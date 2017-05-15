@@ -26,11 +26,14 @@ namespace SyncClipboard
         
         private String stringOld = "";
         private Thread pullThread;
-        private bool stopFlag = false;
-        private bool firstFlag = true;
         private int timeLoop = 3000;
         private int erroTimes = 0;
+        private int getTimeoutTimes = 0;
         private int retryTimes = 3;
+        bool statusErroFlag = false;
+        bool timeoutFlag = false;
+        private bool stopFlag = false;
+        private bool firstFlag = true;
         public MainForm()
         {
             InitializeComponent();
@@ -60,17 +63,37 @@ namespace SyncClipboard
         {
             String url = "https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/ios.json";
             String auth = "Authorization: Basic " + "SmVyaWNYOkppYW5ncnVvY2hlbjQyNg==";
-            HttpWebResponse httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url,5000,null,auth,null);
-            if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
+            HttpWebResponse httpWebResponse = null;
+            try
             {
-                erroTimes += 1;
-                if (erroTimes > retryTimes)
+                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, 5000, null, auth, null);
+                if (timeoutFlag)
                 {
-                    this.notifyIcon1.ShowBalloonTip(5, "与服务器失恋", "重试次数" + erroTimes.ToString(), ToolTipIcon.None);  
+                    this.notifyIcon1.ShowBalloonTip(5, "连接服务器成功", "", ToolTipIcon.None);
+                    timeoutFlag = false;
                 }
-                return;
+                if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    erroTimes += 1;
+                    if (erroTimes > retryTimes)
+                    {
+                        this.notifyIcon1.ShowBalloonTip(5, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数" + erroTimes.ToString(), ToolTipIcon.None);
+                    }
+                    statusErroFlag = true;
+                }
             }
-            erroTimes = 0;
+            catch
+            {
+                getTimeoutTimes += 1;
+                timeoutFlag = true;
+                if (getTimeoutTimes > retryTimes)
+                {
+                    this.notifyIcon1.ShowBalloonTip(5, "连接服务器超时", "重试次数" + getTimeoutTimes.ToString(), ToolTipIcon.None);
+                }
+            }
+            if (statusErroFlag || timeoutFlag)
+                return;
+            erroTimes = getTimeoutTimes = 0;
             StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
             String strReply = objStrmReader.ReadToEnd();
             JavaScriptSerializer serializer = new JavaScriptSerializer();
@@ -100,6 +123,7 @@ namespace SyncClipboard
 
         private void PushToRemote()
         {
+            bool timeoutFlag = false;
             IDataObject iData = Clipboard.GetDataObject();
             if (!iData.GetDataPresent(DataFormats.Text))
             {
@@ -113,15 +137,28 @@ namespace SyncClipboard
             string jsonString = serializer.Serialize(convertJson);
             String url = "https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/Windows.json";
             String auth = "Authorization: Basic " + "SmVyaWNYOkppYW5ncnVvY2hlbjQyNg==";
-            HttpWebResponse httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url,str, 5000, null, auth, null, null);
-            string msgString;
+            HttpWebResponse httpWebResponse = null;
             try
             {
-                msgString = jsonString.Substring(0, 20) + "...";
+                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, str, 5000, null, auth, null, null);
             }
             catch
             {
-                msgString = jsonString;
+                timeoutFlag = true;
+            }
+            string msgString;
+            try
+            {
+                msgString = str.Substring(0, 20) + "...";
+            }
+            catch
+            {
+                msgString = str;
+            }
+            if (timeoutFlag)
+            {
+                this.notifyIcon1.ShowBalloonTip(5, "连接服务器超时", "未同步：" + msgString, ToolTipIcon.None);
+                return;
             }
             if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
