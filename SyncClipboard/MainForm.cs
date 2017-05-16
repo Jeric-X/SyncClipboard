@@ -22,7 +22,12 @@ namespace SyncClipboard
         public static extern bool AddClipboardFormatListener(IntPtr hwnd);
         [DllImport("user32.dll")]
         public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
-        private static int WM_CLIPBOARDUPDATE = 0x031D;  
+        private static int WM_CLIPBOARDUPDATE = 0x031D;
+
+        private String remoteURL;
+        private String user;
+        private String password;
+        bool ifsettingsFormExist = false;
         
         private String stringOld = "";
         private Thread pullThread;
@@ -37,10 +42,18 @@ namespace SyncClipboard
         public MainForm()
         {
             InitializeComponent();
-            AddClipboardFormatListener(this.Handle);  
+            this.TopLevel = false;
+            AddClipboardFormatListener(this.Handle);
+            this.LoadConfig();
             pullThread = new Thread(PullLoop);
             pullThread.SetApartmentState(ApartmentState.STA);
             pullThread.Start();
+        }
+        public void LoadConfig()
+        {
+            remoteURL = Properties.Settings.Default.URL;
+            user = Properties.Settings.Default.USERNAME;
+            password = Properties.Settings.Default.PASSWORD;
         }
 
         private void 退出ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -61,15 +74,15 @@ namespace SyncClipboard
         }
         private void PullFromRemote()
         {
-            String url = "https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/ios.json";
-            String auth = "Authorization: Basic " + "SmVyaWNYOkppYW5ncnVvY2hlbjQyNg==";
+            String url = this.remoteURL + "ios.json";
+            String auth = "Authorization: Basic " + this.user;
             HttpWebResponse httpWebResponse = null;
             try
             {
                 httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, 5000, null, auth, null);
                 if (timeoutFlag)
                 {
-                    this.notifyIcon1.ShowBalloonTip(5, "连接服务器成功", "", ToolTipIcon.None);
+                    this.notifyIcon1.ShowBalloonTip(5, "重新连接服务器成功", "正在同步", ToolTipIcon.None);
                     timeoutFlag = false;
                 }
                 if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
@@ -82,17 +95,23 @@ namespace SyncClipboard
                     statusErroFlag = true;
                 }
             }
-            catch
+            catch(Exception ex)
             {
                 getTimeoutTimes += 1;
                 timeoutFlag = true;
                 if (getTimeoutTimes > retryTimes)
                 {
-                    this.notifyIcon1.ShowBalloonTip(5, "连接服务器超时", "重试次数" + getTimeoutTimes.ToString(), ToolTipIcon.None);
+                    Console.WriteLine(ex.ToString());
+                    this.notifyIcon1.ShowBalloonTip(5, ex.Message.ToString() , url + "\n重试次数" + getTimeoutTimes.ToString(), ToolTipIcon.None);
                 }
             }
+
             if (statusErroFlag || timeoutFlag)
+            {
+                try { httpWebResponse.Close(); }
+                catch { }
                 return;
+            }
             erroTimes = getTimeoutTimes = 0;
             StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
             String strReply = objStrmReader.ReadToEnd();
@@ -119,6 +138,8 @@ namespace SyncClipboard
                 }
                 this.notifyIcon1.ShowBalloonTip(5, "剪切板同步成功", msgString, ToolTipIcon.None);  
             }
+            try { httpWebResponse.Close(); }
+            catch { }
         }
 
         private void PushToRemote()
@@ -135,8 +156,9 @@ namespace SyncClipboard
             convertJson.str = str;
             JavaScriptSerializer serializer = new JavaScriptSerializer();
             string jsonString = serializer.Serialize(convertJson);
-            String url = "https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/Windows.json";
-            String auth = "Authorization: Basic " + "SmVyaWNYOkppYW5ncnVvY2hlbjQyNg==";
+
+            String url = this.remoteURL + "Windows.json";
+            String auth = "Authorization: Basic " + this.user;
             HttpWebResponse httpWebResponse = null;
             try
             {
@@ -179,7 +201,17 @@ namespace SyncClipboard
             {
                 base.DefWndProc(ref m);
             }
-        }  
+        }
+
+        private void 设置ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!ifsettingsFormExist)
+            {
+                ifsettingsFormExist = true;
+                new SettingsForm(this).ShowDialog();
+                ifsettingsFormExist = false;
+            }
+        }
     }
    
     class ConvertJson
