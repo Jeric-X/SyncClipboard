@@ -48,6 +48,7 @@
             // 
             // notifyMenu
             // 
+            this.notifyMenu.DropShadowEnabled = false;
             this.notifyMenu.Font = new System.Drawing.Font("Microsoft YaHei UI", 9F);
             this.notifyMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.notifyMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -58,12 +59,13 @@
             this.notifyMenu.Name = "notifyMenu";
             this.notifyMenu.ShowCheckMargin = true;
             this.notifyMenu.ShowImageMargin = false;
-            this.notifyMenu.Size = new System.Drawing.Size(139, 76);
+            this.notifyMenu.ShowItemToolTips = false;
+            this.notifyMenu.Size = new System.Drawing.Size(182, 110);
             // 
             // 设置ToolStripMenuItem
             // 
             this.设置ToolStripMenuItem.Name = "设置ToolStripMenuItem";
-            this.设置ToolStripMenuItem.Size = new System.Drawing.Size(138, 24);
+            this.设置ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.设置ToolStripMenuItem.Text = "设置";
             this.设置ToolStripMenuItem.Click += new System.EventHandler(this.设置ToolStripMenuItem_Click);
             // 
@@ -71,14 +73,14 @@
             // 
             this.开机启动ToolStripMenuItem.CheckOnClick = true;
             this.开机启动ToolStripMenuItem.Name = "开机启动ToolStripMenuItem";
-            this.开机启动ToolStripMenuItem.Size = new System.Drawing.Size(138, 24);
+            this.开机启动ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.开机启动ToolStripMenuItem.Text = "开机启动";
             this.开机启动ToolStripMenuItem.Click += new System.EventHandler(this.开机启动ToolStripMenuItem_Click);
             // 
             // 退出ToolStripMenuItem
             // 
             this.退出ToolStripMenuItem.Name = "退出ToolStripMenuItem";
-            this.退出ToolStripMenuItem.Size = new System.Drawing.Size(138, 24);
+            this.退出ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.退出ToolStripMenuItem.Text = "退出";
             this.退出ToolStripMenuItem.Click += new System.EventHandler(this.退出ToolStripMenuItem_Click);
             // 

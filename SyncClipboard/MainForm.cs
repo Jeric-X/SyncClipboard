@@ -25,40 +25,30 @@ namespace SyncClipboard
         public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
         private static int WM_CLIPBOARDUPDATE = 0x031D;
 
-        private String remoteURL;
-        private String user;
-        private String password;
-        bool ifsettingsFormExist = false;
-        
-        private String stringOld = "";
-        private Thread pullThread;
-        private int timeLoop = 3000;
-        private int erroTimes = 0;
-        private int getTimeoutTimes = 0;
-        private int retryTimes = 3;
-        bool statusErroFlag = false;
-        bool timeoutFlag = false;
-        private bool stopFlag = false;
-        private bool firstFlag = true;
+        SyncService syncService;
+        bool isSttingsFormExist = false;
+
         public MainForm()
         {
             InitializeComponent();
             this.TopLevel = false;
             AddClipboardFormatListener(this.Handle);
             this.LoadConfig();
-            pullThread = new Thread(PullLoop);
-            pullThread.SetApartmentState(ApartmentState.STA);
-            pullThread.Start();
+            this.syncService = new SyncService(this);
+            this.syncService.Start();
         }
         public void LoadConfig()
         {
             try
             {
-                remoteURL = Properties.Settings.Default.URL;
-                user = Properties.Settings.Default.USERNAME;
-                password = Properties.Settings.Default.PASSWORD;
+                Config.Load();
             }
-            catch { MessageBox.Show("配置文件出错","初始化默认配置",MessageBoxButtons.YesNo); Application.Exit(); return; }
+            catch
+            { 
+                MessageBox.Show("配置文件出错", "初始化默认配置(还没做，即将退出)", MessageBoxButtons.YesNo); 
+                Application.Exit(); 
+                return; 
+            }
             if(Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.softName, null) == null)
             {
                 this.开机启动ToolStripMenuItem.Checked = false;
@@ -68,26 +58,26 @@ namespace SyncClipboard
                 this.开机启动ToolStripMenuItem.Checked = true;
             }
         }
-        private void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
+        public void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
         {
             try 
             { 
-            if(notify)
-            {
-                this.notifyIcon1.ShowBalloonTip(5, title, content, ToolTipIcon.None);
-            }
-            if (notifyIconText)
-            {
-                this.notifyIcon1.Text = Program.softName + "\n" + title + "\n" + contentSimple;
-            }
-            if(level == "erro")
-            {
-                notifyIcon1.Icon = Properties.Resources.erro;
-            }
-            else if(level == "info")
-            {
-                notifyIcon1.Icon = Properties.Resources.upload;
-            }
+                if(notify)
+                {
+                    this.notifyIcon1.ShowBalloonTip(5, title, content, ToolTipIcon.None);
+                }
+                if (notifyIconText)
+                {
+                    this.notifyIcon1.Text = Program.softName + "\n" + title + "\n" + contentSimple;
+                }
+                if(level == "erro")
+                {
+                    notifyIcon1.Icon = Properties.Resources.erro;
+                }
+                else if(level == "info")
+                {
+                    notifyIcon1.Icon = Properties.Resources.upload;
+                }
             }
             catch (NullReferenceException ex)
             {
@@ -97,153 +87,16 @@ namespace SyncClipboard
         private void 退出ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             RemoveClipboardFormatListener(this.Handle);  
-            stopFlag = true;
-            pullThread.Abort();
+            this.syncService.Stop();
             Application.Exit();
         }
 
-        private void PullLoop()
-        {
-            while (!stopFlag)
-            {
-                PullFromRemote();
-                Thread.Sleep(timeLoop);
-            }
-        }
-        private void PullFromRemote()
-        {
-            String url = this.remoteURL + "ios.json";
-            String auth = "Authorization: Basic " + this.user;
-            HttpWebResponse httpWebResponse = null;
-            try
-            {
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, 5000, null, auth, null);
-                if (statusErroFlag || timeoutFlag)
-                {
-                    setLog(true, true, "连接服务器成功", "正在同步", "正在同步","info");
-                    timeoutFlag = false;
-                }
-                if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
-                {
-                    erroTimes += 1;
-                    if (erroTimes < retryTimes)
-                    {
-                        setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString(),"erro");
-                    }
-                    else
-                    {
-                        setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString(), "erro");
-                    }
-                    statusErroFlag = true;
-                }
-                statusErroFlag = false;
-            }
-            catch(Exception ex)
-            {
-                getTimeoutTimes += 1;
-                timeoutFlag = true;
-                if (getTimeoutTimes < retryTimes)
-                {
-                    Console.WriteLine(ex.ToString());
-                    setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(), "重试次数:" + getTimeoutTimes.ToString(), "erro");
-                }
-                else
-                {
-                    Console.WriteLine(ex.ToString());
-                    setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(), "重试次数:" + getTimeoutTimes.ToString(), "erro");
-                }
-            }
-
-            if (statusErroFlag || timeoutFlag)
-            {
-                try { httpWebResponse.Close(); }
-                catch { }
-                return;
-            }
-            erroTimes = getTimeoutTimes = 0;
-            StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
-            String strReply = objStrmReader.ReadToEnd();
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            var p1 = serializer.Deserialize<ConvertJson>(strReply);
-            if (p1.str != stringOld)
-            {
-                if(firstFlag)
-                {
-                    firstFlag = false;
-                    stringOld = p1.str;
-                    return;
-                }
-                Clipboard.SetData(DataFormats.Text, p1.str);
-                stringOld = p1.str;
-                string msgString;
-                try
-                {
-                    msgString = stringOld.Substring(0, 20) + "...";
-                }
-                catch
-                {
-                    msgString = stringOld;
-                }
-                setLog(true, false, "剪切板同步成功", msgString, null, "info");  
-            }
-            try { httpWebResponse.Close(); }
-            catch { }
-        }
-
-        private void PushToRemote()
-        {
-            bool timeoutFlag = false;
-            IDataObject iData = Clipboard.GetDataObject();
-            if (!iData.GetDataPresent(DataFormats.Text))
-            {
-                return;
-            }
-            string str = (String)iData.GetData(DataFormats.Text);
-            ConvertJson convertJson = new ConvertJson();
-            convertJson.platform = "Windows";
-            convertJson.str = str;
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            string jsonString = serializer.Serialize(convertJson);
-
-            String url = this.remoteURL + "Windows.json";
-            String auth = "Authorization: Basic " + this.user;
-            HttpWebResponse httpWebResponse = null;
-            try
-            {
-                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, str, 5000, null, auth, null, null);
-            }
-            catch
-            {
-                timeoutFlag = true;
-            }
-            string msgString;
-            try
-            {
-                msgString = str.Substring(0, 20) + "...";
-            }
-            catch
-            {
-                msgString = str;
-            }
-            if (timeoutFlag)
-            {
-                setLog(true, false, "连接服务器超时", "未同步：" + msgString, null, "erro");
-                return;
-            }
-            if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
-            {
-                //this.notifyIcon1.ShowBalloonTip(5, "剪切板同步到云", httpWebResponse.StatusCode.GetHashCode().ToString(), ToolTipIcon.None);
-            }
-            else
-            {
-                setLog(true, false, "剪切板同步失败", httpWebResponse.StatusCode.GetHashCode().ToString(), null, "erro");
-            }
-        }
+        
         protected override void DefWndProc(ref Message m)
         {
             if (m.Msg == WM_CLIPBOARDUPDATE)
             {
-                PushToRemote();
+                this.syncService.PushLoop();
             }
             else
             {
@@ -253,11 +106,11 @@ namespace SyncClipboard
 
         private void 设置ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!ifsettingsFormExist)
+            if (!isSttingsFormExist)
             {
-                ifsettingsFormExist = true;
+                isSttingsFormExist = true;
                 new SettingsForm(this).ShowDialog();
-                ifsettingsFormExist = false;
+                isSttingsFormExist = false;
             }
         }
 
@@ -279,11 +132,5 @@ namespace SyncClipboard
                 setLog(true, false, "设置启动项失败", "设置启动项失败", null, "erro");
             }
         }
-    }
-   
-    class ConvertJson
-    {
-        public string platform { get; set; }
-        public string str { get; set; }
     }
 }
