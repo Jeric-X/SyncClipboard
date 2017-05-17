@@ -8,6 +8,7 @@ namespace SyncClipboard
 {
     static class Program
     {
+        public static String softName = "SyncClipboard";
         /// <summary>
         /// 应用程序的主入口点。
         /// </summary>

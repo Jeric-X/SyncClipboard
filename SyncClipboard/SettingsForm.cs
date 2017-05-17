@@ -32,7 +32,7 @@ namespace SyncClipboard
         private void button1_Click(object sender, EventArgs e)
         {
             Properties.Settings.Default.URL = this.textBox1.Text;
-            this.textBox2.Text = Properties.Settings.Default.USERNAME;
+            Properties.Settings.Default.USERNAME = this.textBox2.Text;
             Properties.Settings.Default.Save();
             mainForm.LoadConfig();
             this.Close();
@@ -46,7 +46,7 @@ namespace SyncClipboard
         private void button3_Click(object sender, EventArgs e)
         {
             Properties.Settings.Default.URL = this.textBox1.Text;
-            this.textBox2.Text = Properties.Settings.Default.USERNAME;
+            Properties.Settings.Default.USERNAME = this.textBox2.Text;
             Properties.Settings.Default.Save();
             mainForm.LoadConfig();
         }

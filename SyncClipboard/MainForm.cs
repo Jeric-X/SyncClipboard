@@ -12,6 +12,7 @@ using System.Net;
 using System.IO;
 using System.Web.Script.Serialization;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
        
 namespace SyncClipboard
@@ -51,11 +52,33 @@ namespace SyncClipboard
         }
         public void LoadConfig()
         {
-            remoteURL = Properties.Settings.Default.URL;
-            user = Properties.Settings.Default.USERNAME;
-            password = Properties.Settings.Default.PASSWORD;
+            try
+            {
+                remoteURL = Properties.Settings.Default.URL;
+                user = Properties.Settings.Default.USERNAME;
+                password = Properties.Settings.Default.PASSWORD;
+            }
+            catch { MessageBox.Show("配置文件出错","初始化默认配置",MessageBoxButtons.YesNo); Application.Exit(); return; }
+            if(Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.softName, null) == null)
+            {
+                this.开机启动ToolStripMenuItem.Checked = false;
+            }
+            else
+            {
+                this.开机启动ToolStripMenuItem.Checked = true;
+            }
         }
-
+        private void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple)
+        {
+            if(notify)
+            {
+                this.notifyIcon1.ShowBalloonTip(5, title, content, ToolTipIcon.None);
+            }
+            if (notifyIconText)
+            {
+                this.notifyIcon1.Text = Program.softName + "\n" + title + "\n" + contentSimple;
+            }
+        }
         private void 退出ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             RemoveClipboardFormatListener(this.Handle);  
@@ -80,29 +103,39 @@ namespace SyncClipboard
             try
             {
                 httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, 5000, null, auth, null);
-                if (timeoutFlag)
+                if (statusErroFlag || timeoutFlag)
                 {
-                    this.notifyIcon1.ShowBalloonTip(5, "重新连接服务器成功", "正在同步", ToolTipIcon.None);
+                    setLog(true, true, "连接服务器成功", "正在同步", "正在同步");
                     timeoutFlag = false;
                 }
                 if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
                 {
                     erroTimes += 1;
-                    if (erroTimes > retryTimes)
+                    if (erroTimes < retryTimes)
                     {
-                        this.notifyIcon1.ShowBalloonTip(5, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数" + erroTimes.ToString(), ToolTipIcon.None);
+                        setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString());
+                    }
+                    else
+                    {
+                        setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString());
                     }
                     statusErroFlag = true;
                 }
+                statusErroFlag = false;
             }
             catch(Exception ex)
             {
                 getTimeoutTimes += 1;
                 timeoutFlag = true;
-                if (getTimeoutTimes > retryTimes)
+                if (getTimeoutTimes < retryTimes)
                 {
                     Console.WriteLine(ex.ToString());
-                    this.notifyIcon1.ShowBalloonTip(5, ex.Message.ToString() , url + "\n重试次数" + getTimeoutTimes.ToString(), ToolTipIcon.None);
+                    setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(),"重试次数:" + getTimeoutTimes.ToString());
+                }
+                else
+                {
+                    Console.WriteLine(ex.ToString());
+                    setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(), "重试次数:" + getTimeoutTimes.ToString());
                 }
             }
 
@@ -136,7 +169,7 @@ namespace SyncClipboard
                 {
                     msgString = stringOld;
                 }
-                this.notifyIcon1.ShowBalloonTip(5, "剪切板同步成功", msgString, ToolTipIcon.None);  
+                setLog(true,false, "剪切板同步成功", msgString, null);  
             }
             try { httpWebResponse.Close(); }
             catch { }
@@ -179,7 +212,7 @@ namespace SyncClipboard
             }
             if (timeoutFlag)
             {
-                this.notifyIcon1.ShowBalloonTip(5, "连接服务器超时", "未同步：" + msgString, ToolTipIcon.None);
+                setLog(true, false,"连接服务器超时", "未同步：" + msgString,null);
                 return;
             }
             if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
@@ -188,7 +221,7 @@ namespace SyncClipboard
             }
             else
             {
-                this.notifyIcon1.ShowBalloonTip(5, "剪切板同步失败", httpWebResponse.StatusCode.GetHashCode().ToString(), ToolTipIcon.None);
+                setLog(true, false,"剪切板同步失败", httpWebResponse.StatusCode.GetHashCode().ToString(),null);
             }
         }
         protected override void DefWndProc(ref Message m)
@@ -210,6 +243,25 @@ namespace SyncClipboard
                 ifsettingsFormExist = true;
                 new SettingsForm(this).ShowDialog();
                 ifsettingsFormExist = false;
+            }
+        }
+
+        private void 开机启动ToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            try 
+            { 
+                if(this.开机启动ToolStripMenuItem.Checked == true)
+                {
+                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.softName, Application.ExecutablePath);
+                }
+                else
+                {
+                    Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true).DeleteValue(Program.softName, false);
+                }
+            }
+            catch
+            {
+                setLog(true, false, "设置启动项失败", "设置启动项失败", null);
             }
         }
     }
