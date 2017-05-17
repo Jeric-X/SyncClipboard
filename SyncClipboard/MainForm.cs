@@ -68,8 +68,10 @@ namespace SyncClipboard
                 this.开机启动ToolStripMenuItem.Checked = true;
             }
         }
-        private void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple)
+        private void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
         {
+            try 
+            { 
             if(notify)
             {
                 this.notifyIcon1.ShowBalloonTip(5, title, content, ToolTipIcon.None);
@@ -77,6 +79,19 @@ namespace SyncClipboard
             if (notifyIconText)
             {
                 this.notifyIcon1.Text = Program.softName + "\n" + title + "\n" + contentSimple;
+            }
+            if(level == "erro")
+            {
+                notifyIcon1.Icon = Properties.Resources.erro;
+            }
+            else if(level == "info")
+            {
+                notifyIcon1.Icon = Properties.Resources.upload;
+            }
+            }
+            catch (NullReferenceException ex)
+            {
+                //Console.WriteLine("Setlog错误");
             }
         }
         private void 退出ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -105,7 +120,7 @@ namespace SyncClipboard
                 httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, 5000, null, auth, null);
                 if (statusErroFlag || timeoutFlag)
                 {
-                    setLog(true, true, "连接服务器成功", "正在同步", "正在同步");
+                    setLog(true, true, "连接服务器成功", "正在同步", "正在同步","info");
                     timeoutFlag = false;
                 }
                 if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
@@ -113,11 +128,11 @@ namespace SyncClipboard
                     erroTimes += 1;
                     if (erroTimes < retryTimes)
                     {
-                        setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString());
+                        setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString(),"erro");
                     }
                     else
                     {
-                        setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString());
+                        setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + erroTimes.ToString(), "重试次数:" + erroTimes.ToString(), "erro");
                     }
                     statusErroFlag = true;
                 }
@@ -130,12 +145,12 @@ namespace SyncClipboard
                 if (getTimeoutTimes < retryTimes)
                 {
                     Console.WriteLine(ex.ToString());
-                    setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(),"重试次数:" + getTimeoutTimes.ToString());
+                    setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(), "重试次数:" + getTimeoutTimes.ToString(), "erro");
                 }
                 else
                 {
                     Console.WriteLine(ex.ToString());
-                    setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(), "重试次数:" + getTimeoutTimes.ToString());
+                    setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + getTimeoutTimes.ToString(), "重试次数:" + getTimeoutTimes.ToString(), "erro");
                 }
             }
 
@@ -169,7 +184,7 @@ namespace SyncClipboard
                 {
                     msgString = stringOld;
                 }
-                setLog(true,false, "剪切板同步成功", msgString, null);  
+                setLog(true, false, "剪切板同步成功", msgString, null, "info");  
             }
             try { httpWebResponse.Close(); }
             catch { }
@@ -212,7 +227,7 @@ namespace SyncClipboard
             }
             if (timeoutFlag)
             {
-                setLog(true, false,"连接服务器超时", "未同步：" + msgString,null);
+                setLog(true, false, "连接服务器超时", "未同步：" + msgString, null, "erro");
                 return;
             }
             if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
@@ -221,7 +236,7 @@ namespace SyncClipboard
             }
             else
             {
-                setLog(true, false,"剪切板同步失败", httpWebResponse.StatusCode.GetHashCode().ToString(),null);
+                setLog(true, false, "剪切板同步失败", httpWebResponse.StatusCode.GetHashCode().ToString(), null, "erro");
             }
         }
         protected override void DefWndProc(ref Message m)
@@ -246,11 +261,11 @@ namespace SyncClipboard
             }
         }
 
-        private void 开机启动ToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        private void 开机启动ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            try 
-            { 
-                if(this.开机启动ToolStripMenuItem.Checked == true)
+            try
+            {
+                if (this.开机启动ToolStripMenuItem.Checked == true)
                 {
                     Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.softName, Application.ExecutablePath);
                 }
@@ -261,7 +276,7 @@ namespace SyncClipboard
             }
             catch
             {
-                setLog(true, false, "设置启动项失败", "设置启动项失败", null);
+                setLog(true, false, "设置启动项失败", "设置启动项失败", null, "erro");
             }
         }
     }
