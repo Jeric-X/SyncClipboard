@@ -8,9 +8,9 @@ namespace SyncClipboard
 {
     public static class Config
     {
-        public static uint IntervalTime = 3000;
+        public static int IntervalTime = 3000;
         public static int RetryTimes = 3;
-        public static int TimeOut = 10000;
+        public static int TimeOut = 1*60*1000;
 
         public static String RemoteURL { get; set; }
         public static String User { get; set; }

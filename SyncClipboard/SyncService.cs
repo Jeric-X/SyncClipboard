@@ -15,6 +15,7 @@ namespace SyncClipboard
     {
         private MainForm mainForm;
         private Thread pullThread;
+        private Thread pushThread;
         private String oldString = "";
 
         public bool isStop = false;
@@ -38,6 +39,13 @@ namespace SyncClipboard
             pullThread.SetApartmentState(ApartmentState.STA);
             pullThread.Start();
         }
+        public void StartPush()
+        {
+            pushThread = new Thread(PushLoop);
+            pushThread.SetApartmentState(ApartmentState.STA);
+            pushThread.Start();
+        }
+
         public void Stop()
         {
             isStop = true;
@@ -150,6 +158,10 @@ namespace SyncClipboard
             string str = (String)iData.GetData(DataFormats.Text);
             for (int i = 0; i < Config.RetryTimes; i++)
             {
+                if(this.isStop)
+                {
+                    return;
+                }
                 this.PushToRemote(str);
                 if (this.isPushError)
                 {

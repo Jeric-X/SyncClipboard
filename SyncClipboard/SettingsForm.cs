@@ -48,6 +48,8 @@ namespace SyncClipboard
         }
         private void SaveConfig()
         {
+            if (this.textBox1.Text != "" && this.textBox1.Text.Substring(this.textBox1.Text.Length - 1, 1) != "/")
+                this.textBox1.Text += "/";
             Properties.Settings.Default.URL = this.textBox1.Text;
             Properties.Settings.Default.USERNAME = this.textBox2.Text;
             Properties.Settings.Default.PASSWORD = this.textBox3.Text;

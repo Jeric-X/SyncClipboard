@@ -95,7 +95,7 @@ namespace SyncClipboard
         {
             if (m.Msg == WM_CLIPBOARDUPDATE)
             {
-                this.syncService.PushLoop();
+                this.syncService.StartPush();
             }
             else
             {
