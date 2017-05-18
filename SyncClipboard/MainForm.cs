@@ -88,10 +88,9 @@ namespace SyncClipboard
         {
             RemoveClipboardFormatListener(this.Handle);  
             this.syncService.Stop();
+            this.notifyIcon1.Visible = false;
             Application.Exit();
         }
-
-        
         protected override void DefWndProc(ref Message m)
         {
             if (m.Msg == WM_CLIPBOARDUPDATE)
@@ -129,8 +128,13 @@ namespace SyncClipboard
             }
             catch
             {
-                setLog(true, false, "设置启动项失败", "设置启动项失败", null, "erro");
+                setLog(true, false, "设置启动项失败", "设置启动项失败", null, "warn");
             }
+        }
+
+        private void notifyIcon1_BalloonTipClicked(object sender, EventArgs e)
+        {
+            syncService.OpenURL();
         }
     }
 }

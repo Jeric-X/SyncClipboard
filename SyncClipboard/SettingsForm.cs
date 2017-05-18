@@ -25,16 +25,15 @@ namespace SyncClipboard
 
         private void SettingsForm_Load(object sender, EventArgs e)
         {
-            this.textBox1.Text = Properties.Settings.Default.URL;
-            this.textBox2.Text = Properties.Settings.Default.USERNAME;
+            this.textBox1.Text = Config.RemoteURL;
+            this.textBox2.Text = Config.User;
+            this.textBox3.Text = Config.Password;
+
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Properties.Settings.Default.URL = this.textBox1.Text;
-            Properties.Settings.Default.USERNAME = this.textBox2.Text;
-            Properties.Settings.Default.Save();
-            mainForm.LoadConfig();
+            SaveConfig();
             this.Close();
         }
 
@@ -45,8 +44,13 @@ namespace SyncClipboard
 
         private void button3_Click(object sender, EventArgs e)
         {
+            SaveConfig();
+        }
+        private void SaveConfig()
+        {
             Properties.Settings.Default.URL = this.textBox1.Text;
             Properties.Settings.Default.USERNAME = this.textBox2.Text;
+            Properties.Settings.Default.PASSWORD = this.textBox3.Text;
             Properties.Settings.Default.Save();
             mainForm.LoadConfig();
         }

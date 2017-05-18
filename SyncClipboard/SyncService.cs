@@ -44,6 +44,14 @@ namespace SyncClipboard
             pullThread.Abort();
         }
 
+        public void OpenURL()
+        {
+            if(this.oldString.Length < 4)
+                return;
+            if(this.oldString.Substring(0,4) == "http")
+                System.Diagnostics.Process.Start(this.oldString);  
+        }
+
         private void PullLoop()
         {
             while (!this.isStop)
@@ -55,7 +63,9 @@ namespace SyncClipboard
         private void PullFromRemote()
         {
             String url = Config.RemoteURL + "ios.json";
-            String auth = "Authorization: Basic " + Config.User;
+            String auth = "Authorization: Basic " + Config.Auth;
+
+            Console.WriteLine (auth +"dd");
             HttpWebResponse httpWebResponse = GetPullResponse(url, auth);
             if (this.isStatusError || this.isTimeOut)
             {
@@ -78,16 +88,11 @@ namespace SyncClipboard
                 }
                 Clipboard.SetData(DataFormats.Text, p1.Clipboard);
                 this.oldString = p1.Clipboard;
-                string msgString;
-                try
-                {
-                    msgString = this.oldString.Substring(0, 20) + "...";
-                }
-                catch
-                {
-                    msgString = this.oldString;
-                }
-                this.mainForm.setLog(true, false, "剪切板同步成功", msgString, null, "info");
+                this.mainForm.setLog(true, false, "剪切板同步成功", this.SafeMessage(oldString), null, "info");
+            }
+            else
+            {
+                this.mainForm.setLog(false, true, "服务器连接成功", null, "正在同步", "info");
             }
             try { httpWebResponse.Close(); }
             catch { }
@@ -97,7 +102,7 @@ namespace SyncClipboard
             HttpWebResponse httpWebResponse = null;
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, 5000, null, auth, null);
+                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, null, auth, null);
                 if (this.isStatusError || this.isTimeOut)
                 {
                     this.mainForm.setLog(true, true, "连接服务器成功", "正在同步", "正在同步", "info");
@@ -153,11 +158,9 @@ namespace SyncClipboard
                 return;
             }
             this.mainForm.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
-            
         }
         public void PushToRemote(String str)
         {
-            bool isTimeout = false;
             //ConvertJsonClass convertJson = new ConvertJsonClass();
             //convertJson.File = "Windows";
             //convertJson.Clipboard = str;
@@ -165,11 +168,11 @@ namespace SyncClipboard
             //string jsonString = serializer.Serialize(convertJson);
 
             String url = Config.RemoteURL + "Windows.json";
-            String auth = "Authorization: Basic " + Config.User;
+            String auth = "Authorization: Basic " + Config.Auth;
             HttpWebResponse httpWebResponse = null;
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, str, 5000, null, auth, null, null);
+                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, str, Config.TimeOut, null, auth, null, null);
             }
             catch(Exception ex)
             {

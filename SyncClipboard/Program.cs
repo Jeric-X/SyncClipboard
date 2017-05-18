@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -17,7 +18,11 @@ namespace SyncClipboard
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            System.Threading.Mutex mutex = new System.Threading.Mutex(true, Program.softName);
+            if (mutex.WaitOne(0, false))
+            {
+                Application.Run(new MainForm());
+            }
         }
     }
 }
