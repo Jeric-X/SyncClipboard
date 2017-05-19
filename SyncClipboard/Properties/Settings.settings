@@ -6,10 +6,10 @@
       <Value Profile="(Default)">https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/SyncClipboard.json</Value>
     </Setting>
     <Setting Name="USERNAME" Type="System.String" Scope="User">
-      <Value Profile="(Default)">a</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="PASSWORD" Type="System.String" Scope="User">
-      <Value Profile="(Default)">b</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="IFPULL" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>

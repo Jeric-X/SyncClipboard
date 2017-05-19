@@ -107,7 +107,7 @@ namespace SyncClipboard
             {
                 return;
             }
-            if (p1.Clipboard != this.oldString)
+            if (p1 != null && p1.Clipboard != this.oldString)
             {
                 if (this.isFirstTime)
                 {

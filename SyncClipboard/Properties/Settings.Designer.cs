@@ -38,7 +38,7 @@ namespace SyncClipboard.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("a")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string USERNAME {
             get {
                 return ((string)(this["USERNAME"]));
@@ -50,7 +50,7 @@ namespace SyncClipboard.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("b")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string PASSWORD {
             get {
                 return ((string)(this["PASSWORD"]));
