@@ -10,20 +10,59 @@ namespace SyncClipboard
     {
         public static int IntervalTime = 3000;
         public static int RetryTimes = 3;
-        public static int TimeOut = 1*60*1000;
+        public static int TimeOut = 10000;
 
+        public static bool IsCustomServer { get; set; }
+        public static String CustomName { get; set; }
+        public static bool IfPull { get; set; }
+        public static bool IfPush { get; set; }
         public static String RemoteURL { get; set; }
         public static String User { get; set; }
         public static String Password { get; set; }
+
         public static String Auth { get; set; }
+        public static String Url { get; set; }
 
         public static void Load()
         {
             RemoteURL = Properties.Settings.Default.URL;
             User = Properties.Settings.Default.USERNAME;
             Password = Properties.Settings.Default.PASSWORD;
-            Auth = GetAuth(User + ":" + Password);
+            IfPull = Properties.Settings.Default.IFPULL;
+            IfPush = Properties.Settings.Default.IFPUSH;
+            IsCustomServer = Properties.Settings.Default.ISCUSTOMSERVER;
+            CustomName = Properties.Settings.Default.CUSTOMNAME;
+            IntervalTime = Properties.Settings.Default.IntervalTime;
+            RetryTimes = Properties.Settings.Default.RetryTimes;
+            TimeOut = Properties.Settings.Default.TimeOut;
+
+            if (IsCustomServer)
+            {
+                Auth = GetAuth(User + ":" + Password);
+                Url = RemoteURL;
+            }
+            else
+            {
+                Auth = GetAuth(Program.DefaultUser + ":" + Program.DefaultPassword);
+                Url = Program.DefaultServer + CustomName + ".json";
+            }
         }
+
+        public static void Save()
+        {
+            Properties.Settings.Default.URL = RemoteURL;
+            Properties.Settings.Default.USERNAME = User ;
+            Properties.Settings.Default.PASSWORD = Password;
+            Properties.Settings.Default.IFPULL = IfPull;
+            Properties.Settings.Default.IFPUSH = IfPush;
+            Properties.Settings.Default.CUSTOMNAME = CustomName;
+            Properties.Settings.Default.ISCUSTOMSERVER = IsCustomServer;
+            Properties.Settings.Default.IntervalTime = IntervalTime;
+            Properties.Settings.Default.RetryTimes = RetryTimes;
+            Properties.Settings.Default.TimeOut = TimeOut;
+            Properties.Settings.Default.Save();
+        }
+
         private static String GetAuth(String source)
         {
             String Auth;

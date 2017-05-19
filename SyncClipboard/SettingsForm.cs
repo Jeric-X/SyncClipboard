@@ -21,6 +21,17 @@ namespace SyncClipboard
         {
             InitializeComponent();
             mainForm = mainform;
+            this.textBox6.KeyPress += OnlyNum;
+            this.textBox7.KeyPress += OnlyNum;
+            this.textBox8.KeyPress += OnlyNum;
+        }
+
+        private void OnlyNum(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar != '\b' && !Char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
 
         private void SettingsForm_Load(object sender, EventArgs e)
@@ -28,7 +39,15 @@ namespace SyncClipboard
             this.textBox1.Text = Config.RemoteURL;
             this.textBox2.Text = Config.User;
             this.textBox3.Text = Config.Password;
+            this.textBox4.Text = Config.CustomName;
+            this.textBox6.Text = Config.RetryTimes.ToString();
+            this.textBox7.Text = (Config.TimeOut / 1000).ToString();
+            this.textBox8.Text = (Config.IntervalTime / 1000).ToString();
 
+            if(Config.IsCustomServer)
+                this.radioButton1.Checked = true;
+            else
+                this.radioButton2.Checked = true;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -48,13 +67,39 @@ namespace SyncClipboard
         }
         private void SaveConfig()
         {
-            if (this.textBox1.Text != "" && this.textBox1.Text.Substring(this.textBox1.Text.Length - 1, 1) != "/")
-                this.textBox1.Text += "/";
-            Properties.Settings.Default.URL = this.textBox1.Text;
-            Properties.Settings.Default.USERNAME = this.textBox2.Text;
-            Properties.Settings.Default.PASSWORD = this.textBox3.Text;
-            Properties.Settings.Default.Save();
+            Config.RemoteURL = this.textBox1.Text;
+            Config.User = this.textBox2.Text;
+            Config.Password = this.textBox3.Text;
+            Config.IsCustomServer = this.radioButton1.Checked;
+            Config.CustomName = this.textBox4.Text;
+
+            if (this.textBox8.Text != "")
+                Config.IntervalTime = Convert.ToInt32(this.textBox8.Text) * 1000;
+            if (this.textBox7.Text != "")
+                Config.TimeOut = Convert.ToInt32(this.textBox7.Text) * 1000;
+            if (this.textBox6.Text != "")
+                Config.RetryTimes = Convert.ToInt32(this.textBox6.Text);
+            Config.Save();
             mainForm.LoadConfig();
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton1.Checked)
+            {
+                panel1.Visible = true;
+                panel2.Visible = false;
+            }
+            else
+            {
+                panel2.Visible = true;
+                panel1.Visible = false;
+            }
+        }
+
+        private void textBox4_TextChanged(object sender, EventArgs e)
+        {
+            textBox5.Text = Program.DefaultServer + textBox4.Text + ".json";
         }
     }
 }

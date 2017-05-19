@@ -25,7 +25,8 @@ namespace SyncClipboard.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/")]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/SyncClipboard.json" +
+            "")]
         public string URL {
             get {
                 return ((string)(this["URL"]));
@@ -37,7 +38,7 @@ namespace SyncClipboard.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("a")]
         public string USERNAME {
             get {
                 return ((string)(this["USERNAME"]));
@@ -49,13 +50,97 @@ namespace SyncClipboard.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("b")]
         public string PASSWORD {
             get {
                 return ((string)(this["PASSWORD"]));
             }
             set {
                 this["PASSWORD"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IFPULL {
+            get {
+                return ((bool)(this["IFPULL"]));
+            }
+            set {
+                this["IFPULL"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IFPUSH {
+            get {
+                return ((bool)(this["IFPUSH"]));
+            }
+            set {
+                this["IFPUSH"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ISCUSTOMSERVER {
+            get {
+                return ((bool)(this["ISCUSTOMSERVER"]));
+            }
+            set {
+                this["ISCUSTOMSERVER"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CUSTOMNAME {
+            get {
+                return ((string)(this["CUSTOMNAME"]));
+            }
+            set {
+                this["CUSTOMNAME"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3000")]
+        public int IntervalTime {
+            get {
+                return ((int)(this["IntervalTime"]));
+            }
+            set {
+                this["IntervalTime"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int RetryTimes {
+            get {
+                return ((int)(this["RetryTimes"]));
+            }
+            set {
+                this["RetryTimes"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10000")]
+        public int TimeOut {
+            get {
+                return ((int)(this["TimeOut"]));
+            }
+            set {
+                this["TimeOut"] = value;
             }
         }
     }

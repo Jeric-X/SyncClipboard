@@ -49,7 +49,7 @@ namespace SyncClipboard
                 Application.Exit(); 
                 return; 
             }
-            if(Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.softName, null) == null)
+            if(Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, null) == null)
             {
                 this.开机启动ToolStripMenuItem.Checked = false;
             }
@@ -57,6 +57,8 @@ namespace SyncClipboard
             {
                 this.开机启动ToolStripMenuItem.Checked = true;
             }
+            this.上传本机ToolStripMenuItem.Checked = Config.IfPush;
+            this.下载远程ToolStripMenuItem.Checked = Config.IfPull;
         }
         public void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
         {
@@ -68,7 +70,7 @@ namespace SyncClipboard
                 }
                 if (notifyIconText)
                 {
-                    this.notifyIcon1.Text = Program.softName + "\n" + title + "\n" + contentSimple;
+                    this.notifyIcon1.Text = Program.SoftName + "\n" + title + "\n" + contentSimple;
                 }
                 if(level == "erro")
                 {
@@ -79,7 +81,7 @@ namespace SyncClipboard
                     notifyIcon1.Icon = Properties.Resources.upload;
                 }
             }
-            catch (NullReferenceException ex)
+            catch (Exception  ex)
             {
                 //Console.WriteLine("Setlog错误");
             }
@@ -119,11 +121,11 @@ namespace SyncClipboard
             {
                 if (this.开机启动ToolStripMenuItem.Checked == true)
                 {
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.softName, Application.ExecutablePath);
+                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, Application.ExecutablePath);
                 }
                 else
                 {
-                    Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true).DeleteValue(Program.softName, false);
+                    Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true).DeleteValue(Program.SoftName, false);
                 }
             }
             catch
@@ -135,6 +137,18 @@ namespace SyncClipboard
         private void notifyIcon1_BalloonTipClicked(object sender, EventArgs e)
         {
             syncService.OpenURL();
+        }
+
+        private void 上传本机ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Config.IfPush = this.上传本机ToolStripMenuItem.Checked;
+            Config.Save();
+        }
+
+        private void 下载远程ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Config.IfPull = this.下载远程ToolStripMenuItem.Checked;
+            Config.Save();
         }
     }
 }

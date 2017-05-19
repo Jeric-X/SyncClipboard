@@ -19,6 +19,8 @@ namespace SyncClipboard
         private String oldString = "";
 
         public bool isStop = false;
+
+
         private bool isStatusError = false;
         private bool isTimeOut = false;
         private bool isFirstTime = true;
@@ -49,7 +51,17 @@ namespace SyncClipboard
         public void Stop()
         {
             isStop = true;
-            pullThread.Abort();
+            try
+            {
+                pullThread.Abort();
+                pushThread.Abort();
+            }
+            catch { }
+        }
+
+        public void LoadConfig()
+        {
+
         }
 
         public void OpenURL()
@@ -64,13 +76,14 @@ namespace SyncClipboard
         {
             while (!this.isStop)
             {
-                this.PullFromRemote();
+                if (Config.IfPull)
+                    this.PullFromRemote();
                 Thread.Sleep((int)Config.IntervalTime);
             }
         }
         private void PullFromRemote()
         {
-            String url = Config.RemoteURL + "ios.json";
+            String url = Config.Url;
             String auth = "Authorization: Basic " + Config.Auth;
 
             Console.WriteLine (auth +"dd");
@@ -85,7 +98,15 @@ namespace SyncClipboard
             StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
             String strReply = objStrmReader.ReadToEnd();
             JavaScriptSerializer serializer = new JavaScriptSerializer();
-            var p1 = serializer.Deserialize<ConvertJsonClass>(strReply);
+            ConvertJsonClass p1=null;
+            try
+            {
+                p1 = serializer.Deserialize<ConvertJsonClass>(strReply);
+            }
+            catch
+            {
+                return;
+            }
             if (p1.Clipboard != this.oldString)
             {
                 if (this.isFirstTime)
@@ -119,7 +140,7 @@ namespace SyncClipboard
                 if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
                 {
                     this.errorTimes += 1;
-                    if (this.errorTimes < Config.RetryTimes)
+                    if (this.errorTimes == Config.RetryTimes + 1)
                     {
                         this.mainForm.setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
                     }
@@ -135,7 +156,7 @@ namespace SyncClipboard
             {
                 this.pullTimeoutTimes += 1;
                 isTimeOut = true;
-                if (this.pullTimeoutTimes < Config.RetryTimes)
+                if (this.pullTimeoutTimes == Config.RetryTimes + 1)
                 {
                     Console.WriteLine(ex.ToString());
                     this.mainForm.setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
@@ -158,7 +179,7 @@ namespace SyncClipboard
             string str = (String)iData.GetData(DataFormats.Text);
             for (int i = 0; i < Config.RetryTimes; i++)
             {
-                if(this.isStop)
+                if(this.isStop || (!Config.IfPush))
                 {
                     return;
                 }
@@ -179,7 +200,7 @@ namespace SyncClipboard
             //JavaScriptSerializer serializer = new JavaScriptSerializer();
             //string jsonString = serializer.Serialize(convertJson);
 
-            String url = Config.RemoteURL + "Windows.json";
+            String url = Config.Url;
             String auth = "Authorization: Basic " + Config.Auth;
             HttpWebResponse httpWebResponse = null;
             try
