@@ -194,18 +194,18 @@ namespace SyncClipboard
         }
         public void PushToRemote(String str)
         {
-            //ConvertJsonClass convertJson = new ConvertJsonClass();
-            //convertJson.File = "Windows";
-            //convertJson.Clipboard = str;
-            //JavaScriptSerializer serializer = new JavaScriptSerializer();
-            //string jsonString = serializer.Serialize(convertJson);
+            ConvertJsonClass convertJson = new ConvertJsonClass();
+            convertJson.File = "";
+            convertJson.Clipboard = str;
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            string jsonString = serializer.Serialize(convertJson);
 
             String url = Config.Url;
             String auth = "Authorization: Basic " + Config.Auth;
             HttpWebResponse httpWebResponse = null;
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, str, Config.TimeOut, null, auth, null, null);
+                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, jsonString, Config.TimeOut, null, auth, null, null);
             }
             catch(Exception ex)
             {
