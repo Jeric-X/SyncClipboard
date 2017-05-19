@@ -1,4 +1,5 @@
 # SyncClipboard
+[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
 ## 功能
 一个简单的剪切板同步工具，C/S架构
 ## Server

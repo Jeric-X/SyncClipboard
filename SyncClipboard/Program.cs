@@ -48,11 +48,11 @@ namespace SyncClipboard
         {
             mainForm.setLog(true, false, "未知错误", e.ExceptionObject.ToString(), null, "erro");
         }
-         private static void Application_ApplicationExit(object sender, EventArgs e)
-         {
-             // detach static event handlers
-             Application.ApplicationExit -= Application_ApplicationExit;
-             Application.ThreadException -= Application_ThreadException;
-         }
+        private static void Application_ApplicationExit(object sender, EventArgs e)
+        {
+            // detach static event handlers
+            Application.ApplicationExit -= Application_ApplicationExit;
+            Application.ThreadException -= Application_ThreadException;
+        }
     }
 }
