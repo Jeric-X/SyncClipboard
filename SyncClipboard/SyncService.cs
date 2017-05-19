@@ -43,6 +43,8 @@ namespace SyncClipboard
         }
         public void StartPush()
         {
+            if (pushThread != null)
+                pushThread.Abort();
             pushThread = new Thread(PushLoop);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
@@ -57,11 +59,6 @@ namespace SyncClipboard
                 pushThread.Abort();
             }
             catch { }
-        }
-
-        public void LoadConfig()
-        {
-
         }
 
         public void OpenURL()
@@ -217,6 +214,7 @@ namespace SyncClipboard
             {
                 //this.notifyIcon1.ShowBalloonTip(5, "剪切板同步到云", httpWebResponse.StatusCode.GetHashCode().ToString(), ToolTipIcon.None);
                 this.isPushError = false;
+                this.oldString = str;
             }
             else
             {

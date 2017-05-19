@@ -13,7 +13,7 @@ namespace SyncClipboard
     public partial class SettingsForm : Form
     {
         private MainForm mainForm;
-        public SettingsForm()
+        private SettingsForm()
         {
             InitializeComponent();
         }

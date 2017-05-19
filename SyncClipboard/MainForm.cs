@@ -36,6 +36,7 @@ namespace SyncClipboard
             this.LoadConfig();
             this.syncService = new SyncService(this);
             this.syncService.Start();
+            //notifyMenu.RenderMode = ToolStripRenderMode .System   ;
         }
         public void LoadConfig()
         {
