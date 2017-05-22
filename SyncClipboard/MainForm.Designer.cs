@@ -39,6 +39,7 @@
             this.下载远程ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.退出ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.检查更新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.notifyMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -58,6 +59,7 @@
             this.notifyMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.设置ToolStripMenuItem,
             this.开机启动ToolStripMenuItem,
+            this.检查更新ToolStripMenuItem,
             this.toolStripMenuItem2,
             this.上传本机ToolStripMenuItem,
             this.下载远程ToolStripMenuItem,
@@ -68,12 +70,12 @@
             this.notifyMenu.ShowCheckMargin = true;
             this.notifyMenu.ShowImageMargin = false;
             this.notifyMenu.ShowItemToolTips = false;
-            this.notifyMenu.Size = new System.Drawing.Size(145, 146);
+            this.notifyMenu.Size = new System.Drawing.Size(182, 200);
             // 
             // 设置ToolStripMenuItem
             // 
             this.设置ToolStripMenuItem.Name = "设置ToolStripMenuItem";
-            this.设置ToolStripMenuItem.Size = new System.Drawing.Size(144, 26);
+            this.设置ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.设置ToolStripMenuItem.Text = "设置";
             this.设置ToolStripMenuItem.Click += new System.EventHandler(this.设置ToolStripMenuItem_Click);
             // 
@@ -81,20 +83,20 @@
             // 
             this.开机启动ToolStripMenuItem.CheckOnClick = true;
             this.开机启动ToolStripMenuItem.Name = "开机启动ToolStripMenuItem";
-            this.开机启动ToolStripMenuItem.Size = new System.Drawing.Size(144, 26);
+            this.开机启动ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.开机启动ToolStripMenuItem.Text = "开机启动";
             this.开机启动ToolStripMenuItem.Click += new System.EventHandler(this.开机启动ToolStripMenuItem_Click);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(141, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(178, 6);
             // 
             // 上传本机ToolStripMenuItem
             // 
             this.上传本机ToolStripMenuItem.CheckOnClick = true;
             this.上传本机ToolStripMenuItem.Name = "上传本机ToolStripMenuItem";
-            this.上传本机ToolStripMenuItem.Size = new System.Drawing.Size(144, 26);
+            this.上传本机ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.上传本机ToolStripMenuItem.Text = "上传本机";
             this.上传本机ToolStripMenuItem.Click += new System.EventHandler(this.上传本机ToolStripMenuItem_Click);
             // 
@@ -102,21 +104,28 @@
             // 
             this.下载远程ToolStripMenuItem.CheckOnClick = true;
             this.下载远程ToolStripMenuItem.Name = "下载远程ToolStripMenuItem";
-            this.下载远程ToolStripMenuItem.Size = new System.Drawing.Size(144, 26);
+            this.下载远程ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.下载远程ToolStripMenuItem.Text = "下载远程";
             this.下载远程ToolStripMenuItem.Click += new System.EventHandler(this.下载远程ToolStripMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(141, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(178, 6);
             // 
             // 退出ToolStripMenuItem
             // 
             this.退出ToolStripMenuItem.Name = "退出ToolStripMenuItem";
-            this.退出ToolStripMenuItem.Size = new System.Drawing.Size(144, 26);
+            this.退出ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
             this.退出ToolStripMenuItem.Text = "退出";
             this.退出ToolStripMenuItem.Click += new System.EventHandler(this.退出ToolStripMenuItem_Click);
+            // 
+            // 检查更新ToolStripMenuItem
+            // 
+            this.检查更新ToolStripMenuItem.Name = "检查更新ToolStripMenuItem";
+            this.检查更新ToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
+            this.检查更新ToolStripMenuItem.Text = "检查更新";
+            this.检查更新ToolStripMenuItem.Click += new System.EventHandler(this.检查更新ToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -144,6 +153,7 @@
         private System.Windows.Forms.ToolStripMenuItem 上传本机ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 下载远程ToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem 检查更新ToolStripMenuItem;
     }
 }
 

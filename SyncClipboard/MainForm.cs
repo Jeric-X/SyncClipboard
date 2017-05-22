@@ -151,5 +151,11 @@ namespace SyncClipboard
             Config.IfPull = this.下载远程ToolStripMenuItem.Checked;
             Config.Save();
         }
+
+        private void 检查更新ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            UpdateChecker updateChecker = new UpdateChecker();
+            updateChecker.Check();
+        }
     }
 }

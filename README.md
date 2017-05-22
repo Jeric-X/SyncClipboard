@@ -8,7 +8,8 @@
 > - [x] NextCloud  
 
 ## Client-Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)
+下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，自备梯子  
+或者clone or下载源码，VS2013及以上编译
 ## Client-IOS 
 使用[Workflow](https://appsto.re/cn/2IzJ2.i)提供的`Get Contents of URL`功能发送HTTP协议  
 导入这个[Workflow](https://workflow.is/workflows/6da4c1de8b1446cda56e336b1ed50b25)
