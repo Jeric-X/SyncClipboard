@@ -1,0 +1,21 @@
+version: 1.0.{build}
+image: Visual Studio 2013
+configuration: Release
+platform: Any CPU
+build:
+  verbosity: minimal
+after_build:
+- cmd: AppVeyor.bat
+artifacts:
+- path: SyncClipboard\bin\Release\SyncClipboard.exe
+  name: SyncClipboard_$(VERSION)
+deploy:
+- provider: GitHub
+  release: $(VERSION)
+  description: $(FEATURE)
+  auth_token:
+    secure: zuPhf3Nx5b5FX/XCtz5/goxwD1t3htaC59DgWs2AiaeNdoTssqKoT1QX+2S+h3pr
+  artifact: SyncClipboard_$(VERSION)
+  force_update: true
+  on:
+    APPVEYOR_REPO_TAG: true
