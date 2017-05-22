@@ -445,3 +445,6 @@ $RECYCLE.BIN/
 # BizTalk build output
 
 # End of https://www.gitignore.io/api/csharp,windows,visualstudio
+#tempfiles
+feature.txt
+version.txt
