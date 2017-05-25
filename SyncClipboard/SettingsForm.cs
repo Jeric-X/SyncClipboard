@@ -7,20 +7,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SyncClipboard.Control;
 
 namespace SyncClipboard
 {
     public partial class SettingsForm : Form
     {
-        private MainForm mainForm;
+        private MainController mainController;
         private SettingsForm()
         {
             InitializeComponent();
         }
-        public SettingsForm(MainForm mainform)
+        public SettingsForm(MainController mainform)
         {
             InitializeComponent();
-            mainForm = mainform;
+            mainController = mainform;
             this.textBox6.KeyPress += OnlyNum;
             this.textBox7.KeyPress += OnlyNum;
             this.textBox8.KeyPress += OnlyNum;
@@ -80,7 +81,7 @@ namespace SyncClipboard
             if (this.textBox6.Text != "")
                 Config.RetryTimes = Convert.ToInt32(this.textBox6.Text);
             Config.Save();
-            mainForm.LoadConfig();
+            mainController.LoadConfig();
         }
 
         private void radioButton1_CheckedChanged(object sender, EventArgs e)

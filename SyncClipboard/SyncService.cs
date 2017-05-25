@@ -8,12 +8,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using SyncClipboard.Control;
 
 namespace SyncClipboard
 {
     class SyncService
     {
-        private MainForm mainForm;
+        private Control.MainController mainController;
         private Thread pullThread;
         private Thread pushThread;
         private String oldString = "";
@@ -31,9 +32,9 @@ namespace SyncClipboard
         private int pullTimeoutTimes = 0;
 
 
-        public SyncService(MainForm mf)
+        public SyncService(MainController mf)
         {
-            this.mainForm = mf;
+            this.mainController = mf;
         }
         public void Start()
         {
@@ -114,11 +115,11 @@ namespace SyncClipboard
                 }
                 Clipboard.SetData(DataFormats.Text, p1.Clipboard);
                 this.oldString = p1.Clipboard;
-                this.mainForm.setLog(true, false, "剪切板同步成功", this.SafeMessage(oldString), null, "info");
+                this.mainController.setLog(true, false, "剪切板同步成功", this.SafeMessage(oldString), null, "info");
             }
             else
             {
-                this.mainForm.setLog(false, true, "服务器连接成功", null, "正在同步", "info");
+                this.mainController.setLog(false, true, "服务器连接成功", null, "正在同步", "info");
             }
             try { httpWebResponse.Close(); }
             catch { }
@@ -131,7 +132,7 @@ namespace SyncClipboard
                 httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, null, auth, null);
                 if (this.isStatusError || this.isTimeOut)
                 {
-                    this.mainForm.setLog(true, true, "连接服务器成功", "正在同步", "正在同步", "info");
+                    this.mainController.setLog(true, true, "连接服务器成功", "正在同步", "正在同步", "info");
                     this.isTimeOut = false;
                 }
                 if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
@@ -139,11 +140,11 @@ namespace SyncClipboard
                     this.errorTimes += 1;
                     if (this.errorTimes == Config.RetryTimes + 1)
                     {
-                        this.mainForm.setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
+                        this.mainController.setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
                     }
                     else
                     {
-                        this.mainForm.setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
+                        this.mainController.setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
                     }
                     isStatusError = true;
                 }
@@ -156,12 +157,12 @@ namespace SyncClipboard
                 if (this.pullTimeoutTimes == Config.RetryTimes + 1)
                 {
                     Console.WriteLine(ex.ToString());
-                    this.mainForm.setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
+                    this.mainController.setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
                 }
                 else
                 {
                     Console.WriteLine(ex.ToString());
-                    this.mainForm.setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
+                    this.mainController.setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
                 }
             }
             return httpWebResponse;
@@ -187,7 +188,7 @@ namespace SyncClipboard
                 }
                 return;
             }
-            this.mainForm.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
+            this.mainController.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
         }
         public void PushToRemote(String str)
         {
