@@ -1,3 +1,7 @@
+v1.0.4
+- change contextmenu style
+- othor optimization 
+
 v1.0.3
 - Add check update
 

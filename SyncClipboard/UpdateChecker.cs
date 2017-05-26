@@ -12,7 +12,7 @@ namespace SyncClipboard
 {
     class UpdateChecker
     {
-        public const string Version = "1.0.3";
+        public const string Version = "1.0.4";
         public const string UpdateUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";
         public const string ReleaseUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
@@ -35,9 +35,16 @@ namespace SyncClipboard
             try
             {
                 p1 = serializer.Deserialize<UpdateConvertJson>(strReply);
-                if (String.Compare(p1.name, "v" + Version) > 0)
+                if (String.Compare(p1.name, "v" + Version) > 0){
+
+                
                     if (MessageBox.Show("v" + Version + " -> " + p1.name + "\n\n是否更新", "检测到新版本", MessageBoxButtons.OKCancel) == DialogResult.OK)
                         System.Diagnostics.Process.Start(UpdateChecker.ReleaseUrl);
+                }
+                else
+                {
+                    MessageBox.Show("当前版本为最新版本");
+                }
             }
             catch (Exception e)
             {
