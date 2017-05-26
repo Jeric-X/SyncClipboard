@@ -1,3 +1,6 @@
+v1.0.5
+- Fix start with boot
+
 v1.0.4
 - change contextmenu style
 - othor optimization 

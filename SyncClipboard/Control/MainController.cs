@@ -164,7 +164,7 @@ namespace SyncClipboard.Control
         {
             try
             {
-                if (this.开机启动MenuItem.Checked == true)
+                if (this.开机启动MenuItem.Checked != true)
                 {
                     Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, Application.ExecutablePath);
                 }
