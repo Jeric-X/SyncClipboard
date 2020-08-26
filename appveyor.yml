@@ -11,7 +11,7 @@ artifacts:
   name: SyncClipboard_$(VERSION)
 deploy:
 - provider: GitHub
-  release: $(VERSION)
+  release: $(APPVEYOR_REPO_TAG_NAME)
   description: $(FEATURE)
   auth_token:
     secure: yWzcVxxzOxtNtkULlYk7YhliLYB3TNM5upWKfzmoLBHPY+hoypQr6/XHBEWB3chq
