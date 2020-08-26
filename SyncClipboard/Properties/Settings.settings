@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="URL" Type="System.String" Scope="User">
-      <Value Profile="(Default)">https://cloud.jericx.xyz/remote.php/dav/files/JericX/Clipboard/SyncClipboard.json</Value>
+      <Value Profile="(Default)">https://file.jericx.xyz/remote.php/dav/files/JericX/Clipboard/SyncClipboard.json</Value>
     </Setting>
     <Setting Name="USERNAME" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

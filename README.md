@@ -3,9 +3,9 @@
 ## 功能
 一个简单的剪切板同步工具，C/S架构
 ## Server
-理论支持任何支持WebDAV协议的网盘、web服务器   
-> 测试过的服务器：   
-> - [x] NextCloud  
+~~~理论支持任何支持WebDAV协议的网盘、web服务器~~~   
+测试过的服务器：   
+- [x] NextCloud  
 
 ## Client-Windows  
 下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，自备梯子  

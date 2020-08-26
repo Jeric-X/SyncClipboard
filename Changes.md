@@ -1,3 +1,7 @@
+v1.0.6
+- Support tls1.2
+- Fix built-in server
+
 v1.0.5
 - Fix start with boot
 

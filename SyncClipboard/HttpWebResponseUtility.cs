@@ -29,7 +29,10 @@ namespace SyncClipboard
             {
                 throw new ArgumentNullException("url");
             }
+
+            SetSecurityProtocol(url);
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+
             request.Method = "GET";
             request.UserAgent = DefaultUserAgent;
             if (!string.IsNullOrEmpty(userAgent))
@@ -71,18 +74,11 @@ namespace SyncClipboard
             {
                 throw new ArgumentNullException("requestEncoding");
             }
-            HttpWebRequest request = null;
-            //如果是发送HTTPS请求  
-            if (url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
-            {
-                ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
-                request = WebRequest.Create(url) as HttpWebRequest;
-                request.ProtocolVersion = HttpVersion.Version10;
-            }
-            else
-            {
-                request = WebRequest.Create(url) as HttpWebRequest;
-            }
+
+            SetSecurityProtocol(url);
+
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
 
@@ -149,18 +145,10 @@ namespace SyncClipboard
             {
                 throw new ArgumentNullException("requestEncoding");
             }
-            HttpWebRequest request = null;
-            //如果是发送HTTPS请求  
-            if (url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
-            {
-                ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
-                request = WebRequest.Create(url) as HttpWebRequest;
-                request.ProtocolVersion = HttpVersion.Version10;
-            }
-            else
-            {
-                request = WebRequest.Create(url) as HttpWebRequest;
-            }
+
+            SetSecurityProtocol(url);
+
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Method = "PUT";
             request.ContentType = "text/plain";
             if (!string.IsNullOrEmpty(userAgent))
@@ -203,9 +191,13 @@ namespace SyncClipboard
 
             return request.GetResponse() as HttpWebResponse;
         }
-        private static bool CheckValidationResult(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+
+        public static void SetSecurityProtocol(string url)
         {
-            return true; //总是接受  
+            if (url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+            {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            }
         }
     } 
 }
