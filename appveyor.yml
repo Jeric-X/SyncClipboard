@@ -14,7 +14,7 @@ deploy:
   release: $(VERSION)
   description: $(FEATURE)
   auth_token:
-    secure: zuPhf3Nx5b5FX/XCtz5/goxwD1t3htaC59DgWs2AiaeNdoTssqKoT1QX+2S+h3pr
+    secure: yWzcVxxzOxtNtkULlYk7YhliLYB3TNM5upWKfzmoLBHPY+hoypQr6/XHBEWB3chq
   artifact: SyncClipboard_$(VERSION)
   force_update: true
   on:
