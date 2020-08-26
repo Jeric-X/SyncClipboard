@@ -16,6 +16,6 @@ deploy:
   auth_token:
     secure: yWzcVxxzOxtNtkULlYk7YhliLYB3TNM5upWKfzmoLBHPY+hoypQr6/XHBEWB3chq
   artifact: SyncClipboard_$(VERSION)
-  force_update: true
+  force_update: false
   on:
     APPVEYOR_REPO_TAG: true
