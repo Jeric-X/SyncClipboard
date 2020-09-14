@@ -1,3 +1,6 @@
+v1.1.0
+- support copy image (now upload only)
+
 v1.0.6
 - Support tls1.2
 - Fix built-in server

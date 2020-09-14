@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -137,19 +138,12 @@ namespace SyncClipboard
         /// <returns></returns>  
         public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int? timeout, string userAgent, string headerAuthorization, Encoding requestEncoding, CookieCollection cookies)
         {
-            if (string.IsNullOrEmpty(url))
-            {
-                throw new ArgumentNullException("url");
-            }
+            
             if (requestEncoding != null)
             {
                 throw new ArgumentNullException("requestEncoding");
             }
-
-            SetSecurityProtocol(url);
-
-            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
-            request.Method = "PUT";
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", headerAuthorization);
             request.ContentType = "text/plain";
             if (!string.IsNullOrEmpty(userAgent))
             {
@@ -169,10 +163,7 @@ namespace SyncClipboard
                 request.CookieContainer = new CookieContainer();
                 request.CookieContainer.Add(cookies);
             }
-            if (headerAuthorization != null)
-            {
-                request.Headers.Add(headerAuthorization);
-            }
+
             //如果需要POST数据  
             //request.ContentLength = parameters.Length;
             request.ContentType = "text/plain";
@@ -188,6 +179,38 @@ namespace SyncClipboard
             //{
               //  writer.Write(parameters);
            // }
+
+            return request.GetResponse() as HttpWebResponse;
+        }
+
+        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string auth)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                throw new ArgumentNullException("url");
+            }
+
+            SetSecurityProtocol(url);
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            request.Headers.Add(auth);
+            request.Method = httpMethod;
+            return request;
+        }
+
+        public static HttpWebResponse SentImageHttpContent(ref HttpWebRequest request, Image image)
+        {
+            request.ContentType = "application/x-bmp";
+            MemoryStream mstream = new MemoryStream();
+            image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
+            byte[] byteData = new Byte[mstream.Length];
+            mstream.Position = 0;
+            mstream.Read(byteData, 0, byteData.Length);
+            mstream.Close();
+
+            using (Stream reqStream = request.GetRequestStream())
+            {
+                reqStream.Write(byteData, 0, byteData.Length);
+            }
 
             return request.GetResponse() as HttpWebResponse;
         }

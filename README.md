@@ -2,7 +2,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
 
 ## 功能
-一个简单的剪切板同步工具，服务器端使用网盘存储一个文件作为剪切版内容，windows使用一个挂机客户端更新/定时扫描文件内容，IOS只能曲线救国手动使用APP`捷径`收发想要同步的内容了
+一个简单的剪切板同步工具，使用网盘作为服务器，暂存剪切版内容，windows使用一个客户端自动更新或上传剪切版内容，IOS只能曲线救国手动使用APP`捷径`收发想要同步的内容了
 
 ## Server
 
@@ -25,7 +25,7 @@
 
 ### 使用自定义服务器
 #### Windows
-- 填写地址：指定服务器同步文件的地址（服务器提供的WebDAV地址+一个文本文件路径），SyncClipboard会以json格式读写这个文件
+- 填写地址：指定服务器同步文件夹的地址（提前在服务器中创建好）
 - 填写用户名、密码
 
 #### IOS

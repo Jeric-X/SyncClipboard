@@ -100,7 +100,7 @@ namespace SyncClipboard
 
         private void textBox4_TextChanged(object sender, EventArgs e)
         {
-            textBox5.Text = Program.DefaultServer + textBox4.Text + ".json";
+            textBox5.Text = Program.DefaultServer + textBox4.Text;
         }
     }
 }

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using SyncClipboard.Control;
+using System.Drawing;
 
 namespace SyncClipboard
 {
@@ -81,7 +82,7 @@ namespace SyncClipboard
         }
         private void PullFromRemote()
         {
-            String url = Config.Url;
+            String url = Config.GetProfileUrl();
             String auth = "Authorization: Basic " + Config.Auth;
 
             Console.WriteLine (auth +"dd");
@@ -169,19 +170,29 @@ namespace SyncClipboard
         }
         public void PushLoop()
         {
-            IDataObject iData = Clipboard.GetDataObject();
-            if (!iData.GetDataPresent(DataFormats.Text))
+            IDataObject ClipboardData = Clipboard.GetDataObject();
+            if (!ClipboardData.GetDataPresent(DataFormats.Text) && !ClipboardData.GetDataPresent(DataFormats.Bitmap))
             {
                 return;
             }
-            string str = (String)iData.GetData(DataFormats.Text);
+            string str = Clipboard.GetText();
+            Image image = Clipboard.GetImage();
+            bool isImage = Clipboard.ContainsImage();
+
             for (int i = 0; i < Config.RetryTimes; i++)
             {
                 if(this.isStop || (!Config.IfPush))
                 {
                     return;
                 }
-                this.PushToRemote(str);
+
+                if (isImage)
+                {
+                    PushService pushService = new PushService();
+                    pushService.PushImage(image);
+                }
+                this.PushToRemote(str, isImage);
+
                 if (this.isPushError)
                 {
                     continue;
@@ -190,15 +201,19 @@ namespace SyncClipboard
             }
             this.mainController.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
         }
-        public void PushToRemote(String str)
+        public void PushToRemote(String str, bool isImage)
         {
             ConvertJsonClass convertJson = new ConvertJsonClass();
             convertJson.File = "";
+            if(isImage)
+            {
+                convertJson.File = "image";
+            }
             convertJson.Clipboard = str;
             JavaScriptSerializer serializer = new JavaScriptSerializer();
             string jsonString = serializer.Serialize(convertJson);
 
-            String url = Config.Url;
+            String url = Config.GetProfileUrl();
             String auth = "Authorization: Basic " + Config.Auth;
             HttpWebResponse httpWebResponse = null;
             try

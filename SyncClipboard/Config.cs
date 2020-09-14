@@ -21,7 +21,17 @@ namespace SyncClipboard
         public static String Password { get; set; }
 
         public static String Auth { get; set; }
-        public static String Url { get; set; }
+        private static String Url { get; set; }
+
+        public static string GetProfileUrl()
+        {
+            return Url + "/SyncClipboard.json";
+        }
+
+        public static string GetImageUrl()
+        {
+            return Url + "/image.bmg";
+        }
 
         public static void Load()
         {
@@ -44,7 +54,7 @@ namespace SyncClipboard
             else
             {
                 Auth = GetAuth(Program.DefaultUser + ":" + Program.DefaultPassword);
-                Url = Program.DefaultServer + CustomName + ".json";
+                Url = Program.DefaultServer + CustomName;
             }
         }
 

@@ -25,7 +25,7 @@ namespace SyncClipboard.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://file.jericx.xyz/remote.php/dav/files/JericX/Clipboard/SyncClipboard.json")]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://file.jericx.xyz/remote.php/dav/files/JericX/Clipboard")]
         public string URL {
             get {
                 return ((string)(this["URL"]));
