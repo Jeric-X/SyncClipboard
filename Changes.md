@@ -1,3 +1,6 @@
+v1.1.1
+- fix bug
+
 v1.1.0
 - support copy image (now upload only)
 

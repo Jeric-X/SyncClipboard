@@ -30,7 +30,7 @@ namespace SyncClipboard
 
         public static string GetImageUrl()
         {
-            return Url + "/image.bmg";
+            return Url + "/image.bmp";
         }
 
         public static void Load()
