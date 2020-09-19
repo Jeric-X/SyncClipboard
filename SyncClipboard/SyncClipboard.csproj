@@ -68,11 +68,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
-    <Compile Include="ConvertJsonClass.cs" />
     <Compile Include="HttpWebResponseUtility.cs" />
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Profile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PushService.cs" />

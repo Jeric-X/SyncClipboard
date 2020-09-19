@@ -1,3 +1,7 @@
+v1.1.2
+- change profile file's syntax
+- update ios workflow
+
 v1.1.1
 - fix bug
 

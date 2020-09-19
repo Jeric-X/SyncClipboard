@@ -96,26 +96,18 @@ namespace SyncClipboard
             errorTimes = this.pullTimeoutTimes = 0;
             StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
             String strReply = objStrmReader.ReadToEnd();
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            ConvertJsonClass p1=null;
-            try
-            {
-                p1 = serializer.Deserialize<ConvertJsonClass>(strReply);
-            }
-            catch
-            {
-                return;
-            }
-            if (p1 != null && p1.Clipboard != this.oldString)
+            Profile profile = new Profile(strReply);
+
+            if (profile.Text != this.oldString)
             {
                 if (this.isFirstTime)
                 {
                     this.isFirstTime = false;
-                    this.oldString = p1.Clipboard;
+                    this.oldString = profile.Text;
                     return;
                 }
-                Clipboard.SetData(DataFormats.Text, p1.Clipboard);
-                this.oldString = p1.Clipboard;
+                Clipboard.SetData(DataFormats.Text, profile.Text);
+                this.oldString = profile.Text;
                 this.mainController.setLog(true, false, "剪切板同步成功", this.SafeMessage(oldString), null, "info");
             }
             else
@@ -130,7 +122,9 @@ namespace SyncClipboard
             HttpWebResponse httpWebResponse = null;
             try
             {
+                Console.WriteLine("pull start " + DateTime.Now.ToString());
                 httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, null, auth, null);
+                Console.WriteLine("pull end " + DateTime.Now.ToString());
                 if (this.isStatusError || this.isTimeOut)
                 {
                     this.mainController.setLog(true, true, "连接服务器成功", "正在同步", "正在同步", "info");
@@ -170,6 +164,7 @@ namespace SyncClipboard
         }
         public void PushLoop()
         {
+            Console.WriteLine("Push start "+ DateTime.Now.ToString());
             IDataObject ClipboardData = Clipboard.GetDataObject();
             if (!ClipboardData.GetDataPresent(DataFormats.Text) && !ClipboardData.GetDataPresent(DataFormats.Bitmap))
             {
@@ -197,28 +192,30 @@ namespace SyncClipboard
                 {
                     continue;
                 }
+                Console.WriteLine("Push end " + DateTime.Now.ToString());
                 return;
             }
             this.mainController.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
         }
         public void PushToRemote(String str, bool isImage)
         {
-            ConvertJsonClass convertJson = new ConvertJsonClass();
-            convertJson.File = "";
+            Profile profile = new Profile();
             if(isImage)
             {
-                convertJson.File = "image";
+                profile.Type = Profile.ClipboardType.Image;
             }
-            convertJson.Clipboard = str;
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            string jsonString = serializer.Serialize(convertJson);
+            else
+            {
+                profile.Type = Profile.ClipboardType.Text;
+                profile.Text = str;
+            }
 
             String url = Config.GetProfileUrl();
             String auth = "Authorization: Basic " + Config.Auth;
             HttpWebResponse httpWebResponse = null;
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, jsonString, Config.TimeOut, null, auth, null, null);
+                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, null, auth, null, null);
             }
             catch(Exception ex)
             {

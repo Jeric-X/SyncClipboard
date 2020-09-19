@@ -2,7 +2,8 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
 
 ## 功能
-一个简单的剪切板同步工具，使用网盘作为服务器，暂存剪切版内容，windows使用一个客户端自动更新或上传剪切版内容，IOS只能曲线救国手动使用APP`捷径`收发想要同步的内容了
+一个简单的剪切板同步工具，使用网盘作为中转站，支持文字和图片
+windows使用c#写了个客户端，IOS只能曲线救国使用APP`快捷指令`手动收发
 
 ## Server
 
@@ -19,7 +20,7 @@
 
 ## Client-IOS 
 使用[Workflow](https://appsto.re/cn/2IzJ2.i)提供的`Get Contents of URL`功能发送HTTP协议  
-导入这个[Workflow](https://workflow.is/workflows/6da4c1de8b1446cda56e336b1ed50b25)
+导入这个[Workflow](https://www.icloud.com/shortcuts/229cd7657ce544daafc7ece882405b36)
 
 ## 配置
 
