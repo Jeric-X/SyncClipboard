@@ -31,11 +31,12 @@ namespace SyncClipboard
 
         private int errorTimes = 0;
         private int pullTimeoutTimes = 0;
-
+        private PushService pushServive = null;
 
         public SyncService(MainController mf)
         {
             this.mainController = mf;
+            pushServive = new PushService();
         }
         public void Start()
         {

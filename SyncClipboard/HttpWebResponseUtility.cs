@@ -2,12 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncClipboard
 {/// <summary>  
@@ -200,17 +196,18 @@ namespace SyncClipboard
         public static HttpWebResponse SentImageHttpContent(ref HttpWebRequest request, Image image)
         {
             request.ContentType = "application/x-bmp";
+
             MemoryStream mstream = new MemoryStream();
             image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
             byte[] byteData = new Byte[mstream.Length];
+    
             mstream.Position = 0;
             mstream.Read(byteData, 0, byteData.Length);
             mstream.Close();
 
-            using (Stream reqStream = request.GetRequestStream())
-            {
-                reqStream.Write(byteData, 0, byteData.Length);
-            }
+            Stream reqStream = request.GetRequestStream();
+            reqStream.Write(byteData, 0, byteData.Length);
+            reqStream.Close();
 
             return request.GetResponse() as HttpWebResponse;
         }
