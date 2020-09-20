@@ -20,7 +20,7 @@ namespace SyncClipboard
             String auth = "Authorization: Basic " + Config.Auth;
             HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(Config.GetImageUrl(), "PUT", auth);
             HttpWebResponse response = HttpWebResponseUtility.SentImageHttpContent(ref request, image);
-            HttpWebResponseUtility.AnalyseAndCloseHttpResponse(response);
+            response.Close();
         }
 
         public void PushProfile(String str, bool isImage)
@@ -39,8 +39,8 @@ namespace SyncClipboard
             String url = Config.GetProfileUrl();
             String auth = "Authorization: Basic " + Config.Auth;
 
-            HttpWebResponse response = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, null, auth, null, null);
-            HttpWebResponseUtility.AnalyseAndCloseHttpResponse(response);
+            HttpWebResponse response = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, null, auth, null);
+            response.Close();
         }
 
         private void HandleHttpException(Exception ex)

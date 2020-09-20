@@ -22,8 +22,6 @@ namespace SyncClipboard
 
         public bool isStop = false;
 
-
-        private bool isStatusError = false;
         private bool isTimeOut = false;
         private bool isFirstTime = true;
         private String pushErrorMessage;
@@ -87,7 +85,7 @@ namespace SyncClipboard
 
             Console.WriteLine (auth +"dd");
             HttpWebResponse httpWebResponse = GetPullResponse(url, auth);
-            if (this.isStatusError || this.isTimeOut)
+            if (this.isTimeOut)
             {
                 try { httpWebResponse.Close(); }
                 catch { }
@@ -123,42 +121,16 @@ namespace SyncClipboard
             try
             {
                 Console.WriteLine("pull start " + DateTime.Now.ToString());
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, null, auth, null);
+                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, null, auth);
                 Console.WriteLine("pull end " + DateTime.Now.ToString());
-                if (this.isStatusError || this.isTimeOut)
-                {
-                    this.mainController.setLog(true, true, "连接服务器成功", "正在同步", "正在同步", "info");
-                    this.isTimeOut = false;
-                }
-                if (httpWebResponse.StatusCode != System.Net.HttpStatusCode.OK)
-                {
-                    this.errorTimes += 1;
-                    if (this.errorTimes == Config.RetryTimes + 1)
-                    {
-                        this.mainController.setLog(true, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
-                    }
-                    else
-                    {
-                        this.mainController.setLog(false, true, "服务器状态错误：" + httpWebResponse.StatusCode.ToString(), "重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
-                    }
-                    isStatusError = true;
-                }
-                isStatusError = false;
+                this.isTimeOut = false;
             }
             catch (Exception ex)
             {
                 this.pullTimeoutTimes += 1;
                 isTimeOut = true;
-                if (this.pullTimeoutTimes == Config.RetryTimes + 1)
-                {
-                    Console.WriteLine(ex.ToString());
-                    this.mainController.setLog(true, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
-                }
-                else
-                {
-                    Console.WriteLine(ex.ToString());
-                    this.mainController.setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
-                }
+                Console.WriteLine(ex.ToString());
+                this.mainController.setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
             }
             return httpWebResponse;
         }

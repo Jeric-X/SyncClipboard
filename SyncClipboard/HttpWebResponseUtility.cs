@@ -1,26 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
 
 namespace SyncClipboard
-{/// <summary>  
-    /// 有关HTTP请求的辅助类  
-    /// </summary>  
+{
     public class HttpWebResponseUtility
     {
         private static readonly string DefaultUserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)";
-        /// <summary>  
-        /// 创建GET方式的HTTP请求  
-        /// </summary>  
-        /// <param name="url">请求的URL</param>  
-        /// <param name="timeout">请求的超时时间</param>  
-        /// <param name="userAgent">请求的客户端浏览器信息，可以为空</param>  
-        /// <param name="cookies">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
-        /// <returns></returns>  
-        public static HttpWebResponse CreateGetHttpResponse(string url, int? timeout, string userAgent, string headerAuthorization,CookieCollection cookies)
+        private static CookieCollection savedCookies = null;
+
+        private static void SaveCookies(CookieCollection cookies)
+        {
+            //savedCookies = cookies;
+        }
+
+        public static HttpWebResponse CreateGetHttpResponse(string url, int? timeout, string userAgent, string headerAuthorization)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -40,99 +36,19 @@ namespace SyncClipboard
             {
                 request.Timeout = timeout.Value;
             }
-            if (cookies != null)
+            if (savedCookies != null)
             {
                 request.CookieContainer = new CookieContainer();
-                request.CookieContainer.Add(cookies);
+                request.CookieContainer.Add(savedCookies);
             }
             if (headerAuthorization != null)
             {
                 request.Headers.Add(headerAuthorization);
             }
-            return request.GetResponse() as HttpWebResponse;
+            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
         }
-        /// <summary>  
-        /// 创建POST方式的HTTP请求  
-        /// </summary>  
-        /// <param name="url">请求的URL</param>  
-        /// <param name="parameters">随同请求POST的参数名称及参数值字典</param>  
-        /// <param name="timeout">请求的超时时间</param>  
-        /// <param name="userAgent">请求的客户端浏览器信息，可以为空</param>  
-        /// <param name="requestEncoding">发送HTTP请求时所用的编码</param>  
-        /// <param name="cookies">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
-        /// <returns></returns>  
-        public static HttpWebResponse CreatePostHttpResponse(string url, IDictionary<string, string> parameters, int? timeout, string userAgent, Encoding requestEncoding, CookieCollection cookies)
-        {
-            if (string.IsNullOrEmpty(url))
-            {
-                throw new ArgumentNullException("url");
-            }
-            if (requestEncoding == null)
-            {
-                throw new ArgumentNullException("requestEncoding");
-            }
 
-            SetSecurityProtocol(url);
-
-            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
-
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-
-            if (!string.IsNullOrEmpty(userAgent))
-            {
-                request.UserAgent = userAgent;
-            }
-            else
-            {
-                request.UserAgent = DefaultUserAgent;
-            }
-
-            if (timeout.HasValue)
-            {
-                request.Timeout = timeout.Value;
-            }
-            if (cookies != null)
-            {
-                request.CookieContainer = new CookieContainer();
-                request.CookieContainer.Add(cookies);
-            }
-            //如果需要POST数据  
-            if (!(parameters == null || parameters.Count == 0))
-            {
-                StringBuilder buffer = new StringBuilder();
-                int i = 0;
-                foreach (string key in parameters.Keys)
-                {
-                    if (i > 0)
-                    {
-                        buffer.AppendFormat("&{0}={1}", key, parameters[key]);
-                    }
-                    else
-                    {
-                        buffer.AppendFormat("{0}={1}", key, parameters[key]);
-                    }
-                    i++;
-                }
-                byte[] data = requestEncoding.GetBytes(buffer.ToString());
-                using (Stream stream = request.GetRequestStream())
-                {
-                    stream.Write(data, 0, data.Length);
-                }
-            }
-            return request.GetResponse() as HttpWebResponse;
-        }
-        /// <summary>  
-        /// 创建PUT方式的HTTP请求  
-        /// </summary>  
-        /// <param name="url">请求的URL</param>  
-        /// <param name="parameters">随同请求PUT的参数名称</param>  
-        /// <param name="timeout">请求的超时时间</param>  
-        /// <param name="userAgent">请求的客户端浏览器信息，可以为空</param>  
-        /// <param name="requestEncoding">发送HTTP请求时所用的编码</param>  
-        /// <param name="cookies">随同HTTP请求发送的Cookie信息，如果不需要身份验证可以为空</param>  
-        /// <returns></returns>  
-        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int? timeout, string userAgent, string headerAuthorization, Encoding requestEncoding, CookieCollection cookies)
+        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int? timeout, string userAgent, string headerAuthorization, Encoding requestEncoding)
         {
             
             if (requestEncoding != null)
@@ -154,11 +70,6 @@ namespace SyncClipboard
             {
                 request.Timeout = timeout.Value;
             }
-            if (cookies != null)
-            {
-                request.CookieContainer = new CookieContainer();
-                request.CookieContainer.Add(cookies);
-            }
 
             //如果需要POST数据  
             //request.ContentLength = parameters.Length;
@@ -176,7 +87,7 @@ namespace SyncClipboard
               //  writer.Write(parameters);
            // }
 
-            return request.GetResponse() as HttpWebResponse;
+            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
         }
 
         public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string auth)
@@ -190,6 +101,11 @@ namespace SyncClipboard
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Headers.Add(auth);
             request.Method = httpMethod;
+            if (savedCookies != null)
+            {
+                request.CookieContainer = new CookieContainer();
+                request.CookieContainer.Add(savedCookies);
+            }
             return request;
         }
 
@@ -209,7 +125,7 @@ namespace SyncClipboard
             reqStream.Write(byteData, 0, byteData.Length);
             reqStream.Close();
 
-            return request.GetResponse() as HttpWebResponse;
+            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
         }
 
         public static void SetSecurityProtocol(string url)
@@ -220,14 +136,17 @@ namespace SyncClipboard
             }
         }
 
-        public static void AnalyseAndCloseHttpResponse(HttpWebResponse response)
+        private static HttpWebResponse AnalyseHttpResponse(HttpWebResponse response)
         {
             HttpStatusCode code = response.StatusCode;
             string codeMessage = response.StatusDescription;
             if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
             {
+                response.Close();
                 throw new WebException(response.StatusCode.GetHashCode().ToString());
             }
+            SaveCookies(response.Cookies);
+            return response;
         }
     } 
 }
