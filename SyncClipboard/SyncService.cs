@@ -121,7 +121,7 @@ namespace SyncClipboard
             try
             {
                 Console.WriteLine("pull start " + DateTime.Now.ToString());
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, null, auth);
+                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, auth, true);
                 Console.WriteLine("pull end " + DateTime.Now.ToString());
                 this.isTimeOut = false;
             }

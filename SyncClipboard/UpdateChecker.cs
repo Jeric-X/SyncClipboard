@@ -21,7 +21,7 @@ namespace SyncClipboard
             HttpWebResponse httpWebResponse = null;
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(UpdateUrl, Config.TimeOut, null, null);
+                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(UpdateUrl, Config.TimeOut, null, false);
             }
             catch (Exception ex)
             {

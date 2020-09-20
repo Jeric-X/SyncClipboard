@@ -16,7 +16,7 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
-        public static HttpWebResponse CreateGetHttpResponse(string url, int? timeout, string userAgent, string headerAuthorization)
+        public static HttpWebResponse CreateGetHttpResponse(string url, int? timeout, string headerAuthorization, bool useCookies)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -28,15 +28,12 @@ namespace SyncClipboard
 
             request.Method = "GET";
             request.UserAgent = DefaultUserAgent;
-            if (!string.IsNullOrEmpty(userAgent))
-            {
-                request.UserAgent = userAgent;
-            }
+
             if (timeout.HasValue)
             {
                 request.Timeout = timeout.Value;
             }
-            if (savedCookies != null)
+            if (useCookies && savedCookies != null)
             {
                 request.CookieContainer = new CookieContainer();
                 request.CookieContainer.Add(savedCookies);
@@ -48,31 +45,17 @@ namespace SyncClipboard
             return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
         }
 
-        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int? timeout, string userAgent, string headerAuthorization, Encoding requestEncoding)
+        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int? timeout, string headerAuthorization, bool useCookies)
         {
-            
-            if (requestEncoding != null)
-            {
-                throw new ArgumentNullException("requestEncoding");
-            }
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", headerAuthorization);
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", headerAuthorization, useCookies);
             request.ContentType = "text/plain";
-            if (!string.IsNullOrEmpty(userAgent))
-            {
-                request.UserAgent = userAgent;
-            }
-            else
-            {
-                request.UserAgent = DefaultUserAgent;
-            }
+            request.UserAgent = DefaultUserAgent;
 
             if (timeout.HasValue)
             {
                 request.Timeout = timeout.Value;
             }
 
-            //如果需要POST数据  
-            //request.ContentLength = parameters.Length;
             request.ContentType = "text/plain";
 
             byte[] postBytes = Encoding.UTF8.GetBytes(parameters);
@@ -82,15 +65,10 @@ namespace SyncClipboard
                 reqStream.Write(postBytes, 0, postBytes.Length);
             }
 
-            //using (StreamWriter writer = new StreamWriter(request.GetRequestStream()))
-            //{
-              //  writer.Write(parameters);
-           // }
-
-            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
+            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
         }
 
-        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string auth)
+        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string auth, bool useCookies)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -101,7 +79,7 @@ namespace SyncClipboard
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Headers.Add(auth);
             request.Method = httpMethod;
-            if (savedCookies != null)
+            if (useCookies && savedCookies != null)
             {
                 request.CookieContainer = new CookieContainer();
                 request.CookieContainer.Add(savedCookies);
@@ -125,7 +103,7 @@ namespace SyncClipboard
             reqStream.Write(byteData, 0, byteData.Length);
             reqStream.Close();
 
-            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
+            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
         }
 
         public static void SetSecurityProtocol(string url)
