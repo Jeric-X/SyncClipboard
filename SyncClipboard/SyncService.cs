@@ -31,12 +31,12 @@ namespace SyncClipboard
 
         private int errorTimes = 0;
         private int pullTimeoutTimes = 0;
-        private PushService pushServive = null;
+        private PushService pushService = null;
 
         public SyncService(MainController mf)
         {
             this.mainController = mf;
-            pushServive = new PushService();
+            pushService = new PushService(this.mainController.setLog);
         }
         public void Start()
         {
@@ -184,7 +184,6 @@ namespace SyncClipboard
 
                 if (isImage)
                 {
-                    PushService pushService = new PushService();
                     pushService.PushImage(image);
                 }
                 this.PushToRemote(str, isImage);
@@ -198,25 +197,13 @@ namespace SyncClipboard
             }
             this.mainController.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
         }
+
         public void PushToRemote(String str, bool isImage)
         {
-            Profile profile = new Profile();
-            if(isImage)
-            {
-                profile.Type = Profile.ClipboardType.Image;
-            }
-            else
-            {
-                profile.Type = Profile.ClipboardType.Text;
-                profile.Text = str;
-            }
-
-            String url = Config.GetProfileUrl();
-            String auth = "Authorization: Basic " + Config.Auth;
             HttpWebResponse httpWebResponse = null;
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, null, auth, null, null);
+                httpWebResponse = pushService.PushProfile(str, isImage);
             }
             catch(Exception ex)
             {
@@ -226,7 +213,6 @@ namespace SyncClipboard
             }
             if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
-                //this.notifyIcon1.ShowBalloonTip(5, "剪切板同步到云", httpWebResponse.StatusCode.GetHashCode().ToString(), ToolTipIcon.None);
                 this.isPushError = false;
                 this.oldString = str;
             }

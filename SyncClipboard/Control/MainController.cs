@@ -9,6 +9,7 @@ using Microsoft.Win32;
 
 namespace SyncClipboard.Control
 {
+    delegate void Notify(bool notify, bool notifyIconText, string title, string content, string contentSimple, string level);
     public class MainController:System.Windows.Forms.Control
     {
         [DllImport("user32.dll")]
