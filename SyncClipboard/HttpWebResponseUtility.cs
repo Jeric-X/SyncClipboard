@@ -219,5 +219,15 @@ namespace SyncClipboard
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
             }
         }
+
+        public static void AnalyseAndCloseHttpResponse(HttpWebResponse response)
+        {
+            HttpStatusCode code = response.StatusCode;
+            string codeMessage = response.StatusDescription;
+            if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
+            {
+                throw new WebException(response.StatusCode.GetHashCode().ToString());
+            }
+        }
     } 
 }

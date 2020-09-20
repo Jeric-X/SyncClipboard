@@ -14,30 +14,16 @@ namespace SyncClipboard
             Notify = notifyFunction;
         }
 
-        public bool PushImage(Image image)
+        public void PushImage(Image image)
         {
             Console.WriteLine("sending image");
             String auth = "Authorization: Basic " + Config.Auth;
             HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(Config.GetImageUrl(), "PUT", auth);
-            HttpWebResponse response = null;
-            try
-            {
-                response = HttpWebResponseUtility.SentImageHttpContent(ref request, image);
-            }
-            catch(Exception ex)
-            {
-                HandleHttpException(ex);
-                return false;
-            }
-            finally
-            {
-                response.Close();
-            }
-
-            return true;
+            HttpWebResponse response = HttpWebResponseUtility.SentImageHttpContent(ref request, image);
+            HttpWebResponseUtility.AnalyseAndCloseHttpResponse(response);
         }
 
-        public HttpWebResponse PushProfile(String str, bool isImage)
+        public void PushProfile(String str, bool isImage)
         {
             Profile profile = new Profile();
             if(isImage)
@@ -53,9 +39,9 @@ namespace SyncClipboard
             String url = Config.GetProfileUrl();
             String auth = "Authorization: Basic " + Config.Auth;
 
-            return HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, null, auth, null, null);
+            HttpWebResponse response = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, null, auth, null, null);
+            HttpWebResponseUtility.AnalyseAndCloseHttpResponse(response);
         }
-
 
         private void HandleHttpException(Exception ex)
         {

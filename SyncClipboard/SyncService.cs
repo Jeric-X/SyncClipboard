@@ -26,7 +26,6 @@ namespace SyncClipboard
         private bool isStatusError = false;
         private bool isTimeOut = false;
         private bool isFirstTime = true;
-        private bool isPushError = false;
         private String pushErrorMessage;
 
         private int errorTimes = 0;
@@ -182,46 +181,26 @@ namespace SyncClipboard
                     return;
                 }
 
-                if (isImage)
+                try
                 {
-                    pushService.PushImage(image);
+                    if (isImage)
+                    {
+                        pushService.PushImage(image);
+                    }
+                    pushService.PushProfile(str, isImage);
                 }
-                this.PushToRemote(str, isImage);
-
-                if (this.isPushError)
+                catch(Exception ex)
                 {
+                    this.pushErrorMessage = ex.Message.ToString();
                     continue;
                 }
+
                 Console.WriteLine("Push end " + DateTime.Now.ToString());
                 return;
             }
             this.mainController.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
         }
 
-        public void PushToRemote(String str, bool isImage)
-        {
-            HttpWebResponse httpWebResponse = null;
-            try
-            {
-                httpWebResponse = pushService.PushProfile(str, isImage);
-            }
-            catch(Exception ex)
-            {
-                this.isPushError  = true;
-                this.pushErrorMessage = ex.Message.ToString();
-                return;
-            }
-            if (httpWebResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
-            {
-                this.isPushError = false;
-                this.oldString = str;
-            }
-            else
-            {
-                pushErrorMessage = httpWebResponse.StatusCode.GetHashCode().ToString();
-                this.isPushError = true;
-            }
-        }
         private String SafeMessage(String str)
         {
             string msgString;
