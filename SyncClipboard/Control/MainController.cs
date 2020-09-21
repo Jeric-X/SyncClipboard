@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -12,10 +7,7 @@ namespace SyncClipboard.Control
     delegate void Notify(bool notify, bool notifyIconText, string title, string content, string contentSimple, string level);
     public class MainController:System.Windows.Forms.Control
     {
-        [DllImport("user32.dll")]
-        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
-        [DllImport("user32.dll")]
-        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
+        private string notifyText;
         private static int WM_CLIPBOARDUPDATE = 0x031D;
 
         private System.Windows.Forms.NotifyIcon notifyIcon1;
@@ -37,7 +29,6 @@ namespace SyncClipboard.Control
         public MainController()
         {
             InitializeComponent();
-            AddClipboardFormatListener(this.Handle);
             this.LoadConfig();
         }
         private void InitializeComponent()
@@ -106,7 +97,8 @@ namespace SyncClipboard.Control
             { 
                 if(notify)
                 {
-                    this.notifyIcon1.ShowBalloonTip(5, title, content, ToolTipIcon.None);
+                    notifyText = content;
+                    this.notifyIcon1.ShowBalloonTip(5, title, SafeMessage(content), ToolTipIcon.None);
                 }
                 if (notifyIconText)
                 {
@@ -128,25 +120,10 @@ namespace SyncClipboard.Control
         }
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
-            RemoveClipboardFormatListener(this.Handle);  
             Config.IfPull = false;
             Config.IfPush = false;
             this.notifyIcon1.Visible = false;
             Application.Exit();
-        }
-        protected override void DefWndProc(ref Message m)
-        {
-            if (m.Msg == WM_CLIPBOARDUPDATE)
-            {
-                if (syncService != null)
-                {
-                    this.syncService.StartPush();
-                }
-            }
-            else
-            {
-                base.DefWndProc(ref m);
-            }
         }
 
         private void 设置MenuItem_Click(object sender, EventArgs e)
@@ -186,7 +163,10 @@ namespace SyncClipboard.Control
 
         private void notifyIcon1_BalloonTipClicked(object sender, EventArgs e)
         {
-            syncService.OpenURL();
+            if (notifyText.Length < 4)
+                return;
+            if (notifyText.Substring(0,4) == "http" || notifyText.Substring(0,4) == "www.")
+                System.Diagnostics.Process.Start(this.notifyText);  
         }
 
         private void 上传本机MenuItem_Click(object sender, EventArgs e)
@@ -207,6 +187,16 @@ namespace SyncClipboard.Control
         {
             UpdateChecker updateChecker = new UpdateChecker();
             updateChecker.Check();
+        }
+
+        private String SafeMessage(String str)
+        {
+            if (str.Length > 42)
+            {
+                return str.Substring(0, 40) + "...";
+            }
+
+            return str;
         }
     }
 }

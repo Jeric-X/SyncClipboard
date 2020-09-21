@@ -12,7 +12,6 @@ namespace SyncClipboard
     {
         private Control.MainController mainController;
         private Thread pullThread;
-        private Thread pushThread;
         private String oldString = "";
 
         public bool isStop = false;
@@ -36,14 +35,6 @@ namespace SyncClipboard
             pullThread.SetApartmentState(ApartmentState.STA);
             pullThread.Start();
         }
-        public void StartPush()
-        {
-            if (pushThread != null)
-                pushThread.Abort();
-            pushThread = new Thread(PushLoop);
-            pushThread.SetApartmentState(ApartmentState.STA);
-            pushThread.Start();
-        }
 
         public void Stop()
         {
@@ -51,17 +42,8 @@ namespace SyncClipboard
             try
             {
                 pullThread.Abort();
-                pushThread.Abort();
             }
             catch { }
-        }
-
-        public void OpenURL()
-        {
-            if(this.oldString.Length < 4)
-                return;
-            if(this.oldString.Substring(0,4) == "http")
-                System.Diagnostics.Process.Start(this.oldString);  
         }
 
         private void PullLoop()
@@ -95,7 +77,7 @@ namespace SyncClipboard
             {
                 Clipboard.SetData(DataFormats.Text, profile.Text);
                 this.oldString = profile.Text;
-                this.mainController.setLog(true, false, "剪切板同步成功", this.SafeMessage(oldString), null, "info");
+                this.mainController.setLog(true, false, "剪切板同步成功", oldString, null, "info");
             }
             this.mainController.setLog(false, true, "服务器连接成功", null, "正在同步", "info");
             try { httpWebResponse.Close(); }
@@ -119,54 +101,6 @@ namespace SyncClipboard
                 this.mainController.setLog(false, true, ex.Message.ToString(), url + "\n重试次数:" + this.pullTimeoutTimes.ToString(), "重试次数:" + this.pullTimeoutTimes.ToString(), "erro");
             }
             return httpWebResponse;
-        }
-        public void PushLoop()
-        {
-            Console.WriteLine("Push start "+ DateTime.Now.ToString());
-            IDataObject ClipboardData = Clipboard.GetDataObject();
-            if (!ClipboardData.GetDataPresent(DataFormats.Text) && !ClipboardData.GetDataPresent(DataFormats.Bitmap))
-            {
-                return;
-            }
-            string str = Clipboard.GetText();
-            Image image = Clipboard.GetImage();
-            bool isImage = Clipboard.ContainsImage();
-
-            for (int i = 0; i < Config.RetryTimes; i++)
-            {
-                if(this.isStop || (!Config.IfPush))
-                {
-                    return;
-                }
-
-                try
-                {
-                    if (isImage)
-                    {
-                        pushService.PushImage(image);
-                    }
-                    pushService.PushProfile(str, isImage);
-                }
-                catch(Exception ex)
-                {
-                    this.pushErrorMessage = ex.Message.ToString();
-                    continue;
-                }
-
-                Console.WriteLine("Push end " + DateTime.Now.ToString());
-                return;
-            }
-            this.mainController.setLog(true, false, this.pushErrorMessage, "未同步：" + this.SafeMessage(str), null, "erro");
-        }
-
-        private String SafeMessage(String str)
-        {
-            if (str.Length > 42)
-            {
-                return str.Substring(0, 40) + "...";
-            }
-
-            return str;
         }
     }
 }
