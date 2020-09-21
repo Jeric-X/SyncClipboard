@@ -20,7 +20,7 @@ namespace SyncClipboard
         public static String User { get; set; }
         public static String Password { get; set; }
 
-        public static String Auth { get; set; }
+        private static String Auth { get; set; }
         private static String Url { get; set; }
 
         public static string GetProfileUrl()
@@ -48,12 +48,12 @@ namespace SyncClipboard
 
             if (IsCustomServer)
             {
-                Auth = GetAuth(User + ":" + Password);
+                Auth = FormatHttpAuthHeader(User, Password);
                 Url = RemoteURL;
             }
             else
             {
-                Auth = GetAuth(Program.DefaultUser + ":" + Program.DefaultPassword);
+                Auth = FormatHttpAuthHeader(Program.DefaultUser, Program.DefaultPassword);
                 Url = Program.DefaultServer + CustomName;
             }
         }
@@ -73,19 +73,24 @@ namespace SyncClipboard
             Properties.Settings.Default.Save();
         }
 
-        private static String GetAuth(String source)
+        private static string FormatHttpAuthHeader(string user, string password)
         {
-            String Auth;
-            byte[] bytes = System.Text.Encoding.Default.GetBytes(source);
+            string authHeader;
+            byte[] bytes = System.Text.Encoding.Default.GetBytes(user + ":" + password);
             try
             {
-                Auth = Convert.ToBase64String(bytes);
+                authHeader =  "Authorization: Basic " + Convert.ToBase64String(bytes);
             }
             catch
             {
-                Auth = source;
+                authHeader = user + ":" + password;
             }
-            return Auth;
+            return authHeader;
         }
+
+        public static string GetHttpAuthHeader()
+        {
+            return Config.Auth;
+        } 
     }
 }

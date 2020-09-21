@@ -33,9 +33,9 @@ namespace SyncClipboard
             {
                 request.Timeout = timeout.Value;
             }
+            request.CookieContainer = new CookieContainer();
             if (useCookies && savedCookies != null)
             {
-                request.CookieContainer = new CookieContainer();
                 request.CookieContainer.Add(savedCookies);
             }
             if (headerAuthorization != null)
@@ -79,9 +79,9 @@ namespace SyncClipboard
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Headers.Add(auth);
             request.Method = httpMethod;
+            request.CookieContainer = new CookieContainer();
             if (useCookies && savedCookies != null)
             {
-                request.CookieContainer = new CookieContainer();
                 request.CookieContainer.Add(savedCookies);
             }
             return request;
@@ -120,6 +120,7 @@ namespace SyncClipboard
             string codeMessage = response.StatusDescription;
             if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
             {
+                SaveCookies(new CookieCollection());
                 response.Close();
                 throw new WebException(response.StatusCode.GetHashCode().ToString());
             }

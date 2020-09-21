@@ -17,7 +17,7 @@ namespace SyncClipboard
         public void PushImage(Image image)
         {
             Console.WriteLine("sending image");
-            String auth = "Authorization: Basic " + Config.Auth;
+            String auth = Config.GetHttpAuthHeader();
             HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(Config.GetImageUrl(), "PUT", auth, true);
             HttpWebResponse response = HttpWebResponseUtility.SentImageHttpContent(ref request, image);
             response.Close();
@@ -37,7 +37,7 @@ namespace SyncClipboard
             }
 
             String url = Config.GetProfileUrl();
-            String auth = "Authorization: Basic " + Config.Auth;
+            String auth = Config.GetHttpAuthHeader();
 
             HttpWebResponse response = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, auth, true);
             response.Close();

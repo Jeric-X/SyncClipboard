@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using SyncClipboard.Control;
 using System.Drawing;
@@ -81,7 +76,7 @@ namespace SyncClipboard
         private void PullFromRemote()
         {
             String url = Config.GetProfileUrl();
-            String auth = "Authorization: Basic " + Config.Auth;
+            String auth = Config.GetHttpAuthHeader();
 
             Console.WriteLine (auth +"dd");
             HttpWebResponse httpWebResponse = GetPullResponse(url, auth);
@@ -98,20 +93,11 @@ namespace SyncClipboard
 
             if (profile.Text != this.oldString)
             {
-                if (this.isFirstTime)
-                {
-                    this.isFirstTime = false;
-                    this.oldString = profile.Text;
-                    return;
-                }
                 Clipboard.SetData(DataFormats.Text, profile.Text);
                 this.oldString = profile.Text;
                 this.mainController.setLog(true, false, "剪切板同步成功", this.SafeMessage(oldString), null, "info");
             }
-            else
-            {
-                this.mainController.setLog(false, true, "服务器连接成功", null, "正在同步", "info");
-            }
+            this.mainController.setLog(false, true, "服务器连接成功", null, "正在同步", "info");
             try { httpWebResponse.Close(); }
             catch { }
         }
@@ -121,7 +107,7 @@ namespace SyncClipboard
             try
             {
                 Console.WriteLine("pull start " + DateTime.Now.ToString());
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, auth, true);
+                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(url, Config.TimeOut, auth, !this.isTimeOut);
                 Console.WriteLine("pull end " + DateTime.Now.ToString());
                 this.isTimeOut = false;
             }
