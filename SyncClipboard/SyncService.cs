@@ -8,7 +8,7 @@ using System.Drawing;
 
 namespace SyncClipboard
 {
-    class SyncService
+    public class SyncService
     {
         private Control.MainController mainController;
         private Thread pullThread;
@@ -161,16 +161,12 @@ namespace SyncClipboard
 
         private String SafeMessage(String str)
         {
-            string msgString;
-            try
+            if (str.Length > 42)
             {
-                msgString = str.Substring(0, 40) + "...";
+                return str.Substring(0, 40) + "...";
             }
-            catch
-            {
-                msgString = str;
-            }
-            return msgString;
+
+            return str;
         }
     }
 }

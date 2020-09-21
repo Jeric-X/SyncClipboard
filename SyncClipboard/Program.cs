@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Control;
 namespace SyncClipboard
@@ -15,6 +11,7 @@ namespace SyncClipboard
         public static String DefaultUser = "Clipboard";
         public static String DefaultPassword = "Clipboard";
         public static MainController mainController;
+        public static SyncService syncService;
 
         /// <summary>
         /// 应用程序的主入口点。
@@ -37,6 +34,10 @@ namespace SyncClipboard
 
                 
                 mainController = new MainController();
+                syncService = new SyncService(mainController);
+                mainController.syncService = syncService;
+                syncService.Start();
+
                 Application.Run();
             }
         }
@@ -51,7 +52,10 @@ namespace SyncClipboard
         }
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {
-            // detach static event handlers
+            if (syncService != null)
+            {
+                syncService.Stop();
+            }
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
         }

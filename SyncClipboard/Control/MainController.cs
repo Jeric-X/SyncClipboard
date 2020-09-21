@@ -29,7 +29,8 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.MenuItem lineMenuItem;
 
 
-        SyncService syncService;
+        public SyncService syncService;
+
         SettingsForm settingsForm;
         bool isSttingsFormExist = false;
 
@@ -38,8 +39,6 @@ namespace SyncClipboard.Control
             InitializeComponent();
             AddClipboardFormatListener(this.Handle);
             this.LoadConfig();
-            this.syncService = new SyncService(this);
-            this.syncService.Start();
         }
         private void InitializeComponent()
         {
@@ -130,7 +129,8 @@ namespace SyncClipboard.Control
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
             RemoveClipboardFormatListener(this.Handle);  
-            this.syncService.Stop();
+            Config.IfPull = false;
+            Config.IfPush = false;
             this.notifyIcon1.Visible = false;
             Application.Exit();
         }
@@ -138,7 +138,10 @@ namespace SyncClipboard.Control
         {
             if (m.Msg == WM_CLIPBOARDUPDATE)
             {
-                this.syncService.StartPush();
+                if (syncService != null)
+                {
+                    this.syncService.StartPush();
+                }
             }
             else
             {
