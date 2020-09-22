@@ -16,7 +16,7 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
-        public static string GetHttpText(string url, int timeout, string AuthHeader)
+        public static string GetText(string url, int timeout, string AuthHeader)
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", timeout, AuthHeader);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
@@ -30,18 +30,19 @@ namespace SyncClipboard
             return text;
         }
 
-        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int timeout, string headerAuthorization, bool useCookies)
+        public static void PutText(string url, string text, int timeout, string AuthHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", timeout, headerAuthorization);
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", timeout, AuthHeader);
 
-            byte[] postBytes = Encoding.UTF8.GetBytes(parameters);
-            request.ContentLength = Encoding.UTF8.GetBytes(parameters).Length;
-            using (Stream reqStream = request.GetRequestStream())
-            {
-                reqStream.Write(postBytes, 0, postBytes.Length);
-            }
+            byte[] postBytes = Encoding.UTF8.GetBytes(text);
+            request.ContentLength = Encoding.UTF8.GetBytes(text).Length;
 
-            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            Stream reqStream = request.GetRequestStream();
+            reqStream.Write(postBytes, 0, postBytes.Length);
+            reqStream.Close();
+
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            response.Close();
         }
 
         public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, int timeout, string authHeader)

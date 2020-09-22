@@ -1,22 +1,23 @@
 ﻿using SyncClipboard.Control;
 using System;
 using System.Drawing;
-using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace SyncClipboard
 {
     class PushService
     {
-        Notify Notify;
-        ClipboardListener clipboardListener;
+        private Notify Notify;
+        private ClipboardListener clipboardListener;
         private bool switchOn = false;
+        private Thread pushThread = null;
 
         public PushService(Notify notifyFunction)
         {
             Notify = notifyFunction;
             clipboardListener = new ClipboardListener();
-            clipboardListener.ClipBoardChanged += UploadClipBoard;
+            clipboardListener.ClipBoardChanged += ClipboardChangedHandler;
             Load();
         }
         
@@ -28,8 +29,11 @@ namespace SyncClipboard
 
         public void Stop()
         {
-            switchOn = false;
-            clipboardListener.Disable();
+            if (switchOn)
+            {
+                switchOn = false;
+                clipboardListener.Disable();
+            }
         }
 
         public void Load()
@@ -42,7 +46,19 @@ namespace SyncClipboard
             }
         }
 
-        void UploadClipBoard()
+        private void ClipboardChangedHandler()
+        {
+            if (pushThread != null)
+            {
+                pushThread.Abort();
+                pushThread = null;
+            }
+            pushThread = new Thread(UploadClipBoard);
+            pushThread.SetApartmentState(ApartmentState.STA);
+            pushThread.Start();
+        }
+
+        private void UploadClipBoard()
         {
             Console.WriteLine("Push start " + DateTime.Now.ToString());
             IDataObject ClipboardData = Clipboard.GetDataObject();
@@ -71,18 +87,18 @@ namespace SyncClipboard
                 {
                     errMessage = ex.Message.ToString();
                 }
-                System.Threading.Thread.Sleep(1000);
+                Thread.Sleep(1000);
             }
             Notify(true, false, errMessage, "未同步：" + str, null, "erro");
         }
 
-        public void PushImage(Image image)
+        private void PushImage(Image image)
         {
             Console.WriteLine("sending image");
             HttpWebResponseUtility.PutImage(Config.GetImageUrl(), image, Config.TimeOut, Config.GetHttpAuthHeader());
         }
 
-        public void PushProfile(String str, bool isImage)
+        private void PushProfile(String str, bool isImage)
         {
             Profile profile = new Profile();
             if(isImage)
@@ -95,16 +111,7 @@ namespace SyncClipboard
                 profile.Text = str;
             }
 
-            String url = Config.GetProfileUrl();
-            String auth = Config.GetHttpAuthHeader();
-
-            HttpWebResponse response = HttpWebResponseUtility.CreatePutHttpResponse(url, profile.ToJsonString(), Config.TimeOut, auth, true);
-            response.Close();
-        }
-
-        private void HandleHttpException(Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
+            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), profile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
         }
     }
 }

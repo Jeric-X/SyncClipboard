@@ -1,6 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.Net;
 using System.Threading;
 using System.Windows.Forms;
 using SyncClipboard.Control;
@@ -22,10 +20,7 @@ namespace SyncClipboard
         {
             if (Config.IfPull)
             {
-                if (!switchOn)
-                {
-                    Start();
-                } 
+                Start();
             }
             else
             {
@@ -35,10 +30,13 @@ namespace SyncClipboard
 
         public void Start()
         {
-            Thread pullThread = new Thread(PullLoop);
-            pullThread.SetApartmentState(ApartmentState.STA);
-            pullThread.Start();
-            switchOn = true;
+            if (!switchOn)
+            {
+                Thread pullThread = new Thread(PullLoop);
+                pullThread.SetApartmentState(ApartmentState.STA);
+                pullThread.Start();
+                switchOn = true;
+            }
         }
 
         public void Stop()
@@ -56,7 +54,8 @@ namespace SyncClipboard
                 try
                 {
                     Console.WriteLine("pull start " + DateTime.Now.ToString());
-                    strReply = HttpWebResponseUtility.GetHttpText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
+                    strReply = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
+                    errorTimes = 0;
                     Console.WriteLine("pull end " + DateTime.Now.ToString());
                 }
                 catch (Exception ex)

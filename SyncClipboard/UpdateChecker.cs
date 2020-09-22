@@ -15,7 +15,7 @@ namespace SyncClipboard
             String strReply = "";
             try
             {
-                strReply = HttpWebResponseUtility.GetHttpText(UpdateUrl, Config.TimeOut, null);
+                strReply = HttpWebResponseUtility.GetText(UpdateUrl, Config.TimeOut, null);
             }
             catch (Exception ex)
             {
