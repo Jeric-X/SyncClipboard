@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
@@ -18,18 +12,17 @@ namespace SyncClipboard
 
         public bool Check()
         {
-            HttpWebResponse httpWebResponse = null;
+            String strReply = "";
             try
             {
-                httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(UpdateUrl, Config.TimeOut, null, false);
+                strReply = HttpWebResponseUtility.GetHttpText(UpdateUrl, Config.TimeOut, null);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message.ToString());
+                MessageBox.Show("网络连接失败", "获取更新信息失败");
                 return false;
             }
-            StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
-            String strReply = objStrmReader.ReadToEnd();
+
             JavaScriptSerializer serializer = new JavaScriptSerializer();
             UpdateConvertJson p1 = null;
             try
@@ -43,12 +36,12 @@ namespace SyncClipboard
                 }
                 else
                 {
-                    MessageBox.Show("当前版本为最新版本");
+                    MessageBox.Show("当前版本为最新版本", "更新");
                 }
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message.ToString());
+                MessageBox.Show(e.Message.ToString(), "获取更新信息失败");
             }
             return false;
         }

@@ -64,15 +64,14 @@ namespace SyncClipboard
                         PushImage(image);
                     }
                     PushProfile(str, isImage);
+                    Console.WriteLine("Push end " + DateTime.Now.ToString());
+                    return;
                 }
                 catch(Exception ex)
                 {
                     errMessage = ex.Message.ToString();
-                    continue;
                 }
-
-                Console.WriteLine("Push end " + DateTime.Now.ToString());
-                return;
+                System.Threading.Thread.Sleep(1000);
             }
             Notify(true, false, errMessage, "未同步：" + str, null, "erro");
         }
@@ -80,10 +79,7 @@ namespace SyncClipboard
         public void PushImage(Image image)
         {
             Console.WriteLine("sending image");
-            String auth = Config.GetHttpAuthHeader();
-            HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(Config.GetImageUrl(), "PUT", auth, true);
-            HttpWebResponse response = HttpWebResponseUtility.SentImageHttpContent(ref request, image);
-            response.Close();
+            HttpWebResponseUtility.PutImage(Config.GetImageUrl(), image, Config.TimeOut, Config.GetHttpAuthHeader());
         }
 
         public void PushProfile(String str, bool isImage)

@@ -16,47 +16,23 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
-        public static HttpWebResponse CreateGetHttpResponse(string url, int? timeout, string headerAuthorization, bool useCookies)
+        public static string GetHttpText(string url, int timeout, string AuthHeader)
         {
-            if (string.IsNullOrEmpty(url))
-            {
-                throw new ArgumentNullException("url");
-            }
+            HttpWebRequest request = CreateHttpRequest(url, "GET", timeout, AuthHeader);
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
 
-            SetSecurityProtocol(url);
-            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            StreamReader objStrmReader = new StreamReader(response.GetResponseStream());
+            string text = objStrmReader.ReadToEnd();
 
-            request.Method = "GET";
-            request.UserAgent = DefaultUserAgent;
+            objStrmReader.Close();
+            response.Close();
 
-            if (timeout.HasValue)
-            {
-                request.Timeout = timeout.Value;
-            }
-            request.CookieContainer = new CookieContainer();
-            if (useCookies && savedCookies != null)
-            {
-                request.CookieContainer.Add(savedCookies);
-            }
-            if (headerAuthorization != null)
-            {
-                request.Headers.Add(headerAuthorization);
-            }
-            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse()) as HttpWebResponse;
+            return text;
         }
 
-        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int? timeout, string headerAuthorization, bool useCookies)
+        public static HttpWebResponse CreatePutHttpResponse(string url, string parameters, int timeout, string headerAuthorization, bool useCookies)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", headerAuthorization, useCookies);
-            request.ContentType = "text/plain";
-            request.UserAgent = DefaultUserAgent;
-
-            if (timeout.HasValue)
-            {
-                request.Timeout = timeout.Value;
-            }
-
-            request.ContentType = "text/plain";
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", timeout, headerAuthorization);
 
             byte[] postBytes = Encoding.UTF8.GetBytes(parameters);
             request.ContentLength = Encoding.UTF8.GetBytes(parameters).Length;
@@ -68,7 +44,7 @@ namespace SyncClipboard
             return AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
         }
 
-        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string auth, bool useCookies)
+        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, int timeout, string authHeader)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -77,18 +53,25 @@ namespace SyncClipboard
 
             SetSecurityProtocol(url);
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
-            request.Headers.Add(auth);
             request.Method = httpMethod;
-            request.CookieContainer = new CookieContainer();
-            if (useCookies && savedCookies != null)
+            request.UserAgent = DefaultUserAgent;
+            request.Timeout = timeout;
+
+            if (authHeader != null)
             {
-                request.CookieContainer.Add(savedCookies);
+                request.Headers.Add(authHeader);
             }
+            request.CookieContainer = new CookieContainer();
+            // if (useCookies && savedCookies != null)
+            // {
+            //     request.CookieContainer.Add(savedCookies);
+            // }
             return request;
         }
 
-        public static HttpWebResponse SentImageHttpContent(ref HttpWebRequest request, Image image)
+        public static void PutImage(string url, Image image, int timeout, string authHeader)
         {
+            HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
             request.ContentType = "application/x-bmp";
 
             MemoryStream mstream = new MemoryStream();
@@ -103,7 +86,8 @@ namespace SyncClipboard
             reqStream.Write(byteData, 0, byteData.Length);
             reqStream.Close();
 
-            return AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            response.Close();
         }
 
         public static void SetSecurityProtocol(string url)

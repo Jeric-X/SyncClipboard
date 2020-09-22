@@ -53,13 +53,10 @@ namespace SyncClipboard
             while (switchOn)
             {
                 String strReply = "";
-                HttpWebResponse httpWebResponse = null;
                 try
                 {
                     Console.WriteLine("pull start " + DateTime.Now.ToString());
-                    httpWebResponse = HttpWebResponseUtility.CreateGetHttpResponse(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader(), true);
-                    StreamReader objStrmReader = new StreamReader(httpWebResponse.GetResponseStream());
-                    strReply = objStrmReader.ReadToEnd();
+                    strReply = HttpWebResponseUtility.GetHttpText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
                     Console.WriteLine("pull end " + DateTime.Now.ToString());
                 }
                 catch (Exception ex)
@@ -79,8 +76,6 @@ namespace SyncClipboard
                     Notify(true, false, "剪切板同步成功", oldString, null, "info");
                 }
                 Notify(false, true, "服务器连接成功", null, "正在同步", "info");
-                try { httpWebResponse.Close(); }
-                catch { }
                 
                 Thread.Sleep((int)Config.IntervalTime);
             }
