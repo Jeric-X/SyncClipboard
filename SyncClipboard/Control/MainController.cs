@@ -4,7 +4,7 @@ using Microsoft.Win32;
 
 namespace SyncClipboard.Control
 {
-    delegate void Notify(bool notify, bool notifyIconText, string title, string content, string contentSimple, string level);
+    public delegate void Notify(bool notify, bool notifyIconText, string title, string content, string contentSimple, string level);
     public class MainController:System.Windows.Forms.Control
     {
         private string notifyText;
@@ -19,9 +19,6 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.MenuItem 下载远程MenuItem;
         private System.Windows.Forms.MenuItem 检查更新MenuItem;
         private System.Windows.Forms.MenuItem lineMenuItem;
-
-
-        public SyncService syncService;
 
         SettingsForm settingsForm;
         bool isSttingsFormExist = false;
@@ -68,18 +65,13 @@ namespace SyncClipboard.Control
             this.notifyIcon1.DoubleClick += new System.EventHandler(this.设置MenuItem_Click);
         }
         
+        public Notify GetNotifyFunction()
+        {
+            return setLog;
+        }
+
         public void LoadConfig()
         {
-            try
-            {
-                Config.Load();
-            }
-            catch
-            { 
-                MessageBox.Show("配置文件出错", "初始化默认配置(还没做，即将退出)", MessageBoxButtons.YesNo); 
-                Application.Exit(); 
-                return; 
-            }
             if(Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, null) == null)
             {
                 this.开机启动MenuItem.Checked = false;

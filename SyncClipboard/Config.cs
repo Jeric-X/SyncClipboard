@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace SyncClipboard
 {
@@ -35,16 +32,27 @@ namespace SyncClipboard
 
         public static void Load()
         {
-            RemoteURL = Properties.Settings.Default.URL;
-            User = Properties.Settings.Default.USERNAME;
-            Password = Properties.Settings.Default.PASSWORD;
-            IfPull = Properties.Settings.Default.IFPULL;
-            IfPush = Properties.Settings.Default.IFPUSH;
-            IsCustomServer = Properties.Settings.Default.ISCUSTOMSERVER;
-            CustomName = Properties.Settings.Default.CUSTOMNAME;
-            IntervalTime = Properties.Settings.Default.IntervalTime;
-            RetryTimes = Properties.Settings.Default.RetryTimes;
-            TimeOut = Properties.Settings.Default.TimeOut;
+            try
+            {
+                RemoteURL = Properties.Settings.Default.URL;
+                User = Properties.Settings.Default.USERNAME;
+                Password = Properties.Settings.Default.PASSWORD;
+                IfPull = Properties.Settings.Default.IFPULL;
+                IfPush = Properties.Settings.Default.IFPUSH;
+                IsCustomServer = Properties.Settings.Default.ISCUSTOMSERVER;
+                CustomName = Properties.Settings.Default.CUSTOMNAME;
+                IntervalTime = Properties.Settings.Default.IntervalTime;
+                RetryTimes = Properties.Settings.Default.RetryTimes;
+                TimeOut = Properties.Settings.Default.TimeOut;
+            }
+            catch
+            { 
+                if (MessageBox.Show("配置文件出错", "即将初始化默认配置", MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    Application.Exit(); 
+                }
+            }
+            
 
             if (IsCustomServer)
             {

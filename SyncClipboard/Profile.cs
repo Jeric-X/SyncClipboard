@@ -11,13 +11,6 @@ namespace SyncClipboard
             Image
         };
 
-        private class JsonProfile
-        {
-            public String File { get; set; }
-            public String Clipboard { get; set; }
-            public String Type { get; set; }
-        }
-
         public String FileName { get; set; }
         public String Text { get; set; }
         public ClipboardType Type { get; set; }
@@ -42,7 +35,7 @@ namespace SyncClipboard
             }
             catch (ArgumentException)
             {
-                Console.WriteLine("Exited profile file's format is wrong");
+                Console.WriteLine("Existed profile file's format is wrong");
                 FileName = "";
                 Text = "";
                 Type = ClipboardType.Text;
@@ -60,6 +53,13 @@ namespace SyncClipboard
             return serializer.Serialize(jsonProfile);
         }
 
+        private class JsonProfile
+        {
+            public String File { get; set; }
+            public String Clipboard { get; set; }
+            public String Type { get; set; }
+        }
+    
         static private ClipboardType StringToClipBoardType(String stringType)
         {
             ClipboardType type = ClipboardType.Text;

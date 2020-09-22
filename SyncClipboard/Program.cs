@@ -11,7 +11,8 @@ namespace SyncClipboard
         public static String DefaultUser = "Clipboard";
         public static String DefaultPassword = "Clipboard";
         public static MainController mainController;
-        public static SyncService syncService;
+        private static PullService syncService;
+        private static PushService pushService;
 
         /// <summary>
         /// 应用程序的主入口点。
@@ -32,11 +33,10 @@ namespace SyncClipboard
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
                 Application.ApplicationExit += Application_ApplicationExit;
 
-                
+                Config.Load();
                 mainController = new MainController();
-                syncService = new SyncService(mainController);
-                mainController.syncService = syncService;
-                syncService.Start();
+                syncService = new PullService(mainController.GetNotifyFunction());
+                pushService = new PushService(mainController.GetNotifyFunction());
 
                 Application.Run();
             }
@@ -55,6 +55,10 @@ namespace SyncClipboard
             if (syncService != null)
             {
                 syncService.Stop();
+            }
+            if (pushService != null)
+            {
+                pushService.Stop();
             }
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;

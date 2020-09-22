@@ -10,6 +10,7 @@ namespace SyncClipboard
     {
         Notify Notify;
         ClipboardListener clipboardListener;
+        private bool switchOn = false;
 
         public PushService(Notify notifyFunction)
         {
@@ -19,23 +20,25 @@ namespace SyncClipboard
             Load();
         }
         
-        public void Enable()
+        public void Start()
         {
+            switchOn = true;
             clipboardListener.Enable();
         }
 
-        public void Disable()
+        public void Stop()
         {
+            switchOn = false;
             clipboardListener.Disable();
         }
 
         public void Load()
         {
             if (Config.IfPush) {
-                Enable();
+                Start();
             }
             else {
-                Disable();
+                Stop();
             }
         }
 
@@ -52,7 +55,7 @@ namespace SyncClipboard
             bool isImage = Clipboard.ContainsImage();
 
             string errMessage = "";
-            for (int i = 0; i < Config.RetryTimes && Config.IfPush; i++)
+            for (int i = 0; i < Config.RetryTimes && switchOn; i++)
             {
                 try
                 {
