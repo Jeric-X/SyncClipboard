@@ -11,8 +11,10 @@ namespace SyncClipboard
         public static String DefaultUser = "Clipboard";
         public static String DefaultPassword = "Clipboard";
         public static MainController mainController;
-        private static PullService syncService;
-        private static PushService pushService;
+        public static ClipboardListener ClipboardListener;
+
+        public static PullService syncService;
+        public static PushService pushService;
 
         /// <summary>
         /// 应用程序的主入口点。
@@ -35,6 +37,8 @@ namespace SyncClipboard
 
                 Config.Load();
                 mainController = new MainController();
+                ClipboardListener = new ClipboardListener();
+
                 syncService = new PullService(mainController.GetNotifyFunction());
                 pushService = new PushService(mainController.GetNotifyFunction());
 

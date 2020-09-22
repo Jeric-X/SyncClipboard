@@ -1,6 +1,9 @@
 ﻿
 using System;
+using System.ComponentModel;
+using System.Drawing;
 using System.Web.Script.Serialization;
+using System.Windows.Forms;
 
 namespace SyncClipboard
 {
@@ -8,18 +11,21 @@ namespace SyncClipboard
     {
         public enum ClipboardType {
             Text,
-            Image
+            Image,
+            None
         };
 
         public String FileName { get; set; }
         public String Text { get; set; }
         public ClipboardType Type { get; set; }
 
+        private Image image;
+
         public Profile()
         {
             FileName = "";
             Text = "";
-            Type = ClipboardType.Text;
+            Type = ClipboardType.None;
         }
 
         public Profile(String jsonStr)
@@ -36,10 +42,51 @@ namespace SyncClipboard
             catch (ArgumentException)
             {
                 Console.WriteLine("Existed profile file's format is wrong");
-                FileName = "";
-                Text = "";
-                Type = ClipboardType.Text;
             }   
+        }
+
+        public static Profile CreateFromLocalClipboard()
+        {
+            Profile profile = new Profile();
+
+            IDataObject ClipboardData = Clipboard.GetDataObject();
+            profile.image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+            if (profile.image != null)
+            {
+                profile.Type = ClipboardType.Image;
+            }
+
+            profile.Text = (string)ClipboardData.GetData(DataFormats.Text);
+            if (profile.Text != "" && profile.Text != null)
+            {
+                profile.Type = ClipboardType.Text;
+            }
+
+            return profile;
+        }
+
+        public static bool operator == (Profile lhs, Profile rhs)
+        {
+            if (lhs.Type != rhs.Type)
+            {
+                return false;
+            }
+
+            if (lhs.Type == ClipboardType.Text)
+            {
+                return lhs.Text == rhs.Text;
+            }
+            return true;
+        }
+
+        public static bool operator != (Profile lhs, Profile rhs)
+        {
+            return !(lhs == rhs);
+        }
+    
+        public Image GetImage()
+        {
+            return image;
         }
 
         public String ToJsonString()

@@ -17,7 +17,7 @@ namespace SyncClipboard
             {
                 strReply = HttpWebResponseUtility.GetText(UpdateUrl, Config.TimeOut, null);
             }
-            catch (Exception ex)
+            catch
             {
                 MessageBox.Show("网络连接失败", "获取更新信息失败");
                 return false;

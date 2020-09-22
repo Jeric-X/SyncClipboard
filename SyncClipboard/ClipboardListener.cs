@@ -16,6 +16,11 @@ namespace SyncClipboard
         public delegate void ClipBoardChangedHandler();
         public event ClipBoardChangedHandler ClipBoardChanged;
 
+        public ClipboardListener()
+        {
+            Enable();
+        }
+
         public void Enable()
         {
             AddClipboardFormatListener(this.Handle);
@@ -24,6 +29,16 @@ namespace SyncClipboard
         public void Disable()
         {
             RemoveClipboardFormatListener(this.Handle);
+        }
+
+        public void AddHandler(ClipBoardChangedHandler handler)
+        {
+            ClipBoardChanged += handler;
+        }
+
+        public void RemoveHandler(ClipBoardChangedHandler handler)
+        {
+            ClipBoardChanged -= handler;
         }
 
         protected override void DefWndProc(ref Message m)

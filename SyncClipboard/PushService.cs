@@ -1,30 +1,28 @@
 ﻿using SyncClipboard.Control;
 using System;
-using System.Drawing;
 using System.Threading;
-using System.Windows.Forms;
 
 namespace SyncClipboard
 {
     class PushService
     {
         private Notify Notify;
-        private ClipboardListener clipboardListener;
         private bool switchOn = false;
         private Thread pushThread = null;
 
         public PushService(Notify notifyFunction)
         {
             Notify = notifyFunction;
-            clipboardListener = new ClipboardListener();
-            clipboardListener.ClipBoardChanged += ClipboardChangedHandler;
             Load();
         }
         
         public void Start()
         {
-            switchOn = true;
-            clipboardListener.Enable();
+            if(!switchOn)
+            {
+                switchOn = true;
+                Program.ClipboardListener.AddHandler(ClipboardChangedHandler);
+            }
         }
 
         public void Stop()
@@ -32,7 +30,7 @@ namespace SyncClipboard
             if (switchOn)
             {
                 switchOn = false;
-                clipboardListener.Disable();
+                Program.ClipboardListener.RemoveHandler(ClipboardChangedHandler);
             }
         }
 
@@ -53,33 +51,32 @@ namespace SyncClipboard
                 pushThread.Abort();
                 pushThread = null;
             }
+
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
         }
 
-        private void UploadClipBoard()
+        private void UploadClipBoard(Object ClipboardData)
         {
             Console.WriteLine("Push start " + DateTime.Now.ToString());
-            IDataObject ClipboardData = Clipboard.GetDataObject();
-            if (!ClipboardData.GetDataPresent(DataFormats.Text) && !ClipboardData.GetDataPresent(DataFormats.Bitmap))
+            Profile profile = Profile.CreateFromLocalClipboard();
+
+            if (profile.Type == Profile.ClipboardType.None)
             {
                 return;
             }
-            string str = Clipboard.GetText();
-            Image image = Clipboard.GetImage();
-            bool isImage = Clipboard.ContainsImage();
 
             string errMessage = "";
             for (int i = 0; i < Config.RetryTimes && switchOn; i++)
             {
                 try
                 {
-                    if (isImage)
+                    if (profile.Type == Profile.ClipboardType.Image)
                     {
-                        PushImage(image);
+                        HttpWebResponseUtility.PutImage(Config.GetImageUrl(), profile.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
                     }
-                    PushProfile(str, isImage);
+                    HttpWebResponseUtility.PutText(Config.GetProfileUrl(), profile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
                     Console.WriteLine("Push end " + DateTime.Now.ToString());
                     return;
                 }
@@ -89,29 +86,7 @@ namespace SyncClipboard
                 }
                 Thread.Sleep(1000);
             }
-            Notify(true, false, errMessage, "未同步：" + str, null, "erro");
-        }
-
-        private void PushImage(Image image)
-        {
-            Console.WriteLine("sending image");
-            HttpWebResponseUtility.PutImage(Config.GetImageUrl(), image, Config.TimeOut, Config.GetHttpAuthHeader());
-        }
-
-        private void PushProfile(String str, bool isImage)
-        {
-            Profile profile = new Profile();
-            if(isImage)
-            {
-                profile.Type = Profile.ClipboardType.Image;
-            }
-            else
-            {
-                profile.Type = Profile.ClipboardType.Text;
-                profile.Text = str;
-            }
-
-            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), profile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
+            Notify(true, false, errMessage, "未同步：" + profile.Text, null, "erro");
         }
     }
 }

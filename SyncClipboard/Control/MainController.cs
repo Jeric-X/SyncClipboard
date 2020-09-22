@@ -105,7 +105,7 @@ namespace SyncClipboard.Control
                     notifyIcon1.Icon = Properties.Resources.upload;
                 }
             }
-            catch (Exception  ex)
+            catch (Exception)
             {
                 //Console.WriteLine("Setlog错误");
             }

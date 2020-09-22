@@ -7,8 +7,9 @@ namespace SyncClipboard
 {
     public class PullService
     {
-        Notify Notify;
-        public bool switchOn = false;
+        private Notify Notify;
+        private bool switchOn = false;
+        private bool clipboardChanged = false;
 
         public PullService(Notify notifyFunction)
         {
@@ -36,21 +37,31 @@ namespace SyncClipboard
                 pullThread.SetApartmentState(ApartmentState.STA);
                 pullThread.Start();
                 switchOn = true;
+                Program.ClipboardListener.AddHandler(ClipboardChangedHandler);
             }
         }
 
         public void Stop()
         {
-            switchOn = false;
+            if (switchOn)
+            {
+                switchOn = false;
+                Program.ClipboardListener.RemoveHandler(ClipboardChangedHandler);
+            }
+        }
+
+        private void ClipboardChangedHandler()
+        {
+            clipboardChanged = true;
         }
 
         private void PullLoop()
         {
-            string oldString = "";
             int errorTimes = 0;
             while (switchOn)
             {
                 String strReply = "";
+                clipboardChanged = false;
                 try
                 {
                     Console.WriteLine("pull start " + DateTime.Now.ToString());
@@ -67,12 +78,12 @@ namespace SyncClipboard
                 }
 
                 errorTimes = 0;
-                Profile profile = new Profile(strReply);
-                if (profile.Text != oldString)
+                Profile remoteProfile = new Profile(strReply);
+                Profile localProfile = Profile.CreateFromLocalClipboard();
+                if (!clipboardChanged && remoteProfile != localProfile)
                 {
-                    Clipboard.SetData(DataFormats.Text, profile.Text);
-                    oldString = profile.Text;
-                    Notify(true, false, "剪切板同步成功", oldString, null, "info");
+                    Clipboard.SetData(DataFormats.Text, remoteProfile.Text);
+                    Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
                 }
                 Notify(false, true, "服务器连接成功", null, "正在同步", "info");
                 
