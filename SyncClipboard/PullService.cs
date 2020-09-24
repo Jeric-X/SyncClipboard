@@ -75,10 +75,21 @@ namespace SyncClipboard
                     errorTimes += 1;
                     Console.WriteLine(ex.ToString());
                     Notify(false, true, ex.Message.ToString(), Config.GetProfileUrl() + "\n重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
+                    if (errorTimes > Config.RetryTimes)
+                    {
+                        Config.IfPull = false;
+                        Config.Save();
+                        Notify(true, false, "剪切板同步失败，已达到最大重试次数", ex.Message.ToString(), null, "erro");
+                    }
                     continue;
                 }
+                finally
+                {
+                    RemoteClipboardLocker.Unlock();
+                    Thread.Sleep((int)Config.IntervalTime);
+                }
 
-                RemoteClipboardLocker.Unlock();
+                
                 errorTimes = 0;
                 Profile remoteProfile = new Profile(strReply);
                 Profile localProfile = Profile.CreateFromLocalClipboard();
@@ -88,8 +99,6 @@ namespace SyncClipboard
                     Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
                 }
                 Notify(false, true, "服务器连接成功", null, "正在同步", "info");
-                
-                Thread.Sleep((int)Config.IntervalTime);
             }
         }
     }

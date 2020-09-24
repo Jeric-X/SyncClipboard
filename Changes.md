@@ -1,3 +1,7 @@
+v1.1.3
+- add mutex when writing/reading remote files
+- optimize architecture
+
 v1.1.2
 - change profile file's syntax
 - update ios workflow

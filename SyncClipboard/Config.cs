@@ -79,6 +79,7 @@ namespace SyncClipboard
             Properties.Settings.Default.RetryTimes = RetryTimes;
             Properties.Settings.Default.TimeOut = TimeOut;
             Properties.Settings.Default.Save();
+            Load();
         }
 
         private static string FormatHttpAuthHeader(string user, string password)

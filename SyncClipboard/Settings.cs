@@ -18,8 +18,9 @@
         }
         
         private void SettingsSavingEventHandler(object sender, System.ComponentModel.CancelEventArgs e) {
-            Program.syncService.Load();
+            Program.pullService.Load();
             Program.pushService.Load();
+            Program.mainController.LoadConfig();
         }
     }
 }

@@ -13,7 +13,7 @@ namespace SyncClipboard
         public static MainController mainController;
         public static ClipboardListener ClipboardListener;
 
-        public static PullService syncService;
+        public static PullService pullService;
         public static PushService pushService;
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace SyncClipboard
                 mainController = new MainController();
                 ClipboardListener = new ClipboardListener();
 
-                syncService = new PullService(mainController.GetNotifyFunction());
+                pullService = new PullService(mainController.GetNotifyFunction());
                 pushService = new PushService(mainController.GetNotifyFunction());
 
                 Application.Run();
@@ -56,9 +56,9 @@ namespace SyncClipboard
         }
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {
-            if (syncService != null)
+            if (pullService != null)
             {
-                syncService.Stop();
+                pullService.Stop();
             }
             if (pushService != null)
             {
