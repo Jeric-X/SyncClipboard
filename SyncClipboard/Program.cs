@@ -25,8 +25,9 @@ namespace SyncClipboard
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
                 
-            System.Threading.Mutex mutex = new System.Threading.Mutex(true, Program.SoftName);
-            if (mutex.WaitOne(0, false))
+            bool creetedNew;
+            System.Threading.Mutex mutex = new System.Threading.Mutex(false, Program.SoftName, out creetedNew);
+            if (creetedNew)
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
                 // handle UI exceptions
@@ -43,6 +44,10 @@ namespace SyncClipboard
                 pushService = new PushService(mainController.GetNotifyFunction());
 
                 Application.Run();
+            }
+            else
+            {
+                MessageBox.Show("已经存在一个正在运行中的实例！", SoftName);
             }
         }
 

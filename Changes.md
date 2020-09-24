@@ -1,3 +1,6 @@
+v1.1.4
+- 只支持单实例
+
 v1.1.3
 - add mutex when writing/reading remote files
 - optimize architecture

@@ -11,6 +11,7 @@ namespace SyncClipboard
         [DllImport("user32.dll")]
         public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
+        private bool switchOn = false;
         private static readonly int WM_CLIPBOARDUPDATE = 0x031D;
 
         public delegate void ClipBoardChangedHandler();
@@ -23,12 +24,20 @@ namespace SyncClipboard
 
         public void Enable()
         {
-            AddClipboardFormatListener(this.Handle);
+            if (!switchOn)
+            {
+                AddClipboardFormatListener(this.Handle);
+                switchOn = true;
+            }
         }
 
         public void Disable()
         {
-            RemoveClipboardFormatListener(this.Handle);
+            if (switchOn)
+            {
+                RemoveClipboardFormatListener(this.Handle);
+                switchOn = false;
+            }
         }
 
         public void AddHandler(ClipBoardChangedHandler handler)
@@ -51,6 +60,11 @@ namespace SyncClipboard
             {
                 base.DefWndProc(ref m);
             }
+        }
+
+        ~ClipboardListener()
+        {
+            Disable();
         }
     }
 

@@ -89,7 +89,6 @@ namespace SyncClipboard
                     Thread.Sleep((int)Config.IntervalTime);
                 }
 
-                
                 errorTimes = 0;
                 Profile remoteProfile = new Profile(strReply);
                 Profile localProfile = Profile.CreateFromLocalClipboard();
