@@ -60,6 +60,7 @@ namespace SyncClipboard
             int errorTimes = 0;
             while (switchOn)
             {
+                RemoteClipboardLocker.Lock();
                 String strReply = "";
                 clipboardChanged = false;
                 try
@@ -77,6 +78,7 @@ namespace SyncClipboard
                     continue;
                 }
 
+                RemoteClipboardLocker.Unlock();
                 errorTimes = 0;
                 Profile remoteProfile = new Profile(strReply);
                 Profile localProfile = Profile.CreateFromLocalClipboard();

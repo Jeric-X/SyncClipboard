@@ -67,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RemoteClipboardLocker.cs" />
     <Compile Include="ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>

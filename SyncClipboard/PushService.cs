@@ -57,7 +57,7 @@ namespace SyncClipboard
             pushThread.Start();
         }
 
-        private void UploadClipBoard(Object ClipboardData)
+        private void UploadLoop()
         {
             Console.WriteLine("Push start " + DateTime.Now.ToString());
             Profile profile = Profile.CreateFromLocalClipboard();
@@ -87,6 +87,23 @@ namespace SyncClipboard
                 Thread.Sleep(1000);
             }
             Notify(true, false, errMessage, "未同步：" + profile.Text, null, "erro");
+        }
+
+        private void UploadClipBoard()
+        {
+            RemoteClipboardLocker.Lock();
+            try
+            {
+                UploadLoop();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message.ToString());
+            }
+            finally
+            {
+                RemoteClipboardLocker.Unlock();
+            }
         }
     }
 }
