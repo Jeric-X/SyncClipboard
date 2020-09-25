@@ -1,5 +1,6 @@
 v1.1.4
 - 只支持单实例
+- 修复Clipboard线程不安全造成的异常
 
 v1.1.3
 - add mutex when writing/reading remote files

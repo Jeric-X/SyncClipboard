@@ -45,12 +45,16 @@ namespace SyncClipboard
             }   
         }
 
+        private static System.Threading.Mutex clipboardMutex = new System.Threading.Mutex();
         public static Profile CreateFromLocalClipboard()
         {
             Profile profile = new Profile();
 
+            clipboardMutex.WaitOne();
             IDataObject ClipboardData = Clipboard.GetDataObject();
             profile.image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+            clipboardMutex.ReleaseMutex();
+
             if (profile.image != null)
             {
                 profile.Type = ClipboardType.Image;
