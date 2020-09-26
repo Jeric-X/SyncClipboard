@@ -2,7 +2,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
 
 ## 功能
-一个简单的剪切板同步工具，使用网盘作为中转站，支持文字和图片
+一个简单的剪切板同步工具，使用网盘作为中转站，支持文字和图片  
 windows使用c#写了个客户端，IOS只能曲线救国使用APP`快捷指令`手动收发
 
 ## Server

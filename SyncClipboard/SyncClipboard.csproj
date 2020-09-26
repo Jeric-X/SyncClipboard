@@ -67,27 +67,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RemoteClipboardLocker.cs" />
-    <Compile Include="ClipboardListener.cs">
+    <Compile Include="Service\RemoteClipboardLocker.cs" />
+    <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Config.cs" />
-    <Compile Include="HttpWebResponseUtility.cs" />
+    <Compile Include="Utility\HttpWebResponseUtility.cs" />
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Profile.cs" />
+    <Compile Include="Service\Profile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PushService.cs" />
+    <Compile Include="Service\PushService.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="SettingsForm.cs">
+    <Compile Include="Control\SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SettingsForm.Designer.cs">
+    <Compile Include="Control\SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="PullService.cs" />
+    <Compile Include="Service\PullService.cs" />
     <Compile Include="UpdateChecker.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -99,7 +99,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="SettingsForm.resx">
+    <EmbeddedResource Include="Control\SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
@@ -120,7 +120,6 @@
     <Content Include="img\erro.ico" />
     <Content Include="img\icon.ico" />
     <Content Include="img\upload.ico" />
-    <Content Include="plan.txt" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
