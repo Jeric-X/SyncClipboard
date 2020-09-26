@@ -9,6 +9,7 @@ namespace SyncClipboard
         private Notify Notify;
         private bool switchOn = false;
         private Thread pushThread = null;
+        private Profile currentProfile;
 
         public PushService(Notify notifyFunction)
         {
@@ -52,6 +53,7 @@ namespace SyncClipboard
                 pushThread = null;
             }
 
+            currentProfile = Profile.CreateFromLocalClipboard();
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
@@ -60,9 +62,8 @@ namespace SyncClipboard
         private void UploadLoop()
         {
             Console.WriteLine("Push start " + DateTime.Now.ToString());
-            Profile profile = Profile.CreateFromLocalClipboard();
 
-            if (profile.Type == Profile.ClipboardType.None)
+            if (currentProfile.Type == Profile.ClipboardType.None)
             {
                 return;
             }
@@ -72,11 +73,11 @@ namespace SyncClipboard
             {
                 try
                 {
-                    if (profile.Type == Profile.ClipboardType.Image)
+                    if (currentProfile.Type == Profile.ClipboardType.Image)
                     {
-                        HttpWebResponseUtility.PutImage(Config.GetImageUrl(), profile.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
+                        HttpWebResponseUtility.PutImage(Config.GetImageUrl(), currentProfile.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
                     }
-                    HttpWebResponseUtility.PutText(Config.GetProfileUrl(), profile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
+                    HttpWebResponseUtility.PutText(Config.GetProfileUrl(), currentProfile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
                     Console.WriteLine("Push end " + DateTime.Now.ToString());
                     return;
                 }
@@ -86,11 +87,16 @@ namespace SyncClipboard
                 }
                 Thread.Sleep(1000);
             }
-            Notify(true, false, errMessage, "未同步：" + profile.Text, null, "erro");
+            Notify(true, false, errMessage, "未同步：" + currentProfile.Text, null, "erro");
         }
 
         private void UploadClipBoard()
         {
+            if (currentProfile == null)
+            {
+                return;
+            }
+
             RemoteClipboardLocker.Lock();
             try
             {

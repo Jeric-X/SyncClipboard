@@ -8,7 +8,6 @@ namespace SyncClipboard.Control
     public class MainController:System.Windows.Forms.Control
     {
         private string notifyText;
-        private static int WM_CLIPBOARDUPDATE = 0x031D;
 
         private System.Windows.Forms.NotifyIcon notifyIcon1;
         private System.Windows.Forms.ContextMenu contextMenu;

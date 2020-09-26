@@ -91,11 +91,14 @@ namespace SyncClipboard
 
                 errorTimes = 0;
                 Profile remoteProfile = new Profile(strReply);
-                Profile localProfile = Profile.CreateFromLocalClipboard();
-                if (!clipboardChanged && remoteProfile != localProfile)
+                if (!clipboardChanged)
                 {
-                    Clipboard.SetData(DataFormats.Text, remoteProfile.Text);
-                    Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
+                    Profile localProfile = Profile.CreateFromLocalClipboard();
+                    if (remoteProfile != localProfile)
+                    {
+                        Clipboard.SetData(DataFormats.Text, remoteProfile.Text);
+                        Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
+                    }
                 }
                 Notify(false, true, "服务器连接成功", null, "正在同步", "info");
             }

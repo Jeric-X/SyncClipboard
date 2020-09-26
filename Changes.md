@@ -1,6 +1,9 @@
+v1.1.5
+- ĞŞ¸´Ïß³ÌÒì³£ÍË³öµ¼ÖÂµÄMutexÊ§Ğ§Exception
+
 v1.1.4
-- åªæ”¯æŒå•å®ä¾‹
-- ä¿®å¤Clipboardçº¿ç¨‹ä¸å®‰å…¨é€ æˆçš„å¼‚å¸¸
+- Ö»Ö§³Öµ¥ÊµÀı
+- ĞŞ¸´ClipboardÏß³Ì²»°²È«Ôì³ÉµÄÒì³£
 
 v1.1.3
 - add mutex when writing/reading remote files
@@ -35,4 +38,4 @@ v1.0.2
 - Fix bugs
 
 v1.0.1
-- å‘å¸ƒ
+- ·¢²¼

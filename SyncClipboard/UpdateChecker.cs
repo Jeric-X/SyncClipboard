@@ -6,7 +6,7 @@ namespace SyncClipboard
 {
     class UpdateChecker
     {
-        public const string Version = "1.1.4";
+        public const string Version = "1.1.5";
         public const string UpdateUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";
         public const string ReleaseUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 

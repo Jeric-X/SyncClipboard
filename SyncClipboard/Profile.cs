@@ -42,7 +42,7 @@ namespace SyncClipboard
             catch (ArgumentException)
             {
                 Console.WriteLine("Existed profile file's format is wrong");
-            }   
+            }
         }
 
         private static System.Threading.Mutex clipboardMutex = new System.Threading.Mutex();
@@ -71,6 +71,16 @@ namespace SyncClipboard
 
         public static bool operator == (Profile lhs, Profile rhs)
         {
+            if (System.Object.ReferenceEquals(lhs, rhs))
+            {
+                return true;
+            }
+
+            if (((object)lhs == null) || ((object)rhs == null))
+            {
+                return false;
+            }
+
             if (lhs.Type != rhs.Type)
             {
                 return false;
@@ -87,6 +97,26 @@ namespace SyncClipboard
         {
             return !(lhs == rhs);
         }
+
+        public override bool Equals(Object obj)
+        {
+            return this == (Profile)obj;
+        }
+
+        public override int GetHashCode()
+        {
+            return this.ToString().GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            string str = "";
+            str += "FileName" + FileName.ToString();
+            str += "Text:" + Text.ToString();
+            str += "Type:" + Type.ToString();
+            return str;
+        }
+
     
         public Image GetImage()
         {
