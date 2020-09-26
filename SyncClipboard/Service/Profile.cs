@@ -53,6 +53,7 @@ namespace SyncClipboard
             clipboardMutex.WaitOne();
             IDataObject ClipboardData = Clipboard.GetDataObject();
             profile.image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+            profile.Text = (string)ClipboardData.GetData(DataFormats.Text);
             clipboardMutex.ReleaseMutex();
 
             if (profile.image != null)
@@ -60,7 +61,6 @@ namespace SyncClipboard
                 profile.Type = ClipboardType.Image;
             }
 
-            profile.Text = (string)ClipboardData.GetData(DataFormats.Text);
             if (profile.Text != "" && profile.Text != null)
             {
                 profile.Type = ClipboardType.Text;

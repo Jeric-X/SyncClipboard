@@ -61,11 +61,6 @@ namespace SyncClipboard
                 base.DefWndProc(ref m);
             }
         }
-
-        ~ClipboardListener()
-        {
-            Disable();
-        }
     }
 
 }
