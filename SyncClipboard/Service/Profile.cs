@@ -69,6 +69,13 @@ namespace SyncClipboard
             return profile;
         }
 
+        public virtual void SetLocalClipboard()
+        {
+            clipboardMutex.WaitOne();
+            Clipboard.SetData(DataFormats.Text, this.Text);
+            clipboardMutex.ReleaseMutex();
+        }
+
         public static bool operator == (Profile lhs, Profile rhs)
         {
             if (System.Object.ReferenceEquals(lhs, rhs))

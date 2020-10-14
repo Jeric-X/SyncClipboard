@@ -1,5 +1,6 @@
 v1.1.6(working on)
 - 整理目录
+- trying to fix #5
 
 v1.1.5
 - 修复线程异常退出导致的Mutex失效Exception

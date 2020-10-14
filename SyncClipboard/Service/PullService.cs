@@ -96,7 +96,7 @@ namespace SyncClipboard
                     Profile localProfile = Profile.CreateFromLocalClipboard();
                     if (remoteProfile != localProfile)
                     {
-                        Clipboard.SetData(DataFormats.Text, remoteProfile.Text);
+                        remoteProfile.SetLocalClipboard();
                         Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
                     }
                 }
