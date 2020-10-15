@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Windows.Forms;
 using SyncClipboard.Control;
+using SyncClipboard.Utility;
 
 namespace SyncClipboard
 {
@@ -61,19 +62,20 @@ namespace SyncClipboard
             while (switchOn)
             {
                 RemoteClipboardLocker.Lock();
+                Log.Write("pull lock remote");
                 String strReply = "";
                 clipboardChanged = false;
                 try
                 {
-                    Console.WriteLine("pull start " + DateTime.Now.ToString());
+                    Log.Write("pull start");
                     strReply = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
                     errorTimes = 0;
-                    Console.WriteLine("pull end " + DateTime.Now.ToString());
+                    Log.Write("pull end");
                 }
                 catch (Exception ex)
                 {
                     errorTimes += 1;
-                    Console.WriteLine(ex.ToString());
+                    Log.Write(ex.ToString());
                     Notify(false, true, ex.Message.ToString(), Config.GetProfileUrl() + "\n重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
                     if (errorTimes > Config.RetryTimes)
                     {
@@ -85,6 +87,7 @@ namespace SyncClipboard
                 }
                 finally
                 {
+                    Log.Write("pull unlock remote");
                     RemoteClipboardLocker.Unlock();
                     Thread.Sleep((int)Config.IntervalTime);
                 }

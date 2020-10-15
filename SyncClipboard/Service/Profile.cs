@@ -1,7 +1,8 @@
 ﻿
+using SyncClipboard.Utility;
 using System;
-using System.ComponentModel;
 using System.Drawing;
+using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
@@ -41,7 +42,7 @@ namespace SyncClipboard
             }
             catch (ArgumentException)
             {
-                Console.WriteLine("Existed profile file's format is wrong");
+                Log.Write("Existed profile file's format is wrong");
             }
         }
 
@@ -51,9 +52,22 @@ namespace SyncClipboard
             Profile profile = new Profile();
 
             clipboardMutex.WaitOne();
-            IDataObject ClipboardData = Clipboard.GetDataObject();
-            profile.image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
-            profile.Text = (string)ClipboardData.GetData(DataFormats.Text);
+
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    IDataObject ClipboardData = Clipboard.GetDataObject();
+                    profile.image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+                    profile.Text = (string)ClipboardData.GetData(DataFormats.Text);
+                    break;
+                }
+                catch
+                {
+                    Thread.Sleep(500);
+                }
+            }
+
             clipboardMutex.ReleaseMutex();
 
             if (profile.image != null)
@@ -72,7 +86,19 @@ namespace SyncClipboard
         public virtual void SetLocalClipboard()
         {
             clipboardMutex.WaitOne();
-            Clipboard.SetData(DataFormats.Text, this.Text);
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    Clipboard.SetData(DataFormats.Text, this.Text);
+                    break;
+                }
+                catch
+                {
+                    Thread.Sleep(500);
+                }
+            }
+            
             clipboardMutex.ReleaseMutex();
         }
 
@@ -157,7 +183,7 @@ namespace SyncClipboard
             }
             catch
             {
-                Console.WriteLine("Profile Type is Wrong");
+                Log.Write("Profile Type is Wrong");
                 throw new ArgumentException("Profile Type is Wrong");
             }
 

@@ -106,7 +106,7 @@ namespace SyncClipboard.Control
             }
             catch (Exception)
             {
-                //Console.WriteLine("Setlog错误");
+                //Log.Write("Setlog错误");
             }
         }
         private void 退出MenuItem_Click(object sender, EventArgs e)
@@ -154,7 +154,7 @@ namespace SyncClipboard.Control
 
         private void notifyIcon1_BalloonTipClicked(object sender, EventArgs e)
         {
-            if (notifyText.Length < 4)
+            if (notifyText == null || notifyText.Length < 4)
                 return;
             if (notifyText.Substring(0,4) == "http" || notifyText.Substring(0,4) == "www.")
                 System.Diagnostics.Process.Start(this.notifyText);  
@@ -182,6 +182,10 @@ namespace SyncClipboard.Control
 
         private String SafeMessage(String str)
         {
+            if (str == null)
+            {
+                return "【非文本类型】";
+            }
             if (str.Length > 42)
             {
                 return str.Substring(0, 40) + "...";

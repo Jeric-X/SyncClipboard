@@ -6,22 +6,19 @@ namespace SyncClipboard
 {
     class ClipboardListener : System.Windows.Forms.Control
     {
-        [DllImport("user32.dll")]
-        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
-        [DllImport("user32.dll")]
-        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
-
+        public delegate void ClipBoardChangedHandler(); 
+        
         private bool switchOn = false;
         private static readonly int WM_CLIPBOARDUPDATE = 0x031D;
-
-        public delegate void ClipBoardChangedHandler();
-        public event ClipBoardChangedHandler ClipBoardChanged;
+        private event ClipBoardChangedHandler ClipBoardChanged;
 
         public ClipboardListener()
         {
             Enable();
         }
 
+        [DllImport("user32.dll")]
+        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
         public void Enable()
         {
             if (!switchOn)
@@ -31,6 +28,8 @@ namespace SyncClipboard
             }
         }
 
+        [DllImport("user32.dll")]
+        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
         public void Disable()
         {
             if (switchOn)

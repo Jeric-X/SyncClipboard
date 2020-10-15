@@ -89,6 +89,7 @@
     </Compile>
     <Compile Include="Service\PullService.cs" />
     <Compile Include="UpdateChecker.cs" />
+    <Compile Include="Utility\Log.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

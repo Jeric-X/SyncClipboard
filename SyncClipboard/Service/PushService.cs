@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Control;
+using SyncClipboard.Utility;
 using System;
 using System.Threading;
 
@@ -49,6 +50,7 @@ namespace SyncClipboard
         {
             if (pushThread != null)
             {
+                Log.Write("Kill old push thread");
                 pushThread.Abort();
                 pushThread = null;
             }
@@ -57,11 +59,12 @@ namespace SyncClipboard
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
+            Log.Write("Create new push thread");
         }
 
         private void UploadLoop()
         {
-            Console.WriteLine("Push start " + DateTime.Now.ToString());
+            Log.Write("Push start");
 
             if (currentProfile.Type == Profile.ClipboardType.None)
             {
@@ -78,7 +81,7 @@ namespace SyncClipboard
                         HttpWebResponseUtility.PutImage(Config.GetImageUrl(), currentProfile.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
                     }
                     HttpWebResponseUtility.PutText(Config.GetProfileUrl(), currentProfile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
-                    Console.WriteLine("Push end " + DateTime.Now.ToString());
+                    Log.Write("Push end");
                     return;
                 }
                 catch(Exception ex)
@@ -97,6 +100,7 @@ namespace SyncClipboard
                 return;
             }
 
+            Log.Write("push lock remote");
             RemoteClipboardLocker.Lock();
             try
             {
@@ -104,10 +108,11 @@ namespace SyncClipboard
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message.ToString());
+                Log.Write(ex.Message.ToString());
             }
             finally
             {
+                Log.Write("push unlock remote");
                 RemoteClipboardLocker.Unlock();
             }
         }
