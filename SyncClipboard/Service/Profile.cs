@@ -46,13 +46,11 @@ namespace SyncClipboard
             }
         }
 
-        private static System.Threading.Mutex clipboardMutex = new System.Threading.Mutex();
         public static Profile CreateFromLocalClipboard()
         {
             Profile profile = new Profile();
 
-            clipboardMutex.WaitOne();
-
+            LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
             {
                 try
@@ -68,8 +66,7 @@ namespace SyncClipboard
                 }
             }
 
-            clipboardMutex.ReleaseMutex();
-
+            LocalClipboardLocker.Unlock();
             if (profile.image != null)
             {
                 profile.Type = ClipboardType.Image;
@@ -85,7 +82,7 @@ namespace SyncClipboard
 
         public virtual void SetLocalClipboard()
         {
-            clipboardMutex.WaitOne();
+            LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
             {
                 try
@@ -98,8 +95,8 @@ namespace SyncClipboard
                     Thread.Sleep(500);
                 }
             }
-            
-            clipboardMutex.ReleaseMutex();
+
+            LocalClipboardLocker.Unlock();
         }
 
         public static bool operator == (Profile lhs, Profile rhs)

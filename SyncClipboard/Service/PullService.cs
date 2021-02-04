@@ -59,7 +59,7 @@ namespace SyncClipboard
         private void PullLoop()
         {
             int errorTimes = 0;
-            while (switchOn)
+            for (; switchOn; Thread.Sleep((int)Config.IntervalTime))
             {
                 RemoteClipboardLocker.Lock();
                 Log.Write("pull lock remote");
@@ -89,7 +89,6 @@ namespace SyncClipboard
                 {
                     Log.Write("pull unlock remote");
                     RemoteClipboardLocker.Unlock();
-                    Thread.Sleep((int)Config.IntervalTime);
                 }
 
                 errorTimes = 0;
