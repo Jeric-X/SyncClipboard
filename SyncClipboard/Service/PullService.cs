@@ -9,11 +9,18 @@ namespace SyncClipboard
     {
         private Notify Notify;
         private bool switchOn = false;
-        private bool remoteClipboardChanged = true;
-        private Thread pullThread = null;
+        private bool isChangingRemote = false;
 
         public PullService(Notify notifyFunction)
         {
+            Notify = notifyFunction;
+            Load();
+        }
+
+        public PullService(Notify notifyFunction, PushService pushService)
+        {
+            pushService.PushStarted += new PushService.PushStatusChangingHandler(PushStartedHandler);
+            pushService.PushStopped += new PushService.PushStatusChangingHandler(PushStoppedHandler);
             Notify = notifyFunction;
             Load();
         }
@@ -34,11 +41,10 @@ namespace SyncClipboard
         {
             if (!switchOn)
             {
-                Thread pullThread = new Thread(DownloadClipBoard);
+                Thread pullThread = new Thread(PullLoop);
                 pullThread.SetApartmentState(ApartmentState.STA);
                 pullThread.Start();
                 switchOn = true;
-                Program.ClipboardListener.AddHandler(ClipboardChangedHandler);
             }
         }
 
@@ -47,46 +53,19 @@ namespace SyncClipboard
             if (switchOn)
             {
                 switchOn = false;
-                Program.ClipboardListener.RemoveHandler(ClipboardChangedHandler);
             }
         }
 
-        private void ClipboardChangedHandler()
+        public void PushStartedHandler()
         {
-            if (remoteClipboardChanged)
-            {
-                remoteClipboardChanged = false;
-                return;
-            }
-
-            if (pullThread != null)
-            {
-                Log.Write("Kill old pull thread");
-                pullThread.Abort();
-                pullThread = null;
-            }
-
-            pullThread = new Thread(DownloadClipBoard);
-            pullThread.SetApartmentState(ApartmentState.STA);
-            pullThread.Start();
+            isChangingRemote = true;
         }
 
-        private void DownloadClipBoard()
+        public void PushStoppedHandler()
         {
-            Log.Write("pull lock remote");
-            try
-            {
-                PullLoop();
-            }
-            catch (ThreadAbortException ex)
-            {
-                Log.Write(ex.Message.ToString());
-            }
-            finally
-            {
-                Log.Write("pull unlock remote");
-            }
+            isChangingRemote = false;
         }
+
 
         private void PullLoop()
         {
@@ -105,10 +84,10 @@ namespace SyncClipboard
 
                     Profile remoteProfile = new Profile(strReply);
                     Profile localProfile = Profile.CreateFromLocalClipboard();
-                    if (remoteProfile != localProfile)
+                    if (!isChangingRemote && remoteProfile != localProfile)
                     {
-                        remoteClipboardChanged = true;
                         remoteProfile.SetLocalClipboard();
+                        Log.Write("剪切板同步成功:" + remoteProfile.Text);
                         Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
                     }
                     Notify(false, true, "服务器连接成功", null, "正在同步", "info");

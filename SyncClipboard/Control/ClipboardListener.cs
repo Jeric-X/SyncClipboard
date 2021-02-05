@@ -53,7 +53,7 @@ namespace SyncClipboard
         {
             if (m.Msg == WM_CLIPBOARDUPDATE)
             {
-                ClipBoardChanged();
+                ClipBoardChanged.Invoke();
             }
             else
             {

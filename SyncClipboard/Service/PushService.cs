@@ -5,12 +5,16 @@ using System.Threading;
 
 namespace SyncClipboard
 {
-    class PushService
+    public class PushService
     {
         private Notify Notify;
         private bool switchOn = false;
         private Thread pushThread = null;
         private Profile currentProfile;
+
+        public delegate void PushStatusChangingHandler();
+        public event PushStatusChangingHandler PushStarted;
+        public event PushStatusChangingHandler PushStopped;
 
         public PushService(Notify notifyFunction)
         {
@@ -100,6 +104,7 @@ namespace SyncClipboard
                 return;
             }
 
+            PushStarted.Invoke();
             Log.Write("push lock remote");
             RemoteClipboardLocker.Lock();
             try
@@ -114,6 +119,7 @@ namespace SyncClipboard
             {
                 Log.Write("push unlock remote");
                 RemoteClipboardLocker.Unlock();
+                PushStopped.Invoke();
             }
         }
     }
