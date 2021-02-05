@@ -1,4 +1,4 @@
-v1.1.6(working on)
+v1.1.6
 - 整理目录
 - trying to fix #5
 
