@@ -74,24 +74,10 @@ namespace SyncClipboard
             {
                 RemoteClipboardLocker.Lock();
                 Log.Write("pull lock remote");
-                String strReply = "";
+                Profile remoteProfile = null;
                 try
                 {
-                    Log.Write("pull start");
-                    strReply = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
-                    errorTimes = 0;
-                    Log.Write("pull end");
-
-                    Profile remoteProfile = new Profile(strReply);
-                    Profile localProfile = Profile.CreateFromLocalClipboard();
-                    if (!isChangingRemote && remoteProfile != localProfile)
-                    {
-                        remoteProfile.SetLocalClipboard();
-                        Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                        Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
-                    }
-                    Notify(false, true, "服务器连接成功", null, "正在同步", "info");
-                    errorTimes = 0;
+                    remoteProfile = Profile.CreateFromRemote();
                 }
                 catch (Exception ex)
                 {
@@ -104,12 +90,23 @@ namespace SyncClipboard
                         Config.Save();
                         Notify(true, false, "剪切板同步失败，已达到最大重试次数", ex.Message.ToString(), null, "erro");
                     }
+                    continue;
                 }
                 finally
                 {
                     Log.Write("pull unlock remote");
                     RemoteClipboardLocker.Unlock();
                 }
+
+                Profile localProfile = Profile.CreateFromLocal();
+                if (!isChangingRemote && remoteProfile != localProfile)
+                {
+                    remoteProfile.SetLocalClipboard();
+                    Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                    Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
+                }
+                Notify(false, true, "服务器连接成功", null, "正在同步", "info");
+                errorTimes = 0;
             }
         }
     }

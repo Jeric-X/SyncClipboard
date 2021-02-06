@@ -46,7 +46,7 @@ namespace SyncClipboard
             }
         }
 
-        public static Profile CreateFromLocalClipboard()
+        public static Profile CreateFromLocal()
         {
             Profile profile = new Profile();
 
@@ -78,6 +78,15 @@ namespace SyncClipboard
             }
 
             return profile;
+        }
+
+        public static Profile CreateFromRemote()
+        {
+            Log.Write("[PULL] " + Config.GetProfileUrl());
+            String jsonProfile = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
+            Log.Write("[PULL] json " + jsonProfile);
+
+            return new Profile(jsonProfile);
         }
 
         public virtual void SetLocalClipboard()

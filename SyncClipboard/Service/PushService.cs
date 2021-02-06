@@ -59,7 +59,7 @@ namespace SyncClipboard
                 pushThread = null;
             }
 
-            currentProfile = Profile.CreateFromLocalClipboard();
+            currentProfile = Profile.CreateFromLocal();
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();

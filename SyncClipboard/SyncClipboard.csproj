@@ -73,6 +73,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Config.cs" />
+    <Compile Include="Service\TextProfile.cs" />
     <Compile Include="Utility\HttpWebResponseUtility.cs" />
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
