@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Service\LocalClipboardLocker.cs" />
+    <Compile Include="Service\ProfileFactory.cs" />
     <Compile Include="Service\RemoteClipboardLocker.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>

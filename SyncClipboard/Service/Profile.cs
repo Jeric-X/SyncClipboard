@@ -110,26 +110,7 @@ namespace SyncClipboard
 
         public static bool operator == (Profile lhs, Profile rhs)
         {
-            if (System.Object.ReferenceEquals(lhs, rhs))
-            {
-                return true;
-            }
-
-            if (((object)lhs == null) || ((object)rhs == null))
-            {
-                return false;
-            }
-
-            if (lhs.Type != rhs.Type)
-            {
-                return false;
-            }
-
-            if (lhs.Type == ClipboardType.Text)
-            {
-                return lhs.Text == rhs.Text;
-            }
-            return true;
+            return Object.Equals(lhs, rhs);
         }
 
         public static bool operator != (Profile lhs, Profile rhs)
@@ -139,7 +120,28 @@ namespace SyncClipboard
 
         public override bool Equals(Object obj)
         {
-            return this == (Profile)obj;
+            if (System.Object.ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj == null)
+            {
+                return false;
+            }
+
+            if (GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            Profile profile = (Profile)obj;
+            if (profile.Type == ClipboardType.Text)
+            {
+                return this.Text == profile.Text;
+            }
+
+            return true;
         }
 
         public override int GetHashCode()
