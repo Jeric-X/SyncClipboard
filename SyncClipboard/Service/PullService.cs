@@ -77,7 +77,7 @@ namespace SyncClipboard
                 Profile remoteProfile = null;
                 try
                 {
-                    remoteProfile = Profile.CreateFromRemote();
+                    remoteProfile = ProfileFactory.CreateFromRemote();
                 }
                 catch (Exception ex)
                 {
@@ -98,7 +98,7 @@ namespace SyncClipboard
                     RemoteClipboardLocker.Unlock();
                 }
 
-                Profile localProfile = Profile.CreateFromLocal();
+                Profile localProfile = ProfileFactory.CreateFromLocal();
                 if (!isChangingRemote && remoteProfile != localProfile)
                 {
                     remoteProfile.SetLocalClipboard();

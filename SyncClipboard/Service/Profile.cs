@@ -1,26 +1,20 @@
-﻿
-using SyncClipboard.Utility;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using SyncClipboard.Utility;
+using static SyncClipboard.ProfileFactory;
 
 namespace SyncClipboard
 {
     class Profile
     {
-        public enum ClipboardType {
-            Text,
-            Image,
-            None
-        };
-
         public String FileName { get; set; }
         public String Text { get; set; }
         public ClipboardType Type { get; set; }
 
-        private Image image;
+        public Image image;
 
         public Profile()
         {
@@ -46,74 +40,51 @@ namespace SyncClipboard
             }
         }
 
-        public static Profile CreateFromLocal()
+        private class JsonProfile
         {
-            Profile profile = new Profile();
-
-            LocalClipboardLocker.Lock();
-            for (int i = 0; i < 3; i++)
-            {
-                try
-                {
-                    IDataObject ClipboardData = Clipboard.GetDataObject();
-                    profile.image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
-                    profile.Text = (string)ClipboardData.GetData(DataFormats.Text);
-                    break;
-                }
-                catch
-                {
-                    Thread.Sleep(500);
-                }
-            }
-
-            LocalClipboardLocker.Unlock();
-            if (profile.image != null)
-            {
-                profile.Type = ClipboardType.Image;
-            }
-
-            if (profile.Text != "" && profile.Text != null)
-            {
-                profile.Type = ClipboardType.Text;
-            }
-
-            return profile;
+            public String File { get; set; }
+            public String Clipboard { get; set; }
+            public String Type { get; set; }
         }
 
-        public static Profile CreateFromRemote()
+        static private ClipboardType StringToClipBoardType(String stringType)
         {
-            Log.Write("[PULL] " + Config.GetProfileUrl());
-            String jsonProfile = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
-            Log.Write("[PULL] json " + jsonProfile);
-
-            return new Profile(jsonProfile);
-        }
-
-        public virtual void SetLocalClipboard()
-        {
-            LocalClipboardLocker.Lock();
-            for (int i = 0; i < 3; i++)
+            ClipboardType type = ClipboardType.Text;
+            try
             {
-                try
-                {
-                    Clipboard.SetData(DataFormats.Text, this.Text);
-                    break;
-                }
-                catch
-                {
-                    Thread.Sleep(500);
-                }
+                type = (ClipboardType)Enum.Parse(typeof(ClipboardType), stringType);
+            }
+            catch
+            {
+                Log.Write("Profile Type is Wrong");
+                throw new ArgumentException("Profile Type is Wrong");
             }
 
-            LocalClipboardLocker.Unlock();
+            return type;
         }
 
-        public static bool operator == (Profile lhs, Profile rhs)
+        static private String ClipBoardTypeToString(ClipboardType type)
+        {
+            return Enum.GetName(typeof(ClipboardType), type);
+        }
+
+        public String ToJsonString()
+        {
+            JsonProfile jsonProfile = new JsonProfile();
+            jsonProfile.File = FileName;
+            jsonProfile.Clipboard = Text;
+            jsonProfile.Type = ClipBoardTypeToString(Type);
+
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            return serializer.Serialize(jsonProfile);
+        }
+
+        public static bool operator ==(Profile lhs, Profile rhs)
         {
             return Object.Equals(lhs, rhs);
         }
 
-        public static bool operator != (Profile lhs, Profile rhs)
+        public static bool operator !=(Profile lhs, Profile rhs)
         {
             return !(lhs == rhs);
         }
@@ -158,49 +129,29 @@ namespace SyncClipboard
             return str;
         }
 
-    
+        public virtual void SetLocalClipboard()
+        {
+            LocalClipboardLocker.Lock();
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    Clipboard.SetData(DataFormats.Text, this.Text);
+                    break;
+                }
+                catch
+                {
+                    Thread.Sleep(500);
+                }
+            }
+
+            LocalClipboardLocker.Unlock();
+        }
+
+
         public Image GetImage()
         {
             return image;
-        }
-
-        public String ToJsonString()
-        {
-            JsonProfile jsonProfile = new JsonProfile();
-            jsonProfile.File = FileName;
-            jsonProfile.Clipboard = Text;
-            jsonProfile.Type = ClipBoardTypeToString(Type);
-
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            return serializer.Serialize(jsonProfile);
-        }
-
-        private class JsonProfile
-        {
-            public String File { get; set; }
-            public String Clipboard { get; set; }
-            public String Type { get; set; }
-        }
-    
-        static private ClipboardType StringToClipBoardType(String stringType)
-        {
-            ClipboardType type = ClipboardType.Text;
-            try
-            {
-                type = (ClipboardType)Enum.Parse(typeof(ClipboardType), stringType);
-            }
-            catch
-            {
-                Log.Write("Profile Type is Wrong");
-                throw new ArgumentException("Profile Type is Wrong");
-            }
-
-            return type;
-        }
-
-        static private String ClipBoardTypeToString(ClipboardType type)
-        {
-            return Enum.GetName(typeof(ClipboardType), type);
         }
     }
 }

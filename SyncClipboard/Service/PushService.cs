@@ -59,7 +59,7 @@ namespace SyncClipboard
                 pushThread = null;
             }
 
-            currentProfile = Profile.CreateFromLocal();
+            currentProfile = ProfileFactory.CreateFromLocal();
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
@@ -70,7 +70,7 @@ namespace SyncClipboard
         {
             Log.Write("Push start");
 
-            if (currentProfile.Type == Profile.ClipboardType.None)
+            if (currentProfile.Type == ProfileFactory.ClipboardType.None)
             {
                 return;
             }
@@ -80,7 +80,7 @@ namespace SyncClipboard
             {
                 try
                 {
-                    if (currentProfile.Type == Profile.ClipboardType.Image)
+                    if (currentProfile.Type == ProfileFactory.ClipboardType.Image)
                     {
                         HttpWebResponseUtility.PutImage(Config.GetImageUrl(), currentProfile.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
                     }
