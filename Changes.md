@@ -1,3 +1,6 @@
+v1.1.7
+- fix null reference exception
+
 v1.1.6
 - 整理目录
 - trying to fix #5
