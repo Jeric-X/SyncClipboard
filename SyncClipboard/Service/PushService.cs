@@ -70,21 +70,12 @@ namespace SyncClipboard
         {
             Log.Write("Push start");
 
-            if (currentProfile.Type == ProfileFactory.ClipboardType.None)
-            {
-                return;
-            }
-
             string errMessage = "";
             for (int i = 0; i < Config.RetryTimes && switchOn; i++)
             {
                 try
                 {
-                    if (currentProfile.Type == ProfileFactory.ClipboardType.Image)
-                    {
-                        HttpWebResponseUtility.PutImage(Config.GetImageUrl(), currentProfile.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
-                    }
-                    HttpWebResponseUtility.PutText(Config.GetProfileUrl(), currentProfile.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
+                    currentProfile.UploadProfile();
                     Log.Write("Push end");
                     return;
                 }

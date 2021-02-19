@@ -67,19 +67,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Service\Profile\ImageProfile.cs" />
     <Compile Include="Service\LocalClipboardLocker.cs" />
-    <Compile Include="Service\ProfileFactory.cs" />
+    <Compile Include="Service\Profile\ProfileFactory.cs" />
     <Compile Include="Service\RemoteClipboardLocker.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Config.cs" />
-    <Compile Include="Service\TextProfile.cs" />
+    <Compile Include="Service\Profile\TextProfile.cs" />
     <Compile Include="Utility\HttpWebResponseUtility.cs" />
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Service\Profile.cs" />
+    <Compile Include="Service\Profile\Profile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Service\PushService.cs" />
