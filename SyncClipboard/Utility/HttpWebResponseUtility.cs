@@ -72,9 +72,6 @@ namespace SyncClipboard
 
         public static void PutImage(string url, Image image, int timeout, string authHeader)
         {
-            HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
-            request.ContentType = "application/x-bmp";
-
             MemoryStream mstream = new MemoryStream();
             image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
             byte[] byteData = new Byte[mstream.Length];
@@ -82,6 +79,24 @@ namespace SyncClipboard
             mstream.Position = 0;
             mstream.Read(byteData, 0, byteData.Length);
             mstream.Close();
+
+            PutByte(url, byteData, authHeader);
+        }
+
+        public static void PutFile(string url, string file, int timeout, string authHeader)
+        {
+            FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read);
+            byte[] byteData = new byte[fs.Length];
+
+            fs.Read(byteData, 0, (int)fs.Length);
+            fs.Close();
+
+            PutByte(url, byteData, authHeader);
+        }
+
+        private static void PutByte(string url, byte[] byteData, string authHeader)
+        {
+            HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
 
             Stream reqStream = request.GetRequestStream();
             reqStream.Write(byteData, 0, byteData.Length);

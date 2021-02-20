@@ -13,14 +13,16 @@ namespace SyncClipboard
     {
         public enum ClipboardType {
             Text,
+            File,
             Image,
             None
         };
 
         public static Profile CreateFromLocal()
         {
-            String text = "";
+            string text = "";
             Image image = null;
+            string[] files = null;
 
             LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
@@ -30,11 +32,12 @@ namespace SyncClipboard
                     IDataObject ClipboardData = Clipboard.GetDataObject();
                     image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
                     text = (string)ClipboardData.GetData(DataFormats.Text);
+                    files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                     break;
                 }
                 catch
                 {
-                    Thread.Sleep(500);
+                    Thread.Sleep(200);
                 }
             }
 
@@ -43,6 +46,11 @@ namespace SyncClipboard
             // {
             //     return new ImageProfile(image);
             // }
+
+            if (files != null)
+            {
+                return new FileProfile(files[0]);
+            }
 
             if (text != "" && text != null)
             {

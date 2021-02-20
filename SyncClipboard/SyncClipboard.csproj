@@ -67,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Service\Profile\FileProfile.cs" />
     <Compile Include="Service\Profile\ImageProfile.cs" />
     <Compile Include="Service\LocalClipboardLocker.cs" />
     <Compile Include="Service\Profile\ProfileFactory.cs" />

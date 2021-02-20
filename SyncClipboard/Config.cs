@@ -30,6 +30,11 @@ namespace SyncClipboard
             return Url + "/image.bmp";
         }
 
+        public static string GetRemotePath()
+        {
+            return Url;
+        }
+
         public static void Load()
         {
             try

@@ -26,12 +26,9 @@ namespace SyncClipboard.Utility
 
             try
             {
-
-
                 using (StreamWriter file = new StreamWriter($@"{Program.InternalFolder}\Log.txt", true, System.Text.Encoding.UTF8))
                 {
                     file.WriteLine(logStr);
-                    file.WriteLine();// 直接追加文件末尾，换行
                     file.Close();
                 }
             }
