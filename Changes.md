@@ -1,3 +1,7 @@
+v1.1.8
+- add log file
+- fix bug of checking update 
+
 v1.1.7
 - fix null reference exception
 
