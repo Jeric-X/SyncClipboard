@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 16.0.30907.101
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncClipboard", "SyncClipboard\SyncClipboard.csproj", "{05848EE3-A9CB-4402-B8B7-F0016759FFC5}"
 EndProject
 Global
@@ -18,5 +18,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FF2465B4-E81F-4BA3-BD79-0625483443FA}
 	EndGlobalSection
 EndGlobal
