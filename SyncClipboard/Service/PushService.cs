@@ -95,7 +95,7 @@ namespace SyncClipboard
                 return;
             }
 
-            PushStarted.Invoke();
+            PushStarted?.Invoke();
             Log.Write("push lock remote");
             RemoteClipboardLocker.Lock();
             try
@@ -110,7 +110,7 @@ namespace SyncClipboard
             {
                 Log.Write("push unlock remote");
                 RemoteClipboardLocker.Unlock();
-                PushStopped.Invoke();
+                PushStopped?.Invoke();
             }
         }
     }

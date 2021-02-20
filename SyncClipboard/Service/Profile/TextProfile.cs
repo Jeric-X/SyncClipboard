@@ -44,23 +44,9 @@ namespace SyncClipboard.Service
             HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
         }
 
-        public override void SetLocalClipboard()
+        protected override void SetContentToLocalClipboard()
         {
-            LocalClipboardLocker.Lock();
-            for (int i = 0; i < 3; i++)
-            {
-                try
-                {
-                    System.Windows.Forms.Clipboard.SetData(System.Windows.Forms.DataFormats.Text, this.Text);
-                    break;
-                }
-                catch
-                {
-                    System.Threading.Thread.Sleep(500);
-                }
-            }
-
-            LocalClipboardLocker.Unlock();
+            System.Windows.Forms.Clipboard.SetData(System.Windows.Forms.DataFormats.Text, this.Text);
         }
 
     }

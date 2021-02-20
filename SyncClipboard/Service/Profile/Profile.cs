@@ -19,8 +19,28 @@ namespace SyncClipboard
         }
 
         protected abstract ClipboardType GetProfileType();
+        protected abstract void SetContentToLocalClipboard();
         public abstract void UploadProfile();
-        public abstract void SetLocalClipboard();
+
+        public void SetLocalClipboard()
+        {
+            LocalClipboardLocker.Lock();
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    this.SetContentToLocalClipboard();
+                    break;
+                }
+                catch
+                {
+                    System.Threading.Thread.Sleep(200);
+                }
+            }
+
+            LocalClipboardLocker.Unlock();
+        }
+
 
         static private ClipboardType StringToClipBoardType(String stringType)
         {

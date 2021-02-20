@@ -58,12 +58,16 @@ namespace SyncClipboard
 
         public void PushStartedHandler()
         {
+            Log.Write("Push Started1");
             isChangingRemote = true;
+            Log.Write("Push Started2");
         }
 
         public void PushStoppedHandler()
         {
+            Log.Write("Push Ended1");
             isChangingRemote = false;
+            Log.Write("Push Ended2");
         }
 
 

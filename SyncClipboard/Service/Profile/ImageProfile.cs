@@ -22,11 +22,9 @@ namespace SyncClipboard.Service
             HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
         }
 
-        public override void SetLocalClipboard()
+        protected override void SetContentToLocalClipboard()
         {
-            // LocalClipboardLocker.Lock();
             // TODO
-            // LocalClipboardLocker.Unlock();
         }
 
 
