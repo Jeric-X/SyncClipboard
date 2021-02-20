@@ -16,7 +16,7 @@ windows使用c#写了个客户端，IOS只能曲线救国使用APP`快捷指令`
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## Client-Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，或者下载源码，VS2013及以上编译
+下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，或者下载源码，VS2019及以上编译
 
 ## Client-IOS 
 使用[Workflow](https://appsto.re/cn/2IzJ2.i)提供的`Get Contents of URL`功能发送HTTP协议  
