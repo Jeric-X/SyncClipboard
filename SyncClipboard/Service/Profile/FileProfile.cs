@@ -8,13 +8,22 @@ namespace SyncClipboard.Service
     class FileProfile : Profile
     {
         private string fullPath;
-        private const string folder = "file";
+        private string remotePath;
+        private string localPath;
+        private const string fileFolder = "file";
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
 
         public FileProfile(string file)
         {
             FileName = System.IO.Path.GetFileName(file);
             fullPath = file;
+        }
+
+        public FileProfile(JsonProfile jsonProfile)
+        {
+            FileName = jsonProfile.File;
+            remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            localPath = $"{fileFolder}/{FileName}";
         }
 
         protected override ClipboardType GetProfileType()
@@ -24,7 +33,7 @@ namespace SyncClipboard.Service
 
         public override void UploadProfile()
         {
-            string remotePath = Config.GetRemotePath() + $"/{folder}/{FileName}";
+            string remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
 
             FileInfo file = new FileInfo(fullPath);
             if (file.Length <= maxFileSize)

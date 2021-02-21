@@ -1,4 +1,5 @@
 ﻿using System;
+using SyncClipboard.Utility;
 
 namespace SyncClipboard.Service
 {
@@ -12,19 +13,27 @@ namespace SyncClipboard.Service
             None
         };
 
-        public static Type GetProfileClassType(ClipboardType type)
+        public class JsonProfile
         {
-            switch (type)
+            public String File { get; set; }
+            public String Clipboard { get; set; }
+            public String Type { get; set; }
+        }
+
+        public static ClipboardType StringToClipBoardType(String stringType)
+        {
+            ClipboardType type = ClipboardType.Text;
+            try
             {
-                case ClipboardType.Text:
-                    return typeof(TextProfile);
-                case ClipboardType.File:
-                    return typeof(FileProfile);
-                case ClipboardType.Image:
-                    return typeof(ImageProfile);
+                type = (ClipboardType)Enum.Parse(typeof(ClipboardType), stringType);
+            }
+            catch
+            {
+                Log.Write("Profile Type is Wrong");
+                throw new ArgumentException("Profile Type is Wrong");
             }
 
-            return typeof(TextProfile);
+            return type;
         }
     }
 }

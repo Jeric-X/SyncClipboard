@@ -1,11 +1,11 @@
 ﻿
-using SyncClipboard.Service;
 using SyncClipboard.Utility;
 using System;
 using System.Drawing;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
@@ -55,13 +55,6 @@ namespace SyncClipboard.Service
             return null;
         }
 
-        public class JsonProfile
-        {
-            public String File { get; set; }
-            public String Clipboard { get; set; }
-            public String Type { get; set; }
-        }
-
         public static Profile CreateFromRemote()
         {
             Log.Write("[PULL] " + Config.GetProfileUrl());
@@ -79,11 +72,18 @@ namespace SyncClipboard.Service
                 Log.Write("Existed profile file's format is wrong");
             }
 
-            //return ProfileType.GetProfileClassType(jsonProfile.Type)(jsonProfile);
+            ClipboardType type = StringToClipBoardType(jsonProfile.Type);
+            return GetProfileBy(type, jsonProfile);
+        }
 
-            if (jsonProfile.Clipboard != null || jsonProfile.Clipboard != "")
+        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile)
+        {
+            switch (type)
             {
-                return new TextProfile(jsonProfile.Clipboard);
+                case ClipboardType.Text:
+                    return new TextProfile(jsonProfile.Clipboard);
+                case ClipboardType.File:
+                    return new FileProfile(jsonProfile);
             }
 
             return null;

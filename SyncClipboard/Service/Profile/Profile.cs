@@ -22,9 +22,11 @@ namespace SyncClipboard.Service
         protected abstract ClipboardType GetProfileType();
         protected abstract void SetContentToLocalClipboard();
         public abstract void UploadProfile();
+        protected void BeforeSetLocal() { }
 
         public void SetLocalClipboard()
         {
+            BeforeSetLocal();
             LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
             {
@@ -40,23 +42,6 @@ namespace SyncClipboard.Service
             }
 
             LocalClipboardLocker.Unlock();
-        }
-
-
-        static private ClipboardType StringToClipBoardType(String stringType)
-        {
-            ClipboardType type = ClipboardType.Text;
-            try
-            {
-                type = (ClipboardType)Enum.Parse(typeof(ClipboardType), stringType);
-            }
-            catch
-            {
-                Log.Write("Profile Type is Wrong");
-                throw new ArgumentException("Profile Type is Wrong");
-            }
-
-            return type;
         }
 
         static private String ClipBoardTypeToString(ClipboardType type)
