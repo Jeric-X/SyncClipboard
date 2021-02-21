@@ -30,19 +30,10 @@ namespace SyncClipboard
             return text;
         }
 
-        public static void PutText(string url, string text, int timeout, string AuthHeader)
+        public static void PutText(string url, string text, int timeout, string authHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", timeout, AuthHeader);
-
             byte[] postBytes = Encoding.UTF8.GetBytes(text);
-            request.ContentLength = Encoding.UTF8.GetBytes(text).Length;
-
-            Stream reqStream = request.GetRequestStream();
-            reqStream.Write(postBytes, 0, postBytes.Length);
-            reqStream.Close();
-
-            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
-            response.Close();
+            PutByte(url, postBytes, authHeader);
         }
 
         public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, int timeout, string authHeader)
@@ -85,18 +76,21 @@ namespace SyncClipboard
 
         public static void PutFile(string url, string file, int timeout, string authHeader)
         {
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
+            Stream reqStream = request.GetRequestStream();
+
             FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read);
-            byte[] byteData = new byte[fs.Length];
-
-            fs.Read(byteData, 0, (int)fs.Length);
+            fs.CopyTo(reqStream);
             fs.Close();
+            reqStream.Close();
 
-            PutByte(url, byteData, authHeader);
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            response.Close();
         }
 
         private static void PutByte(string url, byte[] byteData, string authHeader)
         {
-            HttpWebRequest request = HttpWebResponseUtility.CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
 
             Stream reqStream = request.GetRequestStream();
             reqStream.Write(byteData, 0, byteData.Length);
@@ -116,13 +110,11 @@ namespace SyncClipboard
 
         private static HttpWebResponse AnalyseHttpResponse(HttpWebResponse response)
         {
-            HttpStatusCode code = response.StatusCode;
-            string codeMessage = response.StatusDescription;
             if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
             {
                 SaveCookies(new CookieCollection());
                 response.Close();
-                throw new WebException(response.StatusCode.GetHashCode().ToString());
+                throw new WebException(response.StatusCode.ToString());
             }
             SaveCookies(response.Cookies);
             return response;
