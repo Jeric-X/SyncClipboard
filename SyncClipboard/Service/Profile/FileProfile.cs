@@ -9,6 +9,7 @@ namespace SyncClipboard.Service
     {
         private string fullPath;
         private const string folder = "file";
+        private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
 
         public FileProfile(string file)
         {
@@ -23,12 +24,20 @@ namespace SyncClipboard.Service
 
         public override void UploadProfile()
         {
-            //todo 大文件跳过
             string remotePath = Config.GetRemotePath() + $"/{folder}/{FileName}";
-            Log.Write("PUSH file " + FileName);
-            HttpWebResponseUtility.PutFile(remotePath, fullPath, Config.TimeOut, Config.GetHttpAuthHeader());
+
+            FileInfo file = new FileInfo(fullPath);
+            if (file.Length <= maxFileSize)
+            {
+                Log.Write("PUSH file " + FileName);
+                HttpWebResponseUtility.PutFile(remotePath, fullPath, Config.TimeOut, Config.GetHttpAuthHeader());
+            }
+            else
+            {
+                Log.Write("file is too large, skipped " + FileName);
+            }
+
             Text = GetMD5HashFromFile(fullPath);
-            Log.Write("md5 " + Text);
             HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
         }
 
@@ -42,10 +51,9 @@ namespace SyncClipboard.Service
             try
             {
                 Log.Write("calc md5 start");
-
                 FileStream file = new FileStream(fileName, FileMode.Open);
-                System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-                byte[] retVal = md5.ComputeHash(file);
+                System.Security.Cryptography.MD5 md5Oper = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                byte[] retVal = md5Oper.ComputeHash(file);
                 file.Close();
 
                 StringBuilder sb = new StringBuilder();
@@ -53,7 +61,9 @@ namespace SyncClipboard.Service
                 {
                     sb.Append(retVal[i].ToString("x2"));
                 }
-                return sb.ToString();
+                string md5 = sb.ToString();
+                Log.Write($"md5 {md5}");
+                return md5;
             }
             catch (System.Exception ex)
             {
