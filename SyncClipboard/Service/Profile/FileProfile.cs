@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 using SyncClipboard.Utility;
-using static SyncClipboard.ProfileFactory;
+using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {

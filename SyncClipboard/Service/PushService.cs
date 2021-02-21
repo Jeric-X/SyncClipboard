@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Control;
+using SyncClipboard.Service;
 using SyncClipboard.Utility;
 using System;
 using System.Threading;

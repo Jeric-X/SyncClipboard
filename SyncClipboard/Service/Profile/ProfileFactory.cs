@@ -7,16 +7,11 @@ using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
-namespace SyncClipboard
+namespace SyncClipboard.Service
 {
     static class ProfileFactory
     {
-        public enum ClipboardType {
-            Text,
-            File,
-            Image,
-            None
-        };
+        
 
         public static Profile CreateFromLocal()
         {
@@ -83,6 +78,8 @@ namespace SyncClipboard
             {
                 Log.Write("Existed profile file's format is wrong");
             }
+
+            //return ProfileType.GetProfileClassType(jsonProfile.Type)(jsonProfile);
 
             if (jsonProfile.Clipboard != null || jsonProfile.Clipboard != "")
             {

@@ -1,5 +1,5 @@
 ﻿using System;
-using static SyncClipboard.ProfileFactory;
+using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
