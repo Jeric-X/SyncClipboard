@@ -34,22 +34,13 @@ namespace SyncClipboard
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
-
             Stream respStream = response.GetResponseStream();
 
-            long fileLenth = long.Parse(response.Headers["Content-Length"]);
-            byte[] bytes = new byte[fileLenth];
-            respStream.Read(bytes, 0, bytes.Length);
-
+            FileStream fs = new FileStream(savePath, FileMode.Create);
+            respStream.CopyTo(fs);
+            fs.Close();
             respStream.Close();
             response.Close();
-
-            // 把 byte[] 写入文件 
-            FileStream fs = new FileStream(savePath, FileMode.Create);
-            BinaryWriter bw = new BinaryWriter(fs);
-            bw.Write(bytes);
-            bw.Close();
-            fs.Close();
         }
 
         public static void PutText(string url, string text, string authHeader)
@@ -132,6 +123,7 @@ namespace SyncClipboard
 
         private static HttpWebResponse AnalyseHttpResponse(HttpWebResponse response)
         {
+            Utility.Log.Write("HTTP RESPONSE " + response.StatusCode.ToString());
             if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
             {
                 SaveCookies(new CookieCollection());
@@ -140,6 +132,27 @@ namespace SyncClipboard
             }
             SaveCookies(response.Cookies);
             return response;
+        }
+
+
+        public static string GetMD5Hash(byte[] bytedata)
+        {
+            try
+            {
+                System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                byte[] retVal = md5.ComputeHash(bytedata);
+
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < retVal.Length; i++)
+                {
+                    sb.Append(retVal[i].ToString("x2"));
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("GetMD5Hash() fail,error:" + ex.Message);
+            }
         }
     } 
 }

@@ -22,6 +22,7 @@ namespace SyncClipboard.Service
         public FileProfile(JsonProfile jsonProfile)
         {
             FileName = jsonProfile.File;
+            SetMd5(jsonProfile.Clipboard);
         }
 
         protected override ClipboardType GetProfileType()
