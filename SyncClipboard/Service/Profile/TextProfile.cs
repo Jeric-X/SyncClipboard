@@ -15,6 +15,11 @@ namespace SyncClipboard.Service
             return ClipboardType.Text;
         }
 
+        public override string ToolTip()
+        {
+            return Text;
+        }
+
         public override bool Equals(Object obj)
         {
             if (obj is null)

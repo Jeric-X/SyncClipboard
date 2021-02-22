@@ -21,6 +21,7 @@ namespace SyncClipboard.Service
 
         protected abstract ClipboardType GetProfileType();
         protected abstract void SetContentToLocalClipboard();
+        public abstract string ToolTip();
         public abstract void UploadProfile();
         protected virtual void BeforeSetLocal() { }
 

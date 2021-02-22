@@ -108,7 +108,7 @@ namespace SyncClipboard
                 {
                     remoteProfile.SetLocalClipboard();
                     Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                    Notify(true, false, "剪切板同步成功", remoteProfile.Text, null, "info");
+                    Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
                 }
                 Notify(false, true, "服务器连接成功", null, "正在同步", "info");
                 errorTimes = 0;

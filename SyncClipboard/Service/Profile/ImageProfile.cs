@@ -27,6 +27,10 @@ namespace SyncClipboard.Service
             // TODO
         }
 
+        public override string ToolTip()
+        {
+            return FileName;
+        }
 
         private Image GetImage()
         {

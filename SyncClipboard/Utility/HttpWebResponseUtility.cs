@@ -16,9 +16,9 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
-        public static string GetText(string url, string AuthHeader)
+        public static string GetText(string url, string authHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "GET", AuthHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
 
             StreamReader objStrmReader = new StreamReader(response.GetResponseStream());
@@ -28,6 +28,28 @@ namespace SyncClipboard
             response.Close();
 
             return text;
+        }
+
+        public static void Getfile(string url, string savePath, string authHeader)
+        {
+            HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+
+            Stream respStream = response.GetResponseStream();
+
+            long fileLenth = long.Parse(response.Headers["Content-Length"]);
+            byte[] bytes = new byte[fileLenth];
+            respStream.Read(bytes, 0, bytes.Length);
+
+            respStream.Close();
+            response.Close();
+
+            // 把 byte[] 写入文件 
+            FileStream fs = new FileStream(savePath, FileMode.Create);
+            BinaryWriter bw = new BinaryWriter(fs);
+            bw.Write(bytes);
+            bw.Close();
+            fs.Close();
         }
 
         public static void PutText(string url, string text, string authHeader)

@@ -8,10 +8,10 @@ namespace SyncClipboard.Service
     class FileProfile : Profile
     {
         private string fullPath;
-        private string remotePath;
-        private string localPath;
+        private bool DownloadStatusOK = false;
         private const string fileFolder = "file";
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
+        private string statusTip ="";
 
         public FileProfile(string file)
         {
@@ -29,6 +29,20 @@ namespace SyncClipboard.Service
             return ClipboardType.File;
         }
 
+        private void SetMd5(string md5)
+        {
+            Text = md5;
+        }
+
+        private string GetMd5()
+        {
+            if(string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(fullPath))
+            {
+                SetMd5(GetMD5HashFromFile(fullPath));
+            }
+            return Text;
+        }
+
         public override void UploadProfile()
         {
             string remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
@@ -44,19 +58,75 @@ namespace SyncClipboard.Service
                 Log.Write("file is too large, skipped " + FileName);
             }
 
-            Text = GetMD5HashFromFile(fullPath);
+            SetMd5(GetMD5HashFromFile(fullPath));
             HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.GetHttpAuthHeader());
         }
 
         protected override void BeforeSetLocal()
         {
-            remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
-            localPath = $"{fileFolder}/{FileName}";
+            string remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            string localPath = $"{fileFolder}/{FileName}";
+
+            if (Directory.Exists(fileFolder) == false)
+            {
+                Directory.CreateDirectory(fileFolder);
+            }
+
+            try
+            {
+                HttpWebResponseUtility.Getfile(remotePath, localPath, Config.GetHttpAuthHeader());
+                DownloadStatusOK = true;
+                if (GetMD5HashFromFile(localPath) != GetMd5())
+                {
+                    Log.Write("[PULL] download erro, md5 wrong");
+                    statusTip = "Downloading erro, md5 wrong";
+                    return;
+                }
+                Log.Write("[PULL] download OK " + localPath);
+                DownloadStatusOK = true;
+                statusTip = FileName;
+            }
+            catch (System.Exception ex)
+            {
+                Log.Write("[PULL] download file failed " + ex.Message);
+            }
+        }
+
+        public override string ToolTip()
+        {
+            return statusTip;
         }
 
         protected override void SetContentToLocalClipboard()
         {
+            if (!DownloadStatusOK)
+            {
+
+            }
             // TODO
+        }
+
+        public override bool Equals(System.Object obj)
+        {
+            if (obj is null)
+            {
+                return false;
+            }
+
+            try
+            {
+                FileProfile profile = (FileProfile)obj;
+                return this.GetMd5() == profile.GetMd5();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Text.GetHashCode();
         }
 
         private static string GetMD5HashFromFile(string fileName)
