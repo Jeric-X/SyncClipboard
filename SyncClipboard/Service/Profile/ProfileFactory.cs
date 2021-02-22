@@ -11,8 +11,6 @@ namespace SyncClipboard.Service
 {
     static class ProfileFactory
     {
-        
-
         public static Profile CreateFromLocal()
         {
             string text = "";
@@ -58,7 +56,7 @@ namespace SyncClipboard.Service
         public static Profile CreateFromRemote()
         {
             Log.Write("[PULL] " + Config.GetProfileUrl());
-            String httpReply = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.TimeOut, Config.GetHttpAuthHeader());
+            String httpReply = HttpWebResponseUtility.GetText(Config.GetProfileUrl(), Config.GetHttpAuthHeader());
             Log.Write("[PULL] json " + httpReply);
 
             JsonProfile jsonProfile = null;

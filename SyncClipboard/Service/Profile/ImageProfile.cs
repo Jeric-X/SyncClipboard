@@ -18,8 +18,8 @@ namespace SyncClipboard.Service
 
         public override void UploadProfile()
         {
-            HttpWebResponseUtility.PutImage(Config.GetImageUrl(), this.GetImage(), Config.TimeOut, Config.GetHttpAuthHeader());
-            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
+            HttpWebResponseUtility.PutImage(Config.GetImageUrl(), this.GetImage(), Config.GetHttpAuthHeader());
+            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.GetHttpAuthHeader());
         }
 
         protected override void SetContentToLocalClipboard()

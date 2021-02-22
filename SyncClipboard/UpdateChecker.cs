@@ -37,7 +37,7 @@ namespace SyncClipboard
             String gitHubReply = "";
             try
             {
-                gitHubReply = HttpWebResponseUtility.GetText(UpdateUrl, Config.TimeOut, null);
+                gitHubReply = HttpWebResponseUtility.GetText(UpdateUrl, null);
             }
             catch
             {

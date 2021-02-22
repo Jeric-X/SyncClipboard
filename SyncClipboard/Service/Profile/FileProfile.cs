@@ -22,8 +22,6 @@ namespace SyncClipboard.Service
         public FileProfile(JsonProfile jsonProfile)
         {
             FileName = jsonProfile.File;
-            remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
-            localPath = $"{fileFolder}/{FileName}";
         }
 
         protected override ClipboardType GetProfileType()
@@ -39,7 +37,7 @@ namespace SyncClipboard.Service
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
-                HttpWebResponseUtility.PutFile(remotePath, fullPath, Config.TimeOut, Config.GetHttpAuthHeader());
+                HttpWebResponseUtility.PutFile(remotePath, fullPath, Config.GetHttpAuthHeader());
             }
             else
             {
@@ -47,7 +45,13 @@ namespace SyncClipboard.Service
             }
 
             Text = GetMD5HashFromFile(fullPath);
-            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.TimeOut, Config.GetHttpAuthHeader());
+            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.GetHttpAuthHeader());
+        }
+
+        protected override void BeforeSetLocal()
+        {
+            remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            localPath = $"{fileFolder}/{FileName}";
         }
 
         protected override void SetContentToLocalClipboard()

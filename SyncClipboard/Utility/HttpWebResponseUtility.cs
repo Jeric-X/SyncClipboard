@@ -16,9 +16,9 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
-        public static string GetText(string url, int timeout, string AuthHeader)
+        public static string GetText(string url, string AuthHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "GET", timeout, AuthHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "GET", AuthHeader);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
 
             StreamReader objStrmReader = new StreamReader(response.GetResponseStream());
@@ -30,13 +30,13 @@ namespace SyncClipboard
             return text;
         }
 
-        public static void PutText(string url, string text, int timeout, string authHeader)
+        public static void PutText(string url, string text, string authHeader)
         {
             byte[] postBytes = Encoding.UTF8.GetBytes(text);
             PutByte(url, postBytes, authHeader);
         }
 
-        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, int timeout, string authHeader)
+        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string authHeader)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -47,7 +47,7 @@ namespace SyncClipboard
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Method = httpMethod;
             request.UserAgent = DefaultUserAgent;
-            request.Timeout = timeout;
+            request.Timeout = Config.TimeOut;
 
             if (authHeader != null)
             {
@@ -61,7 +61,7 @@ namespace SyncClipboard
             return request;
         }
 
-        public static void PutImage(string url, Image image, int timeout, string authHeader)
+        public static void PutImage(string url, Image image, string authHeader)
         {
             MemoryStream mstream = new MemoryStream();
             image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
@@ -74,9 +74,9 @@ namespace SyncClipboard
             PutByte(url, byteData, authHeader);
         }
 
-        public static void PutFile(string url, string file, int timeout, string authHeader)
+        public static void PutFile(string url, string file, string authHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader);
             Stream reqStream = request.GetRequestStream();
 
             FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read);
@@ -90,7 +90,7 @@ namespace SyncClipboard
 
         private static void PutByte(string url, byte[] byteData, string authHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", Config.TimeOut, authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader);
 
             Stream reqStream = request.GetRequestStream();
             reqStream.Write(byteData, 0, byteData.Length);

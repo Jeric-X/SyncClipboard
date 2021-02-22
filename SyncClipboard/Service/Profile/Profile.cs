@@ -22,7 +22,7 @@ namespace SyncClipboard.Service
         protected abstract ClipboardType GetProfileType();
         protected abstract void SetContentToLocalClipboard();
         public abstract void UploadProfile();
-        protected void BeforeSetLocal() { }
+        protected virtual void BeforeSetLocal() { }
 
         public void SetLocalClipboard()
         {
