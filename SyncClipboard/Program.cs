@@ -8,7 +8,6 @@ namespace SyncClipboard
     {
         public static String SoftName = "SyncClipboard";
         public static String DefaultServer = "https://file.jericx.xyz/remote.php/dav/files/Clipboard/Clipboard/";
-        public static String InternalFolder = "SyncClipboardFolder";
         public static String DefaultUser = "Clipboard";
         public static String DefaultPassword = "Clipboard";
         public static MainController mainController;

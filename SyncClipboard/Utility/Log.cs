@@ -5,28 +5,32 @@ namespace SyncClipboard.Utility
 {
     static class Log
     {
+        private static String logFolder = "Log";
+
         public static void Write(string str)
         {
-            string logStr = string.Format("[{0}] {1}", DateTime.Now, str);
+            var dayTime = DateTime.Now;
+            string logStr = string.Format("[{0}] {1}", dayTime, str);
 
 #if DEBUG
             WriteToConsole(logStr);
 #else
-            WriteToFile(logStr);
+            string logFile = dayTime.ToString("yyyyMMdd");
+            WriteToFile(logStr, logFile);
 #endif
         }
 
-        private static void WriteToFile(string logStr)
+        private static void WriteToFile(string logStr, string logFile)
         {
             //判断文件夹是否存在
-            if (!Directory.Exists(Program.InternalFolder))
+            if (!Directory.Exists(logFolder))
             {
-                Directory.CreateDirectory(Program.InternalFolder);
+                Directory.CreateDirectory(logFolder);
             }
 
             try
             {
-                using (StreamWriter file = new StreamWriter($@"{Program.InternalFolder}\Log.txt", true, System.Text.Encoding.UTF8))
+                using (StreamWriter file = new StreamWriter($@"{logFolder}\{logFile}.txt", true, System.Text.Encoding.UTF8))
                 {
                     file.WriteLine(logStr);
                     file.Close();
