@@ -1,3 +1,7 @@
+v1.1.9
+- Now we can sync files
+- Optimize log
+
 v1.1.8
 - add log file
 - fix bug of checking update 
