@@ -10,6 +10,7 @@ namespace SyncClipboard.Service
         private string fullPath;
         private bool DownloadStatusOK = false;
         private const string fileFolder = "file";
+        private string tempFilePath = System.Windows.Forms.Application.StartupPath + $"/{fileFolder}";
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
         private string statusTip ="";
 
@@ -89,6 +90,7 @@ namespace SyncClipboard.Service
             }
             catch (System.Exception ex)
             {
+                statusTip = "";
                 Log.Write("[PULL] download file failed " + ex.Message);
             }
         }
@@ -102,9 +104,13 @@ namespace SyncClipboard.Service
         {
             if (!DownloadStatusOK)
             {
-
+                return;
             }
-            // TODO
+
+            string localPath = $"{tempFilePath}/{FileName}";
+            System.Windows.Forms.Clipboard.SetFileDropList(new System.Collections.Specialized.StringCollection{ localPath });
+
+            return;
         }
 
         public override bool Equals(System.Object obj)

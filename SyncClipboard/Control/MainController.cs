@@ -89,7 +89,10 @@ namespace SyncClipboard.Control
                 if(notify)
                 {
                     notifyText = content;
-                    this.notifyIcon1.ShowBalloonTip(5, title, SafeMessage(content), ToolTipIcon.None);
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        this.notifyIcon1.ShowBalloonTip(5, title, SafeMessage(content), ToolTipIcon.None);
+                    }
                 }
                 if (notifyIconText)
                 {
