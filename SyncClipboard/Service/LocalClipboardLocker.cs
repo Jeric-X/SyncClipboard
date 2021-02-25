@@ -10,7 +10,6 @@ namespace SyncClipboard
         static private int times = 0;
         public static void Lock()
         {
-            Log.Write("lock local " + times.ToString());
             mutex.WaitOne();
             times++;
         }
@@ -19,7 +18,6 @@ namespace SyncClipboard
         {
             mutex.ReleaseMutex();
             times--;
-            Log.Write("unlock local " + times.ToString());
         }
     }
 }

@@ -10,6 +10,7 @@ namespace SyncClipboard.Service
             Text,
             File,
             Image,
+            Unknown,
             None
         };
 

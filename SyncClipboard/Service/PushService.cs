@@ -60,7 +60,9 @@ namespace SyncClipboard
                 pushThread = null;
             }
 
+            Log.Write("[PUSH] waiting for local profile");
             currentProfile = ProfileFactory.CreateFromLocal();
+            Log.Write("[PUSH] end for local profile");
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
@@ -96,9 +98,18 @@ namespace SyncClipboard
                 return;
             }
 
+            if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            {
+                Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
+                return;
+            }
+
+            Log.Write("[PUSH] [EVENT] push started EVENT START");
             PushStarted?.Invoke();
-            Log.Write("push lock remote");
+            Log.Write("[PUSH] [EVENT] push started EVENT END");
+            Log.Write("[PUSH] waiting for remote profile");
             RemoteClipboardLocker.Lock();
+            Log.Write("[PUSH] end waiting for remote profile");
             try
             {
                 UploadLoop();
@@ -109,9 +120,11 @@ namespace SyncClipboard
             }
             finally
             {
-                Log.Write("push unlock remote");
                 RemoteClipboardLocker.Unlock();
+                Log.Write("[PUSH] unlock remote");
+                Log.Write("[PUSH] [EVENT] push ended EVENT START");
                 PushStopped?.Invoke();
+                Log.Write("[PUSH] [EVENT] push ended EVENT END");
             }
         }
     }

@@ -59,16 +59,14 @@ namespace SyncClipboard
 
         public void PushStartedHandler()
         {
-            Log.Write("Push Started1");
             isChangingRemote = true;
-            Log.Write("Push Started2");
+            Log.Write("[PULL] [EVENT] push started");
         }
 
         public void PushStoppedHandler()
         {
-            Log.Write("Push Ended1");
             isChangingRemote = false;
-            Log.Write("Push Ended2");
+            Log.Write("[PULL] [EVENT] push ended");
         }
 
 
@@ -77,8 +75,9 @@ namespace SyncClipboard
             int errorTimes = 0;
             for (; switchOn; Thread.Sleep((int)Config.IntervalTime))
             {
+                Log.Write("[PULL] wait for remote");
                 RemoteClipboardLocker.Lock();
-                Log.Write("pull lock remote");
+                Log.Write("[PULL] end wait for remote");
                 Profile remoteProfile = null;
                 try
                 {
@@ -103,16 +102,30 @@ namespace SyncClipboard
                     RemoteClipboardLocker.Unlock();
                 }
 
-                Profile localProfile = ProfileFactory.CreateFromLocal();
-                if (!isChangingRemote && remoteProfile != localProfile)
-                {
-                    remoteProfile.SetLocalClipboard();
-                    Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                    Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
-                }
-                Notify(false, true, "服务器连接成功", null, "正在同步", "info");
+                SetRemoteProfileToLocal(remoteProfile);
                 errorTimes = 0;
             }
+        }
+
+        private void SetRemoteProfileToLocal(Profile remoteProfile)
+        {
+            Log.Write("[PULL] wait for local");
+            Profile localProfile = ProfileFactory.CreateFromLocal();
+            Log.Write("[PULL] end wait for local");
+            if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            {
+                Log.Write("[PULL] Local profile type is Unkown, stop sync.");
+                return;
+            }
+
+            Log.Write("[PULL] isChangingRemote = " + isChangingRemote.ToString());
+            if (!isChangingRemote && remoteProfile != localProfile)
+            {
+                remoteProfile.SetLocalClipboard();
+                Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
+            }
+            Notify(false, true, "服务器连接成功", null, "正在同步", "info");
         }
     }
 }

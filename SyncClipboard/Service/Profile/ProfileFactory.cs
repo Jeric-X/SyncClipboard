@@ -23,6 +23,10 @@ namespace SyncClipboard.Service
                 try
                 {
                     IDataObject ClipboardData = Clipboard.GetDataObject();
+                    if (ClipboardData is null)
+                    {
+                        return null;
+                    }
                     image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
                     text = (string)ClipboardData.GetData(DataFormats.Text);
                     files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
@@ -42,7 +46,10 @@ namespace SyncClipboard.Service
 
             if (files != null)
             {
-                return new FileProfile(files[0]);
+                if (System.IO.File.Exists(files[0]))
+                {
+                    return new FileProfile(files[0]);
+                }
             }
 
             if (text != "" && text != null)
@@ -50,7 +57,7 @@ namespace SyncClipboard.Service
                 return new TextProfile(text);
             }
 
-            return null;
+            return new UnkonwnProfile();
         }
 
         public static Profile CreateFromRemote()

@@ -26,7 +26,7 @@ namespace SyncClipboard.Service
             SetMd5(jsonProfile.Clipboard);
         }
 
-        protected override ClipboardType GetProfileType()
+        public override ClipboardType GetProfileType()
         {
             return ClipboardType.File;
         }

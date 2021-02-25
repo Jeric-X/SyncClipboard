@@ -72,6 +72,7 @@
     <Compile Include="Service\LocalClipboardLocker.cs" />
     <Compile Include="Service\Profile\ProfileFactory.cs" />
     <Compile Include="Service\Profile\ProfileType.cs" />
+    <Compile Include="Service\Profile\UnkonwnProfile.cs" />
     <Compile Include="Service\RemoteClipboardLocker.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>

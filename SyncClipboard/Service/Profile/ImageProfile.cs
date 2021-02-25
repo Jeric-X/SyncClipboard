@@ -11,7 +11,7 @@ namespace SyncClipboard.Service
             this.image = image;
         }
 
-        protected override ClipboardType GetProfileType()
+        public override ClipboardType GetProfileType()
         {
             return ClipboardType.Image;
         }

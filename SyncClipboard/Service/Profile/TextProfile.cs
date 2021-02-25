@@ -10,7 +10,7 @@ namespace SyncClipboard.Service
             Text = text;
         }
 
-        protected override ClipboardType GetProfileType()
+        public override ClipboardType GetProfileType()
         {
             return ClipboardType.Text;
         }

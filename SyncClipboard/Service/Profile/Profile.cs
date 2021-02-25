@@ -19,7 +19,7 @@ namespace SyncClipboard.Service
             Text = "";
         }
 
-        protected abstract ClipboardType GetProfileType();
+        public abstract ClipboardType GetProfileType();
         protected abstract void SetContentToLocalClipboard();
         public abstract string ToolTip();
         public abstract void UploadProfile();
