@@ -8,7 +8,7 @@ namespace SyncClipboard
 {
     public class PullService
     {
-        private Notify Notify;
+        private readonly Notify Notify;
         private bool switchOn = false;
         private bool isChangingRemote = false;
 

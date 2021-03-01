@@ -8,7 +8,7 @@ namespace SyncClipboard
 {
     public class PushService
     {
-        private Notify Notify;
+        private readonly Notify Notify;
         private bool switchOn = false;
         private Thread pushThread = null;
         //private Profile currentProfile;

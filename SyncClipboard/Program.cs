@@ -25,9 +25,8 @@ namespace SyncClipboard
             Utility.Log.Write("[Program] started");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-                
-            bool creetedNew;
-            System.Threading.Mutex mutex = new System.Threading.Mutex(false, Program.SoftName, out creetedNew);
+
+            System.Threading.Mutex mutex = new System.Threading.Mutex(false, Program.SoftName, out bool creetedNew);
             if (creetedNew)
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
