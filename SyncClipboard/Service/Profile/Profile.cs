@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Web.Script.Serialization;
-using SyncClipboard.Utility;
-using static SyncClipboard.Service.ProfileFactory;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service

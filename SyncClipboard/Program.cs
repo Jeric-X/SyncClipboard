@@ -22,6 +22,7 @@ namespace SyncClipboard
         [STAThread]
         static void Main()
         {
+            Utility.Log.Write("[Program] started");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
                 
