@@ -11,11 +11,36 @@ namespace SyncClipboard.Service
 {
     static class ProfileFactory
     {
+        private struct LocalClipboard
+        {
+            public string Text;
+            public Image Image;
+            public string[] Files;
+        }
+
         public static Profile CreateFromLocal()
         {
-            string text = "";
-            Image image = null;
-            string[] files = null;
+            var localClipboard = GetLocalClipboard();
+
+            if (localClipboard.Files != null)
+            {
+                if (System.IO.File.Exists(localClipboard.Files[0]))
+                {
+                    return new FileProfile(localClipboard.Files[0]);
+                }
+            }
+
+            if (localClipboard.Text != "" && localClipboard.Text != null)
+            {
+                return new TextProfile(localClipboard.Text);
+            }
+
+            return new UnkonwnProfile();
+        }
+
+        private static LocalClipboard GetLocalClipboard()
+        {
+            LocalClipboard localClipboard = new LocalClipboard { Text = null, Image = null, Files = null};
 
             LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
@@ -25,11 +50,11 @@ namespace SyncClipboard.Service
                     IDataObject ClipboardData = Clipboard.GetDataObject();
                     if (ClipboardData is null)
                     {
-                        return null;
+                        return localClipboard;
                     }
-                    image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
-                    text = (string)ClipboardData.GetData(DataFormats.Text);
-                    files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
+                    localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+                    localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text);
+                    localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                     break;
                 }
                 catch
@@ -39,25 +64,8 @@ namespace SyncClipboard.Service
             }
 
             LocalClipboardLocker.Unlock();
-            // if (image != null)
-            // {
-            //     return new ImageProfile(image);
-            // }
 
-            if (files != null)
-            {
-                if (System.IO.File.Exists(files[0]))
-                {
-                    return new FileProfile(files[0]);
-                }
-            }
-
-            if (text != "" && text != null)
-            {
-                return new TextProfile(text);
-            }
-
-            return new UnkonwnProfile();
+            return localClipboard;
         }
 
         public static Profile CreateFromRemote()
