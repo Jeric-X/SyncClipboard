@@ -18,15 +18,22 @@ namespace SyncClipboard.Service
             public string[] Files;
         }
 
+        private static string[] imageExtensions = { "jpg", "jpeg", "gif", "bmg", "png" };
+
         public static Profile CreateFromLocal()
         {
             var localClipboard = GetLocalClipboard();
 
             if (localClipboard.Files != null)
             {
-                if (System.IO.File.Exists(localClipboard.Files[0]))
+                var filename = localClipboard.Files[0];
+                if (System.IO.File.Exists(filename))
                 {
-                    return new FileProfile(localClipboard.Files[0]);
+                    if (FileIsImage(filename))
+                    {
+                        return new ImageProfile(filename);
+                    }
+                    return new FileProfile(filename);
                 }
             }
 
@@ -36,6 +43,19 @@ namespace SyncClipboard.Service
             }
 
             return new UnkonwnProfile();
+        }
+
+        private static bool FileIsImage(string filename)
+        {
+            string extension = System.IO.Path.GetExtension(filename);
+            foreach (var imageExtension in imageExtensions)
+            {
+                if (imageExtension.Equals(extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static LocalClipboard GetLocalClipboard()
