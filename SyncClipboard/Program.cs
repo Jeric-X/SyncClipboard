@@ -72,6 +72,7 @@ namespace SyncClipboard
             }
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
+            Utility.Log.Write("[Program] exited");
         }
     }
 }

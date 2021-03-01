@@ -75,9 +75,8 @@ namespace SyncClipboard
             int errorTimes = 0;
             for (; switchOn; Thread.Sleep((int)Config.IntervalTime))
             {
-                Log.Write("[PULL] wait for remote");
                 RemoteClipboardLocker.Lock();
-                Log.Write("[PULL] end wait for remote");
+
                 Profile remoteProfile = null;
                 try
                 {
@@ -109,9 +108,7 @@ namespace SyncClipboard
 
         private void SetRemoteProfileToLocal(Profile remoteProfile)
         {
-            Log.Write("[PULL] wait for local");
             Profile localProfile = ProfileFactory.CreateFromLocal();
-            Log.Write("[PULL] end wait for local");
             if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
                 Log.Write("[PULL] Local profile type is Unkown, stop sync.");
@@ -121,9 +118,13 @@ namespace SyncClipboard
             Log.Write("[PULL] isChangingRemote = " + isChangingRemote.ToString());
             if (!isChangingRemote && remoteProfile != localProfile)
             {
-                remoteProfile.SetLocalClipboard();
-                Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
+                Thread.Sleep(200);
+                if (!isChangingRemote)
+                {
+                    remoteProfile.SetLocalClipboard();
+                    Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                    Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
+                }
             }
             Notify(false, true, "服务器连接成功", null, "正在同步", "info");
         }
