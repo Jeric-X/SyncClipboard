@@ -26,6 +26,11 @@ namespace SyncClipboard.Service
             SetMd5(jsonProfile.Clipboard);
         }
 
+        protected string GetTempLocalFilePath()
+        {
+            return tempFilePath + "/" + FileName;
+        }
+
         public override ClipboardType GetProfileType()
         {
             return ClipboardType.File;
@@ -67,7 +72,7 @@ namespace SyncClipboard.Service
         protected override void BeforeSetLocal()
         {
             string remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
-            string localPath = $"{fileFolder}/{FileName}";
+            string localPath = GetTempLocalFilePath();
 
             if (Directory.Exists(fileFolder) == false)
             {
@@ -107,7 +112,7 @@ namespace SyncClipboard.Service
                 return;
             }
 
-            string localPath = $"{tempFilePath}/{FileName}";
+            string localPath = GetTempLocalFilePath();
             System.Windows.Forms.Clipboard.SetFileDropList(new System.Collections.Specialized.StringCollection{ localPath });
 
             return;
@@ -133,7 +138,7 @@ namespace SyncClipboard.Service
 
         public override int GetHashCode()
         {
-            return this.Text.GetHashCode();
+            return this.GetMd5().GetHashCode();
         }
 
         private static string GetMD5HashFromFile(string fileName)

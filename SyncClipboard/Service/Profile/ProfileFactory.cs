@@ -14,11 +14,12 @@ namespace SyncClipboard.Service
         private struct LocalClipboard
         {
             public string Text;
+            public string Html;
             public Image Image;
             public string[] Files;
         }
 
-        private static string[] imageExtensions = { "jpg", "jpeg", "gif", "bmg", "png" };
+        private static readonly string[] imageExtensions = { ".jpg", ".jpeg", ".gif", ".bmg", ".png" };
 
         public static Profile CreateFromLocal()
         {
@@ -60,7 +61,7 @@ namespace SyncClipboard.Service
 
         private static LocalClipboard GetLocalClipboard()
         {
-            LocalClipboard localClipboard = new LocalClipboard { Text = null, Image = null, Files = null};
+            LocalClipboard localClipboard = new LocalClipboard();
 
             LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
@@ -72,9 +73,10 @@ namespace SyncClipboard.Service
                     {
                         return localClipboard;
                     }
-                    localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+                    //localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
                     localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text);
                     localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
+                    //localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
                     break;
                 }
                 catch
@@ -116,7 +118,15 @@ namespace SyncClipboard.Service
                 case ClipboardType.Text:
                     return new TextProfile(jsonProfile.Clipboard);
                 case ClipboardType.File:
-                    return new FileProfile(jsonProfile);
+                    {
+                        if (FileIsImage(jsonProfile.File))
+                        {
+                            return new ImageProfile(jsonProfile);
+                        }
+                        return new FileProfile(jsonProfile);
+                    }
+                case ClipboardType.Image:
+                    return new ImageProfile(jsonProfile.Clipboard);
             }
 
             return null;

@@ -4,8 +4,14 @@ namespace SyncClipboard.Service
 {
     class ImageProfile : FileProfile
     {
+        private string fullpath = "";
         public ImageProfile(string filepath) : base(filepath)
-        { }
+        {
+        }
+
+        public ImageProfile(JsonProfile jsonProfile) : base(jsonProfile)
+        {
+        }
 
         public override ClipboardType GetProfileType()
         {
@@ -15,7 +21,9 @@ namespace SyncClipboard.Service
         protected override void SetContentToLocalClipboard()
         {
             base.SetContentToLocalClipboard();
-            // TODO
+            // string imagePath = GetTempLocalFilePath();
+            // string html = $@"<img src=""file:///{imagePath}"">";
+            // ClipboardHelper.CopyToClipboard(html, "");
         }
     }
 }
