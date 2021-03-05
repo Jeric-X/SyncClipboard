@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -49,10 +50,11 @@ namespace SyncClipboard.Service
             HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.GetHttpAuthHeader());
         }
 
-        protected override void SetContentToLocalClipboard()
+        protected override DataObject CreateDataObject()
         {
-            System.Windows.Forms.Clipboard.SetData(System.Windows.Forms.DataFormats.Text, this.Text);
+            var dataObject = new DataObject();
+            dataObject.SetData(DataFormats.Text, this.Text);
+            return dataObject;
         }
-
     }
 }

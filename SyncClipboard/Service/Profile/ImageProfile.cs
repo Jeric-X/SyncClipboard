@@ -18,12 +18,12 @@ namespace SyncClipboard.Service
             return ClipboardType.Image;
         }
 
-        protected override void SetContentToLocalClipboard()
-        {
-            base.SetContentToLocalClipboard();
-            // string imagePath = GetTempLocalFilePath();
-            // string html = $@"<img src=""file:///{imagePath}"">";
-            // ClipboardHelper.CopyToClipboard(html, "");
-        }
+        // protected override void SetContentToLocalClipboard()
+        // {
+        //     base.SetContentToLocalClipboard();
+        //     // string imagePath = GetTempLocalFilePath();
+        //     // string html = $@"<img src=""file:///{imagePath}"">";
+        //     // ClipboardHelper.CopyToClipboard(html, "");
+        // }
     }
 }

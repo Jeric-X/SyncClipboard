@@ -117,8 +117,6 @@ namespace SyncClipboard
 
         private void UploadClipBoard()
         {
-            AddPushThreadNumber();
-
             var currentProfile = ProfileFactory.CreateFromLocal();
 
             if (currentProfile == null)
@@ -131,6 +129,8 @@ namespace SyncClipboard
                 Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
                 return;
             }
+
+            AddPushThreadNumber();
 
             Log.Write("[PUSH] waiting for remote profile");
             RemoteClipboardLocker.Lock();

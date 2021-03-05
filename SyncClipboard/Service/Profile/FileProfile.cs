@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using System.Windows.Forms;
 using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
 
@@ -82,7 +83,6 @@ namespace SyncClipboard.Service
             try
             {
                 HttpWebResponseUtility.Getfile(remotePath, localPath, Config.GetHttpAuthHeader());
-                DownloadStatusOK = true;
                 if (GetMD5HashFromFile(localPath) != GetMd5())
                 {
                     Log.Write("[PULL] download erro, md5 wrong");
@@ -105,17 +105,19 @@ namespace SyncClipboard.Service
             return statusTip;
         }
 
-        protected override void SetContentToLocalClipboard()
+        protected override DataObject CreateDataObject()
         {
             if (!DownloadStatusOK)
             {
-                return;
+                return null;
             }
 
-            string localPath = GetTempLocalFilePath();
-            System.Windows.Forms.Clipboard.SetFileDropList(new System.Collections.Specialized.StringCollection{ localPath });
+            var dataObject = new DataObject();
 
-            return;
+            string localPath = GetTempLocalFilePath();
+            dataObject.SetFileDropList(new System.Collections.Specialized.StringCollection { localPath });
+
+            return dataObject;
         }
 
         public override bool Equals(System.Object obj)

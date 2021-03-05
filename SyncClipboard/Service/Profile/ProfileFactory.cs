@@ -63,9 +63,9 @@ namespace SyncClipboard.Service
         {
             LocalClipboard localClipboard = new LocalClipboard();
 
-            LocalClipboardLocker.Lock();
             for (int i = 0; i < 3; i++)
             {
+                LocalClipboardLocker.Lock();
                 try
                 {
                     IDataObject ClipboardData = Clipboard.GetDataObject();
@@ -83,9 +83,11 @@ namespace SyncClipboard.Service
                 {
                     Thread.Sleep(200);
                 }
+                finally
+                {
+                    LocalClipboardLocker.Unlock();
+                }
             }
-
-            LocalClipboardLocker.Unlock();
 
             return localClipboard;
         }
@@ -126,7 +128,7 @@ namespace SyncClipboard.Service
                         return new FileProfile(jsonProfile);
                     }
                 case ClipboardType.Image:
-                    return new ImageProfile(jsonProfile.Clipboard);
+                    return new ImageProfile(jsonProfile);
             }
 
             return null;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Web.Script.Serialization;
+using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -18,7 +19,7 @@ namespace SyncClipboard.Service
         }
 
         public abstract ClipboardType GetProfileType();
-        protected abstract void SetContentToLocalClipboard();
+        protected abstract DataObject CreateDataObject();
         public abstract string ToolTip();
         public abstract void UploadProfile();
         protected virtual void BeforeSetLocal() { }
@@ -26,20 +27,15 @@ namespace SyncClipboard.Service
         public void SetLocalClipboard()
         {
             BeforeSetLocal();
-            LocalClipboardLocker.Lock();
-            for (int i = 0; i < 3; i++)
+
+            var dataObject = CreateDataObject();
+            if (dataObject is null)
             {
-                try
-                {
-                    this.SetContentToLocalClipboard();
-                    break;
-                }
-                catch
-                {
-                    System.Threading.Thread.Sleep(200);
-                }
+                return;
             }
 
+            LocalClipboardLocker.Lock();
+            Clipboard.SetDataObject(dataObject, true);
             LocalClipboardLocker.Unlock();
         }
 

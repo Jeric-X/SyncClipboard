@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -22,7 +23,7 @@ namespace SyncClipboard.Service
             return ClipboardType.Unknown;
         }
 
-        protected override void SetContentToLocalClipboard()
+        protected override DataObject CreateDataObject()
         {
             throw new NotImplementedException("Do not support this type of clipboard");
         }
