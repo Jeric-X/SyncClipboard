@@ -1,3 +1,6 @@
+v1.2.0
+- Add image support. Image will be set in more formats(html, QQ_Unicode_RichEdit_Format, bitmap, filedrop).
+
 v1.1.9
 - Now we can sync files
 - Optimize log
