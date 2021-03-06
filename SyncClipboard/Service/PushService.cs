@@ -11,7 +11,7 @@ namespace SyncClipboard
         private readonly Notify Notify;
         private bool switchOn = false;
         private Thread pushThread = null;
-        //private Profile currentProfile;
+        private Profile currentProfile;
 
         private int pushThreadNumber = 0;
         public delegate void PushStatusChangingHandler();
@@ -87,6 +87,18 @@ namespace SyncClipboard
                 pushThread = null;
             }
 
+            currentProfile = ProfileFactory.CreateFromLocal();
+            if (currentProfile == null)
+            {
+                return;
+            }
+            if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            {
+                Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
+                return;
+            }
+
+            AddPushThreadNumber();
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
@@ -117,24 +129,7 @@ namespace SyncClipboard
 
         private void UploadClipBoard()
         {
-            var currentProfile = ProfileFactory.CreateFromLocal();
-
-            if (currentProfile == null)
-            {
-                return;
-            }
-
-            if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
-            {
-                Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
-                return;
-            }
-
-            AddPushThreadNumber();
-
-            Log.Write("[PUSH] waiting for remote profile");
             RemoteClipboardLocker.Lock();
-            Log.Write("[PUSH] end waiting for remote profile");
             try
             {
                 UploadLoop(currentProfile);
