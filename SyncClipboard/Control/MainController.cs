@@ -9,7 +9,7 @@ namespace SyncClipboard.Control
     {
         private string notifyText;
 
-        private System.Windows.Forms.NotifyIcon notifyIcon1;
+        private Notifyer notifyer;
         private System.Windows.Forms.ContextMenu contextMenu;
         private System.Windows.Forms.MenuItem 退出MenuItem;
         private System.Windows.Forms.MenuItem 设置MenuItem;
@@ -55,18 +55,13 @@ namespace SyncClipboard.Control
                 this.退出MenuItem
             });
 
-            this.notifyIcon1 = new NotifyIcon();
-            this.notifyIcon1.ContextMenu = this.contextMenu;
-            this.notifyIcon1.Icon = Properties.Resources.upload;
-            this.notifyIcon1.Text = "SyncClipboard";
-            this.notifyIcon1.Visible = true;
-            this.notifyIcon1.BalloonTipClicked += new System.EventHandler(this.notifyIcon1_BalloonTipClicked);
-            this.notifyIcon1.DoubleClick += new System.EventHandler(this.设置MenuItem_Click);
+            notifyer = new Notifyer(this.contextMenu);
+            notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
         }
         
         public Notify GetNotifyFunction()
         {
-            return setLog;
+            return notifyer.setLog;
         }
 
         public void LoadConfig()
@@ -84,39 +79,13 @@ namespace SyncClipboard.Control
         }
         public void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
         {
-            try 
-            { 
-                if(notify)
-                {
-                    notifyText = content;
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        this.notifyIcon1.ShowBalloonTip(5, title, SafeMessage(content), ToolTipIcon.None);
-                    }
-                }
-                if (notifyIconText)
-                {
-                    this.notifyIcon1.Text = Program.SoftName + "\n" + title + "\n" + contentSimple;
-                }
-                if(level == "erro")
-                {
-                    notifyIcon1.Icon = Properties.Resources.erro;
-                }
-                else if(level == "info")
-                {
-                    notifyIcon1.Icon = Properties.Resources.upload;
-                }
-            }
-            catch (Exception)
-            {
-                //Log.Write("Setlog错误");
-            }
+            notifyer.setLog(notify, notifyIconText, title, content, contentSimple, level);
         }
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
             Config.IfPull = false;
             Config.IfPush = false;
-            this.notifyIcon1.Visible = false;
+            notifyer.Exit();
             Application.Exit();
         }
 
@@ -151,16 +120,8 @@ namespace SyncClipboard.Control
             }
             catch
             {
-                setLog(true, false, "设置启动项失败", "设置启动项失败", null, "warn");
+                notifyer.setLog(true, false, "设置启动项失败", "设置启动项失败", null, "warn");
             }
-        }
-
-        private void notifyIcon1_BalloonTipClicked(object sender, EventArgs e)
-        {
-            if (notifyText == null || notifyText.Length < 4)
-                return;
-            if (notifyText.Substring(0,4) == "http" || notifyText.Substring(0,4) == "www.")
-                System.Diagnostics.Process.Start(this.notifyText);  
         }
 
         private void 上传本机MenuItem_Click(object sender, EventArgs e)
@@ -181,20 +142,6 @@ namespace SyncClipboard.Control
         {
             UpdateChecker updateChecker = new UpdateChecker();
             updateChecker.Check();
-        }
-
-        private String SafeMessage(String str)
-        {
-            if (str == null)
-            {
-                return "【非文本类型】";
-            }
-            if (str.Length > 42)
-            {
-                return str.Substring(0, 40) + "...";
-            }
-
-            return str;
         }
     }
 }
