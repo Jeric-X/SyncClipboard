@@ -118,6 +118,57 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="download001" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download001.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download002" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download002.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download003" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download003.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download004" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download004.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download005" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download005.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download006" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download006.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download007" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download007.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download008" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download008.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download009" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download009.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download010" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download010.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download011" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download011.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download012" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download012.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download013" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download013.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download014" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download014.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download015" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download015.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download016" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download016.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download017" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\download017.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="erro" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\erro.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

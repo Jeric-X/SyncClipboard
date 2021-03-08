@@ -127,6 +127,23 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="img\download001.ico" />
+    <None Include="img\download002.ico" />
+    <None Include="img\download003.ico" />
+    <None Include="img\download004.ico" />
+    <None Include="img\download005.ico" />
+    <None Include="img\download006.ico" />
+    <None Include="img\download007.ico" />
+    <None Include="img\download008.ico" />
+    <None Include="img\download009.ico" />
+    <None Include="img\download010.ico" />
+    <None Include="img\download011.ico" />
+    <None Include="img\download012.ico" />
+    <None Include="img\download013.ico" />
+    <None Include="img\download014.ico" />
+    <None Include="img\download015.ico" />
+    <None Include="img\download016.ico" />
+    <None Include="img\download017.ico" />
     <Content Include="img\erro.ico" />
     <Content Include="img\icon.ico" />
     <Content Include="img\upload.ico" />
