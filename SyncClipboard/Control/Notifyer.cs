@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -6,22 +7,28 @@ namespace SyncClipboard.Control
 {
     class Notifyer
     {
+        private readonly Icon DefaultIcon = Properties.Resources.upload;
+        private readonly Icon ErrorIcon = Properties.Resources.erro;
+
         private NotifyIcon _notifyIcon;
-        private string _notifyText;
+        private string _notifyText; // to be modified
 
         private System.Timers.Timer _iconTimer;
         private Icon[] _dynamicIcons;
-        private static Icon _defaultIcon = Properties.Resources.upload;
+        private Icon _staticIcon = Properties.Resources.upload;
         private int _iconIndex = 1;
+        private bool _isShowingDanamicIcon = false;
+
+        private Dictionary<string, string> _statusList;
 
         public Notifyer(ContextMenu contextMenu)
         {
             this._notifyIcon = new System.Windows.Forms.NotifyIcon();
             this._notifyIcon.ContextMenu = contextMenu;
-            this._notifyIcon.Icon = _defaultIcon;
+            this._notifyIcon.Icon = DefaultIcon;
             this._notifyIcon.Text = "SyncClipboard";
             this._notifyIcon.Visible = true;
-            this._notifyIcon.BalloonTipClicked += new System.EventHandler(this.notifyIcon_BalloonTipClicked);
+            this._notifyIcon.BalloonTipClicked += new System.EventHandler(this.notifyIcon_BalloonTipClicked);   // to be modified
         }
 
         public void SetDoubleClickEvent(EventHandler eventHandler)
@@ -99,6 +106,7 @@ namespace SyncClipboard.Control
             _iconTimer = new System.Timers.Timer(delayTime);
             _iconTimer.Elapsed += SetNextDynamicNotifyIcon;
             _iconTimer.AutoReset = true;
+            _isShowingDanamicIcon = true;
             _iconTimer.Start();
         }
 
@@ -110,7 +118,16 @@ namespace SyncClipboard.Control
 
             _dynamicIcons = null;
             _iconIndex = 1;
-            _notifyIcon.Icon = _defaultIcon;
+            _isShowingDanamicIcon = false;
+            ActiveStaticIcon();
+        }
+
+        private void ActiveStaticIcon()
+        {
+            if (!_isShowingDanamicIcon)
+            {
+                _notifyIcon.Icon = _staticIcon;
+            }
         }
 
         private void SetNextDynamicNotifyIcon(object sender, EventArgs e)
@@ -127,6 +144,39 @@ namespace SyncClipboard.Control
 
             _notifyIcon.Icon = _dynamicIcons[_iconIndex];
             _iconIndex++;
+        }
+
+        private void ActiveStatusString()
+        {
+            string str = "服务状态：";
+            foreach (var status in _statusList)
+            {
+                str += System.Environment.NewLine + status.Value;
+            }
+            this._notifyIcon.Text = str;
+        }
+
+        public void SetStatusString(string key, string statusStr, bool error)
+        {
+            if (!string.IsNullOrEmpty(key))
+            {
+                _statusList[key] = statusStr;
+            }
+
+            if (error)
+            {
+                _staticIcon = ErrorIcon;
+            }
+            else
+            {
+                _staticIcon = DefaultIcon;
+            }
+            ActiveStaticIcon();
+        }
+
+        public void ToastNotify(string title, string content, System.EventHandler eventHandler)
+        {
+            // TODO
         }
     }
 }
