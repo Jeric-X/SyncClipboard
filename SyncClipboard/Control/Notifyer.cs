@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace SyncClipboard.Control
 {
-    class Notifyer
+    public class Notifyer
     {
         private readonly Icon DefaultIcon = Properties.Resources.upload;
         private readonly Icon ErrorIcon = Properties.Resources.erro;
@@ -19,7 +19,7 @@ namespace SyncClipboard.Control
         private int _iconIndex = 1;
         private bool _isShowingDanamicIcon = false;
 
-        private Dictionary<string, string> _statusList;
+        private Dictionary<string, string> _statusList = new Dictionary<string, string>();
 
         public Notifyer(ContextMenu contextMenu)
         {
@@ -151,7 +151,7 @@ namespace SyncClipboard.Control
             string str = "服务状态：";
             foreach (var status in _statusList)
             {
-                str += System.Environment.NewLine + status.Value;
+                str += System.Environment.NewLine + $"{status.Key}: {status.Value}";
             }
             this._notifyIcon.Text = str;
         }
@@ -172,11 +172,17 @@ namespace SyncClipboard.Control
                 _staticIcon = DefaultIcon;
             }
             ActiveStaticIcon();
+            ActiveStatusString();
         }
 
-        public void ToastNotify(string title, string content, System.EventHandler eventHandler)
+        public void ToastNotify(string title, string content /*, System.EventHandler eventHandler = null */)
         {
-            // TODO
+            const int durationTime = 5;
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                this._notifyIcon.ShowBalloonTip(durationTime, title, SafeMessage(content), ToolTipIcon.None);
+            }
         }
     }
 }

@@ -8,7 +8,13 @@ namespace SyncClipboard
 {
     public class PushService
     {
-        private readonly Notify Notify;
+        private const string SERVICE_NAME = "Push Service";
+
+        private readonly Notifyer _notifyer;
+
+        bool _isErrorStatus = false;
+        string _statusString = "";
+
         private bool switchOn = false;
         private Thread pushThread = null;
         private Profile currentProfile;
@@ -44,15 +50,18 @@ namespace SyncClipboard
             }
         }
 
-        public PushService(Notify notifyFunction)
+        public PushService(Notifyer notifyer)
         {
-            Notify = notifyFunction;
+            _notifyer = notifyer;
+
+            this.PushStarted += PushStartedHandler;
+            this.PushStopped += PushStoppedHandler;
             Load();
         }
-        
+
         public void Start()
         {
-            if(!switchOn)
+            if (!switchOn)
             {
                 switchOn = true;
                 Program.ClipboardListener.AddHandler(ClipboardChangedHandler);
@@ -70,10 +79,12 @@ namespace SyncClipboard
 
         public void Load()
         {
-            if (Config.IfPush) {
+            if (Config.IfPush)
+            {
                 Start();
             }
-            else {
+            else
+            {
                 Stop();
             }
         }
@@ -118,13 +129,16 @@ namespace SyncClipboard
                     Log.Write("Push end");
                     return;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     errMessage = ex.Message.ToString();
+                    _notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", _isErrorStatus);
                 }
                 Thread.Sleep(1000);
             }
-            Notify(true, false, errMessage, "未同步：" + currentProfile.ToolTip(), null, "erro");
+            _notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
+            _statusString = errMessage;
+            _isErrorStatus = true;
         }
 
         private void UploadClipBoard()
@@ -134,7 +148,7 @@ namespace SyncClipboard
             {
                 UploadLoop(currentProfile);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Write(ex.Message.ToString());
             }
@@ -144,6 +158,46 @@ namespace SyncClipboard
                 Log.Write("[PUSH] unlock remote");
                 ReleasePushThreadNumber();
             }
+        }
+
+        private void SetUploadingIcon()
+        {
+            System.Drawing.Icon[] icon =
+            {
+                Properties.Resources.upload001, Properties.Resources.upload002, Properties.Resources.upload003,
+                Properties.Resources.upload004, Properties.Resources.upload005, Properties.Resources.upload006,
+                Properties.Resources.upload007, Properties.Resources.upload008, Properties.Resources.upload009,
+                Properties.Resources.upload010, Properties.Resources.upload011, Properties.Resources.upload012,
+                Properties.Resources.upload013, Properties.Resources.upload014, Properties.Resources.upload015,
+                Properties.Resources.upload016, Properties.Resources.upload017,
+            };
+
+            _notifyer.SetDynamicNotifyIcon(icon, 150);
+        }
+
+        private void StopUploadingIcon()
+        {
+            _notifyer.StopDynamicNotifyIcon();
+        }
+
+        private void PushStartedHandler()
+        {
+            _statusString = "Uploading.";
+            _isErrorStatus = false;
+            _notifyer.SetStatusString(SERVICE_NAME, _statusString, _isErrorStatus);
+
+            SetUploadingIcon();
+        }
+
+        private void PushStoppedHandler()
+        {
+            if (!_isErrorStatus)
+            {
+                _statusString = "Idle.";
+            }
+            _notifyer.SetStatusString(SERVICE_NAME, _statusString, _isErrorStatus);
+
+            StopUploadingIcon();
         }
     }
 }

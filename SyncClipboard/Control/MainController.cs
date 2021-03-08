@@ -9,7 +9,7 @@ namespace SyncClipboard.Control
     {
         private string notifyText;
 
-        private Notifyer notifyer;
+        public Notifyer Notifyer;
         private System.Windows.Forms.ContextMenu contextMenu;
         private System.Windows.Forms.MenuItem 退出MenuItem;
         private System.Windows.Forms.MenuItem 设置MenuItem;
@@ -55,13 +55,13 @@ namespace SyncClipboard.Control
                 this.退出MenuItem
             });
 
-            notifyer = new Notifyer(this.contextMenu);
-            notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
+            Notifyer = new Notifyer(this.contextMenu);
+            Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
         }
         
         public Notify GetNotifyFunction()
         {
-            return notifyer.setLog;
+            return Notifyer.setLog;
         }
 
         public void LoadConfig()
@@ -79,13 +79,13 @@ namespace SyncClipboard.Control
         }
         public void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
         {
-            notifyer.setLog(notify, notifyIconText, title, content, contentSimple, level);
+            Notifyer.setLog(notify, notifyIconText, title, content, contentSimple, level);
         }
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
             Config.IfPull = false;
             Config.IfPush = false;
-            notifyer.Exit();
+            Notifyer.Exit();
             Application.Exit();
         }
 
@@ -120,7 +120,7 @@ namespace SyncClipboard.Control
             }
             catch
             {
-                notifyer.setLog(true, false, "设置启动项失败", "设置启动项失败", null, "warn");
+                Notifyer.setLog(true, false, "设置启动项失败", "设置启动项失败", null, "warn");
             }
         }
 
