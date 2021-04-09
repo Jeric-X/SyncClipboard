@@ -14,8 +14,8 @@ namespace SyncClipboard.Service
         private struct LocalClipboard
         {
             public string Text;
-            public string Html;
-            public Image Image;
+            //public string Html;
+            //public Image Image;
             public string[] Files;
         }
 

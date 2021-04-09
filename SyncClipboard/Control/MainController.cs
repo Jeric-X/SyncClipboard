@@ -7,8 +7,6 @@ namespace SyncClipboard.Control
 {
     public class MainController:System.Windows.Forms.Control
     {
-        private string notifyText;
-
         public Notifyer Notifyer;
         private System.Windows.Forms.ContextMenu contextMenu;
         private System.Windows.Forms.MenuItem 退出MenuItem;

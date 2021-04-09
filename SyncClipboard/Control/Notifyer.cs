@@ -11,9 +11,8 @@ namespace SyncClipboard.Control
         private readonly Icon ErrorIcon = Properties.Resources.erro;
         private const int MAX_NOTIFY_ICON_TIP_LETTERS = 60;
 
-        private NotifyIcon _notifyIcon;
-        private event Action _toastClicked;
-        private string _notifyText; // to be modified
+        private readonly NotifyIcon _notifyIcon;
+        private event Action ToastClicked;
 
         private System.Timers.Timer _iconTimer;
         private Icon[] _dynamicIcons;
@@ -21,15 +20,17 @@ namespace SyncClipboard.Control
         private int _iconIndex = 1;
         private bool _isShowingDanamicIcon = false;
 
-        private Dictionary<string, string> _statusList = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _statusList = new Dictionary<string, string>();
 
         public Notifyer(ContextMenu contextMenu)
         {
-            this._notifyIcon = new System.Windows.Forms.NotifyIcon();
-            this._notifyIcon.ContextMenu = contextMenu;
-            this._notifyIcon.Icon = DefaultIcon;
-            this._notifyIcon.Text = "SyncClipboard";
-            this._notifyIcon.Visible = true;
+            this._notifyIcon = new System.Windows.Forms.NotifyIcon
+            {
+                ContextMenu = contextMenu,
+                Icon = DefaultIcon,
+                Text = "SyncClipboard",
+                Visible = true
+            };
             this._notifyIcon.BalloonTipClicked += SetToastClickedHandler;   // to be modified
             this._notifyIcon.BalloonTipClosed += ClearToastClickedHandler;
         }
@@ -46,20 +47,20 @@ namespace SyncClipboard.Control
 
         private void SetToastClickedHandler(object sender, EventArgs e)
         {
-            _toastClicked?.Invoke();
+            ToastClicked?.Invoke();
             ClearToastClickedHandler(sender, e);
         }
 
         private void ClearToastClickedHandler(object sender, EventArgs e)
         {
-            if (_toastClicked is null)
+            if (ToastClicked is null)
             {
                 return;
             }
 
-            foreach (var handler in _toastClicked.GetInvocationList())
+            foreach (var handler in ToastClicked.GetInvocationList())
             {
-                _toastClicked -= handler as Action;
+                ToastClicked -= handler as Action;
             }
         }
 
@@ -178,7 +179,7 @@ namespace SyncClipboard.Control
             {
                 if (eventHandler != null)
                 {
-                    _toastClicked += eventHandler;
+                    ToastClicked += eventHandler;
                 }
 
                 this._notifyIcon.ShowBalloonTip(durationTime, title, SafeMessage(content), ToolTipIcon.None);

@@ -27,16 +27,16 @@ namespace SyncClipboard
         private void ReleasePushThreadNumber()
         {
             pushThreadNumber--;
-            setPushstatusChangeEvent();
+            SetPushstatusChangeEvent();
         }
 
         private void AddPushThreadNumber()
         {
             pushThreadNumber++;
-            setPushstatusChangeEvent();
+            SetPushstatusChangeEvent();
         }
 
-        private void setPushstatusChangeEvent()
+        private void SetPushstatusChangeEvent()
         {
             if (pushThreadNumber == 0)
             {
