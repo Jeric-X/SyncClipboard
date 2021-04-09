@@ -9,6 +9,7 @@ namespace SyncClipboard.Control
     {
         private readonly Icon DefaultIcon = Properties.Resources.upload;
         private readonly Icon ErrorIcon = Properties.Resources.erro;
+        private const int MAX_NOTIFY_ICON_TIP_LETTERS = 60;
 
         private NotifyIcon _notifyIcon;
         private string _notifyText; // to be modified
@@ -148,20 +149,24 @@ namespace SyncClipboard.Control
 
         private void ActiveStatusString()
         {
-            string str = "服务状态：";
+            string str = "";
+            var eachMaxLenth = MAX_NOTIFY_ICON_TIP_LETTERS / _statusList.Count;
+
             foreach (var status in _statusList)
             {
-                str += System.Environment.NewLine + $"{status.Key}: {status.Value}";
+                var oneServiceStr = $"{status.Key}: {status.Value}";
+                if (oneServiceStr.Length > eachMaxLenth)
+                {
+                    oneServiceStr = oneServiceStr.Substring(0, eachMaxLenth - 1);
+                }
+                str += oneServiceStr + System.Environment.NewLine;
             }
             this._notifyIcon.Text = str;
         }
 
         public void SetStatusString(string key, string statusStr, bool error)
         {
-            if (!string.IsNullOrEmpty(key))
-            {
-                _statusList[key] = statusStr;
-            }
+            SetStatusString(key, statusStr);
 
             if (error)
             {
@@ -172,12 +177,20 @@ namespace SyncClipboard.Control
                 _staticIcon = DefaultIcon;
             }
             ActiveStaticIcon();
+        }
+
+        public void SetStatusString(string key, string statusStr)
+        {
+            if (!string.IsNullOrEmpty(key))
+            {
+                _statusList[key] = statusStr;
+            }
             ActiveStatusString();
         }
 
         public void ToastNotify(string title, string content /*, System.EventHandler eventHandler = null */)
         {
-            const int durationTime = 5;
+            const int durationTime = 10;
 
             if (!string.IsNullOrEmpty(content))
             {

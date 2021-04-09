@@ -8,9 +8,14 @@ namespace SyncClipboard
 {
     public class PullService
     {
+        private const string SERVICE_NAME = "⬇⬇";
+
+        private readonly Notifyer _notifyer;
+
         private readonly Notify Notify;
         private bool switchOn = false;
         private bool isChangingRemote = false;
+        private PushService _pushService;
 
         public PullService(Notify notifyFunction)
         {
@@ -18,11 +23,14 @@ namespace SyncClipboard
             Load();
         }
 
-        public PullService(Notify notifyFunction, PushService pushService)
+        public PullService(Notify notifyFunction, PushService pushService, Notifyer notifyer)
         {
             pushService.PushStarted += new PushService.PushStatusChangingHandler(PushStartedHandler);
             pushService.PushStopped += new PushService.PushStatusChangingHandler(PushStoppedHandler);
             Notify = notifyFunction;
+            _pushService = pushService;
+            _notifyer = notifyer;
+            _notifyer.SetStatusString(SERVICE_NAME, "Idle.");
             Load();
         }
 
@@ -60,15 +68,12 @@ namespace SyncClipboard
         public void PushStartedHandler()
         {
             isChangingRemote = true;
-            Log.Write("[PULL] [EVENT] push started");
         }
 
         public void PushStoppedHandler()
         {
             isChangingRemote = false;
-            Log.Write("[PULL] [EVENT] push ended");
         }
-
 
         private void PullLoop()
         {
@@ -76,6 +81,7 @@ namespace SyncClipboard
             for (; switchOn; Thread.Sleep((int)Config.IntervalTime))
             {
                 RemoteClipboardLocker.Lock();
+                _notifyer.SetStatusString(SERVICE_NAME, "Reading remote profile.");
 
                 Profile remoteProfile = null;
                 try
@@ -86,11 +92,9 @@ namespace SyncClipboard
                 {
                     errorTimes += 1;
                     Log.Write(ex.ToString());
-                    Notify(false, true, ex.Message.ToString(), Config.GetProfileUrl() + "\n重试次数:" + errorTimes.ToString(), "重试次数:" + errorTimes.ToString(), "erro");
-                    if (errorTimes > Config.RetryTimes)
+                    _notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
+                    if (errorTimes == Config.RetryTimes)
                     {
-                        Config.IfPull = false;
-                        Config.Save();
                         Notify(true, false, "剪切板同步失败，已达到最大重试次数", ex.Message.ToString(), null, "erro");
                     }
                     continue;
@@ -102,6 +106,7 @@ namespace SyncClipboard
                 }
 
                 SetRemoteProfileToLocal(remoteProfile);
+                _notifyer.SetStatusString(SERVICE_NAME, "Idle.", false);
                 errorTimes = 0;
             }
         }
@@ -121,12 +126,38 @@ namespace SyncClipboard
                 Thread.Sleep(200);
                 if (!isChangingRemote)
                 {
+                    SetDownloadingIcon();
+                    _pushService.Stop();
+
                     remoteProfile.SetLocalClipboard();
+
                     Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                    Thread.Sleep(50);
+                    _pushService.Start();
+                    StopDownloadingIcon();
                     Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
                 }
             }
-            Notify(false, true, "服务器连接成功", null, "正在同步", "info");
+        }
+
+        private void SetDownloadingIcon()
+        {
+            System.Drawing.Icon[] icon =
+            {
+                Properties.Resources.download001, Properties.Resources.download002, Properties.Resources.download003,
+                Properties.Resources.download004, Properties.Resources.download005, Properties.Resources.download006,
+                Properties.Resources.download007, Properties.Resources.download008, Properties.Resources.download009,
+                Properties.Resources.download010, Properties.Resources.download011, Properties.Resources.download012,
+                Properties.Resources.download013, Properties.Resources.download014, Properties.Resources.download015,
+                Properties.Resources.download016, Properties.Resources.download017,
+            };
+
+            _notifyer.SetDynamicNotifyIcon(icon, 150);
+        }
+
+        private void StopDownloadingIcon()
+        {
+            _notifyer.StopDynamicNotifyIcon();
         }
     }
 }

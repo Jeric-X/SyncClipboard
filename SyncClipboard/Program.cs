@@ -41,7 +41,7 @@ namespace SyncClipboard
                 ClipboardListener = new ClipboardListener();
 
                 pushService = new PushService(mainController.Notifyer);
-                pullService = new PullService(mainController.GetNotifyFunction(), pushService);
+                pullService = new PullService(mainController.GetNotifyFunction(), pushService, mainController.Notifyer);
 
                 Application.Run();
             }

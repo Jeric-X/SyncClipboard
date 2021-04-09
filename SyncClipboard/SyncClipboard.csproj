@@ -164,31 +164,6 @@
     <None Include="img\upload003.ico" />
     <None Include="img\upload002.ico" />
     <None Include="img\upload001.ico" />
-    <None Include="img\upload09.ico" />
-    <None Include="img\upload08.ico" />
-    <None Include="img\upload07.ico" />
-    <None Include="img\upload06.ico" />
-    <None Include="img\upload05.ico" />
-    <None Include="img\upload04.ico" />
-    <None Include="img\upload03.ico" />
-    <None Include="img\upload02.ico" />
-    <None Include="img\upload01.ico" />
-    <None Include="img\upload8.ico" />
-    <None Include="img\upload7.ico" />
-    <None Include="img\upload6.ico" />
-    <None Include="img\upload5.ico" />
-    <None Include="img\upload4.ico" />
-    <None Include="img\upload3.ico" />
-    <None Include="img\upload2.ico" />
-    <None Include="img\upload1.ico" />
-    <None Include="img\upload16.ico" />
-    <None Include="img\upload15.ico" />
-    <None Include="img\upload14.ico" />
-    <None Include="img\upload13.ico" />
-    <None Include="img\upload12.ico" />
-    <None Include="img\upload11.ico" />
-    <None Include="img\upload10.ico" />
-    <None Include="img\upload9.ico" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">

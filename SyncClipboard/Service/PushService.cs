@@ -8,7 +8,7 @@ namespace SyncClipboard
 {
     public class PushService
     {
-        private const string SERVICE_NAME = "Push Service";
+        private const string SERVICE_NAME = "⬆⬆";
 
         private readonly Notifyer _notifyer;
 
@@ -48,6 +48,8 @@ namespace SyncClipboard
                 Log.Write("[PUSH] [EVENT] push started EVENT START");
                 PushStarted?.Invoke();
             }
+
+            Log.Write("[PUSH] [EVENT] pushThreadNumber = " + pushThreadNumber.ToString());
         }
 
         public PushService(Notifyer notifyer)
@@ -56,6 +58,7 @@ namespace SyncClipboard
 
             this.PushStarted += PushStartedHandler;
             this.PushStopped += PushStoppedHandler;
+            _notifyer.SetStatusString(SERVICE_NAME, "Idle.");
             Load();
         }
 
@@ -91,6 +94,8 @@ namespace SyncClipboard
 
         private void ClipboardChangedHandler()
         {
+            Mutex mutex = new Mutex();
+            mutex.WaitOne();
             if (pushThread != null)
             {
                 Log.Write("Kill old push thread");
@@ -113,7 +118,9 @@ namespace SyncClipboard
             pushThread = new Thread(UploadClipBoard);
             pushThread.SetApartmentState(ApartmentState.STA);
             pushThread.Start();
+            Thread.Sleep(50);
             Log.Write("Create new push thread");
+            mutex.ReleaseMutex();
         }
 
         private void UploadLoop(Profile currentProfile)
