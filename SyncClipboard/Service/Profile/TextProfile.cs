@@ -56,5 +56,19 @@ namespace SyncClipboard.Service
             dataObject.SetData(DataFormats.Text, this.Text);
             return dataObject;
         }
+
+        public override Action ExecuteProfile()
+        {
+            if (Text == null || Text.Length < 4)
+            {
+                return null;
+            }
+            if (Text.Substring(0, 4) == "http" || Text.Substring(0, 4) == "www.")
+            {
+                return () => System.Diagnostics.Process.Start(Text);
+            }
+
+            return null;
+        }
     }
 }

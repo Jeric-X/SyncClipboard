@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Windows.Forms;
 using SyncClipboard.Control;
+using SyncClipboard.Utility;
 namespace SyncClipboard
 {
     static class Program
@@ -41,7 +42,7 @@ namespace SyncClipboard
                 ClipboardListener = new ClipboardListener();
 
                 pushService = new PushService(mainController.Notifyer);
-                pullService = new PullService(mainController.GetNotifyFunction(), pushService, mainController.Notifyer);
+                pullService = new PullService(pushService, mainController.Notifyer);
 
                 Application.Run();
             }
@@ -53,11 +54,11 @@ namespace SyncClipboard
 
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
         {
-            mainController.setLog(true, false, "未知错误", e.Exception.Message.ToString(), null, "erro");
+            Log.Write("未知错误:" + e.Exception.Message.ToString());
         }
          private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            mainController.setLog(true, false, "未知错误", e.ExceptionObject.ToString(), null, "erro");
+            Log.Write("未知错误:" + e.ExceptionObject.ToString());
         }
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {

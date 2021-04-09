@@ -12,22 +12,14 @@ namespace SyncClipboard
 
         private readonly Notifyer _notifyer;
 
-        private readonly Notify Notify;
         private bool switchOn = false;
         private bool isChangingRemote = false;
         private PushService _pushService;
 
-        public PullService(Notify notifyFunction)
-        {
-            Notify = notifyFunction;
-            Load();
-        }
-
-        public PullService(Notify notifyFunction, PushService pushService, Notifyer notifyer)
+        public PullService(PushService pushService, Notifyer notifyer)
         {
             pushService.PushStarted += new PushService.PushStatusChangingHandler(PushStartedHandler);
             pushService.PushStopped += new PushService.PushStatusChangingHandler(PushStoppedHandler);
-            Notify = notifyFunction;
             _pushService = pushService;
             _notifyer = notifyer;
             _notifyer.SetStatusString(SERVICE_NAME, "Idle.");
@@ -95,7 +87,7 @@ namespace SyncClipboard
                     _notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
                     if (errorTimes == Config.RetryTimes)
                     {
-                        Notify(true, false, "剪切板同步失败，已达到最大重试次数", ex.Message.ToString(), null, "erro");
+                        _notifyer.ToastNotify("剪切板同步失败", ex.Message.ToString());
                     }
                     continue;
                 }
@@ -132,10 +124,11 @@ namespace SyncClipboard
                     remoteProfile.SetLocalClipboard();
 
                     Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                    _notifyer.ToastNotify("剪切板同步成功", remoteProfile.ToolTip(), remoteProfile.ExecuteProfile());
+                    StopDownloadingIcon();
+
                     Thread.Sleep(50);
                     _pushService.Start();
-                    StopDownloadingIcon();
-                    Notify(true, false, "剪切板同步成功", remoteProfile.ToolTip(), null, "info");
                 }
             }
         }

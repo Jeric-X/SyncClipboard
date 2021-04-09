@@ -12,6 +12,7 @@ namespace SyncClipboard.Control
         private const int MAX_NOTIFY_ICON_TIP_LETTERS = 60;
 
         private NotifyIcon _notifyIcon;
+        private event Action _toastClicked;
         private string _notifyText; // to be modified
 
         private System.Timers.Timer _iconTimer;
@@ -29,7 +30,8 @@ namespace SyncClipboard.Control
             this._notifyIcon.Icon = DefaultIcon;
             this._notifyIcon.Text = "SyncClipboard";
             this._notifyIcon.Visible = true;
-            this._notifyIcon.BalloonTipClicked += new System.EventHandler(this.notifyIcon_BalloonTipClicked);   // to be modified
+            this._notifyIcon.BalloonTipClicked += SetToastClickedHandler;   // to be modified
+            this._notifyIcon.BalloonTipClosed += ClearToastClickedHandler;
         }
 
         public void SetDoubleClickEvent(EventHandler eventHandler)
@@ -42,42 +44,22 @@ namespace SyncClipboard.Control
             this._notifyIcon.Visible = false;
         }
 
-        private void notifyIcon_BalloonTipClicked(object sender, EventArgs e)
+        private void SetToastClickedHandler(object sender, EventArgs e)
         {
-            if (_notifyText == null || _notifyText.Length < 4)
-                return;
-            if (_notifyText.Substring(0, 4) == "http" || _notifyText.Substring(0, 4) == "www.")
-                System.Diagnostics.Process.Start(this._notifyText);
+            _toastClicked?.Invoke();
+            ClearToastClickedHandler(sender, e);
         }
 
-        public void setLog(bool notify, bool notifyIconText, string title, string content, string contentSimple, string level)
+        private void ClearToastClickedHandler(object sender, EventArgs e)
         {
-            try
+            if (_toastClicked is null)
             {
-                if (notify)
-                {
-                    _notifyText = content;
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        this._notifyIcon.ShowBalloonTip(5, title, SafeMessage(content), ToolTipIcon.None);
-                    }
-                }
-                if (notifyIconText)
-                {
-                    this._notifyIcon.Text = Program.SoftName + "\n" + title + "\n" + contentSimple;
-                }
-                if (level == "erro")
-                {
-                    _notifyIcon.Icon = Properties.Resources.erro;
-                }
-                else if (level == "info")
-                {
-                    _notifyIcon.Icon = Properties.Resources.upload;
-                }
+                return;
             }
-            catch (Exception)
+
+            foreach (var handler in _toastClicked.GetInvocationList())
             {
-                //Log.Write("Setlog错误");
+                _toastClicked -= handler as Action;
             }
         }
 
@@ -188,12 +170,17 @@ namespace SyncClipboard.Control
             ActiveStatusString();
         }
 
-        public void ToastNotify(string title, string content /*, System.EventHandler eventHandler = null */)
+        public void ToastNotify(string title, string content, Action eventHandler = null)
         {
-            const int durationTime = 10;
+            const int durationTime = 5;
 
             if (!string.IsNullOrEmpty(content))
             {
+                if (eventHandler != null)
+                {
+                    _toastClicked += eventHandler;
+                }
+
                 this._notifyIcon.ShowBalloonTip(durationTime, title, SafeMessage(content), ToolTipIcon.None);
             }
         }

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using SyncClipboard.Utility;
 
 namespace SyncClipboard.Control
 {
-    public delegate void Notify(bool notify, bool notifyIconText, string title, string content, string contentSimple, string level);
     public class MainController:System.Windows.Forms.Control
     {
         private string notifyText;
@@ -58,11 +58,6 @@ namespace SyncClipboard.Control
             Notifyer = new Notifyer(this.contextMenu);
             Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
         }
-        
-        public Notify GetNotifyFunction()
-        {
-            return Notifyer.setLog;
-        }
 
         public void LoadConfig()
         {
@@ -77,10 +72,7 @@ namespace SyncClipboard.Control
             this.上传本机MenuItem.Checked = Config.IfPush;
             this.下载远程MenuItem.Checked = Config.IfPull;
         }
-        public void setLog(bool notify,bool notifyIconText,string title,string content,string contentSimple,string level)
-        {
-            Notifyer.setLog(notify, notifyIconText, title, content, contentSimple, level);
-        }
+
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
             Config.IfPull = false;
@@ -120,7 +112,7 @@ namespace SyncClipboard.Control
             }
             catch
             {
-                Notifyer.setLog(true, false, "设置启动项失败", "设置启动项失败", null, "warn");
+                Log.Write("设置启动项失败");
             }
         }
 

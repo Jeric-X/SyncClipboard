@@ -22,6 +22,11 @@ namespace SyncClipboard.Service
         protected abstract DataObject CreateDataObject();
         public abstract string ToolTip();
         public abstract void UploadProfile();
+        public virtual Action ExecuteProfile()
+        {
+            return null;
+        }
+
         protected virtual void BeforeSetLocal() { }
 
         public void SetLocalClipboard()
