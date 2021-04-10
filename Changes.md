@@ -1,5 +1,6 @@
-v1.2.2 (wroking)
+v1.2.2
 - Add local clipboard type "bitmap".
+- Fix auto start with boot.
 
 v1.2.1
 - Add icon animation.

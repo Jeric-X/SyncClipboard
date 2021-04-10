@@ -5,7 +5,7 @@ namespace SyncClipboard.Utility
 {
     static class Log
     {
-        private static String logFolder = "Log";
+        private static String logFolder = System.Windows.Forms.Application.StartupPath + $"/Log";
 
         public static void Write(string str)
         {
