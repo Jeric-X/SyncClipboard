@@ -1,3 +1,6 @@
+v1.2.2 (wroking)
+- Add local clipboard type "bitmap".
+
 v1.2.1
 - Add icon animation.
 

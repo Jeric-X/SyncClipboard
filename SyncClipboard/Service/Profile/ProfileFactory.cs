@@ -15,7 +15,7 @@ namespace SyncClipboard.Service
         {
             public string Text;
             //public string Html;
-            //public Image Image;
+            public Image Image;
             public string[] Files;
         }
 
@@ -36,6 +36,11 @@ namespace SyncClipboard.Service
                     }
                     return new FileProfile(filename);
                 }
+            }
+
+            if (localClipboard.Image != null)
+            {
+                return ImageProfile.CreateFromImage(localClipboard.Image);
             }
 
             if (localClipboard.Text != "" && localClipboard.Text != null)
@@ -73,7 +78,7 @@ namespace SyncClipboard.Service
                     {
                         return localClipboard;
                     }
-                    //localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+                    localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
                     localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text);
                     localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                     //localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);

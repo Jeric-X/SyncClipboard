@@ -8,12 +8,21 @@ namespace SyncClipboard.Service
 {
     class ImageProfile : FileProfile
     {
+        private const string TEMP_IMAGE_NAME = "SyncClipboardTempImage.bmp";
         public ImageProfile(string filepath) : base(filepath)
         {
         }
 
         public ImageProfile(JsonProfile jsonProfile) : base(jsonProfile)
         {
+        }
+
+        public static ImageProfile CreateFromImage(Image image)
+        {
+            var filePath = tempFilePath + $"/{TEMP_IMAGE_NAME}";
+            image.Save(filePath);
+
+            return new ImageProfile(filePath);
         }
 
         public override ClipboardType GetProfileType()
