@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
@@ -81,6 +82,17 @@ namespace SyncClipboard.Service
             SetBitmap(dataObject, imagePath);
 
             return dataObject;
+        }
+
+        public override Action ExecuteProfile()
+        {
+            var path = fullPath ?? GetTempLocalFilePath();
+            if (path != null)
+            {
+                return () => System.Diagnostics.Process.Start(path);
+            }
+
+            return null;
         }
     }
 }

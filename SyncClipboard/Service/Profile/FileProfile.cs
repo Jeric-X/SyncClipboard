@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
@@ -8,10 +9,12 @@ namespace SyncClipboard.Service
 {
     class FileProfile : Profile
     {
-        private string fullPath;
+        private const string SLASH = "\\";  // windows style slash
+
+        protected string fullPath;
         private bool DownloadStatusOK = false;
         private const string fileFolder = "file";
-        protected static string tempFilePath = System.Windows.Forms.Application.StartupPath + $"/{fileFolder}";
+        protected static string tempFilePath = System.Windows.Forms.Application.StartupPath + $"{SLASH}{fileFolder}";
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
         private string statusTip ="";
 
@@ -29,7 +32,7 @@ namespace SyncClipboard.Service
 
         protected string GetTempLocalFilePath()
         {
-            return tempFilePath + "/" + FileName;
+            return $"{tempFilePath}{SLASH}{FileName}";
         }
 
         public override ClipboardType GetProfileType()
@@ -167,6 +170,23 @@ namespace SyncClipboard.Service
                 Log.Write("GetMD5HashFromFile() fail " + ex.Message);
                 throw ex;
             }
+        }
+
+        public override Action ExecuteProfile()
+        {
+            var path = fullPath ?? GetTempLocalFilePath();
+            if (path != null)
+            {
+                return () =>
+                {
+                    System.Diagnostics.Process open = new System.Diagnostics.Process();
+                    open.StartInfo.FileName = "explorer";
+                    open.StartInfo.Arguments = @"/e,/select," + path;
+                    open.Start();
+                };
+            }
+            
+            return null;
         }
     }
 }

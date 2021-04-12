@@ -1,3 +1,7 @@
+v1.2.3
+- Fix bug with bmp file.
+- Add clicking event when file is downloaded. 
+
 v1.2.2
 - Add local clipboard type "bitmap".
 - Fix auto start with boot.
