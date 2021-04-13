@@ -1,0 +1,32 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug",
+            "type": "clr",
+            "request": "launch",
+            "preLaunchTask": "buildDebug",
+            "program": "${workspaceFolder}/SyncClipboard/bin/x64/Debug/SyncClipboard.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Release",
+            "type": "clr",
+            "request": "launch",
+            "preLaunchTask": "buildRelease",
+            "program": "${workspaceFolder}/SyncClipboard/bin/x64/Release/SyncClipboard.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+    ]
+}
