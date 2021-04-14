@@ -5,8 +5,6 @@ namespace SyncClipboard
 {
     public static class Config
     {
-        public static bool IfPull { get; set; }
-        public static bool IfPush { get; set; }
         public static String RemoteURL { get; set; }
         public static String User { get; set; }
         public static String Password { get; set; }
@@ -17,11 +15,6 @@ namespace SyncClipboard
         public static string GetProfileUrl()
         {
             return Url + "/SyncClipboard.json";
-        }
-
-        public static string GetImageUrl()
-        {
-            return Url + "/image.bmp";
         }
 
         public static string GetRemotePath()
@@ -36,8 +29,6 @@ namespace SyncClipboard
                 RemoteURL = Properties.Settings.Default.URL;
                 User = Properties.Settings.Default.USERNAME;
                 Password = Properties.Settings.Default.PASSWORD;
-                IfPull = Properties.Settings.Default.IFPULL;
-                IfPush = Properties.Settings.Default.IFPUSH;
             }
             catch
             { 
@@ -56,8 +47,6 @@ namespace SyncClipboard
             Properties.Settings.Default.URL = RemoteURL;
             Properties.Settings.Default.USERNAME = User ;
             Properties.Settings.Default.PASSWORD = Password;
-            Properties.Settings.Default.IFPULL = IfPull;
-            Properties.Settings.Default.IFPUSH = IfPush;
             Properties.Settings.Default.Save();
             Load();
             UserConfig.Save();

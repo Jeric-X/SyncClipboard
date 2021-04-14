@@ -82,7 +82,7 @@ namespace SyncClipboard
 
         public void Load()
         {
-            if (Config.IfPush)
+            if (UserConfig.Config.SyncService.PushSwitchOn)
             {
                 Start();
             }

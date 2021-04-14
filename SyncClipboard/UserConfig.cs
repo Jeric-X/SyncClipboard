@@ -24,6 +24,8 @@ namespace SyncClipboard
                 public string RemoteURL = "";
                 public string UserName = "";
                 public string Password = "";
+                public bool PullSwitchOn = false;
+                public bool PushSwitchOn = false;
                 public bool IsNextcloud = false;
             }
 
@@ -64,7 +66,6 @@ namespace SyncClipboard
             }
 
             JavaScriptSerializer serializer = new JavaScriptSerializer();
-            Configuration Config = null;
             try
             {
                 Config = serializer.Deserialize<Configuration>(text);

@@ -58,29 +58,5 @@ namespace SyncClipboard.Properties {
                 this["PASSWORD"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool IFPULL {
-            get {
-                return ((bool)(this["IFPULL"]));
-            }
-            set {
-                this["IFPULL"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool IFPUSH {
-            get {
-                return ((bool)(this["IFPUSH"]));
-            }
-            set {
-                this["IFPUSH"] = value;
-            }
-        }
     }
 }

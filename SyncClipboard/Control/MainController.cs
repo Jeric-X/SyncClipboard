@@ -67,14 +67,14 @@ namespace SyncClipboard.Control
             {
                 this.开机启动MenuItem.Checked = true;
             }
-            this.上传本机MenuItem.Checked = Config.IfPush;
-            this.下载远程MenuItem.Checked = Config.IfPull;
+            this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
+            this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
         }
 
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
-            Config.IfPull = false;
-            Config.IfPush = false;
+            UserConfig.Config.SyncService.PullSwitchOn = false;
+            UserConfig.Config.SyncService.PushSwitchOn = false;
             Notifyer.Exit();
             Application.Exit();
         }
@@ -117,14 +117,14 @@ namespace SyncClipboard.Control
         private void 上传本机MenuItem_Click(object sender, EventArgs e)
         {
             this.上传本机MenuItem.Checked = !this.上传本机MenuItem.Checked;
-            Config.IfPush = this.上传本机MenuItem.Checked;
+            UserConfig.Config.SyncService.PushSwitchOn = this.上传本机MenuItem.Checked;
             Config.Save();
         }
 
         private void 下载远程MenuItem_Click(object sender, EventArgs e)
         {
             this.下载远程MenuItem.Checked = !this.下载远程MenuItem.Checked;
-            Config.IfPull = this.下载远程MenuItem.Checked;
+            UserConfig.Config.SyncService.PullSwitchOn = this.下载远程MenuItem.Checked;
             Config.Save();
         }
 

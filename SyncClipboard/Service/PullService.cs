@@ -28,7 +28,7 @@ namespace SyncClipboard
 
         public void Load()
         {
-            if (Config.IfPull)
+            if (UserConfig.Config.SyncService.PullSwitchOn)
             {
                 Start();
             }
