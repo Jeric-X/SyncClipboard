@@ -5,8 +5,6 @@ namespace SyncClipboard
 {
     public static class Config
     {
-        public static bool IsCustomServer { get; set; }
-        public static String CustomName { get; set; }
         public static bool IfPull { get; set; }
         public static bool IfPush { get; set; }
         public static String RemoteURL { get; set; }
@@ -40,8 +38,6 @@ namespace SyncClipboard
                 Password = Properties.Settings.Default.PASSWORD;
                 IfPull = Properties.Settings.Default.IFPULL;
                 IfPush = Properties.Settings.Default.IFPUSH;
-                IsCustomServer = Properties.Settings.Default.ISCUSTOMSERVER;
-                CustomName = Properties.Settings.Default.CUSTOMNAME;
             }
             catch
             { 
@@ -51,17 +47,8 @@ namespace SyncClipboard
                 }
             }
             
-
-            if (IsCustomServer)
-            {
-                Auth = FormatHttpAuthHeader(User, Password);
-                Url = RemoteURL;
-            }
-            else
-            {
-                Auth = FormatHttpAuthHeader(Program.DefaultUser, Program.DefaultPassword);
-                Url = Program.DefaultServer + CustomName;
-            }
+            Auth = FormatHttpAuthHeader(User, Password);
+            Url = RemoteURL;
         }
 
         public static void Save()
@@ -71,8 +58,6 @@ namespace SyncClipboard
             Properties.Settings.Default.PASSWORD = Password;
             Properties.Settings.Default.IFPULL = IfPull;
             Properties.Settings.Default.IFPUSH = IfPush;
-            Properties.Settings.Default.CUSTOMNAME = CustomName;
-            Properties.Settings.Default.ISCUSTOMSERVER = IsCustomServer;
             Properties.Settings.Default.Save();
             Load();
             UserConfig.Save();

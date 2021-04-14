@@ -33,15 +33,9 @@ namespace SyncClipboard
             this.textBox1.Text = Config.RemoteURL;
             this.textBox2.Text = Config.User;
             this.textBox3.Text = Config.Password;
-            this.textBox4.Text = Config.CustomName;
             this.textBox6.Text = UserConfig.Config.Program.RetryTimes.ToString();
             this.textBox7.Text = (UserConfig.Config.Program.TimeOut / 1000).ToString();
             this.textBox8.Text = (UserConfig.Config.Program.IntervalTime / 1000).ToString();
-
-            if(Config.IsCustomServer)
-                this.radioButton1.Checked = true;
-            else
-                this.radioButton2.Checked = true;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -64,8 +58,6 @@ namespace SyncClipboard
             Config.RemoteURL = this.textBox1.Text;
             Config.User = this.textBox2.Text;
             Config.Password = this.textBox3.Text;
-            Config.IsCustomServer = this.radioButton1.Checked;
-            Config.CustomName = this.textBox4.Text;
 
             if (this.textBox8.Text != "")
                 UserConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text) * 1000;
@@ -74,25 +66,6 @@ namespace SyncClipboard
             if (this.textBox6.Text != "")
                 UserConfig.Config.Program.RetryTimes = Convert.ToInt32(this.textBox6.Text);
             Config.Save();
-        }
-
-        private void radioButton1_CheckedChanged(object sender, EventArgs e)
-        {
-            if (radioButton1.Checked)
-            {
-                panel1.Visible = true;
-                panel2.Visible = false;
-            }
-            else
-            {
-                panel2.Visible = true;
-                panel1.Visible = false;
-            }
-        }
-
-        private void textBox4_TextChanged(object sender, EventArgs e)
-        {
-            textBox5.Text = Program.DefaultServer + textBox4.Text;
         }
     }
 }

@@ -82,29 +82,5 @@ namespace SyncClipboard.Properties {
                 this["IFPUSH"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool ISCUSTOMSERVER {
-            get {
-                return ((bool)(this["ISCUSTOMSERVER"]));
-            }
-            set {
-                this["ISCUSTOMSERVER"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string CUSTOMNAME {
-            get {
-                return ((string)(this["CUSTOMNAME"]));
-            }
-            set {
-                this["CUSTOMNAME"] = value;
-            }
-        }
     }
 }
