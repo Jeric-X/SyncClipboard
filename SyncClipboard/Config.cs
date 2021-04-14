@@ -5,10 +5,6 @@ namespace SyncClipboard
 {
     public static class Config
     {
-        public static int IntervalTime = 3000;
-        public static int RetryTimes = 3;
-        public static int TimeOut = 10000;
-
         public static bool IsCustomServer { get; set; }
         public static String CustomName { get; set; }
         public static bool IfPull { get; set; }
@@ -46,9 +42,6 @@ namespace SyncClipboard
                 IfPush = Properties.Settings.Default.IFPUSH;
                 IsCustomServer = Properties.Settings.Default.ISCUSTOMSERVER;
                 CustomName = Properties.Settings.Default.CUSTOMNAME;
-                IntervalTime = Properties.Settings.Default.IntervalTime;
-                RetryTimes = Properties.Settings.Default.RetryTimes;
-                TimeOut = Properties.Settings.Default.TimeOut;
             }
             catch
             { 
@@ -80,11 +73,9 @@ namespace SyncClipboard
             Properties.Settings.Default.IFPUSH = IfPush;
             Properties.Settings.Default.CUSTOMNAME = CustomName;
             Properties.Settings.Default.ISCUSTOMSERVER = IsCustomServer;
-            Properties.Settings.Default.IntervalTime = IntervalTime;
-            Properties.Settings.Default.RetryTimes = RetryTimes;
-            Properties.Settings.Default.TimeOut = TimeOut;
             Properties.Settings.Default.Save();
             Load();
+            UserConfig.Save();
         }
 
         private static string FormatHttpAuthHeader(string user, string password)

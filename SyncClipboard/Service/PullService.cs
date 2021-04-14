@@ -70,7 +70,7 @@ namespace SyncClipboard
         private void PullLoop()
         {
             int errorTimes = 0;
-            for (; switchOn; Thread.Sleep((int)Config.IntervalTime))
+            for (; switchOn; Thread.Sleep((int)UserConfig.Config.Program.IntervalTime))
             {
                 RemoteClipboardLocker.Lock();
                 _notifyer.SetStatusString(SERVICE_NAME, "Reading remote profile.");
@@ -85,7 +85,7 @@ namespace SyncClipboard
                     errorTimes += 1;
                     Log.Write(ex.ToString());
                     _notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
-                    if (errorTimes == Config.RetryTimes)
+                    if (errorTimes == UserConfig.Config.Program.RetryTimes)
                     {
                         _notifyer.ToastNotify("剪切板同步失败", ex.Message.ToString());
                     }

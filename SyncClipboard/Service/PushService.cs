@@ -128,7 +128,7 @@ namespace SyncClipboard
             Log.Write("Push start");
 
             string errMessage = "";
-            for (int i = 0; i < Config.RetryTimes && switchOn; i++)
+            for (int i = 0; i < UserConfig.Config.Program.RetryTimes && switchOn; i++)
             {
                 try
                 {

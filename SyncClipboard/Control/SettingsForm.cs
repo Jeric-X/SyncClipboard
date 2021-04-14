@@ -34,9 +34,9 @@ namespace SyncClipboard
             this.textBox2.Text = Config.User;
             this.textBox3.Text = Config.Password;
             this.textBox4.Text = Config.CustomName;
-            this.textBox6.Text = Config.RetryTimes.ToString();
-            this.textBox7.Text = (Config.TimeOut / 1000).ToString();
-            this.textBox8.Text = (Config.IntervalTime / 1000).ToString();
+            this.textBox6.Text = UserConfig.Config.Program.RetryTimes.ToString();
+            this.textBox7.Text = (UserConfig.Config.Program.TimeOut / 1000).ToString();
+            this.textBox8.Text = (UserConfig.Config.Program.IntervalTime / 1000).ToString();
 
             if(Config.IsCustomServer)
                 this.radioButton1.Checked = true;
@@ -68,11 +68,11 @@ namespace SyncClipboard
             Config.CustomName = this.textBox4.Text;
 
             if (this.textBox8.Text != "")
-                Config.IntervalTime = Convert.ToInt32(this.textBox8.Text) * 1000;
+                UserConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text) * 1000;
             if (this.textBox7.Text != "")
-                Config.TimeOut = Convert.ToInt32(this.textBox7.Text) * 1000;
+                UserConfig.Config.Program.TimeOut = Convert.ToInt32(this.textBox7.Text) * 1000;
             if (this.textBox6.Text != "")
-                Config.RetryTimes = Convert.ToInt32(this.textBox6.Text);
+                UserConfig.Config.Program.RetryTimes = Convert.ToInt32(this.textBox6.Text);
             Config.Save();
         }
 

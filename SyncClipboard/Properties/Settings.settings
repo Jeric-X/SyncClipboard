@@ -23,14 +23,5 @@
     <Setting Name="CUSTOMNAME" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="IntervalTime" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">3000</Value>
-    </Setting>
-    <Setting Name="RetryTimes" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">3</Value>
-    </Setting>
-    <Setting Name="TimeOut" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">10000</Value>
-    </Setting>
   </Settings>
 </SettingsFile>

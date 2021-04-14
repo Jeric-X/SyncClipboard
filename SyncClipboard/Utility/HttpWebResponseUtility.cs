@@ -60,7 +60,7 @@ namespace SyncClipboard
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Method = httpMethod;
             request.UserAgent = DefaultUserAgent;
-            request.Timeout = Config.TimeOut;
+            request.Timeout = UserConfig.Config.Program.TimeOut;
 
             if (authHeader != null)
             {

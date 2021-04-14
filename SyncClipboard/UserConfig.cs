@@ -14,7 +14,9 @@ namespace SyncClipboard
         {
             public class CProgram
             {
-                public bool StartWithBoot = false;
+                public int IntervalTime = 3000;
+                public int RetryTimes = 3;
+                public int TimeOut = 10000;
             }
 
             public class CSyncService
@@ -29,7 +31,7 @@ namespace SyncClipboard
             public CProgram Program = new CProgram();
         }
 
-        static Configuration Config = new Configuration();
+        internal static Configuration Config = new Configuration();
 
         internal static void Save(Configuration config = null)
         {
