@@ -2,12 +2,14 @@ using System.Web.Script.Serialization;
 using SyncClipboard.Utility;
 using System.IO;
 using System.Windows.Forms;
+using System;
 
 namespace SyncClipboard
 {
     static class UserConfig
     {
-        const string CONFIG_FILE = "SyncClipboard.json";
+        internal static event Action ConfigChanged;
+        private const string CONFIG_FILE = "SyncClipboard.json";
         internal class Configuration
         {
             public class CProgram
@@ -43,6 +45,7 @@ namespace SyncClipboard
             {
                 MessageBox.Show("Config file failed to save.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            ConfigChanged?.Invoke();
         }
 
         internal static void Load()

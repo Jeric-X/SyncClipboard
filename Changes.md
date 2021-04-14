@@ -1,3 +1,6 @@
+v1.2.4(working)
+- Add independent config file.
+
 v1.2.3
 - Fix bug with bmp file.
 - Add clicking event when file is downloaded. 

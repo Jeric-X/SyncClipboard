@@ -37,7 +37,7 @@ namespace SyncClipboard
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
                 Application.ApplicationExit += Application_ApplicationExit;
 
-                Config.Load();
+                LoadUserConfig();
                 mainController = new MainController();
                 ClipboardListener = new ClipboardListener();
 
@@ -50,6 +50,20 @@ namespace SyncClipboard
             {
                 MessageBox.Show("已经存在一个正在运行中的实例！", SoftName);
             }
+        }
+
+        private static void ConfigChangedHandler()
+        {
+            Program.pullService.Load();
+            Program.pushService.Load();
+            Program.mainController.LoadConfig();
+        }
+
+        private static void LoadUserConfig()
+        {
+            Config.Load();
+            UserConfig.Load();
+            UserConfig.ConfigChanged += ConfigChangedHandler;
         }
 
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
