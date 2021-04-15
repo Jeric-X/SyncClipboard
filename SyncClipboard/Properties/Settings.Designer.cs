@@ -22,41 +22,5 @@ namespace SyncClipboard.Properties {
                 return defaultInstance;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://file.jericx.xyz/remote.php/dav/files/JericX/Clipboard")]
-        public string URL {
-            get {
-                return ((string)(this["URL"]));
-            }
-            set {
-                this["URL"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string USERNAME {
-            get {
-                return ((string)(this["USERNAME"]));
-            }
-            set {
-                this["USERNAME"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string PASSWORD {
-            get {
-                return ((string)(this["PASSWORD"]));
-            }
-            set {
-                this["PASSWORD"] = value;
-            }
-        }
     }
 }

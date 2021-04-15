@@ -13,6 +13,7 @@
                 "/property:GenerateFullPaths=true",
                 "/t:build",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
+                "/noconsolelogger",
                 "/consoleloggerparameters:NoSummary",
                 "/p:Configuration=Debug",
                 "/p:Platform=x64"

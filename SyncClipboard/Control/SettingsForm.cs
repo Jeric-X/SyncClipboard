@@ -30,9 +30,9 @@ namespace SyncClipboard
 
         private void SettingsForm_Load(object sender, EventArgs e)
         {
-            this.textBox1.Text = Config.RemoteURL;
-            this.textBox2.Text = Config.User;
-            this.textBox3.Text = Config.Password;
+            this.textBox1.Text = UserConfig.Config.SyncService.RemoteURL;
+            this.textBox2.Text = UserConfig.Config.SyncService.UserName;
+            this.textBox3.Text = UserConfig.Config.SyncService.Password;
             this.textBox6.Text = UserConfig.Config.Program.RetryTimes.ToString();
             this.textBox7.Text = (UserConfig.Config.Program.TimeOut / 1000).ToString();
             this.textBox8.Text = (UserConfig.Config.Program.IntervalTime / 1000).ToString();
@@ -55,9 +55,9 @@ namespace SyncClipboard
         }
         private void SaveConfig()
         {
-            Config.RemoteURL = this.textBox1.Text;
-            Config.User = this.textBox2.Text;
-            Config.Password = this.textBox3.Text;
+            UserConfig.Config.SyncService.RemoteURL = this.textBox1.Text;
+            UserConfig.Config.SyncService.UserName = this.textBox2.Text;
+            UserConfig.Config.SyncService.Password = this.textBox3.Text;
 
             if (this.textBox8.Text != "")
                 UserConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text) * 1000;

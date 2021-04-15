@@ -5,48 +5,28 @@ namespace SyncClipboard
 {
     public static class Config
     {
-        public static String RemoteURL { get; set; }
-        public static String User { get; set; }
-        public static String Password { get; set; }
+        //public static String User { get; set; }
+        //public static String Password { get; set; }
 
         private static String Auth { get; set; }
-        private static String Url { get; set; }
 
         public static string GetProfileUrl()
         {
-            return Url + "/SyncClipboard.json";
+            return UserConfig.Config.SyncService.RemoteURL + "/SyncClipboard.json";
         }
 
         public static string GetRemotePath()
         {
-            return Url;
+            return UserConfig.Config.SyncService.RemoteURL;
         }
 
         public static void Load()
         {
-            try
-            {
-                RemoteURL = Properties.Settings.Default.URL;
-                User = Properties.Settings.Default.USERNAME;
-                Password = Properties.Settings.Default.PASSWORD;
-            }
-            catch
-            { 
-                if (MessageBox.Show("配置文件出错", "即将初始化默认配置", MessageBoxButtons.YesNo) == DialogResult.No)
-                {
-                    Application.Exit(); 
-                }
-            }
-            
-            Auth = FormatHttpAuthHeader(User, Password);
-            Url = RemoteURL;
+            Auth = FormatHttpAuthHeader(UserConfig.Config.SyncService.UserName, UserConfig.Config.SyncService.Password);
         }
 
         public static void Save()
         {
-            Properties.Settings.Default.URL = RemoteURL;
-            Properties.Settings.Default.USERNAME = User ;
-            Properties.Settings.Default.PASSWORD = Password;
             Properties.Settings.Default.Save();
             Load();
             UserConfig.Save();
