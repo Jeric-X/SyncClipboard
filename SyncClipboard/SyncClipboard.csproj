@@ -91,7 +91,6 @@
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Config.cs" />
     <Compile Include="Service\Profile\TextProfile.cs" />
     <Compile Include="Utility\ClipboardHtmlBuilder.cs" />
     <Compile Include="Utility\HttpWebResponseUtility.cs" />

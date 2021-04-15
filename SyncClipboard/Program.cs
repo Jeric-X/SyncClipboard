@@ -61,7 +61,6 @@ namespace SyncClipboard
 
         private static void LoadUserConfig()
         {
-            Config.Load();
             UserConfig.Load();
             UserConfig.ConfigChanged += ConfigChangedHandler;
         }

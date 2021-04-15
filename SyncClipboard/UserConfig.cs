@@ -50,6 +50,7 @@ namespace SyncClipboard
                 MessageBox.Show("Config file failed to save.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             ConfigChanged?.Invoke();
+            Load();
         }
 
         internal static void Load()
@@ -74,6 +75,8 @@ namespace SyncClipboard
             {
                 WriteDefaultConfigFile();
             }
+
+            Auth = FormatHttpAuthHeader(UserConfig.Config.SyncService.UserName, UserConfig.Config.SyncService.Password);
         }
 
         private static void WriteDefaultConfigFile()
@@ -81,5 +84,42 @@ namespace SyncClipboard
             Log.Write("Write new default file.");
             Save(new Configuration());
         }
+
+
+        #region  TO BE MODIFIED
+        // TO BE MODIFIED
+        private static String Auth { get; set; }
+
+        public static string GetProfileUrl()
+        {
+            return UserConfig.Config.SyncService.RemoteURL + "/SyncClipboard.json";
+        }
+
+        public static string GetRemotePath()
+        {
+            return UserConfig.Config.SyncService.RemoteURL;
+        }
+
+        private static string FormatHttpAuthHeader(string user, string password)
+        {
+            string authHeader;
+            byte[] bytes = System.Text.Encoding.Default.GetBytes(user + ":" + password);
+            try
+            {
+                authHeader = "Authorization: Basic " + Convert.ToBase64String(bytes);
+            }
+            catch
+            {
+                authHeader = user + ":" + password;
+            }
+            return authHeader;
+        }
+
+        public static string GetHttpAuthHeader()
+        {
+            return UserConfig.Auth;
+        }
+
+        #endregion
     }
 }

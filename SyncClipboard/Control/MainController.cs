@@ -118,14 +118,14 @@ namespace SyncClipboard.Control
         {
             this.上传本机MenuItem.Checked = !this.上传本机MenuItem.Checked;
             UserConfig.Config.SyncService.PushSwitchOn = this.上传本机MenuItem.Checked;
-            Config.Save();
+            UserConfig.Save();
         }
 
         private void 下载远程MenuItem_Click(object sender, EventArgs e)
         {
             this.下载远程MenuItem.Checked = !this.下载远程MenuItem.Checked;
             UserConfig.Config.SyncService.PullSwitchOn = this.下载远程MenuItem.Checked;
-            Config.Save();
+            UserConfig.Save();
         }
 
         private void 检查更新MenuItem_Click(object sender, EventArgs e)

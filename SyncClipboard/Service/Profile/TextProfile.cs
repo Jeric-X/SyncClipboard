@@ -47,7 +47,7 @@ namespace SyncClipboard.Service
 
         public override void UploadProfile()
         {
-            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.GetHttpAuthHeader());
+            HttpWebResponseUtility.PutText(UserConfig.GetProfileUrl(), this.ToJsonString(), UserConfig.GetHttpAuthHeader());
         }
 
         protected override DataObject CreateDataObject()

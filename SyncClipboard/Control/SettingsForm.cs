@@ -65,7 +65,7 @@ namespace SyncClipboard
                 UserConfig.Config.Program.TimeOut = Convert.ToInt32(this.textBox7.Text) * 1000;
             if (this.textBox6.Text != "")
                 UserConfig.Config.Program.RetryTimes = Convert.ToInt32(this.textBox6.Text);
-            Config.Save();
+            UserConfig.Save();
         }
     }
 }

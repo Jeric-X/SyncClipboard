@@ -56,13 +56,13 @@ namespace SyncClipboard.Service
 
         public override void UploadProfile()
         {
-            string remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            string remotePath = UserConfig.GetRemotePath() + $"/{fileFolder}/{FileName}";
 
             FileInfo file = new FileInfo(fullPath);
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
-                HttpWebResponseUtility.PutFile(remotePath, fullPath, Config.GetHttpAuthHeader());
+                HttpWebResponseUtility.PutFile(remotePath, fullPath, UserConfig.GetHttpAuthHeader());
             }
             else
             {
@@ -70,12 +70,12 @@ namespace SyncClipboard.Service
             }
 
             SetMd5(GetMD5HashFromFile(fullPath));
-            HttpWebResponseUtility.PutText(Config.GetProfileUrl(), this.ToJsonString(), Config.GetHttpAuthHeader());
+            HttpWebResponseUtility.PutText(UserConfig.GetProfileUrl(), this.ToJsonString(), UserConfig.GetHttpAuthHeader());
         }
 
         protected override void BeforeSetLocal()
         {
-            string remotePath = Config.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            string remotePath = UserConfig.GetRemotePath() + $"/{fileFolder}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
             if (Directory.Exists(fileFolder) == false)
@@ -85,7 +85,7 @@ namespace SyncClipboard.Service
 
             try
             {
-                HttpWebResponseUtility.Getfile(remotePath, localPath, Config.GetHttpAuthHeader());
+                HttpWebResponseUtility.Getfile(remotePath, localPath, UserConfig.GetHttpAuthHeader());
                 if (GetMD5HashFromFile(localPath) != GetMd5())
                 {
                     Log.Write("[PULL] download erro, md5 wrong");
