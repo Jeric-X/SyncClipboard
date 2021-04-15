@@ -16,6 +16,7 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.MenuItem 下载远程MenuItem;
         private System.Windows.Forms.MenuItem 检查更新MenuItem;
         private System.Windows.Forms.MenuItem lineMenuItem;
+        private System.Windows.Forms.MenuItem nextCloudLogger;
 
         SettingsForm settingsForm;
         bool isSttingsFormExist = false;
@@ -34,6 +35,7 @@ namespace SyncClipboard.Control
             this.退出MenuItem = new System.Windows.Forms.MenuItem("退出");
             this.检查更新MenuItem = new System.Windows.Forms.MenuItem("检查更新");
             this.lineMenuItem = new System.Windows.Forms.MenuItem("-");
+            this.nextCloudLogger = new System.Windows.Forms.MenuItem("从NextCloud登录");
 
             this.设置MenuItem.Click += new System.EventHandler(this.设置MenuItem_Click);
             this.开机启动MenuItem.Click += new System.EventHandler(this.开机启动MenuItem_Click);
@@ -41,9 +43,12 @@ namespace SyncClipboard.Control
             this.下载远程MenuItem.Click += new System.EventHandler(this.下载远程MenuItem_Click);
             this.退出MenuItem.Click += new System.EventHandler(this.退出MenuItem_Click);
             this.检查更新MenuItem.Click += new System.EventHandler(this.检查更新MenuItem_Click);
+            this.nextCloudLogger.Click += new System.EventHandler(this.nextCloudLogger_Click);
             
             this.contextMenu = new ContextMenu(new MenuItem[] { 
-                this.设置MenuItem, 
+                this.设置MenuItem,
+                this.lineMenuItem.CloneMenu(),
+                this.nextCloudLogger,
                 this.lineMenuItem.CloneMenu(),
                 this.开机启动MenuItem,
                 this.上传本机MenuItem,
@@ -71,6 +76,11 @@ namespace SyncClipboard.Control
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
         }
 
+        private void nextCloudLogger_Click(object sender, EventArgs e)
+        {
+            Nextcloud.SignIn();
+        }
+
         private void 退出MenuItem_Click(object sender, EventArgs e)
         {
             UserConfig.Config.SyncService.PullSwitchOn = false;
@@ -78,7 +88,6 @@ namespace SyncClipboard.Control
             Notifyer.Exit();
             Application.Exit();
         }
-
         private void 设置MenuItem_Click(object sender, EventArgs e)
         {
             if (!isSttingsFormExist)

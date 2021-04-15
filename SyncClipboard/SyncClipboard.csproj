@@ -81,6 +81,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Control\Notifyer.cs" />
+    <Compile Include="Control\InputBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Service\Profile\FileProfile.cs" />
     <Compile Include="Service\Profile\ImageProfile.cs" />
     <Compile Include="Service\LocalClipboardLocker.cs" />
@@ -94,6 +97,7 @@
     <Compile Include="Service\Profile\TextProfile.cs" />
     <Compile Include="Utility\ClipboardHtmlBuilder.cs" />
     <Compile Include="Utility\HttpWebResponseUtility.cs" />
+    <Compile Include="Utility\Nextcloud.cs" />
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
     </Compile>

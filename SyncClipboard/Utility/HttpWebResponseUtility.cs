@@ -16,7 +16,7 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
-        public static string GetText(string url, string authHeader)
+        public static string GetText(string url, string authHeader = null)
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
