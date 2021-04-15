@@ -16,6 +16,17 @@ namespace SyncClipboard
             //savedCookies = cookies;
         }
 
+        public static string PostText(string url, string text, string authHeader = null)
+        {
+            return OperateText(url, "POST", text, authHeader);
+        }
+
+        public static string Post(string url, string authHeader = null)
+        {
+            HttpWebRequest request = CreateHttpRequest(url, "POST", authHeader);
+            return GetString(request);
+        }
+
         public static string GetText(string url, string authHeader = null)
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
@@ -45,8 +56,13 @@ namespace SyncClipboard
 
         public static void PutText(string url, string text, string authHeader)
         {
+            OperateText(url, "PUT", text, authHeader);
+        }
+
+        private static string OperateText(string url, string method, string text, string authHeader)
+        {
             byte[] postBytes = Encoding.UTF8.GetBytes(text);
-            PutByte(url, postBytes, authHeader);
+            return OperateByte(url, postBytes, method, authHeader);
         }
 
         public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string authHeader)
@@ -84,7 +100,7 @@ namespace SyncClipboard
             mstream.Read(byteData, 0, byteData.Length);
             mstream.Close();
 
-            PutByte(url, byteData, authHeader);
+            OperateByte(url, byteData, "PUT", authHeader);
         }
 
         public static void PutFile(string url, string file, string authHeader)
@@ -101,16 +117,27 @@ namespace SyncClipboard
             response.Close();
         }
 
-        private static void PutByte(string url, byte[] byteData, string authHeader)
+        private static string GetString(HttpWebRequest request)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader);
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
 
+            StreamReader objStrmReader = new StreamReader(response.GetResponseStream());
+            string receiveText = objStrmReader.ReadToEnd();
+
+            objStrmReader.Close();
+            response.Close();
+
+            return receiveText;
+        }
+        private static string OperateByte(string url, byte[] byteData, string method, string authHeader)
+        {
+            HttpWebRequest request = CreateHttpRequest(url, method, authHeader);
+            request.ContentLength = byteData.Length;
             Stream reqStream = request.GetRequestStream();
             reqStream.Write(byteData, 0, byteData.Length);
             reqStream.Close();
 
-            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
-            response.Close();
+            return GetString(request);
         }
 
         public static void SetSecurityProtocol(string url)

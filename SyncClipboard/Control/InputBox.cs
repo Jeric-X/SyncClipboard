@@ -56,6 +56,12 @@ namespace SyncClipboard.Control
             this.ResumeLayout(false);
         }
 
+        public void SetText(string text)
+        {
+            _textBox.Text = text;
+            _textBox.Select(_textBox.TextLength, 0);
+        }
+
         //对键盘进行响应
         private void txtData_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
         {
@@ -71,11 +77,13 @@ namespace SyncClipboard.Control
         }
 
         //显示InputBox
-        public static string Show(string Title)
+        public static string Show(string Title, string defaultText = "")
         {
             InputBox inputbox = new InputBox();
             inputbox.Text = Title;
-            inputbox.ShowDialog();
+            inputbox.SetText(defaultText);
+            var a = inputbox.ShowDialog();
+            SyncClipboard.Utility.Log.Write(a.ToString());
             return inputbox._textBox.Text;
         }
     }

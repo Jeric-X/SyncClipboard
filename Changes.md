@@ -1,6 +1,7 @@
 v1.2.4(working)
 - Add independent config file.
 - Remove internal server.
+- Add nextcloud official login flow.
 
 v1.2.3
 - Fix bug with bmp file.
