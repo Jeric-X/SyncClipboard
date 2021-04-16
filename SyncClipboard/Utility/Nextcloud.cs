@@ -126,7 +126,7 @@ namespace SyncClipboard.Utility
             }
             catch
             {
-                MessageBox.Show("认证中发生错误：" + System.Environment.NewLine + json, "Error");
+                MessageBox.Show("认证中发生错误：" + System.Environment.NewLine + json?.ToString(), "Error");
             }
             return firstResponse;
         }

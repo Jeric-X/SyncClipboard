@@ -1,3 +1,6 @@
+v1.3.1
+- fix bug: `config won't effect until next startup`
+
 v1.3.0
 - Add independent config file.
 - Remove internal server.

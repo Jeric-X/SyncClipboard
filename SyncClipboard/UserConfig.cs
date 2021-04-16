@@ -48,6 +48,7 @@ namespace SyncClipboard
                 MessageBox.Show("Config file failed to save.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             ConfigChanged?.Invoke();
+            Auth = FormatHttpAuthHeader(UserConfig.Config.SyncService.UserName, UserConfig.Config.SyncService.Password);
         }
 
         internal static void Load()
