@@ -18,18 +18,19 @@ namespace SyncClipboard
 
         public static string PostText(string url, string text, string authHeader = null)
         {
-            return OperateText(url, "POST", text, authHeader);
+            string contenType = "application/x-www-form-urlencoded";
+            return OperateText(url, "POST", text, authHeader, contenType);
         }
 
         public static string Post(string url, string authHeader = null)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "POST", authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "POST", authHeader, null);
             return GetString(request);
         }
 
         public static string GetText(string url, string authHeader = null)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader, null);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
 
             StreamReader objStrmReader = new StreamReader(response.GetResponseStream());
@@ -43,7 +44,7 @@ namespace SyncClipboard
 
         public static void Getfile(string url, string savePath, string authHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader, null);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
             Stream respStream = response.GetResponseStream();
 
@@ -56,16 +57,16 @@ namespace SyncClipboard
 
         public static void PutText(string url, string text, string authHeader)
         {
-            OperateText(url, "PUT", text, authHeader);
+            OperateText(url, "PUT", text, authHeader, null);
         }
 
-        private static string OperateText(string url, string method, string text, string authHeader)
+        private static string OperateText(string url, string method, string text, string authHeader, string contentType)
         {
             byte[] postBytes = Encoding.UTF8.GetBytes(text);
-            return OperateByte(url, postBytes, method, authHeader);
+            return OperateByte(url, postBytes, method, authHeader, contentType);
         }
 
-        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string authHeader)
+        public static HttpWebRequest CreateHttpRequest(string url, string httpMethod, string authHeader, string contentType)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -82,6 +83,12 @@ namespace SyncClipboard
             {
                 request.Headers.Add(authHeader);
             }
+
+            if (!string.IsNullOrEmpty(contentType))
+            {
+                request.ContentType = contentType;
+            }
+
             request.CookieContainer = new CookieContainer();
             // if (useCookies && savedCookies != null)
             // {
@@ -95,17 +102,17 @@ namespace SyncClipboard
             MemoryStream mstream = new MemoryStream();
             image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
             byte[] byteData = new Byte[mstream.Length];
-    
+
             mstream.Position = 0;
             mstream.Read(byteData, 0, byteData.Length);
             mstream.Close();
 
-            OperateByte(url, byteData, "PUT", authHeader);
+            OperateByte(url, byteData, "PUT", authHeader, null);
         }
 
         public static void PutFile(string url, string file, string authHeader)
         {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader, null);
             Stream reqStream = request.GetRequestStream();
 
             FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read);
@@ -129,9 +136,9 @@ namespace SyncClipboard
 
             return receiveText;
         }
-        private static string OperateByte(string url, byte[] byteData, string method, string authHeader)
+        private static string OperateByte(string url, byte[] byteData, string method, string authHeader, string contentType)
         {
-            HttpWebRequest request = CreateHttpRequest(url, method, authHeader);
+            HttpWebRequest request = CreateHttpRequest(url, method, authHeader, contentType);
             request.ContentLength = byteData.Length;
             Stream reqStream = request.GetRequestStream();
             reqStream.Write(byteData, 0, byteData.Length);
@@ -181,5 +188,5 @@ namespace SyncClipboard
                 throw new Exception("GetMD5Hash() fail,error:" + ex.Message);
             }
         }
-    } 
+    }
 }

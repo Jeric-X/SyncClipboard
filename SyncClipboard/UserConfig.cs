@@ -35,10 +35,8 @@ namespace SyncClipboard
 
         internal static Configuration Config = new Configuration();
 
-        internal static void Save(Configuration config = null)
+        internal static void Save()
         {
-            Config = config ?? Config;
-
             JavaScriptSerializer serializer = new JavaScriptSerializer();
             var configStr = serializer.Serialize(Config);
             try
@@ -50,7 +48,6 @@ namespace SyncClipboard
                 MessageBox.Show("Config file failed to save.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             ConfigChanged?.Invoke();
-            Load();
         }
 
         internal static void Load()
@@ -70,6 +67,10 @@ namespace SyncClipboard
             try
             {
                 Config = serializer.Deserialize<Configuration>(text);
+                if (Config is null)
+                {
+                    WriteDefaultConfigFile();
+                }
             }
             catch
             {
@@ -82,7 +83,8 @@ namespace SyncClipboard
         private static void WriteDefaultConfigFile()
         {
             Log.Write("Write new default file.");
-            Save(new Configuration());
+            Config = new Configuration();
+            Save();
         }
 
 

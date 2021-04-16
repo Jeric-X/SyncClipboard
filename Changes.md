@@ -1,4 +1,4 @@
-v1.2.4(working)
+v1.3.0
 - Add independent config file.
 - Remove internal server.
 - Add nextcloud official login flow.

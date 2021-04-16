@@ -112,6 +112,7 @@ namespace SyncClipboard.Service
             catch (ArgumentException)
             {
                 Log.Write("Existed profile file's format is wrong");
+                throw new Exception("failed to connect remote server");
             }
 
             ClipboardType type = StringToClipBoardType(jsonProfile.Type);

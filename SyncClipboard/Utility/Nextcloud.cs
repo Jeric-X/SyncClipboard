@@ -31,7 +31,9 @@ namespace SyncClipboard.Utility
     static class Nextcloud
     {
         private const string VERIFICATION_URL = "/index.php/login/v2";
-        private const string POLL_URL = "/login/v2/poll";
+        private const string WEBDAV_URL = "/remote.php/dav/files";
+        private const int VERIFICATION_LIMITED_TIME = 60000;
+        private const int INTERVAL_TIME = 1000;
         public static void SignIn()
         {
             SignInFlowAsync();
@@ -39,36 +41,38 @@ namespace SyncClipboard.Utility
 
         public static async void SignInFlowAsync()
         {
-            //string server = InputBox.Show("Please input Nextcloud server address", "https://");
-            string server = "https://file.jericx.xyz:10443";
+            string server = InputBox.Show("Please input Nextcloud server address", $"https://[请在确定后{VERIFICATION_LIMITED_TIME / 1000}秒内完成网页认证]");
             if (server == string.Empty)
             {
                 return;
             }
 
-            string fistResponseJson;
-            try
+            var fistResponseJson = await GetFirstResponse(server); ;
+            var firstResponse = DecodeJson<FistResponseJson>(fistResponseJson);
+            if (firstResponse == null)
             {
-                fistResponseJson = await GetFirstResponse(server);
-            }
-            catch (System.Net.WebException)
-            {
-                MessageBox.Show("Can not connect to the server:" + System.Environment.NewLine + server, "Error");
                 return;
             }
 
-            var firstResponse = DecodeJson<FistResponseJson>(fistResponseJson);
             System.Diagnostics.Process.Start(firstResponse.login);
 
             string secondResponseJson = await GetSecondResponse(server, firstResponse);
-            var secondResponse = DecodeJson<SecondResponse>(fistResponseJson);
-
-            if (secondResponse != null)
+            var secondResponse = DecodeJson<SecondResponse>(secondResponseJson);
+            if (secondResponse == null)
             {
-                UserConfig.Config.SyncService.UserName = secondResponse.loginName;
-                UserConfig.Config.SyncService.Password = secondResponse.appPassword;
-                UserConfig.Config.SyncService.RemoteURL = secondResponse.server;
+                return;
             }
+
+            var path = InputBox.Show("Please input syncClipboard folder path");
+            if (path == string.Empty)
+            {
+                return;
+            }
+
+            UserConfig.Config.SyncService.UserName = secondResponse.loginName;
+            UserConfig.Config.SyncService.Password = secondResponse.appPassword;
+            UserConfig.Config.SyncService.RemoteURL = $"{secondResponse.server}/{WEBDAV_URL}/{secondResponse.loginName}/{path}";
+            UserConfig.Save();
         }
 
         private static async Task<string> GetFirstResponse(string server)
@@ -76,44 +80,53 @@ namespace SyncClipboard.Utility
             var loginUrl = server + VERIFICATION_URL;
             return await Task.Run(() =>
             {
-                return HttpWebResponseUtility.Post(loginUrl);
+                try
+                {
+                    return HttpWebResponseUtility.Post(loginUrl);
+                }
+                catch (System.Net.WebException)
+                {
+                    return "Can not connect to the server";
+                }
+                catch (UriFormatException)
+                {
+                    return "URL format is wrong";
+                }
             });
         }
 
         private static async Task<string> GetSecondResponse(string server, FistResponseJson firstResponse)
         {
-            //var url = firstResponse.poll.endpoint;    // official document, but not usefull
-            var url = server + POLL_URL;
+            var url = firstResponse.poll.endpoint;
             var token = $"token={firstResponse.poll.token}";
             return await Task.Run(() =>
             {
-                for (int i = 0; i < 30; i++)
+                for (int i = 0; i < VERIFICATION_LIMITED_TIME / INTERVAL_TIME; i++)
                 {
                     try
                     {
                         return HttpWebResponseUtility.PostText(url, token);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        Thread.Sleep(1000);
+                        Thread.Sleep(INTERVAL_TIME);
                         continue;
                     }
                 }
-                return null;
+                return $"Can not connect to the server or timeout of {VERIFICATION_LIMITED_TIME / 1000}s";
             });
         }
 
         public static T DecodeJson<T>(string json)
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
             T firstResponse = default(T);
             try
             {
-                firstResponse = serializer.Deserialize<T>(json);
+                firstResponse = new JavaScriptSerializer().Deserialize<T>(json);
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox.Show(ex.ToString(), "Error");
+                MessageBox.Show("认证中发生错误：" + System.Environment.NewLine + json, "Error");
             }
             return firstResponse;
         }
