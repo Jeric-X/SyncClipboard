@@ -12,18 +12,18 @@ namespace SyncClipboard.Utility
     {
         public class Poll
         {
-            public string token;
-            public string endpoint;
+            public string token = null;
+            public string endpoint = null;
         }
-        public Poll poll;
-        public string login;
+        public Poll poll = null;
+        public string login = null;
     }
 
     class SecondResponse
     {
-        public string server;
-        public string loginName;
-        public string appPassword;
+        public string server = null;
+        public string loginName = null;
+        public string appPassword = null;
     }
 
     #endregion
