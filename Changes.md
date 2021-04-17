@@ -1,3 +1,6 @@
+v1.3.2
+- fix bugs when clicking COPY button multi times in a short period of time.
+
 v1.3.1
 - fix bug: `config won't effect until next startup`
 
