@@ -82,8 +82,7 @@ namespace SyncClipboard.Control
             InputBox inputbox = new InputBox();
             inputbox.Text = Title;
             inputbox.SetText(defaultText);
-            var a = inputbox.ShowDialog();
-            SyncClipboard.Utility.Log.Write(a.ToString());
+            inputbox.ShowDialog();
             return inputbox._textBox.Text;
         }
     }

@@ -3,6 +3,7 @@ using SyncClipboard.Service;
 using SyncClipboard.Utility;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SyncClipboard
 {
@@ -16,8 +17,12 @@ namespace SyncClipboard
         string _statusString = "";
 
         private bool switchOn = false;
-        private Thread pushThread = null;
+
+        private CancellationTokenSource _cancelToken = new CancellationTokenSource();
+        private Task _task = Task.Run(() => {/* Do Nothing */});
+
         private Profile currentProfile;
+        private Object _currentProfileMutex = new Object();
 
         private int pushThreadNumber = 0;
         public delegate void PushStatusChangingHandler();
@@ -94,46 +99,60 @@ namespace SyncClipboard
 
         private void ClipboardChangedHandler()
         {
-            Mutex mutex = new Mutex();
-            mutex.WaitOne();
-            if (pushThread != null)
+            lock (_currentProfileMutex)
             {
-                Log.Write("Kill old push thread");
-                pushThread.Abort();
-                pushThread = null;
+                currentProfile = ProfileFactory.CreateFromLocal();
+                if (currentProfile == null)
+                {
+                    return;
+                }
+                if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+                {
+                    Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
+                    return;
+                }
             }
 
-            currentProfile = ProfileFactory.CreateFromLocal();
-            if (currentProfile == null)
+            lock (_task)
             {
-                return;
-            }
-            if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
-            {
-                Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
-                return;
-            }
+                _cancelToken.Cancel();
+                _cancelToken = new CancellationTokenSource();
 
-            AddPushThreadNumber();
-            pushThread = new Thread(UploadClipBoard);
-            pushThread.SetApartmentState(ApartmentState.STA);
-            pushThread.Start();
-            Thread.Sleep(50);
-            Log.Write("Create new push thread");
-            mutex.ReleaseMutex();
+                AddPushThreadNumber();
+
+                _task = _task.ContinueWith(
+                    (Task task) =>
+                    {
+                        UploadLoop(_cancelToken.Token, _task);
+                    },
+                    _cancelToken.Token
+                ).ContinueWith(
+                    (Task task) =>
+                    {
+                        ReleasePushThreadNumber();
+                    }
+                );
+            }
         }
 
-        private void UploadLoop(Profile currentProfile)
+        private void UploadLoop(CancellationToken token, Task iii)
         {
-            Log.Write("Push start");
-
+            Log.Write("[PUSH] start loop");
+            RemoteClipboardLocker.Lock();
             string errMessage = "";
             for (int i = 0; i < UserConfig.Config.Program.RetryTimes && switchOn; i++)
             {
+                if (token.IsCancellationRequested)
+                {
+                    RemoteClipboardLocker.Unlock();
+                    return;
+                }
+
                 try
                 {
                     currentProfile.UploadProfile();
-                    Log.Write("Push end");
+                    Log.Write("[PUSH] upload end");
+                    RemoteClipboardLocker.Unlock();
                     return;
                 }
                 catch (Exception ex)
@@ -141,30 +160,19 @@ namespace SyncClipboard
                     errMessage = ex.Message.ToString();
                     _notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", _isErrorStatus);
                 }
-                Thread.Sleep(1000);
+
+                if (token.IsCancellationRequested)
+                {
+                    Log.Write("DDDD" + token.IsCancellationRequested);
+                    RemoteClipboardLocker.Unlock();
+                    return;
+                }
+                Thread.Sleep(UserConfig.Config.Program.IntervalTime);
             }
+            RemoteClipboardLocker.Unlock();
             _notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
             _statusString = errMessage;
             _isErrorStatus = true;
-        }
-
-        private void UploadClipBoard()
-        {
-            RemoteClipboardLocker.Lock();
-            try
-            {
-                UploadLoop(currentProfile);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex.Message.ToString());
-            }
-            finally
-            {
-                RemoteClipboardLocker.Unlock();
-                Log.Write("[PUSH] unlock remote");
-                ReleasePushThreadNumber();
-            }
         }
 
         private void SetUploadingIcon()
