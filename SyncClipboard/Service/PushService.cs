@@ -21,40 +21,40 @@ namespace SyncClipboard
         private CancellationTokenSource _cancelToken = new CancellationTokenSource();
         private Task _task = Task.Run(() => {/* Do Nothing */});
 
-        private Profile currentProfile;
+        private Profile _currentProfile;
         private Object _currentProfileMutex = new Object();
 
-        private int pushThreadNumber = 0;
+        private int _uploadTaskNumber = 0;
         public delegate void PushStatusChangingHandler();
         public event PushStatusChangingHandler PushStarted;
         public event PushStatusChangingHandler PushStopped;
 
         private void ReleasePushThreadNumber()
         {
-            pushThreadNumber--;
+            Interlocked.Decrement(ref _uploadTaskNumber);
             SetPushstatusChangeEvent();
         }
 
         private void AddPushThreadNumber()
         {
-            pushThreadNumber++;
+            Interlocked.Increment(ref _uploadTaskNumber);
             SetPushstatusChangeEvent();
         }
 
         private void SetPushstatusChangeEvent()
         {
-            if (pushThreadNumber == 0)
+            if (_uploadTaskNumber == 0)
             {
                 Log.Write("[PUSH] [EVENT] push ended EVENT START");
                 PushStopped?.Invoke();
             }
-            else if (pushThreadNumber == 1)
+            else if (_uploadTaskNumber == 1)
             {
                 Log.Write("[PUSH] [EVENT] push started EVENT START");
                 PushStarted?.Invoke();
             }
 
-            Log.Write("[PUSH] [EVENT] pushThreadNumber = " + pushThreadNumber.ToString());
+            Log.Write("[PUSH] [EVENT] pushThreadNumber = " + _uploadTaskNumber.ToString());
         }
 
         public PushService(Notifyer notifyer)
@@ -101,12 +101,12 @@ namespace SyncClipboard
         {
             lock (_currentProfileMutex)
             {
-                currentProfile = ProfileFactory.CreateFromLocal();
-                if (currentProfile == null)
+                _currentProfile = ProfileFactory.CreateFromLocal();
+                if (_currentProfile == null)
                 {
                     return;
                 }
-                if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+                if (_currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
                 {
                     Log.Write("[PUSH] Local profile type is Unkown, stop upload.");
                     return;
@@ -150,7 +150,7 @@ namespace SyncClipboard
 
                 try
                 {
-                    currentProfile.UploadProfile();
+                    _currentProfile.UploadProfile();
                     Log.Write("[PUSH] upload end");
                     RemoteClipboardLocker.Unlock();
                     return;
@@ -170,7 +170,7 @@ namespace SyncClipboard
                 Thread.Sleep(UserConfig.Config.Program.IntervalTime);
             }
             RemoteClipboardLocker.Unlock();
-            _notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
+            _notifyer.ToastNotify("上传失败：" + _currentProfile.ToolTip(), errMessage);
             _statusString = errMessage;
             _isErrorStatus = true;
         }
