@@ -16,6 +16,7 @@ namespace SyncClipboard
 
         public static PullService pullService;
         public static PushService pushService;
+        public static WebDav webDav;
 
         /// <summary>
         /// 应用程序的主入口点。
@@ -37,7 +38,7 @@ namespace SyncClipboard
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
                 Application.ApplicationExit += Application_ApplicationExit;
 
-                LoadUserConfig();
+                StartUp();
                 mainController = new MainController();
                 ClipboardListener = new ClipboardListener();
 
@@ -50,6 +51,27 @@ namespace SyncClipboard
             {
                 MessageBox.Show("已经存在一个正在运行中的实例！", SoftName);
             }
+        }
+
+        private static void StartUp()
+        {
+            LoadUserConfig();
+            webDav = new WebDav(
+                UserConfig.Config.SyncService.RemoteURL,
+                UserConfig.Config.SyncService.UserName,
+                UserConfig.Config.SyncService.Password
+            );
+
+            webDav.TestAlive(
+                UserConfig.Config.Program.TimeOut,
+                UserConfig.Config.Program.RetryTimes
+            ).ContinueWith(
+                (res) => 
+                {
+                    Log.Write(res.Result.ToString());
+                },
+                System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
+            );
         }
 
         private static void ConfigChangedHandler()
@@ -69,7 +91,7 @@ namespace SyncClipboard
         {
             Log.Write("未知错误:" + e.Exception.Message.ToString());
         }
-         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             Log.Write("未知错误:" + e.ExceptionObject.ToString());
         }

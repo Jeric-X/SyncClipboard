@@ -28,6 +28,12 @@ namespace SyncClipboard
             return GetString(request);
         }
 
+        public static string Operate(string url, string method, string authHeader)
+        {
+            HttpWebRequest request = CreateHttpRequest(url, method, authHeader, null);
+            return GetString(request);
+        }
+
         public static string GetText(string url, string authHeader = null)
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader, null);
