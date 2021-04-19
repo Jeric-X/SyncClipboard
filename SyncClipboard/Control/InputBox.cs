@@ -43,7 +43,6 @@ namespace SyncClipboard.Control
 
             this.AutoScaleBaseSize = new System.Drawing.Size(6, 14);
             this.ClientSize = new System.Drawing.Size(350, 48);
-            this.ControlBox = false;
             this.Controls.Add(this._infoLabel);
             this.Controls.Add(this._textBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -52,7 +51,7 @@ namespace SyncClipboard.Control
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-
+            this.DialogResult = DialogResult.None;
             this.ResumeLayout(false);
         }
 
@@ -67,11 +66,11 @@ namespace SyncClipboard.Control
         {
             if (e.KeyCode == Keys.Enter)
             {
+                this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             else if (e.KeyCode == Keys.Escape)
             {
-                _textBox.Text = string.Empty;
                 this.Close();
             }
         }
@@ -82,8 +81,11 @@ namespace SyncClipboard.Control
             InputBox inputbox = new InputBox();
             inputbox.Text = Title;
             inputbox.SetText(defaultText);
-            inputbox.ShowDialog();
-            return inputbox._textBox.Text;
+            if (inputbox.ShowDialog() == DialogResult.OK)
+            {
+                return inputbox._textBox.Text;
+            }
+            return string.Empty;
         }
     }
 }
