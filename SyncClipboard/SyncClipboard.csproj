@@ -91,6 +91,7 @@
     <Compile Include="Service\Profile\ProfileType.cs" />
     <Compile Include="Service\Profile\UnkonwnProfile.cs" />
     <Compile Include="Service\RemoteClipboardLocker.cs" />
+    <Compile Include="Service\SyncService.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>

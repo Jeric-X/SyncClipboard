@@ -100,7 +100,7 @@ namespace SyncClipboard.Service
         public static Profile CreateFromRemote()
         {
             Log.Write("[PULL] " + UserConfig.GetProfileUrl());
-            String httpReply = HttpWebResponseUtility.GetText(UserConfig.GetProfileUrl(), UserConfig.GetHttpAuthHeader());
+            String httpReply = Program.webDav.GetText(SyncService.RemoteRecordFile);
             Log.Write("[PULL] json " + httpReply);
 
             JsonProfile jsonProfile = null;

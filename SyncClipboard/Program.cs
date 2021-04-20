@@ -56,22 +56,25 @@ namespace SyncClipboard
         private static void StartUp()
         {
             LoadUserConfig();
+            LoadGlobal();
+        }
+
+        private static void LoadGlobal()
+        {
             webDav = new WebDav(
                 UserConfig.Config.SyncService.RemoteURL,
                 UserConfig.Config.SyncService.UserName,
                 UserConfig.Config.SyncService.Password
             );
 
-            webDav.TestAlive(
-                UserConfig.Config.Program.TimeOut,
-                UserConfig.Config.Program.RetryTimes
-            ).ContinueWith(
-                (res) => 
+            webDav.TestAlive().ContinueWith(
+                (res) =>
                 {
                     Log.Write(res.Result.ToString());
                 },
                 System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
             );
+
         }
 
         private static void ConfigChangedHandler()
@@ -79,6 +82,7 @@ namespace SyncClipboard
             Program.pullService.Load();
             Program.pushService.Load();
             Program.mainController.LoadConfig();
+            LoadGlobal();
         }
 
         private static void LoadUserConfig()

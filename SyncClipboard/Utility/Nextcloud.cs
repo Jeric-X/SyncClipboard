@@ -113,7 +113,7 @@ namespace SyncClipboard.Utility
                         continue;
                     }
                 }
-                return $"Can not connect to the server or timeout of {VERIFICATION_LIMITED_TIME / 1000}s";
+                return $"认证失败/{VERIFICATION_LIMITED_TIME / 1000}s超时";
             });
         }
 
