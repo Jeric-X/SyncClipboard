@@ -17,6 +17,7 @@ namespace SyncClipboard.Service
         protected static string tempFilePath = System.Windows.Forms.Application.StartupPath + $"{SLASH}{fileFolder}";
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
         private string statusTip ="";
+        private IWebDav _webDav;
 
         public FileProfile(string file)
         {
@@ -24,9 +25,10 @@ namespace SyncClipboard.Service
             fullPath = file;
         }
 
-        public FileProfile(JsonProfile jsonProfile)
+        public FileProfile(JsonProfile jsonProfile, IWebDav webDav)
         {
             FileName = jsonProfile.File;
+            _webDav = webDav;
             SetMd5(jsonProfile.Clipboard);
         }
 
@@ -75,17 +77,17 @@ namespace SyncClipboard.Service
 
         protected override void BeforeSetLocal()
         {
-            string remotePath = UserConfig.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
-            if (Directory.Exists(fileFolder) == false)
+            if (Directory.Exists(tempFilePath) == false)
             {
-                Directory.CreateDirectory(fileFolder);
+                Directory.CreateDirectory(tempFilePath);
             }
 
             try
             {
-                HttpWebResponseUtility.Getfile(remotePath, localPath, UserConfig.GetHttpAuthHeader());
+                _webDav.GetFile(remotePath, localPath);
                 if (GetMD5HashFromFile(localPath) != GetMd5())
                 {
                     Log.Write("[PULL] download erro, md5 wrong");

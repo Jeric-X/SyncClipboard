@@ -12,6 +12,7 @@ namespace SyncClipboard.Utility
         string GetText(string remotefile);
         void PutText(string remotefile, string text);
         void PutFile(string remotefile, string localFilePath);
+        void GetFile(string remotefile, string localFilePath);
         Task<bool> TestAliveAsync();
     }
 
@@ -86,6 +87,11 @@ namespace SyncClipboard.Utility
         public void PutFile(string remotefile, string localFilePath)
         {
             HttpWebResponseUtility.PutFile(FullUrl(remotefile), localFilePath, _authHeader);
+        }
+
+        public void GetFile(string remotefile, string localFilePath)
+        {
+            HttpWebResponseUtility.GetFile(FullUrl(remotefile), localFilePath, _authHeader);
         }
 
         # region 内部工具函数

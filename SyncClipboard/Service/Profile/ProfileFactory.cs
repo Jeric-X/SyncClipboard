@@ -97,10 +97,10 @@ namespace SyncClipboard.Service
             return localClipboard;
         }
 
-        public static Profile CreateFromRemote()
+        public static Profile CreateFromRemote(IWebDav webDav)
         {
             Log.Write("[PULL] " + UserConfig.GetProfileUrl());
-            String httpReply = Program.webDav.GetText(SyncService.REMOTE_RECORD_FILE);
+            String httpReply = webDav.GetText(SyncService.REMOTE_RECORD_FILE);
             Log.Write("[PULL] json " + httpReply);
 
             JsonProfile jsonProfile = null;
@@ -116,10 +116,10 @@ namespace SyncClipboard.Service
             }
 
             ClipboardType type = StringToClipBoardType(jsonProfile.Type);
-            return GetProfileBy(type, jsonProfile);
+            return GetProfileBy(type, jsonProfile, webDav);
         }
 
-        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile)
+        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile, IWebDav webDav)
         {
             switch (type)
             {
@@ -129,12 +129,12 @@ namespace SyncClipboard.Service
                     {
                         if (FileIsImage(jsonProfile.File))
                         {
-                            return new ImageProfile(jsonProfile);
+                            return new ImageProfile(jsonProfile, webDav);
                         }
-                        return new FileProfile(jsonProfile);
+                        return new FileProfile(jsonProfile, webDav);
                     }
                 case ClipboardType.Image:
-                    return new ImageProfile(jsonProfile);
+                    return new ImageProfile(jsonProfile, webDav);
             }
 
             return null;

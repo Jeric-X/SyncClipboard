@@ -14,7 +14,7 @@ namespace SyncClipboard.Service
         {
         }
 
-        public ImageProfile(JsonProfile jsonProfile) : base(jsonProfile)
+        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav) : base(jsonProfile, webdav)
         {
         }
 

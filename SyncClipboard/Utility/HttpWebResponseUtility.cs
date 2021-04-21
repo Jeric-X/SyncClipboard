@@ -48,7 +48,7 @@ namespace SyncClipboard
             return text;
         }
 
-        public static void Getfile(string url, string savePath, string authHeader)
+        public static void GetFile(string url, string savePath, string authHeader)
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader, null);
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());

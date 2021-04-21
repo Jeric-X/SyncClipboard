@@ -78,7 +78,7 @@ namespace SyncClipboard
                 Profile remoteProfile = null;
                 try
                 {
-                    remoteProfile = ProfileFactory.CreateFromRemote();
+                    remoteProfile = ProfileFactory.CreateFromRemote(Program.webDav);
                 }
                 catch (Exception ex)
                 {
