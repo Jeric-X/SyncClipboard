@@ -9,12 +9,8 @@ namespace SyncClipboard.Service
 {
     class FileProfile : Profile
     {
-        private const string SLASH = "\\";  // windows style slash
-
         protected string fullPath;
         private bool DownloadStatusOK = false;
-        private const string fileFolder = "file";
-        protected static string tempFilePath = System.Windows.Forms.Application.StartupPath + $"{SLASH}{fileFolder}";
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
         private string statusTip ="";
         private IWebDav _webDav;
@@ -34,7 +30,7 @@ namespace SyncClipboard.Service
 
         protected string GetTempLocalFilePath()
         {
-            return $"{tempFilePath}{SLASH}{FileName}";
+            return Env.PathConcat(SyncService.LOCAL_FILE_FOLDER, FileName);
         }
 
         public override ClipboardType GetProfileType()
@@ -80,9 +76,9 @@ namespace SyncClipboard.Service
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
-            if (Directory.Exists(tempFilePath) == false)
+            if (Directory.Exists(SyncService.LOCAL_FILE_FOLDER) == false)
             {
-                Directory.CreateDirectory(tempFilePath);
+                Directory.CreateDirectory(SyncService.LOCAL_FILE_FOLDER);
             }
 
             try
