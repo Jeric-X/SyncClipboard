@@ -9,17 +9,17 @@ namespace SyncClipboard
     public class HttpWebResponseUtility
     {
         private static readonly string DefaultUserAgent = "SyncClipboard";
-        //private static CookieCollection savedCookies = null;
-
-        private static void SaveCookies(CookieCollection cookies)
-        {
-            //savedCookies = cookies;
-        }
 
         public static string PostText(string url, string text, string authHeader = null)
         {
+            HttpWebRequest request = CreateHttpRequest(url, "POST", authHeader, null);
             string contenType = "application/x-www-form-urlencoded";
             return OperateText(url, "POST", text, authHeader, contenType);
+        }
+
+        public static void PutText(string url, string text, string authHeader)
+        {
+            OperateText(url, "PUT", text, authHeader, null);
         }
 
         public static string Post(string url, string authHeader = null)
@@ -28,24 +28,10 @@ namespace SyncClipboard
             return GetString(request);
         }
 
-        public static string Operate(string url, string method, string authHeader)
-        {
-            HttpWebRequest request = CreateHttpRequest(url, method, authHeader, null);
-            return GetString(request);
-        }
-
         public static string GetText(string url, string authHeader = null)
         {
             HttpWebRequest request = CreateHttpRequest(url, "GET", authHeader, null);
-            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
-
-            StreamReader objStrmReader = new StreamReader(response.GetResponseStream());
-            string text = objStrmReader.ReadToEnd();
-
-            objStrmReader.Close();
-            response.Close();
-
-            return text;
+            return GetString(request);
         }
 
         public static void GetFile(string url, string savePath, string authHeader)
@@ -61,9 +47,37 @@ namespace SyncClipboard
             response.Close();
         }
 
-        public static void PutText(string url, string text, string authHeader)
+        public static void PutImage(string url, Image image, string authHeader)
         {
-            OperateText(url, "PUT", text, authHeader, null);
+            MemoryStream mstream = new MemoryStream();
+            image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
+            byte[] byteData = new Byte[mstream.Length];
+
+            mstream.Position = 0;
+            mstream.Read(byteData, 0, byteData.Length);
+            mstream.Close();
+
+            OperateByte(url, byteData, "PUT", authHeader, null);
+        }
+
+        public static void PutFile(string url, string file, string authHeader)
+        {
+            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader, null);
+            Stream reqStream = request.GetRequestStream();
+
+            FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read);
+            fs.CopyTo(reqStream);
+            fs.Close();
+            reqStream.Close();
+
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            response.Close();
+        }
+
+        public static string Operate(string url, string method, string authHeader)
+        {
+            HttpWebRequest request = CreateHttpRequest(url, method, authHeader, null);
+            return GetString(request);
         }
 
         private static string OperateText(string url, string method, string text, string authHeader, string contentType)
@@ -96,38 +110,7 @@ namespace SyncClipboard
             }
 
             request.CookieContainer = new CookieContainer();
-            // if (useCookies && savedCookies != null)
-            // {
-            //     request.CookieContainer.Add(savedCookies);
-            // }
             return request;
-        }
-
-        public static void PutImage(string url, Image image, string authHeader)
-        {
-            MemoryStream mstream = new MemoryStream();
-            image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
-            byte[] byteData = new Byte[mstream.Length];
-
-            mstream.Position = 0;
-            mstream.Read(byteData, 0, byteData.Length);
-            mstream.Close();
-
-            OperateByte(url, byteData, "PUT", authHeader, null);
-        }
-
-        public static void PutFile(string url, string file, string authHeader)
-        {
-            HttpWebRequest request = CreateHttpRequest(url, "PUT", authHeader, null);
-            Stream reqStream = request.GetRequestStream();
-
-            FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read);
-            fs.CopyTo(reqStream);
-            fs.Close();
-            reqStream.Close();
-
-            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
-            response.Close();
         }
 
         private static string GetString(HttpWebRequest request)
@@ -142,6 +125,7 @@ namespace SyncClipboard
 
             return receiveText;
         }
+
         private static string OperateByte(string url, byte[] byteData, string method, string authHeader, string contentType)
         {
             HttpWebRequest request = CreateHttpRequest(url, method, authHeader, contentType);
@@ -166,33 +150,10 @@ namespace SyncClipboard
             Utility.Log.Write("HTTP RESPONSE " + response.StatusCode.ToString());
             if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
             {
-                SaveCookies(new CookieCollection());
                 response.Close();
                 throw new WebException(response.StatusCode.ToString());
             }
-            SaveCookies(response.Cookies);
             return response;
-        }
-
-
-        public static string GetMD5Hash(byte[] bytedata)
-        {
-            try
-            {
-                System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-                byte[] retVal = md5.ComputeHash(bytedata);
-
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < retVal.Length; i++)
-                {
-                    sb.Append(retVal[i].ToString("x2"));
-                }
-                return sb.ToString();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("GetMD5Hash() fail,error:" + ex.Message);
-            }
         }
     }
 }
