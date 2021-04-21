@@ -71,13 +71,21 @@ namespace SyncClipboard.Utility
             response.Close();
         }
 
+        internal static CookieCollection ReceiveCookie(HttpWebRequest request)
+        {
+            HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
+            var cookies = response.Cookies;
+            response.Close();
+            return cookies;
+        }
+
         internal static void Receive(HttpWebRequest request)
         {
             HttpWebResponse response = AnalyseHttpResponse((HttpWebResponse)request.GetResponse());
             response.Close();
         }
 
-        internal static HttpWebRequest Create(string url, string httpMethod, string authHeader, string contentType)
+        internal static HttpWebRequest Create(string url, string httpMethod, string authHeader, string contentType, CookieCollection cookies)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -101,6 +109,11 @@ namespace SyncClipboard.Utility
             }
 
             request.CookieContainer = new CookieContainer();
+            if (cookies != null)
+            {
+                request.CookieContainer.Add(cookies);
+            }
+
             return request;
         }
 

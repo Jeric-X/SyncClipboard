@@ -31,7 +31,7 @@ namespace SyncClipboard.Utility
     static class Nextcloud
     {
         private const string VERIFICATION_URL = "/index.php/login/v2";
-        private const string WEBDAV_URL = "/remote.php/dav/files";
+        private const string WEBDAV_URL = "remote.php/dav/files";
         private const int VERIFICATION_LIMITED_TIME = 60000;
         private const int INTERVAL_TIME = 1000;
         public static void SignIn()

@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Utility
@@ -24,6 +25,7 @@ namespace SyncClipboard.Utility
         private string _username;
         private string _password;
         private string _authHeader;
+        private CookieCollection _cookies;
 
         # endregion
 
@@ -56,10 +58,10 @@ namespace SyncClipboard.Utility
         {
             try
             {
-                string resault = await LoopAsync<string>(
+                _cookies = await LoopAsync<CookieCollection>(
                     () =>
                     {
-                        return HttpWeb.Operate(_url, "PROPFIND", _authHeader);
+                        return HttpWeb.GetCookie(_url, "HEAD", _authHeader);
                     }
                 );
             }
@@ -72,26 +74,25 @@ namespace SyncClipboard.Utility
             return true;
         }
 
-
         public string GetText(string file)
         {
-            return HttpWeb.GetText(FullUrl(file), _authHeader);
+            return HttpWeb.GetText(FullUrl(file), _authHeader, _cookies);
         }
 
         public void PutText(string file, string text)
         {
-            HttpWeb.PutText(FullUrl(file), text, _authHeader);
+            HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies);
         }
 
 
         public void PutFile(string remotefile, string localFilePath)
         {
-            HttpWeb.PutFile(FullUrl(remotefile), localFilePath, _authHeader);
+            HttpWeb.PutFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies);
         }
 
         public void GetFile(string remotefile, string localFilePath)
         {
-            HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader);
+            HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies);
         }
 
         # region 内部工具函数
