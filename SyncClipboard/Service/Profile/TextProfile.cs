@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -45,9 +46,9 @@ namespace SyncClipboard.Service
             return this.Text.GetHashCode();
         }
 
-        public override void UploadProfile()
+        public override void UploadProfile(IWebDav webdav)
         {
-            HttpWebResponseUtility.PutText(UserConfig.GetProfileUrl(), this.ToJsonString(), UserConfig.GetHttpAuthHeader());
+            webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
         }
 
         protected override DataObject CreateDataObject()

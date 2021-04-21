@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -13,7 +14,7 @@ namespace SyncClipboard.Service
             throw new NotImplementedException("Do not support this type of clipboard");
         }
 
-        public override void UploadProfile()
+        public override void UploadProfile(IWebDav webdav)
         {
             throw new NotImplementedException("Do not support this type of clipboard");
         }

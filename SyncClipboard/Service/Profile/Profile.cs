@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -11,17 +12,10 @@ namespace SyncClipboard.Service
         public String Text { get; set; }
         //public ClipboardType Type { get; set; }
 
-
-        public Profile()
-        {
-            FileName = "";
-            Text = "";
-        }
-
         public abstract ClipboardType GetProfileType();
         protected abstract DataObject CreateDataObject();
         public abstract string ToolTip();
-        public abstract void UploadProfile();
+        public abstract void UploadProfile(IWebDav webdav);
         public virtual Action ExecuteProfile()
         {
             return null;

@@ -54,15 +54,15 @@ namespace SyncClipboard.Service
             return Text;
         }
 
-        public override void UploadProfile()
+        public override void UploadProfile(IWebDav webdav)
         {
-            string remotePath = UserConfig.GetRemotePath() + $"/{fileFolder}/{FileName}";
+            string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
 
             FileInfo file = new FileInfo(fullPath);
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
-                HttpWebResponseUtility.PutFile(remotePath, fullPath, UserConfig.GetHttpAuthHeader());
+                webdav.PutFile(remotePath, fullPath);
             }
             else
             {
@@ -70,7 +70,7 @@ namespace SyncClipboard.Service
             }
 
             SetMd5(GetMD5HashFromFile(fullPath));
-            HttpWebResponseUtility.PutText(UserConfig.GetProfileUrl(), this.ToJsonString(), UserConfig.GetHttpAuthHeader());
+            webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
         }
 
         protected override void BeforeSetLocal()

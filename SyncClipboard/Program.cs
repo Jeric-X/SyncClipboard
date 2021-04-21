@@ -67,7 +67,7 @@ namespace SyncClipboard
                 UserConfig.Config.SyncService.Password
             );
 
-            webDav.TestAlive().ContinueWith(
+            webDav.TestAliveAsync().ContinueWith(
                 (res) =>
                 {
                     Log.Write(res.Result.ToString());

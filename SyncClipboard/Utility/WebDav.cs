@@ -3,7 +3,19 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Utility
 {
-    public class WebDav
+    public interface IWebDav
+    {
+        int IntervalTime { get; set; }
+        int RetryTimes { get; set; }
+        int TimeOut { get; set; }
+
+        string GetText(string remotefile);
+        void PutText(string remotefile, string text);
+        void PutFile(string remotefile, string localFilePath);
+        Task<bool> TestAliveAsync();
+    }
+
+    public class WebDav : IWebDav
     {
         # region 私有成员
 
@@ -13,6 +25,7 @@ namespace SyncClipboard.Utility
         private string _authHeader;
 
         # endregion
+
 
         public int IntervalTime { get; set; } = UserConfig.Config.Program.IntervalTime;
         public int RetryTimes { get; set; } = UserConfig.Config.Program.RetryTimes;
@@ -34,11 +47,11 @@ namespace SyncClipboard.Utility
             byte[] bytes = System.Text.Encoding.Default.GetBytes(username + ":" + password);
             return "Authorization: Basic " + System.Convert.ToBase64String(bytes);
         }
-    
+
         # endregion
 
 
-        public async Task<bool> TestAlive()
+        public async Task<bool> TestAliveAsync()
         {
             try
             {
@@ -61,12 +74,23 @@ namespace SyncClipboard.Utility
 
         public string GetText(string file)
         {
-            return Loop<string>(
-                () => HttpWebResponseUtility.GetText(FullUrl(file), _authHeader)
-            );
+            return HttpWebResponseUtility.GetText(FullUrl(file), _authHeader);
         }
 
-        public FuncResType Loop<FuncResType>(Func<FuncResType> func)
+        public void PutText(string file, string text)
+        {
+            HttpWebResponseUtility.PutText(FullUrl(file), text, _authHeader);
+        }
+
+
+        public void PutFile(string remotefile, string localFilePath)
+        {
+            HttpWebResponseUtility.PutFile(FullUrl(remotefile), localFilePath, _authHeader);
+        }
+
+        # region 内部工具函数
+
+        private FuncResType Loop<FuncResType>(Func<FuncResType> func)
         {
             for (int i = 1; i <= RetryTimes; i++)
             {
@@ -115,5 +139,7 @@ namespace SyncClipboard.Utility
         {
             return string.Join("/", _url, relativeUrl);
         }
+
+        # endregion
     }
 }

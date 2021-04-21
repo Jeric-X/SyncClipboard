@@ -150,7 +150,7 @@ namespace SyncClipboard
 
                 try
                 {
-                    _currentProfile.UploadProfile();
+                    _currentProfile.UploadProfile(Program.webDav);
                     Log.Write("[PUSH] upload end");
                     RemoteClipboardLocker.Unlock();
                     return;
