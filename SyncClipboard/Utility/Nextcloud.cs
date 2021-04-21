@@ -82,7 +82,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    return HttpWebResponseUtility.Post(loginUrl);
+                    return HttpWeb.Post(loginUrl);
                 }
                 catch (System.Net.WebException)
                 {
@@ -105,7 +105,7 @@ namespace SyncClipboard.Utility
                 {
                     try
                     {
-                        return HttpWebResponseUtility.PostText(url, token);
+                        return HttpWeb.Post(url, token);
                     }
                     catch
                     {

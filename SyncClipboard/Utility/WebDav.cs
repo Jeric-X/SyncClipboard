@@ -59,7 +59,7 @@ namespace SyncClipboard.Utility
                 string resault = await LoopAsync<string>(
                     () =>
                     {
-                        return HttpWebResponseUtility.Operate(_url, "PROPFIND", _authHeader);
+                        return HttpWeb.Operate(_url, "PROPFIND", _authHeader);
                     }
                 );
             }
@@ -75,23 +75,23 @@ namespace SyncClipboard.Utility
 
         public string GetText(string file)
         {
-            return HttpWebResponseUtility.GetText(FullUrl(file), _authHeader);
+            return HttpWeb.GetText(FullUrl(file), _authHeader);
         }
 
         public void PutText(string file, string text)
         {
-            HttpWebResponseUtility.PutText(FullUrl(file), text, _authHeader);
+            HttpWeb.PutText(FullUrl(file), text, _authHeader);
         }
 
 
         public void PutFile(string remotefile, string localFilePath)
         {
-            HttpWebResponseUtility.PutFile(FullUrl(remotefile), localFilePath, _authHeader);
+            HttpWeb.PutFile(FullUrl(remotefile), localFilePath, _authHeader);
         }
 
         public void GetFile(string remotefile, string localFilePath)
         {
-            HttpWebResponseUtility.GetFile(FullUrl(remotefile), localFilePath, _authHeader);
+            HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader);
         }
 
         # region 内部工具函数

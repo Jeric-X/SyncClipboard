@@ -97,7 +97,8 @@
     </Compile>
     <Compile Include="Service\Profile\TextProfile.cs" />
     <Compile Include="Utility\ClipboardHtmlBuilder.cs" />
-    <Compile Include="Utility\HttpWebResponseUtility.cs" />
+    <Compile Include="Utility\HttpWebUtility.cs" />
+    <Compile Include="Utility\HttpWeb.cs" />
     <Compile Include="Utility\Nextcloud.cs" />
     <Compile Include="Utility\WebDav.cs" />
     <Compile Include="Control\MainController.cs">

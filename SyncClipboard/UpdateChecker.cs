@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using SyncClipboard.Utility;
 
 namespace SyncClipboard
 {
@@ -37,7 +38,7 @@ namespace SyncClipboard
             String gitHubReply = "";
             try
             {
-                gitHubReply = HttpWebResponseUtility.GetText(UpdateUrl, null);
+                gitHubReply = HttpWeb.GetText(UpdateUrl, null);
             }
             catch
             {
