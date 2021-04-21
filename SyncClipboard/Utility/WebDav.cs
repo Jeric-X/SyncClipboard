@@ -96,7 +96,7 @@ namespace SyncClipboard.Utility
 
         # region 内部工具函数
 
-        private FuncResType Loop<FuncResType>(Func<FuncResType> func)
+        private T Loop<T>(Func<T> func)
         {
             for (int i = 1; i <= RetryTimes; i++)
             {
@@ -113,16 +113,16 @@ namespace SyncClipboard.Utility
                 }
                 Task.Delay(IntervalTime);
             }
-            return default(FuncResType);
+            return default(T);
         }
 
-        private async Task<FuncResType> LoopAsync<FuncResType>(Func<FuncResType> func)
+        private async Task<T> LoopAsync<T>(Func<T> func)
         {
             for (int i = 1; i <= RetryTimes; i++)
             {
                 try
                 {
-                    return await RunAsync<FuncResType>(func);
+                    return await RunAsync<T>(func);
                 }
                 catch (Exception ex)
                 {
@@ -133,10 +133,10 @@ namespace SyncClipboard.Utility
                 }
                 await Task.Delay(IntervalTime);
             }
-            return default(FuncResType);
+            return default(T);
         }
 
-        private async Task<FuncResType> RunAsync<FuncResType>(Func<FuncResType> t)
+        private async Task<T> RunAsync<T>(Func<T> t)
         {
             return await Task.Run(() => t());
         }
