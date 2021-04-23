@@ -84,18 +84,18 @@
     <Compile Include="Control\InputBox.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Service\Profile\FileProfile.cs" />
-    <Compile Include="Service\Profile\ImageProfile.cs" />
-    <Compile Include="Service\LocalClipboardLocker.cs" />
-    <Compile Include="Service\Profile\ProfileFactory.cs" />
-    <Compile Include="Service\Profile\ProfileType.cs" />
-    <Compile Include="Service\Profile\UnkonwnProfile.cs" />
-    <Compile Include="Service\RemoteClipboardLocker.cs" />
-    <Compile Include="Service\SyncService.cs" />
+    <Compile Include="Service\SyncService\Profile\FileProfile.cs" />
+    <Compile Include="Service\SyncService\Profile\ImageProfile.cs" />
+    <Compile Include="Service\SyncService\LocalClipboardLocker.cs" />
+    <Compile Include="Service\SyncService\Profile\ProfileFactory.cs" />
+    <Compile Include="Service\SyncService\Profile\ProfileType.cs" />
+    <Compile Include="Service\SyncService\Profile\UnkonwnProfile.cs" />
+    <Compile Include="Service\SyncService\RemoteClipboardLocker.cs" />
+    <Compile Include="Service\SyncService\SyncService.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Service\Profile\TextProfile.cs" />
+    <Compile Include="Service\SyncService\Profile\TextProfile.cs" />
     <Compile Include="Utility\ClipboardHtmlBuilder.cs" />
     <Compile Include="Utility\HttpWebUtility.cs" />
     <Compile Include="Utility\HttpWeb.cs" />
@@ -104,10 +104,10 @@
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Service\Profile\Profile.cs" />
+    <Compile Include="Service\SyncService\Profile\Profile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Service\PushService.cs" />
+    <Compile Include="Service\SyncService\PushService.cs" />
     <Compile Include="Env.cs" />
     <Compile Include="UserConfig.cs" />
     <Compile Include="Control\SettingsForm.cs">
@@ -116,7 +116,7 @@
     <Compile Include="Control\SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Service\PullService.cs" />
+    <Compile Include="Service\SyncService\PullService.cs" />
     <Compile Include="UpdateChecker.cs" />
     <Compile Include="Utility\Log.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
