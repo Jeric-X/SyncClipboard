@@ -84,6 +84,8 @@
     <Compile Include="Control\InputBox.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Service\Service.cs" />
+    <Compile Include="Service\CommandService\CommandService.cs" />
     <Compile Include="Service\SyncService\Profile\FileProfile.cs" />
     <Compile Include="Service\SyncService\Profile\ImageProfile.cs" />
     <Compile Include="Service\SyncService\LocalClipboardLocker.cs" />
@@ -101,6 +103,7 @@
     <Compile Include="Utility\HttpWeb.cs" />
     <Compile Include="Utility\Nextcloud.cs" />
     <Compile Include="Utility\WebDav.cs" />
+    <Compile Include="Utility\Json.cs" />
     <Compile Include="Control\MainController.cs">
       <SubType>Component</SubType>
     </Compile>

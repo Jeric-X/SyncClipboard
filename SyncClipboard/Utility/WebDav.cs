@@ -11,7 +11,9 @@ namespace SyncClipboard.Utility
         int TimeOut { get; set; }
 
         string GetText(string remotefile);
+        Task<string> GetTextAsync(string remotefile, int retryTimes, int intervalTime);
         void PutText(string remotefile, string text);
+        Task PutTextAsync(string remotefile, string text, int retryTimes, int intervalTime);
         void PutFile(string remotefile, string localFilePath);
         void GetFile(string remotefile, string localFilePath);
         Task<bool> TestAliveAsync();
@@ -79,11 +81,34 @@ namespace SyncClipboard.Utility
             return HttpWeb.GetText(FullUrl(file), _authHeader, _cookies);
         }
 
+        public async Task<string> GetTextAsync(string remotefile, int retryTimes, int intervalTime)
+        {
+            return await LoopAsync<string>(
+                () =>
+                {
+                    return HttpWeb.GetText(FullUrl(remotefile), _authHeader, _cookies);
+                },
+                retryTimes,
+                intervalTime
+            );
+        }
+
         public void PutText(string file, string text)
         {
             HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies);
         }
 
+        public async Task PutTextAsync(string file, string text, int retryTimes, int intervalTime)
+        {
+            await LoopAsync(
+                () =>
+                {
+                    HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies);
+                },
+                retryTimes,
+                intervalTime
+            );
+        }
 
         public void PutFile(string remotefile, string localFilePath)
         {
@@ -119,7 +144,22 @@ namespace SyncClipboard.Utility
 
         private async Task<T> LoopAsync<T>(Func<T> func)
         {
-            for (int i = 1; i <= RetryTimes; i++)
+            return await LoopAsyncDetail<T>(func, RetryTimes, IntervalTime);
+        }
+
+        private async Task<T> LoopAsync<T>(Func<T> func, int retryTimes, int intervalTime)
+        {
+            return await LoopAsyncDetail<T>(func, retryTimes, intervalTime);
+        }
+
+        private async Task LoopAsync(Action action, int retryTimes, int intervalTime)
+        {
+            await LoopAsyncDetail(action, retryTimes, intervalTime);
+        }
+
+        private async Task<T> LoopAsyncDetail<T>(Func<T> func, int retryTimes, int intervalTime)
+        {
+            for (int i = 0; i <= retryTimes; i++)
             {
                 try
                 {
@@ -127,19 +167,44 @@ namespace SyncClipboard.Utility
                 }
                 catch (Exception ex)
                 {
-                    if (i == RetryTimes)
+                    if (i == retryTimes)
                     {
                         throw ex;
                     }
                 }
-                await Task.Delay(IntervalTime);
+                await Task.Delay(intervalTime);
             }
             return default(T);
         }
 
+        private async Task LoopAsyncDetail(Action action, int retryTimes, int intervalTime)
+        {
+            for (int i = 0; i <= retryTimes; i++)
+            {
+                try
+                {
+                    await RunAsync(action);
+                }
+                catch (Exception ex)
+                {
+                    if (i == retryTimes)
+                    {
+                        throw ex;
+                    }
+                }
+                await Task.Delay(intervalTime);
+            }
+        }
+
+
         private async Task<T> RunAsync<T>(Func<T> t)
         {
             return await Task.Run(() => t());
+        }
+
+        private async Task RunAsync(Action action)
+        {
+            await Task.Run(() => action());
         }
 
         private string FullUrl(string relativeUrl)

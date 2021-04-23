@@ -3,6 +3,7 @@ using System.Threading;
 using System.Windows.Forms;
 using SyncClipboard.Control;
 using SyncClipboard.Utility;
+using SyncClipboard.Service;
 namespace SyncClipboard
 {
     static class Program
@@ -16,6 +17,7 @@ namespace SyncClipboard
 
         public static PullService pullService;
         public static PushService pushService;
+        public static CommandService commandService;
         public static WebDav webDav;
 
         /// <summary>
@@ -44,6 +46,8 @@ namespace SyncClipboard
 
                 pushService = new PushService(mainController.Notifyer);
                 pullService = new PullService(pushService, mainController.Notifyer);
+                commandService = new CommandService();
+                commandService.Start();
 
                 Application.Run();
             }
@@ -81,6 +85,7 @@ namespace SyncClipboard
         {
             Program.pullService.Load();
             Program.pushService.Load();
+            Program.commandService.Load();
             Program.mainController.LoadConfig();
             LoadGlobal();
         }
@@ -108,6 +113,10 @@ namespace SyncClipboard
             if (pushService != null)
             {
                 pushService.Stop();
+            }
+            if (commandService != null)
+            {
+                commandService.Stop();
             }
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
