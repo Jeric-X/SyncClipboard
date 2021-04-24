@@ -1,6 +1,7 @@
 v1.3.3(working)
 - Add cookie support.
 - Add CommandService.
+- Optimize Log system.
 
 v1.3.2
 - fix bugs when clicking COPY button multi times in a short period of time.

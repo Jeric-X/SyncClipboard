@@ -19,6 +19,7 @@ namespace SyncClipboard
         public static PushService pushService;
         public static CommandService commandService;
         public static WebDav webDav;
+        public static Notifyer notifyer;
 
         /// <summary>
         /// 应用程序的主入口点。
@@ -42,6 +43,8 @@ namespace SyncClipboard
 
                 StartUp();
                 mainController = new MainController();
+
+                notifyer = mainController.Notifyer;
                 ClipboardListener = new ClipboardListener();
 
                 pushService = new PushService(mainController.Notifyer);

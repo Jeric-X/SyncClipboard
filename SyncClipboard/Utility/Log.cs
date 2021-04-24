@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace SyncClipboard.Utility
@@ -9,8 +10,13 @@ namespace SyncClipboard.Utility
 
         public static void Write(string str)
         {
+            StackFrame sf = new StackTrace(true).GetFrame(1);
+
             var dayTime = DateTime.Now;
-            string logStr = string.Format("[{0}] {1}", dayTime, str);
+            var fileName = System.IO.Path.GetFileName(sf.GetFileName());
+            var lineNumber = sf.GetFileLineNumber();
+
+            string logStr = string.Format("[{0}][{1, -20}][{2, 4}] {3}", dayTime.ToString("yyyy/MM/dd HH:mm:ss"), fileName, lineNumber, str);
 
 #if DEBUG
             WriteToConsole(logStr);

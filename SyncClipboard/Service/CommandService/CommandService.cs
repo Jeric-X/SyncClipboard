@@ -37,13 +37,20 @@ namespace SyncClipboard.Service
                     break;
                 }
 
-                Command command = await GetRemoteCommand();
-                await ResetRemoteCommand(new Command());
-                ExecuteCommand(command);
+                try
+                {
+                    Command command = await GetRemoteCommand();
+                    await ResetRemoteCommand(new Command());
+                    ExecuteCommand(command);
+                }
+                catch (System.Exception ex)
+                {
+                    Program.notifyer.ToastNotify("CommandService failed", ex.ToString());
+                }
 
                 await Task.Delay(UserConfig.Config.Program.IntervalTime);
             }
-            Log.Write("Command serivce exit");
+            Log.Write("Command serivce exited");
         }
 
         private async Task<Command> GetRemoteCommand()
@@ -69,7 +76,7 @@ namespace SyncClipboard.Service
             {
                 System.Diagnostics.Process open = new System.Diagnostics.Process();
                 open.StartInfo.FileName = "cmd";
-                open.StartInfo.Arguments = @"/k shutdown.exe /s /t 120 /c ""use [ shutdown /a ] in 120s to undo shutdown.""";
+                open.StartInfo.Arguments = @"/k shutdown.exe /s /t 60 /c ""use [ shutdown /a ] in 60s to undo shutdown.""";
                 open.Start();
             }
         }
