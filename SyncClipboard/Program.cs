@@ -17,7 +17,7 @@ namespace SyncClipboard
 
         public static PullService pullService;
         public static PushService pushService;
-        public static CommandService commandService;
+        private static ServiceManager _serviceManager = new ServiceManager();
         public static WebDav webDav;
         public static Notifyer notifyer;
 
@@ -49,8 +49,8 @@ namespace SyncClipboard
 
                 pushService = new PushService(mainController.Notifyer);
                 pullService = new PullService(pushService, mainController.Notifyer);
-                commandService = new CommandService();
-                commandService.Start();
+
+                _serviceManager.StartUpAllService();
 
                 Application.Run();
             }
@@ -88,9 +88,9 @@ namespace SyncClipboard
         {
             Program.pullService.Load();
             Program.pushService.Load();
-            Program.commandService.Load();
             Program.mainController.LoadConfig();
             LoadGlobal();
+            _serviceManager.LoadAllService();
         }
 
         private static void LoadUserConfig()
@@ -117,10 +117,7 @@ namespace SyncClipboard
             {
                 pushService.Stop();
             }
-            if (commandService != null)
-            {
-                commandService.Stop();
-            }
+            _serviceManager?.StopAllService();
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
             Utility.Log.Write("[Program] exited");

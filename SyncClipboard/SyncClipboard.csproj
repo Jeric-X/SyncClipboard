@@ -86,6 +86,7 @@
     </Compile>
     <Compile Include="Module\Event.cs" />
     <Compile Include="Service\Service.cs" />
+    <Compile Include="Service\ServiceManager.cs" />
     <Compile Include="Service\CommandService\CommandService.cs" />
     <Compile Include="Service\SyncService\Profile\FileProfile.cs" />
     <Compile Include="Service\SyncService\Profile\ImageProfile.cs" />

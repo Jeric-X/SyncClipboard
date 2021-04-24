@@ -7,6 +7,8 @@
         void Start();
         void Stop();
         void Load();
+        void RegistEvent();
+        void RegistEventHandler();
     }
 
     public abstract class Service : IService
@@ -16,6 +18,8 @@
         protected abstract void StartService();
         protected abstract void StopSerivce();
         public virtual void Load() { }
+        public virtual void RegistEvent() { }
+        public virtual void RegistEventHandler() { }
 
         public void Start()
         {
