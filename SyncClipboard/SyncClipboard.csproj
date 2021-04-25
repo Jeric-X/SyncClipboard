@@ -85,6 +85,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Module\Event.cs" />
+    <Compile Include="Service\ClipboardService\ClipboardService.cs" />
     <Compile Include="Service\Service.cs" />
     <Compile Include="Service\ServiceManager.cs" />
     <Compile Include="Service\CommandService\CommandService.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Service\SyncService\Profile\UnkonwnProfile.cs" />
     <Compile Include="Service\SyncService\RemoteClipboardLocker.cs" />
     <Compile Include="Service\SyncService\SyncService.cs" />
+    <Compile Include="Service\SyncService\UploadService.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>

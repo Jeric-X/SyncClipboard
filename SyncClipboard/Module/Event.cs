@@ -2,13 +2,13 @@ using System.Collections.Generic;
 
 namespace SyncClipboard.Module
 {
-    internal static class Event
+    public static class Event
     {
-        internal delegate void SystemEvent();
+        public delegate void SystemEvent();
 
-        private static Dictionary<string, SystemEvent> _savedEvent = new Dictionary<string, SystemEvent>();
+        private static readonly Dictionary<string, SystemEvent> _savedEvent = new Dictionary<string, SystemEvent>();
 
-        internal static bool RegistEvent(string eventName, SystemEvent eventDelegate)
+        public static bool RegistEvent(string eventName, SystemEvent eventDelegate)
         {
             if (_savedEvent.ContainsKey(eventName))
             {
@@ -18,7 +18,7 @@ namespace SyncClipboard.Module
             return true;
         }
 
-        internal static bool RegistEventHandler(string eventName, SystemEvent eventDelegate)
+        public static bool RegistEventHandler(string eventName, SystemEvent eventDelegate)
         {
             if (_savedEvent.ContainsKey(eventName))
             {
