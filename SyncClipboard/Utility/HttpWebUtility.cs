@@ -38,7 +38,7 @@ namespace SyncClipboard.Utility
             MemoryStream mstream = new MemoryStream();
             image.Save(mstream, System.Drawing.Imaging.ImageFormat.Bmp);
 
-            byte[] byteData = new Byte[mstream.Length];
+            byte[] byteData = new byte[mstream.Length];
             mstream.Position = 0;
             mstream.Read(byteData, 0, byteData.Length);
             mstream.Close();
@@ -127,8 +127,8 @@ namespace SyncClipboard.Utility
 
         internal static HttpWebResponse AnalyseHttpResponse(HttpWebResponse response)
         {
-            Utility.Log.Write("HTTP RESPONSE " + response.StatusCode.ToString());
-            if (response.StatusCode < System.Net.HttpStatusCode.OK || response.StatusCode >= System.Net.HttpStatusCode.Ambiguous)
+            Log.Write("HTTP RESPONSE " + response.StatusCode.ToString());
+            if (response.StatusCode < HttpStatusCode.OK || response.StatusCode >= HttpStatusCode.Ambiguous)
             {
                 response.Close();
                 throw new WebException(response.StatusCode.ToString());

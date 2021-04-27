@@ -10,8 +10,8 @@ EndHTML:<<<<<<<<2
 StartFragment:<<<<<<<<3
 EndFragment:<<<<<<<<4";
 
-        private const string StartFragment = @"<!--StartFragment-->";
-        private const string EndFragment = @"<!--EndFragment-->";
+        private const string StartFragment = "<!--StartFragment-->";
+        private const string EndFragment = "<!--EndFragment-->";
 
         public static string GetClipboardHtml(string html)
         {
@@ -36,12 +36,10 @@ EndFragment:<<<<<<<<4";
 
         private static int GetByteCount(StringBuilder sb, int start = 0, int end = -1)
         {
-            int count = 0;
             end = end > -1 ? end : sb.Length;
 
             string str = sb.ToString().Substring(start, end);
-            count = Encoding.UTF8.GetByteCount(str);
-            return count;
+            return Encoding.UTF8.GetByteCount(str);
         }
     }
 }

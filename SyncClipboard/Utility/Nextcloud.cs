@@ -8,27 +8,27 @@ using SyncClipboard.Control;
 namespace SyncClipboard.Utility
 {
     # region nextcloud official response defination
-    class FistResponseJson
+    internal class FistResponseJson
     {
         public class Poll
         {
-            public string token = null;
-            public string endpoint = null;
+            public string token;
+            public string endpoint;
         }
-        public Poll poll = null;
-        public string login = null;
+        public Poll poll;
+        public string login;
     }
 
-    class SecondResponse
+    internal class SecondResponse
     {
-        public string server = null;
-        public string loginName = null;
-        public string appPassword = null;
+        public string server;
+        public string loginName;
+        public string appPassword;
     }
 
     #endregion
 
-    static class Nextcloud
+    public static class Nextcloud
     {
         private const string VERIFICATION_URL = "/index.php/login/v2";
         private const string WEBDAV_URL = "remote.php/dav/files";
@@ -47,7 +47,7 @@ namespace SyncClipboard.Utility
                 return;
             }
 
-            var fistResponseJson = await GetFirstResponse(server); ;
+            var fistResponseJson = await GetFirstResponse(server).ConfigureAwait(false);
             var firstResponse = DecodeJson<FistResponseJson>(fistResponseJson);
             if (firstResponse == null)
             {
@@ -56,7 +56,7 @@ namespace SyncClipboard.Utility
 
             System.Diagnostics.Process.Start(firstResponse.login);
 
-            string secondResponseJson = await GetSecondResponse(server, firstResponse);
+            string secondResponseJson = await GetSecondResponse(firstResponse).ConfigureAwait(false);
             var secondResponse = DecodeJson<SecondResponse>(secondResponseJson);
             if (secondResponse == null)
             {
@@ -92,10 +92,10 @@ namespace SyncClipboard.Utility
                 {
                     return "URL format is wrong";
                 }
-            });
+            }).ConfigureAwait(false);
         }
 
-        private static async Task<string> GetSecondResponse(string server, FistResponseJson firstResponse)
+        private static async Task<string> GetSecondResponse(FistResponseJson firstResponse)
         {
             var url = firstResponse.poll.endpoint;
             var token = $"token={firstResponse.poll.token}";
@@ -110,16 +110,15 @@ namespace SyncClipboard.Utility
                     catch
                     {
                         Thread.Sleep(INTERVAL_TIME);
-                        continue;
                     }
                 }
                 return $"认证失败/{VERIFICATION_LIMITED_TIME / 1000}s超时";
-            });
+            }).ConfigureAwait(false);
         }
 
         public static T DecodeJson<T>(string json)
         {
-            T firstResponse = default(T);
+            T firstResponse = default;
             try
             {
                 firstResponse = new JavaScriptSerializer().Deserialize<T>(json);

@@ -108,26 +108,6 @@ namespace SyncClipboard.Utility
 
         # region 内部工具函数
 
-        private T Loop<T>(Func<T> func)
-        {
-            for (int i = 1; i <= RetryTimes; i++)
-            {
-                try
-                {
-                    return func();
-                }
-                catch (Exception ex)
-                {
-                    if (i == RetryTimes)
-                    {
-                        throw ex;
-                    }
-                }
-                Task.Delay(IntervalTime);
-            }
-            return default;
-        }
-
         private async Task<T> LoopAsync<T>(Func<T> func)
         {
             return await LoopAsyncDetail<T>(func, RetryTimes, IntervalTime).ConfigureAwait(false);
@@ -151,11 +131,11 @@ namespace SyncClipboard.Utility
                 {
                     return await RunAsync<T>(func).ConfigureAwait(false);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     if (i == retryTimes)
                     {
-                        throw ex;
+                        throw;
                     }
                 }
                 await Task.Delay(intervalTime).ConfigureAwait(false);
@@ -181,7 +161,6 @@ namespace SyncClipboard.Utility
                 await Task.Delay(intervalTime).ConfigureAwait(false);
             }
         }
-
 
         private async Task<T> RunAsync<T>(Func<T> t)
         {

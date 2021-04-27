@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SyncClipboard.Utility
 {
-    public class HttpWeb
+    public static class HttpWeb
     {
         public static string Post(string url, string text = null, string authHeader = null, CookieCollection cookies = null)
         {
