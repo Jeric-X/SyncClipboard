@@ -38,6 +38,5 @@
                 this.StopSerivce();
             }
         }
-
     }
 }

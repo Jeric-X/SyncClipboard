@@ -4,17 +4,17 @@ using SyncClipboard.Utility;
 
 namespace SyncClipboard.Service
 {
-    class CommandService : Service
+    internal class CommandService : Service
     {
         private const string COMMAND_FILE = "Command.json";
-        public class Command 
+        public class Command
         {
             public string CommandStr = "";
             public string Time = "";
         }
 
-        CancellationTokenSource _cancelSource;
-        CancellationToken _cancelToken;
+        private CancellationTokenSource _cancelSource;
+        private CancellationToken _cancelToken;
 
         protected override void StartService()
         {
@@ -39,8 +39,8 @@ namespace SyncClipboard.Service
 
                 try
                 {
-                    Command command = await GetRemoteCommand();
-                    await ResetRemoteCommand(new Command());
+                    Command command = await GetRemoteCommand().ConfigureAwait(false);
+                    await ResetRemoteCommand(new Command()).ConfigureAwait(false);
                     ExecuteCommand(command);
                 }
                 catch (System.Exception ex)
@@ -48,17 +48,17 @@ namespace SyncClipboard.Service
                     Program.notifyer.ToastNotify("CommandService failed", ex.ToString());
                 }
 
-                await Task.Delay(UserConfig.Config.Program.IntervalTime);
+                await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(false);
             }
             Log.Write("Command serivce exited");
         }
 
         private async Task<Command> GetRemoteCommand()
         {
-            Command command = new Command();
+            Command command;
             try
             {
-                string str = await Program.webDav.GetTextAsync(COMMAND_FILE, 0, 0);
+                string str = await Program.webDav.GetTextAsync(COMMAND_FILE, 0, 0).ConfigureAwait(false);
                 command = Json.Decode<Command>(str);
             }
             catch
@@ -85,7 +85,7 @@ namespace SyncClipboard.Service
         {
             try
             {
-                await Program.webDav.PutTextAsync(COMMAND_FILE, Json.Encode(command), 0, 0);
+                await Program.webDav.PutTextAsync(COMMAND_FILE, Json.Encode(command), 0, 0).ConfigureAwait(false);
             }
             catch
             {

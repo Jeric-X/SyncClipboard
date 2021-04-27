@@ -2,7 +2,7 @@ namespace SyncClipboard.Service
 {
     internal class ServiceManager
     {
-        private IService[] _services = { 
+        private readonly IService[] _services = {
             new CommandService()
         };
 

@@ -12,18 +12,18 @@ namespace SyncClipboard.Utility
     {
         public class Poll
         {
-            public string token;
-            public string endpoint;
+            public string token = null;
+            public string endpoint = null;
         }
-        public Poll poll;
-        public string login;
+        public Poll poll = null;
+        public string login = null;
     }
 
     internal class SecondResponse
     {
-        public string server;
-        public string loginName;
-        public string appPassword;
+        public string server = null;
+        public string loginName = null;
+        public string appPassword = null;
     }
 
     #endregion
@@ -42,7 +42,7 @@ namespace SyncClipboard.Utility
         public static async void SignInFlowAsync()
         {
             string server = InputBox.Show("Please input Nextcloud server address", $"https://[请在确定后{VERIFICATION_LIMITED_TIME / 1000}秒内完成网页认证]");
-            if (server == string.Empty)
+            if (string.IsNullOrEmpty(server))
             {
                 return;
             }
@@ -64,7 +64,7 @@ namespace SyncClipboard.Utility
             }
 
             var path = InputBox.Show("Please input syncClipboard folder path");
-            if (path == string.Empty)
+            if (string.IsNullOrEmpty(path))
             {
                 return;
             }

@@ -4,7 +4,7 @@ using System.IO;
 
 namespace SyncClipboard.Utility
 {
-    static class Log
+    internal static class Log
     {
         private static readonly string logFolder = Env.FullPath("Log");
 
@@ -43,7 +43,7 @@ namespace SyncClipboard.Utility
             }
             catch (Exception)
             {
-                //throw;
+                throw;
             }
         }
 

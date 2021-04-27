@@ -2,11 +2,10 @@ using System.Windows.Forms;
 
 namespace SyncClipboard.Control
 {
-    public class InputBox : System.Windows.Forms.Form
+    public sealed class InputBox : Form
     {
-
-        private System.Windows.Forms.TextBox _textBox;
-        private System.Windows.Forms.Label _infoLabel;
+        private TextBox _textBox;
+        private Label _infoLabel;
 
         private InputBox()
         {
@@ -20,8 +19,8 @@ namespace SyncClipboard.Control
 
         private void InitializeComponent()
         {
-            this._textBox = new System.Windows.Forms.TextBox();
-            this._infoLabel = new System.Windows.Forms.Label();
+            this._textBox = new TextBox();
+            this._infoLabel = new Label();
             this.SuspendLayout();
 
             this._textBox.Location = new System.Drawing.Point(19, 8);
@@ -29,11 +28,11 @@ namespace SyncClipboard.Control
             this._textBox.Size = new System.Drawing.Size(317, 23);
             this._textBox.TabIndex = 0;
             this._textBox.Text = "";
-            this._textBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtData_KeyDown);
+            this._textBox.KeyDown += this.TextBoxKeyDownHandler;
 
             this._infoLabel.BackColor = System.Drawing.SystemColors.ScrollBar;
-            this._infoLabel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this._infoLabel.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this._infoLabel.BorderStyle = BorderStyle.Fixed3D;
+            this._infoLabel.FlatStyle = FlatStyle.System;
             this._infoLabel.ForeColor = System.Drawing.Color.Gray;
             this._infoLabel.Location = new System.Drawing.Point(19, 32);
             this._infoLabel.Name = "lblInfo";
@@ -45,12 +44,12 @@ namespace SyncClipboard.Control
             this.ClientSize = new System.Drawing.Size(350, 48);
             this.Controls.Add(this._infoLabel);
             this.Controls.Add(this._textBox);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.Name = "InputBox";
             this.Text = "InputBox";
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.StartPosition = FormStartPosition.CenterScreen;
             this.DialogResult = DialogResult.None;
             this.ResumeLayout(false);
         }
@@ -62,7 +61,7 @@ namespace SyncClipboard.Control
         }
 
         //对键盘进行响应
-        private void txtData_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
+        private void TextBoxKeyDownHandler(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
@@ -78,8 +77,7 @@ namespace SyncClipboard.Control
         //显示InputBox
         public static string Show(string Title, string defaultText = "")
         {
-            InputBox inputbox = new InputBox();
-            inputbox.Text = Title;
+            InputBox inputbox = new InputBox { Text = Title };
             inputbox.SetText(defaultText);
             if (inputbox.ShowDialog() == DialogResult.OK)
             {
