@@ -23,22 +23,19 @@ namespace SyncClipboard.Utility
     {
         # region 私有成员
 
-        private string _url;
-        private string _username;
-        private string _password;
-        private string _authHeader;
+        private readonly string _url;
+        private readonly string _username;
+        private readonly string _password;
+        private readonly string _authHeader;
         private CookieCollection _cookies;
 
         # endregion
-
 
         public int IntervalTime { get; set; } = UserConfig.Config.Program.IntervalTime;
         public int RetryTimes { get; set; } = UserConfig.Config.Program.RetryTimes;
         public int TimeOut { get; set; } = UserConfig.Config.Program.TimeOut;
 
-
         # region 构造函数
-
         public WebDav(string url, string username, string password)
         {
             _url = url;
@@ -52,20 +49,15 @@ namespace SyncClipboard.Utility
             byte[] bytes = System.Text.Encoding.Default.GetBytes(username + ":" + password);
             return "Authorization: Basic " + System.Convert.ToBase64String(bytes);
         }
-
         # endregion
-
 
         public async Task<bool> TestAliveAsync()
         {
             try
             {
                 _cookies = await LoopAsync<CookieCollection>(
-                    () =>
-                    {
-                        return HttpWeb.GetCookie(_url, "HEAD", _authHeader);
-                    }
-                );
+                    () => HttpWeb.GetCookie(_url, "HEAD", _authHeader)
+                ).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -84,13 +76,10 @@ namespace SyncClipboard.Utility
         public async Task<string> GetTextAsync(string remotefile, int retryTimes, int intervalTime)
         {
             return await LoopAsync<string>(
-                () =>
-                {
-                    return HttpWeb.GetText(FullUrl(remotefile), _authHeader, _cookies);
-                },
+                () => HttpWeb.GetText(FullUrl(remotefile), _authHeader, _cookies),
                 retryTimes,
                 intervalTime
-            );
+            ).ConfigureAwait(false);
         }
 
         public void PutText(string file, string text)
@@ -101,13 +90,10 @@ namespace SyncClipboard.Utility
         public async Task PutTextAsync(string file, string text, int retryTimes, int intervalTime)
         {
             await LoopAsync(
-                () =>
-                {
-                    HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies);
-                },
+                () => HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies),
                 retryTimes,
                 intervalTime
-            );
+            ).ConfigureAwait(false);
         }
 
         public void PutFile(string remotefile, string localFilePath)
@@ -139,22 +125,22 @@ namespace SyncClipboard.Utility
                 }
                 Task.Delay(IntervalTime);
             }
-            return default(T);
+            return default;
         }
 
         private async Task<T> LoopAsync<T>(Func<T> func)
         {
-            return await LoopAsyncDetail<T>(func, RetryTimes, IntervalTime);
+            return await LoopAsyncDetail<T>(func, RetryTimes, IntervalTime).ConfigureAwait(false);
         }
 
         private async Task<T> LoopAsync<T>(Func<T> func, int retryTimes, int intervalTime)
         {
-            return await LoopAsyncDetail<T>(func, retryTimes, intervalTime);
+            return await LoopAsyncDetail<T>(func, retryTimes, intervalTime).ConfigureAwait(false);
         }
 
         private async Task LoopAsync(Action action, int retryTimes, int intervalTime)
         {
-            await LoopAsyncDetail(action, retryTimes, intervalTime);
+            await LoopAsyncDetail(action, retryTimes, intervalTime).ConfigureAwait(false);
         }
 
         private async Task<T> LoopAsyncDetail<T>(Func<T> func, int retryTimes, int intervalTime)
@@ -163,7 +149,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    return await RunAsync<T>(func);
+                    return await RunAsync<T>(func).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -172,9 +158,9 @@ namespace SyncClipboard.Utility
                         throw ex;
                     }
                 }
-                await Task.Delay(intervalTime);
+                await Task.Delay(intervalTime).ConfigureAwait(false);
             }
-            return default(T);
+            return default;
         }
 
         private async Task LoopAsyncDetail(Action action, int retryTimes, int intervalTime)
@@ -183,7 +169,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    await RunAsync(action);
+                    await RunAsync(action).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -192,19 +178,19 @@ namespace SyncClipboard.Utility
                         throw ex;
                     }
                 }
-                await Task.Delay(intervalTime);
+                await Task.Delay(intervalTime).ConfigureAwait(false);
             }
         }
 
 
         private async Task<T> RunAsync<T>(Func<T> t)
         {
-            return await Task.Run(() => t());
+            return await Task.Run(() => t()).ConfigureAwait(false);
         }
 
         private async Task RunAsync(Action action)
         {
-            await Task.Run(() => action());
+            await Task.Run(() => action()).ConfigureAwait(false);
         }
 
         private string FullUrl(string relativeUrl)

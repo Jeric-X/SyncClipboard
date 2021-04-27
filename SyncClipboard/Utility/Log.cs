@@ -6,7 +6,7 @@ namespace SyncClipboard.Utility
 {
     static class Log
     {
-        private static String logFolder = System.Windows.Forms.Application.StartupPath + $"/Log";
+        private static readonly string logFolder = Env.FullPath("Log");
 
         public static void Write(string str)
         {
@@ -39,7 +39,6 @@ namespace SyncClipboard.Utility
                 using (StreamWriter file = new StreamWriter($@"{logFolder}\{logFile}.txt", true, System.Text.Encoding.UTF8))
                 {
                     file.WriteLine(logStr);
-                    file.Close();
                 }
             }
             catch (Exception)

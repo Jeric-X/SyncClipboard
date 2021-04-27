@@ -6,14 +6,14 @@ namespace SyncClipboard.Utility
     {
         public static T Decode<T>(string json)
         {
-            T firstResponse = default(T);
+            T firstResponse;
             try
             {
                 firstResponse = new JavaScriptSerializer().Deserialize<T>(json);
             }
             catch
             {
-                firstResponse = default(T);
+                firstResponse = default;
             }
             return firstResponse;
         }

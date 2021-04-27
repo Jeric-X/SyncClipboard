@@ -8,9 +8,9 @@ namespace SyncClipboard.Utility
 {
     internal static class HttpWebUtility
     {
-        private static readonly string DefaultUserAgent = "SyncClipboard";
+        private const string DEFAULT_USER_AGENT = "SyncClipboard";
 
-        internal static void sentBytes(HttpWebRequest request, byte[] bytes)
+        internal static void SentBytes(HttpWebRequest request, byte[] bytes)
         {
             request.ContentLength = bytes.Length;
             Stream reqStream = request.GetRequestStream();
@@ -21,7 +21,7 @@ namespace SyncClipboard.Utility
         internal static void SentText(HttpWebRequest request, string text)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(text);
-            sentBytes(request, bytes);
+            SentBytes(request, bytes);
         }
 
         internal static void SentFile(HttpWebRequest request, string filePath)
@@ -43,7 +43,7 @@ namespace SyncClipboard.Utility
             mstream.Read(byteData, 0, byteData.Length);
             mstream.Close();
 
-            sentBytes(request, byteData);
+            SentBytes(request, byteData);
         }
 
         internal static string ReceiveString(HttpWebRequest request)
@@ -89,13 +89,13 @@ namespace SyncClipboard.Utility
         {
             if (string.IsNullOrEmpty(url))
             {
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
             }
 
             SetSecurityProtocol(url);
             HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Method = httpMethod;
-            request.UserAgent = DefaultUserAgent;
+            request.UserAgent = DEFAULT_USER_AGENT;
             request.Timeout = UserConfig.Config.Program.TimeOut;
 
             if (authHeader != null)

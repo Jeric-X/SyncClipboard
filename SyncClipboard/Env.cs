@@ -1,8 +1,8 @@
 namespace SyncClipboard
 {
-    static class Env
+    internal static class Env
     {
-        const string PATH_SLASH = @"\";
+        private const string PATH_SLASH = @"\";
         internal static readonly string Directory = System.Windows.Forms.Application.StartupPath;
 
         internal static string PathConcat(params string[] values)

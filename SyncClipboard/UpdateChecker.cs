@@ -5,7 +5,7 @@ using SyncClipboard.Utility;
 
 namespace SyncClipboard
 {
-    class UpdateChecker
+    internal class UpdateChecker
     {
         public const string Version = "1.3.2";
         public const int VersionPartNumber = 3;
@@ -35,7 +35,7 @@ namespace SyncClipboard
 
         private string GetNewestVersion()
         {
-            String gitHubReply = "";
+            string gitHubReply;
             try
             {
                 gitHubReply = HttpWeb.GetText(UpdateUrl, null);
@@ -55,7 +55,7 @@ namespace SyncClipboard
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message.ToString(), "获取更新信息失败");
+                MessageBox.Show(e.Message, "获取更新信息失败");
             }
 
             return null;
@@ -79,10 +79,11 @@ namespace SyncClipboard
             return false;
         }
     }
-    class UpdateConvertJson
+
+    internal class UpdateConvertJson
     {
         public String name { get; set; }
-        
+
         public String rowser_download_url { get; set; }
     }
 }

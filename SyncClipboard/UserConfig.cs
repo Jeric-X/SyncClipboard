@@ -6,7 +6,7 @@ using System;
 
 namespace SyncClipboard
 {
-    static class UserConfig
+    internal static class UserConfig
     {
         internal static event Action ConfigChanged;
         private const string CONFIG_FILE = "SyncClipboard.json";
@@ -87,7 +87,6 @@ namespace SyncClipboard
             Config = new Configuration();
             Save();
         }
-
 
         #region  TO BE MODIFIED
         // TO BE MODIFIED
