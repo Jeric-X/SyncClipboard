@@ -1,6 +1,7 @@
 ﻿using SyncClipboard.Control;
 using SyncClipboard.Service;
 using SyncClipboard.Utility;
+using SyncClipboard.Module;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

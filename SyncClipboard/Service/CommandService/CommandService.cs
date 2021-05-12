@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Utility;
+using SyncClipboard.Module;
 
 namespace SyncClipboard.Service
 {
@@ -15,6 +16,7 @@ namespace SyncClipboard.Service
 
         private CancellationTokenSource _cancelSource;
         private CancellationToken _cancelToken;
+        private bool _isError = false;
 
         protected override void StartService()
         {
@@ -42,10 +44,16 @@ namespace SyncClipboard.Service
                     Command command = await GetRemoteCommand().ConfigureAwait(false);
                     await ResetRemoteCommand(new Command()).ConfigureAwait(false);
                     ExecuteCommand(command);
+
+                    _isError = false;
                 }
                 catch (System.Exception ex)
                 {
-                    Program.notifyer.ToastNotify("CommandService failed", ex.ToString());
+                    if (!_isError)
+                    {
+                        Program.notifyer.ToastNotify("CommandService failed", ex.ToString());
+                        _isError = true;
+                    }
                 }
 
                 await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(false);
@@ -74,10 +82,12 @@ namespace SyncClipboard.Service
         {
             if (command.CommandStr == "shutdown")
             {
-                System.Diagnostics.Process open = new System.Diagnostics.Process();
-                open.StartInfo.FileName = "cmd";
-                open.StartInfo.Arguments = @"/k shutdown.exe /s /t 60 /c ""use [ shutdown /a ] in 60s to undo shutdown.""";
-                open.Start();
+                var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
+
+                var process = new System.Diagnostics.Process();
+                process.StartInfo.FileName = "cmd";
+                process.StartInfo.Arguments = $@"/k shutdown.exe /s /t {shutdownTime} /c ""use [ shutdown /a ] in {shutdownTime}s to undo shutdown.""";
+                process.Start();
             }
         }
 

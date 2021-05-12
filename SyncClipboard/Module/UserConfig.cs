@@ -4,7 +4,7 @@ using System.IO;
 using System.Windows.Forms;
 using System;
 
-namespace SyncClipboard
+namespace SyncClipboard.Module
 {
     internal static class UserConfig
     {
@@ -29,7 +29,13 @@ namespace SyncClipboard
                 public bool IsNextcloud = false;
             }
 
+            public class CCommandService
+            {
+                public int Shutdowntime = 30;
+            }
+
             public CSyncService SyncService = new CSyncService();
+            public CCommandService CommandService = new CCommandService();
             public CProgram Program = new CProgram();
         }
 
@@ -41,7 +47,7 @@ namespace SyncClipboard
             var configStr = serializer.Serialize(Config);
             try
             {
-                System.IO.File.WriteAllText(Env.FullPath(CONFIG_FILE), configStr);
+                File.WriteAllText(Env.FullPath(CONFIG_FILE), configStr);
             }
             catch
             {
@@ -56,7 +62,7 @@ namespace SyncClipboard
             string text;
             try
             {
-                text = System.IO.File.ReadAllText(Env.FullPath(CONFIG_FILE));
+                text = File.ReadAllText(Env.FullPath(CONFIG_FILE));
             }
             catch (FileNotFoundException)
             {
@@ -78,7 +84,7 @@ namespace SyncClipboard
                 WriteDefaultConfigFile();
             }
 
-            Auth = FormatHttpAuthHeader(UserConfig.Config.SyncService.UserName, UserConfig.Config.SyncService.Password);
+            Auth = FormatHttpAuthHeader(Config.SyncService.UserName, Config.SyncService.Password);
         }
 
         private static void WriteDefaultConfigFile()

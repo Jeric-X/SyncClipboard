@@ -1,4 +1,4 @@
-v1.3.3(working)
+v1.3.3
 - Add cookie support.
 - Add CommandService.
 - Optimize Log system.

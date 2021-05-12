@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using Microsoft.Win32;
 using SyncClipboard.Utility;
+using SyncClipboard.Module;
 
 namespace SyncClipboard.Control
 {

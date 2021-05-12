@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using SyncClipboard.Control;
 using SyncClipboard.Utility;
 using SyncClipboard.Service;
+using SyncClipboard.Module;
 namespace SyncClipboard
 {
     static class Program

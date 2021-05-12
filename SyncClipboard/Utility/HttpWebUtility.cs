@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
+using SyncClipboard.Module;
 
 namespace SyncClipboard.Utility
 {
