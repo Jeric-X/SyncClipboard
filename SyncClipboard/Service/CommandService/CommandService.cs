@@ -20,14 +20,17 @@ namespace SyncClipboard.Service
 
         protected override void StartService()
         {
-            _cancelSource = new CancellationTokenSource();
-            _cancelToken = _cancelSource.Token;
-            StartServiceAsync(_cancelToken);
+            if (UserConfig.Config.CommandService.switchOn)
+            {
+                _cancelSource = new CancellationTokenSource();
+                _cancelToken = _cancelSource.Token;
+                StartServiceAsync(_cancelToken);
+            }
         }
 
         protected override void StopSerivce()
         {
-            _cancelSource.Cancel();
+            _cancelSource?.Cancel();
         }
 
         private async void StartServiceAsync(CancellationToken cancelToken)

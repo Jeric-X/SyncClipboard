@@ -1,6 +1,6 @@
 ﻿using SyncClipboard.Module;
 
-namespace SyncClipboard.Service.ClipboardService
+namespace SyncClipboard.Service
 {
     public class ClipboardService : Service
     {

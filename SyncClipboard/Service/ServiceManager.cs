@@ -3,7 +3,9 @@ namespace SyncClipboard.Service
     internal class ServiceManager
     {
         private readonly IService[] _services = {
-            new CommandService()
+            new CommandService(),
+            new ClipboardService(),
+            new UploadService()
         };
 
         internal void StartUpAllService()

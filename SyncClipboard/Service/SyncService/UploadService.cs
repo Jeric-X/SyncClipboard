@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using SyncClipboard.Module;
+using SyncClipboard.Utility;
 
 namespace SyncClipboard.Service
 {
@@ -41,13 +43,95 @@ namespace SyncClipboard.Service
 
         public override void RegistEventHandler()
         {
-            base.RegistEventHandler();
+            Event.RegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
         }
 
         public override void UnRegistEventHandler()
         {
-            base.UnRegistEventHandler();
+            Event.UnRegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
         }
 
+        private int _uploadQueue = 0;
+        private readonly object _uploadQueueLocker = new object();
+
+        private bool _isUploaderWorking = false;
+        private readonly object _uploaderWorkingLocker = new object();
+
+        private void ClipBoardChangedHandler()
+        {
+            lock(_uploadQueueLocker)
+            {
+                _uploadQueue++;
+            }
+
+            ProcessUploadQueue();
+        }
+
+        private void ProcessUploadQueue()
+        {
+            lock (_uploaderWorkingLocker)
+            {
+                if (_isUploaderWorking)
+                {
+                    return;
+                }
+                _isUploaderWorking = true;
+            }
+
+            lock (_uploadQueueLocker)
+            {
+                if (_uploadQueue == 0)
+                {
+                    return;
+                }
+                _uploadQueue = 0;
+            }
+
+            UploadClipboard().ConfigureAwait(false);
+
+            lock (_uploaderWorkingLocker)
+            {
+                Log.Write("DONEEEEE");
+                _isUploaderWorking = false;
+            }
+            ProcessUploadQueue();
+        }
+
+        private async Task UploadClipboard()
+        {
+            await Task.Delay(2000).ConfigureAwait(false);
+            Log.Write("STARTTTTT");
+            var currentProfile = ProfileFactory.CreateFromLocal();
+            if (currentProfile == null || currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            {
+                Log.Write("Local profile type is Unkown, stop upload.");
+                return;
+            }
+
+            Log.Write("start loop");
+            lock (SyncService.remoteProfileLocker)
+            {
+                string errMessage = "";
+                for (int i = 0; i < UserConfig.Config.Program.RetryTimes; i++)
+                {
+                    try
+                    {
+                        currentProfile.UploadProfile(Program.webDav);
+                        Log.Write("[PUSH] upload end");
+                        return;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errMessage = ex.Message;
+                        //Program.notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", _isErrorStatus);
+                    }
+
+                    //Thread.Sleep(UserConfig.Config.Program.IntervalTime);
+                }
+                Program.notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
+                //_statusString = errMessage;
+                //_isErrorStatus = true;
+            }
+        }
     }
 }

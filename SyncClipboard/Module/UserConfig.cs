@@ -31,6 +31,7 @@ namespace SyncClipboard.Module
 
             public class CCommandService
             {
+                public bool switchOn = false;
                 public int Shutdowntime = 30;
             }
 

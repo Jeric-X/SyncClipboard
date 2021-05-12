@@ -73,7 +73,7 @@ namespace SyncClipboard
             if (!switchOn)
             {
                 switchOn = true;
-                Program.ClipboardListener.AddHandler(ClipboardChangedHandler);
+                //Program.ClipboardListener.AddHandler(ClipboardChangedHandler);
             }
         }
 
@@ -82,7 +82,7 @@ namespace SyncClipboard
             if (switchOn)
             {
                 switchOn = false;
-                Program.ClipboardListener.RemoveHandler(ClipboardChangedHandler);
+               // Program.ClipboardListener.RemoveHandler(ClipboardChangedHandler);
             }
         }
 
