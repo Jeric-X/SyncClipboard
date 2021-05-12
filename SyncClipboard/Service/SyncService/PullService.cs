@@ -15,13 +15,11 @@ namespace SyncClipboard
 
         private bool switchOn = false;
         private bool isChangingRemote = false;
-        private PushService _pushService;
 
-        public PullService(PushService pushService, Notifyer notifyer)
+        public PullService(Notifyer notifyer)
         {
-            pushService.PushStarted += new PushService.PushStatusChangingHandler(PushStartedHandler);
-            pushService.PushStopped += new PushService.PushStatusChangingHandler(PushStoppedHandler);
-            _pushService = pushService;
+            // pushService.PushStarted += new PushService.PushStatusChangingHandler(PushStartedHandler);
+            // pushService.PushStopped += new PushService.PushStatusChangingHandler(PushStoppedHandler);
             _notifyer = notifyer;
             _notifyer.SetStatusString(SERVICE_NAME, "Idle.");
             Load();
@@ -120,7 +118,7 @@ namespace SyncClipboard
                 if (!isChangingRemote)
                 {
                     SetDownloadingIcon();
-                    _pushService.Stop();
+                    //_pushService.Stop();
 
                     remoteProfile.SetLocalClipboard();
 
@@ -129,7 +127,7 @@ namespace SyncClipboard
                     StopDownloadingIcon();
 
                     Thread.Sleep(50);
-                    _pushService.Start();
+                    //_pushService.Start();
                 }
             }
         }

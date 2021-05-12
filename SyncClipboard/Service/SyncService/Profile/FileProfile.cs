@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
@@ -52,6 +53,25 @@ namespace SyncClipboard.Service
             return Text;
         }
 
+        public override async Task UploadProfileAsync(IWebDav webdav)
+        {
+            string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
+
+            FileInfo file = new FileInfo(fullPath);
+            if (file.Length <= maxFileSize)
+            {
+                Log.Write("PUSH file " + FileName);
+                webdav.PutFile(remotePath, fullPath);
+            }
+            else
+            {
+                Log.Write("file is too large, skipped " + FileName);
+            }
+
+            SetMd5(GetMD5HashFromFile(fullPath));
+            await webdav.PutTextAsync(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), 0, 0).ConfigureAwait(false);
+        }
+
         public override void UploadProfile(IWebDav webdav)
         {
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
@@ -76,7 +96,7 @@ namespace SyncClipboard.Service
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
-            if (Directory.Exists(SyncService.LOCAL_FILE_FOLDER) == false)
+            if (!Directory.Exists(SyncService.LOCAL_FILE_FOLDER))
             {
                 Directory.CreateDirectory(SyncService.LOCAL_FILE_FOLDER);
             }

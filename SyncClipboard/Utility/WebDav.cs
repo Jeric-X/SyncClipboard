@@ -102,6 +102,15 @@ namespace SyncClipboard.Utility
             HttpWeb.PutFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies);
         }
 
+        public async Task PutFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime)
+        {
+            await LoopAsync(
+                () => HttpWeb.PutFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies),
+                retryTimes,
+                intervalTime
+            ).ConfigureAwait(false);
+        }
+
         public void GetFile(string remotefile, string localFilePath)
         {
             HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies);

@@ -80,10 +80,12 @@ namespace SyncClipboard.Control
 
         public void SetDynamicNotifyIcon(Icon[] icons, int delayTime)
         {
-            if (icons.Length <= 0)
+            if (icons.Length == 0)
             {
                 return;
             }
+
+            StopDynamicNotifyIcon();
 
             _dynamicIcons = icons;
             _notifyIcon.Icon = _dynamicIcons[0];
@@ -96,8 +98,8 @@ namespace SyncClipboard.Control
 
         public void StopDynamicNotifyIcon()
         {
-            _iconTimer.Stop();
-            _iconTimer.Close();
+            _iconTimer?.Stop();
+            _iconTimer?.Close();
             _iconTimer = null;
 
             _dynamicIcons = null;

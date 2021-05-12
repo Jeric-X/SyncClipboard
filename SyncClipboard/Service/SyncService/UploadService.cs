@@ -91,14 +91,18 @@ namespace SyncClipboard.Service
             {
                 if (_uploadQueue == 0)
                 {
+                    StopUploadingIcon();
                     PushStopped?.Invoke();
+                    _isUploaderWorking = false;
                     return;
                 }
+                Program.notifyer.SetStatusString(SERVICE_NAME, "Uploading.");
+                SetUploadingIcon();
                 PushStarted?.Invoke();
                 _uploadQueue = 0;
             }
 
-            await UploadClipboard().ConfigureAwait(false);
+            await UploadClipboard().ConfigureAwait(true);
 
             lock (_uploaderWorkingLocker)
             {
@@ -109,39 +113,62 @@ namespace SyncClipboard.Service
 
         private async Task UploadClipboard()
         {
-            await Task.Delay(2000).ConfigureAwait(false);
-            Log.Write("STARTTTTT");
             var currentProfile = ProfileFactory.CreateFromLocal();
+            if (currentProfile == null)
+            {
+                Log.Write("Local profile type is null, stop upload.");
+                return;
+            }
+
             if (currentProfile == null || currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
                 Log.Write("Local profile type is Unkown, stop upload.");
                 return;
             }
 
-            Log.Write("start loop");
-            lock (SyncService.remoteProfileLocker)
-            {
-                string errMessage = "";
-                for (int i = 0; i < UserConfig.Config.Program.RetryTimes; i++)
-                {
-                    try
-                    {
-                        currentProfile.UploadProfile(Program.webDav);
-                        Log.Write("[PUSH] upload end");
-                        return;
-                    }
-                    catch (System.Exception ex)
-                    {
-                        errMessage = ex.Message;
-                        //Program.notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", _isErrorStatus);
-                    }
+            SyncService.remoteProfilemutex.WaitOne();
 
-                    //Thread.Sleep(UserConfig.Config.Program.IntervalTime);
+            string errMessage = "";
+            for (int i = 0; i < UserConfig.Config.Program.RetryTimes; i++)
+            {
+                try
+                {
+                    await currentProfile.UploadProfileAsync(Program.webDav).ConfigureAwait(true);
+                    Log.Write("Upload end");
+                    Program.notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
+                    SyncService.remoteProfilemutex.ReleaseMutex();
+                    return;
                 }
-                Program.notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
-                //_statusString = errMessage;
-                //_isErrorStatus = true;
+                catch (System.Exception ex)
+                {
+                    errMessage = ex.Message;
+                    Program.notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
+                }
+
+                await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(true);
             }
+            SyncService.remoteProfilemutex.ReleaseMutex();
+            Program.notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
+        }
+
+        private void SetUploadingIcon()
+        {
+            System.Drawing.Icon[] icon =
+            {
+                Properties.Resources.upload001, Properties.Resources.upload002, Properties.Resources.upload003,
+                Properties.Resources.upload004, Properties.Resources.upload005, Properties.Resources.upload006,
+                Properties.Resources.upload007, Properties.Resources.upload008, Properties.Resources.upload009,
+                Properties.Resources.upload010, Properties.Resources.upload011, Properties.Resources.upload012,
+                Properties.Resources.upload013, Properties.Resources.upload014, Properties.Resources.upload015,
+                Properties.Resources.upload016, Properties.Resources.upload017,
+            };
+
+            Program.notifyer.SetDynamicNotifyIcon(icon, 150);
+        }
+
+        private void StopUploadingIcon()
+        {
+            Program.notifyer.StopDynamicNotifyIcon();
         }
     }
 }

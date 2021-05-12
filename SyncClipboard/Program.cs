@@ -17,7 +17,6 @@ namespace SyncClipboard
         public static ClipboardListener ClipboardListener;
 
         public static PullService pullService;
-        public static PushService pushService;
         private static ServiceManager _serviceManager = new ServiceManager();
         public static WebDav webDav;
         public static Notifyer notifyer;
@@ -48,8 +47,7 @@ namespace SyncClipboard
                 notifyer = mainController.Notifyer;
                 ClipboardListener = new ClipboardListener();
 
-                pushService = new PushService(mainController.Notifyer);
-                pullService = new PullService(pushService, mainController.Notifyer);
+                pullService = new PullService(mainController.Notifyer);
 
                 _serviceManager.StartUpAllService();
 
@@ -88,7 +86,6 @@ namespace SyncClipboard
         private static void ConfigChangedHandler()
         {
             Program.pullService.Load();
-            Program.pushService.Load();
             Program.mainController.LoadConfig();
             LoadGlobal();
             _serviceManager.LoadAllService();
@@ -114,10 +111,7 @@ namespace SyncClipboard
             {
                 pullService.Stop();
             }
-            if (pushService != null)
-            {
-                pushService.Stop();
-            }
+
             _serviceManager?.StopAllService();
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
