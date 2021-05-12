@@ -4,7 +4,7 @@ namespace SyncClipboard
 {
     public static class RemoteClipboardLocker
     {
-        static Mutex mutex = new Mutex();
+        private static readonly Mutex mutex = new Mutex();
 
         public static void Lock()
         {

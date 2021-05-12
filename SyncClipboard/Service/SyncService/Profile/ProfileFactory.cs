@@ -5,12 +5,11 @@ using System.Drawing;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using SyncClipboard.Module;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
-    static class ProfileFactory
+    public static class ProfileFactory
     {
         private struct LocalClipboard
         {
@@ -100,11 +99,10 @@ namespace SyncClipboard.Service
 
         public static Profile CreateFromRemote(IWebDav webDav)
         {
-            Log.Write("[PULL] " + UserConfig.GetProfileUrl());
-            String httpReply = webDav.GetText(SyncService.REMOTE_RECORD_FILE);
+            string httpReply = webDav.GetText(SyncService.REMOTE_RECORD_FILE);
             Log.Write("[PULL] json " + httpReply);
 
-            JsonProfile jsonProfile = null;
+            JsonProfile jsonProfile;
             try
             {
                 JavaScriptSerializer serializer = new JavaScriptSerializer();

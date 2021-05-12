@@ -6,7 +6,7 @@ using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
-    class TextProfile : Profile
+    public class TextProfile : Profile
     {
         public TextProfile(String text)
         {
@@ -35,11 +35,10 @@ namespace SyncClipboard.Service
                 TextProfile textprofile = (TextProfile)obj;
                 return this.Text == textprofile.Text;
             }
-
             catch
             {
                 return false;
-            }            
+            }
         }
 
         public override int GetHashCode()

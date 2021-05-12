@@ -7,15 +7,10 @@ namespace SyncClipboard
 {
     public partial class SettingsForm : Form
     {
-        private MainController mainController;
-        private SettingsForm()
+
+        public SettingsForm()
         {
             InitializeComponent();
-        }
-        public SettingsForm(MainController mainform)
-        {
-            InitializeComponent();
-            mainController = mainform;
             this.textBox6.KeyPress += OnlyNum;
             this.textBox7.KeyPress += OnlyNum;
             this.textBox8.KeyPress += OnlyNum;

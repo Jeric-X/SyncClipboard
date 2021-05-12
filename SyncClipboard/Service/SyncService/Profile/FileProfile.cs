@@ -8,13 +8,13 @@ using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
-    class FileProfile : Profile
+    public class FileProfile : Profile
     {
         protected string fullPath;
         private bool DownloadStatusOK = false;
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
         private string statusTip ="";
-        private IWebDav _webDav;
+        private readonly IWebDav _webDav;
 
         public FileProfile(string file)
         {
@@ -199,11 +199,11 @@ namespace SyncClipboard.Service
                 {
                     System.Diagnostics.Process open = new System.Diagnostics.Process();
                     open.StartInfo.FileName = "explorer";
-                    open.StartInfo.Arguments = @"/e,/select," + path;
+                    open.StartInfo.Arguments = "/e,/select," + path;
                     open.Start();
                 };
             }
-            
+
             return null;
         }
     }

@@ -7,7 +7,7 @@ using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
-    abstract class Profile
+    public abstract class Profile
     {
         public String FileName { get; set; } = "";
         public String Text { get; set; } = "";
@@ -40,17 +40,19 @@ namespace SyncClipboard.Service
             LocalClipboardLocker.Unlock();
         }
 
-        static private String ClipBoardTypeToString(ClipboardType type)
+        static private string ClipBoardTypeToString(ClipboardType type)
         {
             return Enum.GetName(typeof(ClipboardType), type);
         }
 
-        public String ToJsonString()
+        public string ToJsonString()
         {
-            JsonProfile jsonProfile = new JsonProfile();
-            jsonProfile.File = FileName;
-            jsonProfile.Clipboard = Text;
-            jsonProfile.Type = ClipBoardTypeToString(GetProfileType());
+            JsonProfile jsonProfile = new JsonProfile
+            {
+                File = FileName,
+                Clipboard = Text,
+                Type = ClipBoardTypeToString(GetProfileType())
+            };
 
             JavaScriptSerializer serializer = new JavaScriptSerializer();
             return serializer.Serialize(jsonProfile);
@@ -58,7 +60,7 @@ namespace SyncClipboard.Service
 
         public static bool operator ==(Profile lhs, Profile rhs)
         {
-            if (System.Object.ReferenceEquals(lhs, rhs))
+            if (ReferenceEquals(lhs, rhs))
             {
                 return true;
             }
@@ -99,8 +101,8 @@ namespace SyncClipboard.Service
         public override string ToString()
         {
             string str = "";
-            str += "FileName" + FileName.ToString();
-            str += "Text:" + Text.ToString();
+            str += "FileName" + FileName;
+            str += "Text:" + Text;
             return str;
         }
     }

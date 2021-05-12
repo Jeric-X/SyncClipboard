@@ -47,10 +47,9 @@ namespace SyncClipboard
             }
 
             JavaScriptSerializer serializer = new JavaScriptSerializer();
-            UpdateConvertJson p1 = null;
             try
             {
-                p1 = serializer.Deserialize<UpdateConvertJson>(gitHubReply);
+                UpdateConvertJson p1 = serializer.Deserialize<UpdateConvertJson>(gitHubReply);
                 return p1.name;
             }
             catch (Exception e)

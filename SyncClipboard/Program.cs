@@ -7,17 +7,14 @@ using SyncClipboard.Service;
 using SyncClipboard.Module;
 namespace SyncClipboard
 {
-    static class Program
+    internal static class Program
     {
-        public static String SoftName = "SyncClipboard";
-        public static String DefaultServer = "https://file.jericx.xyz/remote.php/dav/files/Clipboard/Clipboard/";
-        public static String DefaultUser = "Clipboard";
-        public static String DefaultPassword = "Clipboard";
+        public static string SoftName = "SyncClipboard";
         public static MainController mainController;
         public static ClipboardListener ClipboardListener;
 
         public static PullService pullService;
-        private static ServiceManager _serviceManager = new ServiceManager();
+        private static readonly ServiceManager _serviceManager = new ServiceManager();
         public static WebDav webDav;
         public static Notifyer notifyer;
 
@@ -25,13 +22,13 @@ namespace SyncClipboard
         /// 应用程序的主入口点。
         /// </summary>
         [STAThread]
-        static void Main()
+        private static void Main()
         {
-            Utility.Log.Write("[Program] started");
+            Log.Write("[Program] started");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            System.Threading.Mutex mutex = new System.Threading.Mutex(false, Program.SoftName, out bool creetedNew);
+            Mutex mutex = new Mutex(false, SoftName, out bool creetedNew);
             if (creetedNew)
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -74,19 +71,15 @@ namespace SyncClipboard
             );
 
             webDav.TestAliveAsync().ContinueWith(
-                (res) =>
-                {
-                    Log.Write(res.Result.ToString());
-                },
+                (res) => Log.Write(res.Result.ToString()),
                 System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
             );
-
         }
 
         private static void ConfigChangedHandler()
         {
-            Program.pullService.Load();
-            Program.mainController.LoadConfig();
+            pullService.Load();
+            mainController.LoadConfig();
             LoadGlobal();
             _serviceManager.LoadAllService();
         }
@@ -99,7 +92,7 @@ namespace SyncClipboard
 
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
         {
-            Log.Write("未知错误:" + e.Exception.Message.ToString());
+            Log.Write("未知错误:" + e.Exception.Message);
         }
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
@@ -107,15 +100,12 @@ namespace SyncClipboard
         }
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {
-            if (pullService != null)
-            {
-                pullService.Stop();
-            }
+            pullService?.Stop();
 
             _serviceManager?.StopAllService();
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
-            Utility.Log.Write("[Program] exited");
+            Log.Write("[Program] exited");
         }
     }
 }

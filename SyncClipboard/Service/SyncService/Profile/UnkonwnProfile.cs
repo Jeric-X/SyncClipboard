@@ -6,7 +6,7 @@ using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
-    class UnkonwnProfile : Profile
+    public class UnkonwnProfile : Profile
     {
         public UnkonwnProfile() { }
 

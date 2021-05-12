@@ -7,7 +7,7 @@ using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
-    class ImageProfile : FileProfile
+    public class ImageProfile : FileProfile
     {
         private const string TEMP_IMAGE_NAME = "SyncClipboardTempImage.bmp";
         public ImageProfile(string filepath) : base(filepath)
@@ -53,7 +53,7 @@ namespace SyncClipboard.Service
             dataObject.SetData(DataFormats.Html, clipboardHtml);
         }
 
-        private static string clipboardQqFormat = @"<QQRichEditFormat>
+        private const string clipboardQqFormat = @"<QQRichEditFormat>
 <Info version=""1001"">
 </Info>
 <EditElement type=""1"" imagebiztype=""0"" textsummary="""" filepath=""<<<<<<"" shortcut="""">

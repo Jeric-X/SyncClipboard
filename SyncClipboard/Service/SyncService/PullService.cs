@@ -81,12 +81,12 @@ namespace SyncClipboard
                 }
                 catch (Exception ex)
                 {
-                    errorTimes += 1;
+                    errorTimes++;
                     Log.Write(ex.ToString());
                     _notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
                     if (errorTimes == UserConfig.Config.Program.RetryTimes)
                     {
-                        _notifyer.ToastNotify("剪切板同步失败", ex.Message.ToString());
+                        _notifyer.ToastNotify("剪切板同步失败", ex.Message);
                     }
                     continue;
                 }

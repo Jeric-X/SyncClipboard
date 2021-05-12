@@ -12,11 +12,6 @@ namespace SyncClipboard.Control
             InitializeComponent();
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-        }
-
         private void InitializeComponent()
         {
             this._textBox = new TextBox();

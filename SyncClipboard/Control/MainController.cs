@@ -19,8 +19,8 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.MenuItem lineMenuItem;
         private System.Windows.Forms.MenuItem nextCloudLogger;
 
-        SettingsForm settingsForm;
-        bool isSttingsFormExist = false;
+        private SettingsForm settingsForm;
+        private bool isSttingsFormExist = false;
 
         public MainController()
         {
@@ -38,15 +38,15 @@ namespace SyncClipboard.Control
             this.lineMenuItem = new System.Windows.Forms.MenuItem("-");
             this.nextCloudLogger = new System.Windows.Forms.MenuItem("从NextCloud登录");
 
-            this.设置MenuItem.Click += new System.EventHandler(this.设置MenuItem_Click);
-            this.开机启动MenuItem.Click += new System.EventHandler(this.开机启动MenuItem_Click);
-            this.上传本机MenuItem.Click += new System.EventHandler(this.上传本机MenuItem_Click);
-            this.下载远程MenuItem.Click += new System.EventHandler(this.下载远程MenuItem_Click);
-            this.退出MenuItem.Click += new System.EventHandler(this.退出MenuItem_Click);
-            this.检查更新MenuItem.Click += new System.EventHandler(this.检查更新MenuItem_Click);
-            this.nextCloudLogger.Click += new System.EventHandler(this.nextCloudLogger_Click);
-            
-            this.contextMenu = new ContextMenu(new MenuItem[] { 
+            this.设置MenuItem.Click += this.设置MenuItem_Click;
+            this.开机启动MenuItem.Click += this.开机启动MenuItem_Click;
+            this.上传本机MenuItem.Click += this.上传本机MenuItem_Click;
+            this.下载远程MenuItem.Click += this.下载远程MenuItem_Click;
+            this.退出MenuItem.Click += this.退出MenuItem_Click;
+            this.检查更新MenuItem.Click += this.检查更新MenuItem_Click;
+            this.nextCloudLogger.Click += this.NextCloudLogger_Click;
+
+            this.contextMenu = new ContextMenu(new MenuItem[] {
                 this.设置MenuItem,
                 this.lineMenuItem.CloneMenu(),
                 this.nextCloudLogger,
@@ -65,19 +65,12 @@ namespace SyncClipboard.Control
 
         public void LoadConfig()
         {
-            if(Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, null) == null)
-            {
-                this.开机启动MenuItem.Checked = false;
-            }
-            else
-            {
-                this.开机启动MenuItem.Checked = true;
-            }
+            this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, null) != null;
             this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
         }
 
-        private void nextCloudLogger_Click(object sender, EventArgs e)
+        private void NextCloudLogger_Click(object sender, EventArgs e)
         {
             Nextcloud.SignIn();
         }
@@ -94,7 +87,7 @@ namespace SyncClipboard.Control
             if (!isSttingsFormExist)
             {
                 isSttingsFormExist = true;
-                this.settingsForm = new SettingsForm(this);
+                this.settingsForm = new SettingsForm();
                 settingsForm.ShowDialog();
                 isSttingsFormExist = false;
             }
@@ -108,7 +101,7 @@ namespace SyncClipboard.Control
         {
             try
             {
-                if (this.开机启动MenuItem.Checked != true)
+                if (!this.开机启动MenuItem.Checked)
                 {
                     Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, Application.ExecutablePath);
                 }

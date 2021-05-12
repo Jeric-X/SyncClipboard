@@ -3,7 +3,7 @@ using SyncClipboard.Utility;
 
 namespace SyncClipboard.Service
 {
-    class ProfileType
+    public static class ProfileType
     {
         public enum ClipboardType
         {
@@ -23,7 +23,7 @@ namespace SyncClipboard.Service
 
         public static ClipboardType StringToClipBoardType(String stringType)
         {
-            ClipboardType type = ClipboardType.Text;
+            ClipboardType type;
             try
             {
                 type = (ClipboardType)Enum.Parse(typeof(ClipboardType), stringType);
