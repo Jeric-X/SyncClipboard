@@ -84,6 +84,7 @@
     <Compile Include="Control\InputBox.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Module\ProgramEvent.cs" />
     <Compile Include="Module\Event.cs" />
     <Compile Include="Service\ClipboardService\ClipboardService.cs" />
     <Compile Include="Service\Service.cs" />

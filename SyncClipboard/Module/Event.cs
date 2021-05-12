@@ -4,17 +4,15 @@ namespace SyncClipboard.Module
 {
     public static class Event
     {
-        public delegate void ProgramEvent();
-
         private static readonly Dictionary<string, ProgramEvent> _savedEvent = new Dictionary<string, ProgramEvent>();
 
-        public static bool RegistEvent(string eventName, ProgramEvent eventDelegate)
+        public static bool RegistEvent(string eventName, ProgramEvent programEvent)
         {
             if (_savedEvent.ContainsKey(eventName))
             {
                 return false;
             }
-            _savedEvent.Add(eventName, eventDelegate);
+            _savedEvent.Add(eventName, programEvent);
             return true;
         }
 
@@ -28,22 +26,22 @@ namespace SyncClipboard.Module
             return true;
         }
 
-        public static bool RegistEventHandler(string eventName, ProgramEvent eventDelegate)
+        public static bool RegistEventHandler(string eventName, ProgramEvent.ProgramEventHandler eventhandler)
         {
             if (_savedEvent.ContainsKey(eventName))
             {
-                _savedEvent[eventName] += eventDelegate;
+                _savedEvent[eventName].Add(eventhandler);
                 return true;
             }
 
             return false;
         }
 
-        public static bool UnRegistEventHandler(string eventName, ProgramEvent eventDelegate)
+        public static bool UnRegistEventHandler(string eventName, ProgramEvent.ProgramEventHandler eventhandler)
         {
             if (_savedEvent.ContainsKey(eventName))
             {
-                _savedEvent[eventName] -= eventDelegate;
+                _savedEvent[eventName].Remove(eventhandler);
                 return true;
             }
 

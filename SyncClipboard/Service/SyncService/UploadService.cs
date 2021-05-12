@@ -8,8 +8,8 @@ namespace SyncClipboard.Service
     {
         public const string PUSH_START_ENENT_NAME = "PUSH_START_ENENT";
         public const string PUSH_STOP_ENENT_NAME = "PUSH_STOP_ENENT";
-        public event Event.ProgramEvent PushStarted;
-        public event Event.ProgramEvent PushStopped;
+        public event ProgramEvent.ProgramEventHandler PushStarted;
+        public event ProgramEvent.ProgramEventHandler PushStopped;
 
         private const string SERVICE_NAME = "⬆⬆";
 
@@ -37,8 +37,17 @@ namespace SyncClipboard.Service
 
         public override void RegistEvent()
         {
-            Event.RegistEvent(PUSH_START_ENENT_NAME, PushStarted);
-            Event.RegistEvent(PUSH_START_ENENT_NAME, PushStopped);
+            var pushStartedEvent = new ProgramEvent(
+                (handler) => PushStarted += handler,
+                (handler) => PushStarted -= handler
+            );
+            Event.RegistEvent(PUSH_START_ENENT_NAME, pushStartedEvent);
+
+            var pushStoppedEvent = new ProgramEvent(
+                (handler) => PushStopped += handler,
+                (handler) => PushStopped -= handler
+            );
+            Event.RegistEvent(PUSH_START_ENENT_NAME, pushStoppedEvent);
         }
 
         public override void RegistEventHandler()
@@ -67,7 +76,7 @@ namespace SyncClipboard.Service
             ProcessUploadQueue();
         }
 
-        private void ProcessUploadQueue()
+        private async void ProcessUploadQueue()
         {
             lock (_uploaderWorkingLocker)
             {
@@ -82,16 +91,17 @@ namespace SyncClipboard.Service
             {
                 if (_uploadQueue == 0)
                 {
+                    PushStopped?.Invoke();
                     return;
                 }
+                PushStarted?.Invoke();
                 _uploadQueue = 0;
             }
 
-            UploadClipboard().ConfigureAwait(false);
+            await UploadClipboard().ConfigureAwait(false);
 
             lock (_uploaderWorkingLocker)
             {
-                Log.Write("DONEEEEE");
                 _isUploaderWorking = false;
             }
             ProcessUploadQueue();
