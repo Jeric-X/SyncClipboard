@@ -8,7 +8,9 @@
         void Stop();
         void Load();
         void RegistEvent();
+        void UnRegistEvent();
         void RegistEventHandler();
+        void UnRegistEventHandler();
     }
 
     public abstract class Service : IService
@@ -19,7 +21,9 @@
         protected abstract void StopSerivce();
         public virtual void Load() { }
         public virtual void RegistEvent() { }
+        public virtual void UnRegistEvent() { }
         public virtual void RegistEventHandler() { }
+        public virtual void UnRegistEventHandler() { }
 
         public void Start()
         {
@@ -27,6 +31,7 @@
             {
                 Enabled = true;
                 this.StartService();
+                this.RegistEvent();
             }
         }
 
@@ -35,6 +40,8 @@
             if (Enabled)
             {
                 Enabled = false;
+                this.UnRegistEventHandler();
+                this.UnRegistEvent();
                 this.StopSerivce();
             }
         }

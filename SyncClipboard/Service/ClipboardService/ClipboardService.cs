@@ -5,7 +5,7 @@ namespace SyncClipboard.Service.ClipboardService
     public class ClipboardService : Service
     {
         public const string CLIPBOARD_CHANGED_EVENT_NAME = "CLIPBOARD_CHANGED_EVENT";
-        public event Event.SystemEvent ClipBoardChanged;
+        public event Event.ProgramEvent ClipBoardChanged;
         private ClipboardListener _listener;
 
         protected override void StartService()
@@ -23,6 +23,11 @@ namespace SyncClipboard.Service.ClipboardService
         public override void RegistEvent()
         {
             Event.RegistEvent(CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChanged);
+        }
+
+        public override void UnRegistEvent()
+        {
+            Event.UnRegistEvent(CLIPBOARD_CHANGED_EVENT_NAME);
         }
 
         private void ClipBoardChangedHandler()

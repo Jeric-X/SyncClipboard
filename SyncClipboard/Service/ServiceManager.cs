@@ -11,12 +11,10 @@ namespace SyncClipboard.Service
             foreach (IService service in _services)
             {
                 service.Start();
-                service.RegistEvent();
             }
 
             foreach (IService service in _services)
             {
-                service.Start();
                 service.RegistEventHandler();
             }
         }
