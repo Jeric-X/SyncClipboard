@@ -91,7 +91,7 @@ namespace SyncClipboard.Service
             webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
         }
 
-        protected override void BeforeSetLocal()
+        protected override async Task BeforeSetLocal()
         {
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
@@ -103,7 +103,7 @@ namespace SyncClipboard.Service
 
             try
             {
-                _webDav.GetFile(remotePath, localPath);
+                await _webDav.GetFileAsync(remotePath, localPath, 0, 0).ConfigureAwait(false);
                 if (GetMD5HashFromFile(localPath) != GetMd5())
                 {
                     Log.Write("[PULL] download erro, md5 wrong");

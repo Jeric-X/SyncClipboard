@@ -23,11 +23,11 @@ namespace SyncClipboard.Service
             return null;
         }
 
-        protected virtual void BeforeSetLocal() { }
+        protected virtual Task BeforeSetLocal() { return Task.CompletedTask; }
 
-        public void SetLocalClipboard()
+        public async Task SetLocalClipboard()
         {
-            BeforeSetLocal();
+            await BeforeSetLocal().ConfigureAwait(true);
 
             var dataObject = CreateDataObject();
             if (dataObject is null)
@@ -35,9 +35,10 @@ namespace SyncClipboard.Service
                 return;
             }
 
-            LocalClipboardLocker.Lock();
-            Clipboard.SetDataObject(dataObject, true);
-            LocalClipboardLocker.Unlock();
+            lock (SyncService.localProfilemutex)
+            {
+                Clipboard.SetDataObject(dataObject, true);
+            }
         }
 
         static private string ClipBoardTypeToString(ClipboardType type)

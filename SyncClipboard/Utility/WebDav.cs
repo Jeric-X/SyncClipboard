@@ -17,6 +17,7 @@ namespace SyncClipboard.Utility
         Task PutTextAsync(string remotefile, string text, int retryTimes, int intervalTime);
         void PutFile(string remotefile, string localFilePath);
         void GetFile(string remotefile, string localFilePath);
+        Task GetFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime);
         Task<bool> TestAliveAsync();
     }
 
@@ -114,6 +115,15 @@ namespace SyncClipboard.Utility
         public void GetFile(string remotefile, string localFilePath)
         {
             HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies);
+        }
+
+        public async Task GetFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime)
+        {
+            await LoopAsync(
+                () => HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies),
+                retryTimes,
+                intervalTime
+            ).ConfigureAwait(false);
         }
 
         # region 内部工具函数

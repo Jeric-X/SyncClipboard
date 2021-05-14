@@ -3,6 +3,7 @@ using SyncClipboard.Utility;
 using System;
 using System.Drawing;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
@@ -70,36 +71,34 @@ namespace SyncClipboard.Service
 
             for (int i = 0; i < 3; i++)
             {
-                LocalClipboardLocker.Lock();
-                try
+                lock (SyncService.localProfilemutex)
                 {
-                    IDataObject ClipboardData = Clipboard.GetDataObject();
-                    if (ClipboardData is null)
+                    try
                     {
-                        return localClipboard;
+                        IDataObject ClipboardData = Clipboard.GetDataObject();
+                        if (ClipboardData is null)
+                        {
+                            return localClipboard;
+                        }
+                        localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+                        localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text);
+                        localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
+                        //localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
+                        break;
                     }
-                    localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
-                    localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text);
-                    localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
-                    //localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
-                    break;
-                }
-                catch
-                {
-                    Thread.Sleep(200);
-                }
-                finally
-                {
-                    LocalClipboardLocker.Unlock();
+                    catch
+                    {
+                        Thread.Sleep(200);
+                    }
                 }
             }
 
             return localClipboard;
         }
 
-        public static Profile CreateFromRemote(IWebDav webDav)
+        public static async Task<Profile> CreateFromRemote(IWebDav webDav)
         {
-            string httpReply = webDav.GetText(SyncService.REMOTE_RECORD_FILE);
+            string httpReply = await webDav.GetTextAsync(SyncService.REMOTE_RECORD_FILE, 0, 0).ConfigureAwait(false);
             Log.Write("[PULL] json " + httpReply);
 
             JsonProfile jsonProfile;

@@ -96,9 +96,9 @@
     <Compile Include="Service\SyncService\Profile\ProfileFactory.cs" />
     <Compile Include="Service\SyncService\Profile\ProfileType.cs" />
     <Compile Include="Service\SyncService\Profile\UnkonwnProfile.cs" />
-    <Compile Include="Service\SyncService\RemoteClipboardLocker.cs" />
     <Compile Include="Service\SyncService\SyncService.cs" />
     <Compile Include="Service\SyncService\UploadService.cs" />
+    <Compile Include="Service\SyncService\DownloadService.cs" />
     <Compile Include="Control\ClipboardListener.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -123,7 +123,6 @@
     <Compile Include="Control\SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Service\SyncService\PullService.cs" />
     <Compile Include="Module\UpdateChecker.cs" />
     <Compile Include="Utility\Log.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">

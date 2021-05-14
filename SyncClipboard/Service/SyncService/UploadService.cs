@@ -6,12 +6,11 @@ namespace SyncClipboard.Service
 {
     public class UploadService : Service
     {
-        public const string PUSH_START_ENENT_NAME = "PUSH_START_ENENT";
-        public const string PUSH_STOP_ENENT_NAME = "PUSH_STOP_ENENT";
         public event ProgramEvent.ProgramEventHandler PushStarted;
         public event ProgramEvent.ProgramEventHandler PushStopped;
 
         private const string SERVICE_NAME = "⬆⬆";
+        private bool _isChangingLocal = false;
 
         protected override void StartService()
         {
@@ -23,41 +22,45 @@ namespace SyncClipboard.Service
             Program.notifyer.SetStatusString(SERVICE_NAME, "Stopped.");
         }
 
-        public override void Load()
-        {
-            if (UserConfig.Config.SyncService.PushSwitchOn)
-            {
-                this.Start();
-            }
-            else
-            {
-                this.Stop();
-            }
-        }
-
         public override void RegistEvent()
         {
             var pushStartedEvent = new ProgramEvent(
                 (handler) => PushStarted += handler,
                 (handler) => PushStarted -= handler
             );
-            Event.RegistEvent(PUSH_START_ENENT_NAME, pushStartedEvent);
+            Event.RegistEvent(SyncService.PUSH_START_ENENT_NAME, pushStartedEvent);
 
             var pushStoppedEvent = new ProgramEvent(
                 (handler) => PushStopped += handler,
                 (handler) => PushStopped -= handler
             );
-            Event.RegistEvent(PUSH_START_ENENT_NAME, pushStoppedEvent);
+            Event.RegistEvent(SyncService.PUSH_STOP_ENENT_NAME, pushStoppedEvent);
         }
 
         public override void RegistEventHandler()
         {
             Event.RegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
+            Event.RegistEventHandler(SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
+            Event.RegistEventHandler(SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
         }
 
         public override void UnRegistEventHandler()
         {
             Event.UnRegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
+            Event.UnRegistEventHandler(SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
+            Event.UnRegistEventHandler(SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
+        }
+
+        public void PullStartedHandler()
+        {
+            Log.Write("_isChangingLocal set to TRUE");
+            _isChangingLocal = true;
+        }
+
+        public void PullStoppedHandler()
+        {
+            Log.Write("_isChangingLocal set to FALSE");
+            _isChangingLocal = false;
         }
 
         private int _uploadQueue = 0;
@@ -68,6 +71,11 @@ namespace SyncClipboard.Service
 
         private void ClipBoardChangedHandler()
         {
+            if (!UserConfig.Config.SyncService.PushSwitchOn || _isChangingLocal)
+            {
+                return;
+            }
+
             lock(_uploadQueueLocker)
             {
                 _uploadQueue++;
@@ -126,6 +134,11 @@ namespace SyncClipboard.Service
                 return;
             }
 
+            await UploadLoop(currentProfile).ConfigureAwait(true);
+        }
+
+        private async Task UploadLoop(Profile profile)
+        {
             SyncService.remoteProfilemutex.WaitOne();
 
             string errMessage = "";
@@ -133,7 +146,7 @@ namespace SyncClipboard.Service
             {
                 try
                 {
-                    await currentProfile.UploadProfileAsync(Program.webDav).ConfigureAwait(true);
+                    await profile.UploadProfileAsync(Program.webDav).ConfigureAwait(true);
                     Log.Write("Upload end");
                     Program.notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
                     SyncService.remoteProfilemutex.ReleaseMutex();
@@ -148,7 +161,7 @@ namespace SyncClipboard.Service
                 await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(true);
             }
             SyncService.remoteProfilemutex.ReleaseMutex();
-            Program.notifyer.ToastNotify("上传失败：" + currentProfile.ToolTip(), errMessage);
+            Program.notifyer.ToastNotify("上传失败：" + profile.ToolTip(), errMessage);
         }
 
         private void SetUploadingIcon()
