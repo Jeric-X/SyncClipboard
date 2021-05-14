@@ -1,7 +1,6 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
-using SyncClipboard.Module;
 
 namespace SyncClipboard.Utility
 {
@@ -33,17 +32,21 @@ namespace SyncClipboard.Utility
 
         # endregion
 
-        public int IntervalTime { get; set; } = UserConfig.Config.Program.IntervalTime;
-        public int RetryTimes { get; set; } = UserConfig.Config.Program.RetryTimes;
-        public int TimeOut { get; set; } = UserConfig.Config.Program.TimeOut;
+        public int IntervalTime { get; set; } = 6000;
+        public int RetryTimes { get; set; } = 1;
+        public int TimeOut { get; set; } = 6000;
 
         # region 构造函数
-        public WebDav(string url, string username, string password)
+        public WebDav(string url, string username, string password, int intervalTime, int retryTimes, int timeOut)
         {
             _url = url;
             _username = username;
             _password = password;
             _authHeader = FormatHttpAuthHeader(_username, _password);
+
+            IntervalTime = intervalTime;
+            RetryTimes = retryTimes;
+            TimeOut = timeOut;
         }
 
         private static string FormatHttpAuthHeader(string username, string password)
@@ -130,12 +133,12 @@ namespace SyncClipboard.Utility
 
         private async Task<T> LoopAsync<T>(Func<T> func)
         {
-            return await LoopAsyncDetail<T>(func, RetryTimes, IntervalTime).ConfigureAwait(false);
+            return await LoopAsyncDetail(func, RetryTimes, IntervalTime).ConfigureAwait(false);
         }
 
         private async Task<T> LoopAsync<T>(Func<T> func, int retryTimes, int intervalTime)
         {
-            return await LoopAsyncDetail<T>(func, retryTimes, intervalTime).ConfigureAwait(false);
+            return await LoopAsyncDetail(func, retryTimes, intervalTime).ConfigureAwait(false);
         }
 
         private async Task LoopAsync(Action action, int retryTimes, int intervalTime)
@@ -149,7 +152,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    return await RunAsync<T>(func).ConfigureAwait(false);
+                    return await RunAsync(func).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {

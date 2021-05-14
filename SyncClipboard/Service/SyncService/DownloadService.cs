@@ -93,26 +93,26 @@ namespace SyncClipboard.Service
             int errorTimes = 0;
             while (!_cancelToken.IsCancellationRequested)
             {
-                Program.notifyer.SetStatusString(SERVICE_NAME, "Reading remote profile.");
+                Global.Notifyer.SetStatusString(SERVICE_NAME, "Reading remote profile.");
                 SyncService.remoteProfilemutex.WaitOne();
 
                 Profile remoteProfile = null;
                 try
                 {
-                    remoteProfile = await ProfileFactory.CreateFromRemote(Program.webDav).ConfigureAwait(true);
+                    remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav).ConfigureAwait(true);
                     await SetRemoteProfileToLocal(remoteProfile).ConfigureAwait(true);
-                    Program.notifyer.SetStatusString(SERVICE_NAME, "Idle.", false);
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, "Idle.", false);
                     errorTimes = 0;
                 }
                 catch (Exception ex)
                 {
                     errorTimes++;
-                    Program.notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
 
                     Log.Write(ex.ToString());
                     if (errorTimes == UserConfig.Config.Program.RetryTimes)
                     {
-                        Program.notifyer.ToastNotify("剪切板同步失败", ex.Message);
+                        Global.Notifyer.ToastNotify("剪切板同步失败", ex.Message);
                     }
                 }
                 finally
@@ -145,7 +145,7 @@ namespace SyncClipboard.Service
                     await remoteProfile.SetLocalClipboard().ConfigureAwait(true);
 
                     Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                    Program.notifyer.ToastNotify("剪切板同步成功", remoteProfile.ToolTip(), remoteProfile.ExecuteProfile());
+                    Global.Notifyer.ToastNotify("剪切板同步成功", remoteProfile.ToolTip(), remoteProfile.ExecuteProfile());
                     StopDownloadingIcon();
 
                     Thread.Sleep(50);
@@ -166,12 +166,12 @@ namespace SyncClipboard.Service
                 Properties.Resources.download016, Properties.Resources.download017,
             };
 
-            Program.notifyer.SetDynamicNotifyIcon(icon, 150);
+            Global.Notifyer.SetDynamicNotifyIcon(icon, 150);
         }
 
         private void StopDownloadingIcon()
         {
-            Program.notifyer.StopDynamicNotifyIcon();
+            Global.Notifyer.StopDynamicNotifyIcon();
         }
     }
 }

@@ -1,20 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Forms;
-using SyncClipboard.Control;
 using SyncClipboard.Utility;
-using SyncClipboard.Service;
-using SyncClipboard.Module;
 namespace SyncClipboard
 {
     internal static class Program
     {
         public static string SoftName = "SyncClipboard";
-        public static MainController mainController;
-
-        private static readonly ServiceManager _serviceManager = new ServiceManager();
-        public static WebDav webDav;
-        public static Notifyer notifyer;
 
         /// <summary>
         /// 应用程序的主入口点。
@@ -36,10 +28,7 @@ namespace SyncClipboard
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
                 Application.ApplicationExit += Application_ApplicationExit;
 
-                StartUp();
-                mainController = new MainController();
-                notifyer = mainController.Notifyer;
-                _serviceManager.StartUpAllService();
+                Global.StartUp();
 
                 Application.Run();
             }
@@ -47,39 +36,6 @@ namespace SyncClipboard
             {
                 MessageBox.Show("已经存在一个正在运行中的实例！", SoftName);
             }
-        }
-
-        private static void StartUp()
-        {
-            LoadUserConfig();
-            LoadGlobal();
-        }
-
-        private static void LoadGlobal()
-        {
-            webDav = new WebDav(
-                UserConfig.Config.SyncService.RemoteURL,
-                UserConfig.Config.SyncService.UserName,
-                UserConfig.Config.SyncService.Password
-            );
-
-            webDav.TestAliveAsync().ContinueWith(
-                (res) => Log.Write(res.Result.ToString()),
-                System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
-            );
-        }
-
-        private static void ConfigChangedHandler()
-        {
-            mainController.LoadConfig();
-            LoadGlobal();
-            _serviceManager.LoadAllService();
-        }
-
-        private static void LoadUserConfig()
-        {
-            UserConfig.Load();
-            UserConfig.ConfigChanged += ConfigChangedHandler;
         }
 
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
@@ -92,7 +48,7 @@ namespace SyncClipboard
         }
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {
-            _serviceManager?.StopAllService();
+            Global.EndUp();
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
             Log.Write("[Program] exited");

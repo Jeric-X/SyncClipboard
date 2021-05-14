@@ -14,12 +14,12 @@ namespace SyncClipboard.Service
 
         protected override void StartService()
         {
-            Program.notifyer.SetStatusString(SERVICE_NAME, "Running.");
+            Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.");
         }
 
         protected override void StopSerivce()
         {
-            Program.notifyer.SetStatusString(SERVICE_NAME, "Stopped.");
+            Global.Notifyer.SetStatusString(SERVICE_NAME, "Stopped.");
         }
 
         public override void RegistEvent()
@@ -104,7 +104,7 @@ namespace SyncClipboard.Service
                     _isUploaderWorking = false;
                     return;
                 }
-                Program.notifyer.SetStatusString(SERVICE_NAME, "Uploading.");
+                Global.Notifyer.SetStatusString(SERVICE_NAME, "Uploading.");
                 SetUploadingIcon();
                 PushStarted?.Invoke();
                 _uploadQueue = 0;
@@ -146,22 +146,22 @@ namespace SyncClipboard.Service
             {
                 try
                 {
-                    await profile.UploadProfileAsync(Program.webDav).ConfigureAwait(true);
+                    await profile.UploadProfileAsync(Global.WebDav).ConfigureAwait(true);
                     Log.Write("Upload end");
-                    Program.notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
                     SyncService.remoteProfilemutex.ReleaseMutex();
                     return;
                 }
                 catch (System.Exception ex)
                 {
                     errMessage = ex.Message;
-                    Program.notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
                 }
 
                 await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(true);
             }
             SyncService.remoteProfilemutex.ReleaseMutex();
-            Program.notifyer.ToastNotify("上传失败：" + profile.ToolTip(), errMessage);
+            Global.Notifyer.ToastNotify("上传失败：" + profile.ToolTip(), errMessage);
         }
 
         private void SetUploadingIcon()
@@ -176,12 +176,12 @@ namespace SyncClipboard.Service
                 Properties.Resources.upload016, Properties.Resources.upload017,
             };
 
-            Program.notifyer.SetDynamicNotifyIcon(icon, 150);
+            Global.Notifyer.SetDynamicNotifyIcon(icon, 150);
         }
 
         private void StopUploadingIcon()
         {
-            Program.notifyer.StopDynamicNotifyIcon();
+            Global.Notifyer.StopDynamicNotifyIcon();
         }
     }
 }

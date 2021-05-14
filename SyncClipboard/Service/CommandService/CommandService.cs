@@ -54,7 +54,7 @@ namespace SyncClipboard.Service
                 {
                     if (!_isError)
                     {
-                        Program.notifyer.ToastNotify("CommandService failed", ex.ToString());
+                        Global.Notifyer.ToastNotify("CommandService failed", ex.ToString());
                         _isError = true;
                     }
                 }
@@ -69,7 +69,7 @@ namespace SyncClipboard.Service
             Command command;
             try
             {
-                string str = await Program.webDav.GetTextAsync(COMMAND_FILE, 0, 0).ConfigureAwait(false);
+                string str = await Global.WebDav.GetTextAsync(COMMAND_FILE, 0, 0).ConfigureAwait(false);
                 command = Json.Decode<Command>(str);
             }
             catch
@@ -98,7 +98,7 @@ namespace SyncClipboard.Service
         {
             try
             {
-                await Program.webDav.PutTextAsync(COMMAND_FILE, Json.Encode(command), 0, 0).ConfigureAwait(false);
+                await Global.WebDav.PutTextAsync(COMMAND_FILE, Json.Encode(command), 0, 0).ConfigureAwait(false);
             }
             catch
             {
