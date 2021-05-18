@@ -38,7 +38,7 @@ namespace SyncClipboard.Module
             string gitHubReply;
             try
             {
-                gitHubReply = HttpWeb.GetText(new HttpPara { Url = UpdateUrl, Timeout = UserConfig.Config.Program.TimeOut });
+                gitHubReply = HttpWeb.GetText(UpdateUrl, new HttpPara { Timeout = UserConfig.Config.Program.TimeOut });
             }
             catch
             {

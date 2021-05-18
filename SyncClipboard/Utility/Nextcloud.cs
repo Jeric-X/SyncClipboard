@@ -84,7 +84,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    return HttpWeb.Post(new HttpPara { Url = loginUrl, Timeout = TIMEOUT });
+                    return HttpWeb.Post(loginUrl, new HttpPara { Timeout = TIMEOUT });
                 }
                 catch (System.Net.WebException)
                 {
@@ -107,7 +107,7 @@ namespace SyncClipboard.Utility
                 {
                     try
                     {
-                        return HttpWeb.Post(new HttpPara { Url = url, Timeout = TIMEOUT }, token);
+                        return HttpWeb.Post(url, new HttpPara { Timeout = TIMEOUT }, token);
                     }
                     catch
                     {

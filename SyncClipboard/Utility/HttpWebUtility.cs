@@ -85,15 +85,15 @@ namespace SyncClipboard.Utility
             response.Close();
         }
 
-        internal static HttpWebRequest Create(HttpPara httpPara, string httpMethod, string contentType)
+        internal static HttpWebRequest Create(string url, HttpPara httpPara, string httpMethod, string contentType)
         {
-            if (string.IsNullOrEmpty(httpPara.Url))
+            if (string.IsNullOrEmpty(url))
             {
-                throw new ArgumentNullException(nameof(httpPara.Url));
+                throw new ArgumentNullException(nameof(url));
             }
 
-            SetSecurityProtocol(httpPara.Url);
-            HttpWebRequest request = WebRequest.Create(httpPara.Url) as HttpWebRequest;
+            SetSecurityProtocol(url);
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
             request.Method = httpMethod;
             request.UserAgent = DEFAULT_USER_AGENT;
 

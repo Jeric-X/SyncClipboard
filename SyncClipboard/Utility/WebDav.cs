@@ -53,7 +53,7 @@ namespace SyncClipboard.Utility
             _username = username;
             _password = password;
             _authHeader = FormatHttpAuthHeader(_username, _password);
-            _httpPara = new HttpPara { Url = _url, AuthHeader = _authHeader };
+            _httpPara = new HttpPara { AuthHeader = _authHeader };
 
             IntervalTime = intervalTime;
             RetryTimes = retryTimes;
@@ -71,7 +71,7 @@ namespace SyncClipboard.Utility
         private static string FormatHttpAuthHeader(string username, string password)
         {
             byte[] bytes = System.Text.Encoding.Default.GetBytes(username + ":" + password);
-            return "Authorization: Basic " + System.Convert.ToBase64String(bytes);
+            return "Authorization: Basic " + Convert.ToBase64String(bytes);
         }
         # endregion
 
@@ -80,7 +80,7 @@ namespace SyncClipboard.Utility
             try
             {
                 _cookies = await LoopAsync(
-                    () => HttpWeb.GetCookie(new HttpPara{ Url = _url, AuthHeader = _authHeader })
+                    () => HttpWeb.GetCookie(_url, new HttpPara{ AuthHeader = _authHeader })
                 ).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -94,15 +94,13 @@ namespace SyncClipboard.Utility
 
         public string GetText(string file)
         {
-            _httpPara.Url = FullUrl(file);
-            return HttpWeb.GetText(_httpPara);
+            return HttpWeb.GetText(FullUrl(file), _httpPara);
         }
 
         public async Task<string> GetTextAsync(string remotefile, int? retryTimes, int? intervalTime)
         {
-            _httpPara.Url = FullUrl(remotefile);
             return await LoopAsync(
-                () => HttpWeb.GetText(_httpPara),
+                () => HttpWeb.GetText(FullUrl(remotefile), _httpPara),
                 retryTimes,
                 intervalTime
             ).ConfigureAwait(false);
@@ -110,15 +108,13 @@ namespace SyncClipboard.Utility
 
         public void PutText(string file, string text)
         {
-            _httpPara.Url = FullUrl(file);
-            HttpWeb.PutText(_httpPara, text);
+            HttpWeb.PutText(FullUrl(file), _httpPara, text);
         }
 
         public async Task PutTextAsync(string file, string text, int? retryTimes, int? intervalTime)
         {
-            _httpPara.Url = FullUrl(file);
             await LoopAsync(
-                () => HttpWeb.PutText(_httpPara, text),
+                () => HttpWeb.PutText(FullUrl(file), _httpPara, text),
                 retryTimes,
                 intervalTime
             ).ConfigureAwait(false);
@@ -126,15 +122,13 @@ namespace SyncClipboard.Utility
 
         public void PutFile(string remotefile, string localFilePath)
         {
-            _httpPara.Url = FullUrl(remotefile);
-            HttpWeb.PutFile(_httpPara, localFilePath);
+            HttpWeb.PutFile(FullUrl(remotefile), _httpPara, localFilePath);
         }
 
         public async Task PutFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime)
         {
-            _httpPara.Url = FullUrl(remotefile);
             await LoopAsync(
-                () => HttpWeb.PutFile(_httpPara, localFilePath),
+                () => HttpWeb.PutFile(FullUrl(remotefile), _httpPara, localFilePath),
                 retryTimes,
                 intervalTime
             ).ConfigureAwait(false);
@@ -142,15 +136,13 @@ namespace SyncClipboard.Utility
 
         public void GetFile(string remotefile, string localFilePath)
         {
-            _httpPara.Url = FullUrl(remotefile);
-            HttpWeb.GetFile(_httpPara, localFilePath);
+            HttpWeb.GetFile(FullUrl(remotefile), _httpPara, localFilePath);
         }
 
         public async Task GetFileAsync(string remotefile, string localFilePath, int? retryTimes, int? intervalTime)
         {
-            _httpPara.Url = FullUrl(remotefile);
             await LoopAsync(
-                () => HttpWeb.GetFile(_httpPara, localFilePath),
+                () => HttpWeb.GetFile(FullUrl(remotefile), _httpPara, localFilePath),
                 retryTimes,
                 intervalTime
             ).ConfigureAwait(false);
