@@ -35,6 +35,7 @@ namespace SyncClipboard.Utility
         private const string WEBDAV_URL = "remote.php/dav/files";
         private const int VERIFICATION_LIMITED_TIME = 60000;
         private const int INTERVAL_TIME = 1000;
+        private const int TIMEOUT = 10000;
         public static void SignIn()
         {
             SignInFlowAsync();
@@ -83,7 +84,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    return HttpWeb.Post(new HttpPara { Url = loginUrl });
+                    return HttpWeb.Post(new HttpPara { Url = loginUrl, Timeout = TIMEOUT });
                 }
                 catch (System.Net.WebException)
                 {
@@ -106,7 +107,7 @@ namespace SyncClipboard.Utility
                 {
                     try
                     {
-                        return HttpWeb.Post(new HttpPara { Url = url }, token);
+                        return HttpWeb.Post(new HttpPara { Url = url, Timeout = TIMEOUT }, token);
                     }
                     catch
                     {

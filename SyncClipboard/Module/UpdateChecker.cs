@@ -3,7 +3,7 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
 
-namespace SyncClipboard
+namespace SyncClipboard.Module
 {
     internal class UpdateChecker
     {
@@ -38,7 +38,7 @@ namespace SyncClipboard
             string gitHubReply;
             try
             {
-                gitHubReply = HttpWeb.GetText(new HttpPara { Url = UpdateUrl });
+                gitHubReply = HttpWeb.GetText(new HttpPara { Url = UpdateUrl, Timeout = UserConfig.Config.Program.TimeOut });
             }
             catch
             {

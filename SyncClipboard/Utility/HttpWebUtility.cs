@@ -3,7 +3,6 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
-using SyncClipboard.Module;
 
 namespace SyncClipboard.Utility
 {
@@ -97,7 +96,11 @@ namespace SyncClipboard.Utility
             HttpWebRequest request = WebRequest.Create(httpPara.Url) as HttpWebRequest;
             request.Method = httpMethod;
             request.UserAgent = DEFAULT_USER_AGENT;
-            request.Timeout = UserConfig.Config.Program.TimeOut;
+
+            if (httpPara.Timeout != default)
+            {
+                request.Timeout = httpPara.Timeout;
+            }
 
             if (httpPara.AuthHeader != null)
             {

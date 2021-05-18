@@ -8,7 +8,7 @@ namespace SyncClipboard.Utility
     {
         int IntervalTime { get; set; }
         int RetryTimes { get; set; }
-        int TimeOut { get; set; }
+        int Timeout { get; set; }
 
         string GetText(string remotefile);
         Task<string> GetTextAsync(string remotefile, int? retryTimes = null, int? intervalTime = null);
@@ -33,12 +33,21 @@ namespace SyncClipboard.Utility
 
         # endregion
 
-        public int IntervalTime { get; set; } = 6000;
-        public int RetryTimes { get; set; } = 1;
-        public int TimeOut { get; set; } = 6000;
+        public int IntervalTime { get; set; }
+        public int RetryTimes { get; set; }
+
+        private int _timeout;
+        public int Timeout {
+            get => _timeout;
+            set
+            {
+                _timeout = value;
+                _httpPara.Timeout = value;
+            }
+        }
 
         # region 构造函数
-        public WebDav(string url, string username, string password, int intervalTime, int retryTimes, int timeOut)
+        public WebDav(string url, string username, string password, int intervalTime, int retryTimes, int timeout)
         {
             _url = url;
             _username = username;
@@ -48,7 +57,7 @@ namespace SyncClipboard.Utility
 
             IntervalTime = intervalTime;
             RetryTimes = retryTimes;
-            TimeOut = timeOut;
+            Timeout = timeout;
 
             TestAliveAsync().ContinueWith((task) =>
             {
