@@ -186,7 +186,7 @@ namespace SyncClipboard.Service
             catch (System.Exception ex)
             {
                 Log.Write("GetMD5HashFromFile() fail " + ex.Message);
-                throw ex;
+                throw;
             }
         }
 

@@ -5,9 +5,16 @@ namespace SyncClipboard.Utility
 {
     public static class HttpWeb
     {
-        public static string Post(string url, string text = null, string authHeader = null, CookieCollection cookies = null)
+        public struct HttpPara
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, "POST", authHeader, "application/x-www-form-urlencoded", cookies);
+            public string Url;
+            public string AuthHeader;
+            public CookieCollection Cookies;
+        }
+
+        public static string Post(HttpPara para, string text = null)
+        {
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "POST", para.AuthHeader, "application/x-www-form-urlencoded", para.Cookies);
             if (text != null)
             {
                 HttpWebUtility.SentText(request, text);
@@ -15,48 +22,48 @@ namespace SyncClipboard.Utility
             return HttpWebUtility.ReceiveString(request);
         }
 
-        public static void PutText(string url, string text, string authHeader = null, CookieCollection cookies = null)
+        public static void PutText(HttpPara para, string text)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, "PUT", authHeader, null, cookies);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "PUT", para.AuthHeader, null, para.Cookies);
             HttpWebUtility.SentText(request, text);
             HttpWebUtility.Receive(request);
         }
 
-        public static string GetText(string url, string authHeader = null, CookieCollection cookies = null)
+        public static string GetText(HttpPara para)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, "GET", authHeader, null, cookies);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "GET", para.AuthHeader, null, para.Cookies);
             return HttpWebUtility.ReceiveString(request);
         }
 
-        public static void GetFile(string url, string savePath, string authHeader = null, CookieCollection cookies = null)
+        public static void GetFile(HttpPara para, string savePath)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, "GET", authHeader, null, cookies);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "GET", para.AuthHeader, null, para.Cookies);
             HttpWebUtility.ReceiveFile(request, savePath);
         }
 
-        public static void PutImage(string url, Image image, string authHeader, CookieCollection cookies = null)
+        public static void PutImage(HttpPara para, Image image)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, "PUT", authHeader, null, cookies);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "PUT", para.AuthHeader, null, para.Cookies);
             HttpWebUtility.SentImage(request, image);
             HttpWebUtility.Receive(request);
         }
 
-        public static void PutFile(string url, string file, string authHeader, CookieCollection cookies = null)
+        public static void PutFile(HttpPara para, string file)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, "PUT", authHeader, null, cookies);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "PUT", para.AuthHeader, null, para.Cookies);
             HttpWebUtility.SentFile(request, file);
             HttpWebUtility.Receive(request);
         }
 
-        public static string Operate(string url, string method, string authHeader = null, CookieCollection cookies = null)
+        public static string Operate(HttpPara para, string method)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, method, authHeader, null, cookies);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, method, para.AuthHeader, null, para.Cookies);
             return HttpWebUtility.ReceiveString(request);
         }
 
-        public static CookieCollection GetCookie(string url, string method, string authHeader)
+        public static CookieCollection GetCookie(HttpPara para)
         {
-            HttpWebRequest request = HttpWebUtility.Create(url, method, authHeader, null, null);
+            HttpWebRequest request = HttpWebUtility.Create(para.Url, "HEAD", para.AuthHeader, null, null);
             return HttpWebUtility.ReceiveCookie(request);
         }
     }

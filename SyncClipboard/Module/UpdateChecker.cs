@@ -38,7 +38,7 @@ namespace SyncClipboard
             string gitHubReply;
             try
             {
-                gitHubReply = HttpWeb.GetText(UpdateUrl, null);
+                gitHubReply = HttpWeb.GetText(new HttpWeb.HttpPara { Url = UpdateUrl });
             }
             catch
             {
@@ -81,8 +81,8 @@ namespace SyncClipboard
 
     internal class UpdateConvertJson
     {
-        public String name { get; set; }
+        public string name { get; set; }
 
-        public String rowser_download_url { get; set; }
+        public string rowser_download_url { get; set; }
     }
 }
