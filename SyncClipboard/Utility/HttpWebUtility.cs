@@ -86,22 +86,22 @@ namespace SyncClipboard.Utility
             response.Close();
         }
 
-        internal static HttpWebRequest Create(string url, string httpMethod, string authHeader, string contentType, CookieCollection cookies)
+        internal static HttpWebRequest Create(HttpPara httpPara, string httpMethod, string contentType)
         {
-            if (string.IsNullOrEmpty(url))
+            if (string.IsNullOrEmpty(httpPara.Url))
             {
-                throw new ArgumentNullException(nameof(url));
+                throw new ArgumentNullException(nameof(httpPara.Url));
             }
 
-            SetSecurityProtocol(url);
-            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            SetSecurityProtocol(httpPara.Url);
+            HttpWebRequest request = WebRequest.Create(httpPara.Url) as HttpWebRequest;
             request.Method = httpMethod;
             request.UserAgent = DEFAULT_USER_AGENT;
             request.Timeout = UserConfig.Config.Program.TimeOut;
 
-            if (authHeader != null)
+            if (httpPara.AuthHeader != null)
             {
-                request.Headers.Add(authHeader);
+                request.Headers.Add(httpPara.AuthHeader);
             }
 
             if (!string.IsNullOrEmpty(contentType))
@@ -110,9 +110,9 @@ namespace SyncClipboard.Utility
             }
 
             request.CookieContainer = new CookieContainer();
-            if (cookies != null)
+            if (httpPara.Cookies != null)
             {
-                request.CookieContainer.Add(cookies);
+                request.CookieContainer.Add(httpPara.Cookies);
             }
 
             return request;

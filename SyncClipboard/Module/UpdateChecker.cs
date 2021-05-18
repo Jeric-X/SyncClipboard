@@ -38,7 +38,7 @@ namespace SyncClipboard
             string gitHubReply;
             try
             {
-                gitHubReply = HttpWeb.GetText(new HttpWeb.HttpPara { Url = UpdateUrl });
+                gitHubReply = HttpWeb.GetText(new HttpPara { Url = UpdateUrl });
             }
             catch
             {

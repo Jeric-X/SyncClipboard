@@ -83,7 +83,7 @@ namespace SyncClipboard.Utility
             {
                 try
                 {
-                    return HttpWeb.Post(new HttpWeb.HttpPara { Url = loginUrl });
+                    return HttpWeb.Post(new HttpPara { Url = loginUrl });
                 }
                 catch (System.Net.WebException)
                 {
@@ -106,7 +106,7 @@ namespace SyncClipboard.Utility
                 {
                     try
                     {
-                        return HttpWeb.Post(new HttpWeb.HttpPara { Url = url }, token);
+                        return HttpWeb.Post(new HttpPara { Url = url }, token);
                     }
                     catch
                     {

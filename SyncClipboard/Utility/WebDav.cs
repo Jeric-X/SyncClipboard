@@ -29,7 +29,7 @@ namespace SyncClipboard.Utility
         private readonly string _password;
         private readonly string _authHeader;
         private CookieCollection _cookies;
-        private HttpWeb.HttpPara _httpPara;
+        private HttpPara _httpPara;
 
         # endregion
 
@@ -44,7 +44,7 @@ namespace SyncClipboard.Utility
             _username = username;
             _password = password;
             _authHeader = FormatHttpAuthHeader(_username, _password);
-            _httpPara = new HttpWeb.HttpPara { Url = _url, AuthHeader = _authHeader };
+            _httpPara = new HttpPara { Url = _url, AuthHeader = _authHeader };
 
             IntervalTime = intervalTime;
             RetryTimes = retryTimes;
@@ -71,7 +71,7 @@ namespace SyncClipboard.Utility
             try
             {
                 _cookies = await LoopAsync(
-                    () => HttpWeb.GetCookie(new HttpWeb.HttpPara{ Url = _url, AuthHeader = _authHeader })
+                    () => HttpWeb.GetCookie(new HttpPara{ Url = _url, AuthHeader = _authHeader })
                 ).ConfigureAwait(false);
             }
             catch (Exception ex)
