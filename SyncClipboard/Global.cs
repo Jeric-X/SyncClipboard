@@ -14,8 +14,8 @@ namespace SyncClipboard
 
         internal static void StartUp()
         {
-            StartUpUI();
             StartUpUserConfig();
+            StartUpUI();
             LoadGlobalWebDavSession();
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
@@ -54,6 +54,7 @@ namespace SyncClipboard
         {
             Menu = new MainController();
             Notifyer = Menu.Notifyer;
+            ReloadUI();
         }
 
         private static void ReloadUI()

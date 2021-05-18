@@ -11,12 +11,12 @@ namespace SyncClipboard.Utility
         int TimeOut { get; set; }
 
         string GetText(string remotefile);
-        Task<string> GetTextAsync(string remotefile, int retryTimes, int intervalTime);
+        Task<string> GetTextAsync(string remotefile, int? retryTimes = null, int? intervalTime = null);
         void PutText(string remotefile, string text);
-        Task PutTextAsync(string remotefile, string text, int retryTimes, int intervalTime);
+        Task PutTextAsync(string remotefile, string text, int? retryTimes = null, int? intervalTime = null);
         void PutFile(string remotefile, string localFilePath);
         void GetFile(string remotefile, string localFilePath);
-        Task GetFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime);
+        Task GetFileAsync(string remotefile, string localFilePath, int? retryTimes = null, int? intervalTime = null);
         Task<bool> TestAliveAsync();
     }
 
@@ -60,7 +60,7 @@ namespace SyncClipboard.Utility
         {
             try
             {
-                _cookies = await LoopAsync<CookieCollection>(
+                _cookies = await LoopAsync(
                     () => HttpWeb.GetCookie(_url, "HEAD", _authHeader)
                 ).ConfigureAwait(false);
             }
@@ -78,7 +78,7 @@ namespace SyncClipboard.Utility
             return HttpWeb.GetText(FullUrl(file), _authHeader, _cookies);
         }
 
-        public async Task<string> GetTextAsync(string remotefile, int retryTimes, int intervalTime)
+        public async Task<string> GetTextAsync(string remotefile, int? retryTimes, int? intervalTime)
         {
             return await LoopAsync<string>(
                 () => HttpWeb.GetText(FullUrl(remotefile), _authHeader, _cookies),
@@ -92,7 +92,7 @@ namespace SyncClipboard.Utility
             HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies);
         }
 
-        public async Task PutTextAsync(string file, string text, int retryTimes, int intervalTime)
+        public async Task PutTextAsync(string file, string text, int? retryTimes, int? intervalTime)
         {
             await LoopAsync(
                 () => HttpWeb.PutText(FullUrl(file), text, _authHeader, _cookies),
@@ -120,7 +120,7 @@ namespace SyncClipboard.Utility
             HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies);
         }
 
-        public async Task GetFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime)
+        public async Task GetFileAsync(string remotefile, string localFilePath, int? retryTimes, int? intervalTime)
         {
             await LoopAsync(
                 () => HttpWeb.GetFile(FullUrl(remotefile), localFilePath, _authHeader, _cookies),
@@ -131,19 +131,29 @@ namespace SyncClipboard.Utility
 
         # region 内部工具函数
 
-        private async Task<T> LoopAsync<T>(Func<T> func)
+        private async Task<T> LoopAsync<T>(Func<T> func, int? retryTimes = null, int? intervalTime = null)
         {
-            return await LoopAsyncDetail(func, RetryTimes, IntervalTime).ConfigureAwait(false);
+            AdjustPara(ref retryTimes, ref intervalTime);
+            return await LoopAsyncDetail(func, (int)retryTimes, (int)intervalTime).ConfigureAwait(false);
         }
 
-        private async Task<T> LoopAsync<T>(Func<T> func, int retryTimes, int intervalTime)
+        private async Task LoopAsync(Action action, int? retryTimes = null, int? intervalTime = null)
         {
-            return await LoopAsyncDetail(func, retryTimes, intervalTime).ConfigureAwait(false);
+            AdjustPara(ref retryTimes, ref intervalTime);
+            await LoopAsyncDetail(action, (int)retryTimes, (int)intervalTime).ConfigureAwait(false);
         }
 
-        private async Task LoopAsync(Action action, int retryTimes, int intervalTime)
+        private void AdjustPara(ref int? retryTimes, ref int? intervalTime)
         {
-            await LoopAsyncDetail(action, retryTimes, intervalTime).ConfigureAwait(false);
+            if (retryTimes is null)
+            {
+                retryTimes = RetryTimes;
+            }
+
+            if (intervalTime is null)
+            {
+                intervalTime = IntervalTime;
+            }
         }
 
         private async Task<T> LoopAsyncDetail<T>(Func<T> func, int retryTimes, int intervalTime)

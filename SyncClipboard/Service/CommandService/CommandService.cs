@@ -69,7 +69,7 @@ namespace SyncClipboard.Service
             Command command;
             try
             {
-                string str = await Global.WebDav.GetTextAsync(COMMAND_FILE, 0, 0).ConfigureAwait(false);
+                string str = await Global.WebDav.GetTextAsync(COMMAND_FILE).ConfigureAwait(false);
                 command = Json.Decode<Command>(str);
             }
             catch
@@ -98,12 +98,12 @@ namespace SyncClipboard.Service
         {
             try
             {
-                await Global.WebDav.PutTextAsync(COMMAND_FILE, Json.Encode(command), 0, 0).ConfigureAwait(false);
+                await Global.WebDav.PutTextAsync(COMMAND_FILE, Json.Encode(command)).ConfigureAwait(false);
             }
             catch
             {
                 Log.Write("Reset command failed");
-                throw new System.Exception("Reset command failed");
+                throw;
             }
             Log.Write($"Command [{command.CommandStr}] has reset");
         }
