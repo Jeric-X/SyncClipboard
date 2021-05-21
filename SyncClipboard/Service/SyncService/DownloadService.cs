@@ -46,7 +46,7 @@ namespace SyncClipboard.Service
 
         protected override void StopSerivce()
         {
-            _cancelSource.Cancel();
+            _cancelSource?.Cancel();
         }
 
         public override void RegistEventHandler()

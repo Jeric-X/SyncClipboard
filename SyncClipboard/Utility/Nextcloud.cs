@@ -4,10 +4,16 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using SyncClipboard.Control;
-using SyncClipboard.Module;
 
 namespace SyncClipboard.Utility
 {
+    public class NextcloudCredential
+    {
+        public string Username;
+        public string Password;
+        public string Url;
+    }
+
     # region nextcloud official response defination
     internal class FistResponseJson
     {
@@ -36,24 +42,20 @@ namespace SyncClipboard.Utility
         private const int VERIFICATION_LIMITED_TIME = 60000;
         private const int INTERVAL_TIME = 1000;
         private const int TIMEOUT = 10000;
-        public static void SignIn()
-        {
-            SignInFlowAsync();
-        }
 
-        public static async void SignInFlowAsync()
+        public static async Task<NextcloudCredential> SignInFlowAsync()
         {
             string server = InputBox.Show("Please input Nextcloud server address", $"https://[请在确定后{VERIFICATION_LIMITED_TIME / 1000}秒内完成网页认证]");
             if (string.IsNullOrEmpty(server))
             {
-                return;
+                return null;
             }
 
             var fistResponseJson = await GetFirstResponse(server).ConfigureAwait(false);
             var firstResponse = DecodeJson<FistResponseJson>(fistResponseJson);
             if (firstResponse == null)
             {
-                return;
+                return null;
             }
 
             System.Diagnostics.Process.Start(firstResponse.login);
@@ -62,20 +64,21 @@ namespace SyncClipboard.Utility
             var secondResponse = DecodeJson<SecondResponse>(secondResponseJson);
             if (secondResponse == null)
             {
-                return;
+                return null;
             }
 
             var path = InputBox.Show("Please input syncClipboard folder path");
             if (string.IsNullOrEmpty(path))
             {
-                return;
+                return null;
             }
 
-            UserConfig.Config.SyncService.UserName = secondResponse.loginName;
-            UserConfig.Config.SyncService.Password = secondResponse.appPassword;
-            UserConfig.Config.SyncService.RemoteURL = $"{secondResponse.server}/{WEBDAV_URL}/{secondResponse.loginName}/{path}";
-            UserConfig.Save();
-        }
+            return new NextcloudCredential {
+                Username = secondResponse.loginName,
+                Password = secondResponse.appPassword,
+                Url = $"{secondResponse.server}/{WEBDAV_URL}/{secondResponse.loginName}/{path}"
+            };
+    }
 
         private static async Task<string> GetFirstResponse(string server)
         {

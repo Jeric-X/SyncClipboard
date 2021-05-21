@@ -70,9 +70,18 @@ namespace SyncClipboard.Control
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
         }
 
-        private void NextCloudLogger_Click(object sender, EventArgs e)
+        private async void NextCloudLogger_Click(object sender, EventArgs e)
         {
-            Nextcloud.SignIn();
+            NextcloudCredential nextcloudInfo = await Nextcloud.SignInFlowAsync().ConfigureAwait(true);
+            if (nextcloudInfo is null)
+            {
+                return;
+            }
+
+            UserConfig.Config.SyncService.UserName = nextcloudInfo.Username;
+            UserConfig.Config.SyncService.Password = nextcloudInfo.Password;
+            UserConfig.Config.SyncService.RemoteURL = nextcloudInfo.Url;
+            UserConfig.Save();
         }
 
         private void 退出MenuItem_Click(object sender, EventArgs e)

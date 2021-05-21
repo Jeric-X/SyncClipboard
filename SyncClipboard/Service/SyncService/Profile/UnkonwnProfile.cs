@@ -8,16 +8,13 @@ namespace SyncClipboard.Service
 {
     public class UnkonwnProfile : Profile
     {
-        public UnkonwnProfile() { }
-
         public override string ToolTip()
         {
-            throw new NotImplementedException("Do not support this type of clipboard");
+            return "Do not support this type of clipboard";
         }
 
         public override void UploadProfile(IWebDav webdav)
         {
-            throw new NotImplementedException("Do not support this type of clipboard");
         }
 
         public override ClipboardType GetProfileType()
@@ -27,12 +24,12 @@ namespace SyncClipboard.Service
 
         protected override DataObject CreateDataObject()
         {
-            throw new NotImplementedException("Do not support this type of clipboard");
+            return null;
         }
 
         public override Task UploadProfileAsync(IWebDav webdav)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

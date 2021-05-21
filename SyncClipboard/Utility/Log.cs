@@ -6,14 +6,15 @@ namespace SyncClipboard.Utility
 {
     internal static class Log
     {
-        private static readonly string logFolder = Env.FullPath("Log");
+        private static readonly string LOG_FOLDER = Env.FullPath("Log");
+        private static readonly object LOCKER = new object();
 
         public static void Write(string str)
         {
             StackFrame sf = new StackTrace(true).GetFrame(1);
 
             var dayTime = DateTime.Now;
-            var fileName = System.IO.Path.GetFileName(sf.GetFileName());
+            var fileName = Path.GetFileName(sf.GetFileName());
             var lineNumber = sf.GetFileLineNumber();
 
             string logStr = string.Format("[{0}][{1, -20}][{2, 4}] {3}", dayTime.ToString("yyyy/MM/dd HH:mm:ss"), fileName, lineNumber, str);
@@ -29,21 +30,24 @@ namespace SyncClipboard.Utility
         private static void WriteToFile(string logStr, string logFile)
         {
             //判断文件夹是否存在
-            if (!Directory.Exists(logFolder))
+            if (!Directory.Exists(LOG_FOLDER))
             {
-                Directory.CreateDirectory(logFolder);
+                Directory.CreateDirectory(LOG_FOLDER);
             }
 
-            try
+            lock (LOCKER)
             {
-                using (StreamWriter file = new StreamWriter($@"{logFolder}\{logFile}.txt", true, System.Text.Encoding.UTF8))
+                try
                 {
-                    file.WriteLine(logStr);
+                    using (StreamWriter file = new StreamWriter($@"{LOG_FOLDER}\{logFile}.txt", true, System.Text.Encoding.UTF8))
+                    {
+                        file.WriteLine(logStr);
+                    }
                 }
-            }
-            catch (Exception)
-            {
-                throw;
+                catch
+                {
+                    throw;
+                }
             }
         }
 
