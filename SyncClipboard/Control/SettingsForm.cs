@@ -33,18 +33,18 @@ namespace SyncClipboard
             this.textBox8.Text = (UserConfig.Config.Program.IntervalTime / 1000).ToString();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void OKButtenClicked(object sender, EventArgs e)
         {
             SaveConfig();
             this.Close();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void CancelButtonClicked(object sender, EventArgs e)
         {
             this.Close();
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void ApplicationButtonClicked(object sender, EventArgs e)
         {
             SaveConfig();
         }

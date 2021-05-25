@@ -183,12 +183,10 @@ namespace SyncClipboard.Utility
                 {
                     return await RunAsync(func).ConfigureAwait(false);
                 }
-                catch (Exception)
+                catch when (i < retryTimes) {}
+                catch
                 {
-                    if (i == retryTimes)
-                    {
-                        throw;
-                    }
+                    throw;
                 }
                 await Task.Delay(intervalTime).ConfigureAwait(false);
             }
@@ -203,12 +201,10 @@ namespace SyncClipboard.Utility
                 {
                     await RunAsync(action).ConfigureAwait(false);
                 }
+                catch when (i < retryTimes) {}
                 catch
                 {
-                    if (i == retryTimes)
-                    {
-                        throw;
-                    }
+                    throw;
                 }
                 await Task.Delay(intervalTime).ConfigureAwait(false);
             }

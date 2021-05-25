@@ -45,8 +45,11 @@ namespace SyncClipboard.Service
                 try
                 {
                     Command command = await GetRemoteCommand().ConfigureAwait(false);
-                    await ResetRemoteCommand(new Command()).ConfigureAwait(false);
-                    ExecuteCommand(command);
+                    if (!string.IsNullOrEmpty(command.CommandStr))
+                    {
+                        await ResetRemoteCommand(new Command()).ConfigureAwait(false);
+                        ExecuteCommand(command);
+                    }
 
                     _isError = false;
                 }
