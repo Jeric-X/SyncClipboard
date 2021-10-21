@@ -1,3 +1,6 @@
+v1.3.4
+- Fix a bug when local clipboard is nothing.
+
 v1.3.3
 - Add cookie support.
 - Add CommandService.

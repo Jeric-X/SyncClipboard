@@ -44,7 +44,7 @@ namespace SyncClipboard.Service
                 return ImageProfile.CreateFromImage(localClipboard.Image);
             }
 
-            if (localClipboard.Text != "" && localClipboard.Text != null)
+            if (localClipboard.Text != null)
             {
                 return new TextProfile(localClipboard.Text);
             }
@@ -80,8 +80,12 @@ namespace SyncClipboard.Service
                         {
                             return localClipboard;
                         }
+                        if (ClipboardData.GetFormats().Length == 0)
+                        {
+                            localClipboard.Text = "";
+                        }
                         localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
-                        localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text);
+                        localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text) ?? localClipboard.Text;
                         localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                         //localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
                         break;
