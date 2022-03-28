@@ -46,6 +46,7 @@ namespace SyncClipboard.Utility
                 }
                 catch
                 {
+                    Console.WriteLine(logStr);
                     throw;
                 }
             }

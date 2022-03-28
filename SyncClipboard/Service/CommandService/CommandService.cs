@@ -57,6 +57,7 @@ namespace SyncClipboard.Service
                 {
                     if (!_isError)
                     {
+                        System.Console.WriteLine(ex.Message);
                         Global.Notifyer.ToastNotify("CommandService failed", ex.ToString());
                         _isError = true;
                     }
@@ -78,7 +79,7 @@ namespace SyncClipboard.Service
             catch
             {
                 Log.Write("Get command failed");
-                throw new System.Exception("Get command failed");
+                throw;
             }
             Log.Write($"Command is [{command.CommandStr}]");
             return command;

@@ -6,7 +6,7 @@ using SyncClipboard.Module;
 
 namespace SyncClipboard.Control
 {
-    public class MainController:System.Windows.Forms.Control
+    public class MainController
     {
         public Notifyer Notifyer;
         private System.Windows.Forms.ContextMenu contextMenu;
@@ -19,7 +19,7 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.MenuItem lineMenuItem;
         private System.Windows.Forms.MenuItem nextCloudLogger;
 
-        private SettingsForm settingsForm;
+        private readonly SettingsForm settingsForm = new SettingsForm();
         private bool isSttingsFormExist = false;
 
         public MainController()
@@ -96,7 +96,6 @@ namespace SyncClipboard.Control
             if (!isSttingsFormExist)
             {
                 isSttingsFormExist = true;
-                this.settingsForm = new SettingsForm();
                 settingsForm.ShowDialog();
                 isSttingsFormExist = false;
             }

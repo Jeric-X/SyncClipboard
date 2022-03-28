@@ -111,9 +111,7 @@
     <Compile Include="Utility\Nextcloud.cs" />
     <Compile Include="Utility\WebDav.cs" />
     <Compile Include="Utility\Json.cs" />
-    <Compile Include="Control\MainController.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="Control\MainController.cs" />
     <Compile Include="Service\SyncService\Profile\Profile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Global.cs" />
