@@ -6,7 +6,8 @@ namespace SyncClipboard.Service
             new CommandService(),
             new ClipboardService(),
             new UploadService(),
-            new DownloadService()
+            new DownloadService(),
+            new EasyCopyImageSerivce()
         };
 
         internal void StartUpAllService()

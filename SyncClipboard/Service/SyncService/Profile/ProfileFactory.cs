@@ -12,19 +12,19 @@ namespace SyncClipboard.Service
 {
     public static class ProfileFactory
     {
-        private struct LocalClipboard
+        public struct LocalClipboard
         {
             public string Text;
-            //public string Html;
+            public string Html;
             public Image Image;
             public string[] Files;
         }
 
         private static readonly string[] imageExtensions = { ".jpg", ".jpeg", ".gif", ".bmp", ".png" };
 
-        public static Profile CreateFromLocal()
+        public static Profile CreateFromLocal(out LocalClipboard localClipboard)
         {
-            var localClipboard = GetLocalClipboard();
+            localClipboard = GetLocalClipboard();
 
             if (localClipboard.Files != null)
             {
@@ -50,6 +50,11 @@ namespace SyncClipboard.Service
             }
 
             return new UnkonwnProfile();
+        }
+
+        public static Profile CreateFromLocal()
+        {
+            return CreateFromLocal(out _);
         }
 
         private static bool FileIsImage(string filename)
@@ -87,7 +92,7 @@ namespace SyncClipboard.Service
                         localClipboard.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
                         localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text) ?? localClipboard.Text;
                         localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
-                        //localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
+                        localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
                         break;
                     }
                     catch

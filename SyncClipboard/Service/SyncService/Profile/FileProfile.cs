@@ -11,7 +11,6 @@ namespace SyncClipboard.Service
     public class FileProfile : Profile
     {
         protected string fullPath;
-        private bool DownloadStatusOK = false;
         private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
         private string statusTip ="";
         private readonly IWebDav _webDav;
@@ -93,6 +92,11 @@ namespace SyncClipboard.Service
 
         protected override async Task BeforeSetLocal()
         {
+            if (!string.IsNullOrEmpty(fullPath))
+            {
+                return;
+            }
+
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
@@ -111,7 +115,7 @@ namespace SyncClipboard.Service
                     return;
                 }
                 Log.Write("[PULL] download OK " + localPath);
-                DownloadStatusOK = true;
+                fullPath = localPath;
                 statusTip = FileName;
             }
             catch (System.Exception ex)
@@ -128,15 +132,14 @@ namespace SyncClipboard.Service
 
         protected override DataObject CreateDataObject()
         {
-            if (!DownloadStatusOK)
+            if (string.IsNullOrEmpty(fullPath))
             {
                 return null;
             }
 
             var dataObject = new DataObject();
 
-            string localPath = GetTempLocalFilePath();
-            dataObject.SetFileDropList(new System.Collections.Specialized.StringCollection { localPath });
+            dataObject.SetFileDropList(new System.Collections.Specialized.StringCollection { fullPath });
 
             return dataObject;
         }

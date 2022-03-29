@@ -75,11 +75,9 @@ namespace SyncClipboard.Service
                 return null;
             }
 
-            string imagePath = GetTempLocalFilePath();
-
-            SetHtml(dataObject, imagePath);
-            SetQqFormat(dataObject, imagePath);
-            SetBitmap(dataObject, imagePath);
+            SetHtml(dataObject, fullPath);
+            SetQqFormat(dataObject, fullPath);
+            SetBitmap(dataObject, fullPath);
 
             return dataObject;
         }

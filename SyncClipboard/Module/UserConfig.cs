@@ -26,7 +26,7 @@ namespace SyncClipboard.Module
                 public string Password = "";
                 public bool PullSwitchOn = false;
                 public bool PushSwitchOn = false;
-                public bool IsNextcloud = false;
+                public bool EasyCopyImageSwitchOn = false;
             }
 
             public class CCommandService
