@@ -1,3 +1,7 @@
+v1.3.5
+- Add EasyCopyImageSerivce for optimizing image clipboard.
+- Add max size of file in config.
+
 v1.3.4
 - Fix a bug when local clipboard is nothing.
 

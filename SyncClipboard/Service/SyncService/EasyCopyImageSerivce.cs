@@ -28,7 +28,7 @@ namespace SyncClipboard.Service
 
         private async void ProcessClipboard()
         {
-            var profile = ProfileFactory.CreateFromLocal(out var localClipboard);
+            var profile = CreateFromLocal(out var localClipboard);
             if (profile.GetProfileType() != ProfileType.ClipboardType.Image)
             {
                 return;
@@ -41,7 +41,7 @@ namespace SyncClipboard.Service
                 {
                     Log.Write("http image url: " + match.Result("$1"));
                     var localPath = await DownloadImage(match.Result("$1"));
-                    if (localPath is null)
+                    if (localPath is null || !SupportsImage(localPath))
                     {
                         return;
                     }
@@ -50,6 +50,19 @@ namespace SyncClipboard.Service
             }
 
             await AdjustClipboard(profile, localClipboard);
+        }
+
+        private bool SupportsImage(string fileName)
+        {
+            string extension = System.IO.Path.GetExtension(fileName);
+            foreach (var imageExtension in imageExtensions)
+            {
+                if (imageExtension.Equals(extension, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private async Task AdjustClipboard(Profile profile, LocalClipboard localClipboard)

@@ -27,6 +27,7 @@ namespace SyncClipboard.Module
                 public bool PullSwitchOn = false;
                 public bool PushSwitchOn = false;
                 public bool EasyCopyImageSwitchOn = false;
+                public int MaxFileByte = 1024 * 1024 * 20;  // 10MB
             }
 
             public class CCommandService

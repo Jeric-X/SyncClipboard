@@ -20,7 +20,7 @@ namespace SyncClipboard.Service
             public string[] Files;
         }
 
-        private static readonly string[] imageExtensions = { ".jpg", ".jpeg", ".gif", ".bmp", ".png" };
+        public static readonly string[] imageExtensions = { ".jpg", ".jpeg", ".gif", ".bmp", ".png" };
 
         public static Profile CreateFromLocal(out LocalClipboard localClipboard)
         {

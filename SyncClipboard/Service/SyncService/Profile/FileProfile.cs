@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
 
@@ -11,7 +12,7 @@ namespace SyncClipboard.Service
     public class FileProfile : Profile
     {
         protected string fullPath;
-        private const long maxFileSize = 500 * 1024 * 1024;     // 500MBytes
+        private static readonly long maxFileSize = UserConfig.Config.SyncService.MaxFileByte;
         private string statusTip ="";
         private readonly IWebDav _webDav;
 
