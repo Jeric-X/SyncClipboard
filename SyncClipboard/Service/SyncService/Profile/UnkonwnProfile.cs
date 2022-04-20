@@ -13,10 +13,6 @@ namespace SyncClipboard.Service
             return "Do not support this type of clipboard";
         }
 
-        public override void UploadProfile(IWebDav webdav)
-        {
-        }
-
         public override ClipboardType GetProfileType()
         {
             return ClipboardType.Unknown;

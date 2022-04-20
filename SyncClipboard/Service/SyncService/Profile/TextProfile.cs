@@ -51,11 +51,6 @@ namespace SyncClipboard.Service
             await webdav.PutTextAsync(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), 0, 0).ConfigureAwait(false);
         }
 
-        public override void UploadProfile(IWebDav webdav)
-        {
-            webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
-        }
-
         protected override DataObject CreateDataObject()
         {
             var dataObject = new DataObject();

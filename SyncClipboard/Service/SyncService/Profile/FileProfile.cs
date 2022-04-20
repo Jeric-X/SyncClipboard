@@ -15,6 +15,7 @@ namespace SyncClipboard.Service
         private static readonly long maxFileSize = UserConfig.Config.SyncService.MaxFileByte;
         private string statusTip ="";
         private readonly IWebDav _webDav;
+        private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
 
         public FileProfile(string file)
         {
@@ -70,25 +71,6 @@ namespace SyncClipboard.Service
 
             SetMd5(GetMD5HashFromFile(fullPath));
             await webdav.PutTextAsync(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), 0, 0).ConfigureAwait(false);
-        }
-
-        public override void UploadProfile(IWebDav webdav)
-        {
-            string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
-
-            FileInfo file = new FileInfo(fullPath);
-            if (file.Length <= maxFileSize)
-            {
-                Log.Write("PUSH file " + FileName);
-                webdav.PutFile(remotePath, fullPath);
-            }
-            else
-            {
-                Log.Write("file is too large, skipped " + FileName);
-            }
-
-            SetMd5(GetMD5HashFromFile(fullPath));
-            webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
         }
 
         protected override async Task BeforeSetLocal()
@@ -170,6 +152,11 @@ namespace SyncClipboard.Service
 
         private static string GetMD5HashFromFile(string fileName)
         {
+            FileInfo fileInfo = new FileInfo(fileName);
+            if (fileInfo.Length > maxFileSize)
+            {
+                return MD5_FOR_OVERSIZED_FILE;
+            }
             try
             {
                 Log.Write("calc md5 start");
