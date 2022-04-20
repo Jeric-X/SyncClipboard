@@ -62,7 +62,7 @@ namespace SyncClipboard.Service
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
-                webdav.PutFile(remotePath, fullPath);
+                await webdav.PutFileAsync(remotePath, fullPath, 0, 0);
             }
             else
             {

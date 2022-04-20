@@ -15,6 +15,7 @@ namespace SyncClipboard.Utility
         void PutText(string remotefile, string text);
         Task PutTextAsync(string remotefile, string text, int? retryTimes = null, int? intervalTime = null);
         void PutFile(string remotefile, string localFilePath);
+        Task PutFileAsync(string remotefile, string localFilePath, int? retryTimes = null, int? intervalTime = null);
         void GetFile(string remotefile, string localFilePath);
         Task GetFileAsync(string remotefile, string localFilePath, int? retryTimes = null, int? intervalTime = null);
         Task<bool> TestAliveAsync();
@@ -125,7 +126,7 @@ namespace SyncClipboard.Utility
             HttpWeb.PutFile(FullUrl(remotefile), _httpPara, localFilePath);
         }
 
-        public async Task PutFileAsync(string remotefile, string localFilePath, int retryTimes, int intervalTime)
+        public async Task PutFileAsync(string remotefile, string localFilePath, int? retryTimes, int? intervalTime)
         {
             await LoopAsync(
                 () => HttpWeb.PutFile(FullUrl(remotefile), _httpPara, localFilePath),
