@@ -1,3 +1,6 @@
+v1.3.6
+- Fix: Uploading blocks UI thread.
+
 v1.3.5
 - Add EasyCopyImageSerivce for optimizing image clipboard.
 - Add max size of file in config.

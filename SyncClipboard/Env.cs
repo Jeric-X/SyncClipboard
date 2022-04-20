@@ -2,6 +2,7 @@ namespace SyncClipboard
 {
     internal static class Env
     {
+        public const string VERSION = "1.3.6";
         private const string PATH_SLASH = @"\";
         internal static readonly string Directory = System.Windows.Forms.Application.StartupPath;
 
