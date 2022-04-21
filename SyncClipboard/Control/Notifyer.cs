@@ -22,11 +22,11 @@ namespace SyncClipboard.Control
 
         private readonly Dictionary<string, string> _statusList = new Dictionary<string, string>();
 
-        public Notifyer(ContextMenu contextMenu)
+        public Notifyer(ContextMenuStrip contextMenu)
         {
             this._notifyIcon = new System.Windows.Forms.NotifyIcon
             {
-                ContextMenu = contextMenu,
+                ContextMenuStrip = contextMenu,
                 Icon = DefaultIcon,
                 Text = "SyncClipboard",
                 Visible = true
