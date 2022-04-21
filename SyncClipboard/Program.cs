@@ -16,6 +16,7 @@ namespace SyncClipboard
         {
             Log.Write("[Program] started");
             Application.EnableVisualStyles();
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
             Mutex mutex = new Mutex(false, SoftName, out bool creetedNew);
