@@ -1,4 +1,4 @@
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using SyncClipboard.Utility;
 using System.IO;
 using System.Windows.Forms;
@@ -45,8 +45,7 @@ namespace SyncClipboard.Module
 
         internal static void Save()
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            var configStr = serializer.Serialize(Config);
+            var configStr = JsonSerializer.Serialize(Config);
             try
             {
                 File.WriteAllText(Env.FullPath(CONFIG_FILE), configStr);
@@ -71,10 +70,10 @@ namespace SyncClipboard.Module
                 return;
             }
 
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            
             try
             {
-                Config = serializer.Deserialize<Configuration>(text);
+                Config = JsonSerializer.Deserialize<Configuration>(text);
                 if (Config is null)
                 {
                     WriteDefaultConfigFile();

@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Control;
 
@@ -126,7 +126,7 @@ namespace SyncClipboard.Utility
             T firstResponse = default;
             try
             {
-                firstResponse = new JavaScriptSerializer().Deserialize<T>(json);
+                firstResponse = JsonSerializer.Deserialize<T>(json);
             }
             catch
             {

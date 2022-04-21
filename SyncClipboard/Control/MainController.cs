@@ -46,6 +46,7 @@ namespace SyncClipboard.Control
             this.检查更新MenuItem.Click += this.检查更新MenuItem_Click;
             this.nextCloudLogger.Click += this.NextCloudLogger_Click;
 
+            this.contextMenu = new ContextMenuStrip();
             this.contextMenu.Items.Add(this.设置MenuItem);
             this.contextMenu.Items.Add(this.lineMenuItem);
             this.contextMenu.Items.Add(this.nextCloudLogger);

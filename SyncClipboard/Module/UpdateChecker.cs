@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
 
@@ -46,10 +46,9 @@ namespace SyncClipboard.Module
                 return null;
             }
 
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
             try
             {
-                UpdateConvertJson p1 = serializer.Deserialize<UpdateConvertJson>(gitHubReply);
+                UpdateConvertJson p1 = JsonSerializer.Deserialize<UpdateConvertJson>(gitHubReply);
                 return p1.name;
             }
             catch (Exception e)
@@ -82,7 +81,5 @@ namespace SyncClipboard.Module
     internal class UpdateConvertJson
     {
         public string name { get; set; }
-
-        public string rowser_download_url { get; set; }
     }
 }
