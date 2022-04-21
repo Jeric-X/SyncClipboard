@@ -66,7 +66,7 @@ namespace SyncClipboard.Service
             }
             if (Text.Substring(0, 4) == "http" || Text.Substring(0, 4) == "www.")
             {
-                return () => System.Diagnostics.Process.Start(Text);
+                return () => Sys.OpenWithDefaultApp(Text);
             }
 
             return null;

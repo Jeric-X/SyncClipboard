@@ -87,7 +87,7 @@ namespace SyncClipboard.Service
             var path = fullPath ?? GetTempLocalFilePath();
             if (path != null)
             {
-                return () => System.Diagnostics.Process.Start(path);
+                return () => Sys.OpenWithDefaultApp(path);
             }
 
             return null;

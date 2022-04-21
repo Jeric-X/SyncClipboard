@@ -6,10 +6,10 @@
     "configurations": [
         {
             "name": "Debug",
-            "type": "clr",
+            "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "buildDebug",
-            "program": "${workspaceFolder}/SyncClipboard/bin/x64/Debug/SyncClipboard.exe",
+            "program": "${workspaceFolder}/SyncClipboard/bin/Debug/net6.0-windows/SyncClipboard.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -18,10 +18,10 @@
         },
         {
             "name": "Release",
-            "type": "clr",
+            "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "buildRelease",
-            "program": "${workspaceFolder}/SyncClipboard/bin/x64/Release/SyncClipboard.exe",
+            "program": "${workspaceFolder}/SyncClipboard/bin/Release/net6.0-windows/SyncClipboard.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

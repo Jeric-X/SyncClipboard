@@ -58,7 +58,7 @@ namespace SyncClipboard.Utility
                 return null;
             }
 
-            System.Diagnostics.Process.Start(firstResponse.login);
+            Sys.OpenWithDefaultApp(firstResponse.login);
 
             string secondResponseJson = await GetSecondResponse(firstResponse).ConfigureAwait(false);
             var secondResponse = DecodeJson<SecondResponse>(secondResponseJson);

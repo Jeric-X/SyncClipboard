@@ -24,7 +24,7 @@ namespace SyncClipboard.Module
             {
                 if (MessageBox.Show($"v{Version} -> {newVersion}", $"检测到新版本{newVersion}, 是否更新", MessageBoxButtons.OKCancel) == DialogResult.OK)
                 {
-                    System.Diagnostics.Process.Start(UpdateChecker.ReleaseUrl);
+                    Sys.OpenWithDefaultApp(ReleaseUrl);
                 }
             }
             else
