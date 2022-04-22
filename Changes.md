@@ -1,11 +1,7 @@
 v1.3.7
 - upgrade to .net6
 todo:
-- 界面大小修正
 - 功能测试
-- json优化：带格式的配置文件; 优化decode流程，删除临时object，使用json["xxx"]解析
-- 复制已占用的文件exception
-- 上传错误重试时，无法上传新复制的内容
 
 v1.3.6
 - Fix: Uploading blocks UI thread.
