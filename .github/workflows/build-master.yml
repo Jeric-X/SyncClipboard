@@ -1,0 +1,13 @@
+name: build-master
+
+on:
+  push:
+    branches: 
+      - master
+    tags-ignore: 
+      - 'v*'
+  pull_request:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml

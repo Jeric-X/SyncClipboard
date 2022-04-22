@@ -8,7 +8,7 @@
             "command": "dotnet",
             "type": "shell",
             "args": [
-                "build",
+                "publish",
                 "-c",
                 "Debug",
                 // Ask dotnet build to generate full paths for file names.
@@ -27,7 +27,7 @@
             "command": "dotnet",
             "type": "shell",
             "args": [
-                "build",
+                "publish",
                 "-c",
                 "Release",
                 // Ask dotnet build to generate full paths for file names.

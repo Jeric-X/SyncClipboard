@@ -1,23 +1,12 @@
 name: build
 
 on:
-  push:
-    branches: 
-      - master
-    tags-ignore: 
-      - '**'
-  push:
-    branches-ignore:
-      - master
-  pull_request:
+  workflow_call:
 
 jobs:
   build:
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
-
-    env:
-      Solution_Name: SyncClipboard
 
     steps:
     - name: Checkout
@@ -29,11 +18,26 @@ jobs:
       with:
         dotnet-version: 6.0.x
 
+    - name: Install dependencies
+      run: dotnet restore
+
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet publish --configuration Release --no-restore
+
+    - name: Generate change log
+      run: |
+        .\PreRelease.bat
+        type feature.txt
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: SyncClipboard
-        path: bin/Release/net6.0-windows
+        path: SyncClipboard/bin/Release/net6.0-windows/win-x64/publish/SyncClipboard.exe
+    
+    - name: Upload change log
+      uses: actions/upload-artifact@v3
+      with:
+        name: feature
+        path:
+          feature.txt
