@@ -16,7 +16,6 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.ToolStripMenuItem 上传本机MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 下载远程MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 检查更新MenuItem;
-        private System.Windows.Forms.ToolStripMenuItem lineMenuItem;
         private System.Windows.Forms.ToolStripMenuItem nextCloudLogger;
 
         private readonly SettingsForm settingsForm = new SettingsForm();
@@ -35,7 +34,6 @@ namespace SyncClipboard.Control
             this.下载远程MenuItem = new System.Windows.Forms.ToolStripMenuItem("下载远程");
             this.退出MenuItem = new System.Windows.Forms.ToolStripMenuItem("退出");
             this.检查更新MenuItem = new System.Windows.Forms.ToolStripMenuItem("检查更新");
-            this.lineMenuItem = new System.Windows.Forms.ToolStripMenuItem("-");
             this.nextCloudLogger = new System.Windows.Forms.ToolStripMenuItem("从NextCloud登录");
 
             this.设置MenuItem.Click += this.设置MenuItem_Click;
@@ -46,15 +44,18 @@ namespace SyncClipboard.Control
             this.检查更新MenuItem.Click += this.检查更新MenuItem_Click;
             this.nextCloudLogger.Click += this.NextCloudLogger_Click;
 
-            this.contextMenu = new ContextMenuStrip();
+            this.contextMenu = new ContextMenuStrip
+            {
+                Renderer = new ToolStripProfessionalRenderer(new MenuStripColorTable())
+            };
             this.contextMenu.Items.Add(this.设置MenuItem);
-            this.contextMenu.Items.Add(this.lineMenuItem);
+            this.contextMenu.Items.Add("-");
             this.contextMenu.Items.Add(this.nextCloudLogger);
-            this.contextMenu.Items.Add(this.lineMenuItem);
+            this.contextMenu.Items.Add("-");
             this.contextMenu.Items.Add(this.开机启动MenuItem);
             this.contextMenu.Items.Add(this.上传本机MenuItem);
             this.contextMenu.Items.Add(this.下载远程MenuItem);
-            this.contextMenu.Items.Add(this.lineMenuItem);
+            this.contextMenu.Items.Add("-");
             this.contextMenu.Items.Add(this.检查更新MenuItem);
             this.contextMenu.Items.Add(this.退出MenuItem);
 
