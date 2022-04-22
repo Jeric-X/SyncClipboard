@@ -1,0 +1,39 @@
+name: build
+
+on:
+  push:
+    branches: 
+      - master
+    tags-ignore: 
+      - '**'
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest  # For a list of available runner types, refer to
+                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+    env:
+      Solution_Name: SyncClipboard
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the .NET workload
+    - name: Install .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard
+        path: bin/Release/net6.0-windows
