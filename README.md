@@ -1,4 +1,5 @@
 # SyncClipboard
+[![build-master](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-master.yml/badge.svg)](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-master.yml)
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
 
 ## 功能
@@ -21,7 +22,7 @@
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## Client-Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，或者下载源码，VS2019及以上编译
+下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6
 
 ## Client-IOS 
 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)提供的`Get Contents of URL`功能发送HTTP协议  
