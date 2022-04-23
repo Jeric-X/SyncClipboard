@@ -141,8 +141,7 @@ namespace SyncClipboard.Control
 
         private void 检查更新MenuItem_Click(object sender, EventArgs e)
         {
-            UpdateChecker updateChecker = new UpdateChecker();
-            updateChecker.Check();
+            UpdateChecker.Check();
         }
     }
 }

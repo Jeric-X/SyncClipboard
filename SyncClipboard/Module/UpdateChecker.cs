@@ -1,18 +1,19 @@
 ﻿using System;
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
 
 namespace SyncClipboard.Module
 {
-    internal class UpdateChecker
+    internal static class UpdateChecker
     {
         public const string Version = Env.VERSION;
+        private const string GITHUB_JSON_VERSION_TAG = "name";
         public const int VersionPartNumber = 3;
         public const string UpdateUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";
         public const string ReleaseUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
-        public void Check()
+        public static void Check()
         {
             string newVersion = GetNewestVersion();
             if (newVersion is null)
@@ -33,7 +34,7 @@ namespace SyncClipboard.Module
             }
         }
 
-        private string GetNewestVersion()
+        private static string GetNewestVersion()
         {
             string gitHubReply;
             try
@@ -48,8 +49,7 @@ namespace SyncClipboard.Module
 
             try
             {
-                UpdateConvertJson p1 = JsonSerializer.Deserialize<UpdateConvertJson>(gitHubReply);
-                return p1.name;
+                return JsonNode.Parse(gitHubReply)![GITHUB_JSON_VERSION_TAG]!.GetValue<string>();
             }
             catch (Exception e)
             {
@@ -59,9 +59,9 @@ namespace SyncClipboard.Module
             return null;
         }
 
-        private bool NeedUpdate(string newVersionStr)
+        private static bool NeedUpdate(string newVersionStr)
         {
-            newVersionStr = newVersionStr.Substring(1);         // 去除v1.0.0中的v
+            newVersionStr = newVersionStr[1..];         // 去除v1.0.0中的v
             string[] newVersion = newVersionStr.Split(new char[2] { 'v', '.' });
             string[] oldVersion = Version.Split(new char[2] { 'v', '.' });
 
@@ -76,10 +76,5 @@ namespace SyncClipboard.Module
             }
             return false;
         }
-    }
-
-    internal class UpdateConvertJson
-    {
-        public string name { get; set; }
     }
 }
