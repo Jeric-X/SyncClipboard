@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
+#nullable enable
 
 namespace SyncClipboard.Module
 {
@@ -15,7 +16,7 @@ namespace SyncClipboard.Module
 
         public static void Check()
         {
-            string newVersion = GetNewestVersion();
+            var newVersion = GetNewestVersion();
             if (newVersion is null)
             {
                 return;
@@ -34,7 +35,7 @@ namespace SyncClipboard.Module
             }
         }
 
-        private static string GetNewestVersion()
+        private static string? GetNewestVersion()
         {
             string gitHubReply;
             try
@@ -49,7 +50,7 @@ namespace SyncClipboard.Module
 
             try
             {
-                return JsonNode.Parse(gitHubReply)![GITHUB_JSON_VERSION_TAG]!.GetValue<string>();
+                return JsonNode.Parse(gitHubReply)?[GITHUB_JSON_VERSION_TAG]?.GetValue<string>();
             }
             catch (Exception e)
             {

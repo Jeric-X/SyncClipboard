@@ -32,7 +32,7 @@ namespace SyncClipboard.Module
 
             public class CCommandService
             {
-                public bool switchOn { get; set; } = false;
+                public bool SwitchOn { get; set; } = false;
                 public int Shutdowntime { get; set; } = 30;
             }
 
@@ -45,7 +45,7 @@ namespace SyncClipboard.Module
 
         internal static void Save()
         {
-            var configStr = JsonSerializer.Serialize(Config);
+            var configStr = JsonSerializer.Serialize(Config,  new JsonSerializerOptions{ WriteIndented = true });
             try
             {
                 File.WriteAllText(Env.FullPath(CONFIG_FILE), configStr);
@@ -70,7 +70,6 @@ namespace SyncClipboard.Module
                 return;
             }
 
-            
             try
             {
                 Config = JsonSerializer.Deserialize<Configuration>(text);
