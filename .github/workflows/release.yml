@@ -5,15 +5,13 @@ permissions:
 
 on:
   push:
-    branches: 
-      - master
     tags: 
       - 'v*'
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
-  
+    uses: ./.github/workflows/build-progress.yml
+
   release:
     runs-on: windows-latest
     needs: build

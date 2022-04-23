@@ -1,5 +1,5 @@
 # SyncClipboard
-[![build-master](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-master.yml/badge.svg)](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-master.yml)
+[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg)](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml)
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
 
 ## 功能
