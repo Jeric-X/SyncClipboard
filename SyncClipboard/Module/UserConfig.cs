@@ -1,4 +1,4 @@
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using SyncClipboard.Utility;
 using System.IO;
 using System.Windows.Forms;
@@ -14,39 +14,38 @@ namespace SyncClipboard.Module
         {
             public class CProgram
             {
-                public int IntervalTime = 3000;
-                public int RetryTimes = 3;
-                public int TimeOut = 10000;
+                public int IntervalTime { get; set; } = 3000;
+                public int RetryTimes { get; set; } = 3;
+                public int TimeOut { get; set; } = 10000;
             }
 
             public class CSyncService
             {
-                public string RemoteURL = "";
-                public string UserName = "";
-                public string Password = "";
-                public bool PullSwitchOn = false;
-                public bool PushSwitchOn = false;
-                public bool EasyCopyImageSwitchOn = false;
-                public int MaxFileByte = 1024 * 1024 * 20;  // 10MB
+                public string RemoteURL { get; set; } = "";
+                public string UserName { get; set; } = "";
+                public string Password { get; set; } = "";
+                public bool PullSwitchOn { get; set; } = false;
+                public bool PushSwitchOn { get; set; } = false;
+                public bool EasyCopyImageSwitchOn { get; set; } = false;
+                public int MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 10MB
             }
 
             public class CCommandService
             {
-                public bool switchOn = false;
-                public int Shutdowntime = 30;
+                public bool switchOn { get; set; } = false;
+                public int Shutdowntime { get; set; } = 30;
             }
 
-            public CSyncService SyncService = new CSyncService();
-            public CCommandService CommandService = new CCommandService();
-            public CProgram Program = new CProgram();
+            public CSyncService SyncService { get; set; } = new CSyncService();
+            public CCommandService CommandService { get; set; } = new CCommandService();
+            public CProgram Program { get; set; } = new CProgram();
         }
 
         internal static Configuration Config = new Configuration();
 
         internal static void Save()
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            var configStr = serializer.Serialize(Config);
+            var configStr = JsonSerializer.Serialize(Config);
             try
             {
                 File.WriteAllText(Env.FullPath(CONFIG_FILE), configStr);
@@ -71,10 +70,10 @@ namespace SyncClipboard.Module
                 return;
             }
 
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            
             try
             {
-                Config = serializer.Deserialize<Configuration>(text);
+                Config = JsonSerializer.Deserialize<Configuration>(text);
                 if (Config is null)
                 {
                     WriteDefaultConfigFile();

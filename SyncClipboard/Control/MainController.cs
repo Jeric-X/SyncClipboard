@@ -9,15 +9,14 @@ namespace SyncClipboard.Control
     public class MainController
     {
         public Notifyer Notifyer;
-        private System.Windows.Forms.ContextMenu contextMenu;
-        private System.Windows.Forms.MenuItem 退出MenuItem;
-        private System.Windows.Forms.MenuItem 设置MenuItem;
-        private System.Windows.Forms.MenuItem 开机启动MenuItem;
-        private System.Windows.Forms.MenuItem 上传本机MenuItem;
-        private System.Windows.Forms.MenuItem 下载远程MenuItem;
-        private System.Windows.Forms.MenuItem 检查更新MenuItem;
-        private System.Windows.Forms.MenuItem lineMenuItem;
-        private System.Windows.Forms.MenuItem nextCloudLogger;
+        private System.Windows.Forms.ContextMenuStrip contextMenu;
+        private System.Windows.Forms.ToolStripMenuItem 退出MenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 设置MenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 开机启动MenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 上传本机MenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 下载远程MenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 检查更新MenuItem;
+        private System.Windows.Forms.ToolStripMenuItem nextCloudLogger;
 
         private readonly SettingsForm settingsForm = new SettingsForm();
         private bool isSttingsFormExist = false;
@@ -29,14 +28,13 @@ namespace SyncClipboard.Control
         }
         private void InitializeComponent()
         {
-            this.设置MenuItem = new System.Windows.Forms.MenuItem("设置");
-            this.开机启动MenuItem = new System.Windows.Forms.MenuItem("开机启动");
-            this.上传本机MenuItem = new System.Windows.Forms.MenuItem("上传本机");
-            this.下载远程MenuItem = new System.Windows.Forms.MenuItem("下载远程");
-            this.退出MenuItem = new System.Windows.Forms.MenuItem("退出");
-            this.检查更新MenuItem = new System.Windows.Forms.MenuItem("检查更新");
-            this.lineMenuItem = new System.Windows.Forms.MenuItem("-");
-            this.nextCloudLogger = new System.Windows.Forms.MenuItem("从NextCloud登录");
+            this.设置MenuItem = new System.Windows.Forms.ToolStripMenuItem("设置");
+            this.开机启动MenuItem = new System.Windows.Forms.ToolStripMenuItem("开机启动");
+            this.上传本机MenuItem = new System.Windows.Forms.ToolStripMenuItem("上传本机");
+            this.下载远程MenuItem = new System.Windows.Forms.ToolStripMenuItem("下载远程");
+            this.退出MenuItem = new System.Windows.Forms.ToolStripMenuItem("退出");
+            this.检查更新MenuItem = new System.Windows.Forms.ToolStripMenuItem("检查更新");
+            this.nextCloudLogger = new System.Windows.Forms.ToolStripMenuItem("从NextCloud登录");
 
             this.设置MenuItem.Click += this.设置MenuItem_Click;
             this.开机启动MenuItem.Click += this.开机启动MenuItem_Click;
@@ -46,18 +44,20 @@ namespace SyncClipboard.Control
             this.检查更新MenuItem.Click += this.检查更新MenuItem_Click;
             this.nextCloudLogger.Click += this.NextCloudLogger_Click;
 
-            this.contextMenu = new ContextMenu(new MenuItem[] {
-                this.设置MenuItem,
-                this.lineMenuItem.CloneMenu(),
-                this.nextCloudLogger,
-                this.lineMenuItem.CloneMenu(),
-                this.开机启动MenuItem,
-                this.上传本机MenuItem,
-                this.下载远程MenuItem,
-                this.lineMenuItem.CloneMenu(),
-                this.检查更新MenuItem,
-                this.退出MenuItem
-            });
+            this.contextMenu = new ContextMenuStrip
+            {
+                Renderer = new ToolStripProfessionalRenderer(new MenuStripColorTable())
+            };
+            this.contextMenu.Items.Add(this.设置MenuItem);
+            this.contextMenu.Items.Add("-");
+            this.contextMenu.Items.Add(this.nextCloudLogger);
+            this.contextMenu.Items.Add("-");
+            this.contextMenu.Items.Add(this.开机启动MenuItem);
+            this.contextMenu.Items.Add(this.上传本机MenuItem);
+            this.contextMenu.Items.Add(this.下载远程MenuItem);
+            this.contextMenu.Items.Add("-");
+            this.contextMenu.Items.Add(this.检查更新MenuItem);
+            this.contextMenu.Items.Add(this.退出MenuItem);
 
             Notifyer = new Notifyer(this.contextMenu);
             Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);

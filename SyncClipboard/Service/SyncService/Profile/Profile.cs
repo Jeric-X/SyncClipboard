@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
 using static SyncClipboard.Service.ProfileType;
@@ -54,8 +54,8 @@ namespace SyncClipboard.Service
                 Type = ClipBoardTypeToString(GetProfileType())
             };
 
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            return serializer.Serialize(jsonProfile);
+            
+            return JsonSerializer.Serialize(jsonProfile);
         }
 
         public static bool operator ==(Profile lhs, Profile rhs)

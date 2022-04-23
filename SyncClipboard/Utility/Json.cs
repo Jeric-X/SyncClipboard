@@ -1,4 +1,4 @@
-using System.Web.Script.Serialization;
+using System.Text.Json;
 
 namespace SyncClipboard.Utility
 {
@@ -9,7 +9,7 @@ namespace SyncClipboard.Utility
             T firstResponse;
             try
             {
-                firstResponse = new JavaScriptSerializer().Deserialize<T>(json);
+                firstResponse = JsonSerializer.Deserialize<T>(json);
             }
             catch
             {
@@ -20,8 +20,8 @@ namespace SyncClipboard.Utility
 
         public static string Encode<T>(T jsonClass)
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            return serializer.Serialize(jsonClass);
+            
+            return JsonSerializer.Serialize(jsonClass);
         }
     }
 }

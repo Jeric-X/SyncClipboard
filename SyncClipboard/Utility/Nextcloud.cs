@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Control;
 
@@ -19,18 +19,18 @@ namespace SyncClipboard.Utility
     {
         public class Poll
         {
-            public string token = null;
-            public string endpoint = null;
+            public string token { get; set; } = null;
+            public string endpoint { get; set; } = null;
         }
-        public Poll poll = null;
-        public string login = null;
+        public Poll poll { get; set; } = null;
+        public string login { get; set; } = null;
     }
 
     internal class SecondResponse
     {
-        public string server = null;
-        public string loginName = null;
-        public string appPassword = null;
+        public string server { get; set; } = null;
+        public string loginName { get; set; } = null;
+        public string appPassword { get; set; } = null;
     }
 
     #endregion
@@ -58,7 +58,7 @@ namespace SyncClipboard.Utility
                 return null;
             }
 
-            System.Diagnostics.Process.Start(firstResponse.login);
+            Sys.OpenWithDefaultApp(firstResponse.login);
 
             string secondResponseJson = await GetSecondResponse(firstResponse).ConfigureAwait(false);
             var secondResponse = DecodeJson<SecondResponse>(secondResponseJson);
@@ -126,7 +126,7 @@ namespace SyncClipboard.Utility
             T firstResponse = default;
             try
             {
-                firstResponse = new JavaScriptSerializer().Deserialize<T>(json);
+                firstResponse = JsonSerializer.Deserialize<T>(json);
             }
             catch
             {

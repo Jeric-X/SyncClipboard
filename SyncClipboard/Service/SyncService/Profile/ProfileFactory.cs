@@ -4,7 +4,7 @@ using System;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 
@@ -113,8 +113,8 @@ namespace SyncClipboard.Service
             JsonProfile jsonProfile;
             try
             {
-                JavaScriptSerializer serializer = new JavaScriptSerializer();
-                jsonProfile = serializer.Deserialize<JsonProfile>(httpReply);
+                
+                jsonProfile = JsonSerializer.Deserialize<JsonProfile>(httpReply);
             }
             catch (ArgumentException)
             {

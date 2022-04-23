@@ -1,16 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{05848EE3-A9CB-4402-B8B7-F0016759FFC5}</ProjectGuid>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SyncClipboard</RootNamespace>
-    <AssemblyName>SyncClipboard</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
     <PublishUrl>发布\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -26,184 +17,16 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <Platforms>AnyCPU</Platforms>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>img\icon.ico</ApplicationIcon>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject>
-    </StartupObject>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <DebugType>portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DebugType>portable</DebugType>
-    <Optimize>true</Optimize>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Web.Extensions" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Control\Notifyer.cs" />
-    <Compile Include="Control\InputBox.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Module\ProgramEvent.cs" />
-    <Compile Include="Module\Event.cs" />
-    <Compile Include="Service\ClipboardService\ClipboardService.cs" />
-    <Compile Include="Service\Service.cs" />
-    <Compile Include="Service\ServiceManager.cs" />
-    <Compile Include="Service\CommandService\CommandService.cs" />
-    <Compile Include="Service\SyncService\EasyCopyImageSerivce.cs" />
-    <Compile Include="Service\SyncService\Profile\FileProfile.cs" />
-    <Compile Include="Service\SyncService\Profile\ImageProfile.cs" />
-    <Compile Include="Service\SyncService\LocalClipboardLocker.cs" />
-    <Compile Include="Service\SyncService\Profile\ProfileFactory.cs" />
-    <Compile Include="Service\SyncService\Profile\ProfileType.cs" />
-    <Compile Include="Service\SyncService\Profile\UnkonwnProfile.cs" />
-    <Compile Include="Service\SyncService\SyncService.cs" />
-    <Compile Include="Service\SyncService\UploadService.cs" />
-    <Compile Include="Service\SyncService\DownloadService.cs" />
-    <Compile Include="Control\ClipboardListener.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Service\SyncService\Profile\TextProfile.cs" />
-    <Compile Include="Utility\ClipboardHtmlBuilder.cs" />
-    <Compile Include="Utility\HttpWebUtility.cs" />
-    <Compile Include="Utility\HttpWeb.cs" />
-    <Compile Include="Utility\HttpPara.cs" />
-    <Compile Include="Utility\Nextcloud.cs" />
-    <Compile Include="Utility\WebDav.cs" />
-    <Compile Include="Utility\Json.cs" />
-    <Compile Include="Control\MainController.cs" />
-    <Compile Include="Service\SyncService\Profile\Profile.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Global.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Env.cs" />
-    <Compile Include="Module\UserConfig.cs" />
-    <Compile Include="Control\SettingsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Control\SettingsForm.Designer.cs">
-      <DependentUpon>SettingsForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Module\UpdateChecker.cs" />
-    <Compile Include="Utility\Log.cs" />
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <EmbeddedResource Include="Control\SettingsForm.resx">
-      <DependentUpon>SettingsForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="img\download001.ico" />
-    <None Include="img\download002.ico" />
-    <None Include="img\download003.ico" />
-    <None Include="img\download004.ico" />
-    <None Include="img\download005.ico" />
-    <None Include="img\download006.ico" />
-    <None Include="img\download007.ico" />
-    <None Include="img\download008.ico" />
-    <None Include="img\download009.ico" />
-    <None Include="img\download010.ico" />
-    <None Include="img\download011.ico" />
-    <None Include="img\download012.ico" />
-    <None Include="img\download013.ico" />
-    <None Include="img\download014.ico" />
-    <None Include="img\download015.ico" />
-    <None Include="img\download016.ico" />
-    <None Include="img\download017.ico" />
-    <Content Include="img\erro.ico" />
-    <Content Include="img\icon.ico" />
-    <Content Include="img\upload.ico" />
-    <None Include="img\upload017.ico" />
-    <None Include="img\upload016.ico" />
-    <None Include="img\upload015.ico" />
-    <None Include="img\upload014.ico" />
-    <None Include="img\upload013.ico" />
-    <None Include="img\upload012.ico" />
-    <None Include="img\upload011.ico" />
-    <None Include="img\upload010.ico" />
-    <None Include="img\upload009.ico" />
-    <None Include="img\upload008.ico" />
-    <None Include="img\upload007.ico" />
-    <None Include="img\upload006.ico" />
-    <None Include="img\upload005.ico" />
-    <None Include="img\upload004.ico" />
-    <None Include="img\upload003.ico" />
-    <None Include="img\upload002.ico" />
-    <None Include="img\upload001.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.5 %28x86 和 x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

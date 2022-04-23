@@ -1,3 +1,8 @@
+v1.3.7
+- upgrade to .net6
+todo:
+- 功能测试
+
 v1.3.6
 - Fix: Uploading blocks UI thread.
 
