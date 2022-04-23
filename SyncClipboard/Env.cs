@@ -8,6 +8,10 @@ namespace SyncClipboard
 
         internal static string PathConcat(params string[] values)
         {
+            for (var i = 0; i < values.Length; i++)
+            {
+                values[i] = values[i].TrimEnd(new char[]{'\\', '/'});
+            }
             return string.Join(PATH_SLASH, values);
         }
 
