@@ -5,6 +5,11 @@ VisualStudioVersion = 17.1.32414.318
 MinimumVisualStudioVersion = 16.0.30907.101
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard", "SyncClipboard\SyncClipboard.csproj", "{05848EE3-A9CB-4402-B8B7-F0016759FFC5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{64D61E6B-DE25-4B6A-BCF9-2B92A244B082}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
