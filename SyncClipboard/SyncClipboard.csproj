@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows10.0.17763.0</TargetFramework>
     <OutputType>WinExe</OutputType>
     <PublishUrl>发布\</PublishUrl>
     <Install>true</Install>
@@ -29,4 +29,10 @@
   <PropertyGroup>
     <ApplicationIcon>img\icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.2" />
+  </ItemGroup>
 </Project>

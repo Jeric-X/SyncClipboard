@@ -22,7 +22,7 @@
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## Client-Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6
+下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6，Windows 10 17763
 
 ## Client-IOS 
 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)提供的`Get Contents of URL`功能发送HTTP协议  
