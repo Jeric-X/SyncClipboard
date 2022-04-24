@@ -2,7 +2,8 @@
 using System.Threading.Tasks;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
-
+using System.Text.Json;
+#nullable enable
 namespace SyncClipboard.Service
 {
     internal class CommandService : Service
@@ -10,21 +11,18 @@ namespace SyncClipboard.Service
         private const string COMMAND_FILE = "Command.json";
         public class Command
         {
-            public string CommandStr = "";
-            public string Time = "";
+            public string CommandStr { get; set; } = "";
+            public string Time { get; set; } = "";
         }
 
-        private CancellationTokenSource _cancelSource;
-        private CancellationToken _cancelToken;
+        private readonly CancellationTokenSource _cancelSource = new();
         private bool _isError = false;
 
         protected override void StartService()
         {
             if (UserConfig.Config.CommandService.SwitchOn)
             {
-                _cancelSource = new CancellationTokenSource();
-                _cancelToken = _cancelSource.Token;
-                StartServiceAsync(_cancelToken);
+                StartServiceAsync(_cancelSource.Token);
             }
         }
 
@@ -48,7 +46,7 @@ namespace SyncClipboard.Service
                     if (!string.IsNullOrEmpty(command.CommandStr))
                     {
                         await ResetRemoteCommand(new Command()).ConfigureAwait(false);
-                        ExecuteCommand(command);
+                        await ExecuteCommand(command);
                     }
 
                     _isError = false;
@@ -63,18 +61,19 @@ namespace SyncClipboard.Service
                     }
                 }
 
-                await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(false);
+                await Task.Delay(UserConfig.Config.Program.IntervalTime, cancelToken).ConfigureAwait(false);
             }
             Log.Write("Command serivce exited");
         }
 
-        private async Task<Command> GetRemoteCommand()
+        private static async Task<Command> GetRemoteCommand()
         {
-            Command command;
+            Command? command;
             try
             {
                 string str = await Global.WebDav.GetTextAsync(COMMAND_FILE).ConfigureAwait(false);
-                command = Json.Decode<Command>(str);
+                command = JsonSerializer.Deserialize<Command>(str);
+                System.ArgumentNullException.ThrowIfNull(command);
             }
             catch
             {
@@ -85,24 +84,27 @@ namespace SyncClipboard.Service
             return command;
         }
 
-        private void ExecuteCommand(Command command)
+        private static Task ExecuteCommand(Command command)
         {
-            if (command.CommandStr == "shutdown")
+            return Task.Run(() =>
             {
-                var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
+                if (command.CommandStr == "shutdown")
+                {
+                    var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
 
-                var process = new System.Diagnostics.Process();
-                process.StartInfo.FileName = "cmd";
-                process.StartInfo.Arguments = $@"/k shutdown.exe /s /t {shutdownTime} /c ""use [ shutdown /a ] in {shutdownTime}s to undo shutdown.""";
-                process.Start();
-            }
+                    var process = new System.Diagnostics.Process();
+                    process.StartInfo.FileName = "cmd";
+                    process.StartInfo.Arguments = $@"/k shutdown.exe /s /t {shutdownTime} /c ""use [ shutdown /a ] in {shutdownTime}s to undo shutdown.""";
+                    process.Start();
+                }
+            });
         }
 
-        private async Task ResetRemoteCommand(Command command)
+        private static async Task ResetRemoteCommand(Command command)
         {
             try
             {
-                await Global.WebDav.PutTextAsync(COMMAND_FILE, Json.Encode(command)).ConfigureAwait(false);
+                await Global.WebDav.PutTextAsync(COMMAND_FILE, JsonSerializer.Serialize(command)).ConfigureAwait(false);
             }
             catch
             {
