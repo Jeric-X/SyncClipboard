@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
@@ -91,7 +92,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     var match = Regex.Match(imageUrl, "[^/]+(?!.*/)");
-                    var localPath = Env.PathConcat(SyncService.LOCAL_FILE_FOLDER, match.Value);
+                    var localPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, match.Value);
                     HttpWeb.GetFile(imageUrl, new HttpPara(), localPath);
                     return localPath;
                 }

@@ -20,7 +20,7 @@ namespace SyncClipboard.Service
 
         public static ImageProfile CreateFromImage(Image image)
         {
-            var filePath = Env.PathConcat(SyncService.LOCAL_FILE_FOLDER, TEMP_IMAGE_NAME);
+            var filePath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, TEMP_IMAGE_NAME);
             image.Save(filePath);
 
             return new ImageProfile(filePath);

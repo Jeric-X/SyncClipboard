@@ -13,7 +13,7 @@ namespace SyncClipboard.Service
     {
         protected string fullPath;
         private static readonly long maxFileSize = UserConfig.Config.SyncService.MaxFileByte;
-        private string statusTip ="";
+        private string statusTip = "";
         private readonly IWebDav _webDav;
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
 
@@ -32,7 +32,7 @@ namespace SyncClipboard.Service
 
         protected string GetTempLocalFilePath()
         {
-            return Env.PathConcat(SyncService.LOCAL_FILE_FOLDER, FileName);
+            return Path.Combine(SyncService.LOCAL_FILE_FOLDER, FileName);
         }
 
         public override ClipboardType GetProfileType()
@@ -47,7 +47,7 @@ namespace SyncClipboard.Service
 
         private string GetMd5()
         {
-            if(string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(fullPath))
+            if (string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(fullPath))
             {
                 SetMd5(GetMD5HashFromFile(fullPath));
             }
@@ -58,7 +58,7 @@ namespace SyncClipboard.Service
         {
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
 
-            FileInfo file = new FileInfo(fullPath);
+            var file = new FileInfo(fullPath);
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
@@ -152,7 +152,7 @@ namespace SyncClipboard.Service
 
         private static string GetMD5HashFromFile(string fileName)
         {
-            FileInfo fileInfo = new FileInfo(fileName);
+            var fileInfo = new FileInfo(fileName);
             if (fileInfo.Length > maxFileSize)
             {
                 return MD5_FOR_OVERSIZED_FILE;
@@ -160,12 +160,12 @@ namespace SyncClipboard.Service
             try
             {
                 Log.Write("calc md5 start");
-                FileStream file = new FileStream(fileName, FileMode.Open);
-                System.Security.Cryptography.MD5 md5Oper = new System.Security.Cryptography.MD5CryptoServiceProvider();
-                byte[] retVal = md5Oper.ComputeHash(file);
+                var file = new FileStream(fileName, FileMode.Open);
+                var md5Oper = System.Security.Cryptography.MD5.Create();
+                var retVal = md5Oper.ComputeHash(file);
                 file.Close();
 
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 for (int i = 0; i < retVal.Length; i++)
                 {
                     sb.Append(retVal[i].ToString("x2"));
@@ -188,7 +188,7 @@ namespace SyncClipboard.Service
             {
                 return () =>
                 {
-                    System.Diagnostics.Process open = new System.Diagnostics.Process();
+                    var open = new System.Diagnostics.Process();
                     open.StartInfo.FileName = "explorer";
                     open.StartInfo.Arguments = "/e,/select," + path;
                     open.Start();

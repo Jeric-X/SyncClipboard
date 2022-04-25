@@ -10,13 +10,9 @@ namespace SyncClipboard.Utility
         int RetryTimes { get; set; }
         int Timeout { get; set; }
 
-        string GetText(string remotefile);
         Task<string> GetTextAsync(string remotefile, int? retryTimes = null, int? intervalTime = null);
-        void PutText(string remotefile, string text);
         Task PutTextAsync(string remotefile, string text, int? retryTimes = null, int? intervalTime = null);
-        void PutFile(string remotefile, string localFilePath);
         Task PutFileAsync(string remotefile, string localFilePath, int? retryTimes = null, int? intervalTime = null);
-        void GetFile(string remotefile, string localFilePath);
         Task GetFileAsync(string remotefile, string localFilePath, int? retryTimes = null, int? intervalTime = null);
         Task<bool> TestAliveAsync();
     }
@@ -93,11 +89,6 @@ namespace SyncClipboard.Utility
             return true;
         }
 
-        public string GetText(string file)
-        {
-            return HttpWeb.GetText(FullUrl(file), _httpPara);
-        }
-
         public async Task<string> GetTextAsync(string remotefile, int? retryTimes, int? intervalTime)
         {
             return await LoopAsync(
@@ -105,11 +96,6 @@ namespace SyncClipboard.Utility
                 retryTimes,
                 intervalTime
             ).ConfigureAwait(false);
-        }
-
-        public void PutText(string file, string text)
-        {
-            HttpWeb.PutText(FullUrl(file), _httpPara, text);
         }
 
         public async Task PutTextAsync(string file, string text, int? retryTimes, int? intervalTime)
@@ -121,11 +107,6 @@ namespace SyncClipboard.Utility
             ).ConfigureAwait(false);
         }
 
-        public void PutFile(string remotefile, string localFilePath)
-        {
-            HttpWeb.PutFile(FullUrl(remotefile), _httpPara, localFilePath);
-        }
-
         public async Task PutFileAsync(string remotefile, string localFilePath, int? retryTimes, int? intervalTime)
         {
             await LoopAsync(
@@ -133,11 +114,6 @@ namespace SyncClipboard.Utility
                 retryTimes,
                 intervalTime
             ).ConfigureAwait(false);
-        }
-
-        public void GetFile(string remotefile, string localFilePath)
-        {
-            HttpWeb.GetFile(FullUrl(remotefile), _httpPara, localFilePath);
         }
 
         public async Task GetFileAsync(string remotefile, string localFilePath, int? retryTimes, int? intervalTime)
@@ -176,7 +152,7 @@ namespace SyncClipboard.Utility
             }
         }
 
-        private async Task<T> LoopAsyncDetail<T>(Func<T> func, int retryTimes, int intervalTime)
+        private static async Task<T> LoopAsyncDetail<T>(Func<T> func, int retryTimes, int intervalTime)
         {
             for (int i = 0; i <= retryTimes; i++)
             {
@@ -194,7 +170,7 @@ namespace SyncClipboard.Utility
             return default;
         }
 
-        private async Task LoopAsyncDetail(Action action, int retryTimes, int intervalTime)
+        private static async Task LoopAsyncDetail(Action action, int retryTimes, int intervalTime)
         {
             for (int i = 0; i <= retryTimes; i++)
             {
@@ -211,12 +187,12 @@ namespace SyncClipboard.Utility
             }
         }
 
-        private async Task<T> RunAsync<T>(Func<T> t)
+        private static async Task<T> RunAsync<T>(Func<T> t)
         {
             return await Task.Run(() => t()).ConfigureAwait(false);
         }
 
-        private async Task RunAsync(Action action)
+        private static async Task RunAsync(Action action)
         {
             await Task.Run(() => action()).ConfigureAwait(false);
         }

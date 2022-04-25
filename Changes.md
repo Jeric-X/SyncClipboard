@@ -1,5 +1,8 @@
 v1.3.9
 - 修复：commandService失效
+- todo: 
+  - 增加win10 toast
+    - 已完成：关机倒计时
 
 v1.3.8
 - 配置文件现在是格式化过的了
