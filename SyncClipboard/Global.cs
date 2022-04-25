@@ -11,12 +11,14 @@ namespace SyncClipboard
         internal static Notifyer Notifyer;
         internal static MainController Menu;
         internal static ServiceManager ServiceManager;
+        internal static string AppUserModelId;
 
         internal static void StartUp()
         {
             StartUpUserConfig();
             StartUpUI();
             LoadGlobalWebDavSession();
+            AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
         }
@@ -31,6 +33,7 @@ namespace SyncClipboard
         internal static void EndUp()
         {
             ServiceManager?.StopAllService();
+            Utility.Notification.Register.UnRegistFromCurrentProcess();
         }
 
         private static void LoadGlobalWebDavSession()

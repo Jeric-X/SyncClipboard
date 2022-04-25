@@ -3,17 +3,13 @@ using System.Threading.Tasks;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using System.Text.Json;
+using SyncClipboard.Service.Command;
 #nullable enable
 namespace SyncClipboard.Service
 {
     internal class CommandService : Service
     {
         private const string COMMAND_FILE = "Command.json";
-        public class Command
-        {
-            public string CommandStr { get; set; } = "";
-            public string Time { get; set; } = "";
-        }
 
         private readonly CancellationTokenSource _cancelSource = new();
         private bool _isError = false;
@@ -42,10 +38,10 @@ namespace SyncClipboard.Service
 
                 try
                 {
-                    Command command = await GetRemoteCommand().ConfigureAwait(false);
+                    CommandInfo command = await GetRemoteCommand().ConfigureAwait(false);
                     if (!string.IsNullOrEmpty(command.CommandStr))
                     {
-                        await ResetRemoteCommand(new Command()).ConfigureAwait(false);
+                        await ResetRemoteCommand(new CommandInfo()).ConfigureAwait(false);
                         await ExecuteCommand(command);
                     }
 
@@ -66,13 +62,13 @@ namespace SyncClipboard.Service
             Log.Write("Command serivce exited");
         }
 
-        private static async Task<Command> GetRemoteCommand()
+        private static async Task<CommandInfo> GetRemoteCommand()
         {
-            Command? command;
+            CommandInfo? command;
             try
             {
                 string str = await Global.WebDav.GetTextAsync(COMMAND_FILE).ConfigureAwait(false);
-                command = JsonSerializer.Deserialize<Command>(str);
+                command = JsonSerializer.Deserialize<CommandInfo>(str);
                 System.ArgumentNullException.ThrowIfNull(command);
             }
             catch
@@ -84,23 +80,19 @@ namespace SyncClipboard.Service
             return command;
         }
 
-        private static Task ExecuteCommand(Command command)
+        private static Task ExecuteCommand(CommandInfo command)
         {
             return Task.Run(() =>
             {
                 if (command.CommandStr == "shutdown")
                 {
-                    var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
-
-                    var process = new System.Diagnostics.Process();
-                    process.StartInfo.FileName = "cmd";
-                    process.StartInfo.Arguments = $@"/k shutdown.exe /s /t {shutdownTime} /c ""use [ shutdown /a ] in {shutdownTime}s to undo shutdown.""";
-                    process.Start();
+                    return new TaskShutdown(command).ExecuteAsync();
                 }
+                return Task.CompletedTask;
             });
         }
 
-        private static async Task ResetRemoteCommand(Command command)
+        private static async Task ResetRemoteCommand(CommandInfo command)
         {
             try
             {
