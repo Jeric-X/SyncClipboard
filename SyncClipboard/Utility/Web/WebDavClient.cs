@@ -3,7 +3,6 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,6 +50,8 @@ namespace SyncClipboard.Utility.Web
             {
                 BaseAddress = new Uri(url?.TrimEnd('/', '\\') + '/' ?? "")
             };
+
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(Http.USER_AGENT);
         }
         private void SetAuthHeader()
         {
@@ -83,10 +84,10 @@ namespace SyncClipboard.Utility.Web
             return httpClient.GetStringAsync(url, AdjustCancelToken(cancelToken));
         }
 
-        public Task PutText(string url, string text, CancellationToken? cancelToken = null)
+        public async Task PutText(string url, string text, CancellationToken? cancelToken = null)
         {
-            var byteArray = Encoding.Default.GetBytes(text);
-            return httpClient.PutAsync(url, new ByteArrayContent(byteArray), AdjustCancelToken(cancelToken));
+            var res = await httpClient.PutAsync(url, new StringContent(text), AdjustCancelToken(cancelToken));
+            res.EnsureSuccessStatusCode();
         }
 
         public Task<Type?> GetJson<Type>(string url, CancellationToken? cancelToken = null)

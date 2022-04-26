@@ -1,9 +1,9 @@
 using System;
-using System.Threading;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Control;
+using SyncClipboard.Utility.Web;
 
 namespace SyncClipboard.Utility
 {
@@ -17,20 +17,20 @@ namespace SyncClipboard.Utility
     # region nextcloud official response defination
     internal class FistResponseJson
     {
-        public class Poll
+        public class CPoll
         {
-            public string token { get; set; } = null;
-            public string endpoint { get; set; } = null;
+            public string Token { get; set; } = null;
+            public string Endpoint { get; set; } = null;
         }
-        public Poll poll { get; set; } = null;
-        public string login { get; set; } = null;
+        public CPoll Poll { get; set; } = null;
+        public string Login { get; set; } = null;
     }
 
     internal class SecondResponse
     {
-        public string server { get; set; } = null;
-        public string loginName { get; set; } = null;
-        public string appPassword { get; set; } = null;
+        public string Server { get; set; } = null;
+        public string LoginName { get; set; } = null;
+        public string AppPassword { get; set; } = null;
     }
 
     #endregion
@@ -41,7 +41,6 @@ namespace SyncClipboard.Utility
         private const string WEBDAV_URL = "remote.php/dav/files";
         private const int VERIFICATION_LIMITED_TIME = 60000;
         private const int INTERVAL_TIME = 1000;
-        private const int TIMEOUT = 10000;
 
         public static async Task<NextcloudCredential> SignInFlowAsync()
         {
@@ -51,19 +50,18 @@ namespace SyncClipboard.Utility
                 return null;
             }
 
-            var fistResponseJson = await GetFirstResponse(server).ConfigureAwait(false);
-            var firstResponse = DecodeJson<FistResponseJson>(fistResponseJson);
+            var firstResponse = await GetFirstResponse(server).ConfigureAwait(false);
             if (firstResponse == null)
             {
                 return null;
             }
 
-            Sys.OpenWithDefaultApp(firstResponse.login);
+            Sys.OpenWithDefaultApp(firstResponse.Login);
 
-            string secondResponseJson = await GetSecondResponse(firstResponse).ConfigureAwait(false);
-            var secondResponse = DecodeJson<SecondResponse>(secondResponseJson);
+            var secondResponse = await GetSecondResponse(firstResponse).ConfigureAwait(false);
             if (secondResponse == null)
             {
+                MessageBox.Show("认证中发生错误：" + Environment.NewLine + "Pelease Login using broswer", "Error");
                 return null;
             }
 
@@ -73,66 +71,49 @@ namespace SyncClipboard.Utility
                 return null;
             }
 
-            return new NextcloudCredential {
-                Username = secondResponse.loginName,
-                Password = secondResponse.appPassword,
-                Url = $"{secondResponse.server}/{WEBDAV_URL}/{secondResponse.loginName}/{path}"
+            return new NextcloudCredential
+            {
+                Username = secondResponse.LoginName,
+                Password = secondResponse.AppPassword,
+                Url = $"{secondResponse.Server}/{WEBDAV_URL}/{secondResponse.LoginName}/{path}"
             };
-    }
+        }
 
-        private static async Task<string> GetFirstResponse(string server)
+        private static async Task<FistResponseJson> GetFirstResponse(string server)
         {
             var loginUrl = server + VERIFICATION_URL;
-            return await Task.Run(() =>
+            try
+            {
+                return await Http.PostTextRecieveJson<FistResponseJson>(loginUrl);
+            }
+            catch (System.Net.WebException)
+            {
+                MessageBox.Show("认证中发生错误：" + Environment.NewLine + "Can not connect to the server", "Error");
+                return null;
+            }
+            catch (UriFormatException)
+            {
+                MessageBox.Show("认证中发生错误：" + Environment.NewLine + "URL format is wrong", "Error");
+                return null;
+            }
+        }
+
+        private static async Task<SecondResponse> GetSecondResponse(FistResponseJson firstResponse)
+        {
+            var url = firstResponse.Poll.Endpoint;
+            for (int i = 0; i < VERIFICATION_LIMITED_TIME / INTERVAL_TIME; i++)
             {
                 try
                 {
-                    return HttpWeb.Post(loginUrl, new HttpPara { Timeout = TIMEOUT });
+                    KeyValuePair<string, string>[] list = { KeyValuePair.Create("token", firstResponse.Poll.Token) };
+                    return await Http.PostTextRecieveJson<SecondResponse>(url, list);
                 }
-                catch (System.Net.WebException)
+                catch
                 {
-                    return "Can not connect to the server";
+                    await Task.Delay(INTERVAL_TIME);
                 }
-                catch (UriFormatException)
-                {
-                    return "URL format is wrong";
-                }
-            }).ConfigureAwait(false);
-        }
-
-        private static async Task<string> GetSecondResponse(FistResponseJson firstResponse)
-        {
-            var url = firstResponse.poll.endpoint;
-            var token = $"token={firstResponse.poll.token}";
-            return await Task.Run(() =>
-            {
-                for (int i = 0; i < VERIFICATION_LIMITED_TIME / INTERVAL_TIME; i++)
-                {
-                    try
-                    {
-                        return HttpWeb.Post(url, new HttpPara { Timeout = TIMEOUT }, token);
-                    }
-                    catch
-                    {
-                        Thread.Sleep(INTERVAL_TIME);
-                    }
-                }
-                return $"认证失败/{VERIFICATION_LIMITED_TIME / 1000}s超时";
-            }).ConfigureAwait(false);
-        }
-
-        public static T DecodeJson<T>(string json)
-        {
-            T firstResponse = default;
-            try
-            {
-                firstResponse = JsonSerializer.Deserialize<T>(json);
             }
-            catch
-            {
-                MessageBox.Show("认证中发生错误：" + System.Environment.NewLine + json?.ToString(), "Error");
-            }
-            return firstResponse;
+            return null;
         }
     }
 }
