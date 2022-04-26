@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,9 +64,18 @@ namespace SyncClipboard.Utility.Web
                 = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
         }
 
-        public Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null)
+        public async Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null)
         {
-            throw new NotImplementedException();
+            using var instream = await httpClient.GetStreamAsync(url);
+            using var fileStrem = new FileStream(localFilePath, FileMode.Create);
+            await instream.CopyToAsync(fileStrem);
+        }
+
+        public async Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null)
+        {
+            using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read);
+            using var streamContent = new StreamContent(fileStream);
+            await httpClient.PutAsync(url, streamContent, AdjustCancelToken(cancelToken));
         }
 
         public Task<string> GetText(string url, CancellationToken? cancelToken = null)
@@ -74,12 +85,8 @@ namespace SyncClipboard.Utility.Web
 
         public Task PutText(string url, string text, CancellationToken? cancelToken = null)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null)
-        {
-            throw new NotImplementedException();
+            var byteArray = Encoding.Default.GetBytes(text);
+            return httpClient.PutAsync(url, new ByteArrayContent(byteArray), AdjustCancelToken(cancelToken));
         }
 
         public Task<Type?> GetJson<Type>(string url, CancellationToken? cancelToken = null)
