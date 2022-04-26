@@ -2,12 +2,14 @@
 using SyncClipboard.Module;
 using SyncClipboard.Service;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 
 namespace SyncClipboard
 {
     internal static class Global
     {
-        internal static IWebDav WebDav;
+        internal static Utility.IWebDav WebDav;
+        internal static Utility.Web.IWebDav WebDavClient;
         internal static Notifyer Notifyer;
         internal static MainController Menu;
         internal static ServiceManager ServiceManager;
@@ -45,6 +47,20 @@ namespace SyncClipboard
                 UserConfig.Config.Program.IntervalTime,
                 UserConfig.Config.Program.RetryTimes,
                 UserConfig.Config.Program.TimeOut
+            );
+
+            WebDavClient = new WebDavClient(UserConfig.Config.SyncService.RemoteURL)
+            {
+                User = UserConfig.Config.SyncService.UserName,
+                Token = UserConfig.Config.SyncService.Password,
+                IntervalTime = UserConfig.Config.Program.IntervalTime,
+                RetryTimes = UserConfig.Config.Program.RetryTimes,
+                Timeout = UserConfig.Config.Program.TimeOut
+            };
+
+            WebDavClient.TestAlive().ContinueWith(
+                (res) => Log.Write("[WebDavClient]" + res.Result.ToString()),
+                System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
             );
 
             WebDav.TestAliveAsync().ContinueWith(

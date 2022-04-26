@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
-using System.Text.Json;
 using SyncClipboard.Service.Command;
 #nullable enable
 namespace SyncClipboard.Service
@@ -67,8 +66,7 @@ namespace SyncClipboard.Service
             CommandInfo? command;
             try
             {
-                string str = await Global.WebDav.GetTextAsync(COMMAND_FILE).ConfigureAwait(false);
-                command = JsonSerializer.Deserialize<CommandInfo>(str);
+                command = await Global.WebDavClient.GetJson<CommandInfo>(COMMAND_FILE);
                 System.ArgumentNullException.ThrowIfNull(command);
             }
             catch
@@ -96,7 +94,7 @@ namespace SyncClipboard.Service
         {
             try
             {
-                await Global.WebDav.PutTextAsync(COMMAND_FILE, JsonSerializer.Serialize(command)).ConfigureAwait(false);
+                await Global.WebDavClient.PutJson(COMMAND_FILE, command);
             }
             catch
             {
