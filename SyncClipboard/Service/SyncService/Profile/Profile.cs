@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+using System.Threading;
 
 namespace SyncClipboard.Service
 {
@@ -16,7 +17,7 @@ namespace SyncClipboard.Service
         public abstract ClipboardType GetProfileType();
         protected abstract DataObject CreateDataObject();
         public abstract string ToolTip();
-        public abstract Task UploadProfileAsync(IWebDav webdav);
+        public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
         public virtual Action ExecuteProfile()
         {
             return null;

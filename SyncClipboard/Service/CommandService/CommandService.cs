@@ -56,7 +56,7 @@ namespace SyncClipboard.Service
                     }
                 }
 
-                await Task.Delay(UserConfig.Config.Program.IntervalTime, cancelToken).ConfigureAwait(false);
+                await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(false);
             }
             Log.Write("Command serivce exited");
         }

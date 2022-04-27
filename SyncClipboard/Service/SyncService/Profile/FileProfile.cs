@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Module;
@@ -55,7 +56,7 @@ namespace SyncClipboard.Service
             return Text;
         }
 
-        public override async Task UploadProfileAsync(IWebDav webdav)
+        public override async Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
         {
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
 
@@ -63,7 +64,7 @@ namespace SyncClipboard.Service
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
-                await webdav.PutFile(remotePath, fullPath);
+                await webdav.PutFile(remotePath, fullPath, cancelToken);
             }
             else
             {
@@ -71,7 +72,7 @@ namespace SyncClipboard.Service
             }
 
             SetMd5(GetMD5HashFromFile(fullPath));
-            await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
+            await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
         }
 
         protected override async Task BeforeSetLocal()

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
@@ -23,7 +23,7 @@ namespace SyncClipboard.Service
             return null;
         }
 
-        public override Task UploadProfileAsync(IWebDav webdav)
+        public override Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
         {
             return Task.CompletedTask;
         }

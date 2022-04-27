@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
@@ -47,9 +48,9 @@ namespace SyncClipboard.Service
             return this.Text.GetHashCode();
         }
 
-        public override async Task UploadProfileAsync(IWebDav webdav)
+        public override async Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
         {
-            await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
+            await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
         }
 
         protected override DataObject CreateDataObject()

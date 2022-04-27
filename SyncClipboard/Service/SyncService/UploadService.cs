@@ -1,16 +1,19 @@
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
     public class UploadService : Service
     {
-        public event ProgramEvent.ProgramEventHandler PushStarted;
-        public event ProgramEvent.ProgramEventHandler PushStopped;
+        public event ProgramEvent.ProgramEventHandler? PushStarted;
+        public event ProgramEvent.ProgramEventHandler? PushStopped;
 
         private const string SERVICE_NAME = "⬆⬆";
-        private bool _isChangingLocal = false;
+        private bool _downServiceChangingNow = false;
 
         protected override void StartService()
         {
@@ -20,6 +23,7 @@ namespace SyncClipboard.Service
         protected override void StopSerivce()
         {
             Global.Notifyer.SetStatusString(SERVICE_NAME, "Stopped.");
+            StopPreviousAndGetNewToken();
         }
 
         public override void RegistEvent()
@@ -54,72 +58,77 @@ namespace SyncClipboard.Service
         public void PullStartedHandler()
         {
             Log.Write("_isChangingLocal set to TRUE");
-            _isChangingLocal = true;
+            _downServiceChangingNow = true;
         }
 
         public void PullStoppedHandler()
         {
             Log.Write("_isChangingLocal set to FALSE");
-            _isChangingLocal = false;
+            _downServiceChangingNow = false;
         }
 
-        private int _uploadQueue = 0;
-        private readonly object _uploadQueueLocker = new object();
-
-        private bool _isUploaderWorking = false;
-        private readonly object _uploaderWorkingLocker = new object();
+        private CancellationTokenSource? _cancelSource;
+        private readonly object _cancelSourceLocker = new();
+        private uint sessionNumber = 0;
 
         private void ClipBoardChangedHandler()
         {
-            if (!UserConfig.Config.SyncService.PushSwitchOn || _isChangingLocal)
+            if (!UserConfig.Config.SyncService.PushSwitchOn || _downServiceChangingNow)
             {
                 return;
             }
 
-            lock(_uploadQueueLocker)
-            {
-                _uploadQueue++;
-            }
-
             ProcessUploadQueue();
+        }
+
+        private CancellationToken StopPreviousAndGetNewToken()
+        {
+            lock (_cancelSourceLocker)
+            {
+                if (_cancelSource?.Token.CanBeCanceled ?? false)
+                {
+                    _cancelSource.Cancel();
+                }
+                _cancelSource = new();
+                return _cancelSource.Token;
+            }
+        }
+
+        private void SetWorkingStartStatus()
+        {
+            Interlocked.Increment(ref sessionNumber);
+            SetUploadingIcon();
+            Global.Notifyer.SetStatusString(SERVICE_NAME, "Uploading.");
+            PushStarted?.Invoke();
+        }
+
+        private void SetWorkingEndStatus()
+        {
+            Interlocked.Decrement(ref sessionNumber);
+            if (sessionNumber == 0)
+            {
+                StopUploadingIcon();
+                Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
+                PushStopped?.Invoke();
+            }
         }
 
         private async void ProcessUploadQueue()
         {
-            lock (_uploaderWorkingLocker)
+            SetWorkingStartStatus();
+            CancellationToken cancelToken = StopPreviousAndGetNewToken();
+            try
             {
-                if (_isUploaderWorking)
-                {
-                    return;
-                }
-                _isUploaderWorking = true;
+                await UploadClipboard(cancelToken);
             }
-
-            lock (_uploadQueueLocker)
+            catch (OperationCanceledException)
             {
-                if (_uploadQueue == 0)
-                {
-                    StopUploadingIcon();
-                    PushStopped?.Invoke();
-                    _isUploaderWorking = false;
-                    return;
-                }
-                Global.Notifyer.SetStatusString(SERVICE_NAME, "Uploading.");
-                SetUploadingIcon();
-                PushStarted?.Invoke();
-                _uploadQueue = 0;
+                Log.Write("Upload Canceled");
             }
-
-            await UploadClipboard().ConfigureAwait(true);
-
-            lock (_uploaderWorkingLocker)
-            {
-                _isUploaderWorking = false;
-            }
-            ProcessUploadQueue();
+            SetWorkingEndStatus();
         }
 
-        private async Task UploadClipboard()
+        private static async Task UploadClipboard(CancellationToken cancelToken)
         {
             var currentProfile = ProfileFactory.CreateFromLocal();
             if (currentProfile == null)
@@ -134,37 +143,41 @@ namespace SyncClipboard.Service
                 return;
             }
 
-            await UploadLoop(currentProfile).ConfigureAwait(true);
+            await UploadLoop(currentProfile, cancelToken);
         }
 
-        private async Task UploadLoop(Profile profile)
+        private static async Task UploadLoop(Profile profile, CancellationToken cancelToken)
         {
-            SyncService.remoteProfilemutex.WaitOne();
-
             string errMessage = "";
             for (int i = 0; i < UserConfig.Config.Program.RetryTimes; i++)
             {
                 try
                 {
-                    await profile.UploadProfileAsync(Global.WebDav).ConfigureAwait(true);
-                    Log.Write("Upload end");
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
-                    SyncService.remoteProfilemutex.ReleaseMutex();
+                    SyncService.remoteProfilemutex.WaitOne();
+                    await profile.UploadProfileAsync(Global.WebDav, cancelToken);
                     return;
                 }
-                catch (System.Exception ex)
+                catch (TaskCanceledException)
+                {
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：超时或取消", true);
+                }
+                catch (Exception ex)
                 {
                     errMessage = ex.Message;
                     Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
                 }
+                finally
+                {
+                    SyncService.remoteProfilemutex.ReleaseMutex();
+                    cancelToken.ThrowIfCancellationRequested();
+                }
 
-                await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(true);
+                await Task.Delay(UserConfig.Config.Program.IntervalTime, cancelToken);
             }
-            SyncService.remoteProfilemutex.ReleaseMutex();
             Global.Notifyer.ToastNotify("上传失败：" + profile.ToolTip(), errMessage);
         }
 
-        private void SetUploadingIcon()
+        private static void SetUploadingIcon()
         {
             System.Drawing.Icon[] icon =
             {
@@ -179,7 +192,7 @@ namespace SyncClipboard.Service
             Global.Notifyer.SetDynamicNotifyIcon(icon, 150);
         }
 
-        private void StopUploadingIcon()
+        private static void StopUploadingIcon()
         {
             Global.Notifyer.StopDynamicNotifyIcon();
         }

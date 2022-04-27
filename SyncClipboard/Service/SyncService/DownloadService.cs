@@ -100,6 +100,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav).ConfigureAwait(true);
+                    Log.Write("[Pull] remote is " + remoteProfile.ToJsonString());
                     await SetRemoteProfileToLocal(remoteProfile).ConfigureAwait(true);
                     Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
                     errorTimes = 0;
