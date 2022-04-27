@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 #nullable enable
 
 namespace SyncClipboard.Module
@@ -14,9 +16,9 @@ namespace SyncClipboard.Module
         public const string UpdateUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";
         public const string ReleaseUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
-        public static void Check()
+        public static async void Check()
         {
-            var newVersion = GetNewestVersion();
+            var newVersion = await GetNewestVersion();
             if (newVersion is null)
             {
                 return;
@@ -35,12 +37,12 @@ namespace SyncClipboard.Module
             }
         }
 
-        private static string? GetNewestVersion()
+        private static async Task<string?> GetNewestVersion()
         {
             string gitHubReply;
             try
             {
-                gitHubReply = HttpWeb.GetText(UpdateUrl, new HttpPara { Timeout = UserConfig.Config.Program.TimeOut });
+                gitHubReply = await Http.HttpClient.GetStringAsync(UpdateUrl);
             }
             catch
             {

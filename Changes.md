@@ -1,5 +1,6 @@
 v1.3.9
 - 修复：commandService失效
+- 使用HttpClient替换了过时的WebRequest
 - todo: 
   - 增加win10 toast
     - 已完成：关机倒计时

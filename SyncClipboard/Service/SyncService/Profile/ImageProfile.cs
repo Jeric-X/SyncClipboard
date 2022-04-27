@@ -3,13 +3,14 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
     public class ImageProfile : FileProfile
     {
-        private const string TEMP_IMAGE_NAME = "SyncClipboardTempImage.bmp";
+        private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
         public ImageProfile(string filepath) : base(filepath)
         {
         }
@@ -20,7 +21,11 @@ namespace SyncClipboard.Service
 
         public static ImageProfile CreateFromImage(Image image)
         {
-            var filePath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, TEMP_IMAGE_NAME);
+            if (!Directory.Exists(TEMP_FOLDER))
+            {
+                Directory.CreateDirectory(TEMP_FOLDER);
+            }
+            var filePath = Path.Combine(TEMP_FOLDER, $"{Path.GetRandomFileName()}.bmp");
             image.Save(filePath);
 
             return new ImageProfile(filePath);

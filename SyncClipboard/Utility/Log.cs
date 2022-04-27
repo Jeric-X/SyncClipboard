@@ -54,7 +54,7 @@ namespace SyncClipboard.Utility
 
         private static void WriteToConsole(string logStr)
         {
-            Console.WriteLine(logStr);
+            Trace.WriteLine(logStr);
         }
     }
 }

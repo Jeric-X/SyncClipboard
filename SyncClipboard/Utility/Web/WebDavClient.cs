@@ -46,10 +46,11 @@ namespace SyncClipboard.Utility.Web
         private readonly HttpClient httpClient;
         public WebDavClient(string url)
         {
-            httpClient = new HttpClient
+            httpClient = new HttpClient();
+            if (Uri.TryCreate(url?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
             {
-                BaseAddress = new Uri(url?.TrimEnd('/', '\\') + '/' ?? "")
-            };
+                httpClient.BaseAddress = uri;
+            }
 
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(Http.USER_AGENT);
         }
@@ -65,11 +66,9 @@ namespace SyncClipboard.Utility.Web
                 = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
         }
 
-        public async Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null)
+        public Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null)
         {
-            using var instream = await httpClient.GetStreamAsync(url);
-            using var fileStrem = new FileStream(localFilePath, FileMode.Create);
-            await instream.CopyToAsync(fileStrem);
+            return httpClient.GetFile(url, localFilePath, AdjustCancelToken(cancelToken));
         }
 
         public async Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null)

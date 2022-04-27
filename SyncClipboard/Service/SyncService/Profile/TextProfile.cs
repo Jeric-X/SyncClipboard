@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -48,7 +49,7 @@ namespace SyncClipboard.Service
 
         public override async Task UploadProfileAsync(IWebDav webdav)
         {
-            await webdav.PutTextAsync(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), 0, 0).ConfigureAwait(false);
+            await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
         }
 
         protected override DataObject CreateDataObject()

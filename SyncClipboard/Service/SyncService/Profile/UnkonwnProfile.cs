@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service

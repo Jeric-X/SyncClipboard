@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Control;
+﻿using System.IO;
+using SyncClipboard.Control;
 using SyncClipboard.Module;
 using SyncClipboard.Service;
 using SyncClipboard.Utility;
@@ -8,8 +9,7 @@ namespace SyncClipboard
 {
     internal static class Global
     {
-        internal static Utility.IWebDav WebDav;
-        internal static Utility.Web.IWebDav WebDavClient;
+        internal static IWebDav WebDav;
         internal static Notifyer Notifyer;
         internal static MainController Menu;
         internal static ServiceManager ServiceManager;
@@ -21,6 +21,10 @@ namespace SyncClipboard
             StartUpUI();
             LoadGlobalWebDavSession();
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
+            if (!Directory.Exists(Env.LOCAL_FILE_FOLDER))
+            {
+                Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
+            }
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
         }
@@ -40,16 +44,7 @@ namespace SyncClipboard
 
         private static void LoadGlobalWebDavSession()
         {
-            WebDav = new WebDav(
-                UserConfig.Config.SyncService.RemoteURL,
-                UserConfig.Config.SyncService.UserName,
-                UserConfig.Config.SyncService.Password,
-                UserConfig.Config.Program.IntervalTime,
-                UserConfig.Config.Program.RetryTimes,
-                UserConfig.Config.Program.TimeOut
-            );
-
-            WebDavClient = new WebDavClient(UserConfig.Config.SyncService.RemoteURL)
+            WebDav = new WebDavClient(UserConfig.Config.SyncService.RemoteURL)
             {
                 User = UserConfig.Config.SyncService.UserName,
                 Token = UserConfig.Config.SyncService.Password,
@@ -58,13 +53,8 @@ namespace SyncClipboard
                 Timeout = UserConfig.Config.Program.TimeOut
             };
 
-            WebDavClient.TestAlive().ContinueWith(
-                (res) => Log.Write("[WebDavClient]" + res.Result.ToString()),
-                System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
-            );
-
-            WebDav.TestAliveAsync().ContinueWith(
-                (res) => Log.Write(res.Result.ToString()),
+            WebDav.TestAlive().ContinueWith(
+                (res) => Log.Write("[WebDavClient] test sucess = " + res.Result.ToString()),
                 System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
             );
         }

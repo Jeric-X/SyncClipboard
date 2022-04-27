@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -62,7 +63,7 @@ namespace SyncClipboard.Service
             if (file.Length <= maxFileSize)
             {
                 Log.Write("PUSH file " + FileName);
-                await webdav.PutFileAsync(remotePath, fullPath, 0, 0);
+                await webdav.PutFile(remotePath, fullPath);
             }
             else
             {
@@ -70,7 +71,7 @@ namespace SyncClipboard.Service
             }
 
             SetMd5(GetMD5HashFromFile(fullPath));
-            await webdav.PutTextAsync(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), 0, 0).ConfigureAwait(false);
+            await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString());
         }
 
         protected override async Task BeforeSetLocal()
@@ -83,14 +84,9 @@ namespace SyncClipboard.Service
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
-            if (!Directory.Exists(SyncService.LOCAL_FILE_FOLDER))
-            {
-                Directory.CreateDirectory(SyncService.LOCAL_FILE_FOLDER);
-            }
-
             try
             {
-                await _webDav.GetFileAsync(remotePath, localPath, 0, 0).ConfigureAwait(false);
+                await _webDav.GetFile(remotePath, localPath);
                 if (GetMD5HashFromFile(localPath) != GetMd5())
                 {
                     Log.Write("[PULL] download erro, md5 wrong");

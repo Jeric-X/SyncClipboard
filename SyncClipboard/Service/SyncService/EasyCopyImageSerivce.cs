@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileFactory;
 
 namespace SyncClipboard.Service
@@ -85,23 +86,20 @@ namespace SyncClipboard.Service
             }
         }
 
-        private Task<string> DownloadImage(string imageUrl)
+        private static async Task<string> DownloadImage(string imageUrl)
         {
-            return Task.Run(() =>
+            try
             {
-                try
-                {
-                    var match = Regex.Match(imageUrl, "[^/]+(?!.*/)");
-                    var localPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, match.Value);
-                    HttpWeb.GetFile(imageUrl, new HttpPara(), localPath);
-                    return localPath;
-                }
-                catch
-                {
-                    Log.Write("Download http image failed");
-                    return null;
-                }
-            });
+                var match = Regex.Match(imageUrl, "[^/]+(?!.*/)");
+                var localPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, match.Value);
+                await Http.HttpClient.GetFile(imageUrl, localPath);
+                return localPath;
+            }
+            catch
+            {
+                Log.Write("Download http image failed");
+                return null;
+            }
         }
 
         public override void RegistEventHandler()

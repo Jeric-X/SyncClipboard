@@ -1,10 +1,10 @@
 using System;
 using System.Net.Http;
-using System.Text;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using System.Text.Json;
 using System.Collections.Generic;
+using System.Threading;
+using System.IO;
 #nullable enable
 
 namespace SyncClipboard.Utility.Web
@@ -32,7 +32,14 @@ namespace SyncClipboard.Utility.Web
             var res = await HttpClient.PostAsync(url, new FormUrlEncodedContent(list));
             res.EnsureSuccessStatusCode();
             return await res.Content.ReadFromJsonAsync<Type>();
-            //new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        }
+
+        public static async Task GetFile(this HttpClient httpClient,
+            string url, string localFilePath, CancellationToken? cancelToken = null)
+        {
+            using var instream = await httpClient.GetStreamAsync(url, cancelToken ?? CancellationToken.None);
+            using var fileStrem = new FileStream(localFilePath, FileMode.Create);
+            await instream.CopyToAsync(fileStrem);
         }
     }
 }

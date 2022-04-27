@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Windows.Forms;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -107,19 +108,15 @@ namespace SyncClipboard.Service
 
         public static async Task<Profile> CreateFromRemote(IWebDav webDav)
         {
-            string httpReply = await webDav.GetTextAsync(SyncService.REMOTE_RECORD_FILE, 0, 0).ConfigureAwait(false);
-            Log.Write("[PULL] json " + httpReply);
-
             JsonProfile jsonProfile;
             try
             {
-                
-                jsonProfile = JsonSerializer.Deserialize<JsonProfile>(httpReply);
+                jsonProfile = await webDav.GetJson<JsonProfile>(SyncService.REMOTE_RECORD_FILE);
             }
-            catch (ArgumentException)
+            catch
             {
-                Log.Write("Existed profile file's format is wrong");
-                throw new Exception("failed to connect remote server");
+                Log.Write("CreateFromRemote failed");
+                throw;
             }
 
             ClipboardType type = StringToClipBoardType(jsonProfile.Type);

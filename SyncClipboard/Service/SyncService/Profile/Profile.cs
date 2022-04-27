@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Windows.Forms;
-using SyncClipboard.Utility;
+using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -54,7 +54,6 @@ namespace SyncClipboard.Service
                 Type = ClipBoardTypeToString(GetProfileType())
             };
 
-            
             return JsonSerializer.Serialize(jsonProfile);
         }
 

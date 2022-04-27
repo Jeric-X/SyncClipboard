@@ -66,7 +66,7 @@ namespace SyncClipboard.Service
             CommandInfo? command;
             try
             {
-                command = await Global.WebDavClient.GetJson<CommandInfo>(COMMAND_FILE);
+                command = await Global.WebDav.GetJson<CommandInfo>(COMMAND_FILE);
                 System.ArgumentNullException.ThrowIfNull(command);
             }
             catch
@@ -94,7 +94,7 @@ namespace SyncClipboard.Service
         {
             try
             {
-                await Global.WebDavClient.PutJson(COMMAND_FILE, command);
+                await Global.WebDav.PutJson(COMMAND_FILE, command);
             }
             catch
             {
