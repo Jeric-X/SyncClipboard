@@ -14,7 +14,6 @@ namespace SyncClipboard.Service
     public class FileProfile : Profile
     {
         protected string fullPath;
-        private static readonly long maxFileSize = UserConfig.Config.SyncService.MaxFileByte;
         private string statusTip = "";
         private readonly IWebDav _webDav;
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
@@ -61,7 +60,7 @@ namespace SyncClipboard.Service
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
 
             var file = new FileInfo(fullPath);
-            if (file.Length <= maxFileSize)
+            if (file.Length <= UserConfig.Config.SyncService.MaxFileByte)
             {
                 Log.Write("PUSH file " + FileName);
                 await webdav.PutFile(remotePath, fullPath, cancelToken);
@@ -147,14 +146,14 @@ namespace SyncClipboard.Service
         private static string GetMD5HashFromFile(string fileName)
         {
             var fileInfo = new FileInfo(fileName);
-            if (fileInfo.Length > maxFileSize)
+            if (fileInfo.Length > UserConfig.Config.SyncService.MaxFileByte)
             {
                 return MD5_FOR_OVERSIZED_FILE;
             }
             try
             {
                 Log.Write("calc md5 start");
-                var file = new FileStream(fileName, FileMode.Open);
+                var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                 var md5Oper = System.Security.Cryptography.MD5.Create();
                 var retVal = md5Oper.ComputeHash(file);
                 file.Close();
