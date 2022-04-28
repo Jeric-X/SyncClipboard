@@ -17,8 +17,8 @@ namespace SyncClipboard
 
         internal static void StartUp()
         {
-            StartUpUserConfig();
             StartUpUI();
+            StartUpUserConfig();
             LoadGlobalWebDavSession();
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             if (!Directory.Exists(Env.LOCAL_FILE_FOLDER))
@@ -33,7 +33,7 @@ namespace SyncClipboard
         {
             ReloadUI();
             LoadGlobalWebDavSession();
-            ServiceManager.LoadAllService();
+            ServiceManager?.LoadAllService();
         }
 
         internal static void EndUp()
@@ -68,13 +68,31 @@ namespace SyncClipboard
 
         private static void ReloadUI()
         {
-            Menu.LoadConfig();
+            Menu?.LoadConfig();
         }
 
         private static void StartUpUserConfig()
         {
-            UserConfig.Load();
             UserConfig.ConfigChanged += ReloadConfig;
+            UserConfig.Load();
+            Menu.AddMenuItem(
+                new string[] { "打开配置文件", "打开配置文件所在位置", "重新载入配置文件" },
+                new System.Action[] {
+                    () => {
+                        var open = new System.Diagnostics.Process();
+                        open.StartInfo.FileName = "notepad";
+                        open.StartInfo.Arguments = Env.FullPath(UserConfig.CONFIG_FILE);
+                        open.Start();
+                    },
+                    () => {
+                        var open = new System.Diagnostics.Process();
+                        open.StartInfo.FileName = "explorer";
+                        open.StartInfo.Arguments = "/e,/select," + Env.FullPath(UserConfig.CONFIG_FILE);
+                        open.Start();
+                    },
+                    () => UserConfig.Load()
+                }
+            );
         }
     }
 }

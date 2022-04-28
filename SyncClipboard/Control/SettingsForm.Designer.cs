@@ -272,7 +272,6 @@
             this.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "设置";
-            this.Load += new System.EventHandler(this.SettingsForm_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);

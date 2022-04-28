@@ -9,7 +9,7 @@ namespace SyncClipboard.Module
     internal static class UserConfig
     {
         internal static event Action ConfigChanged;
-        private const string CONFIG_FILE = "SyncClipboard.json";
+        public const string CONFIG_FILE = "SyncClipboard.json";
         internal class Configuration
         {
             public class CProgram
@@ -77,6 +77,7 @@ namespace SyncClipboard.Module
                 {
                     WriteDefaultConfigFile();
                 }
+                ConfigChanged?.Invoke();
             }
             catch
             {

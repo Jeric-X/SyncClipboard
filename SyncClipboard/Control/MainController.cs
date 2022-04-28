@@ -68,6 +68,7 @@ namespace SyncClipboard.Control
             this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, null) != null;
             this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
+            settingsForm.LoadConfig();
         }
 
         private async void NextCloudLogger_Click(object sender, EventArgs e)
@@ -142,6 +143,25 @@ namespace SyncClipboard.Control
         private void 检查更新MenuItem_Click(object sender, EventArgs e)
         {
             UpdateChecker.Check();
+        }
+
+        public void AddMenuItem(string[] texts, Action[] actions)
+        {
+            if (texts.Length == 0 || texts.Length != actions.Length)
+            {
+                throw new ArgumentException("参数为零或不匹配");
+            }
+
+            int index = 1;
+            contextMenu.Items.Insert(index++, new ToolStripSeparator());
+            for (var i = 0; i < texts.Length; i++, index++) // 包括两条分割线
+            {
+                var iCopy = i;
+                contextMenu.Items.Insert(
+                    index,
+                    new ToolStripMenuItem(texts[i], null, (sender, e) => actions[iCopy]())
+                );
+            }
         }
     }
 }

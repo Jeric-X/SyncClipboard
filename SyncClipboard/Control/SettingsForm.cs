@@ -22,7 +22,7 @@ namespace SyncClipboard
             }
         }
 
-        private void SettingsForm_Load(object sender, EventArgs e)
+        public void LoadConfig()
         {
             this.textBox1.Text = UserConfig.Config.SyncService.RemoteURL;
             this.textBox2.Text = UserConfig.Config.SyncService.UserName;
