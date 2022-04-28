@@ -10,9 +10,9 @@ namespace SyncClipboard.Utility
         private static readonly string LOG_FOLDER = Env.FullPath("Log");
         private static readonly object LOCKER = new();
 
-        public static void Write(string? tag, string str)
+        public static void Write(string? tag, string str, StackFrame? stackFrame = null)
         {
-            StackFrame? sf = new StackTrace(true).GetFrame(1);
+            StackFrame? sf = stackFrame ?? new StackTrace(true).GetFrame(1);
 
             var dayTime = DateTime.Now;
             var fileName = Path.GetFileName(sf?.GetFileName());
@@ -40,7 +40,7 @@ namespace SyncClipboard.Utility
 
         public static void Write(string str)
         {
-            Write(null, str);
+            Write(null, str, new StackTrace(true).GetFrame(1));
         }
 
         public static void WriteToFile(string logStr, string logFile)

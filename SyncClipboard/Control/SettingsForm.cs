@@ -28,8 +28,8 @@ namespace SyncClipboard
             this.textBox2.Text = UserConfig.Config.SyncService.UserName;
             this.textBox3.Text = UserConfig.Config.SyncService.Password;
             this.textBox6.Text = UserConfig.Config.Program.RetryTimes.ToString();
-            this.textBox7.Text = (UserConfig.Config.Program.TimeOut / 1000).ToString();
-            this.textBox8.Text = (UserConfig.Config.Program.IntervalTime / 1000).ToString();
+            this.textBox7.Text = UserConfig.Config.Program.TimeOut.ToString();
+            this.textBox8.Text = UserConfig.Config.Program.IntervalTime.ToString();
         }
 
         private void OKButtenClicked(object sender, EventArgs e)
@@ -54,9 +54,9 @@ namespace SyncClipboard
             UserConfig.Config.SyncService.Password = this.textBox3.Text;
 
             if (this.textBox8.Text != "")
-                UserConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text) * 1000;
+                UserConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text);
             if (this.textBox7.Text != "")
-                UserConfig.Config.Program.TimeOut = Convert.ToInt32(this.textBox7.Text) * 1000;
+                UserConfig.Config.Program.TimeOut = Convert.ToInt32(this.textBox7.Text);
             if (this.textBox6.Text != "")
                 UserConfig.Config.Program.RetryTimes = Convert.ToInt32(this.textBox6.Text);
             UserConfig.Save();

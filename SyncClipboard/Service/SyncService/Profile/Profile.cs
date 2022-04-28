@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 using System.Threading;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
@@ -18,17 +19,15 @@ namespace SyncClipboard.Service
         protected abstract DataObject CreateDataObject();
         public abstract string ToolTip();
         public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
-        public virtual Action ExecuteProfile()
+        public virtual Action? ExecuteProfile()
         {
             return null;
         }
 
-        protected virtual Task BeforeSetLocal() { return Task.CompletedTask; }
+        public virtual Task BeforeSetLocal(CancellationToken cancelToken) { return Task.CompletedTask; }
 
-        public async Task SetLocalClipboard()
+        public void SetLocalClipboard()
         {
-            await BeforeSetLocal().ConfigureAwait(true);
-
             var dataObject = CreateDataObject();
             if (dataObject is null)
             {
@@ -43,12 +42,12 @@ namespace SyncClipboard.Service
 
         static private string ClipBoardTypeToString(ClipboardType type)
         {
-            return Enum.GetName(typeof(ClipboardType), type);
+            return Enum.GetName(typeof(ClipboardType), type) ?? "Undefined";
         }
 
         public string ToJsonString()
         {
-            JsonProfile jsonProfile = new JsonProfile
+            JsonProfile jsonProfile = new()
             {
                 File = FileName,
                 Clipboard = Text,
@@ -88,7 +87,7 @@ namespace SyncClipboard.Service
             return !(lhs == rhs);
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object? obj)
         {
             return true;
         }

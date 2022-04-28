@@ -14,9 +14,9 @@ namespace SyncClipboard.Module
         {
             public class CProgram
             {
-                public int IntervalTime { get; set; } = 3000;
+                public int IntervalTime { get; set; } = 3;
                 public int RetryTimes { get; set; } = 3;
-                public int TimeOut { get; set; } = 10000;
+                public int TimeOut { get; set; } = 10;
             }
 
             public class CSyncService

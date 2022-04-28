@@ -4,10 +4,10 @@ using System;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
 using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
@@ -15,10 +15,10 @@ namespace SyncClipboard.Service
     {
         public struct LocalClipboard
         {
-            public string Text;
-            public string Html;
-            public Image Image;
-            public string[] Files;
+            public string? Text;
+            public string? Html;
+            public Image? Image;
+            public string[]? Files;
         }
 
         public static readonly string[] imageExtensions = { ".jpg", ".jpeg", ".gif", ".bmp", ".png" };
@@ -73,7 +73,7 @@ namespace SyncClipboard.Service
 
         private static LocalClipboard GetLocalClipboard()
         {
-            LocalClipboard localClipboard = new LocalClipboard();
+            LocalClipboard localClipboard = new();
 
             for (int i = 0; i < 3; i++)
             {
@@ -106,12 +106,12 @@ namespace SyncClipboard.Service
             return localClipboard;
         }
 
-        public static async Task<Profile> CreateFromRemote(IWebDav webDav)
+        public static async Task<Profile> CreateFromRemote(IWebDav webDav, CancellationToken cancelToken)
         {
-            JsonProfile jsonProfile;
+            JsonProfile? jsonProfile;
             try
             {
-                jsonProfile = await webDav.GetJson<JsonProfile>(SyncService.REMOTE_RECORD_FILE);
+                jsonProfile = await webDav.GetJson<JsonProfile>(SyncService.REMOTE_RECORD_FILE, cancelToken);
             }
             catch
             {
@@ -119,6 +119,7 @@ namespace SyncClipboard.Service
                 throw;
             }
 
+            ArgumentNullException.ThrowIfNull(jsonProfile);
             ClipboardType type = StringToClipBoardType(jsonProfile.Type);
             return GetProfileBy(type, jsonProfile, webDav);
         }
@@ -141,7 +142,7 @@ namespace SyncClipboard.Service
                     return new ImageProfile(jsonProfile, webDav);
             }
 
-            return null;
+            return new UnkonwnProfile();
         }
     }
 }

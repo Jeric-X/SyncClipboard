@@ -39,7 +39,7 @@ namespace SyncClipboard.Utility.Web
         {
             using var instream = await httpClient.GetStreamAsync(url, cancelToken ?? CancellationToken.None);
             using var fileStrem = new FileStream(localFilePath, FileMode.Create);
-            await instream.CopyToAsync(fileStrem);
+            await instream.CopyToAsync(fileStrem, cancelToken ?? CancellationToken.None);
         }
     }
 }

@@ -3,50 +3,85 @@ using System.Threading;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using System.Threading.Tasks;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
     public class DownloadService : Service
     {
-        public event ProgramEvent.ProgramEventHandler PullStarted;
-        public event ProgramEvent.ProgramEventHandler PullStopped;
+        public event ProgramEvent.ProgramEventHandler? PullStarted;
+        public event ProgramEvent.ProgramEventHandler? PullStopped;
 
         private const string SERVICE_NAME = "⬇⬇";
-        private bool _isChangingRemote = false;
+        private const string LOG_TAG = "PULL";
+        private bool _pullSwitchOn = false;
+        private readonly object _pullSwitchLocker = new();
 
         public override void Load()
         {
             if (UserConfig.Config.SyncService.PullSwitchOn)
             {
-                this.StartService();
+                SwitchOnPullLoop();
             }
             else
             {
-                this.StopSerivce();
+                SwitchOffPullLoop();
             }
         }
 
-        private CancellationTokenSource _cancelSource;
-        private CancellationToken _cancelToken;
+        private CancellationTokenSource? _cancelSource;
 
         protected override void StartService()
         {
-            if (UserConfig.Config.SyncService.PullSwitchOn)
-            {
-                _cancelSource = new CancellationTokenSource();
-                _cancelToken = _cancelSource.Token;
-                StartServiceAsync();
-            }
-        }
-
-        protected async void StartServiceAsync()
-        {
-            await PullLoop().ConfigureAwait(true);
+            Load();
         }
 
         protected override void StopSerivce()
         {
+            SwitchOffPullLoop();
+        }
+
+        private void SwitchOnPullLoop()
+        {
+            lock (_pullSwitchLocker)
+            {
+                if (!_pullSwitchOn)
+                {
+                    _pullSwitchOn = true;
+                    StartPullLoop();
+                }
+            }
+        }
+
+        private void SwitchOffPullLoop()
+        {
+            lock (_pullSwitchLocker)
+            {
+                if (_pullSwitchOn)
+                {
+                    _pullSwitchOn = false;
+                    StopPullLoop();
+                }
+            }
+        }
+
+        private void StartPullLoop()
+        {
+            _cancelSource = new CancellationTokenSource();
+            try
+            {
+                _ = PullLoop(_cancelSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Write(LOG_TAG, "Canceled");
+            }
+        }
+
+        private void StopPullLoop()
+        {
             _cancelSource?.Cancel();
+            _cancelSource = null;
         }
 
         public override void RegistEventHandler()
@@ -63,14 +98,15 @@ namespace SyncClipboard.Service
 
         public void PushStartedHandler()
         {
-            Log.Write("_isChangingRemote set to TRUE");
-            _isChangingRemote = true;
+            Log.Write(LOG_TAG, "due to upload service start, cancel");
+            StopPullLoop();
         }
 
         public void PushStoppedHandler()
         {
-            Log.Write("_isChangingRemote set to FALSE");
-            _isChangingRemote = false;
+            Log.Write(LOG_TAG, "due to upload service stop, cancel");
+            StopPullLoop();
+            StartPullLoop();
         }
 
         public override void RegistEvent()
@@ -88,44 +124,54 @@ namespace SyncClipboard.Service
             Event.RegistEvent(SyncService.PULL_STOP_ENENT_NAME, pullStoppedEvent);
         }
 
-        private async Task PullLoop()
+        private static void SetStatusOnError(ref int errorTimes, Exception ex)
+        {
+            errorTimes++;
+            Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
+
+            Log.Write(ex.ToString());
+            if (errorTimes == UserConfig.Config.Program.RetryTimes)
+            {
+                Global.Notifyer.ToastNotify("剪切板同步失败", ex.Message);
+            }
+        }
+
+        private async Task PullLoop(CancellationToken cancelToken)
         {
             int errorTimes = 0;
-            while (!_cancelToken.IsCancellationRequested)
+            while (!cancelToken.IsCancellationRequested)
             {
                 Global.Notifyer.SetStatusString(SERVICE_NAME, "Reading remote profile.");
-                SyncService.remoteProfilemutex.WaitOne();
 
-                Profile remoteProfile = null;
                 try
                 {
-                    remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav).ConfigureAwait(true);
-                    Log.Write("[Pull] remote is " + remoteProfile.ToJsonString());
-                    await SetRemoteProfileToLocal(remoteProfile).ConfigureAwait(true);
+                    SyncService.remoteProfilemutex.WaitOne();
+                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken).ConfigureAwait(true);
+                    Log.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
+
+                    await SetRemoteProfileToLocal(remoteProfile, cancelToken).ConfigureAwait(true);
                     Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
                     errorTimes = 0;
                 }
+                catch (TaskCanceledException)
+                {
+                    cancelToken.ThrowIfCancellationRequested();
+                    SetStatusOnError(ref errorTimes, new Exception("请求超时"));
+                }
                 catch (Exception ex)
                 {
-                    errorTimes++;
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
-
-                    Log.Write(ex.ToString());
-                    if (errorTimes == UserConfig.Config.Program.RetryTimes)
-                    {
-                        Global.Notifyer.ToastNotify("剪切板同步失败", ex.Message);
-                    }
+                    SetStatusOnError(ref errorTimes, ex);
                 }
                 finally
                 {
                     SyncService.remoteProfilemutex.ReleaseMutex();
                 }
 
-                await Task.Delay(UserConfig.Config.Program.IntervalTime).ConfigureAwait(true);
+                await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken).ConfigureAwait(true);
             }
         }
 
-        private async Task SetRemoteProfileToLocal(Profile remoteProfile)
+        private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
         {
             Profile localProfile = ProfileFactory.CreateFromLocal();
             if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
@@ -134,28 +180,24 @@ namespace SyncClipboard.Service
                 return;
             }
 
-            Log.Write("[PULL] isChangingRemote = " + _isChangingRemote.ToString());
-            if (!_isChangingRemote && remoteProfile != localProfile)
+            if (remoteProfile != localProfile)
             {
-                Thread.Sleep(200);
-                if (!_isChangingRemote)
-                {
-                    SetDownloadingIcon();
-                    PullStarted?.Invoke();
+                SetDownloadingIcon();
+                await remoteProfile.BeforeSetLocal(cancelToken);
 
-                    await remoteProfile.SetLocalClipboard().ConfigureAwait(true);
+                PullStarted?.Invoke();
+                remoteProfile.SetLocalClipboard();
 
-                    Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                    Global.Notifyer.ToastNotify("剪切板同步成功", remoteProfile.ToolTip(), remoteProfile.ExecuteProfile());
-                    StopDownloadingIcon();
+                Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                Global.Notifyer.ToastNotify("剪切板同步成功", remoteProfile.ToolTip(), remoteProfile.ExecuteProfile());
+                StopDownloadingIcon();
 
-                    Thread.Sleep(50);
-                    PullStopped?.Invoke();
-                }
+                await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
+                PullStopped?.Invoke();
             }
         }
 
-        private void SetDownloadingIcon()
+        private static void SetDownloadingIcon()
         {
             System.Drawing.Icon[] icon =
             {
@@ -170,7 +212,7 @@ namespace SyncClipboard.Service
             Global.Notifyer.SetDynamicNotifyIcon(icon, 150);
         }
 
-        private void StopDownloadingIcon()
+        private static void StopDownloadingIcon()
         {
             Global.Notifyer.StopDynamicNotifyIcon();
         }

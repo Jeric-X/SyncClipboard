@@ -13,7 +13,8 @@ namespace SyncClipboard.Service
         public event ProgramEvent.ProgramEventHandler? PushStopped;
 
         private const string SERVICE_NAME = "⬆⬆";
-        private bool _downServiceChangingNow = false;
+        private const string LOG_TAG = "PUSH";
+        private bool _downServiceChangingLocal = false;
 
         protected override void StartService()
         {
@@ -58,13 +59,13 @@ namespace SyncClipboard.Service
         public void PullStartedHandler()
         {
             Log.Write("_isChangingLocal set to TRUE");
-            _downServiceChangingNow = true;
+            _downServiceChangingLocal = true;
         }
 
         public void PullStoppedHandler()
         {
             Log.Write("_isChangingLocal set to FALSE");
-            _downServiceChangingNow = false;
+            _downServiceChangingLocal = false;
         }
 
         private CancellationTokenSource? _cancelSource;
@@ -73,7 +74,7 @@ namespace SyncClipboard.Service
 
         private void ClipBoardChangedHandler()
         {
-            if (!UserConfig.Config.SyncService.PushSwitchOn || _downServiceChangingNow)
+            if (!UserConfig.Config.SyncService.PushSwitchOn || _downServiceChangingLocal)
             {
                 return;
             }
@@ -123,7 +124,7 @@ namespace SyncClipboard.Service
             }
             catch (OperationCanceledException)
             {
-                Log.Write("Upload Canceled");
+                Log.Write("Upload", "Upload Canceled");
             }
             SetWorkingEndStatus();
         }
@@ -131,13 +132,8 @@ namespace SyncClipboard.Service
         private static async Task UploadClipboard(CancellationToken cancelToken)
         {
             var currentProfile = ProfileFactory.CreateFromLocal();
-            if (currentProfile == null)
-            {
-                Log.Write("Local profile type is null, stop upload.");
-                return;
-            }
 
-            if (currentProfile == null || currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
                 Log.Write("Local profile type is Unkown, stop upload.");
                 return;
@@ -154,12 +150,18 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    await profile.UploadProfileAsync(Global.WebDav, cancelToken);
+                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken);
+                    if (remoteProfile != profile)
+                    {
+                        await profile.UploadProfileAsync(Global.WebDav, cancelToken);
+                    }
+                    Log.Write(LOG_TAG, "remote is same as local, won't push");
                     return;
                 }
                 catch (TaskCanceledException)
                 {
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：超时或取消", true);
+                    cancelToken.ThrowIfCancellationRequested();
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
                 }
                 catch (Exception ex)
                 {
@@ -169,10 +171,9 @@ namespace SyncClipboard.Service
                 finally
                 {
                     SyncService.remoteProfilemutex.ReleaseMutex();
-                    cancelToken.ThrowIfCancellationRequested();
                 }
 
-                await Task.Delay(UserConfig.Config.Program.IntervalTime, cancelToken);
+                await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
             }
             Global.Notifyer.ToastNotify("上传失败：" + profile.ToolTip(), errMessage);
         }

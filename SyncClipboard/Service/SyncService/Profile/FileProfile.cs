@@ -75,9 +75,14 @@ namespace SyncClipboard.Service
             await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
         }
 
-        protected override async Task BeforeSetLocal()
+        public override async Task BeforeSetLocal(CancellationToken cancelToken)
         {
             if (!string.IsNullOrEmpty(fullPath))
+            {
+                return;
+            }
+
+            if (_webDav is null)
             {
                 return;
             }
@@ -85,24 +90,16 @@ namespace SyncClipboard.Service
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
-            try
+            await _webDav.GetFile(remotePath, localPath, cancelToken);
+            if (GetMD5HashFromFile(localPath) != GetMd5())
             {
-                await _webDav.GetFile(remotePath, localPath);
-                if (GetMD5HashFromFile(localPath) != GetMd5())
-                {
-                    Log.Write("[PULL] download erro, md5 wrong");
-                    statusTip = "Downloading erro, md5 wrong";
-                    return;
-                }
-                Log.Write("[PULL] download OK " + localPath);
-                fullPath = localPath;
-                statusTip = FileName;
+                Log.Write("[PULL] download erro, md5 wrong");
+                statusTip = "Downloading erro, md5 wrong";
+                throw new Exception("FileProfile download check md5 failed");
             }
-            catch (System.Exception ex)
-            {
-                statusTip = "";
-                Log.Write("[PULL] download file failed " + ex.Message);
-            }
+            Log.Write("[PULL] download OK " + localPath);
+            fullPath = localPath;
+            statusTip = FileName;
         }
 
         public override string ToolTip()

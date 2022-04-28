@@ -17,7 +17,7 @@ namespace SyncClipboard.Utility.Web
         private int? _timeout;
         public int Timeout
         {
-            get => _timeout ?? (int)httpClient.Timeout.TotalMilliseconds;
+            get => _timeout ?? (int)httpClient.Timeout.TotalSeconds;
             set => _timeout = value;
         }
 
@@ -112,7 +112,7 @@ namespace SyncClipboard.Utility.Web
         {
             return CancellationTokenSource.CreateLinkedTokenSource(
                 cancelToken ?? CancellationToken.None,
-                new CancellationTokenSource(TimeSpan.FromMilliseconds(Timeout)).Token
+                new CancellationTokenSource(TimeSpan.FromSeconds(Timeout)).Token
             ).Token;
         }
 
