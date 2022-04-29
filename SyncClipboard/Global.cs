@@ -75,7 +75,7 @@ namespace SyncClipboard
         {
             UserConfig.ConfigChanged += ReloadConfig;
             UserConfig.Load();
-            Menu.AddMenuItem(
+            Menu.AddMenuItemGroup(
                 new string[] { "打开配置文件", "打开配置文件所在位置", "重新载入配置文件" },
                 new System.Action[] {
                     () => {

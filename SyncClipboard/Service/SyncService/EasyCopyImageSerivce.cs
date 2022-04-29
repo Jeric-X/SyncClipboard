@@ -1,18 +1,39 @@
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileFactory;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
     public class EasyCopyImageSerivce : Service
     {
+        private event Action<bool>? SwitchChanged;
+        private const string SERVICE_NAME = "💠";
+        private const string LOG_TAG = "EASY IMAGE";
         protected override void StartService()
         {
             Log.Write("EasyCopyImageSerivce started");
+            SwitchChanged += Global.Menu.AddMenuItemGroup(
+                new string[] { "Easy Copy Image" },
+                new Action<bool>[] {
+                    (switchOn) => {
+                        UserConfig.Config.SyncService.EasyCopyImageSwitchOn = switchOn;
+                        UserConfig.Save();
+                    }
+                }
+            )[0];
+            SwitchChanged?.Invoke(UserConfig.Config.SyncService.EasyCopyImageSwitchOn);
+        }
+
+        public override void Load()
+        {
+            SwitchChanged?.Invoke(UserConfig.Config.SyncService.EasyCopyImageSwitchOn);
         }
 
         protected override void StopSerivce()
@@ -20,29 +41,56 @@ namespace SyncClipboard.Service
             Log.Write("EasyCopyImageSerivce stopped");
         }
 
-        private void ClipBoardChangedHandler()
+        private CancellationTokenSource? _cancelSource;
+        private readonly object _cancelSourceLocker = new();
+
+        private CancellationToken StopPreviousAndGetNewToken()
         {
-            if (UserConfig.Config.SyncService.EasyCopyImageSwitchOn)
+            lock (_cancelSourceLocker)
             {
-                ProcessClipboard();
+                if (_cancelSource?.Token.CanBeCanceled ?? false)
+                {
+                    _cancelSource.Cancel();
+                }
+                _cancelSource = new();
+                return _cancelSource.Token;
             }
         }
 
-        private static async void ProcessClipboard()
+        private async void ClipBoardChangedHandler()
+        {
+            if (UserConfig.Config.SyncService.EasyCopyImageSwitchOn)
+            {
+                Global.Notifyer.SetStatusString(SERVICE_NAME, "running");
+                CancellationToken cancelToken = StopPreviousAndGetNewToken();
+                try
+                {
+                    await ProcessClipboard(cancelToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    Log.Write(LOG_TAG, "Upload canceled because newer image");
+                }
+                Global.Notifyer.SetStatusString(SERVICE_NAME, "running");
+            }
+        }
+
+        private static async Task ProcessClipboard(CancellationToken cancellationToken)
         {
             var profile = CreateFromLocal(out var localClipboard);
-            if (profile.GetProfileType() != ProfileType.ClipboardType.Image)
+            if (profile.GetProfileType() != ProfileType.ClipboardType.Image || !NeedAdjust(localClipboard))
             {
                 return;
             }
 
-            if (!string.IsNullOrEmpty(localClipboard.Html)) // 无html，通常是纯复制图片，剪切板中只有bitmap
+            if (!string.IsNullOrEmpty(localClipboard.Html))
             {
                 var match = Regex.Match(localClipboard.Html, @"<!--StartFragment--><img src=""(http[s]?://.*)""/><!--EndFragment-->");
                 if (match.Success) // 是从浏览器复制的图片
                 {
                     Log.Write("http image url: " + match.Result("$1"));
-                    var localPath = await DownloadImage(match.Result("$1"));
+                    Global.Notifyer.SetStatusString(SERVICE_NAME, "downloading");
+                    var localPath = await DownloadImage(match.Result("$1"), cancellationToken);
                     if (localPath is null || !SupportsImage(localPath))
                     {
                         return;
@@ -51,7 +99,7 @@ namespace SyncClipboard.Service
                 }
             }
 
-            await AdjustClipboard(profile, localClipboard);
+            await AdjustClipboard(profile, cancellationToken);
         }
 
         private static bool SupportsImage(string fileName)
@@ -67,32 +115,34 @@ namespace SyncClipboard.Service
             return false;
         }
 
-        private static async Task AdjustClipboard(Profile profile, LocalClipboard localClipboard)
+        private static bool NeedAdjust(LocalClipboard localClipboard)
         {
-            if (localClipboard.Files is null || localClipboard.Html is null || localClipboard.Image is null)
+            return localClipboard.Files is null || localClipboard.Html is null || localClipboard.Image is null;
+        }
+
+        private static async Task AdjustClipboard(Profile profile, CancellationToken cancellationToken)
+        {
+            for (int i = 0; i < 3; i++)
             {
-                for (int i = 0; i < 3; i++)
+                try
                 {
-                    try
-                    {
-                        profile.SetLocalClipboard();
-                        break;
-                    }
-                    catch
-                    {
-                        await Task.Delay(50);
-                    }
+                    profile.SetLocalClipboard();
+                    break;
+                }
+                catch
+                {
+                    await Task.Delay(50, cancellationToken);
                 }
             }
         }
 
-        private static async Task<string> DownloadImage(string imageUrl)
+        private static async Task<string?> DownloadImage(string imageUrl, CancellationToken cancellationToken)
         {
             try
             {
                 var match = Regex.Match(imageUrl, "[^/]+(?!.*/)");
                 var localPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, match.Value);
-                await Http.HttpClient.GetFile(imageUrl, localPath);
+                await Http.HttpClient.GetFile(imageUrl, localPath, cancellationToken);
                 return localPath;
             }
             catch

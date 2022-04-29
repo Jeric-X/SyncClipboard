@@ -9,13 +9,25 @@ namespace SyncClipboard.Service
 {
     internal class CommandService : Service
     {
+        private event Action<bool>? SwitchChanged;
         private const string COMMAND_FILE = "Command.json";
-        private const string LOG_TAG = "Command.json";
+        private const string LOG_TAG = "Command";
         private readonly CancellationTokenSource _cancelSource = new();
         private bool _isError = false;
 
         protected override void StartService()
         {
+            SwitchChanged += Global.Menu.AddMenuItemGroup(
+                new string[] { "Remote Command" },
+                new Action<bool>[] {
+                    (switchOn) => {
+                        UserConfig.Config.CommandService.SwitchOn = switchOn;
+                        UserConfig.Save();
+                    }
+                }
+            )[0];
+            SwitchChanged?.Invoke(UserConfig.Config.CommandService.SwitchOn);
+
             try
             {
                 StartServiceAsync(_cancelSource.Token);
@@ -26,6 +38,11 @@ namespace SyncClipboard.Service
             }
         }
 
+        public override void Load()
+        {
+            SwitchChanged?.Invoke(UserConfig.Config.CommandService.SwitchOn);
+        }
+
         protected override void StopSerivce()
         {
             _cancelSource?.Cancel();
@@ -33,26 +50,28 @@ namespace SyncClipboard.Service
 
         private async void StartServiceAsync(CancellationToken cancelToken)
         {
-            while (UserConfig.Config.CommandService.SwitchOn)
+            while (true)
             {
-                try
+                if (UserConfig.Config.CommandService.SwitchOn)
                 {
-                    CommandInfo command = await GetRemoteCommand();
-                    if (!string.IsNullOrEmpty(command.CommandStr))
+                    try
                     {
-                        await ResetRemoteCommand(new CommandInfo());
-                        await ExecuteCommand(command);
+                        CommandInfo command = await GetRemoteCommand();
+                        if (!string.IsNullOrEmpty(command.CommandStr))
+                        {
+                            await ResetRemoteCommand(new CommandInfo());
+                            await ExecuteCommand(command);
+                        }
+                        _isError = false;
                     }
-
-                    _isError = false;
-                }
-                catch (Exception ex)
-                {
-                    if (!_isError)
+                    catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
-                        Global.Notifyer.ToastNotify("CommandService failed", ex.ToString());
-                        _isError = true;
+                        if (!_isError)
+                        {
+                            Console.WriteLine(ex.Message);
+                            Global.Notifyer.ToastNotify("CommandService failed", ex.ToString());
+                            _isError = true;
+                        }
                     }
                 }
 

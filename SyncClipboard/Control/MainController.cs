@@ -18,7 +18,7 @@ namespace SyncClipboard.Control
         private System.Windows.Forms.ToolStripMenuItem 检查更新MenuItem;
         private System.Windows.Forms.ToolStripMenuItem nextCloudLogger;
 
-        private readonly SettingsForm settingsForm = new SettingsForm();
+        private readonly SettingsForm settingsForm = new();
         private bool isSttingsFormExist = false;
 
         public MainController()
@@ -145,23 +145,65 @@ namespace SyncClipboard.Control
             UpdateChecker.Check();
         }
 
-        public void AddMenuItem(string[] texts, Action[] actions)
+        private int _index = 3;
+        public void AddMenuItemGroup(string[] texts, Action[] actions)
         {
-            if (texts.Length == 0 || texts.Length != actions.Length)
+            if (texts.Length == 0)
             {
-                throw new ArgumentException("参数为零或不匹配");
+                throw new ArgumentException("参数为零");
             }
 
-            int index = 1;
-            contextMenu.Items.Insert(index++, new ToolStripSeparator());
-            for (var i = 0; i < texts.Length; i++, index++) // 包括两条分割线
+            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
+            for (var i = 0; i < texts.Length; i++)
             {
                 var iCopy = i;
-                contextMenu.Items.Insert(
-                    index,
-                    new ToolStripMenuItem(texts[i], null, (sender, e) => actions[iCopy]())
-                );
+                AddMenuItem(texts[i], (_) => actions[iCopy](), false);
             }
+        }
+
+        public Action<bool>[] AddMenuItemGroup(string[] texts, Action<bool>[] actions, bool[] withCheckBox)
+        {
+            if (texts.Length == 0)
+            {
+                throw new ArgumentException("参数为零");
+            }
+
+            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
+
+            var setters = new Action<bool>[texts.Length];
+            for (var i = 0; i < texts.Length; i++)
+            {
+                setters[i] = AddMenuItem(texts[i], actions[i], withCheckBox[i]);
+            }
+            return setters;
+        }
+
+        public Action<bool>[] AddMenuItemGroup(string[] texts, Action<bool>[] actions)
+        {
+            if (texts.Length == 0)
+            {
+                throw new ArgumentException("参数为零");
+            }
+
+            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
+
+            var setters = new Action<bool>[texts.Length];
+            for (var i = 0; i < texts.Length; i++)
+            {
+                setters[i] = AddMenuItem(texts[i], actions[i], true);
+            }
+            return setters;
+        }
+
+        private Action<bool> AddMenuItem(string texts, Action<bool> actions, bool withCheckBox)
+        {
+            var item = new ToolStripMenuItem(texts)
+            {
+                CheckOnClick = withCheckBox
+            };
+            item.Click += (sender, e) => actions(item.Checked);
+            contextMenu.Items.Insert(_index++, item);
+            return (status) => item.Checked = status;
         }
     }
 }
