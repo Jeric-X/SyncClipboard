@@ -3,8 +3,10 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
@@ -36,9 +38,9 @@ namespace SyncClipboard.Service
             return ClipboardType.Image;
         }
 
-        private void SetBitmap(DataObject dataObject, string imagePath)
+        private static void SetBitmap(DataObject dataObject, string imagePath)
         {
-            FileStream fileStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            FileStream fileStream = new(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             byte[] bytes = new byte[fileStream.Length];
             fileStream.Read(bytes, 0, bytes.Length);
             fileStream.Close();
@@ -51,7 +53,7 @@ namespace SyncClipboard.Service
             dataObject.SetData(DataFormats.Bitmap, bitmap);
         }
 
-        private void SetHtml(DataObject dataObject, string imagePath)
+        private static void SetHtml(DataObject dataObject, string imagePath)
         {
             string html = $@"<img src=""file:///{imagePath}"">";
             string clipboardHtml = ClipboardHtmlBuilder.GetClipboardHtml(html);
@@ -65,14 +67,14 @@ namespace SyncClipboard.Service
 </EditElement>
 </QQRichEditFormat>";
 
-        private void SetQqFormat(DataObject dataObject, string imagePath)
+        private static void SetQqFormat(DataObject dataObject, string imagePath)
         {
             string clipboardQq = clipboardQqFormat.Replace("<<<<<<", imagePath);
-            MemoryStream ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(clipboardQq));
+            MemoryStream ms = new(System.Text.Encoding.UTF8.GetBytes(clipboardQq));
             dataObject.SetData("QQ_Unicode_RichEdit_Format", ms);
         }
 
-        protected override DataObject CreateDataObject()
+        protected override DataObject? CreateDataObject()
         {
             var dataObject = base.CreateDataObject();
             if (dataObject is null)
@@ -80,6 +82,7 @@ namespace SyncClipboard.Service
                 return null;
             }
 
+            ArgumentNullException.ThrowIfNull(fullPath);
             SetHtml(dataObject, fullPath);
             SetQqFormat(dataObject, fullPath);
             SetBitmap(dataObject, fullPath);
@@ -87,15 +90,10 @@ namespace SyncClipboard.Service
             return dataObject;
         }
 
-        public override Action ExecuteProfile()
+        protected override void AfterSetLocal()
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            if (path != null)
-            {
-                return () => Sys.OpenWithDefaultApp(path);
-            }
-
-            return null;
+            Toast.SendImage("图片同步成功", FileName, new Uri(path), (_) => Sys.OpenWithDefaultApp(path));
         }
     }
 }

@@ -12,5 +12,15 @@ namespace SyncClipboard.Utility.Notification
             Handler.AddHandler(arg, callBack);
             return content.AddButton(button.AddArgument("", arg));
         }
+
+        public static ToastContentBuilder AddArgument(
+            this ToastContentBuilder content, string arg, Action<string>? callBack)
+        {
+            if (callBack is not null)
+            {
+                Handler.AddHandler(arg, callBack);
+            }
+            return content.AddArgument("", arg);
+        }
     }
 }

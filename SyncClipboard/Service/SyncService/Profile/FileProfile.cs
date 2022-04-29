@@ -6,21 +6,23 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
     public class FileProfile : Profile
     {
-        protected string fullPath;
+        protected string? fullPath;
         private string statusTip = "";
-        private readonly IWebDav _webDav;
+        private readonly IWebDav? _webDav;
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
 
         public FileProfile(string file)
         {
-            FileName = System.IO.Path.GetFileName(file);
+            FileName = Path.GetFileName(file);
             fullPath = file;
         }
 
@@ -59,6 +61,7 @@ namespace SyncClipboard.Service
         {
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
 
+            ArgumentNullException.ThrowIfNull(fullPath);
             var file = new FileInfo(fullPath);
             if (file.Length <= UserConfig.Config.SyncService.MaxFileByte)
             {
@@ -106,7 +109,7 @@ namespace SyncClipboard.Service
             return statusTip;
         }
 
-        protected override DataObject CreateDataObject()
+        protected override DataObject? CreateDataObject()
         {
             if (string.IsNullOrEmpty(fullPath))
             {
@@ -163,12 +166,12 @@ namespace SyncClipboard.Service
             }
         }
 
-        public override Action ExecuteProfile()
+        public Action<string>? OpenInExplorer()
         {
             var path = fullPath ?? GetTempLocalFilePath();
             if (path != null)
             {
-                return () =>
+                return (_) =>
                 {
                     var open = new System.Diagnostics.Process();
                     open.StartInfo.FileName = "explorer";
@@ -178,6 +181,11 @@ namespace SyncClipboard.Service
             }
 
             return null;
+        }
+
+        protected override void AfterSetLocal()
+        {
+            Toast.SendText("文件同步成功", FileName, OpenInExplorer());
         }
     }
 }

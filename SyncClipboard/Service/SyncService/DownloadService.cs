@@ -3,6 +3,7 @@ using System.Threading;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using System.Threading.Tasks;
+using SyncClipboard.Utility.Notification;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -106,7 +107,10 @@ namespace SyncClipboard.Service
         {
             Log.Write(LOG_TAG, "due to upload service stop, cancel");
             StopPullLoop();
-            Load();
+            if (UserConfig.Config.SyncService.PullSwitchOn)
+            {
+                StartPullLoop();
+            }
         }
 
         public override void RegistEvent()
@@ -189,7 +193,6 @@ namespace SyncClipboard.Service
                 remoteProfile.SetLocalClipboard();
 
                 Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                Global.Notifyer.ToastNotify("剪切板同步成功", remoteProfile.ToolTip(), remoteProfile.ExecuteProfile());
                 StopDownloadingIcon();
 
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件

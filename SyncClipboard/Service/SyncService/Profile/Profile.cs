@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 using System.Threading;
+using SyncClipboard.Utility.Notification;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -16,7 +17,7 @@ namespace SyncClipboard.Service
         //public ClipboardType Type { get; set; }
 
         public abstract ClipboardType GetProfileType();
-        protected abstract DataObject CreateDataObject();
+        protected abstract DataObject? CreateDataObject();
         public abstract string ToolTip();
         public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
         public virtual Action? ExecuteProfile()
@@ -25,6 +26,10 @@ namespace SyncClipboard.Service
         }
 
         public virtual Task BeforeSetLocal(CancellationToken cancelToken) { return Task.CompletedTask; }
+        protected virtual void AfterSetLocal()
+        {
+            Toast.SendText("剪切板同步成功", Text);
+        }
 
         public void SetLocalClipboard()
         {
@@ -38,6 +43,7 @@ namespace SyncClipboard.Service
             {
                 Clipboard.SetDataObject(dataObject, true);
             }
+            AfterSetLocal();
         }
 
         static private string ClipBoardTypeToString(ClipboardType type)

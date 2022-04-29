@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+#nullable enable
 
 namespace SyncClipboard.Service
 {
@@ -50,18 +52,15 @@ namespace SyncClipboard.Service
             return dataObject;
         }
 
-        public override Action ExecuteProfile()
+        protected override void AfterSetLocal()
         {
-            if (Text == null || Text.Length < 4)
-            {
-                return null;
-            }
+            Action<string>? action = null;
             if (Text[..4] == "http" || Text[..4] == "www.")
             {
-                return () => Sys.OpenWithDefaultApp(Text);
+                action = (_) => Sys.OpenWithDefaultApp(Text);
             }
 
-            return null;
+            Toast.SendText("文本同步成功", Text, action);
         }
     }
 }
