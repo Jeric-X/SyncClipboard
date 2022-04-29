@@ -3,21 +3,26 @@ using System.Threading.Tasks;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using SyncClipboard.Service.Command;
+using System;
 #nullable enable
 namespace SyncClipboard.Service
 {
     internal class CommandService : Service
     {
         private const string COMMAND_FILE = "Command.json";
-
+        private const string LOG_TAG = "Command.json";
         private readonly CancellationTokenSource _cancelSource = new();
         private bool _isError = false;
 
         protected override void StartService()
         {
-            if (UserConfig.Config.CommandService.SwitchOn)
+            try
             {
                 StartServiceAsync(_cancelSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Write(LOG_TAG, "Command serivce exited");
             }
         }
 
@@ -28,37 +33,31 @@ namespace SyncClipboard.Service
 
         private async void StartServiceAsync(CancellationToken cancelToken)
         {
-            while (this.Enabled)
+            while (UserConfig.Config.CommandService.SwitchOn)
             {
-                if (cancelToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
                 try
                 {
-                    CommandInfo command = await GetRemoteCommand().ConfigureAwait(false);
+                    CommandInfo command = await GetRemoteCommand();
                     if (!string.IsNullOrEmpty(command.CommandStr))
                     {
-                        await ResetRemoteCommand(new CommandInfo()).ConfigureAwait(false);
+                        await ResetRemoteCommand(new CommandInfo());
                         await ExecuteCommand(command);
                     }
 
                     _isError = false;
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     if (!_isError)
                     {
-                        System.Console.WriteLine(ex.Message);
+                        Console.WriteLine(ex.Message);
                         Global.Notifyer.ToastNotify("CommandService failed", ex.ToString());
                         _isError = true;
                     }
                 }
 
-                await Task.Delay(System.TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime)).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
             }
-            Log.Write("Command serivce exited");
         }
 
         private static async Task<CommandInfo> GetRemoteCommand()
@@ -67,7 +66,7 @@ namespace SyncClipboard.Service
             try
             {
                 command = await Global.WebDav.GetJson<CommandInfo>(COMMAND_FILE);
-                System.ArgumentNullException.ThrowIfNull(command);
+                ArgumentNullException.ThrowIfNull(command);
             }
             catch
             {
