@@ -57,7 +57,9 @@ namespace SyncClipboard.Service
             return JsonSerializer.Serialize(jsonProfile);
         }
 
-        public static bool operator ==(Profile lhs, Profile rhs)
+        protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
+
+        public static async Task<bool> Same(Profile lhs, Profile rhs, CancellationToken cancellationToken)
         {
             if (ReferenceEquals(lhs, rhs))
             {
@@ -79,22 +81,7 @@ namespace SyncClipboard.Service
                 return false;
             }
 
-            return Object.Equals(lhs, rhs);
-        }
-
-        public static bool operator !=(Profile lhs, Profile rhs)
-        {
-            return !(lhs == rhs);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            return this.ToString().GetHashCode();
+            return await lhs.Same(rhs, cancellationToken);
         }
 
         public override string ToString()

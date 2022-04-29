@@ -27,5 +27,18 @@ namespace SyncClipboard.Service
         {
             return Task.CompletedTask;
         }
+
+        protected override Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var _ = (TextProfile)rhs;
+                return Task.FromResult(true);
+            }
+            catch
+            {
+                return Task.FromResult(false);
+            }
+        }
     }
 }

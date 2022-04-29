@@ -25,27 +25,17 @@ namespace SyncClipboard.Service
             return Text;
         }
 
-        public override bool Equals(Object obj)
+        protected override Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
         {
-            if (obj is null)
-            {
-                return false;
-            }
-
             try
             {
-                TextProfile textprofile = (TextProfile)obj;
-                return this.Text == textprofile.Text;
+                var textprofile = (TextProfile)rhs;
+                return Task.FromResult(Text == textprofile.Text);
             }
             catch
             {
-                return false;
+                return Task.FromResult(false);
             }
-        }
-
-        public override int GetHashCode()
-        {
-            return this.Text.GetHashCode();
         }
 
         public override async Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
@@ -66,7 +56,7 @@ namespace SyncClipboard.Service
             {
                 return null;
             }
-            if (Text.Substring(0, 4) == "http" || Text.Substring(0, 4) == "www.")
+            if (Text[..4] == "http" || Text[..4] == "www.")
             {
                 return () => Sys.OpenWithDefaultApp(Text);
             }

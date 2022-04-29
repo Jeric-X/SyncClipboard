@@ -180,7 +180,7 @@ namespace SyncClipboard.Service
                 return;
             }
 
-            if (remoteProfile != localProfile)
+            if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
             {
                 SetDownloadingIcon();
                 await remoteProfile.BeforeSetLocal(cancelToken);

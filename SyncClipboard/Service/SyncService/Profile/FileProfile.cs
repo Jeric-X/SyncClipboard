@@ -46,11 +46,11 @@ namespace SyncClipboard.Service
             Text = md5;
         }
 
-        private string GetMd5()
+        private async Task<string> GetMd5(CancellationToken cancelToken)
         {
             if (string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(fullPath))
             {
-                SetMd5(GetMD5HashFromFile(fullPath));
+                SetMd5(await GetMD5HashFromFile(fullPath, cancelToken));
             }
             return Text;
         }
@@ -70,7 +70,7 @@ namespace SyncClipboard.Service
                 Log.Write("file is too large, skipped " + FileName);
             }
 
-            SetMd5(GetMD5HashFromFile(fullPath));
+            SetMd5(await GetMd5(cancelToken));
             await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
         }
 
@@ -90,7 +90,7 @@ namespace SyncClipboard.Service
             string localPath = GetTempLocalFilePath();
 
             await _webDav.GetFile(remotePath, localPath, cancelToken);
-            if (GetMD5HashFromFile(localPath) != GetMd5())
+            if (await GetMD5HashFromFile(localPath, cancelToken) != await GetMd5(cancelToken))
             {
                 Log.Write("[PULL] download erro, md5 wrong");
                 statusTip = "Downloading erro, md5 wrong";
@@ -120,17 +120,11 @@ namespace SyncClipboard.Service
             return dataObject;
         }
 
-        public override bool Equals(System.Object obj)
+        protected override async Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
         {
-            if (obj is null)
-            {
-                return false;
-            }
-
             try
             {
-                FileProfile profile = (FileProfile)obj;
-                return this.GetMd5() == profile.GetMd5();
+                return await GetMd5(cancellationToken) == await ((FileProfile)rhs).GetMd5(cancellationToken);
             }
             catch
             {
@@ -138,12 +132,7 @@ namespace SyncClipboard.Service
             }
         }
 
-        public override int GetHashCode()
-        {
-            return this.GetMd5().GetHashCode();
-        }
-
-        private static string GetMD5HashFromFile(string fileName)
+        private static async Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
         {
             var fileInfo = new FileInfo(fileName);
             if (fileInfo.Length > UserConfig.Config.SyncService.MaxFileByte)
@@ -155,7 +144,7 @@ namespace SyncClipboard.Service
                 Log.Write("calc md5 start");
                 var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                 var md5Oper = System.Security.Cryptography.MD5.Create();
-                var retVal = md5Oper.ComputeHash(file);
+                var retVal = await md5Oper.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
                 file.Close();
 
                 var sb = new StringBuilder();

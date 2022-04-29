@@ -151,7 +151,7 @@ namespace SyncClipboard.Service
                 {
                     SyncService.remoteProfilemutex.WaitOne();
                     var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken);
-                    if (remoteProfile != profile)
+                    if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
                         await profile.UploadProfileAsync(Global.WebDav, cancelToken);
                     }
