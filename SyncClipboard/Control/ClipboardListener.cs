@@ -12,9 +12,9 @@ namespace SyncClipboard
         private event ClipBoardChangedHandler ClipBoardChanged;
 
         [DllImport("user32.dll")]
-        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+        private static extern bool AddClipboardFormatListener(IntPtr hwnd);
         [DllImport("user32.dll")]
-        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
+        private static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
         public ClipboardListener()
         {
