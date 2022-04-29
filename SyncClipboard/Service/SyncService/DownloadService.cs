@@ -106,7 +106,7 @@ namespace SyncClipboard.Service
         {
             Log.Write(LOG_TAG, "due to upload service stop, cancel");
             StopPullLoop();
-            StartPullLoop();
+            Load();
         }
 
         public override void RegistEvent()
