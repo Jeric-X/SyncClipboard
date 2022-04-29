@@ -9,6 +9,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -166,26 +167,30 @@ namespace SyncClipboard.Service
             }
         }
 
-        public Action<string>? OpenInExplorer()
+        public Action<string> OpenInExplorer()
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            if (path != null)
+            return (_) =>
             {
-                return (_) =>
-                {
-                    var open = new System.Diagnostics.Process();
-                    open.StartInfo.FileName = "explorer";
-                    open.StartInfo.Arguments = "/e,/select," + path;
-                    open.Start();
-                };
-            }
-
-            return null;
+                var open = new System.Diagnostics.Process();
+                open.StartInfo.FileName = "explorer";
+                open.StartInfo.Arguments = "/e,/select," + path;
+                open.Start();
+            };
         }
 
         protected override void AfterSetLocal()
         {
-            Toast.SendText("文件同步成功", FileName, OpenInExplorer());
+            var path = fullPath ?? GetTempLocalFilePath();
+            Toast.SendText(
+                "文件同步成功",
+                FileName,
+                new Button[]
+                {
+                    new Button("打开文件所在文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+                    new Button("打开文件", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path))),
+                }
+            );
         }
     }
 }

@@ -19,7 +19,7 @@ namespace SyncClipboard.Utility.Notification
 
         public static bool AddHandler(string name, Action<string> handler)
         {
-            string adjustName = $"={name}";
+            string adjustName = name;
             if (handlerList.ContainsKey(adjustName))
             {
                 return false;

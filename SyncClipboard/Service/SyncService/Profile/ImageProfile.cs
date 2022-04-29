@@ -6,6 +6,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -93,7 +94,16 @@ namespace SyncClipboard.Service
         protected override void AfterSetLocal()
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            Toast.SendImage("图片同步成功", FileName, new Uri(path), (_) => Sys.OpenWithDefaultApp(path));
+            Toast.SendImage(
+                "图片同步成功",
+                FileName,
+                new Uri(path),
+                new Button[]
+                {
+                    new Button("打开图片所在文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+                    new Button("打开图片", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
+                }
+            );
         }
     }
 }

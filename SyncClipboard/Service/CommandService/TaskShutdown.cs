@@ -89,8 +89,8 @@ namespace SyncClipboard.Service.Command
                     ValueStringOverride = new BindableString("progressValueString"),
                     Status = "当前状态"
                 })
-                .AddButton(new ToastButton().SetContent("取消关机"), $"{tagName}Cancel", CancelCallback)
-                .AddButton(new ToastButton().SetContent("立刻关机"), $"{tagName}RightNow", RightNowCallback)
+                .AddButton(new ToastButton("取消关机", $"{tagName}Cancel"), CancelCallback)
+                .AddButton(new ToastButton("立刻关机", $"{tagName}RightNow"), RightNowCallback)
                 .GetToastContent();
 
             var toast = new ToastNotification(content.GetXml())

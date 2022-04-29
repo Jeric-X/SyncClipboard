@@ -6,6 +6,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -54,13 +55,15 @@ namespace SyncClipboard.Service
 
         protected override void AfterSetLocal()
         {
-            Action<string>? action = null;
             if (Text[..4] == "http" || Text[..4] == "www.")
             {
-                action = (_) => Sys.OpenWithDefaultApp(Text);
+                Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
+                Toast.SendText("文本同步成功", Text, new Button("在浏览器中打开", callbacker));
             }
-
-            Toast.SendText("文本同步成功", Text, action);
+            else
+            {
+                Toast.SendText("文本同步成功", Text);
+            }
         }
     }
 }

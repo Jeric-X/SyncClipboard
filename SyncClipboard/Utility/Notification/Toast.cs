@@ -6,23 +6,29 @@ namespace SyncClipboard.Utility.Notification
 {
     public static class Toast
     {
-        public static void SendText(string title, string text, Action<string>? eventHandler = null)
+        public static void SendText(string title, string text, params Button[] buttons)
         {
-            new ToastContentBuilder()
-                .AddArgument(text, eventHandler)
+            var content = new ToastContentBuilder()
                 .AddText(title)
-                .AddText(text, null, null, 2)
-                .Show();
+                .AddText(text);
+            foreach (var button in buttons)
+            {
+                content.AddButton(button);
+            }
+            content.Show();
         }
 
-        public static void SendImage(string title, string text, Uri uri, Action<string>? eventHandler = null)
+        public static void SendImage(string title, string text, Uri uri, params Button[] buttons)
         {
-            new ToastContentBuilder()
+            var content = new ToastContentBuilder()
                 .AddHeroImage(uri, "alternateText")
-                .AddArgument(text, eventHandler)
                 .AddText(title)
-                .AddText(text, null, null, 2)
-                .Show();
+                .AddText(text);
+            foreach(var button in buttons)
+            {
+                content.AddButton(button);
+            }
+            content.Show();
         }
     }
 }
