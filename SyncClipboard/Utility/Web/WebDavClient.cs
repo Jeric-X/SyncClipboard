@@ -46,7 +46,10 @@ namespace SyncClipboard.Utility.Web
         private readonly HttpClient httpClient;
         public WebDavClient(string url)
         {
-            httpClient = new HttpClient();
+            httpClient = new HttpClient()
+            {
+                Timeout = System.Threading.Timeout.InfiniteTimeSpan
+            };
             if (Uri.TryCreate(url?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
             {
                 httpClient.BaseAddress = uri;
