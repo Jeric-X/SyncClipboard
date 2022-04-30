@@ -65,7 +65,7 @@ namespace SyncClipboard.Control
 
         public void LoadConfig()
         {
-            this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, null) != null;
+            this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, null) != null;
             this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
             settingsForm.LoadConfig();
@@ -112,11 +112,11 @@ namespace SyncClipboard.Control
             {
                 if (!this.开机启动MenuItem.Checked)
                 {
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Program.SoftName, Application.ExecutablePath);
+                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, Application.ExecutablePath);
                 }
                 else
                 {
-                    Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true).DeleteValue(Program.SoftName, false);
+                    Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true).DeleteValue(Env.SoftName, false);
                 }
                 this.开机启动MenuItem.Checked = !this.开机启动MenuItem.Checked;
             }

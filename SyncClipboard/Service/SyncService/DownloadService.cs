@@ -76,6 +76,7 @@ namespace SyncClipboard.Service
             }
             catch (OperationCanceledException)
             {
+                _toastReporter?.CancelSicent();
                 Log.Write(LOG_TAG, "Canceled");
             }
         }
@@ -137,7 +138,7 @@ namespace SyncClipboard.Service
             Log.Write(ex.ToString());
             if (errorTimes == UserConfig.Config.Program.RetryTimes)
             {
-                Global.Notifyer.ToastNotify("剪切板同步失败", ex.Message);
+                Toast.SendText("剪切板下载失败", ex.Message);
             }
         }
 
@@ -161,15 +162,16 @@ namespace SyncClipboard.Service
                 catch (TaskCanceledException)
                 {
                     cancelToken.ThrowIfCancellationRequested();
+                    _toastReporter?.Cancel();
                     SetStatusOnError(ref errorTimes, new Exception("请求超时"));
                 }
                 catch (Exception ex)
                 {
                     SetStatusOnError(ref errorTimes, ex);
+                    _toastReporter?.Cancel();
                 }
                 finally
                 {
-                    _toastReporter?.Cancel();
                     SyncService.remoteProfilemutex.ReleaseMutex();
                 }
 
@@ -191,7 +193,11 @@ namespace SyncClipboard.Service
                 SetDownloadingIcon();
                 try
                 {
-                    await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter = new ProgressToastReporter(remoteProfile.FileName));
+                    if (remoteProfile is FileProfile)
+                    {
+                        _toastReporter = new ProgressToastReporter(remoteProfile.FileName, "正在下载远程文件");
+                    }
+                    await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                     _toastReporter = null;
                     PullStarted?.Invoke();
                     remoteProfile.SetLocalClipboard();

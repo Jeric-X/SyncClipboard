@@ -6,8 +6,6 @@ namespace SyncClipboard
 {
     internal static class Program
     {
-        public static string SoftName = "SyncClipboard";
-
         /// <summary>
         /// 应用程序的主入口点。
         /// </summary>
@@ -19,7 +17,7 @@ namespace SyncClipboard
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Mutex mutex = new Mutex(false, SoftName, out bool creetedNew);
+            Mutex mutex = new(false, Env.SoftName, out bool creetedNew);
             if (creetedNew)
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -35,7 +33,7 @@ namespace SyncClipboard
             }
             else
             {
-                MessageBox.Show("已经存在一个正在运行中的实例！", SoftName);
+                MessageBox.Show("已经存在一个正在运行中的实例！", Env.SoftName);
             }
         }
 

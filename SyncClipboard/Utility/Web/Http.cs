@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
 using System.IO;
+using SyncClipboard.Module;
 #nullable enable
 
 namespace SyncClipboard.Utility.Web
 {
     public static class Http
     {
-        public const string USER_AGENT = "SyncClipboard " + Env.VERSION;
+        public const string USER_AGENT = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36";
         private const int BUFFER_SIZE = 102400;
         private static readonly Lazy<HttpClient> lazyHttpClient = new(
             () =>
@@ -26,6 +27,22 @@ namespace SyncClipboard.Utility.Web
             }
         );
         public static HttpClient HttpClient => lazyHttpClient.Value;
+
+        private static readonly Lazy<HttpClient> lazyHttpClientProxy = new(
+            () =>
+            {
+                HttpClient client = new(
+                    new SocketsHttpHandler()
+                    {
+                        ConnectTimeout = TimeSpan.FromSeconds(60),
+                        Proxy = new System.Net.WebProxy(UserConfig.Config.Program.Proxy, true),
+                        UseProxy = true
+                });
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
+                return client;
+            }
+        );
+        public static HttpClient HttpClientProxy => lazyHttpClientProxy.Value;
 
         public static async Task<Type?> PostTextRecieveJson<Type>(string url,
             IEnumerable<KeyValuePair<string, string>>? list = null)

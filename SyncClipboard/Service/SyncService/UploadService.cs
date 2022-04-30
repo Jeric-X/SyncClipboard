@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Notification;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -162,6 +163,7 @@ namespace SyncClipboard.Service
                 {
                     cancelToken.ThrowIfCancellationRequested();
                     Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
+                    errMessage = "连接超时";
                 }
                 catch (Exception ex)
                 {
@@ -175,7 +177,7 @@ namespace SyncClipboard.Service
 
                 await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
             }
-            Global.Notifyer.ToastNotify("上传失败：" + profile.ToolTip(), errMessage);
+            Toast.SendText("上传失败：" + profile.ToolTip(), errMessage);
         }
 
         private static void SetUploadingIcon()

@@ -81,12 +81,11 @@ namespace SyncClipboard.Service.Command
         {
             await Task.Run(() =>
             {
-                // var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
-                // var process = new System.Diagnostics.Process();
-                // process.StartInfo.FileName = "cmd";
-                // process.StartInfo.Arguments = @"/k shutdown.exe /s /t 5 /c ""use [ shutdown /a ] in 5s to undo shutdown.""";
-                // process.Start();
-                System.Windows.Forms.MessageBox.Show("临时关机", "临时关机2");
+                var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
+                var process = new System.Diagnostics.Process();
+                process.StartInfo.FileName = "cmd";
+                process.StartInfo.Arguments = @"/k shutdown.exe /s /t 5 /c ""use [ shutdown /a ] in 5s to undo shutdown.""";
+                process.Start();
             });
         }
     }

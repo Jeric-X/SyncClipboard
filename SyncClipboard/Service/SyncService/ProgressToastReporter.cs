@@ -10,11 +10,11 @@ namespace SyncClipboard.Service
     {
         private readonly ProgressBar _progressBar;
         private readonly Counter _counter;
-        public ProgressToastReporter(string filename)
+        public ProgressToastReporter(string filename, string title)
         {
-            _progressBar = new("正在同步剪切板")
+            _progressBar = new(title)
             {
-                Tag = "Download progress",
+                Tag = title + filename,
                 ProgressTitle = filename,
                 ProgressStatus = "当前状态",
                 ProgressValue = 0,
@@ -31,10 +31,21 @@ namespace SyncClipboard.Service
             _progressBar.Upadate();
         }
 
+        public void CancelSicent()
+        {
+            _counter.Cancle();
+            _progressBar.Remove();
+        }
+
         public void Report(HttpDownloadProgress progress)
         {
-            _progressBar.ProgressValue = (double)progress.BytesReceived / progress.TotalBytesToReceive;
-            _progressBar.ProgressValueTip = ((double)progress.BytesReceived / progress.TotalBytesToReceive)?.ToString("P");
+            var percent = (double)progress.BytesReceived / progress.TotalBytesToReceive;
+            if (percent < _progressBar.ProgressValue)
+            {
+                return;
+            }
+            _progressBar.ProgressValue = percent;
+            _progressBar.ProgressValueTip = percent?.ToString("P");
             if (progress.End)
             {
                 _counter.Cancle();

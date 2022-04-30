@@ -64,7 +64,14 @@ namespace SyncClipboard.Utility.Notification
 
         public virtual void Remove()
         {
-            ToastNotificationManagerCompat.History.Remove(Tag, Group);
+            try
+            {
+                ToastNotificationManagerCompat.History.Remove(Tag, Group);
+            }
+            catch
+            {
+                Log.Write("TOAST", "remove failed");
+            }
         }
     }
 }

@@ -4,7 +4,8 @@ namespace SyncClipboard
 {
     internal static class Env
     {
-        public const string VERSION = "1.3.8";
+        public const string SoftName = "SyncClipboard";
+        public const string VERSION = "1.3.9";
         internal static readonly string Directory = System.Windows.Forms.Application.StartupPath;
         internal static readonly string LOCAL_FILE_FOLDER = FullPath("file");
         internal static string FullPath(string relativePath)

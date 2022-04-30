@@ -43,9 +43,13 @@ namespace SyncClipboard.Service
 
         private CancellationTokenSource? _cancelSource;
         private readonly object _cancelSourceLocker = new();
+        private ProgressToastReporter? _progress;
+        private readonly object _progressLocker = new();
 
         private CancellationToken StopPreviousAndGetNewToken()
         {
+            _progress?.CancelSicent();
+            _progress = null;
             lock (_cancelSourceLocker)
             {
                 if (_cancelSource?.Token.CanBeCanceled ?? false)
@@ -57,25 +61,18 @@ namespace SyncClipboard.Service
             }
         }
 
-        private async void ClipBoardChangedHandler()
+        private void ClipBoardChangedHandler()
         {
             if (UserConfig.Config.SyncService.EasyCopyImageSwitchOn)
             {
                 Global.Notifyer.SetStatusString(SERVICE_NAME, "running");
                 CancellationToken cancelToken = StopPreviousAndGetNewToken();
-                try
-                {
-                    await ProcessClipboard(cancelToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    Log.Write(LOG_TAG, "Upload canceled because newer image");
-                }
-                Global.Notifyer.SetStatusString(SERVICE_NAME, "running");
+                _ = ProcessClipboard(false, cancelToken);
+                _ = ProcessClipboard(true, cancelToken);
             }
         }
 
-        private static async Task ProcessClipboard(CancellationToken cancellationToken)
+        private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
         {
             var profile = CreateFromLocal(out var localClipboard);
             if (profile.GetProfileType() != ProfileType.ClipboardType.Image || !NeedAdjust(localClipboard))
@@ -90,8 +87,8 @@ namespace SyncClipboard.Service
                 {
                     Log.Write("http image url: " + match.Result("$1"));
                     Global.Notifyer.SetStatusString(SERVICE_NAME, "downloading");
-                    var localPath = await DownloadImage(match.Result("$1"), cancellationToken);
-                    if (localPath is null || !SupportsImage(localPath))
+                    var localPath = await DownloadImage(match.Result("$1"), useProxy, cancellationToken);
+                    if (!SupportsImage(localPath))
                     {
                         return;
                     }
@@ -104,7 +101,7 @@ namespace SyncClipboard.Service
 
         private static bool SupportsImage(string fileName)
         {
-            string extension = System.IO.Path.GetExtension(fileName);
+            string extension = Path.GetExtension(fileName);
             foreach (var imageExtension in imageExtensions)
             {
                 if (imageExtension.Equals(extension, System.StringComparison.OrdinalIgnoreCase))
@@ -136,19 +133,24 @@ namespace SyncClipboard.Service
             }
         }
 
-        private static async Task<string?> DownloadImage(string imageUrl, CancellationToken cancellationToken)
+        private async Task<string> DownloadImage(string imageUrl, bool userProxy, CancellationToken cancellationToken)
         {
-            try
+            var filename = Regex.Match(imageUrl, "[^/]+(?!.*/)");
+            lock (_progressLocker)
             {
-                var match = Regex.Match(imageUrl, "[^/]+(?!.*/)");
-                var localPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, match.Value);
-                await Http.HttpClient.GetFile(imageUrl, localPath, cancellationToken);
-                return localPath;
+                _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], "正在从网站下载原图");
             }
-            catch
+            if (userProxy)
             {
-                Log.Write("Download http image failed");
-                return null;
+                var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "proxy " + filename.Value);
+                await Http.HttpClientProxy.GetFile(imageUrl, fullPath, _progress, cancellationToken);
+                return fullPath;
+            }
+            else
+            {
+                var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, filename.Value);
+                await Http.HttpClient.GetFile(imageUrl, fullPath, _progress, cancellationToken);
+                return fullPath;
             }
         }
 

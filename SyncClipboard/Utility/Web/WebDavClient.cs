@@ -12,6 +12,7 @@ namespace SyncClipboard.Utility.Web
 {
     public class WebDavClient : IWebDav
     {
+        private const string USER_AGENT = Env.SoftName + Env.VERSION;
         public int? IntervalTime { get; set; }
         public int? RetryTimes { get; set; }
         private int? _timeout;
@@ -55,7 +56,7 @@ namespace SyncClipboard.Utility.Web
                 httpClient.BaseAddress = uri;
             }
 
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(Http.USER_AGENT);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
         }
         private void SetAuthHeader()
         {

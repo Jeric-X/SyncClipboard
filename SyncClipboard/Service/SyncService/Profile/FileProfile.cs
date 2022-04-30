@@ -25,11 +25,13 @@ namespace SyncClipboard.Service
         {
             FileName = Path.GetFileName(file);
             fullPath = file;
+            statusTip = FileName;
         }
 
         public FileProfile(JsonProfile jsonProfile, IWebDav webDav)
         {
             FileName = jsonProfile.File;
+            statusTip = FileName;
             _webDav = webDav;
             SetMd5(jsonProfile.Clipboard);
         }

@@ -17,6 +17,7 @@ namespace SyncClipboard.Module
                 public int IntervalTime { get; set; } = 3;
                 public int RetryTimes { get; set; } = 3;
                 public int TimeOut { get; set; } = 10;
+                public string Proxy { get; set; } = "";
             }
 
             public class CSyncService
@@ -41,7 +42,7 @@ namespace SyncClipboard.Module
             public CProgram Program { get; set; } = new CProgram();
         }
 
-        internal static Configuration Config = new Configuration();
+        internal static Configuration Config = new();
 
         internal static void Save()
         {
