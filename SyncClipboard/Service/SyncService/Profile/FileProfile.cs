@@ -78,7 +78,8 @@ namespace SyncClipboard.Service
             await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
         }
 
-        public override async Task BeforeSetLocal(CancellationToken cancelToken)
+        public override async Task BeforeSetLocal(CancellationToken cancelToken,
+            IProgress<HttpDownloadProgress>? progress = null)
         {
             if (!string.IsNullOrEmpty(fullPath))
             {
@@ -93,7 +94,7 @@ namespace SyncClipboard.Service
             string remotePath = $"{SyncService.REMOTE_FILE_FOLDER}/{FileName}";
             string localPath = GetTempLocalFilePath();
 
-            await _webDav.GetFile(remotePath, localPath, cancelToken);
+            await _webDav.GetFile(remotePath, localPath, progress, cancelToken);
             if (await GetMD5HashFromFile(localPath, cancelToken) != await GetMd5(cancelToken))
             {
                 Log.Write("[PULL] download erro, md5 wrong");

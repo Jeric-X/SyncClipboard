@@ -25,7 +25,12 @@ namespace SyncClipboard.Service
             return null;
         }
 
-        public virtual Task BeforeSetLocal(CancellationToken cancelToken) { return Task.CompletedTask; }
+        public virtual Task BeforeSetLocal(CancellationToken cancelToken,
+            IProgress<HttpDownloadProgress>? progress = null)
+        {
+            return Task.CompletedTask;
+        }
+
         protected virtual void AfterSetLocal()
         {
             Toast.SendText("剪切板同步成功", Text);

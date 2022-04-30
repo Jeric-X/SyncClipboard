@@ -74,6 +74,12 @@ namespace SyncClipboard.Utility.Web
             return httpClient.GetFile(url, localFilePath, AdjustCancelToken(cancelToken));
         }
 
+        public Task GetFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress = null,
+            CancellationToken? cancelToken = null)
+        {
+            return httpClient.GetFile(url, localFilePath, progress, AdjustCancelToken(cancelToken));
+        }
+
         public async Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null)
         {
             using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read);

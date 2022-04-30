@@ -12,8 +12,10 @@ namespace SyncClipboard.Utility.Web
     public static class Http
     {
         public const string USER_AGENT = "SyncClipboard " + Env.VERSION;
+        private const int BUFFER_SIZE = 102400;
         private static readonly Lazy<HttpClient> lazyHttpClient = new(
-            () => {
+            () =>
+            {
                 HttpClient client = new(
                     new SocketsHttpHandler()
                     {
@@ -40,6 +42,40 @@ namespace SyncClipboard.Utility.Web
             using var instream = await httpClient.GetStreamAsync(url, cancelToken ?? CancellationToken.None);
             using var fileStrem = new FileStream(localFilePath, FileMode.Create);
             await instream.CopyToAsync(fileStrem, cancelToken ?? CancellationToken.None);
+        }
+
+        public static async Task GetFile(this HttpClient httpClient, string url, string localFilePath,
+            IProgress<HttpDownloadProgress>? progress, CancellationToken? cancellationToken = null)
+        {
+            var cancelToken = cancellationToken ?? CancellationToken.None;
+            using var responseMessage = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancelToken);
+            responseMessage.EnsureSuccessStatusCode();
+
+            var content = responseMessage.Content;
+            var contentLength = content.Headers.ContentLength;
+            using var responseStream = await content.ReadAsStreamAsync(cancelToken);
+
+            var downloadProgress = new HttpDownloadProgress();
+            if (contentLength.HasValue)
+            {
+                downloadProgress.TotalBytesToReceive = (ulong)contentLength.Value;
+            }
+            progress?.Report(downloadProgress);
+
+            var buffer = new byte[BUFFER_SIZE];
+            int bytesRead;
+            var bytes = new List<byte>();
+
+            using var fileStrem = new FileStream(localFilePath, FileMode.Create);
+
+            while ((bytesRead = await responseStream.ReadAsync(buffer.AsMemory(0, BUFFER_SIZE), cancelToken)) > 0)
+            {
+                await fileStrem.WriteAsync(buffer.AsMemory(0, bytesRead), cancelToken);
+                downloadProgress.BytesReceived += (ulong)bytesRead;
+                progress?.Report(downloadProgress);
+            }
+            downloadProgress.End = true;
+            progress?.Report(downloadProgress);
         }
     }
 }

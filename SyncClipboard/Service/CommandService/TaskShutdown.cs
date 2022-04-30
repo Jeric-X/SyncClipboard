@@ -40,7 +40,7 @@ namespace SyncClipboard.Service.Command
 
             counter = new Counter(
                 (count) => progressBar.ForceUpdate((double)count / shutdownTime, $"{shutdownTime - count} 秒后关机"),
-                (ulong)shutdownTime
+                (ulong)shutdownTime * 1000
             );
 
             await counter.WaitAsync();

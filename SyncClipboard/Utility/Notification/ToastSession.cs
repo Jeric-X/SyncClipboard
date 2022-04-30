@@ -56,5 +56,15 @@ namespace SyncClipboard.Utility.Notification
         {
             Toast.Notifer.Show(GetToast(GetBuilder()));
         }
+
+        public virtual void ShowSilent()
+        {
+            Toast.Notifer.Show(GetToast(GetBuilder().AddAudio(null, null, true)));
+        }
+
+        public virtual void Remove()
+        {
+            ToastNotificationManagerCompat.History.Remove(Tag, Group);
+        }
     }
 }

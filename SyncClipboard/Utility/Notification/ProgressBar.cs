@@ -59,6 +59,11 @@ namespace SyncClipboard.Utility.Notification
             return Toast.Notifer.Update(SetBingData(), Tag, Group);
         }
 
+        public NotificationUpdateResult Upadate()
+        {
+            return Toast.Notifer.Update(SetBingData(), Tag, Group);
+        }
+
         public void ForceUpdate(double value, string? valueTip = null, string? status = null)
         {
             if (Upadate(value, valueTip, status) is NotificationUpdateResult.NotificationNotFound)

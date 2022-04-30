@@ -17,6 +17,7 @@ namespace SyncClipboard.Service
         private const string LOG_TAG = "PULL";
         private bool _pullSwitchOn = false;
         private readonly object _pullSwitchLocker = new();
+        private ProgressToastReporter? _toastReporter;
 
         public override void Load()
         {
@@ -168,6 +169,7 @@ namespace SyncClipboard.Service
                 }
                 finally
                 {
+                    _toastReporter?.Cancel();
                     SyncService.remoteProfilemutex.ReleaseMutex();
                 }
 
@@ -187,16 +189,24 @@ namespace SyncClipboard.Service
             if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
             {
                 SetDownloadingIcon();
-                await remoteProfile.BeforeSetLocal(cancelToken);
-
-                PullStarted?.Invoke();
-                remoteProfile.SetLocalClipboard();
-
-                Log.Write("剪切板同步成功:" + remoteProfile.Text);
-                StopDownloadingIcon();
-
-                await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
-                PullStopped?.Invoke();
+                try
+                {
+                    await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter = new ProgressToastReporter(remoteProfile.FileName));
+                    _toastReporter = null;
+                    PullStarted?.Invoke();
+                    remoteProfile.SetLocalClipboard();
+                    Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                    await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    StopDownloadingIcon();
+                    PullStopped?.Invoke();
+                }
             }
         }
 

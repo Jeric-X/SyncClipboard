@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 #nullable enable
 
 namespace SyncClipboard.Utility
@@ -56,7 +57,7 @@ namespace SyncClipboard.Utility
                 try
                 {
                     using StreamWriter file = new($@"{LOG_FOLDER}\{logFile}.txt", true, System.Text.Encoding.UTF8);
-                    file.WriteLine(logStr);
+                    file.WriteLineAsync(logStr);
                 }
                 catch
                 {
@@ -68,7 +69,7 @@ namespace SyncClipboard.Utility
 
         private static void WriteToConsole(string logStr)
         {
-            Trace.WriteLine(logStr);
+            Task.Run(() => Trace.WriteLine(logStr));
         }
     }
 }
