@@ -7,10 +7,12 @@ namespace SyncClipboard.Utility.Notification
     {
         public string Argument { get; set; }
         public Action<string> CallBack { get; set; }
-        public Callbacker(string argument, Action<string> callback)
+        public bool Pedding { get; set; } = false;
+        public Callbacker(string argument, Action<string> callback, bool pedding = false)
         {
             Argument = argument;
             CallBack = callback;
+            Pedding = pedding;
         }
     }
 

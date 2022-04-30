@@ -11,122 +11,83 @@ namespace SyncClipboard.Service.Command
 {
     public sealed class TaskShutdown
     {
-        private readonly CommandInfo commandInfo;
-        private readonly ulong shutdownTime;
-        private string tagName = "";
+        private readonly int shutdownTime;
+        private readonly string tagName = "";
         private const string GROUP_NAME = "Command";
         private Counter? counter;
         private bool canceled = false;
-        private readonly ToastNotifier notifer;
+        private static bool IsWorking = false;
+        private static readonly object IsWorkingLocker = new();
 
         public TaskShutdown(CommandInfo info)
         {
             tagName = info.ToString() + DateTime.Now;
-            shutdownTime = (ulong)UserConfig.Config.CommandService.Shutdowntime;
-            commandInfo = info;
-            notifer = ToastNotificationManager.CreateToastNotifier(Global.AppUserModelId);
+            shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
         }
 
         public async Task ExecuteAsync()
         {
-            counter = new Counter(UpdateToast, shutdownTime);
-            await counter.WaitAsync();
-            if (canceled)
+            lock (IsWorkingLocker)
             {
-                return;
+                if (IsWorking)
+                {
+                    return;
+                }
+                IsWorking = true;
             }
+
+            var progressBar = InitToastProgressBar();
+
+            counter = new Counter(
+                (count) => progressBar.ForceUpdate((double)count / shutdownTime, $"{shutdownTime - count} 秒后关机"),
+                (ulong)shutdownTime
+            );
+
+            await counter.WaitAsync();
+            progressBar.Buttons.Clear();
+            progressBar.ProgressValueTip = canceled ? "已取消" : "正在关机";
+            if (!canceled)
+            {
+                progressBar.IsIndeterminate = true;
+                ShutdowntPc();
+            }
+
+            progressBar.Show();
+            lock (IsWorkingLocker)
+            {
+                IsWorking = false;
+            }
+        }
+
+        private ProgressBar InitToastProgressBar()
+        {
+            var progressBar = new ProgressBar("远程命令")
+            {
+                Group = GROUP_NAME,
+                Tag = tagName,
+                ProgressStatus = "当前状态",
+                ProgressTitle = "正在关机",
+                ProgressValue = 0,
+                ProgressValueTip = "准备开始倒计时"
+            };
+            progressBar.Buttons.Add(
+                new Button("取消关机", new Callbacker($"{tagName}Cancel", _ => { canceled = true; counter?.Cancle(); })));
+            progressBar.Buttons.Add(
+                new Button("立刻关机", new Callbacker($"{tagName}RightNow", _ => counter?.Cancle())));
+            return progressBar;
+        }
+
+        private static async void ShutdowntPc()
+        {
             await Task.Run(() =>
             {
-                var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
-                var process = new System.Diagnostics.Process();
-                process.StartInfo.FileName = "cmd";
-                process.StartInfo.Arguments = @"/k shutdown.exe /s /t 5 /c ""use [ shutdown /a ] in 5s to undo shutdown.""";
-                process.Start();
+                // var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
+                // var process = new System.Diagnostics.Process();
+                // process.StartInfo.FileName = "cmd";
+                // process.StartInfo.Arguments = @"/k shutdown.exe /s /t 5 /c ""use [ shutdown /a ] in 5s to undo shutdown.""";
+                // process.Start();
+                System.Windows.Forms.MessageBox.Show("临时关机", "临时关机2");
             });
-        }
-
-        public void CancelCallback(string _)
-        {
-            canceled = true;
-            counter?.Cancle();
-            SetFinishToast();
-        }
-        public void RightNowCallback(string _)
-        {
-            counter?.Cancle();
-            SetFinishToast();
-        }
-
-        private void SetFinishToast()
-        {
-            new ToastContentBuilder()
-                .AddText("远程任务")
-                .AddVisualChild(new AdaptiveProgressBar()
-                {
-                    Title = "电脑即将关机",
-                    Value = canceled ? 0 : AdaptiveProgressBarValue.Indeterminate,
-                    ValueStringOverride = canceled ? "已取消" : "正在关机",
-                    Status = "当前状态"
-                })
-                .Show(toast =>
-                {
-                    toast.Tag = tagName;
-                    toast.Group = GROUP_NAME;
-                }
-            );
-        }
-
-        public void SetToast(uint count)
-        {
-            tagName = commandInfo.ToString() + DateTime.Now.Millisecond;
-            var content = new ToastContentBuilder()
-                .SetToastScenario(ToastScenario.Reminder)
-                .AddText("远程任务")
-                .AddVisualChild(new AdaptiveProgressBar()
-                {
-                    Title = "电脑即将关机",
-                    Value = new BindableProgressBarValue("progressValue"),
-                    ValueStringOverride = new BindableString("progressValueString"),
-                    Status = "当前状态"
-                })
-                .AddButton(new ToastButton("取消关机", $"{tagName}Cancel"), CancelCallback)
-                .AddButton(new ToastButton("立刻关机", $"{tagName}RightNow"), RightNowCallback)
-                .GetToastContent();
-
-            var toast = new ToastNotification(content.GetXml())
-            {
-                Tag = tagName,
-                Group = GROUP_NAME,
-                Data = new NotificationData()
-            };
-            toast.Data.Values["progressValue"] = $"{(double)count / shutdownTime}";
-            toast.Data.Values["progressValueString"] = $"{shutdownTime - count} 秒后关机";
-            toast.Data.SequenceNumber = count;
-            notifer.Show(toast);
-        }
-
-        public void UpdateToast(uint count)
-        {
-            var data = new NotificationData()
-            {
-                SequenceNumber = count
-            };
-            if (count == shutdownTime)
-            {
-                SetFinishToast();
-                return;
-            }
-            else
-            {
-                data.Values["progressValueString"] = $"{shutdownTime - count} 秒后关机";
-            }
-            data.Values["progressValue"] = $"{(double)count / shutdownTime}";
-
-            var rval = notifer.Update(data, tagName, GROUP_NAME);
-            if (rval is NotificationUpdateResult.NotificationNotFound)
-            {
-                SetToast(count);
-            }
         }
     }
 }

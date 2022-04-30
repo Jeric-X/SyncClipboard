@@ -13,6 +13,7 @@ namespace SyncClipboard.Utility
         private readonly ulong endTime;
         private event Action<uint> Tick;
         private readonly AutoResetEvent autoResetEvent = new(false);
+        private bool sucess = true;
 
         public Counter(Action<uint> callback, ulong end)
         {
@@ -26,12 +27,13 @@ namespace SyncClipboard.Utility
             timer.Dispose();
         }
 
-        private void Wait()
+        private bool Wait()
         {
             autoResetEvent.WaitOne();
+            return sucess;
         }
 
-        public Task WaitAsync()
+        public Task<bool> WaitAsync()
         {
             return Task.Run(
                 () => Wait()
@@ -40,6 +42,7 @@ namespace SyncClipboard.Utility
 
         public void Cancle()
         {
+            sucess = false;
             timer.Dispose();
             autoResetEvent.Set();
         }
