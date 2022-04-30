@@ -126,7 +126,7 @@ namespace SyncClipboard.Service
             {
                 try
                 {
-                    profile.SetLocalClipboard();
+                    profile.SetLocalClipboard(false);
                     break;
                 }
                 catch

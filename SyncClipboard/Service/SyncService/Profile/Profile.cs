@@ -31,7 +31,7 @@ namespace SyncClipboard.Service
             Toast.SendText("剪切板同步成功", Text);
         }
 
-        public void SetLocalClipboard()
+        public void SetLocalClipboard(bool notify = true)
         {
             var dataObject = CreateDataObject();
             if (dataObject is null)
@@ -43,7 +43,10 @@ namespace SyncClipboard.Service
             {
                 Clipboard.SetDataObject(dataObject, true);
             }
-            AfterSetLocal();
+            if (notify)
+            {
+                AfterSetLocal();
+            }
         }
 
         static private string ClipBoardTypeToString(ClipboardType type)
