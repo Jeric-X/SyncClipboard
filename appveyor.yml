@@ -8,7 +8,7 @@ build_script:
 
     ./AppVeyor.bat
 artifacts:
-- path: SyncClipboard/bin/Release/net6.0-windows/win-x64/publish/SyncClipboard.exe
+- path: SyncClipboard/bin/Release/net6.0-windows10.0.17763.0/win-x64/publish/SyncClipboard.exe
   name: SyncClipboard_$(VERSION)
 # deploy:
 # - provider: GitHub
