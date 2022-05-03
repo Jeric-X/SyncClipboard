@@ -114,6 +114,10 @@ namespace SyncClipboard.Service
 
         private static bool NeedAdjust(LocalClipboard localClipboard)
         {
+            if (localClipboard.Files?.Length > 1)
+            {
+                return false;
+            }
             return localClipboard.Files is null || localClipboard.Html is null || localClipboard.Image is null;
         }
 
