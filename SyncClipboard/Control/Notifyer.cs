@@ -20,7 +20,7 @@ namespace SyncClipboard.Control
         private int _iconIndex = 1;
         private bool _isShowingDanamicIcon = false;
 
-        private readonly Dictionary<string, string> _statusList = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _statusList = new();
 
         public Notifyer(ContextMenuStrip contextMenu)
         {
@@ -62,20 +62,6 @@ namespace SyncClipboard.Control
             {
                 ToastClicked -= handler as Action;
             }
-        }
-
-        private String SafeMessage(String str)
-        {
-            if (str == null)
-            {
-                return "【非文本类型】";
-            }
-            if (str.Length > 42)
-            {
-                return str.Substring(0, 40) + "...";
-            }
-
-            return str;
         }
 
         public void SetDynamicNotifyIcon(Icon[] icons, int delayTime)
@@ -142,7 +128,7 @@ namespace SyncClipboard.Control
                 var oneServiceStr = $"{status.Key}: {status.Value}";
                 if (oneServiceStr.Length > eachMaxLenth)
                 {
-                    oneServiceStr = oneServiceStr.Substring(0, eachMaxLenth - 1);
+                    oneServiceStr = oneServiceStr[..(eachMaxLenth - 1)];
                 }
                 str += oneServiceStr + System.Environment.NewLine;
             }
@@ -171,21 +157,6 @@ namespace SyncClipboard.Control
                 _statusList[key] = statusStr;
             }
             ActiveStatusString();
-        }
-
-        public void ToastNotify(string title, string content, Action eventHandler = null)
-        {
-            const int durationTime = 5;
-
-            if (!string.IsNullOrEmpty(content))
-            {
-                if (eventHandler != null)
-                {
-                    ToastClicked += eventHandler;
-                }
-
-                this._notifyIcon.ShowBalloonTip(durationTime, title, SafeMessage(content), ToolTipIcon.None);
-            }
         }
     }
 }

@@ -4,6 +4,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using SyncClipboard.Service.Command;
 using System;
+using SyncClipboard.Utility.Notification;
 #nullable enable
 namespace SyncClipboard.Service
 {
@@ -69,7 +70,7 @@ namespace SyncClipboard.Service
                         if (!_isError)
                         {
                             Console.WriteLine(ex.Message);
-                            Global.Notifyer.ToastNotify("CommandService failed", ex.ToString());
+                            Toast.SendText("CommandService failed", ex.ToString());
                             _isError = true;
                         }
                     }
