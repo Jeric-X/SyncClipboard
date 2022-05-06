@@ -68,23 +68,17 @@ namespace SyncClipboard.Utility.Web
             using var responseMessage = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancelToken);
             responseMessage.EnsureSuccessStatusCode();
 
-            var content = responseMessage.Content;
-            var contentLength = content.Headers.ContentLength;
-            using var responseStream = await content.ReadAsStreamAsync(cancelToken);
-
-            var downloadProgress = new HttpDownloadProgress();
-            if (contentLength.HasValue)
+            var downloadProgress = new HttpDownloadProgress
             {
-                downloadProgress.TotalBytesToReceive = (ulong)contentLength.Value;
-            }
+                TotalBytesToReceive = (ulong?)responseMessage.Content.Headers.ContentLength
+            };
             progress?.Report(downloadProgress);
 
             var buffer = new byte[BUFFER_SIZE];
             int bytesRead;
-            var bytes = new List<byte>();
 
+            using var responseStream = await responseMessage.Content.ReadAsStreamAsync(cancelToken);
             using var fileStrem = new FileStream(localFilePath, FileMode.Create);
-
             while ((bytesRead = await responseStream.ReadAsync(buffer.AsMemory(0, BUFFER_SIZE), cancelToken)) > 0)
             {
                 await fileStrem.WriteAsync(buffer.AsMemory(0, bytesRead), cancelToken);

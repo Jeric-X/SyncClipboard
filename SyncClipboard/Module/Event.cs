@@ -4,7 +4,7 @@ namespace SyncClipboard.Module
 {
     public static class Event
     {
-        private static readonly Dictionary<string, ProgramEvent> _savedEvent = new Dictionary<string, ProgramEvent>();
+        private static readonly Dictionary<string, ProgramEvent> _savedEvent = new();
 
         public static bool RegistEvent(string eventName, ProgramEvent programEvent)
         {

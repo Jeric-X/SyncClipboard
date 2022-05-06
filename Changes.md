@@ -1,5 +1,5 @@
 v1.3.10
-- 修复bug
+- 修复bug: 无法一次复制多个文件（EasyCopyImageSerivce引起）
 - 增加重新复制按钮
 
 v1.3.9

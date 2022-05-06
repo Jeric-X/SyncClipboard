@@ -72,7 +72,7 @@ namespace SyncClipboard.Control
         //显示InputBox
         public static string Show(string Title, string defaultText = "")
         {
-            InputBox inputbox = new InputBox { Text = Title };
+            InputBox inputbox = new() { Text = Title };
             inputbox.SetText(defaultText);
             if (inputbox.ShowDialog() == DialogResult.OK)
             {

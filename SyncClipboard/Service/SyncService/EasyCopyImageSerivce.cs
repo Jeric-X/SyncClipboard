@@ -18,7 +18,7 @@ namespace SyncClipboard.Service
         private const string LOG_TAG = "EASY IMAGE";
         protected override void StartService()
         {
-            Log.Write("EasyCopyImageSerivce started");
+            Log.Write(LOG_TAG, "EasyCopyImageSerivce started");
             SwitchChanged += Global.Menu.AddMenuItemGroup(
                 new string[] { "Easy Copy Image" },
                 new Action<bool>[] {
@@ -38,7 +38,7 @@ namespace SyncClipboard.Service
 
         protected override void StopSerivce()
         {
-            Log.Write("EasyCopyImageSerivce stopped");
+            Log.Write(LOG_TAG, "EasyCopyImageSerivce stopped");
         }
 
         private CancellationTokenSource? _cancelSource;
@@ -85,7 +85,7 @@ namespace SyncClipboard.Service
                 var match = Regex.Match(localClipboard.Html, @"<!--StartFragment--><img src=""(http[s]?://.*)""/><!--EndFragment-->");
                 if (match.Success) // 是从浏览器复制的图片
                 {
-                    Log.Write("http image url: " + match.Result("$1"));
+                    Log.Write(LOG_TAG, "http image url: " + match.Result("$1"));
                     Global.Notifyer.SetStatusString(SERVICE_NAME, "downloading");
                     var localPath = await DownloadImage(match.Result("$1"), useProxy, cancellationToken);
                     if (!SupportsImage(localPath))
