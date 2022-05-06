@@ -98,11 +98,9 @@ namespace SyncClipboard.Service
                 "图片同步成功",
                 FileName,
                 new Uri(path),
-                new Button[]
-                {
-                    new Button("打开图片所在文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
-                    new Button("打开图片", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
-                }
+                DefaultButton(),
+                new Button("打开文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+                new Button("打开", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
             );
         }
     }

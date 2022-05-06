@@ -6,6 +6,7 @@ using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 using System.Threading;
 using SyncClipboard.Utility.Notification;
+using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -14,7 +15,10 @@ namespace SyncClipboard.Service
     {
         public String FileName { get; set; } = "";
         public String Text { get; set; } = "";
+
         //public ClipboardType Type { get; set; }
+
+        protected readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
 
         public abstract ClipboardType GetProfileType();
         protected abstract DataObject? CreateDataObject();
@@ -46,7 +50,14 @@ namespace SyncClipboard.Service
 
             lock (SyncService.localProfilemutex)
             {
-                Clipboard.SetDataObject(dataObject, true);
+                if (MainThreadSynContext == SynchronizationContext.Current)
+                {
+                    Clipboard.SetDataObject(dataObject, true);
+                }
+                else
+                {
+                    MainThreadSynContext?.Send((_) => Clipboard.SetDataObject(dataObject, true), null);
+                }
             }
             if (notify)
             {
@@ -104,6 +115,11 @@ namespace SyncClipboard.Service
             str += "FileName" + FileName;
             str += "Text:" + Text;
             return str;
+        }
+
+        protected Button DefaultButton()
+        {
+            return new Button("复制", new(Guid.NewGuid().ToString(), (_) => SetLocalClipboard(false)));
         }
     }
 }

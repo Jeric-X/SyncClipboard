@@ -58,11 +58,11 @@ namespace SyncClipboard.Service
             if (Text[..4] == "http" || Text[..4] == "www.")
             {
                 Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
-                Toast.SendText("文本同步成功", Text, new Button("在浏览器中打开", callbacker));
+                Toast.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
             }
             else
             {
-                Toast.SendText("文本同步成功", Text);
+                Toast.SendText("文本同步成功", Text, DefaultButton());
             }
         }
     }

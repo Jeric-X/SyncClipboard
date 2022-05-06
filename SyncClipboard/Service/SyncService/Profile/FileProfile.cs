@@ -188,11 +188,9 @@ namespace SyncClipboard.Service
             Toast.SendText(
                 "文件同步成功",
                 FileName,
-                new Button[]
-                {
-                    new Button("打开文件所在文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
-                    new Button("打开文件", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path))),
-                }
+                DefaultButton(),
+                new Button("打开文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+                new Button("打开", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
             );
         }
     }
