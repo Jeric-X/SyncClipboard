@@ -40,7 +40,7 @@ namespace SyncClipboard.Service
             Toast.SendText("剪切板同步成功", Text);
         }
 
-        public void SetLocalClipboard(bool notify = true)
+        public void SetLocalClipboard(CancellationToken? cancelToken, bool notify = true)
         {
             var dataObject = CreateDataObject();
             if (dataObject is null)
@@ -48,6 +48,7 @@ namespace SyncClipboard.Service
                 return;
             }
 
+            cancelToken?.ThrowIfCancellationRequested();
             lock (SyncService.localProfilemutex)
             {
                 if (MainThreadSynContext == SynchronizationContext.Current)
@@ -119,7 +120,7 @@ namespace SyncClipboard.Service
 
         protected Button DefaultButton()
         {
-            return new Button("复制", new(Guid.NewGuid().ToString(), (_) => SetLocalClipboard(false)));
+            return new Button("复制", new(Guid.NewGuid().ToString(), (_) => SetLocalClipboard(null, false)));
         }
     }
 }
