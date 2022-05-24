@@ -85,7 +85,7 @@ namespace SyncClipboard.Service
 
         protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
 
-        public static async Task<bool> Same(Profile lhs, Profile rhs, CancellationToken cancellationToken)
+        public static async Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken cancellationToken)
         {
             if (ReferenceEquals(lhs, rhs))
             {

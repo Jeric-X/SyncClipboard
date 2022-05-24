@@ -18,6 +18,7 @@ namespace SyncClipboard.Service
         private bool _pullSwitchOn = false;
         private readonly object _pullSwitchLocker = new();
         private ProgressToastReporter? _toastReporter;
+        private Profile? _remoteProfileCache;
 
         public override void Load()
         {
@@ -155,7 +156,11 @@ namespace SyncClipboard.Service
                     var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken).ConfigureAwait(true);
                     Log.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
-                    await SetRemoteProfileToLocal(remoteProfile, cancelToken).ConfigureAwait(true);
+                    if (!await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+                    {
+                        await SetRemoteProfileToLocal(remoteProfile, cancelToken).ConfigureAwait(true);
+                        _remoteProfileCache = remoteProfile;
+                    }
                     Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
                     errorTimes = 0;
                 }
