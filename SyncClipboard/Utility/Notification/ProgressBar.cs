@@ -22,7 +22,8 @@ namespace SyncClipboard.Utility.Notification
         protected override ToastContentBuilder GetBuilder()
         {
             var builder = base.GetBuilder();
-            builder.AddVisualChild(new AdaptiveProgressBar()
+            builder.AddVisualChild(
+                new AdaptiveProgressBar()
                 {
                     Title = new BindableString(PROGRESS_BINDING_TITLE),
                     Value = IsIndeterminate ? AdaptiveProgressBarValue.Indeterminate : new BindableProgressBarValue(PROGRESS_BINDING_VALUE),

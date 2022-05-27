@@ -19,7 +19,7 @@ namespace SyncClipboard.Utility.Notification
                 .AddHeroImage(uri, "alternateText")
                 .AddText(title)
                 .AddText(text);
-            foreach(var button in buttons)
+            foreach (var button in buttons)
             {
                 content.AddButton(button);
             }

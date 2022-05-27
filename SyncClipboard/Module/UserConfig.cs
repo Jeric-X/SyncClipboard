@@ -46,7 +46,7 @@ namespace SyncClipboard.Module
 
         internal static void Save()
         {
-            var configStr = JsonSerializer.Serialize(Config,  new JsonSerializerOptions{ WriteIndented = true });
+            var configStr = JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true });
             try
             {
                 File.WriteAllText(Env.FullPath(CONFIG_FILE), configStr);

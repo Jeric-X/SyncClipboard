@@ -37,7 +37,8 @@ namespace SyncClipboard.Utility.Web
                         ConnectTimeout = TimeSpan.FromSeconds(60),
                         Proxy = new System.Net.WebProxy(UserConfig.Config.Program.Proxy, true),
                         UseProxy = true
-                });
+                    }
+                );
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
                 return client;
             }
