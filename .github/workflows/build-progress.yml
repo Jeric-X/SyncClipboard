@@ -21,6 +21,9 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
 
+    - name: Check code style
+      run: dotnet format --verify-no-changes
+
     - name: Build
       run: dotnet publish --configuration Release --no-restore
 
