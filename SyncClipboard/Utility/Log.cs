@@ -57,12 +57,11 @@ namespace SyncClipboard.Utility
                 try
                 {
                     using StreamWriter file = new($@"{LOG_FOLDER}\{logFile}.txt", true, System.Text.Encoding.UTF8);
-                    file.WriteLineAsync(logStr);
+                    file.WriteLine(logStr);
                 }
                 catch
                 {
                     Console.WriteLine(logStr);
-                    throw;
                 }
             }
         }
