@@ -193,5 +193,10 @@ namespace SyncClipboard.Service
                 new Button("打开", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
             );
         }
+
+        public async Task<bool> Oversized(CancellationToken cancelToken)
+        {
+            return await GetMd5(cancelToken) == MD5_FOR_OVERSIZED_FILE;
+        }
     }
 }

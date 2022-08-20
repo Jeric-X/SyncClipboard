@@ -156,7 +156,7 @@ namespace SyncClipboard.Service
                     var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken).ConfigureAwait(true);
                     Log.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
-                    if (!await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+                    if (await NeedUpdate(remoteProfile, cancelToken))
                     {
                         await SetRemoteProfileToLocal(remoteProfile, cancelToken).ConfigureAwait(true);
                         _remoteProfileCache = remoteProfile;
@@ -182,6 +182,23 @@ namespace SyncClipboard.Service
 
                 await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken).ConfigureAwait(true);
             }
+        }
+
+        private async Task<bool> NeedUpdate(Profile remoteProfile, CancellationToken cancelToken)
+        {
+            if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+            {
+                return false;
+            }
+
+            if (remoteProfile is FileProfile)
+            {
+                if (await (remoteProfile as FileProfile)!.Oversized(cancelToken))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)

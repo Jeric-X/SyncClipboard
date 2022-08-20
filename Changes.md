@@ -2,6 +2,7 @@ v1.3.10
 - 修复bug: 无法一次复制多个文件（EasyCopyImageSerivce引起）
 - 增加重新复制按钮
 - 修复bug: 复制超大文本引起cpu爆高
+- 修复bug: 文件过大不上传，引起的404
 
 v1.3.9
 - 修复：commandService失效
