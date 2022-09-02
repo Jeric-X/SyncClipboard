@@ -10,8 +10,10 @@ namespace SyncClipboard.Utility.Notification
     {
         public const string DEFAULT_GROUP = "DEFAULT_GROUP";
         public const string DEFAULT_TAG = "DEFAULT_TAG";
-        public string Group { get; set; } = DEFAULT_GROUP;
-        public string Tag { get; set; } = DEFAULT_TAG;
+        private string group = DEFAULT_GROUP;
+        public string Group { get => group; set => group = value.Length <= 64 ? value : value[..63]; }
+        private string tag = DEFAULT_TAG;
+        public string Tag { get => tag; set => tag = value.Length <= 64 ? value : value[..63]; }
         public string Title { get; set; }
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
