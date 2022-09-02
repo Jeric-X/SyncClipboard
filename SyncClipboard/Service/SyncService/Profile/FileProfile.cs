@@ -97,15 +97,30 @@ namespace SyncClipboard.Service
             string localPath = GetTempLocalFilePath();
 
             await _webDav.GetFile(remotePath, localPath, progress, cancelToken);
-            if (await GetMD5HashFromFile(localPath, cancelToken) != await GetMd5(cancelToken))
+            await CheckHash(localPath, cancelToken);
+
+            Log.Write("[PULL] download OK " + localPath);
+            fullPath = localPath;
+            statusTip = FileName;
+        }
+
+        private async Task CheckHash(string localPath, CancellationToken cancelToken)
+        {
+            var downloadFIleMd5 = GetMD5HashFromFile(localPath, cancelToken);
+            var existedMd5 = GetMd5(cancelToken);
+            if (string.IsNullOrEmpty(await existedMd5))
+            {
+                SetMd5(await downloadFIleMd5);
+                await (_webDav?.PutText(SyncService.REMOTE_RECORD_FILE, ToJsonString(), cancelToken) ?? Task.CompletedTask);
+                return;
+            }
+
+            if (await downloadFIleMd5 != await existedMd5)
             {
                 Log.Write("[PULL] download erro, md5 wrong");
                 statusTip = "Downloading erro, md5 wrong";
                 throw new Exception("FileProfile download check md5 failed");
             }
-            Log.Write("[PULL] download OK " + localPath);
-            fullPath = localPath;
-            statusTip = FileName;
         }
 
         public override string ToolTip()
@@ -131,7 +146,13 @@ namespace SyncClipboard.Service
         {
             try
             {
-                return await GetMd5(cancellationToken) == await ((FileProfile)rhs).GetMd5(cancellationToken);
+                var md5This = await GetMd5(cancellationToken);
+                var md5Other = await ((FileProfile)rhs).GetMd5(cancellationToken);
+                if (string.IsNullOrEmpty(md5This) || string.IsNullOrEmpty(md5Other))
+                {
+                    return false;
+                }
+                return md5This == md5Other;
             }
             catch
             {
