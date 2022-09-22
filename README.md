@@ -22,24 +22,23 @@
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## Client-Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6，Windows 10 17763
+下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6，Windows 10 17763。后台运行，自动同步
 
 ## Client-IOS 
-使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)提供的`Get Contents of URL`功能发送HTTP协议  
-导入这个[快捷指令](https://www.icloud.com/shortcuts/229cd7657ce544daafc7ece882405b36)
+### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
+
+导入这个[快捷指令](https://www.icloud.com/shortcuts/229cd7657ce544daafc7ece882405b36)。从组件栏和分享菜单中使用
+
+### 使用[JSBox](https://apps.apple.com/cn/app/jsbox-%E5%AD%A6%E4%B9%A0%E5%86%99%E4%BB%A3%E7%A0%81/id1312014438)
+导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件
 
 ## Client-Android
-只用同步文字的话可以使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)解决，复杂功能可以用各种脚本自动化工具解决
+### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
+导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
 ## 配置
 
-### Windows
-- 填写地址：指定服务器同步文件夹的地址（提前在服务器中创建好）
-- 填写用户名、密码
-- 支持Nextcloud的网页认证
-- 部分功能的设定只能在配置文件修改
-### IOS
-- 修改导入的Workflow
-- 填写地址：第一个可输入的URL Action
-- 填写用户名：第一个可输入的Text Action
-- 填写密码：第二个可输入的Text Action
+全平台依赖三条必要配置，windows端可以在配置文件中修改更多配置
+- user
+- token
+- url，具体到文件夹，需提前创建好

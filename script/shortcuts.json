@@ -1,0 +1,182 @@
+{
+  "categories": [
+    {
+      "id": "accb6a5b-60a3-4ba5-921a-f9cd772067aa",
+      "name": "快捷方式",
+      "shortcuts": [
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "codeOnSuccess": "showToast(\u0027已上传\u0027);",
+          "contentType": "application/json",
+          "description": "支持选中文字后分享",
+          "iconName": "freepik_upload",
+          "id": "d6a958cb-3fa6-4c79-b342-229008bfac8a",
+          "method": "PUT",
+          "name": "上传剪切板",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "quickSettingsTileShortcut": true,
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/SyncClipboard.json",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\r\nconst type \u003d profile.Type\r\n\r\nif (type \u003d\u003d \u0027Text\u0027) {\r\n    const ClibboardText \u003d profile.Clipboard;\r\n    copyToClipboard(ClibboardText);\r\n    showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\r\n\r\n    const httpstr \u003d httpString(ClibboardText);\r\n\r\n    if (httpstr) {\r\n        if (confirm(\u0027包含网址，是否打开\u0027)) {\r\n            openUrl(httpstr[0]);\r\n        }\r\n    }\r\n}\r\n\r\nif (type \u003d\u003d \u0027File\u0027 || type \u003d\u003d \u0027Image\u0027) {\r\n    const downloadUrl \u003d getVariable(\u0027url\u0027) + \u0027/file/\u0027 + profile.File\r\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\r\n    enqueueShortcut(\u0027分析文件\u0027, inputPara)\r\n}\r\n\r\nfunction httpString(s) {\r\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\r\n    s \u003d s.match(reg);\r\n    return (s)\r\n}",
+          "iconName": "freepik_download",
+          "id": "91cf41c5-da0c-45b5-988c-9f636e135abd",
+          "name": "下载剪切板",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "quickSettingsTileShortcut": true,
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/SyncClipboard.json",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "codeOnPrepare": "setVariable(\u0027FileName\u0027, selectedFiles[0].name);",
+          "codeOnSuccess": "enqueueShortcut(\u0027上传文件 控制部分\u0027)",
+          "contentType": "application/json",
+          "description": "从分享菜单使用",
+          "iconName": "freepik_upload",
+          "id": "2b8e95a4-2ece-41a1-aace-f8f80c0497fb",
+          "method": "PUT",
+          "name": "上传文件",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "requestBodyType": "file",
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/file/{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        }
+      ]
+    },
+    {
+      "id": "316553f3-4bb0-4e10-806b-0de26e10fb2a",
+      "name": "基础组件",
+      "shortcutClickBehavior": "edit",
+      "shortcuts": [
+        {
+          "browserPackageName": "com.android.chrome",
+          "description": "使用chrome访问指定的网页",
+          "executionType": "browser",
+          "iconName": "flat_color_global",
+          "id": "ec5b4427-b36f-463e-aea1-7299a5ab197f",
+          "name": "使用浏览器下载",
+          "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}\",\"Clipboard\":\"\",\"Type\":\"File\"}",
+          "codeOnSuccess": "showToast(\u0027已上传\u0027);",
+          "contentType": "application/json",
+          "iconName": "freepik_upload",
+          "id": "2424dcac-6fa0-4ff9-849b-63a56d63c79f",
+          "method": "PUT",
+          "name": "上传文件 控制部分",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/SyncClipboard.json",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "codeOnFailure": "const inputPara \u003d { \u0027downloadUrl\u0027: getVariable(\u0027downloadUrl\u0027) }\r\nenqueueShortcut(\u0027分析文件(GET)\u0027, inputPara)",
+          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(\u0027downloadUrl\u0027) }\r\n\r\nshowToast(\u0027文件大小\\n\u0027 + contentLength);\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
+          "contentType": "application/json",
+          "description": "根据文件大小，选择内部展示还是使用浏览器下载",
+          "iconName": "flat_color_folder",
+          "id": "a215838f-786b-4e38-b1b3-6188e14fb628",
+          "method": "HEAD",
+          "name": "分析文件",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "requestBodyType": "file",
+          "responseHandling": {
+            "failureOutput": "none",
+            "includeMetaInfo": true,
+            "successOutput": "none",
+            "uiType": "toast"
+          },
+          "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(\u0027downloadUrl\u0027) }\r\n\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
+          "contentType": "application/json",
+          "description": "HEAD失败的情况下使用GET",
+          "iconName": "flat_color_folder",
+          "id": "cba2110f-e098-4154-8314-64649fe9f9f2",
+          "name": "分析文件(GET)",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "requestBodyType": "file",
+          "responseHandling": {
+            "includeMetaInfo": true,
+            "successOutput": "none"
+          },
+          "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "contentType": "application/json",
+          "description": "只支持2m以下文件",
+          "iconName": "flat_color_folder",
+          "id": "1e693964-ab59-4e9c-902b-6b94b90ff2f0",
+          "name": "展示文件",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "requestBodyType": "file",
+          "responseHandling": {},
+          "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        }
+      ]
+    }
+  ],
+  "variables": [
+    {
+      "id": "719f997c-6bf6-458f-a148-3c2a8ac5e405",
+      "key": "UserName",
+      "value": "ChangeIt"
+    },
+    {
+      "id": "9421719b-086f-4799-8432-158b84b6e05a",
+      "key": "UserToken",
+      "value": "ChangeIt"
+    },
+    {
+      "flags": 1,
+      "id": "76b1e948-84b3-497e-8ec5-b911d00f8f0f",
+      "jsonEncode": true,
+      "key": "Clipboard",
+      "type": "clipboard"
+    },
+    {
+      "id": "d12cab01-6d2b-44aa-a1fb-dfddc6fe7895",
+      "jsonEncode": true,
+      "key": "FileName",
+      "value": ""
+    },
+    {
+      "id": "136751b5-5f38-49fc-81dc-80a825804203",
+      "key": "url",
+      "value": "ChangeIt"
+    },
+    {
+      "id": "5989c421-2669-4424-80c3-69ba7995524a",
+      "key": "downloadUrl"
+    }
+  ],
+  "version": 53
+}
