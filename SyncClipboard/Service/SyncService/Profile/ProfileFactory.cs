@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
+using System.Net.Http;
+using System.Net;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -113,8 +115,14 @@ namespace SyncClipboard.Service
             {
                 jsonProfile = await webDav.GetJson<JsonProfile>(SyncService.REMOTE_RECORD_FILE, cancelToken);
             }
-            catch
+            catch(Exception ex)
             {
+                if (ex is HttpRequestException && (ex as HttpRequestException)?.StatusCode == HttpStatusCode.NotFound)
+                {
+                    var blankProfile = new TextProfile("");
+                    await blankProfile.UploadProfileAsync(webDav, cancelToken);
+                    return blankProfile;
+                }
                 Log.Write("CreateFromRemote failed");
                 throw;
             }

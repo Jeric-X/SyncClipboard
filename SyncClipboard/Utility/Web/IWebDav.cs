@@ -22,5 +22,7 @@ namespace SyncClipboard.Utility.Web
         Task<bool> TestAlive(CancellationToken? cancelToken = null);
         Task<Type?> GetJson<Type>(string url, CancellationToken? cancelToken = null);
         Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null);
+        Task<bool> Exist(string url, CancellationToken? cancelToken = null);
+        Task CreateDirectory(string url, CancellationToken? cancelToken = null);
     }
 }

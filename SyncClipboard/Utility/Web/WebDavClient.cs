@@ -126,6 +126,25 @@ namespace SyncClipboard.Utility.Web
             ).Token;
         }
 
+        public async Task<bool> Exist(string url, CancellationToken? cancelToken = null)
+        {
+            var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
+            var res = await httpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
+            res.EnsureSuccessStatusCode();
+            return true;
+        }
+
+        public async Task CreateDirectory(string url, CancellationToken? cancelToken = null)
+        {
+            var requestMessage = new HttpRequestMessage(new HttpMethod("MKCOL"), url);
+            var res = await httpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            res.EnsureSuccessStatusCode();
+        }
+
         public async Task<bool> TestAlive(CancellationToken? cancelToken = null)
         {
             HttpRequestMessage requestMessage = new()

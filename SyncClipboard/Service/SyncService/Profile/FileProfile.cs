@@ -69,6 +69,10 @@ namespace SyncClipboard.Service
             if (file.Length <= UserConfig.Config.SyncService.MaxFileByte)
             {
                 Log.Write("PUSH file " + FileName);
+                if (!await webdav.Exist(SyncService.REMOTE_FILE_FOLDER))
+                {
+                    await webdav.CreateDirectory(SyncService.REMOTE_FILE_FOLDER);
+                }
                 await webdav.PutFile(remotePath, fullPath, cancelToken);
             }
             else
