@@ -115,7 +115,7 @@ namespace SyncClipboard.Service
             {
                 jsonProfile = await webDav.GetJson<JsonProfile>(SyncService.REMOTE_RECORD_FILE, cancelToken);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (ex is HttpRequestException && (ex as HttpRequestException)?.StatusCode == HttpStatusCode.NotFound)
                 {
