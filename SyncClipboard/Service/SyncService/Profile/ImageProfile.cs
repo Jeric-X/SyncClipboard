@@ -41,17 +41,7 @@ namespace SyncClipboard.Service
 
         private static void SetBitmap(DataObject dataObject, string imagePath)
         {
-            FileStream fileStream = new(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            byte[] bytes = new byte[fileStream.Length];
-            fileStream.Read(bytes, 0, bytes.Length);
-            fileStream.Close();
-
-            Stream stream = new MemoryStream(bytes);
-
-            var bitmap = new Bitmap(stream);
-            stream.Close();
-
-            dataObject.SetData(DataFormats.Bitmap, bitmap);
+            dataObject.SetData(DataFormats.Bitmap, new Bitmap(imagePath));
         }
 
         private static void SetHtml(DataObject dataObject, string imagePath)
