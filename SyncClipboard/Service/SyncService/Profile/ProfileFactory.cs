@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility.Web;
+using SyncClipboard.Utility.Image;
 using static SyncClipboard.Service.ProfileType;
 using System.Net.Http;
 using System.Net;
@@ -23,8 +24,6 @@ namespace SyncClipboard.Service
             public string[]? Files;
         }
 
-        public static readonly string[] imageExtensions = { ".jpg", ".jpeg", ".gif", ".bmp", ".png" };
-
         public static Profile CreateFromLocal(out LocalClipboard localClipboard)
         {
             localClipboard = GetLocalClipboard();
@@ -34,7 +33,7 @@ namespace SyncClipboard.Service
                 var filename = localClipboard.Files[0];
                 if (System.IO.File.Exists(filename))
                 {
-                    if (FileIsImage(filename))
+                    if (ImageHelper.FileIsImage(filename))
                     {
                         return new ImageProfile(filename);
                     }
@@ -58,19 +57,6 @@ namespace SyncClipboard.Service
         public static Profile CreateFromLocal()
         {
             return CreateFromLocal(out _);
-        }
-
-        private static bool FileIsImage(string filename)
-        {
-            string extension = System.IO.Path.GetExtension(filename);
-            foreach (var imageExtension in imageExtensions)
-            {
-                if (imageExtension.Equals(extension, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         private static LocalClipboard GetLocalClipboard()
@@ -140,7 +126,7 @@ namespace SyncClipboard.Service
                     return new TextProfile(jsonProfile.Clipboard);
                 case ClipboardType.File:
                     {
-                        if (FileIsImage(jsonProfile.File))
+                        if (ImageHelper.FileIsImage(jsonProfile.File))
                         {
                             return new ImageProfile(jsonProfile, webDav);
                         }

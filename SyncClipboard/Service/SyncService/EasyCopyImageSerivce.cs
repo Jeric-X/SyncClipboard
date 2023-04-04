@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Image;
 using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileFactory;
 #nullable enable
@@ -88,7 +89,7 @@ namespace SyncClipboard.Service
                     Log.Write(LOG_TAG, "http image url: " + match.Result("$1"));
                     Global.Notifyer.SetStatusString(SERVICE_NAME, "downloading");
                     var localPath = await DownloadImage(match.Result("$1"), useProxy, cancellationToken);
-                    if (!SupportsImage(localPath))
+                    if (!ImageHelper.FileIsImage(localPath))
                     {
                         return;
                     }
@@ -97,19 +98,6 @@ namespace SyncClipboard.Service
             }
 
             await AdjustClipboard(profile, cancellationToken);
-        }
-
-        private static bool SupportsImage(string fileName)
-        {
-            string extension = Path.GetExtension(fileName);
-            foreach (var imageExtension in imageExtensions)
-            {
-                if (imageExtension.Equals(extension, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         private static bool NeedAdjust(LocalClipboard localClipboard)
