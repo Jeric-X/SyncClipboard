@@ -12,65 +12,37 @@ using static SyncClipboard.Service.ProfileFactory;
 
 namespace SyncClipboard.Service
 {
-    public class EasyCopyImageSerivce : Service
+    public class EasyCopyImageSerivce : ClipboardHander
     {
-        private event Action<bool>? SwitchChanged;
-        private const string SERVICE_NAME = "💠";
-        private const string LOG_TAG = "EASY IMAGE";
-        protected override void StartService()
-        {
-            Log.Write(LOG_TAG, "EasyCopyImageSerivce started");
-            SwitchChanged += Global.Menu.AddMenuItemGroup(
-                new string[] { "Easy Copy Image" },
-                new Action<bool>[] {
-                    (switchOn) => {
-                        UserConfig.Config.SyncService.EasyCopyImageSwitchOn = switchOn;
-                        UserConfig.Save();
-                    }
-                }
-            )[0];
-            SwitchChanged?.Invoke(UserConfig.Config.SyncService.EasyCopyImageSwitchOn);
-        }
-
-        public override void Load()
-        {
-            SwitchChanged?.Invoke(UserConfig.Config.SyncService.EasyCopyImageSwitchOn);
-        }
-
-        protected override void StopSerivce()
-        {
-            Log.Write(LOG_TAG, "EasyCopyImageSerivce stopped");
-        }
-
-        private CancellationTokenSource? _cancelSource;
-        private readonly object _cancelSourceLocker = new();
         private ProgressToastReporter? _progress;
         private readonly object _progressLocker = new();
 
-        private CancellationToken StopPreviousAndGetNewToken()
+        public override string SERVICE_NAME => "Easy Copy Image";
+
+        public override string LOG_TAG => "EASY IMAGE";
+
+        protected override void MenuItemChanged(bool check)
+        {
+            UserConfig.Config.SyncService.EasyCopyImageSwitchOn = check;
+        }
+
+        protected override void LoadFromConfig(Action<bool> switchOn)
+        {
+            switchOn(UserConfig.Config.SyncService.EasyCopyImageSwitchOn);
+        }
+
+        protected override CancellationToken StopPreviousAndGetNewToken()
         {
             _progress?.CancelSicent();
             _progress = null;
-            lock (_cancelSourceLocker)
-            {
-                if (_cancelSource?.Token.CanBeCanceled ?? false)
-                {
-                    _cancelSource.Cancel();
-                }
-                _cancelSource = new();
-                return _cancelSource.Token;
-            }
+            return base.StopPreviousAndGetNewToken();
         }
 
-        private void ClipBoardChangedHandler()
+        protected override Task HandleClipboard(CancellationToken cancelToken)
         {
-            if (UserConfig.Config.SyncService.EasyCopyImageSwitchOn)
-            {
-                Global.Notifyer.SetStatusString(SERVICE_NAME, "running");
-                CancellationToken cancelToken = StopPreviousAndGetNewToken();
-                _ = ProcessClipboard(false, cancelToken);
-                _ = ProcessClipboard(true, cancelToken);
-            }
+            _ = ProcessClipboard(false, cancelToken);
+            _ = ProcessClipboard(true, cancelToken);
+            return Task.CompletedTask;
         }
 
         private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
@@ -87,7 +59,6 @@ namespace SyncClipboard.Service
                 if (match.Success) // 是从浏览器复制的图片
                 {
                     Log.Write(LOG_TAG, "http image url: " + match.Result("$1"));
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, "downloading");
                     var localPath = await DownloadImage(match.Result("$1"), useProxy, cancellationToken);
                     if (!ImageHelper.FileIsImage(localPath))
                     {
@@ -144,16 +115,6 @@ namespace SyncClipboard.Service
                 await Http.HttpClient.GetFile(imageUrl, fullPath, _progress, cancellationToken);
                 return fullPath;
             }
-        }
-
-        public override void RegistEventHandler()
-        {
-            Event.RegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
-        }
-
-        public override void UnRegistEventHandler()
-        {
-            Event.UnRegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
         }
     }
 }
