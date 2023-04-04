@@ -22,9 +22,11 @@ namespace SyncClipboard.Service
                     (check) => {
                         SwitchOn = check;
                         MenuItemChanged(check);
+                        UserConfig.Save();
                     }
                 }
             )[0];
+            Load();
         }
 
         protected abstract void MenuItemChanged(bool check);

@@ -37,8 +37,14 @@ namespace SyncClipboard.Module
                 public int Shutdowntime { get; set; } = 30;
             }
 
+            public class CClipboardService
+            {
+                public bool ConvertSwitchOn { get; set; } = false;
+            }
+
             public CSyncService SyncService { get; set; } = new CSyncService();
             public CCommandService CommandService { get; set; } = new CCommandService();
+            public CClipboardService ClipboardService { get; set; } = new CClipboardService();
             public CProgram Program { get; set; } = new CProgram();
         }
 

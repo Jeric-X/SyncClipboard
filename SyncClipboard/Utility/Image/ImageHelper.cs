@@ -1,4 +1,8 @@
 using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using ImageMagick;
 
 namespace SyncClipboard.Utility.Image
 {
@@ -32,6 +36,23 @@ namespace SyncClipboard.Utility.Image
                 }
             }
             return false;
+        }
+
+        public static async Task<string> CompatibilityCast(string filePath, string newFileDir, CancellationToken cancelToken)
+        {
+            using var image = new MagickImageCollection();
+            await image.ReadAsync(filePath, cancelToken);
+            var newPath = Path.Combine(newFileDir, Path.GetFileNameWithoutExtension(filePath));
+            if (image.Count >= 2)
+            {
+                newPath += ".gif";
+            }
+            else
+            {
+                newPath += ".jpg";
+            }
+            await image.WriteAsync(newPath, cancelToken);
+            return newPath;
         }
     }
 }

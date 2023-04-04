@@ -62,7 +62,7 @@ namespace SyncClipboard.Service
                     var localPath = await DownloadImage(match.Result("$1"), useProxy, cancellationToken);
                     if (!ImageHelper.FileIsImage(localPath))
                     {
-                        return;
+                        localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                     }
                     profile = new ImageProfile(localPath);
                 }
