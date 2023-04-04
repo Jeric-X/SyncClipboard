@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using ImageMagick;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Notification;
 using SyncClipboard.Utility.Web;
@@ -41,7 +42,8 @@ namespace SyncClipboard.Service
 
         private static void SetBitmap(DataObject dataObject, string imagePath)
         {
-            dataObject.SetData(DataFormats.Bitmap, new Bitmap(imagePath));
+            using var image = new MagickImage(imagePath);
+            dataObject.SetData(DataFormats.Bitmap, image.ToBitmap());
         }
 
         private static void SetHtml(DataObject dataObject, string imagePath)
