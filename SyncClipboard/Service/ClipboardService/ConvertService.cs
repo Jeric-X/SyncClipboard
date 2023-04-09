@@ -1,6 +1,6 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
+using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using SyncClipboard.Utility.Image;
 using static SyncClipboard.Service.ProfileFactory;
@@ -23,7 +23,7 @@ namespace SyncClipboard.Service
             switchOn(UserConfig.Config.ClipboardService.ConvertSwitchOn);
         }
 
-        protected override async Task HandleClipboard(CancellationToken cancellationToken)
+        protected override async void HandleClipboard(CancellationToken cancellationToken)
         {
             var profile = CreateFromLocal(out var localClipboard);
             if (profile.GetProfileType() != ProfileType.ClipboardType.File || !NeedAdjust(localClipboard))
@@ -37,8 +37,9 @@ namespace SyncClipboard.Service
                 var newPath = await ImageHelper.CompatibilityCast(file, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                 new ImageProfile(newPath).SetLocalClipboard(cancellationToken, false);
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Write(LOG_TAG, ex.Message);
                 return;
             }
         }

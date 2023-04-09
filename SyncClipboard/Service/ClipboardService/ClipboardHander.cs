@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 #nullable enable
@@ -31,6 +30,18 @@ namespace SyncClipboard.Service
 
         protected abstract void MenuItemChanged(bool check);
         protected abstract void LoadFromConfig(Action<bool> switchOn);
+
+        public void CancelProcess()
+        {
+            lock (_cancelSourceLocker)
+            {
+                if (_cancelSource?.Token.CanBeCanceled ?? false)
+                {
+                    _cancelSource.Cancel();
+                }
+                _cancelSource = null;
+            }
+        }
 
         public override void Load()
         {
@@ -64,11 +75,11 @@ namespace SyncClipboard.Service
             if (SwitchOn)
             {
                 CancellationToken cancelToken = StopPreviousAndGetNewToken();
-                _ = HandleClipboard(cancelToken);
+                HandleClipboard(cancelToken);
             }
         }
 
-        protected abstract Task HandleClipboard(CancellationToken cancelToken);
+        protected abstract void HandleClipboard(CancellationToken cancelToken);
 
         public override void RegistEventHandler()
         {

@@ -38,11 +38,16 @@ namespace SyncClipboard.Service
             return base.StopPreviousAndGetNewToken();
         }
 
-        protected override Task HandleClipboard(CancellationToken cancelToken)
+        protected override void HandleClipboard(CancellationToken cancelToken)
         {
-            _ = ProcessClipboard(false, cancelToken);
-            _ = ProcessClipboard(true, cancelToken);
-            return Task.CompletedTask;
+            Task[] tasks = {
+                ProcessClipboard(false, cancelToken),
+                ProcessClipboard(true, cancelToken)
+            };
+            foreach (var task in tasks)
+            {
+                task.ContinueWith((_) => this.CancelProcess(), TaskContinuationOptions.OnlyOnRanToCompletion);
+            }
         }
 
         private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
