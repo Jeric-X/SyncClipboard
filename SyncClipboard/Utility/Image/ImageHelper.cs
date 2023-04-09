@@ -45,6 +45,7 @@ namespace SyncClipboard.Utility.Image
             var newPath = Path.Combine(newFileDir, Path.GetFileNameWithoutExtension(filePath));
             if (image.Count >= 2)
             {
+                image.Coalesce();
                 newPath += ".gif";
             }
             else
