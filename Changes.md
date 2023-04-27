@@ -1,3 +1,6 @@
+v1.4.2 (working)
+- 修复：从excel/ppt复制文字会变成图片
+
 v1.4.1
 - 修复：webp转gif后动画撕裂
 

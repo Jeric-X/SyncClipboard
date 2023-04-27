@@ -41,14 +41,14 @@ namespace SyncClipboard.Service
                 }
             }
 
-            if (localClipboard.Image != null)
-            {
-                return ImageProfile.CreateFromImage(localClipboard.Image);
-            }
-
             if (localClipboard.Text != null)
             {
                 return new TextProfile(localClipboard.Text);
+            }
+
+            if (localClipboard.Image != null)
+            {
+                return ImageProfile.CreateFromImage(localClipboard.Image);
             }
 
             return new UnkonwnProfile();
