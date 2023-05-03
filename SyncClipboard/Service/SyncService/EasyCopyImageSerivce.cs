@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Image;
@@ -79,6 +80,11 @@ namespace SyncClipboard.Service
         private static bool NeedAdjust(LocalClipboard localClipboard)
         {
             if (localClipboard.Files?.Length > 1)
+            {
+                return false;
+            }
+
+            if ((localClipboard.Effects & DragDropEffects.Move) == DragDropEffects.Move)
             {
                 return false;
             }

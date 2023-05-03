@@ -10,6 +10,7 @@ using SyncClipboard.Utility.Image;
 using static SyncClipboard.Service.ProfileType;
 using System.Net.Http;
 using System.Net;
+using System.IO;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -22,6 +23,7 @@ namespace SyncClipboard.Service
             public string? Html;
             public Image? Image;
             public string[]? Files;
+            public DragDropEffects? Effects;
         }
 
         public static Profile CreateFromLocal(out LocalClipboard localClipboard)
@@ -82,6 +84,7 @@ namespace SyncClipboard.Service
                         localClipboard.Text = (string)ClipboardData.GetData(DataFormats.Text) ?? localClipboard.Text;
                         localClipboard.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                         localClipboard.Html = (string)ClipboardData.GetData(DataFormats.Html);
+                        localClipboard.Effects = (DragDropEffects?)(ClipboardData.GetData("Preferred DropEffect") as MemoryStream)?.ReadByte();
                         break;
                     }
                     catch
