@@ -18,6 +18,7 @@
 测试过的服务器：   
 - [x] NextCloud  
 - [x] 坚果云  
+- [x] [AList](https://alist.nn.ci/)
 
 注：
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
