@@ -24,7 +24,7 @@
         },
         {
           "authentication": "basic",
-          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\r\nconst type \u003d profile.Type\r\n\r\nif (type \u003d\u003d \u0027Text\u0027) {\r\n    const ClibboardText \u003d profile.Clipboard;\r\n    copyToClipboard(ClibboardText);\r\n    showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\r\n\r\n    const httpstr \u003d httpString(ClibboardText);\r\n\r\n    if (httpstr) {\r\n        if (confirm(\u0027包含网址，是否打开\u0027)) {\r\n            openUrl(httpstr[0]);\r\n        }\r\n    }\r\n}\r\n\r\nif (type \u003d\u003d \u0027File\u0027 || type \u003d\u003d \u0027Image\u0027) {\r\n    const downloadUrl \u003d getVariable(\u0027url\u0027) + \u0027/file/\u0027 + profile.File\r\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\r\n    enqueueShortcut(\u0027分析文件\u0027, inputPara)\r\n}\r\n\r\nfunction httpString(s) {\r\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\r\n    s \u003d s.match(reg);\r\n    return (s)\r\n}",
+          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\r\nconst type \u003d profile.Type\r\n\r\nif (type \u003d\u003d \u0027Text\u0027) {\r\n    const ClibboardText \u003d profile.Clipboard;\r\n    copyToClipboard(ClibboardText);\r\n    showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\r\n\r\n    const httpstr \u003d httpString(ClibboardText);\r\n\r\n    if (httpstr) {\r\n        if (confirm(\u0027包含网址，是否打开\u0027)) {\r\n            openUrl(httpstr[0]);\r\n        }\r\n    }\r\n}\r\n\r\nif (type \u003d\u003d \u0027File\u0027 || type \u003d\u003d \u0027Image\u0027) {\r\n    const downloadUrl \u003d getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + profile.File\r\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\r\n    enqueueShortcut(\u0027分析文件\u0027, inputPara)\r\n}\r\n\r\nfunction httpString(s) {\r\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\r\n    s \u003d s.match(reg);\r\n    return (s)\r\n}",
           "iconName": "freepik_download",
           "id": "91cf41c5-da0c-45b5-988c-9f636e135abd",
           "name": "下载剪切板",
@@ -39,7 +39,7 @@
         {
           "authentication": "basic",
           "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
-          "codeOnPrepare": "setVariable(\u0027FileName\u0027, selectedFiles[0].name);",
+          "codeOnPrepare": "setVariable(/*[variable]*/\"d12cab01-6d2b-44aa-a1fb-dfddc6fe7895\"/*[/variable]*/, selectedFiles[0].name);",
           "codeOnSuccess": "enqueueShortcut(\u0027上传文件 控制部分\u0027)",
           "contentType": "application/json",
           "description": "从分享菜单使用",
@@ -64,6 +64,7 @@
       "shortcuts": [
         {
           "browserPackageName": "com.android.chrome",
+          "codeOnPrepare": "let url \u003d getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/)\nconst user \u003d getVariable(/*[variable]*/\"719f997c-6bf6-458f-a148-3c2a8ac5e405\"/*[/variable]*/)\nconst pass \u003d getVariable(/*[variable]*/\"9421719b-086f-4799-8432-158b84b6e05a\"/*[/variable]*/)\nurl \u003d url.replace(\"://\", `://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@`)\nsetVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/, url)",
           "description": "使用chrome访问指定的网页",
           "executionType": "browser",
           "iconName": "flat_color_global",
@@ -90,8 +91,8 @@
         {
           "authentication": "basic",
           "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
-          "codeOnFailure": "const inputPara \u003d { \u0027downloadUrl\u0027: getVariable(\u0027downloadUrl\u0027) }\r\nenqueueShortcut(\u0027分析文件(GET)\u0027, inputPara)",
-          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(\u0027downloadUrl\u0027) }\r\n\r\nshowToast(\u0027文件大小\\n\u0027 + contentLength);\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
+          "codeOnFailure": "const inputPara \u003d { \u0027downloadUrl\u0027: getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/) }\r\nenqueueShortcut(\u0027分析文件(GET)\u0027, inputPara)",
+          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/) }\r\n\r\nshowToast(\u0027文件大小\\n\u0027 + contentLength);\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
           "contentType": "application/json",
           "description": "根据文件大小，选择内部展示还是使用浏览器下载",
           "iconName": "flat_color_folder",
@@ -112,7 +113,7 @@
         {
           "authentication": "basic",
           "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
-          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(\u0027downloadUrl\u0027) }\r\n\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
+          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/) }\r\n\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
           "contentType": "application/json",
           "description": "HEAD失败的情况下使用GET",
           "iconName": "flat_color_folder",
@@ -175,8 +176,9 @@
     },
     {
       "id": "5989c421-2669-4424-80c3-69ba7995524a",
-      "key": "downloadUrl"
+      "key": "downloadUrl",
+      "value": ""
     }
   ],
-  "version": 53
+  "version": 56
 }
