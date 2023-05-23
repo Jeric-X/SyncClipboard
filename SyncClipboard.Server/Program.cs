@@ -58,6 +58,22 @@ namespace SyncClipboard.Server
             return app;
         }
 
+        private static async Task<IResult> PutFile(HttpContext content, string path)
+        {
+            using var fs = new FileStream(path, FileMode.Create);
+            await content.Request.Body.CopyToAsync(fs);
+            return Results.Ok();
+        }
+
+        private static IResult GetFile(string path)
+        {
+            if (!File.Exists(path))
+            {
+                return Results.NotFound();
+            }
+            return Results.File(path);
+        }
+
         private static void Route(WebApplication app)
         {
             //app.UseStaticFiles();
@@ -71,40 +87,17 @@ namespace SyncClipboard.Server
                 return Results.Ok();
             }).RequireAuthorization();
 
-            app.MapPut("/file/{fileName}", async (HttpContext content, string fileName) =>
-            {
-                var path = Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName);
-                using var fs = new FileStream(path, FileMode.Create);
-                await content.Request.Body.CopyToAsync(fs);
-                return Results.Ok();
-            }).RequireAuthorization();
+            app.MapPut("/file/{fileName}", (HttpContext content, string fileName) =>
+                PutFile(content, Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName))).RequireAuthorization();
 
             app.MapGet("/file/{fileName}", (string fileName) =>
-            {
-                var path = Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName);
-                if (!File.Exists(path))
-                {
-                    return Results.NotFound();
-                }
-                return Results.File(path);
-            }).RequireAuthorization();
+                GetFile(Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName))).RequireAuthorization();
 
             app.MapGet("/{name}", (string name) =>
-            {
-                var path = Path.Combine(WebHostEnvironment?.WebRootPath!, name);
-                if (!File.Exists(path))
-                {
-                    return Results.NotFound();
-                }
-                return Results.File(path);
-            }).RequireAuthorization();
+                GetFile(Path.Combine(WebHostEnvironment?.WebRootPath!, name))).RequireAuthorization();
 
-            app.MapPut("/{name}", async (HttpContext content, string name) =>
-            {
-                using var fs = new FileStream(Path.Combine(WebHostEnvironment?.WebRootPath!, name), FileMode.Create);
-                await content.Request.Body.CopyToAsync(fs);
-                return Results.Ok();
-            }).RequireAuthorization();
+            app.MapPut("/{name}", (HttpContext content, string name) =>
+                PutFile(content, Path.Combine(WebHostEnvironment?.WebRootPath!, name))).RequireAuthorization();
         }
     }
 }
