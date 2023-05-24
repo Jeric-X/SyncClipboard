@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace SyncClipboard.Server
 {
@@ -72,7 +73,8 @@ namespace SyncClipboard.Server
             {
                 return Results.NotFound();
             }
-            return Results.File(path);
+            new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
+            return Results.File(path, contentType);
         }
 
         private static void Route(WebApplication app)
