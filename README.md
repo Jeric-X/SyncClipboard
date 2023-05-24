@@ -14,6 +14,14 @@
 
 ## Server
 
+### 客户端内置服务器
+通过右键菜单开启关闭，可以在配置文件中修改`端口号`，`用户名`，`密码`，使用http协议  
+注意：
+- 客户端处填写`http://ip:端口号`，`http`不可省略
+- http使用明文传输，在公网部署考虑使用反向代理工具配置SSL
+- 内置服务器并不是WebDAV实现
+
+### WebDAV服务器
 理论支持任何支持WebDAV协议的网盘、web服务器  
 测试过的服务器：   
 - [x] NextCloud  
@@ -24,7 +32,7 @@
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## Client-Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6，Windows 10 17763。后台运行，自动同步
+下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6([desktop](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)和[asp.net](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，没安装会弹窗提醒并跳转到浏览器下载，两个部分会分别提醒)，Windows 10 17763。后台运行，自动同步
 
 ## Client-IOS 
 ### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
