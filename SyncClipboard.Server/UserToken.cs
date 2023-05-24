@@ -9,8 +9,8 @@ namespace SyncClipboard.Server
 
     public class UserToken : IUserToken
     {
-        public string UserName { get; set; } = null!;
-        public string Password { get; set; } = null!;
+        public string UserName { get; set; } = "admin";
+        public string Password { get; set; } = "admin";
         public void SetUserToken(string name, string pass)
         {
             UserName = name;
