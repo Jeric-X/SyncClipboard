@@ -8,13 +8,16 @@ namespace SyncClipboard.Server
 {
     public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
+        private readonly IUserToken _userToken;
         public BasicAuthenticationHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
-            ISystemClock clock
+            ISystemClock clock,
+            IUserToken userToken
             ) : base(options, logger, encoder, clock)
         {
+            _userToken = userToken;
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -26,7 +29,7 @@ namespace SyncClipboard.Server
                 System.Console.WriteLine(token);
                 var credentialstring = Encoding.UTF8.GetString(Convert.FromBase64String(token));
                 var credentials = credentialstring.Split(':');
-                if (credentials[0] == "admin" && credentials[1] == "admin")
+                if (credentials[0] == _userToken.UserName && credentials[1] == _userToken.Password)
                 {
                     var claims = new[] { new Claim("name", credentials[0]), new Claim(ClaimTypes.Role, "Admin") };
                     var identity = new ClaimsIdentity(claims, "Basic");

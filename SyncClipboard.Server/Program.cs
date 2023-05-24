@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.StaticFiles;
 
 namespace SyncClipboard.Server
 {
@@ -20,6 +19,7 @@ namespace SyncClipboard.Server
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddSingleton<IUserToken, UserToken>();
 
             var app = builder.Build();
             WebHostEnvironment = app.Environment;
@@ -43,16 +43,17 @@ namespace SyncClipboard.Server
             app.Run();
         }
 
-        public static WebApplication Start(short prot, string path)
+        public static WebApplication Start(short prot, string path, string userName, string password)
         {
             var builder = WebApplication.CreateBuilder(
                 new WebApplicationOptions
                 {
-                    WebRootPath = path + "wwwroot"
+                    WebRootPath = path + "server"
                 }
             );
             builder.WebHost.UseUrls($"http://*:{prot}");
             var app = Configure(builder);
+            app.Services.GetService<IUserToken>()?.SetUserToken(userName, password);
             Route(app);
             app.StartAsync();
             return app;
@@ -77,7 +78,7 @@ namespace SyncClipboard.Server
         private static void Route(WebApplication app)
         {
             //app.UseStaticFiles();
-            app.MapMethods("/file", new string[] { "PROPFIND" }, () =>
+            app.MapMethods("/file", new string[] { "HEAD" }, () =>
             {
                 var path = Path.Combine(WebHostEnvironment?.WebRootPath!, "file");
                 if (!Directory.Exists(path))
@@ -87,11 +88,11 @@ namespace SyncClipboard.Server
                 return Results.Ok();
             }).RequireAuthorization();
 
-            app.MapPut("/file/{fileName}", (HttpContext content, string fileName) =>
-                PutFile(content, Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName))).RequireAuthorization();
-
             app.MapGet("/file/{fileName}", (string fileName) =>
                 GetFile(Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName))).RequireAuthorization();
+
+            app.MapPut("/file/{fileName}", (HttpContext content, string fileName) =>
+                PutFile(content, Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName))).RequireAuthorization();
 
             app.MapGet("/{name}", (string name) =>
                 GetFile(Path.Combine(WebHostEnvironment?.WebRootPath!, name))).RequireAuthorization();

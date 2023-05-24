@@ -42,10 +42,19 @@ namespace SyncClipboard.Module
                 public bool ConvertSwitchOn { get; set; } = false;
             }
 
+            public class CServerService
+            {
+                public bool SwitchOn { get; set; } = false;
+                public short Port { get; set; } = 5033;
+                public string UserName { get; set; } = "admin";
+                public string Password { get; set; } = "admin";
+            }
+
             public CSyncService SyncService { get; set; } = new CSyncService();
             public CCommandService CommandService { get; set; } = new CCommandService();
             public CClipboardService ClipboardService { get; set; } = new CClipboardService();
             public CProgram Program { get; set; } = new CProgram();
+            public CServerService ServerService { get; set; } = new CServerService();
         }
 
         internal static Configuration Config = new();
