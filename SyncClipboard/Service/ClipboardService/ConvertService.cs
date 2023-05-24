@@ -55,6 +55,12 @@ namespace SyncClipboard.Service
             {
                 return false;
             }
+
+            if (!ImageHelper.IsComplexImage(localClipboard.Files[0]))
+            {
+                return false;
+            }
+
             return true;
         }
     }
