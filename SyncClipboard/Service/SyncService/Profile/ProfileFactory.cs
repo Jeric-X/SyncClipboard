@@ -106,7 +106,7 @@ namespace SyncClipboard.Service
             }
             catch (Exception ex)
             {
-                if (ex is HttpRequestException && (ex as HttpRequestException)?.StatusCode == HttpStatusCode.NotFound)
+                if (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound })
                 {
                     var blankProfile = new TextProfile("");
                     await blankProfile.UploadProfileAsync(webDav, cancelToken);

@@ -8,7 +8,8 @@ namespace SyncClipboard.Service
             new UploadService(),
             new DownloadService(),
             new EasyCopyImageSerivce(),
-            new ConvertService()
+            new ConvertService(),
+            new ServerService()
         };
 
         internal void StartUpAllService()
