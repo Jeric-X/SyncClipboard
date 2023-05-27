@@ -11,19 +11,19 @@ namespace SyncClipboard.Server
 
         private static WebApplication Configure(WebApplicationBuilder builder)
         {
-            builder.Services.Configure<KestrelServerOptions>(options => options.Limits.MaxRequestBodySize = int.MaxValue);
+            var services = builder.Services;
 
-            // Add services to the container.
-            builder.Services.AddAuthentication("BasicAuthentication")
-                            .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>
-                            ("BasicAuthentication", null);
-            builder.Services.AddAuthorization(
+            services.Configure<KestrelServerOptions>(options => options.Limits.MaxRequestBodySize = int.MaxValue);
+
+            services.AddAuthentication("BasicAuthentication")
+                    .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+            services.AddAuthorization(
                 options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            builder.Services.AddSingleton<IUserToken, UserToken>();
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+            services.AddSingleton<IUserToken, UserToken>();
 
             var app = builder.Build();
             WebHostEnvironment = app.Environment;
