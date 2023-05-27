@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace SyncClipboard.Server
@@ -10,6 +11,8 @@ namespace SyncClipboard.Server
 
         private static WebApplication Configure(WebApplicationBuilder builder)
         {
+            builder.Services.Configure<KestrelServerOptions>(options => options.Limits.MaxRequestBodySize = int.MaxValue);
+
             // Add services to the container.
             builder.Services.AddAuthentication("BasicAuthentication")
                             .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>
