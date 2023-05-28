@@ -8,7 +8,7 @@ namespace SyncClipboard.Utility
 {
     internal static class Log
     {
-        private static readonly string LOG_FOLDER = Env.FullPath("Log");
+        private static readonly string LOG_FOLDER = Env.LOCAL_LOG_FOLDER;
         private static readonly object LOCKER = new();
 
         public static void Write(string? tag, string str, StackFrame? stackFrame = null)

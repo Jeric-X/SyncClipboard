@@ -18,6 +18,8 @@ namespace SyncClipboard.Module
                 public int RetryTimes { get; set; } = 3;
                 public int TimeOut { get; set; } = 10;
                 public string Proxy { get; set; } = "";
+                public bool DeleteTempFilesOnStartUp { get; set; } = false;
+                public int LogRemainDays { get; set; } = 30;
             }
 
             public class CSyncService

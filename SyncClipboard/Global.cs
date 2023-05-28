@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using SyncClipboard.Control;
 using SyncClipboard.Module;
 using SyncClipboard.Service;
@@ -20,11 +21,8 @@ namespace SyncClipboard
             StartUpUI();
             StartUpUserConfig();
             LoadGlobalWebDavSession();
+            PrepareWorkingFolder();
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
-            if (!Directory.Exists(Env.LOCAL_FILE_FOLDER))
-            {
-                Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
-            }
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
         }
@@ -93,6 +91,36 @@ namespace SyncClipboard
                     () => UserConfig.Load()
                 }
             );
+        }
+
+        private static void PrepareWorkingFolder()
+        {
+            if (Directory.Exists(Env.LOCAL_FILE_FOLDER))
+            {
+                if (UserConfig.Config.Program.DeleteTempFilesOnStartUp)
+                {
+                    Directory.Delete(Env.LOCAL_FILE_FOLDER);
+                    Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
+                }
+            }
+            else
+            {
+                Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
+            }
+
+            var logFolder = new DirectoryInfo(Env.LOCAL_LOG_FOLDER);
+            if (logFolder.Exists && UserConfig.Config.Program.LogRemainDays != 0)
+            {
+                var today = DateTime.Today;
+                foreach (var log in logFolder.EnumerateFileSystemInfos("????????.txt"))
+                {
+                    var createTime = log.CreationTime.Date;
+                    if ((today - createTime) > TimeSpan.FromDays(UserConfig.Config.Program.LogRemainDays))
+                    {
+                        log.Delete();
+                    }
+                }
+            }
         }
     }
 }
