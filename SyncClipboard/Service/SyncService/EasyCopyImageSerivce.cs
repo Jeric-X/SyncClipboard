@@ -61,7 +61,7 @@ namespace SyncClipboard.Service
 
             if (!string.IsNullOrEmpty(localClipboard.Html))
             {
-                var match = Regex.Match(localClipboard.Html, @"<!--StartFragment--><img src=""(http[s]?://.*)""/><!--EndFragment-->");
+                var match = Regex.Match(localClipboard.Html, @"<!--StartFragment--><img src=""(http[s]?://[^""]+)"".*/><!--EndFragment-->");
                 if (match.Success) // 是从浏览器复制的图片
                 {
                     Log.Write(LOG_TAG, "http image url: " + match.Result("$1"));
