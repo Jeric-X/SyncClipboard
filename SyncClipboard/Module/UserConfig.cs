@@ -29,6 +29,7 @@ namespace SyncClipboard.Module
                 public string Password { get; set; } = "";
                 public bool PullSwitchOn { get; set; } = false;
                 public bool PushSwitchOn { get; set; } = false;
+                public bool DeletePreviousFilesOnPush { get; set; } = true;
                 public bool EasyCopyImageSwitchOn { get; set; } = false;
                 public int MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 10MB
             }

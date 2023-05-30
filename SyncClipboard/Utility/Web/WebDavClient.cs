@@ -165,5 +165,11 @@ namespace SyncClipboard.Utility.Web
             Log.Write("Test ok ");
             return true;
         }
+
+        public async Task Delete(string url, CancellationToken? cancelToken = null)
+        {
+            var res = await httpClient.DeleteAsync(url, AdjustCancelToken(cancelToken));
+            res.EnsureSuccessStatusCode();
+        }
     }
 }

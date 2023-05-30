@@ -93,6 +93,17 @@ namespace SyncClipboard.Server
                 return Results.Ok();
             }).RequireAuthorization();
 
+            app.MapDelete("/file", () =>
+            {
+                var path = Path.Combine(WebHostEnvironment?.WebRootPath!, "file");
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(Path.Combine(WebHostEnvironment?.WebRootPath!, "file"), true);
+                    return Results.Ok();
+                }
+                return Results.NotFound();
+            }).RequireAuthorization();
+
             app.MapGet("/file/{fileName}", (string fileName) =>
                 GetFile(Path.Combine(WebHostEnvironment?.WebRootPath!, "file", fileName))).RequireAuthorization();
 

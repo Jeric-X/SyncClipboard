@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
@@ -154,6 +155,7 @@ namespace SyncClipboard.Service
                     var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken);
                     if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
+                        await CleanServerTempFile(cancelToken);
                         await profile.UploadProfileAsync(Global.WebDav, cancelToken);
                     }
                     Log.Write(LOG_TAG, "remote is same as local, won't push");
@@ -178,6 +180,20 @@ namespace SyncClipboard.Service
                 await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
             }
             Toast.SendText("上传失败：" + profile.ToolTip(), errMessage);
+        }
+
+        private static async Task CleanServerTempFile(CancellationToken cancelToken)
+        {
+            if (UserConfig.Config.SyncService.DeletePreviousFilesOnPush)
+            {
+                try
+                {
+                    await Global.WebDav.Delete(SyncService.REMOTE_FILE_FOLDER, cancelToken);
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
+                {
+                }
+            }
         }
 
         private static void SetUploadingIcon()
