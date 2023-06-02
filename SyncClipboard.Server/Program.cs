@@ -23,7 +23,6 @@ namespace SyncClipboard.Server
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-            services.AddSingleton<IUserToken, UserToken>();
 
             var app = builder.Build();
             WebHostEnvironment = app.Environment;
@@ -42,8 +41,16 @@ namespace SyncClipboard.Server
 
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            var builder = WebApplication.CreateBuilder(
+                new WebApplicationOptions
+                {
+                    Args = args,
+                    WebRootPath = "server"
+                }
+            );
+            builder.Services.AddSingleton<ICredentialChecker, FileCredentialChecker>();
             var app = Configure(builder);
+            Route(app);
             app.Run();
         }
 
@@ -52,12 +59,12 @@ namespace SyncClipboard.Server
             var builder = WebApplication.CreateBuilder(
                 new WebApplicationOptions
                 {
-                    WebRootPath = path + "server"
+                    WebRootPath = path + "server",
                 }
             );
             builder.WebHost.UseUrls($"http://*:{prot}");
+            builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(userName, password));
             var app = Configure(builder);
-            app.Services.GetService<IUserToken>()?.SetUserToken(userName, password);
             Route(app);
             app.StartAsync();
             return app;
