@@ -55,7 +55,7 @@
 全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。windows端可以在配置文件中修改更多配置
 - user
 - password
-- url，http(s)不可省略，具体到文件夹作为工作目录，需提前创建好。未使用过windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端在首次同步文件时会自动创建`file`文件夹
+- url，格式为http(s)://ip(或者域名):port。使用其他WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，不使用windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端在首次同步文件时会自动创建`file`文件夹
 
 ## 项目依赖
 [Magick.NET](https://github.com/dlemstra/Magick.NET)

@@ -72,6 +72,11 @@ namespace SyncClipboard.Server
 
         private static async Task<IResult> PutFile(HttpContext content, string path)
         {
+            var pathFolder = Path.Combine(WebHostEnvironment?.WebRootPath!, "file");
+            if (!Directory.Exists(pathFolder))
+            {
+                Directory.CreateDirectory(pathFolder);
+            }
             using var fs = new FileStream(path, FileMode.Create);
             await content.Request.Body.CopyToAsync(fs);
             return Results.Ok();
