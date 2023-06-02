@@ -27,20 +27,28 @@ jobs:
     - name: Build
       run: dotnet publish --configuration Release --no-restore
 
+    - name: copy SyncClipboard.Server
+      run: xcopy SyncClipboard.Server\bin\Release\net6.0\publish server\ /s /e
+
     - name: Generate change log
       run: |
         .\PreRelease.bat
         type feature.txt
 
-    - name: Upload build artifacts
+    - name: Upload build artifacts SyncClipboard
       uses: actions/upload-artifact@v3
       with:
         name: SyncClipboard
         path: SyncClipboard/bin/Release/net6.0-windows10.0.17763.0/win-x64/publish/SyncClipboard.exe
-    
+
+    - name: Upload build artifacts SyncClipboard.Server
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard.Server
+        path: server/
+
     - name: Upload change log
       uses: actions/upload-artifact@v3
       with:
         name: feature
-        path:
-          feature.txt
+        path: feature.txt

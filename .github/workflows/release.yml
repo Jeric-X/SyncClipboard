@@ -16,10 +16,15 @@ jobs:
     runs-on: windows-latest
     needs: build
     steps:
-      - name: Download last-job-built artifact
+      - name: Download last-job-built artifact SyncClipboard
         uses: actions/download-artifact@v3
         with:
           name: SyncClipboard
+
+      - name: Download last-job-built artifact SyncClipboard.Server
+        uses: actions/download-artifact@v3
+        with:
+          name: SyncClipboard.Server
 
       - name: Download last-job-built change log
         uses: actions/download-artifact@v3
@@ -35,4 +40,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: feature.txt
-          files: SyncClipboard.exe
+          files: |
+            SyncClipboard.exe
+            SyncClipboard.Server.zip
