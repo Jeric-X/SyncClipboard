@@ -61,11 +61,12 @@ namespace SyncClipboard.Service
 
             if (!string.IsNullOrEmpty(localClipboard.Html))
             {
-                var match = Regex.Match(localClipboard.Html, @"<!--StartFragment--><img src=""(http[s]?://[^""]+)"".*/><!--EndFragment-->");
+                const string Expression = @"<!--StartFragment--><img src=(?<qoute>[""'])(?<imgUrl>https?://.*?)\k<qoute>.*/><!--EndFragment-->";
+                var match = Regex.Match(localClipboard.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
                 if (match.Success) // 是从浏览器复制的图片
                 {
-                    Log.Write(LOG_TAG, "http image url: " + match.Result("$1"));
-                    var localPath = await DownloadImage(match.Result("$1"), useProxy, cancellationToken);
+                    Log.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
+                    var localPath = await DownloadImage(match.Groups["imgUrl"].Value, useProxy, cancellationToken);
                     if (!ImageHelper.FileIsImage(localPath))
                     {
                         localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
