@@ -14,7 +14,12 @@
 
 ## 服务器
 ### 独立服务器
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持全平台运行，依赖[ASP.NET Core 6.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/6.0)，安装`ASP.NET Core 运行时`后，通过命令`dotnet SyncClipboard.Server.dll`运行，在`appsettings.json`中可以修改绑定的ip和端口，以及客户端认证需要的用户名和密码  
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 6.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/6.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
+```
+dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
+```
+工作目录与dll所在目录一致，会产生临时文件，在`appsettings.json`中可以修改绑定的ip和端口，以及客户端认证需要的用户名和密码  
+如需修改工作目录，拷贝一份appsettings.json到新工作目录并修改`--contentRoot`后的路径  
 注意：
 - 客户端处填写`http://ip:端口号`，`http`不可省略
 - http使用明文传输，在公网部署考虑使用反向代理工具配置SSL

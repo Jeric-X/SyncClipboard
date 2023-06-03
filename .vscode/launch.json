@@ -14,7 +14,10 @@
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,
-            "internalConsoleOptions": "openOnSessionStart"
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Development"
+            }
         },
         {
             "name": "Release",
@@ -26,7 +29,48 @@
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,
-            "internalConsoleOptions": "openOnSessionStart"
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
+        {
+            "name": "Debug server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Debug",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/SyncClipboard.Server/bin/Debug/net6.0/publish/SyncClipboard.Server.dll",
+                "--contentRoot",
+                "./"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Development"
+            }
+        },
+        {
+            "name": "Release server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Release",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/SyncClipboard.Server/bin/Release/net6.0/publish/SyncClipboard.Server.dll",
+                "--contentRoot",
+                "./"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
         },
     ]
 }

@@ -27,12 +27,11 @@ namespace SyncClipboard.Server
             var app = builder.Build();
             WebHostEnvironment = app.Environment;
 
-            // Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            //{
-            app.UseSwagger();
-            app.UseSwaggerUI();
-            //}
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
 
             app.UseAuthentication();
             app.UseAuthorization();
