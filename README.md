@@ -26,7 +26,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 内置服务器并不是WebDAV实现
 
 ### Windows客户端内置服务器
-[Windows客户端](#Windows)自带服务器实现，可以作为其他客户端的服务器。  
+[Windows客户端](#Windows)自带服务器实现，可以作为自身和其他客户端的服务器。  
 通过右键菜单开启关闭，可以在配置文件`SyncClipboard.json`中的`ServerService`部分修改`端口号`，`用户名`，`密码`，服务器注意事项同上
 
 ### 其他WebDAV服务器
