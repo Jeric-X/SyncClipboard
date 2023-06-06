@@ -7,6 +7,9 @@
     xmlns:local="using:SyncClipboard.WinUI3"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="Base"/>
+    </Window.SystemBackdrop>
     <StackPanel Orientation="Vertical">
         <Border
             x:Name="AppTitleBar"
@@ -20,16 +23,19 @@
                 Text="设置" />
         </Border>
         <NavigationView
-            x:Name="nvSample"
+            IsBackButtonVisible="Collapsed"
             IsSettingsVisible="False"
-            PaneDisplayMode="Top">
+            PaneDisplayMode="Top"
+            SelectedItem="{Binding ElementName=SyncSettingItem}"
+            SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="Menu Item1" Tag="SamplePage1" />
-                <NavigationViewItem Content="Menu Item2" Tag="SamplePage2" />
-                <NavigationViewItem Content="Menu Item3" Tag="SamplePage3" />
-                <NavigationViewItem Content="Menu Item4" Tag="SamplePage4" />
+                <NavigationViewItem
+                    x:Name="SyncSettingItem"
+                    Content="Menu Item1"
+                    Tag="SyncSettingPage" />
+                <NavigationViewItem Content="Menu Item2" Tag="NetwordSettingPage" />
             </NavigationView.MenuItems>
-            <Frame x:Name="contentFrame" />
+            <Frame x:Name="ContentFrame" />
         </NavigationView>
     </StackPanel>
 </Window>

@@ -16,6 +16,8 @@ using Windows.Foundation.Collections;
 using Microsoft.UI;
 using WinRT.Interop;
 using Microsoft.UI.Windowing;
+using Windows.UI.WindowManagement;
+using AppWindow = Microsoft.UI.Windowing.AppWindow;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -32,16 +34,19 @@ namespace SyncClipboard.WinUI3
         public MainWindow()
         {
             this.InitializeComponent();
-            if (AppWindowTitleBar.IsCustomizationSupported())
-            {
-                // 不支持时 titleBar 为 null
-                _appWindow = GetAppWindowForCurrentWindow();
-                var titleBar = _appWindow.TitleBar;
-                titleBar.ExtendsContentIntoTitleBar = true;
-                // 标题栏按键背景色设置为透明
-                titleBar.ButtonBackgroundColor = Colors.Transparent;
-                titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-            }
+            _appWindow = GetAppWindowForCurrentWindow();
+            var titleBar = _appWindow.TitleBar;
+            titleBar.ExtendsContentIntoTitleBar = true;
+            // 标题栏按键背景色设置为透明
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+            titleBar.ButtonForegroundColor = Colors.Black;
+
+            OverlappedPresenter op = _appWindow.Presenter as OverlappedPresenter;
+            op.IsResizable = false;
+            op.IsMaximizable = false;
+
+            _appWindow.ResizeClient(new(900, 500));
         }
 
         private AppWindow GetAppWindowForCurrentWindow()
@@ -49,6 +54,15 @@ namespace SyncClipboard.WinUI3
             IntPtr hWnd = WindowNative.GetWindowHandle(this);
             WindowId wndId = Win32Interop.GetWindowIdFromWindow(hWnd);
             return AppWindow.GetFromWindowId(wndId);
+        }
+
+        //C# code behind
+        private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        {
+            var selectedItem = (Microsoft.UI.Xaml.Controls.NavigationViewItem)args.SelectedItem;
+            string pageName = "SyncClipboard.WinUI3." + ((string)selectedItem.Tag);
+            Type pageType = Type.GetType(pageName);
+            ContentFrame.Navigate(pageType);
         }
     }
 }

@@ -10,7 +10,7 @@
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed>false</PublishTrimmed>
     <SelfContained>false</SelfContained>
     <TrimMode>partial</TrimMode>
 	  <PublishReadyToRun>false</PublishReadyToRun>
