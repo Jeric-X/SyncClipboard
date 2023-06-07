@@ -5,16 +5,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:SyncClipboard.WinUI3"
+    xmlns:vm="using:SyncClipboard.WinUI3.ViewModels"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Window.SystemBackdrop>
-        <MicaBackdrop Kind="Base"/>
+        <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <StackPanel Orientation="Vertical">
-        <Border
-            x:Name="AppTitleBar"
-            Grid.Column="1"
-            VerticalAlignment="Top">
+        <StackPanel.DataContext>
+            <vm:MainWindowViewModel />
+        </StackPanel.DataContext>
+        <Border x:Name="AppTitleBar" Grid.Column="1" VerticalAlignment="Top">
             <TextBlock
                 x:Name="AppTitle"
                 Margin="0,8,0,0"
@@ -23,17 +24,18 @@
                 Text="设置" />
         </Border>
         <NavigationView
+            Margin="10,0,10,0"
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="False"
             PaneDisplayMode="Top"
-            SelectedItem="{Binding ElementName=SyncSettingItem}"
-            SelectionChanged="NavView_SelectionChanged">
+            SelectionChanged="NavView_SelectionChanged"
+            SelectedItem="{Binding ElementName=SyncSettingItem}">
+            <NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}" />
+            </NavigationView.Resources>
             <NavigationView.MenuItems>
-                <NavigationViewItem
-                    x:Name="SyncSettingItem"
-                    Content="Menu Item1"
-                    Tag="SyncSettingPage" />
-                <NavigationViewItem Content="Menu Item2" Tag="NetwordSettingPage" />
+                <NavigationViewItem  x:Name="SyncSettingItem" Content="同步" Tag="SyncSettingPage" />
+                <NavigationViewItem Content="服务器" Tag="NetwordSettingPage" />
             </NavigationView.MenuItems>
             <Frame x:Name="ContentFrame" />
         </NavigationView>

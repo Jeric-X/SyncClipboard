@@ -18,6 +18,9 @@ using WinRT.Interop;
 using Microsoft.UI.Windowing;
 using Windows.UI.WindowManagement;
 using AppWindow = Microsoft.UI.Windowing.AppWindow;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Diagnostics;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -34,6 +37,7 @@ namespace SyncClipboard.WinUI3
         public MainWindow()
         {
             this.InitializeComponent();
+
             _appWindow = GetAppWindowForCurrentWindow();
             var titleBar = _appWindow.TitleBar;
             titleBar.ExtendsContentIntoTitleBar = true;
@@ -59,6 +63,16 @@ namespace SyncClipboard.WinUI3
         //C# code behind
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
+            Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                _appWindow.Hide();
+                await Task.Delay(2000);
+                _appWindow?.Show();
+            });
+            //_appWindow.Hide();
+            //_appWindow.Show();
+
             var selectedItem = (Microsoft.UI.Xaml.Controls.NavigationViewItem)args.SelectedItem;
             string pageName = "SyncClipboard.WinUI3." + ((string)selectedItem.Tag);
             Type pageType = Type.GetType(pageName);
