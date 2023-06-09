@@ -1,6 +1,6 @@
 # SyncClipboard
-[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg)](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml)
-[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard)
+[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
+[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/master?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/master)
 
 ## 功能
 
