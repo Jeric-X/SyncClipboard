@@ -21,6 +21,9 @@ using AppWindow = Microsoft.UI.Windowing.AppWindow;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
+using H.NotifyIcon;
+using WinRT;
+using CommunityToolkit.WinUI.UI;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -32,51 +35,65 @@ namespace SyncClipboard.WinUI3
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-        private AppWindow _appWindow;
-
+        Int64 handle;
         public MainWindow()
         {
             this.InitializeComponent();
 
-            _appWindow = GetAppWindowForCurrentWindow();
-            var titleBar = _appWindow.TitleBar;
+            var titleBar = AppWindow.TitleBar;
             titleBar.ExtendsContentIntoTitleBar = true;
             // 标题栏按键背景色设置为透明
             titleBar.ButtonBackgroundColor = Colors.Transparent;
             titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             titleBar.ButtonForegroundColor = Colors.Black;
 
-            OverlappedPresenter op = _appWindow.Presenter as OverlappedPresenter;
-            op.IsResizable = false;
+            OverlappedPresenter op = AppWindow.Presenter as OverlappedPresenter;
+            op.IsResizable = true;
             op.IsMaximizable = false;
 
-            _appWindow.ResizeClient(new(900, 500));
-        }
+            AppWindow.ResizeClient(new(900, 500));
 
-        private AppWindow GetAppWindowForCurrentWindow()
-        {
             IntPtr hWnd = WindowNative.GetWindowHandle(this);
-            WindowId wndId = Win32Interop.GetWindowIdFromWindow(hWnd);
-            return AppWindow.GetFromWindowId(wndId);
+            handle = hWnd.ToInt64();
         }
 
         //C# code behind
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            Task.Run(async () =>
-            {
-                await Task.Delay(2000);
-                _appWindow.Hide();
-                await Task.Delay(2000);
-                _appWindow?.Show();
-            });
-            //_appWindow.Hide();
-            //_appWindow.Show();
-
             var selectedItem = (Microsoft.UI.Xaml.Controls.NavigationViewItem)args.SelectedItem;
-            string pageName = "SyncClipboard.WinUI3." + ((string)selectedItem.Tag);
+            string pageName = "SyncClipboard.WinUI3.Views." + ((string)selectedItem.Tag);
             Type pageType = Type.GetType(pageName);
             ContentFrame.Navigate(pageType);
+            tb_doubleClicked();
+        }
+
+        private void tb_doubleClicked()
+        {
+
+        }
+
+        private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+        {
+            TaskbarIcon.TrayIconAdd(new MenuFlyoutItem() { Text = "111111111" });
+        }
+
+        private void ToggleMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (AppWindow.IsVisible)
+            {
+                AppWindow.Hide();
+            }
+            else
+            {
+                AppWindow.Show();
+            }
+        }
+
+        private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
+        {
+            var s = sender as MenuFlyoutItem;
+            var b = s.FindParent<Frame>();
+            //b.Items.Add(new MenuFlyoutItem() { Text = "MenuFlyoutItem_Click_1 added" });
         }
     }
 }

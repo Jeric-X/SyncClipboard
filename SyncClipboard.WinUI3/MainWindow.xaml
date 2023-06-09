@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:SyncClipboard.WinUI3"
+    xmlns:tb="using:H.NotifyIcon"
     xmlns:vm="using:SyncClipboard.WinUI3.ViewModels"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -12,9 +13,28 @@
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <StackPanel Orientation="Vertical">
-        <StackPanel.DataContext>
-            <vm:MainWindowViewModel />
-        </StackPanel.DataContext>
+        <tb:TaskbarIcon x:Name="TaskbarIcon" ToolTipText="hello world" ContextMenuMode="SecondWindow">
+            <tb:TaskbarIcon.IconSource>
+                <tb:GeneratedIconSource Text="❤️" Foreground="Red" />
+            </tb:TaskbarIcon.IconSource>
+            <tb:TaskbarIcon.TrayPopup>
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="asdf  " />
+                </StackPanel>
+            </tb:TaskbarIcon.TrayPopup>
+            <tb:TaskbarIcon.ContextFlyout>
+                <MenuFlyout>
+                    <RadioMenuFlyoutItem Text="222 " />
+                    <MenuFlyoutSubItem Text="fff" />
+                    <MenuFlyoutItem Width="200" Text="123 1" Click="MenuFlyoutItem_Click" />
+                    <MenuFlyoutItem Width="200" Text="123 2" Click="MenuFlyoutItem_Click_1" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="456" />
+                    <ToggleMenuFlyoutItem Text="222" IsChecked="True" />
+                    <ToggleMenuFlyoutItem Text="233" IsChecked="False" Click="ToggleMenuFlyoutItem_Click" />
+                </MenuFlyout>
+            </tb:TaskbarIcon.ContextFlyout>
+        </tb:TaskbarIcon>
         <Border x:Name="AppTitleBar" Grid.Column="1" VerticalAlignment="Top">
             <TextBlock
                 x:Name="AppTitle"
@@ -24,7 +44,6 @@
                 Text="设置" />
         </Border>
         <NavigationView
-            Margin="10,0,10,0"
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="False"
             PaneDisplayMode="Top"
@@ -34,10 +53,10 @@
                 <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}" />
             </NavigationView.Resources>
             <NavigationView.MenuItems>
-                <NavigationViewItem  x:Name="SyncSettingItem" Content="同步" Tag="SyncSettingPage" />
+                <NavigationViewItem x:Name="SyncSettingItem" Content="同步" Tag="SyncSettingPage" />
                 <NavigationViewItem Content="服务器" Tag="NetwordSettingPage" />
             </NavigationView.MenuItems>
-            <Frame x:Name="ContentFrame" />
+            <Frame x:Name="ContentFrame" Padding="10,10,10,0" BorderThickness="10" />
         </NavigationView>
     </StackPanel>
 </Window>

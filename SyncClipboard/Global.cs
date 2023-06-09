@@ -8,7 +8,7 @@ using SyncClipboard.Utility.Web;
 
 namespace SyncClipboard
 {
-    internal static class Global
+    public static class Global
     {
         internal static IWebDav WebDav;
         internal static Notifyer Notifyer;
@@ -16,7 +16,7 @@ namespace SyncClipboard
         internal static ServiceManager ServiceManager;
         internal static string AppUserModelId;
 
-        internal static void StartUp()
+        public static void StartUp()
         {
             StartUpUI();
             StartUpUserConfig();
