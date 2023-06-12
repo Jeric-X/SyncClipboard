@@ -1,0 +1,13 @@
+[*.cs]
+
+# CC0105: You should use 'var' whenever possible.
+dotnet_diagnostic.CC0105.severity = none
+
+# CC0001: You should use 'var' whenever possible.
+dotnet_diagnostic.CC0001.severity = none
+
+# CC0057: Unused Parameter
+dotnet_diagnostic.CC0057.severity = none
+
+# CC0091: Use static method
+dotnet_diagnostic.CC0091.severity = none

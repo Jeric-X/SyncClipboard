@@ -74,7 +74,7 @@ namespace SyncClipboard.WinUI3
 
         private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
         {
-            TaskbarIcon.TrayIconAdd(new MenuFlyoutItem() { Text = "111111111" });
+            TaskbarIcon.TrayIconAdd(new MenuFlyoutItem { Text = "111111111" });
         }
 
         private void ToggleMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
