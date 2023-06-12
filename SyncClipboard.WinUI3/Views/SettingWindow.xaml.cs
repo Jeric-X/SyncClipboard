@@ -31,8 +31,8 @@ namespace SyncClipboard.WinUI3.Views
         {
             var selectedItem = ((ListView)sender).SelectedItem;
             string pageName = "SyncClipboard.WinUI3.Views." + (((ListViewItem)selectedItem).Tag);
-            Type pageType = Type.GetType(pageName);
-            SettingContentFrame.Navigate(pageType);
+            Type? pageType = Type.GetType(pageName);
+            SettingContentFrame.Navigate(pageType ?? throw new Exception($"Page View not Found: {pageName}"));
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)

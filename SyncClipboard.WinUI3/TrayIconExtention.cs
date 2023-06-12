@@ -23,8 +23,20 @@ namespace SyncClipboard.WinUI3
             var pInfoIsContextMenuVisible = typeof(TaskbarIcon).GetProperty("IsContextMenuVisible", flags);
             var pInfoContextMenuWindowHandle = typeof(TaskbarIcon).GetProperty("ContextMenuWindowHandle", flags);
 
+            if (pInfoContextMenuFlyout is null
+                || pInfoIsContextMenuVisible is null
+                || pInfoContextMenuWindowHandle is null)
+            {
+                return;
+            }
+
             var flyout = pInfoContextMenuFlyout.GetValue(tb, null) as MenuFlyout;
             var handle = pInfoContextMenuWindowHandle.GetValue(tb) as nint?;
+
+            if (handle is null || flyout is null)
+            {
+                return;
+            }
 
             if (flyoutItemBase is not MenuFlyoutSeparator)
             {

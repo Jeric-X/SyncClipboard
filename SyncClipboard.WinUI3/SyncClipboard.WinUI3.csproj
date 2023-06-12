@@ -14,6 +14,10 @@
     <SelfContained>false</SelfContained>
     <TrimMode>partial</TrimMode>
     <PublishReadyToRun>false</PublishReadyToRun>
+    <Nullable>enable</Nullable>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <AssemblyName>SyncClipboard</AssemblyName>
     <!--<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>-->
   </PropertyGroup>
 
@@ -27,9 +31,5 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.3.230502000" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
     <Manifest Include="$(ApplicationManifest)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\SyncClipboard\SyncClipboard.csproj" />
   </ItemGroup>
 </Project>

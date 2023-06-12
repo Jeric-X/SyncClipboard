@@ -47,8 +47,8 @@ namespace SyncClipboard.WinUI3
             titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             titleBar.ButtonForegroundColor = Colors.Black;
 
-            OverlappedPresenter op = AppWindow.Presenter as OverlappedPresenter;
-            op.IsResizable = true;
+            OverlappedPresenter? op = AppWindow.Presenter as OverlappedPresenter;
+            op!.IsResizable = true;
             op.IsMaximizable = false;
 
             AppWindow.ResizeClient(new(900, 500));
@@ -62,7 +62,7 @@ namespace SyncClipboard.WinUI3
         {
             var selectedItem = (Microsoft.UI.Xaml.Controls.NavigationViewItem)args.SelectedItem;
             string pageName = "SyncClipboard.WinUI3.Views." + ((string)selectedItem.Tag);
-            Type pageType = Type.GetType(pageName);
+            Type? pageType = Type.GetType(pageName);
             ContentFrame.Navigate(pageType);
             tb_doubleClicked();
         }
@@ -92,7 +92,7 @@ namespace SyncClipboard.WinUI3
         private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
         {
             var s = sender as MenuFlyoutItem;
-            var b = s.FindParent<Frame>();
+            var b = s?.FindParent<Frame>();
             //b.Items.Add(new MenuFlyoutItem() { Text = "MenuFlyoutItem_Click_1 added" });
         }
     }

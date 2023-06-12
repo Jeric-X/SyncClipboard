@@ -22,13 +22,19 @@ jobs:
       run: dotnet restore
 
     - name: Check code style
-      run: dotnet format --verify-no-changes --no-restore
+      run: dotnet format --severity info --verify-no-changes --no-restore
 
-    - name: Build
-      run: dotnet publish --configuration Release --no-restore
+    - name: Build Winform
+      run: dotnet publish SyncClipboard\SyncClipboard.csproj --configuration Release --no-restore
+
+    - name: Build SyncClipboard.WinUI3
+      run: msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:Configuration=Release
 
     - name: copy SyncClipboard.Server
       run: xcopy SyncClipboard.Server\bin\Release\net6.0\publish server\ /s /e
+
+    - name: copy SyncClipboard.WinUI3
+      run: xcopy SyncClipboard.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0 SyncClipboard.WinUI3\ /s /e
 
     - name: Generate change log
       run: |
@@ -46,6 +52,12 @@ jobs:
       with:
         name: SyncClipboard.Server
         path: server/
+
+    - name: Upload build artifacts SyncClipboard.WinUI3
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard.WinUI3
+        path: SyncClipboard.WinUI3/
 
     - name: Upload change log
       uses: actions/upload-artifact@v3

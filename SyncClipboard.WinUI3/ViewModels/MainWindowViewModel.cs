@@ -12,8 +12,8 @@ namespace SyncClipboard.WinUI3.ViewModels
     {
         public class Item
         {
-            public string Tag { get; set; }
-            public string Text { get; set; }
+            public string Tag { get; set; } = "";
+            public string Text { get; set; } = "";
         }
         public string Text { get; set; } = "avc";
         public List<NavigationViewItem> ItemCollection { get; set; } = new();
