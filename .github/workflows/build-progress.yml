@@ -41,7 +41,7 @@ jobs:
       run: dotnet publish SyncClipboard\SyncClipboard.csproj --configuration Release --no-restore
 
     - name: Build SyncClipboard.WinUI3
-      run: msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:Configuration=Release
+      run: msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:Configuration=Release /v:m
 
     - name: copy SyncClipboard.Server
       run: xcopy SyncClipboard.Server\bin\Release\net6.0\publish server\ /s /e
