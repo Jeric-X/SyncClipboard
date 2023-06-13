@@ -18,6 +18,11 @@ jobs:
       with:
         dotnet-version: 6.0.x
 
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        msbuild-architecture: x64
+
     - name: Install dependencies
       run: dotnet restore
 
