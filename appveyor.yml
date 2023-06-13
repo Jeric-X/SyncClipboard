@@ -4,12 +4,22 @@ configuration: Release
 platform: x64
 build_script:
 - cmd: >-
-    dotnet publish --configuration Release
+    dotnet restore
+
+    dotnet publish SyncClipboard.Server\SyncClipboard.Server.csproj --configuration Release --no-restore
+
+    dotnet publish SyncClipboard\SyncClipboard.csproj --configuration Release --no-restore
+
+    msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:Configuration=Release
 
     ./AppVeyor.bat
 artifacts:
 - path: SyncClipboard/bin/Release/net6.0-windows10.0.17763.0/win-x64/publish/SyncClipboard.exe
   name: SyncClipboard_$(VERSION)
+- path: SyncClipboard.Server/bin/Release/net6.0/publish/
+  name: SyncClipboard.Server_$(VERSION)
+- path: SyncClipboard.WinUI3/bin/x64/Release/net6.0-windows10.0.19041.0/
+  name: SyncClipboard.WinUI3_$(VERSION)
 # deploy:
 # - provider: GitHub
 #   release: $(VERSION)

@@ -47,7 +47,7 @@ jobs:
       run: xcopy SyncClipboard.Server\bin\Release\net6.0\publish server\ /s /e
 
     - name: copy SyncClipboard.WinUI3
-      run: xcopy SyncClipboard.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0 SyncClipboard.WinUI3\ /s /e
+      run: xcopy SyncClipboard.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0 WinUI3\ /s /e
 
     - name: Generate change log
       run: |
@@ -70,7 +70,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: SyncClipboard.WinUI3
-        path: SyncClipboard.WinUI3/
+        path: WinUI3/
 
     - name: Upload change log
       uses: actions/upload-artifact@v3
