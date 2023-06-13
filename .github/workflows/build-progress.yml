@@ -34,6 +34,9 @@ jobs:
         dotnet format --severity info --verify-no-changes --no-restore
         exit 0
 
+    - name: Build SyncClipboard.Server
+      run: dotnet publish SyncClipboard.Server\SyncClipboard.Server.csproj --configuration Release --no-restore
+
     - name: Build Winform
       run: dotnet publish SyncClipboard\SyncClipboard.csproj --configuration Release --no-restore
 
