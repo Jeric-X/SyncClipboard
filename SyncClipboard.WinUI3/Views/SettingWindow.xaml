@@ -5,20 +5,59 @@
         xmlns:local="using:SyncClipboard.WinUI3.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
         SizeChanged="Window_SizeChanged"
         mc:Ignorable="d">
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <StackPanel Orientation="Vertical">
-        <Border x:Name="AppTitleBar" Margin="8,8,8,8" VerticalAlignment="Top">
-            <TextBlock x:Name="AppTitle"
-                       Margin="10,0,0,0"
-                       HorizontalAlignment="Left"
-                       VerticalAlignment="Center"
-                       Text="设置" />
-        </Border>
-        <Grid x:Name="MainGrid" Padding="0,8,0,8">
+        <StackPanel Height="36" Orientation="Horizontal">
+            <Button x:Name="ShowNavigeMenuButton"
+                    Command="{x:Bind ShowHideWindowCommand}"
+                    Width="38"
+                    Margin="10,2,0,0"
+                    Background="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
+                    BorderThickness="0">
+                <AnimatedIcon x:Name="AnimatedIcon">
+                    <AnimatedIcon.Source>
+                        <animatedvisuals:AnimatedGlobalNavigationButtonVisualSource />
+                    </AnimatedIcon.Source>
+                    <AnimatedIcon.FallbackIconSource>
+                        <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE700;" />
+                    </AnimatedIcon.FallbackIconSource>
+                </AnimatedIcon>
+            </Button>
+            <Border x:Name="AppTitleBar"
+                    Padding="0,8,0,8"
+                    VerticalAlignment="Top"
+                    Background="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
+                <TextBlock x:Name="AppTitle"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           Text="设置" />
+            </Border>
+        </StackPanel>
+        <SplitView x:Name="SplitPane"
+                   OpenPaneLength="200"
+                   DisplayMode="Inline"
+                   PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
+            <StackPanel Margin="20,0,20,0" Spacing="8">
+                <TextBlock Text="设置" FontSize="20" />
+                <Frame x:Name="SettingContentFrame" />
+            </StackPanel>
+            <SplitView.Pane>
+                <ListView x:Name="MenuList"
+                          Margin="8,0,0,0"
+                          SelectionMode="Single"
+                          IsItemClickEnabled="False"
+                          SelectionChanged="ListView_SelectionChanged">
+                    <ListViewItem Content="1" Tag="SyncSettingPage" IsSelected="True" />
+                    <ListViewItem Content="2" Tag="NetwordSettingPage" />
+                </ListView>
+            </SplitView.Pane>
+        </SplitView>
+        <!--<Grid x:Name="MainGrid" Padding="0,8,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" MaxWidth="200" />
                 <ColumnDefinition Width="*" />
@@ -36,6 +75,6 @@
                 <ListViewItem Content="1" Tag="SyncSettingPage" IsSelected="True" />
                 <ListViewItem Content="2" Tag="NetwordSettingPage" />
             </ListView>
-        </Grid>
+        </Grid>-->
     </StackPanel>
 </Window>

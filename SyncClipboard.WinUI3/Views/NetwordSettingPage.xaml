@@ -6,10 +6,10 @@
     xmlns:local="using:SyncClipboard.WinUI3"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    BorderBrush="Transparent"
+    mc:Ignorable="d">
 
-    <Grid>
+    <StackPanel Height="20">
         <TextBlock>network setting page</TextBlock>
-    </Grid>
+    </StackPanel>
 </Page>
