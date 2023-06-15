@@ -7,22 +7,36 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
         SizeChanged="Window_SizeChanged"
+        Title="SyncClipboard"
         mc:Ignorable="d">
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <Grid>
-        <Grid.RowDefinitions>
+        <!--<Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <StackPanel Height="36" Orientation="Horizontal">
+        </Grid.RowDefinitions>-->
+        <StackPanel x:Name="TitleBarContainer"
+                    Height="36"
+                    VerticalAlignment="Top"
+                    Canvas.ZIndex="99"
+                    Orientation="Horizontal">
             <Button x:Name="ShowNavigeMenuButton"
                     Width="38"
                     Margin="10,2,0,0"
-                    Command="{x:Bind ShowHideWindowCommand}"
-                    Background="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
+                    Click="ShowNavigeMenuButton_Click"
+                    Background="Transparent"
                     BorderThickness="0">
+                <Button.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Light">
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFE7EBF0" />
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </Button.Resources>
                 <AnimatedIcon x:Name="AnimatedIcon">
                     <AnimatedIcon.Source>
                         <animatedvisuals:AnimatedGlobalNavigationButtonVisualSource />
@@ -32,36 +46,35 @@
                     </AnimatedIcon.FallbackIconSource>
                 </AnimatedIcon>
             </Button>
-            <Border x:Name="AppTitleBar"
-                    Padding="0,8,0,8"
-                    VerticalAlignment="Top"
-                    Background="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
+            <Border x:Name="AppTitleBar" Padding="0,8,0,8" VerticalAlignment="Top">
                 <TextBlock x:Name="AppTitle"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Text="设置" />
+                           Text="SyncClipboard" />
             </Border>
         </StackPanel>
         <SplitView x:Name="SplitPane"
-                   Grid.Row="1"
                    OpenPaneLength="200"
                    DisplayMode="Inline"
                    PaneClosed="SplitPane_PaneClosed"
                    PaneOpening="SplitPane_PaneOpening"
                    PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
-            <Grid>
+            <Grid Margin="0,36,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <TextBlock Margin="20,0,20,8" Grid.Row="0" Text="设置" FontSize="20" />
+                <TextBlock Grid.Row="0"
+                           Margin="20,0,20,8"
+                           Text="设置"
+                           FontSize="20" />
                 <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
-                    <Frame Margin="20,0,20,0" x:Name="SettingContentFrame" />
+                    <Frame x:Name="SettingContentFrame" Margin="20,0,20,0" />
                 </ScrollViewer>
             </Grid>
             <SplitView.Pane>
                 <ListView x:Name="MenuList"
-                          Margin="8,0,0,0"
+                          Margin="8,36,0,0"
                           SelectionMode="Single"
                           IsItemClickEnabled="False"
                           SelectionChanged="ListView_SelectionChanged">

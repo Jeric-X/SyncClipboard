@@ -5,9 +5,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using Windows.UI.WindowManagement;
-using CommunityToolkit.Mvvm.ComponentModel;
-//using static System.Net.Mime.MediaTypeNames;
-using CommunityToolkit.Mvvm.Input;
 using Application = Microsoft.UI.Xaml.Application;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -35,6 +32,11 @@ namespace SyncClipboard.WinUI3.Views
             string pageName = "SyncClipboard.WinUI3.Views." + (((ListViewItem)selectedItem).Tag);
             Type? pageType = Type.GetType(pageName);
             SettingContentFrame.Navigate(pageType ?? throw new Exception($"Page View not Found: {pageName}"));
+
+            if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
+            {
+                SplitPane.IsPaneOpen = false;
+            }
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
@@ -56,8 +58,7 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        [RelayCommand]
-        private void ShowHideWindow()
+        private void ShowNavigeMenuButton_Click(object sender, RoutedEventArgs e)
         {
             SplitPane.IsPaneOpen = !SplitPane.IsPaneOpen;
         }
