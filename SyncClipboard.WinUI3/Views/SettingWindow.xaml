@@ -11,12 +11,16 @@
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
-    <StackPanel Orientation="Vertical">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <StackPanel Height="36" Orientation="Horizontal">
             <Button x:Name="ShowNavigeMenuButton"
-                    Command="{x:Bind ShowHideWindowCommand}"
                     Width="38"
                     Margin="10,2,0,0"
+                    Command="{x:Bind ShowHideWindowCommand}"
                     Background="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
                     BorderThickness="0">
                 <AnimatedIcon x:Name="AnimatedIcon">
@@ -39,13 +43,22 @@
             </Border>
         </StackPanel>
         <SplitView x:Name="SplitPane"
+                   Grid.Row="1"
                    OpenPaneLength="200"
                    DisplayMode="Inline"
+                   PaneClosed="SplitPane_PaneClosed"
+                   PaneOpening="SplitPane_PaneOpening"
                    PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
-            <StackPanel Margin="20,0,20,0" Spacing="8">
-                <TextBlock Text="设置" FontSize="20" />
-                <Frame x:Name="SettingContentFrame" />
-            </StackPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Margin="20,0,20,8" Grid.Row="0" Text="设置" FontSize="20" />
+                <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
+                    <Frame Margin="20,0,20,0" x:Name="SettingContentFrame" />
+                </ScrollViewer>
+            </Grid>
             <SplitView.Pane>
                 <ListView x:Name="MenuList"
                           Margin="8,0,0,0"
@@ -57,24 +70,5 @@
                 </ListView>
             </SplitView.Pane>
         </SplitView>
-        <!--<Grid x:Name="MainGrid" Padding="0,8,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" MaxWidth="200" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="1" Spacing="8" Margin="20,0,20,0">
-                <TextBlock Text="设置" FontSize="20" />
-                <Frame x:Name="SettingContentFrame" Grid.Column="1" />
-            </StackPanel>
-            <ListView x:Name="MenuList"
-                      Grid.Column="0"
-                      Width="200"
-                      SelectionMode="Single"
-                      IsItemClickEnabled="False"
-                      SelectionChanged="ListView_SelectionChanged">
-                <ListViewItem Content="1" Tag="SyncSettingPage" IsSelected="True" />
-                <ListViewItem Content="2" Tag="NetwordSettingPage" />
-            </ListView>
-        </Grid>-->
-    </StackPanel>
+    </Grid>
 </Window>

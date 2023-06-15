@@ -24,15 +24,8 @@ namespace SyncClipboard.WinUI3.Views
         {
             this.InitializeComponent();
 
-            var titleBar = AppWindow.TitleBar;
-            //titleBar.ExtendsContentIntoTitleBar = true;
-
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);
-            // 标题栏按键背景色设置为透明
-            //titleBar.ButtonBackgroundColor = Colors.Transparent;
-            //titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-            //AppWindow.TitleBar.ButtonForegroundColor = Colors.Black;
             AppWindow.ResizeClient(new(1200, 700));
         }
 
@@ -51,7 +44,6 @@ namespace SyncClipboard.WinUI3.Views
                 SplitPane.IsPaneOpen = false;
                 SplitPane.DisplayMode = SplitViewDisplayMode.Overlay;
                 ShowNavigeMenuButton.Visibility = Visibility.Visible;
-                SplitPane.PaneBackground = (SolidColorBrush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTertiaryBrush"];
                 AppTitle.Margin = new(0, 0, 0, 0);
             }
             else
@@ -59,7 +51,7 @@ namespace SyncClipboard.WinUI3.Views
                 SplitPane.DisplayMode = SplitViewDisplayMode.Inline;
                 SplitPane.IsPaneOpen = true;
                 ShowNavigeMenuButton.Visibility = Visibility.Collapsed;
-                SplitPane.PaneBackground = (SolidColorBrush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
+                //SplitPane.PaneBackground = (SolidColorBrush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
                 AppTitle.Margin = new(18, 0, 0, 0);
             }
         }
@@ -68,6 +60,19 @@ namespace SyncClipboard.WinUI3.Views
         private void ShowHideWindow()
         {
             SplitPane.IsPaneOpen = !SplitPane.IsPaneOpen;
+        }
+
+        private void SplitPane_PaneClosed(SplitView sender, object args)
+        {
+            SplitPane.PaneBackground = (Brush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
+        }
+
+        private void SplitPane_PaneOpening(SplitView sender, object args)
+        {
+            if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
+            {
+                SplitPane.PaneBackground = (Brush)Application.Current.Resources["AcrylicInAppFillColorDefaultBrush"];
+            }
         }
     }
 }
