@@ -5,54 +5,17 @@
         xmlns:local="using:SyncClipboard.WinUI3.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
-        SizeChanged="Window_SizeChanged"
         Title="SyncClipboard"
+        SizeChanged="Window_SizeChanged"
         mc:Ignorable="d">
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <Grid>
-        <!--<Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>-->
-        <StackPanel x:Name="TitleBarContainer"
-                    Height="36"
-                    VerticalAlignment="Top"
-                    Canvas.ZIndex="99"
-                    Orientation="Horizontal">
-            <Button x:Name="ShowNavigeMenuButton"
-                    Width="38"
-                    Margin="10,2,0,0"
-                    Click="ShowNavigeMenuButton_Click"
-                    Background="Transparent"
-                    BorderThickness="0">
-                <Button.Resources>
-                    <ResourceDictionary>
-                        <ResourceDictionary.ThemeDictionaries>
-                            <ResourceDictionary x:Key="Light">
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFE7EBF0" />
-                            </ResourceDictionary>
-                        </ResourceDictionary.ThemeDictionaries>
-                    </ResourceDictionary>
-                </Button.Resources>
-                <AnimatedIcon x:Name="AnimatedIcon">
-                    <AnimatedIcon.Source>
-                        <animatedvisuals:AnimatedGlobalNavigationButtonVisualSource />
-                    </AnimatedIcon.Source>
-                    <AnimatedIcon.FallbackIconSource>
-                        <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE700;" />
-                    </AnimatedIcon.FallbackIconSource>
-                </AnimatedIcon>
-            </Button>
-            <Border x:Name="AppTitleBar" Padding="0,8,0,8" VerticalAlignment="Top">
-                <TextBlock x:Name="AppTitle"
-                           HorizontalAlignment="Left"
-                           VerticalAlignment="Center"
-                           Text="SyncClipboard" />
-            </Border>
-        </StackPanel>
+        <local:AppTitleBar x:Name="_AppTitleBar"
+                           Height="36"
+                           VerticalAlignment="Top"
+                           Canvas.ZIndex="99" />
         <SplitView x:Name="SplitPane"
                    OpenPaneLength="200"
                    DisplayMode="Inline"

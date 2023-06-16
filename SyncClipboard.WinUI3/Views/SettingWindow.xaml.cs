@@ -22,7 +22,9 @@ namespace SyncClipboard.WinUI3.Views
             this.InitializeComponent();
 
             ExtendsContentIntoTitleBar = true;
-            SetTitleBar(AppTitleBar);
+            SetTitleBar(_AppTitleBar.DraggableArea);
+            _AppTitleBar.NavigeMenuButtonClicked += () => SplitPane.IsPaneOpen = !SplitPane.IsPaneOpen;
+
             AppWindow.ResizeClient(new(1200, 700));
         }
 
@@ -45,22 +47,14 @@ namespace SyncClipboard.WinUI3.Views
             {
                 SplitPane.IsPaneOpen = false;
                 SplitPane.DisplayMode = SplitViewDisplayMode.Overlay;
-                ShowNavigeMenuButton.Visibility = Visibility.Visible;
-                AppTitle.Margin = new(0, 0, 0, 0);
+                _AppTitleBar.HideNavigationButton();
             }
             else
             {
                 SplitPane.DisplayMode = SplitViewDisplayMode.Inline;
                 SplitPane.IsPaneOpen = true;
-                ShowNavigeMenuButton.Visibility = Visibility.Collapsed;
-                //SplitPane.PaneBackground = (SolidColorBrush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
-                AppTitle.Margin = new(18, 0, 0, 0);
+                _AppTitleBar.ShowNavigationButton();
             }
-        }
-
-        private void ShowNavigeMenuButton_Click(object sender, RoutedEventArgs e)
-        {
-            SplitPane.IsPaneOpen = !SplitPane.IsPaneOpen;
         }
 
         private void SplitPane_PaneClosed(SplitView sender, object args)
