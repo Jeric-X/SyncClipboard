@@ -27,6 +27,14 @@ namespace SyncClipboard.WinUI3
     /// </summary>
     public partial class App : Application
     {
+        internal bool AppExiting { get; private set; } = false;
+
+        public void ExitApp()
+        {
+            AppExiting = true;
+            Exit();
+        }
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().

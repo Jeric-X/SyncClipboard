@@ -449,3 +449,4 @@ $RECYCLE.BIN/
 #tempfiles
 feature.txt
 version.txt
+.vscode/settings.json

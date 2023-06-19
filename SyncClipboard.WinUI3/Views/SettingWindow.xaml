@@ -5,6 +5,7 @@
         xmlns:local="using:SyncClipboard.WinUI3.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:SyncClipboard.Core.ViewModels"
         Title="SyncClipboard"
         SizeChanged="Window_SizeChanged"
         mc:Ignorable="d">
@@ -12,6 +13,10 @@
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <Grid>
+        <Grid.DataContext>
+            <vm:SettingWindowViewModel />
+        </Grid.DataContext>
+        <local:TrayIcon DoubleClickCommand="{x:Bind TrayIcon_DoubleClickCommand}" />
         <local:AppTitleBar x:Name="_AppTitleBar"
                            Height="36"
                            VerticalAlignment="Top"
@@ -36,13 +41,17 @@
                 </ScrollViewer>
             </Grid>
             <SplitView.Pane>
-                <ListView x:Name="MenuList"
+                <ListView x:Name="_MenuList"
                           Margin="8,36,0,0"
                           SelectionMode="Single"
                           IsItemClickEnabled="False"
+                          ItemsSource="{Binding SettingItems}"
                           SelectionChanged="ListView_SelectionChanged">
-                    <ListViewItem Content="1" Tag="SyncSettingPage" IsSelected="True" />
-                    <ListViewItem Content="2" Tag="NetwordSettingPage" />
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ListViewItem Content="{Binding Tag}" Tag="{Binding Name}" />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
                 </ListView>
             </SplitView.Pane>
         </SplitView>

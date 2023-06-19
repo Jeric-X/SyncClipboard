@@ -33,4 +33,9 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+  </ItemGroup>
+
 </Project>
