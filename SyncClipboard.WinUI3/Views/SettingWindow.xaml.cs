@@ -19,6 +19,8 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class SettingWindow : Window
     {
+        public TrayIcon TrayIcon => _TrayIcon;
+
         public SettingWindow()
         {
             this.InitializeComponent();
@@ -35,7 +37,7 @@ namespace SyncClipboard.WinUI3.Views
 
         private void SettingWindow_Closed(object sender, WindowEventArgs args)
         {
-            if (((App)Application.Current).AppExiting)
+            if (App.Current.AppExiting)
             {
                 return;
             }

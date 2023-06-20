@@ -16,7 +16,7 @@
         <Grid.DataContext>
             <vm:SettingWindowViewModel />
         </Grid.DataContext>
-        <local:TrayIcon DoubleClickCommand="{x:Bind TrayIcon_DoubleClickCommand}" />
+        <local:TrayIcon x:Name="_TrayIcon"  DoubleClickCommand="{x:Bind TrayIcon_DoubleClickCommand}" />
         <local:AppTitleBar x:Name="_AppTitleBar"
                            Height="36"
                            VerticalAlignment="Top"
