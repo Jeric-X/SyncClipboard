@@ -12,11 +12,8 @@
     </tb:TaskbarIcon.IconSource>
     <tb:TaskbarIcon.ContextFlyout>
         <MenuFlyout>
-            <RadioMenuFlyoutItem Text="222 " />
-            <MenuFlyoutSubItem Text="fff">
-            </MenuFlyoutSubItem>
-            <MenuFlyoutItem Text="123 123232" />
-            <MenuFlyoutSeparator />
+            <MenuFlyoutSeparator x:Name="_Separator" MinWidth="100" Visibility="Collapsed"/>
+            <MenuFlyoutItem Text="添加" Click="MenuFlyoutItem_Click_1" />
             <MenuFlyoutItem Text="退出" Click="MenuFlyoutItem_Click" />
         </MenuFlyout>
     </tb:TaskbarIcon.ContextFlyout>
