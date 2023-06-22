@@ -37,7 +37,7 @@ namespace SyncClipboard.WinUI3
             this.InitializeComponent();
         }
 
-        private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        private static void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             Trace.WriteLine(e.Message);
         }
@@ -47,6 +47,7 @@ namespace SyncClipboard.WinUI3
             var services = new ServiceCollection();
 
             services.AddSingleton<SettingWindow>();
+            services.AddSingleton<TrayIcon>((sp) => new TrayIcon { MainWindow = sp.GetService<SettingWindow>() });
             services.AddSingleton<IContextMenu, TrayIconContextMenu>();
 
             return services.BuildServiceProvider();
@@ -58,9 +59,9 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            var mainWindow = Services.GetService<SettingWindow>();
-            ArgumentNullException.ThrowIfNull(mainWindow, "MainWindow is not prepared in services.");
-            mainWindow.Activate();
+            var trayIcon = Services.GetService<TrayIcon>();
+            ArgumentNullException.ThrowIfNull(trayIcon);
+            trayIcon.ForceCreate();
         }
     }
 }

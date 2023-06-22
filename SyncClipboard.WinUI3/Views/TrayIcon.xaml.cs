@@ -1,7 +1,6 @@
+using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
-using SyncClipboard.Core.Interface;
 using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -26,24 +25,18 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
+        public Window? MainWindow { get; set; }
+
         public TrayIcon()
         {
             this.InitializeComponent();
+            DoubleClickCommand = new RelayCommand(() => MainWindow?.Activate());
         }
 
-        private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+        private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
         {
             App.Current.ExitApp();
             this.Dispose();
-        }
-
-        private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
-        {
-            var menu = App.Current.Services.GetService<IContextMenu>();
-            menu?.AddMenuItemGroup(new[]
-            {
-                new MenuItem { Text = "added" }
-            });
         }
     }
 }

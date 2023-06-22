@@ -39,4 +39,12 @@
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\Nextcloud\Code\SyncClipboard\SyncClipboard.WinUI3\Views\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Nextcloud\Code\SyncClipboard\SyncClipboard.WinUI3\Views\.editorconfig" />
+  </ItemGroup>
+
 </Project>

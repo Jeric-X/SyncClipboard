@@ -8,6 +8,3 @@ dotnet_diagnostic.CC0001.severity = none
 
 # CC0057: Unused Parameter
 dotnet_diagnostic.CC0057.severity = none
-
-# CC0091: Use static method
-dotnet_diagnostic.CC0091.severity = none

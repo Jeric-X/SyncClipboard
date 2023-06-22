@@ -47,9 +47,9 @@ namespace SyncClipboard.WinUI3.Views
 
         #endregion
 
-        public TrayIconContextMenu(SettingWindow mainWindow)
+        public TrayIconContextMenu(TrayIcon trayIcon)
         {
-            _trayIcon = mainWindow.TrayIcon;
+            _trayIcon = trayIcon;
 
             #region 初始化H.NotifyIcon.TaskbarIcon反射信息
             const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;

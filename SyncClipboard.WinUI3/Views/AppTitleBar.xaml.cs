@@ -33,7 +33,7 @@ namespace SyncClipboard.WinUI3.Views
             _DraggableArea.Margin = new(0, 0, 0, 0);
         }
 
-        private void NavigationButton_Click(object sender, RoutedEventArgs e)
+        private void NavigationButton_Click(object _, RoutedEventArgs _1)
         {
             NavigeMenuButtonClicked?.Invoke();
         }

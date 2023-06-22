@@ -19,8 +19,6 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class SettingWindow : Window
     {
-        public TrayIcon TrayIcon => _TrayIcon;
-
         public SettingWindow()
         {
             this.InitializeComponent();
@@ -43,7 +41,7 @@ namespace SyncClipboard.WinUI3.Views
             }
             else
             {
-                this.Hide();
+                this.AppWindow.Hide();
                 args.Handled = true;
             }
         }
@@ -51,7 +49,6 @@ namespace SyncClipboard.WinUI3.Views
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedItem = ((ListView)sender).SelectedItem;
-            //string pageName = "SyncClipboard.WinUI3.Views." + (((ListViewItem)selectedItem).Tag);
 
             string pageName = "SyncClipboard.WinUI3.Views." + (((SettingItem)selectedItem).Name + "Page");
             Type? pageType = Type.GetType(pageName);
@@ -79,12 +76,12 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        private void SplitPane_PaneClosed(SplitView sender, object args)
+        private void SplitPane_PaneClosed(SplitView _, object _1)
         {
             SplitPane.PaneBackground = (Brush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
         }
 
-        private void SplitPane_PaneOpening(SplitView sender, object args)
+        private void SplitPane_PaneOpening(SplitView _, object _1)
         {
             if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
             {
@@ -95,7 +92,7 @@ namespace SyncClipboard.WinUI3.Views
         [RelayCommand]
         private void TrayIcon_DoubleClick()
         {
-            this.Show();
+            this.AppWindow.Show();
         }
     }
 }
