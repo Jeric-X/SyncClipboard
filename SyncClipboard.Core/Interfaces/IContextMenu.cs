@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Interface
+﻿namespace SyncClipboard.Core.Interfaces
 {
     public class MenuItem
     {

@@ -3,7 +3,7 @@ using H.NotifyIcon;
 using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using SyncClipboard.Core.Interface;
+using SyncClipboard.Core.Interfaces;
 using System;
 using System.Reflection;
 

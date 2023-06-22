@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
-using SyncClipboard.Core.Interface;
+using SyncClipboard.Core;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.WinUI3.Views;
 using System;
 using System.Diagnostics;
@@ -47,7 +48,7 @@ namespace SyncClipboard.WinUI3
             var services = new ServiceCollection();
 
             services.AddSingleton<SettingWindow>();
-            services.AddSingleton<TrayIcon>((sp) => new TrayIcon { MainWindow = sp.GetService<SettingWindow>() });
+            services.AddSingleton<ITrayIcon, TrayIcon>((sp) => new TrayIcon { MainWindow = sp.GetService<SettingWindow>() });
             services.AddSingleton<IContextMenu, TrayIconContextMenu>();
 
             return services.BuildServiceProvider();
@@ -59,9 +60,7 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            var trayIcon = Services.GetService<TrayIcon>();
-            ArgumentNullException.ThrowIfNull(trayIcon);
-            trayIcon.ForceCreate();
+            new ProgramWorkflow(Services).Run();
         }
     }
 }

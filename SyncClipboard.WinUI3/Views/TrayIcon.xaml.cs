@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
+using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
+using SyncClipboard.Core.Interfaces;
 using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -8,7 +10,7 @@ using Windows.Foundation;
 
 namespace SyncClipboard.WinUI3.Views
 {
-    public sealed partial class TrayIcon : TaskbarIcon
+    public sealed partial class TrayIcon : TaskbarIcon, ITrayIcon
     {
         // new MenuFlyoutSeparator()'s DesiredSize is (0.0, 0.0)
         // MenuFlyoutItem's DesiredSize.Width is wrong before fist poping up
@@ -37,6 +39,11 @@ namespace SyncClipboard.WinUI3.Views
         {
             App.Current.ExitApp();
             this.Dispose();
+        }
+
+        void ITrayIcon.Create()
+        {
+            this.ForceCreate();
         }
     }
 }
