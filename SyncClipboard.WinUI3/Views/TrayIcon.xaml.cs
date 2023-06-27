@@ -1,6 +1,4 @@
-using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
-using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core.Interfaces;
 using Windows.Foundation;
@@ -27,17 +25,14 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        public Window? MainWindow { get; set; }
-
         public TrayIcon()
         {
             this.InitializeComponent();
-            DoubleClickCommand = new RelayCommand(() => MainWindow?.Activate());
         }
 
         private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
         {
-            App.Current.ExitApp();
+            App.Current.Exit();
             this.Dispose();
         }
 

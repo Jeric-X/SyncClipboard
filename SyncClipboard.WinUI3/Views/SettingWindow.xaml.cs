@@ -1,5 +1,3 @@
-using CommunityToolkit.Mvvm.Input;
-using H.NotifyIcon;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -22,7 +20,6 @@ namespace SyncClipboard.WinUI3.Views
         public SettingWindow()
         {
             this.InitializeComponent();
-            this.Closed += SettingWindow_Closed;
 
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(_AppTitleBar.DraggableArea);
@@ -31,19 +28,6 @@ namespace SyncClipboard.WinUI3.Views
             AppWindow.ResizeClient(new(1200, 700));
 
             _MenuList.SelectedIndex = 0;
-        }
-
-        private void SettingWindow_Closed(object sender, WindowEventArgs args)
-        {
-            if (App.Current.AppExiting)
-            {
-                return;
-            }
-            else
-            {
-                this.AppWindow.Hide();
-                args.Handled = true;
-            }
         }
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -87,12 +71,6 @@ namespace SyncClipboard.WinUI3.Views
             {
                 SplitPane.PaneBackground = (Brush)Application.Current.Resources["AcrylicInAppFillColorDefaultBrush"];
             }
-        }
-
-        [RelayCommand]
-        private void TrayIcon_DoubleClick()
-        {
-            this.AppWindow.Show();
         }
     }
 }

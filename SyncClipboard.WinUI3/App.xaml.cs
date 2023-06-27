@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
@@ -16,14 +17,6 @@ namespace SyncClipboard.WinUI3
     /// </summary>
     public partial class App : Application
     {
-        internal bool AppExiting { get; private set; } = false;
-
-        public void ExitApp()
-        {
-            AppExiting = true;
-            Exit();
-        }
-
         public new static App Current => (App)Application.Current;
         public IServiceProvider Services { get; private set; }
 
@@ -47,8 +40,12 @@ namespace SyncClipboard.WinUI3
         {
             var services = new ServiceCollection();
 
-            services.AddSingleton<SettingWindow>();
-            services.AddSingleton<ITrayIcon, TrayIcon>((sp) => new TrayIcon { MainWindow = sp.GetService<SettingWindow>() });
+            services.AddTransient<SettingWindow>();
+            services.AddSingleton<ITrayIcon, TrayIcon>(
+                (sp) => new TrayIcon
+                {
+                    DoubleClickCommand = new RelayCommand(() => sp.GetService<SettingWindow>()?.Activate())
+                });
             services.AddSingleton<IContextMenu, TrayIconContextMenu>();
 
             return services.BuildServiceProvider();
