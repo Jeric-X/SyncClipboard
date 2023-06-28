@@ -40,6 +40,8 @@ namespace SyncClipboard.WinUI3
         {
             var services = new ServiceCollection();
 
+            ProgramWorkflow.ConfigCommonService(services);
+
             services.AddTransient<SettingWindow>();
             services.AddSingleton<ITrayIcon, TrayIcon>(
                 (sp) => new TrayIcon
