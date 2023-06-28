@@ -15,7 +15,7 @@ namespace SyncClipboard.Core.Utilities
             LOG_FOLDER = option.Value.Path ?? throw new ArgumentNullException(nameof(option.Value.Path), "日志路径为null"); ;
         }
 
-        public static void Write(string? tag, string str, StackFrame? stackFrame = null)
+        public void Write(string? tag, string str, StackFrame? stackFrame = null)
         {
             StackFrame? sf = stackFrame ?? new StackTrace(true).GetFrame(1);
 
@@ -35,12 +35,9 @@ namespace SyncClipboard.Core.Utilities
                     dayTime.ToString("yyyy/MM/dd HH:mm:ss"), fileName, lineNumber, str);
             }
 
-#if DEBUG
             WriteToConsole(logStr);
-#else
             string logFile = dayTime.ToString("yyyyMMdd");
             WriteToFile(logStr, logFile);
-#endif
         }
 
         void ILogger.Write(string str)
@@ -53,7 +50,7 @@ namespace SyncClipboard.Core.Utilities
             Write(tag, str, new StackTrace(true).GetFrame(1));
         }
 
-        public void WriteToFile(string logStr, string logFile)
+        private void WriteToFile(string logStr, string logFile)
         {
             //判断文件夹是否存在
             if (!Directory.Exists(LOG_FOLDER))
@@ -65,7 +62,7 @@ namespace SyncClipboard.Core.Utilities
             {
                 try
                 {
-                    using StreamWriter file = new($@"{LOG_FOLDER}\{logFile}.txt", true, System.Text.Encoding.UTF8);
+                    using StreamWriter file = new(Path.Combine(LOG_FOLDER, $"{logFile}.txt"), true, System.Text.Encoding.UTF8);
                     file.WriteLine(logStr);
                 }
                 catch
@@ -75,6 +72,7 @@ namespace SyncClipboard.Core.Utilities
             }
         }
 
+        [Conditional("DEBUG")]
         private static void WriteToConsole(string logStr)
         {
             Task.Run(() => Trace.WriteLine(logStr));

@@ -1,7 +1,7 @@
 using System;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Notification;
-using SyncClipboard.Utility.Web;
 #nullable enable
 
 namespace SyncClipboard.Service

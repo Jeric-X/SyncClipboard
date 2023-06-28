@@ -19,6 +19,7 @@ namespace SyncClipboard.WinUI3
     {
         public new static App Current => (App)Application.Current;
         public IServiceProvider Services { get; private set; }
+        public ILogger Logger { get; private set; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -27,6 +28,7 @@ namespace SyncClipboard.WinUI3
         public App()
         {
             Services = ConfigureServices();
+            Logger = Services.GetRequiredService<ILogger>();
             UnhandledException += App_UnhandledException;
             this.InitializeComponent();
         }
@@ -59,6 +61,7 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            Logger.Write("App started");
             new ProgramWorkflow(Services).Run();
         }
     }

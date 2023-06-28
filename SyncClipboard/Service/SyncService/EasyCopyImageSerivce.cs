@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Image;
-using SyncClipboard.Utility.Web;
+using SyncClipboard.Core.Utilities;
 using static SyncClipboard.Service.ProfileFactory;
 #nullable enable
 

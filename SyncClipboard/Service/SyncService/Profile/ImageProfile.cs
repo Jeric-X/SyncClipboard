@@ -1,11 +1,11 @@
-﻿using System;
+﻿using ImageMagick;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Utility;
+using SyncClipboard.Utility.Notification;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using ImageMagick;
-using SyncClipboard.Utility;
-using SyncClipboard.Utility.Notification;
-using SyncClipboard.Utility.Web;
 using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable

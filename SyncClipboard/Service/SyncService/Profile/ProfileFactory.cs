@@ -1,16 +1,16 @@
 ﻿
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Utility;
+using SyncClipboard.Utility.Image;
 using System;
 using System.Drawing;
+using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SyncClipboard.Utility.Web;
-using SyncClipboard.Utility.Image;
 using static SyncClipboard.Service.ProfileType;
-using System.Net.Http;
-using System.Net;
-using System.IO;
 #nullable enable
 
 namespace SyncClipboard.Service

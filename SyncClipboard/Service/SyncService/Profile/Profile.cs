@@ -1,11 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Text.Json;
-using System.Windows.Forms;
-using SyncClipboard.Utility.Web;
-using static SyncClipboard.Service.ProfileType;
-using System.Threading;
+﻿using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Utility.Notification;
+using System;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable
 

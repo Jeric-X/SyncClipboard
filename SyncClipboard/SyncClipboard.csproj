@@ -40,6 +40,10 @@
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.2" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
     <ProjectReference Include="..\SyncClipboard.Server\SyncClipboard.Server.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Utility\Web\" />
   </ItemGroup>
 </Project>

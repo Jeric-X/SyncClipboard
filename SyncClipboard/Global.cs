@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
 using SyncClipboard.Control;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Module;
 using SyncClipboard.Service;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Web;
 
 namespace SyncClipboard
 {

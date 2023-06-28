@@ -17,12 +17,10 @@ namespace SyncClipboard.Core
 
         public void Run()
         {
-            var trayIcon = Services.GetService<ITrayIcon>();
-            ArgumentNullException.ThrowIfNull(trayIcon);
+            var trayIcon = Services.GetRequiredService<ITrayIcon>();
             trayIcon.Create();
 
-            var userConfig = Services.GetService<UserConfig>();
-            ArgumentNullException.ThrowIfNull(userConfig);
+            var userConfig = Services.GetRequiredService<UserConfig>();
             userConfig.AddMenuItems();
         }
 
