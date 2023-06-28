@@ -47,9 +47,9 @@ namespace SyncClipboard.WinUI3.Views
 
         #endregion
 
-        public TrayIconContextMenu(TrayIcon trayIcon)
+        public TrayIconContextMenu(ITrayIcon trayIcon)
         {
-            _trayIcon = trayIcon;
+            _trayIcon = (trayIcon as TrayIcon)!;
 
             #region 初始化H.NotifyIcon.TaskbarIcon反射信息
             const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
@@ -105,7 +105,7 @@ namespace SyncClipboard.WinUI3.Views
             return new MenuFlyoutSeparator
             {
                 Height = _trayIcon.SeparatorSize.Height,
-                Width = _trayIcon.SeparatorSize.Width
+                MinWidth = _trayIcon.SeparatorSize.Width
             };
         }
     }

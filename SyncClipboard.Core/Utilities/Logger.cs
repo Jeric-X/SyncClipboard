@@ -15,7 +15,7 @@ namespace SyncClipboard.Core.Utilities
             LOG_FOLDER = option.Value.Path ?? throw new ArgumentNullException(nameof(option.Value.Path), "日志路径为null"); ;
         }
 
-        public void Write(string? tag, string str, StackFrame? stackFrame = null)
+        public static void Write(string? tag, string str, StackFrame? stackFrame = null)
         {
             StackFrame? sf = stackFrame ?? new StackTrace(true).GetFrame(1);
 
@@ -53,7 +53,7 @@ namespace SyncClipboard.Core.Utilities
             Write(tag, str, new StackTrace(true).GetFrame(1));
         }
 
-        private void WriteToFile(string logStr, string logFile)
+        public void WriteToFile(string logStr, string logFile)
         {
             //判断文件夹是否存在
             if (!Directory.Exists(LOG_FOLDER))
@@ -75,7 +75,7 @@ namespace SyncClipboard.Core.Utilities
             }
         }
 
-        private void WriteToConsole(string logStr)
+        private static void WriteToConsole(string logStr)
         {
             Task.Run(() => Trace.WriteLine(logStr));
         }

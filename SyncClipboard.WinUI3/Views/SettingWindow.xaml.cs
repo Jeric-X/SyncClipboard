@@ -26,8 +26,15 @@ namespace SyncClipboard.WinUI3.Views
             _AppTitleBar.NavigeMenuButtonClicked += () => SplitPane.IsPaneOpen = !SplitPane.IsPaneOpen;
 
             AppWindow.ResizeClient(new(1200, 700));
+            Closed += SettingWindow_Closed;
 
             _MenuList.SelectedIndex = 0;
+        }
+
+        private void SettingWindow_Closed(object sender, WindowEventArgs args)
+        {
+            this.AppWindow.Hide();
+            args.Handled = true;
         }
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)

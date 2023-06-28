@@ -1,6 +1,7 @@
 using H.NotifyIcon;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core.Interfaces;
+using System;
 using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -10,9 +11,10 @@ namespace SyncClipboard.WinUI3.Views
 {
     public sealed partial class TrayIcon : TaskbarIcon, ITrayIcon
     {
-        // new MenuFlyoutSeparator()'s DesiredSize is (0.0, 0.0)
-        // MenuFlyoutItem's DesiredSize.Width is wrong before fist poping up
-        // Use this to tell the real Separator's height and MinWidth
+        // 1 MenuFlyout's Width is wrong when first poping up
+        // 2 new MenuFlyoutSeparator()'s DesiredSize is (0.0, 0.0)
+        // 3 new MenuFlyoutItem's DesiredSize.Width is wrong before fist poping up
+        // Set a default MinWidth and Use this to tell the real Separator's height and MinWidth
         public Size SeparatorSize
         {
             get
@@ -32,7 +34,7 @@ namespace SyncClipboard.WinUI3.Views
 
         private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
         {
-            App.Current.Exit();
+            Environment.Exit(0);
             this.Dispose();
         }
 

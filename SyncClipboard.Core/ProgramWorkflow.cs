@@ -22,7 +22,8 @@ namespace SyncClipboard.Core
             trayIcon.Create();
 
             var userConfig = Services.GetService<UserConfig>();
-            userConfig.Save();
+            ArgumentNullException.ThrowIfNull(userConfig);
+            userConfig.AddMenuItems();
         }
 
         public static void ConfigCommonService(ServiceCollection services)

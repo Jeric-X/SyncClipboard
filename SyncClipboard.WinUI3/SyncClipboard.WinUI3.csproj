@@ -15,7 +15,6 @@
     <TrimMode>partial</TrimMode>
     <PublishReadyToRun>false</PublishReadyToRun>
     <Nullable>enable</Nullable>
-    <PublishReadyToRun>true</PublishReadyToRun>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AssemblyName>SyncClipboard</AssemblyName>
     <!--<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>-->

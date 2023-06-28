@@ -8,3 +8,6 @@ dotnet_diagnostic.CC0001.severity = none
 
 # CC0057: Unused Parameter
 dotnet_diagnostic.CC0057.severity = none
+
+# CA1416: 验证平台兼容性
+dotnet_diagnostic.CA1416.severity = none

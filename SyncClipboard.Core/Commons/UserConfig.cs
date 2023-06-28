@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Options;
+using System.Runtime.Versioning;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.Commons
@@ -8,8 +9,6 @@ namespace SyncClipboard.Core.Commons
     public class UserConfig
     {
         public event Action? ConfigChanged;
-
-        public const string CONFIG_FILE = "SyncClipboard.json";
 
         public class Configuration
         {
@@ -64,12 +63,14 @@ namespace SyncClipboard.Core.Commons
         public Configuration Config = new();
 
         private readonly ILogger _logger;
+        private readonly IContextMenu _contextMenu;
         private readonly string _path;
 
-        public UserConfig(IOptions<UserConfigOption> option, ILogger logger)
+        public UserConfig(IOptions<UserConfigOption> option, ILogger logger, IContextMenu contextMenu)
         {
             _logger = logger;
-            _path = option.Value.Path ?? throw new ArgumentNullException(nameof(option.Value.Path), "�����ļ�·��Ϊnull");
+            _contextMenu = contextMenu;
+            _path = option.Value.Path ?? throw new ArgumentNullException(nameof(option.Value.Path), "配置文件路径为null");
         }
 
         public void Save()
@@ -117,6 +118,30 @@ namespace SyncClipboard.Core.Commons
             _logger.Write("Write new default file.");
             Config = new Configuration();
             Save();
+        }
+
+        [SupportedOSPlatform("windows")]
+        public void AddMenuItems()
+        {
+            MenuItem[] menuItems =
+            {
+                new MenuItem(
+                    "打开配置文件", () => {
+                        var open = new System.Diagnostics.Process();
+                        open.StartInfo.FileName = "notepad";
+                        open.StartInfo.Arguments = _path;
+                        open.Start();
+                    } )  ,
+                new MenuItem(
+                    "打开配置文件所在位置", () => {
+                        var open = new System.Diagnostics.Process();
+                        open.StartInfo.FileName = "explorer";
+                        open.StartInfo.Arguments = "/e,/select," + _path;
+                        open.Start();
+                    }),
+                new MenuItem("重新载入配置文件", () => this.Load())
+            };
+            _contextMenu.AddMenuItemGroup(menuItems);
         }
     }
 }
