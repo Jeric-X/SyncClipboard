@@ -22,14 +22,20 @@ namespace SyncClipboard.Core
 
             var userConfig = Services.GetRequiredService<UserConfig>();
             userConfig.AddMenuItems();
+
+            var webdav = Services.GetRequiredService<IWebDav>();
+            webdav.TestAlive();
         }
 
         public static void ConfigCommonService(ServiceCollection services)
         {
             services.AddSingleton<UserConfig>();
             services.Configure<UserConfigOption>(x => x.Path = Env.UserConfigFile);
+
             services.AddSingleton<ILogger, Logger>();
             services.Configure<LoggerOption>(x => x.Path = Env.LogFolder);
+
+            services.AddSingleton<IWebDav, WebDavClient>();
         }
     }
 }

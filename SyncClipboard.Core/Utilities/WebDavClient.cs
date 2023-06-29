@@ -1,20 +1,17 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using System;
-using System.IO;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-#nullable enable
 
 namespace SyncClipboard.Core.Utilities
 {
     public class WebDavClient : IWebDav
     {
         private const string USER_AGENT = Env.SoftName + Env.VERSION;
+        private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
+
         public int? IntervalTime { get; set; }
         public int? RetryTimes { get; set; }
         private int? _timeout;
@@ -47,19 +44,36 @@ namespace SyncClipboard.Core.Utilities
         }
 
         private readonly HttpClient httpClient;
-        public WebDavClient(string url)
+
+        public WebDavClient(UserConfig userConfig, ILogger logger)
         {
+            _userConfig = userConfig;
+            _userConfig.ConfigChanged += LoadUserConfig;
+            _logger = logger;
+
             httpClient = new HttpClient()
             {
                 Timeout = System.Threading.Timeout.InfiniteTimeSpan
             };
-            if (Uri.TryCreate(url?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
+
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
+            LoadUserConfig();
+        }
+
+        private void LoadUserConfig()
+        {
+            if (Uri.TryCreate(_userConfig.Config.SyncService.RemoteURL?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
             {
                 httpClient.BaseAddress = uri;
             }
 
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
+            User = _userConfig.Config.SyncService.UserName;
+            Token = _userConfig.Config.SyncService.Password;
+            IntervalTime = _userConfig.Config.Program.IntervalTime;
+            RetryTimes = _userConfig.Config.Program.RetryTimes;
+            Timeout = _userConfig.Config.Program.TimeOut;
         }
+
         private void SetAuthHeader()
         {
             if ((User is null) && (Token is null))
@@ -160,11 +174,11 @@ namespace SyncClipboard.Core.Utilities
             }
             catch (Exception ex)
             {
-                Log.Write("[WebDAV] Test WebDav Failed, message = " + ex.Message);
+                _logger.Write("[WebDAV] Test WebDav Failed, message = " + ex.Message);
                 return false;
             }
 
-            Log.Write("Test ok ");
+            _logger.Write("Test ok ");
             return true;
         }
 
