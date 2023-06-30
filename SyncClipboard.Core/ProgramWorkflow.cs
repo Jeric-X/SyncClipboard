@@ -36,6 +36,7 @@ namespace SyncClipboard.Core
             services.Configure<LoggerOption>(x => x.Path = Env.LogFolder);
 
             services.AddSingleton<IWebDav, WebDavClient>();
+            services.AddSingleton<IHttp, Http>();
         }
     }
 }

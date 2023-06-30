@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Control;
-using SyncClipboard.Utility.Web;
 
 namespace SyncClipboard.Utility
 {
@@ -84,7 +83,7 @@ namespace SyncClipboard.Utility
             var loginUrl = server + VERIFICATION_URL;
             try
             {
-                return await Http.PostTextRecieveJson<FistResponseJson>(loginUrl);
+                return await Global.Http.PostTextRecieveJson<FistResponseJson>(loginUrl);
             }
             catch (System.Net.WebException)
             {
@@ -106,7 +105,7 @@ namespace SyncClipboard.Utility
                 try
                 {
                     KeyValuePair<string, string>[] list = { KeyValuePair.Create("token", firstResponse.Poll.Token) };
-                    return await Http.PostTextRecieveJson<SecondResponse>(url, list);
+                    return await Global.Http.PostTextRecieveJson<SecondResponse>(url, list);
                 }
                 catch
                 {

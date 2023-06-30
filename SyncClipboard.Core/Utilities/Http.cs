@@ -4,10 +4,30 @@ using System.Net.Http.Json;
 
 namespace SyncClipboard.Core.Utilities
 {
-    public static class Http
+    public class Http : IHttp
     {
         public const string USER_AGENT = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36";
-        private const int BUFFER_SIZE = 102400;
+
+        private string _proxy;
+        private readonly UserConfig _userConfig;
+
+        public Http(UserConfig userConfig)
+        {
+            _proxy = userConfig.Config.Program.Proxy;
+            _userConfig = userConfig;
+            userConfig.ConfigChanged += UserConfig_ConfigChanged;
+        }
+
+        private void UserConfig_ConfigChanged()
+        {
+            if (_proxy != _userConfig.Config.Program.Proxy)
+            {
+                _proxy = _userConfig.Config.Program.Proxy;
+                HttpClientProxy.Dispose();
+                _lazyHttpClientProxy = null;
+            }
+        }
+
         private static readonly Lazy<HttpClient> lazyHttpClient = new(
             () =>
             {
@@ -20,68 +40,52 @@ namespace SyncClipboard.Core.Utilities
                 return client;
             }
         );
-        public static HttpClient HttpClient => lazyHttpClient.Value;
 
-        private static readonly Lazy<HttpClient> lazyHttpClientProxy = new(
-            () =>
+        private static HttpClient HttpClient => lazyHttpClient.Value;
+        private HttpClient HttpClientProxy => GetHttpClientProxy();
+
+        private HttpClient? _lazyHttpClientProxy = null;
+
+        private HttpClient GetHttpClientProxy()
+        {
+            if (_lazyHttpClientProxy is null)
             {
-                HttpClient client = new(
+                _lazyHttpClientProxy = new(
                     new SocketsHttpHandler()
                     {
                         ConnectTimeout = TimeSpan.FromSeconds(60),
-                        Proxy = new System.Net.WebProxy(UserConfig.Config.Program.Proxy, true),
+                        Proxy = new System.Net.WebProxy(_proxy, true),
                         UseProxy = true
                     }
                 );
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
-                return client;
+                _lazyHttpClientProxy.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
             }
-        );
-        public static HttpClient HttpClientProxy => lazyHttpClientProxy.Value;
-
-        public static async Task<Type?> PostTextRecieveJson<Type>(string url,
-            IEnumerable<KeyValuePair<string, string>>? list = null)
-        {
-            list ??= Array.Empty<KeyValuePair<string, string>>();
-            var res = await HttpClient.PostAsync(url, new FormUrlEncodedContent(list));
-            res.EnsureSuccessStatusCode();
-            return await res.Content.ReadFromJsonAsync<Type>();
+            return _lazyHttpClientProxy;
         }
 
-        public static async Task GetFile(this HttpClient httpClient,
-            string url, string localFilePath, CancellationToken? cancelToken = null)
+        Task<Type?> IHttp.PostTextRecieveJson<Type>(string url, IEnumerable<KeyValuePair<string, string>>? list,
+            bool useProxy) where Type : default
         {
-            using var instream = await httpClient.GetStreamAsync(url, cancelToken ?? CancellationToken.None);
-            using var fileStrem = new FileStream(localFilePath, FileMode.Create);
-            await instream.CopyToAsync(fileStrem, cancelToken ?? CancellationToken.None);
+            HttpClient client = useProxy ? HttpClientProxy : HttpClient;
+            return client.PostTextRecieveJson<Type>(url, list);
         }
 
-        public static async Task GetFile(this HttpClient httpClient, string url, string localFilePath,
-            IProgress<HttpDownloadProgress>? progress, CancellationToken? cancellationToken = null)
+        Task IHttp.GetFile(string url, string localFilePath, CancellationToken? cancelToken, bool useProxy)
         {
-            var cancelToken = cancellationToken ?? CancellationToken.None;
-            using var responseMessage = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancelToken);
-            responseMessage.EnsureSuccessStatusCode();
+            HttpClient client = useProxy ? HttpClientProxy : HttpClient;
+            return client.GetFile(url, localFilePath, cancelToken);
+        }
 
-            var downloadProgress = new HttpDownloadProgress
-            {
-                TotalBytesToReceive = (ulong?)responseMessage.Content.Headers.ContentLength
-            };
-            progress?.Report(downloadProgress);
+        Task IHttp.GetFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress,
+            CancellationToken? cancelToken, bool useProxy)
+        {
+            HttpClient client = useProxy ? HttpClientProxy : HttpClient;
+            return client.GetFile(url, localFilePath, progress, cancelToken);
+        }
 
-            var buffer = new byte[BUFFER_SIZE];
-            int bytesRead;
-
-            using var responseStream = await responseMessage.Content.ReadAsStreamAsync(cancelToken);
-            using var fileStrem = new FileStream(localFilePath, FileMode.Create);
-            while ((bytesRead = await responseStream.ReadAsync(buffer.AsMemory(0, BUFFER_SIZE), cancelToken)) > 0)
-            {
-                await fileStrem.WriteAsync(buffer.AsMemory(0, bytesRead), cancelToken);
-                downloadProgress.BytesReceived += (ulong)bytesRead;
-                progress?.Report(downloadProgress);
-            }
-            downloadProgress.End = true;
-            progress?.Report(downloadProgress);
+        HttpClient IHttp.GetHttpClient(bool useProxy)
+        {
+            return useProxy ? HttpClientProxy : HttpClient;
         }
     }
 }

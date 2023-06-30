@@ -108,23 +108,23 @@ namespace SyncClipboard.Service
             }
         }
 
-        private async Task<string> DownloadImage(string imageUrl, bool userProxy, CancellationToken cancellationToken)
+        private async Task<string> DownloadImage(string imageUrl, bool useProxy, CancellationToken cancellationToken)
         {
             var filename = Regex.Match(imageUrl, "[^/]+(?!.*/)");
             lock (_progressLocker)
             {
                 _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], "正在从网站下载原图");
             }
-            if (userProxy)
+            if (useProxy)
             {
                 var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "proxy " + filename.Value);
-                await Http.HttpClientProxy.GetFile(imageUrl, fullPath, _progress, cancellationToken);
+                await Global.Http.GetFile(imageUrl, fullPath, _progress, cancellationToken, true);
                 return fullPath;
             }
             else
             {
                 var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, filename.Value);
-                await Http.HttpClient.GetFile(imageUrl, fullPath, _progress, cancellationToken);
+                await Global.Http.GetFile(imageUrl, fullPath, _progress, cancellationToken);
                 return fullPath;
             }
         }

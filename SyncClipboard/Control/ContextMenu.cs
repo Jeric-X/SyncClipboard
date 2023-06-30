@@ -1,12 +1,13 @@
-﻿using System;
-using System.Windows.Forms;
-using Microsoft.Win32;
-using SyncClipboard.Utility;
+﻿using Microsoft.Win32;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
+using SyncClipboard.Utility;
+using System;
+using System.Windows.Forms;
 
 namespace SyncClipboard.Control
 {
-    public class MainController
+    public class ContextMenu : IContextMenu
     {
         public Notifyer Notifyer;
         private System.Windows.Forms.ContextMenuStrip contextMenu;
@@ -21,11 +22,12 @@ namespace SyncClipboard.Control
         private readonly SettingsForm settingsForm = new();
         private bool isSttingsFormExist = false;
 
-        public MainController()
+        public ContextMenu()
         {
             InitializeComponent();
             this.LoadConfig();
         }
+
         private void InitializeComponent()
         {
             this.设置MenuItem = new System.Windows.Forms.ToolStripMenuItem("设置");
@@ -92,6 +94,7 @@ namespace SyncClipboard.Control
             Notifyer.Exit();
             Application.Exit();
         }
+
         private void 设置MenuItem_Click(object sender, EventArgs e)
         {
             if (!isSttingsFormExist)
@@ -146,6 +149,7 @@ namespace SyncClipboard.Control
         }
 
         private int _index = 3;
+
         public void AddMenuItemGroup(string[] texts, Action[] actions)
         {
             if (texts.Length == 0)
@@ -204,6 +208,17 @@ namespace SyncClipboard.Control
             item.Click += (sender, e) => actions(item.Checked);
             contextMenu.Items.Insert(_index++, item);
             return (status) => item.Checked = status;
+        }
+
+        void IContextMenu.AddMenuItemGroup(MenuItem[] menuItems)
+        {
+            //throw new NotImplementedException();
+            // code not test
+            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
+            foreach (var item in menuItems)
+            {
+                AddMenuItem(item.Text, (_) => item.Action(), false);
+            }
         }
     }
 }

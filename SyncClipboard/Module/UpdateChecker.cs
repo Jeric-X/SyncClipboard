@@ -3,7 +3,6 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Web;
 #nullable enable
 
 namespace SyncClipboard.Module
@@ -42,7 +41,7 @@ namespace SyncClipboard.Module
             string gitHubReply;
             try
             {
-                gitHubReply = await Http.HttpClient.GetStringAsync(UpdateUrl);
+                gitHubReply = await Global.Http.GetHttpClient().GetStringAsync(UpdateUrl);
             }
             catch
             {

@@ -1,6 +1,9 @@
-﻿using System;
+﻿//global using static SyncClipboard.Core.Commons.UserConfig;
+using System;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Control;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Module;
@@ -13,12 +16,15 @@ namespace SyncClipboard
     {
         internal static IWebDav WebDav;
         internal static Notifyer Notifyer;
-        internal static MainController Menu;
+        internal static ContextMenu Menu;
         internal static ServiceManager ServiceManager;
         internal static string AppUserModelId;
+        internal static IServiceProvider Services;
+        internal static IHttp Http;
 
         public static void StartUp()
         {
+            ConfigurateServices();
             StartUpUI();
             StartUpUserConfig();
             LoadGlobalWebDavSession();
@@ -26,6 +32,19 @@ namespace SyncClipboard
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
+        }
+
+        private static void ConfigurateServices()
+        {
+            var services = new ServiceCollection();
+            ProgramWorkflow.ConfigCommonService(services);
+
+            services.AddSingleton<IContextMenu, ContextMenu>();
+
+            Services = services.BuildServiceProvider();
+            Http = Services.GetRequiredService<IHttp>();
+            Menu = Services.GetRequiredService<IContextMenu>() as ContextMenu;
+            UserConfig.InitializeUserConfig(Services.GetRequiredService<Core.Commons.UserConfig>());
         }
 
         internal static void ReloadConfig()
@@ -43,14 +62,7 @@ namespace SyncClipboard
 
         private static void LoadGlobalWebDavSession()
         {
-            WebDav = new WebDavClient(UserConfig.Config.SyncService.RemoteURL)
-            {
-                User = UserConfig.Config.SyncService.UserName,
-                Token = UserConfig.Config.SyncService.Password,
-                IntervalTime = UserConfig.Config.Program.IntervalTime,
-                RetryTimes = UserConfig.Config.Program.RetryTimes,
-                Timeout = UserConfig.Config.Program.TimeOut
-            };
+            WebDav = Services.GetRequiredService<IWebDav>();
 
             WebDav.TestAlive().ContinueWith(
                 (res) => Log.Write("[WebDavClient] test sucess = " + res.Result.ToString()),
@@ -60,7 +72,6 @@ namespace SyncClipboard
 
         private static void StartUpUI()
         {
-            Menu = new MainController();
             Notifyer = Menu.Notifyer;
             ReloadUI();
         }
@@ -74,24 +85,7 @@ namespace SyncClipboard
         {
             UserConfig.ConfigChanged += ReloadConfig;
             UserConfig.Load();
-            Menu.AddMenuItemGroup(
-                new string[] { "打开配置文件", "打开配置文件所在位置", "重新载入配置文件" },
-                new System.Action[] {
-                    () => {
-                        var open = new System.Diagnostics.Process();
-                        open.StartInfo.FileName = "notepad";
-                        open.StartInfo.Arguments = Env.FullPath(UserConfig.CONFIG_FILE);
-                        open.Start();
-                    },
-                    () => {
-                        var open = new System.Diagnostics.Process();
-                        open.StartInfo.FileName = "explorer";
-                        open.StartInfo.Arguments = "/e,/select," + Env.FullPath(UserConfig.CONFIG_FILE);
-                        open.Start();
-                    },
-                    () => UserConfig.Load()
-                }
-            );
+            UserConfig.AddMenu();
         }
 
         private static void PrepareWorkingFolder()
