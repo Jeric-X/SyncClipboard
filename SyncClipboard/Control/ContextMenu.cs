@@ -22,8 +22,9 @@ namespace SyncClipboard.Control
         private readonly SettingsForm settingsForm = new();
         private bool isSttingsFormExist = false;
 
-        public ContextMenu()
+        public ContextMenu(Notifyer notifyer)
         {
+            Notifyer = notifyer;
             InitializeComponent();
             this.LoadConfig();
         }
@@ -61,8 +62,8 @@ namespace SyncClipboard.Control
             this.contextMenu.Items.Add(this.检查更新MenuItem);
             this.contextMenu.Items.Add(this.退出MenuItem);
 
-            Notifyer = new Notifyer(this.contextMenu);
             Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
+            Notifyer.SetContextMenu(this.contextMenu);
         }
 
         public void LoadConfig()

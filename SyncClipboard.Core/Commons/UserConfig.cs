@@ -71,6 +71,7 @@ namespace SyncClipboard.Core.Commons
             _logger = logger;
             _contextMenu = contextMenu;
             _path = option.Value.Path ?? throw new ArgumentNullException(nameof(option.Value.Path), "配置文件路径为null");
+            Load();
         }
 
         public void Save()

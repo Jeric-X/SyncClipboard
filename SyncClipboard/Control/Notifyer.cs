@@ -1,11 +1,12 @@
-﻿using System;
+﻿using SyncClipboard.Core.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace SyncClipboard.Control
 {
-    public class Notifyer
+    public class Notifyer : ITrayIcon
     {
         private readonly Icon DefaultIcon = Properties.Resources.upload;
         private readonly Icon ErrorIcon = Properties.Resources.erro;
@@ -22,17 +23,22 @@ namespace SyncClipboard.Control
 
         private readonly Dictionary<string, string> _statusList = new();
 
-        public Notifyer(ContextMenuStrip contextMenu)
+        public Notifyer()
         {
             this._notifyIcon = new System.Windows.Forms.NotifyIcon
             {
-                ContextMenuStrip = contextMenu,
+                //ContextMenuStrip = contextMenu,
                 Icon = DefaultIcon,
                 Text = "SyncClipboard",
-                Visible = true
+                Visible = false
             };
             this._notifyIcon.BalloonTipClicked += SetToastClickedHandler;   // to be modified
             this._notifyIcon.BalloonTipClosed += ClearToastClickedHandler;
+        }
+
+        public void SetContextMenu(ContextMenuStrip contextMenu)
+        {
+            _notifyIcon.ContextMenuStrip = contextMenu;
         }
 
         public void SetDoubleClickEvent(EventHandler eventHandler)
@@ -157,6 +163,11 @@ namespace SyncClipboard.Control
                 _statusList[key] = statusStr;
             }
             ActiveStatusString();
+        }
+
+        void ITrayIcon.Create()
+        {
+            _notifyIcon.Visible = true;
         }
     }
 }

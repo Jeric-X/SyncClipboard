@@ -1,14 +1,12 @@
-﻿//global using static SyncClipboard.Core.Commons.UserConfig;
-using System;
-using System.IO;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Control;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities;
 using SyncClipboard.Module;
 using SyncClipboard.Service;
 using SyncClipboard.Utility;
+using System;
+using System.IO;
 
 namespace SyncClipboard
 {
@@ -25,6 +23,8 @@ namespace SyncClipboard
         public static void StartUp()
         {
             ConfigurateServices();
+            new ProgramWorkflow(Services).Run();
+
             StartUpUI();
             StartUpUserConfig();
             LoadGlobalWebDavSession();
@@ -39,11 +39,13 @@ namespace SyncClipboard
             var services = new ServiceCollection();
             ProgramWorkflow.ConfigCommonService(services);
 
-            services.AddSingleton<IContextMenu, ContextMenu>();
+            Notifyer = new Notifyer();
+            Menu = new ContextMenu(Notifyer);
+            services.AddSingleton<IContextMenu>(Menu);
+            services.AddSingleton<ITrayIcon>(Notifyer);
 
             Services = services.BuildServiceProvider();
             Http = Services.GetRequiredService<IHttp>();
-            Menu = Services.GetRequiredService<IContextMenu>() as ContextMenu;
             UserConfig.InitializeUserConfig(Services.GetRequiredService<Core.Commons.UserConfig>());
         }
 
@@ -72,7 +74,6 @@ namespace SyncClipboard
 
         private static void StartUpUI()
         {
-            Notifyer = Menu.Notifyer;
             ReloadUI();
         }
 
@@ -85,7 +86,6 @@ namespace SyncClipboard
         {
             UserConfig.ConfigChanged += ReloadConfig;
             UserConfig.Load();
-            UserConfig.AddMenu();
         }
 
         private static void PrepareWorkingFolder()
