@@ -18,6 +18,7 @@ namespace SyncClipboard.Core
         public void Run()
         {
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
+            trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
             trayIcon.Create();
 
             var userConfig = Services.GetRequiredService<UserConfig>();

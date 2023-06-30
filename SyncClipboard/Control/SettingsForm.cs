@@ -1,10 +1,12 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Windows.Forms;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
 
 namespace SyncClipboard
 {
-    public partial class SettingsForm : Form
+    public partial class SettingsForm : Form, IMainWindow
     {
         public SettingsForm()
         {
@@ -12,6 +14,12 @@ namespace SyncClipboard
             this.textBox6.KeyPress += OnlyNum;
             this.textBox7.KeyPress += OnlyNum;
             this.textBox8.KeyPress += OnlyNum;
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            this.Hide();
+            e.Cancel = true;
         }
 
         private void OnlyNum(object sender, KeyPressEventArgs e)

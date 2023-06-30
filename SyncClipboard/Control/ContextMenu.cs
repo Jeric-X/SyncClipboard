@@ -62,7 +62,7 @@ namespace SyncClipboard.Control
             this.contextMenu.Items.Add(this.检查更新MenuItem);
             this.contextMenu.Items.Add(this.退出MenuItem);
 
-            Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
+            //Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
             Notifyer.SetContextMenu(this.contextMenu);
         }
 
@@ -213,8 +213,6 @@ namespace SyncClipboard.Control
 
         void IContextMenu.AddMenuItemGroup(MenuItem[] menuItems)
         {
-            //throw new NotImplementedException();
-            // code not test
             contextMenu.Items.Insert(_index++, new ToolStripSeparator());
             foreach (var item in menuItems)
             {

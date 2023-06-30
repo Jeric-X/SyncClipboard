@@ -2,6 +2,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using System;
 using Windows.UI.WindowManagement;
@@ -15,7 +16,7 @@ namespace SyncClipboard.WinUI3.Views
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class SettingWindow : Window
+    public sealed partial class SettingWindow : Window, IMainWindow
     {
         public SettingWindow()
         {
@@ -78,6 +79,11 @@ namespace SyncClipboard.WinUI3.Views
             {
                 SplitPane.PaneBackground = (Brush)Application.Current.Resources["AcrylicInAppFillColorDefaultBrush"];
             }
+        }
+
+        void IMainWindow.Show()
+        {
+            this.Activate();
         }
     }
 }

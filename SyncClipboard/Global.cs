@@ -43,6 +43,7 @@ namespace SyncClipboard
             Menu = new ContextMenu(Notifyer);
             services.AddSingleton<IContextMenu>(Menu);
             services.AddSingleton<ITrayIcon>(Notifyer);
+            services.AddSingleton<IMainWindow, SettingsForm>();
 
             Services = services.BuildServiceProvider();
             Http = Services.GetRequiredService<IHttp>();

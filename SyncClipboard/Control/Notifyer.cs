@@ -34,6 +34,14 @@ namespace SyncClipboard.Control
             };
             this._notifyIcon.BalloonTipClicked += SetToastClickedHandler;   // to be modified
             this._notifyIcon.BalloonTipClosed += ClearToastClickedHandler;
+            this._notifyIcon.DoubleClick += (_, _) => DoubleClick?.Invoke();
+        }
+
+        private event Action DoubleClick;
+        event Action ITrayIcon.MainWindowWakedUp
+        {
+            add => DoubleClick += value;
+            remove => DoubleClick -= value;
         }
 
         public void SetContextMenu(ContextMenuStrip contextMenu)
@@ -41,10 +49,6 @@ namespace SyncClipboard.Control
             _notifyIcon.ContextMenuStrip = contextMenu;
         }
 
-        public void SetDoubleClickEvent(EventHandler eventHandler)
-        {
-            this._notifyIcon.DoubleClick += eventHandler;
-        }
 
         public void Exit()
         {

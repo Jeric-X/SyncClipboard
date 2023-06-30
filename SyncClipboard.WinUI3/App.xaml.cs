@@ -27,9 +27,9 @@ namespace SyncClipboard.WinUI3
         /// </summary>
         public App()
         {
+            UnhandledException += App_UnhandledException;
             Services = ConfigureServices();
             Logger = Services.GetRequiredService<ILogger>();
-            UnhandledException += App_UnhandledException;
             this.InitializeComponent();
         }
 
@@ -44,13 +44,9 @@ namespace SyncClipboard.WinUI3
 
             ProgramWorkflow.ConfigCommonService(services);
 
-            services.AddSingleton<SettingWindow>();
-            services.AddSingleton<ITrayIcon, TrayIcon>(
-                (sp) => new TrayIcon
-                {
-                    DoubleClickCommand = new RelayCommand(() => sp.GetService<SettingWindow>()?.Activate())
-                });
-            services.AddSingleton<IContextMenu, TrayIconContextMenu>();
+            services.AddSingleton<IMainWindow, SettingWindow>();
+            services.AddSingleton<ITrayIcon, TrayIcon>();
+            services.AddSingleton<IContextMenu>((sp) => new TrayIconContextMenu((TrayIcon)sp.GetRequiredService<ITrayIcon>()));
 
             return services.BuildServiceProvider();
         }
@@ -61,7 +57,7 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            Logger.Write("App started");
+            Logger?.Write("App started");
             new ProgramWorkflow(Services).Run();
         }
     }

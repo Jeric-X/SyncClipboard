@@ -1,7 +1,9 @@
+using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core.Interfaces;
 using System;
+using System.Diagnostics;
 using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -30,6 +32,14 @@ namespace SyncClipboard.WinUI3.Views
         public TrayIcon()
         {
             this.InitializeComponent();
+            DoubleClickCommand = new RelayCommand(() => DoubleClick?.Invoke());
+        }
+
+        private event Action? DoubleClick;
+        event Action ITrayIcon.MainWindowWakedUp
+        {
+            add => DoubleClick += value;
+            remove => DoubleClick -= value;
         }
 
         private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
