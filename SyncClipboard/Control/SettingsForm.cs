@@ -2,18 +2,22 @@
 using System.ComponentModel;
 using System.Windows.Forms;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Module;
 
 namespace SyncClipboard
 {
     public partial class SettingsForm : Form, IMainWindow
     {
-        public SettingsForm()
+        private readonly Core.Commons.UserConfig _userConfig;
+
+        public SettingsForm(Core.Commons.UserConfig userConfig)
         {
             InitializeComponent();
             this.textBox6.KeyPress += OnlyNum;
             this.textBox7.KeyPress += OnlyNum;
             this.textBox8.KeyPress += OnlyNum;
+            _userConfig = userConfig;
+            LoadConfig();
+            _userConfig.ConfigChanged += LoadConfig;
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -30,14 +34,14 @@ namespace SyncClipboard
             }
         }
 
-        public void LoadConfig()
+        private void LoadConfig()
         {
-            this.textBox1.Text = UserConfig.Config.SyncService.RemoteURL;
-            this.textBox2.Text = UserConfig.Config.SyncService.UserName;
-            this.textBox3.Text = UserConfig.Config.SyncService.Password;
-            this.textBox6.Text = UserConfig.Config.Program.RetryTimes.ToString();
-            this.textBox7.Text = UserConfig.Config.Program.TimeOut.ToString();
-            this.textBox8.Text = UserConfig.Config.Program.IntervalTime.ToString();
+            this.textBox1.Text = _userConfig.Config.SyncService.RemoteURL;
+            this.textBox2.Text = _userConfig.Config.SyncService.UserName;
+            this.textBox3.Text = _userConfig.Config.SyncService.Password;
+            this.textBox6.Text = _userConfig.Config.Program.RetryTimes.ToString();
+            this.textBox7.Text = _userConfig.Config.Program.TimeOut.ToString();
+            this.textBox8.Text = _userConfig.Config.Program.IntervalTime.ToString();
         }
 
         private void OKButtenClicked(object sender, EventArgs e)
@@ -57,17 +61,17 @@ namespace SyncClipboard
         }
         private void SaveConfig()
         {
-            UserConfig.Config.SyncService.RemoteURL = this.textBox1.Text;
-            UserConfig.Config.SyncService.UserName = this.textBox2.Text;
-            UserConfig.Config.SyncService.Password = this.textBox3.Text;
+            _userConfig.Config.SyncService.RemoteURL = this.textBox1.Text;
+            _userConfig.Config.SyncService.UserName = this.textBox2.Text;
+            _userConfig.Config.SyncService.Password = this.textBox3.Text;
 
             if (this.textBox8.Text != "")
-                UserConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text);
+                _userConfig.Config.Program.IntervalTime = Convert.ToInt32(this.textBox8.Text);
             if (this.textBox7.Text != "")
-                UserConfig.Config.Program.TimeOut = Convert.ToInt32(this.textBox7.Text);
+                _userConfig.Config.Program.TimeOut = Convert.ToInt32(this.textBox7.Text);
             if (this.textBox6.Text != "")
-                UserConfig.Config.Program.RetryTimes = Convert.ToInt32(this.textBox6.Text);
-            UserConfig.Save();
+                _userConfig.Config.Program.RetryTimes = Convert.ToInt32(this.textBox6.Text);
+            _userConfig.Save();
         }
     }
 }

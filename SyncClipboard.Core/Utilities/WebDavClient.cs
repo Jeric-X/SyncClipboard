@@ -43,35 +43,48 @@ namespace SyncClipboard.Core.Utilities
             }
         }
 
-        private readonly HttpClient httpClient;
+        private HttpClient httpClient;
 
         public WebDavClient(UserConfig userConfig, ILogger logger)
         {
             _userConfig = userConfig;
-            _userConfig.ConfigChanged += LoadUserConfig;
+            _userConfig.ConfigChanged += UserConfigChangedHandler;
             _logger = logger;
 
-            httpClient = new HttpClient()
-            {
-                Timeout = System.Threading.Timeout.InfiniteTimeSpan
-            };
-
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
+            httpClient = CreateHttpClient();
             LoadUserConfig();
         }
 
         private void LoadUserConfig()
         {
-            if (Uri.TryCreate(_userConfig.Config.SyncService.RemoteURL?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
-            {
-                httpClient.BaseAddress = uri;
-            }
-
             User = _userConfig.Config.SyncService.UserName;
             Token = _userConfig.Config.SyncService.Password;
             IntervalTime = _userConfig.Config.Program.IntervalTime;
             RetryTimes = _userConfig.Config.Program.RetryTimes;
             Timeout = _userConfig.Config.Program.TimeOut;
+        }
+
+        private void UserConfigChangedHandler()
+        {
+            httpClient = CreateHttpClient();
+            LoadUserConfig();
+        }
+
+        private HttpClient CreateHttpClient()
+        {
+            var httpClient = new HttpClient()
+            {
+                Timeout = System.Threading.Timeout.InfiniteTimeSpan
+            };
+
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
+
+            if (Uri.TryCreate(_userConfig.Config.SyncService.RemoteURL?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
+            {
+                httpClient.BaseAddress = uri;
+            }
+
+            return httpClient;
         }
 
         private void SetAuthHeader()

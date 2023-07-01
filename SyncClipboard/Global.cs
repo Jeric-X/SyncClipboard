@@ -4,7 +4,6 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
 using SyncClipboard.Service;
-using SyncClipboard.Utility;
 using System;
 using System.IO;
 
@@ -27,7 +26,6 @@ namespace SyncClipboard
 
             StartUpUI();
             StartUpUserConfig();
-            LoadGlobalWebDavSession();
             PrepareWorkingFolder();
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             ServiceManager = new ServiceManager();
@@ -46,14 +44,15 @@ namespace SyncClipboard
             services.AddSingleton<IMainWindow, SettingsForm>();
 
             Services = services.BuildServiceProvider();
+
             Http = Services.GetRequiredService<IHttp>();
+            WebDav = Services.GetRequiredService<IWebDav>();
             UserConfig.InitializeUserConfig(Services.GetRequiredService<Core.Commons.UserConfig>());
         }
 
         internal static void ReloadConfig()
         {
             ReloadUI();
-            LoadGlobalWebDavSession();
             ServiceManager?.LoadAllService();
         }
 
@@ -61,16 +60,6 @@ namespace SyncClipboard
         {
             ServiceManager?.StopAllService();
             Utility.Notification.Register.UnRegistFromCurrentProcess();
-        }
-
-        private static void LoadGlobalWebDavSession()
-        {
-            WebDav = Services.GetRequiredService<IWebDav>();
-
-            WebDav.TestAlive().ContinueWith(
-                (res) => Log.Write("[WebDavClient] test sucess = " + res.Result.ToString()),
-                System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
-            );
         }
 
         private static void StartUpUI()

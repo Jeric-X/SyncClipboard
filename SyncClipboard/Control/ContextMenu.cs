@@ -12,15 +12,11 @@ namespace SyncClipboard.Control
         public Notifyer Notifyer;
         private System.Windows.Forms.ContextMenuStrip contextMenu;
         private System.Windows.Forms.ToolStripMenuItem 退出MenuItem;
-        private System.Windows.Forms.ToolStripMenuItem 设置MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 开机启动MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 上传本机MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 下载远程MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 检查更新MenuItem;
         private System.Windows.Forms.ToolStripMenuItem nextCloudLogger;
-
-        private readonly SettingsForm settingsForm = new();
-        private bool isSttingsFormExist = false;
 
         public ContextMenu(Notifyer notifyer)
         {
@@ -31,7 +27,6 @@ namespace SyncClipboard.Control
 
         private void InitializeComponent()
         {
-            this.设置MenuItem = new System.Windows.Forms.ToolStripMenuItem("设置");
             this.开机启动MenuItem = new System.Windows.Forms.ToolStripMenuItem("开机启动");
             this.上传本机MenuItem = new System.Windows.Forms.ToolStripMenuItem("上传本机");
             this.下载远程MenuItem = new System.Windows.Forms.ToolStripMenuItem("下载远程");
@@ -39,7 +34,6 @@ namespace SyncClipboard.Control
             this.检查更新MenuItem = new System.Windows.Forms.ToolStripMenuItem("检查更新");
             this.nextCloudLogger = new System.Windows.Forms.ToolStripMenuItem("从NextCloud登录");
 
-            this.设置MenuItem.Click += this.设置MenuItem_Click;
             this.开机启动MenuItem.Click += this.开机启动MenuItem_Click;
             this.上传本机MenuItem.Click += this.上传本机MenuItem_Click;
             this.下载远程MenuItem.Click += this.下载远程MenuItem_Click;
@@ -51,8 +45,6 @@ namespace SyncClipboard.Control
             {
                 Renderer = new ToolStripProfessionalRenderer(new MenuStripColorTable())
             };
-            this.contextMenu.Items.Add(this.设置MenuItem);
-            this.contextMenu.Items.Add("-");
             this.contextMenu.Items.Add(this.nextCloudLogger);
             this.contextMenu.Items.Add("-");
             this.contextMenu.Items.Add(this.开机启动MenuItem);
@@ -62,7 +54,6 @@ namespace SyncClipboard.Control
             this.contextMenu.Items.Add(this.检查更新MenuItem);
             this.contextMenu.Items.Add(this.退出MenuItem);
 
-            //Notifyer.SetDoubleClickEvent(this.设置MenuItem_Click);
             Notifyer.SetContextMenu(this.contextMenu);
         }
 
@@ -71,7 +62,6 @@ namespace SyncClipboard.Control
             this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, null) != null;
             this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
-            settingsForm.LoadConfig();
         }
 
         private async void NextCloudLogger_Click(object sender, EventArgs e)
@@ -94,20 +84,6 @@ namespace SyncClipboard.Control
             UserConfig.Config.SyncService.PushSwitchOn = false;
             Notifyer.Exit();
             Application.Exit();
-        }
-
-        private void 设置MenuItem_Click(object sender, EventArgs e)
-        {
-            if (!isSttingsFormExist)
-            {
-                isSttingsFormExist = true;
-                settingsForm.ShowDialog();
-                isSttingsFormExist = false;
-            }
-            else
-            {
-                settingsForm.Activate();
-            }
         }
 
         private void 开机启动MenuItem_Click(object sender, EventArgs e)
@@ -149,7 +125,7 @@ namespace SyncClipboard.Control
             UpdateChecker.Check();
         }
 
-        private int _index = 3;
+        private int _index = 1;
 
         public void AddMenuItemGroup(string[] texts, Action[] actions)
         {
