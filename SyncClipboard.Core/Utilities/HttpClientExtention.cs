@@ -8,10 +8,10 @@ namespace SyncClipboard.Core.Utilities
         private const int BUFFER_SIZE = 102400;
 
         public static async Task<Type?> PostTextRecieveJson<Type>(this HttpClient httpClient, string url,
-            IEnumerable<KeyValuePair<string, string>>? list = null)
+            IEnumerable<KeyValuePair<string, string>>? list = null, CancellationToken? cancellationToken = null)
         {
             list ??= Array.Empty<KeyValuePair<string, string>>();
-            var res = await httpClient.PostAsync(url, new FormUrlEncodedContent(list));
+            var res = await httpClient.PostAsync(url, new FormUrlEncodedContent(list), cancellationToken ?? CancellationToken.None);
             res.EnsureSuccessStatusCode();
             return await res.Content.ReadFromJsonAsync<Type>();
         }

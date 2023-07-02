@@ -64,10 +64,10 @@ namespace SyncClipboard.Core.Utilities
         }
 
         Task<Type?> IHttp.PostTextRecieveJson<Type>(string url, IEnumerable<KeyValuePair<string, string>>? list,
-            bool useProxy) where Type : default
+            CancellationToken? cancelToken, bool useProxy) where Type : default
         {
             HttpClient client = useProxy ? HttpClientProxy : HttpClient;
-            return client.PostTextRecieveJson<Type>(url, list);
+            return client.PostTextRecieveJson<Type>(url, list, cancelToken);
         }
 
         Task IHttp.GetFile(string url, string localFilePath, CancellationToken? cancelToken, bool useProxy)

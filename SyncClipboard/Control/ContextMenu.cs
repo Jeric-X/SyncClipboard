@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using System;
@@ -9,7 +10,7 @@ namespace SyncClipboard.Control
 {
     public class ContextMenu : IContextMenu
     {
-        public Notifyer Notifyer;
+        private readonly Notifyer Notifyer;
         private System.Windows.Forms.ContextMenuStrip contextMenu;
         private System.Windows.Forms.ToolStripMenuItem 退出MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 开机启动MenuItem;
@@ -66,7 +67,7 @@ namespace SyncClipboard.Control
 
         private async void NextCloudLogger_Click(object sender, EventArgs e)
         {
-            NextcloudCredential nextcloudInfo = await Nextcloud.SignInFlowAsync().ConfigureAwait(true);
+            WebDavCredential nextcloudInfo = await Nextcloud.SignInFlowAsync().ConfigureAwait(true);
             if (nextcloudInfo is null)
             {
                 return;
