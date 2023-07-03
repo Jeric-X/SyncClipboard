@@ -4,8 +4,10 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
 using SyncClipboard.Service;
+using SyncClipboard.Utility;
 using System;
 using System.IO;
+using System.Windows.Forms;
 
 namespace SyncClipboard
 {
@@ -18,6 +20,7 @@ namespace SyncClipboard
         internal static string AppUserModelId;
         internal static IServiceProvider Services;
         internal static IHttp Http;
+        internal static Core.Commons.UserConfig UserConfig;
 
         public static void StartUp()
         {
@@ -46,7 +49,8 @@ namespace SyncClipboard
 
             Http = Services.GetRequiredService<IHttp>();
             WebDav = Services.GetRequiredService<IWebDav>();
-            UserConfig.InitializeUserConfig(Services.GetRequiredService<Core.Commons.UserConfig>());
+            UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
+            Module.UserConfig.InitializeUserConfig(UserConfig);
         }
 
         internal static void ReloadConfig()
@@ -63,6 +67,14 @@ namespace SyncClipboard
 
         private static void StartUpUI()
         {
+            MenuItem[] menuItems =
+            {
+                new MenuItem("从Nextcloud登录", Nextcloud.LogWithNextcloud),
+                new MenuItem("检查更新", UpdateChecker.Check),
+                new MenuItem("退出", Application.Exit)
+            };
+            Menu.AddMenuItemGroup(menuItems, true);
+
             ReloadUI();
         }
 

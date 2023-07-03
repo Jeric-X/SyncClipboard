@@ -80,7 +80,7 @@ namespace SyncClipboard.WinUI3.Views
             # endregion
         }
 
-        void IContextMenu.AddMenuItemGroup(MenuItem[] menuItems)
+        public void AddMenuItemGroup(MenuItem[] menuItems)
         {
             foreach (var item in menuItems)
             {
@@ -107,6 +107,11 @@ namespace SyncClipboard.WinUI3.Views
                 Height = _trayIcon.SeparatorSize.Height,
                 MinWidth = _trayIcon.SeparatorSize.Width
             };
+        }
+
+        public void AddMenuItem(MenuItem menuItem)
+        {
+            AddMenuItemGroup(new MenuItem[] { menuItem });
         }
     }
 }

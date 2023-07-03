@@ -11,6 +11,20 @@ namespace SyncClipboard.Utility
 {
     public static class Nextcloud
     {
+        public static async void LogWithNextcloud()
+        {
+            WebDavCredential nextcloudInfo = await SignInFlowAsync();
+            if (nextcloudInfo is null)
+            {
+                return;
+            }
+
+            Global.UserConfig.Config.SyncService.UserName = nextcloudInfo.Username;
+            Global.UserConfig.Config.SyncService.Password = nextcloudInfo.Password;
+            Global.UserConfig.Config.SyncService.RemoteURL = nextcloudInfo.Url;
+            Global.UserConfig.Save();
+        }
+
         public static async Task<WebDavCredential> SignInFlowAsync()
         {
             try

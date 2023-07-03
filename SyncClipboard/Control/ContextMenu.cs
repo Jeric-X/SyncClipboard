@@ -4,6 +4,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using System;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SyncClipboard.Control
@@ -12,12 +13,9 @@ namespace SyncClipboard.Control
     {
         private readonly Notifyer Notifyer;
         private System.Windows.Forms.ContextMenuStrip contextMenu;
-        private System.Windows.Forms.ToolStripMenuItem 退出MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 开机启动MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 上传本机MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 下载远程MenuItem;
-        private System.Windows.Forms.ToolStripMenuItem 检查更新MenuItem;
-        private System.Windows.Forms.ToolStripMenuItem nextCloudLogger;
 
         public ContextMenu(Notifyer notifyer)
         {
@@ -31,29 +29,19 @@ namespace SyncClipboard.Control
             this.开机启动MenuItem = new System.Windows.Forms.ToolStripMenuItem("开机启动");
             this.上传本机MenuItem = new System.Windows.Forms.ToolStripMenuItem("上传本机");
             this.下载远程MenuItem = new System.Windows.Forms.ToolStripMenuItem("下载远程");
-            this.退出MenuItem = new System.Windows.Forms.ToolStripMenuItem("退出");
-            this.检查更新MenuItem = new System.Windows.Forms.ToolStripMenuItem("检查更新");
-            this.nextCloudLogger = new System.Windows.Forms.ToolStripMenuItem("从NextCloud登录");
 
             this.开机启动MenuItem.Click += this.开机启动MenuItem_Click;
             this.上传本机MenuItem.Click += this.上传本机MenuItem_Click;
             this.下载远程MenuItem.Click += this.下载远程MenuItem_Click;
-            this.退出MenuItem.Click += this.退出MenuItem_Click;
-            this.检查更新MenuItem.Click += this.检查更新MenuItem_Click;
-            this.nextCloudLogger.Click += this.NextCloudLogger_Click;
 
             this.contextMenu = new ContextMenuStrip
             {
                 Renderer = new ToolStripProfessionalRenderer(new MenuStripColorTable())
             };
-            this.contextMenu.Items.Add(this.nextCloudLogger);
             this.contextMenu.Items.Add("-");
             this.contextMenu.Items.Add(this.开机启动MenuItem);
             this.contextMenu.Items.Add(this.上传本机MenuItem);
             this.contextMenu.Items.Add(this.下载远程MenuItem);
-            this.contextMenu.Items.Add("-");
-            this.contextMenu.Items.Add(this.检查更新MenuItem);
-            this.contextMenu.Items.Add(this.退出MenuItem);
 
             Notifyer.SetContextMenu(this.contextMenu);
         }
@@ -63,28 +51,6 @@ namespace SyncClipboard.Control
             this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, null) != null;
             this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
-        }
-
-        private async void NextCloudLogger_Click(object sender, EventArgs e)
-        {
-            WebDavCredential nextcloudInfo = await Nextcloud.SignInFlowAsync().ConfigureAwait(true);
-            if (nextcloudInfo is null)
-            {
-                return;
-            }
-
-            UserConfig.Config.SyncService.UserName = nextcloudInfo.Username;
-            UserConfig.Config.SyncService.Password = nextcloudInfo.Password;
-            UserConfig.Config.SyncService.RemoteURL = nextcloudInfo.Url;
-            UserConfig.Save();
-        }
-
-        private void 退出MenuItem_Click(object sender, EventArgs e)
-        {
-            UserConfig.Config.SyncService.PullSwitchOn = false;
-            UserConfig.Config.SyncService.PushSwitchOn = false;
-            Notifyer.Exit();
-            Application.Exit();
         }
 
         private void 开机启动MenuItem_Click(object sender, EventArgs e)
@@ -121,12 +87,7 @@ namespace SyncClipboard.Control
             UserConfig.Save();
         }
 
-        private void 检查更新MenuItem_Click(object sender, EventArgs e)
-        {
-            UpdateChecker.Check();
-        }
-
-        private int _index = 1;
+        private int _index = 0;
 
         public void AddMenuItemGroup(string[] texts, Action[] actions)
         {
@@ -177,24 +138,62 @@ namespace SyncClipboard.Control
             return setters;
         }
 
-        private Action<bool> AddMenuItem(string texts, Action<bool> actions, bool withCheckBox)
+        private Action<bool> AddMenuItem(string texts, Action<bool> actions, bool withCheckBox, bool reverse = false)
         {
             var item = new ToolStripMenuItem(texts)
             {
                 CheckOnClick = withCheckBox
             };
             item.Click += (sender, e) => actions(item.Checked);
-            contextMenu.Items.Insert(_index++, item);
+            contextMenu.Items.Insert(GetIndexAndAutoIncrease(reverse), item);
             return (status) => item.Checked = status;
         }
 
-        void IContextMenu.AddMenuItemGroup(MenuItem[] menuItems)
+        public void AddMenuItemGroup(MenuItem[] menuItems, bool reverse = false)
         {
-            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
-            foreach (var item in menuItems)
+            if (!reverse)
+                AddSeparator(reverse);
+
+            var items = reverse ? menuItems.Reverse() : menuItems;
+            foreach (var item in items)
             {
-                AddMenuItem(item.Text, (_) => item.Action(), false);
+                AddMenuItem(item.Text, (_) => item.Action(), false, reverse);
             }
+
+            if (reverse)
+                AddSeparator(reverse);
+        }
+
+        private int GetIndexAndAutoIncrease(bool reverse)
+        {
+            if (reverse)
+            {
+                return _index;
+            }
+            return _index++;
+        }
+
+        public void AddMenuItem(MenuItem item, bool reverse = false)
+        {
+            AddMenuItemGroup(new MenuItem[] { item }, reverse);
+        }
+
+        private void AddSeparator(bool reverse)
+        {
+            if (_index != 0)
+            {
+                contextMenu.Items.Insert(GetIndexAndAutoIncrease(reverse), new ToolStripSeparator());
+            }
+        }
+
+        public void AddMenuItemGroup(MenuItem[] menuItems)
+        {
+            AddMenuItemGroup(menuItems, false);
+        }
+
+        public void AddMenuItem(MenuItem menuItem)
+        {
+            AddMenuItem(menuItem, false);
         }
     }
 }

@@ -14,5 +14,6 @@
     public interface IContextMenu
     {
         public void AddMenuItemGroup(MenuItem[] menuItems);
+        public void AddMenuItem(MenuItem menuItem);
     }
 }

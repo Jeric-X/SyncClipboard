@@ -18,6 +18,9 @@ namespace SyncClipboard.Core
 
         public void Run()
         {
+            var contextMenu = Services.GetRequiredService<IContextMenu>();
+            contextMenu.AddMenuItem(new MenuItem("设置", Services.GetRequiredService<IMainWindow>().Show));
+
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
             trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
             trayIcon.Create();
