@@ -1,4 +1,4 @@
-namespace SyncClipboard.Core.Interfaces
+namespace SyncClipboard.Core.Models
 {
     public struct HttpDownloadProgress
     {

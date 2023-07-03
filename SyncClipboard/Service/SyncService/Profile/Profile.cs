@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Utility.Notification;
 using System;
 using System.Text.Json;

@@ -1,10 +1,11 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace SyncClipboard.Core.Utilities
+namespace SyncClipboard.Core.Utilities.Web
 {
     public class WebDavClient : IWebDav
     {
@@ -89,7 +90,7 @@ namespace SyncClipboard.Core.Utilities
 
         private void SetAuthHeader()
         {
-            if ((User is null) && (Token is null))
+            if (User is null && Token is null)
             {
                 httpClient.DefaultRequestHeaders.Authorization = null;
             }
@@ -139,7 +140,7 @@ namespace SyncClipboard.Core.Utilities
 
         public Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null)
         {
-            return httpClient.PutAsJsonAsync<Type>(
+            return httpClient.PutAsJsonAsync(
                 url,
                 jsonContent,
                 new JsonSerializerOptions(JsonSerializerDefaults.General),

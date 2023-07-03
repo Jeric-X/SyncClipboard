@@ -1,7 +1,7 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using SyncClipboard.Core.Models;
 using System.Net.Http.Json;
 
-namespace SyncClipboard.Core.Utilities
+namespace SyncClipboard.Core.Utilities.Web
 {
     public static class HttpClientExtention
     {

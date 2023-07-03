@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Notification;
 using System;

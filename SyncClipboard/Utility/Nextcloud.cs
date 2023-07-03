@@ -1,6 +1,7 @@
 using SyncClipboard.Control;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;

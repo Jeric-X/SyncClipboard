@@ -26,7 +26,6 @@ namespace SyncClipboard
 
             StartUpUI();
             StartUpUserConfig();
-            PrepareWorkingFolder();
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
@@ -76,36 +75,6 @@ namespace SyncClipboard
         {
             UserConfig.ConfigChanged += ReloadConfig;
             UserConfig.Load();
-        }
-
-        private static void PrepareWorkingFolder()
-        {
-            if (Directory.Exists(Env.LOCAL_FILE_FOLDER))
-            {
-                if (UserConfig.Config.Program.DeleteTempFilesOnStartUp)
-                {
-                    Directory.Delete(Env.LOCAL_FILE_FOLDER);
-                    Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
-            }
-
-            var logFolder = new DirectoryInfo(Env.LOCAL_LOG_FOLDER);
-            if (logFolder.Exists && UserConfig.Config.Program.LogRemainDays != 0)
-            {
-                var today = DateTime.Today;
-                foreach (var log in logFolder.EnumerateFileSystemInfos("????????.txt"))
-                {
-                    var createTime = log.CreationTime.Date;
-                    if ((today - createTime) > TimeSpan.FromDays(UserConfig.Config.Program.LogRemainDays))
-                    {
-                        log.Delete();
-                    }
-                }
-            }
         }
     }
 }

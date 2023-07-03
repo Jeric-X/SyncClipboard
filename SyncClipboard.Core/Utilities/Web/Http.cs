@@ -1,8 +1,8 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using System.Net.Http.Json;
+using SyncClipboard.Core.Models;
 
-namespace SyncClipboard.Core.Utilities
+namespace SyncClipboard.Core.Utilities.Web
 {
     public class Http : IHttp
     {

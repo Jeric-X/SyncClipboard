@@ -1,10 +1,10 @@
-﻿using System;
+﻿using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
+using SyncClipboard.Utility.Notification;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Utility;
-using SyncClipboard.Utility.Notification;
 using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Utility.Notification.Button;
 #nullable enable

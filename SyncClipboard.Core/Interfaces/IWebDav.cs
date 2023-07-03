@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Interfaces
 {
