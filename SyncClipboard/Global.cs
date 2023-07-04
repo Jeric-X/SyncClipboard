@@ -6,7 +6,6 @@ using SyncClipboard.Module;
 using SyncClipboard.Service;
 using SyncClipboard.Utility;
 using System;
-using System.IO;
 using System.Windows.Forms;
 
 namespace SyncClipboard
@@ -26,12 +25,12 @@ namespace SyncClipboard
         {
             ConfigurateServices();
             new ProgramWorkflow(Services).Run();
-
             StartUpUI();
-            StartUpUserConfig();
+
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
+            UserConfig.ConfigChanged += ServiceManager.LoadAllService;
         }
 
         private static void ConfigurateServices()
@@ -53,12 +52,6 @@ namespace SyncClipboard
             Module.UserConfig.InitializeUserConfig(UserConfig);
         }
 
-        internal static void ReloadConfig()
-        {
-            ReloadUI();
-            ServiceManager?.LoadAllService();
-        }
-
         internal static void EndUp()
         {
             ServiceManager?.StopAllService();
@@ -75,19 +68,6 @@ namespace SyncClipboard
                 new MenuItem("退出", Application.Exit)
             };
             Menu.AddMenuItemGroup(menuItems, true);
-
-            ReloadUI();
-        }
-
-        private static void ReloadUI()
-        {
-            Menu?.LoadConfig();
-        }
-
-        private static void StartUpUserConfig()
-        {
-            UserConfig.ConfigChanged += ReloadConfig;
-            UserConfig.Load();
         }
     }
 }

@@ -4,6 +4,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using System.Threading.Tasks;
 using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Interfaces;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -36,6 +37,12 @@ namespace SyncClipboard.Service
 
         protected override void StartService()
         {
+            var ToggleMenuItem = new ToggleMenuItem("下载远程", false, (status) =>
+            {
+                UserConfig.Config.SyncService.PullSwitchOn = status;
+                UserConfig.Save();
+            });
+            Global.Menu.AddMenuItem(ToggleMenuItem);
             Load();
         }
 

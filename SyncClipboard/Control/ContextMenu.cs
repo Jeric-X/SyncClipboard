@@ -10,53 +10,21 @@ namespace SyncClipboard.Control
     {
         private readonly Notifyer Notifyer;
         private System.Windows.Forms.ContextMenuStrip contextMenu;
-        private System.Windows.Forms.ToolStripMenuItem 上传本机MenuItem;
-        private System.Windows.Forms.ToolStripMenuItem 下载远程MenuItem;
 
         public ContextMenu(Notifyer notifyer)
         {
             Notifyer = notifyer;
             InitializeComponent();
-            this.LoadConfig();
         }
 
         private void InitializeComponent()
         {
-            this.上传本机MenuItem = new System.Windows.Forms.ToolStripMenuItem("上传本机");
-            this.下载远程MenuItem = new System.Windows.Forms.ToolStripMenuItem("下载远程");
-
-            this.上传本机MenuItem.Click += this.上传本机MenuItem_Click;
-            this.下载远程MenuItem.Click += this.下载远程MenuItem_Click;
-
             this.contextMenu = new ContextMenuStrip
             {
                 Renderer = new ToolStripProfessionalRenderer(new MenuStripColorTable())
             };
-            this.contextMenu.Items.Add("-");
-            this.contextMenu.Items.Add(this.上传本机MenuItem);
-            this.contextMenu.Items.Add(this.下载远程MenuItem);
 
             Notifyer.SetContextMenu(this.contextMenu);
-        }
-
-        public void LoadConfig()
-        {
-            this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
-            this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
-        }
-
-        private void 上传本机MenuItem_Click(object sender, EventArgs e)
-        {
-            this.上传本机MenuItem.Checked = !this.上传本机MenuItem.Checked;
-            UserConfig.Config.SyncService.PushSwitchOn = this.上传本机MenuItem.Checked;
-            UserConfig.Save();
-        }
-
-        private void 下载远程MenuItem_Click(object sender, EventArgs e)
-        {
-            this.下载远程MenuItem.Checked = !this.下载远程MenuItem.Checked;
-            UserConfig.Config.SyncService.PullSwitchOn = this.下载远程MenuItem.Checked;
-            UserConfig.Save();
         }
 
         private int _index = 0;
