@@ -13,14 +13,14 @@ namespace SyncClipboard.Service
         public override string SERVICE_NAME => "图片兼容性优化";
         public override string LOG_TAG => "COMPATIBILITY";
 
-        protected override void MenuItemChanged(bool check)
+        protected override bool SwitchOn
         {
-            UserConfig.Config.ClipboardService.ConvertSwitchOn = check;
-        }
-
-        protected override void LoadFromConfig(Action<bool> switchOn)
-        {
-            switchOn(UserConfig.Config.ClipboardService.ConvertSwitchOn);
+            get => UserConfig.Config.ClipboardService.ConvertSwitchOn;
+            set
+            {
+                UserConfig.Config.ClipboardService.ConvertSwitchOn = value;
+                UserConfig.Save();
+            }
         }
 
         protected override async void HandleClipboard(CancellationToken cancellationToken)

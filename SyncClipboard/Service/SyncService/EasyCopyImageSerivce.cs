@@ -7,7 +7,6 @@ using System.Windows.Forms;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Image;
-using SyncClipboard.Core.Utilities;
 using static SyncClipboard.Service.ProfileFactory;
 #nullable enable
 
@@ -22,14 +21,14 @@ namespace SyncClipboard.Service
 
         public override string LOG_TAG => "EASY IMAGE";
 
-        protected override void MenuItemChanged(bool check)
+        protected override bool SwitchOn
         {
-            UserConfig.Config.SyncService.EasyCopyImageSwitchOn = check;
-        }
-
-        protected override void LoadFromConfig(Action<bool> switchOn)
-        {
-            switchOn(UserConfig.Config.SyncService.EasyCopyImageSwitchOn);
+            get => UserConfig.Config.SyncService.EasyCopyImageSwitchOn;
+            set
+            {
+                UserConfig.Config.SyncService.EasyCopyImageSwitchOn = value;
+                UserConfig.Save();
+            }
         }
 
         protected override CancellationToken StopPreviousAndGetNewToken()

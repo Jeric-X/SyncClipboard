@@ -9,24 +9,36 @@ using SyncClipboard.Utility.Notification;
 
 namespace SyncClipboard.Service
 {
-    public class UploadService : Service
+    public class UploadService : ClipboardHander
     {
         public event ProgramEvent.ProgramEventHandler? PushStarted;
         public event ProgramEvent.ProgramEventHandler? PushStopped;
 
-        private const string SERVICE_NAME = "⬆⬆";
-        private const string LOG_TAG = "PUSH";
+        private const string SERVICE_NAME_SIMPLE = "⬆⬆";
+        public override string LOG_TAG => "PUSH";
+        protected override bool SwitchOn
+        {
+            get => UserConfig.Config.SyncService.PushSwitchOn;
+            set
+            {
+                UserConfig.Config.SyncService.PushSwitchOn = value;
+                UserConfig.Save();
+            }
+        }
+        public override string SERVICE_NAME => "上传本机";
+
         private bool _downServiceChangingLocal = false;
 
         protected override void StartService()
         {
-            Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.");
+            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Running.");
+            base.StartService();
         }
 
         protected override void StopSerivce()
         {
-            Global.Notifyer.SetStatusString(SERVICE_NAME, "Stopped.");
-            StopPreviousAndGetNewToken();
+            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
+            base.StopSerivce();
         }
 
         public override void RegistEvent()
@@ -46,16 +58,16 @@ namespace SyncClipboard.Service
 
         public override void RegistEventHandler()
         {
-            Event.RegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
             Event.RegistEventHandler(SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
             Event.RegistEventHandler(SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
+            base.RegistEventHandler();
         }
 
         public override void UnRegistEventHandler()
         {
-            Event.UnRegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
             Event.UnRegistEventHandler(SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
             Event.UnRegistEventHandler(SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
+            base.UnRegistEventHandler();
         }
 
         public void PullStartedHandler()
@@ -70,59 +82,31 @@ namespace SyncClipboard.Service
             _downServiceChangingLocal = false;
         }
 
-        private CancellationTokenSource? _cancelSource;
-        private readonly object _cancelSourceLocker = new();
-        private uint sessionNumber = 0;
-
-        private void ClipBoardChangedHandler()
-        {
-            if (!UserConfig.Config.SyncService.PushSwitchOn || _downServiceChangingLocal)
-            {
-                return;
-            }
-
-            ProcessUploadQueue();
-        }
-
-        private CancellationToken StopPreviousAndGetNewToken()
-        {
-            lock (_cancelSourceLocker)
-            {
-                if (_cancelSource?.Token.CanBeCanceled ?? false)
-                {
-                    _cancelSource.Cancel();
-                }
-                _cancelSource = new();
-                return _cancelSource.Token;
-            }
-        }
-
         private void SetWorkingStartStatus()
         {
-            Interlocked.Increment(ref sessionNumber);
             SetUploadingIcon();
-            Global.Notifyer.SetStatusString(SERVICE_NAME, "Uploading.");
+            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Uploading.");
             PushStarted?.Invoke();
         }
 
         private void SetWorkingEndStatus()
         {
-            Interlocked.Decrement(ref sessionNumber);
-            if (sessionNumber == 0)
-            {
-                StopUploadingIcon();
-                Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
-                PushStopped?.Invoke();
-            }
+            StopUploadingIcon();
+            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
+            PushStopped?.Invoke();
         }
 
-        private async void ProcessUploadQueue()
+        protected override async void HandleClipboard(CancellationToken cancellationToken)
         {
+            if (_downServiceChangingLocal)
+            {
+                return;
+            }
+
             SetWorkingStartStatus();
-            CancellationToken cancelToken = StopPreviousAndGetNewToken();
             try
             {
-                await UploadClipboard(cancelToken);
+                await UploadClipboard(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -131,7 +115,7 @@ namespace SyncClipboard.Service
             SetWorkingEndStatus();
         }
 
-        private static async Task UploadClipboard(CancellationToken cancelToken)
+        private async Task UploadClipboard(CancellationToken cancelToken)
         {
             var currentProfile = ProfileFactory.CreateFromLocal();
 
@@ -144,7 +128,7 @@ namespace SyncClipboard.Service
             await UploadLoop(currentProfile, cancelToken);
         }
 
-        private static async Task UploadLoop(Profile profile, CancellationToken cancelToken)
+        private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
         {
             string errMessage = "";
             for (int i = 0; i < UserConfig.Config.Program.RetryTimes; i++)
@@ -164,13 +148,13 @@ namespace SyncClipboard.Service
                 catch (TaskCanceledException)
                 {
                     cancelToken.ThrowIfCancellationRequested();
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
+                    Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
                     errMessage = "连接超时";
                 }
                 catch (Exception ex)
                 {
                     errMessage = ex.Message;
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
+                    Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
                 }
                 finally
                 {

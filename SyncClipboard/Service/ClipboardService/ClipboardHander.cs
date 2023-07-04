@@ -1,5 +1,5 @@
-using System;
 using System.Threading;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 #nullable enable
@@ -8,28 +8,18 @@ namespace SyncClipboard.Service
 {
     abstract public class ClipboardHander : Service
     {
-        private event Action<bool>? SwitchChanged;
-        protected bool SwitchOn = true;
+        protected abstract bool SwitchOn { get; set; }
         public abstract string SERVICE_NAME { get; }
         public abstract string LOG_TAG { get; }
+
+        protected ToggleMenuItem? ToggleMenuItem { get; set; }
         protected override void StartService()
         {
             Log.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
-            SwitchChanged += Global.Menu.AddMenuItemGroup(
-                new string[] { SERVICE_NAME },
-                new Action<bool>[] {
-                    (check) => {
-                        SwitchOn = check;
-                        MenuItemChanged(check);
-                        UserConfig.Save();
-                    }
-                }
-            )[0];
+            ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
+            Global.Menu.AddMenuItem(ToggleMenuItem);
             Load();
         }
-
-        protected abstract void MenuItemChanged(bool check);
-        protected abstract void LoadFromConfig(Action<bool> switchOn);
 
         public void CancelProcess()
         {
@@ -45,12 +35,15 @@ namespace SyncClipboard.Service
 
         public override void Load()
         {
-            LoadFromConfig((check) => SwitchOn = check);
-            SwitchChanged?.Invoke(SwitchOn);
+            if (ToggleMenuItem is not null)
+            {
+                ToggleMenuItem.Checked = SwitchOn;
+            }
         }
 
         protected override void StopSerivce()
         {
+            CancelProcess();
             Log.Write(LOG_TAG, $"Service: {SERVICE_NAME} stopped");
         }
 
