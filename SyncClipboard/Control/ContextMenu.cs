@@ -1,8 +1,5 @@
-﻿using Microsoft.Win32;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
+﻿using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
-using SyncClipboard.Utility;
 using System;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,7 +10,6 @@ namespace SyncClipboard.Control
     {
         private readonly Notifyer Notifyer;
         private System.Windows.Forms.ContextMenuStrip contextMenu;
-        private System.Windows.Forms.ToolStripMenuItem 开机启动MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 上传本机MenuItem;
         private System.Windows.Forms.ToolStripMenuItem 下载远程MenuItem;
 
@@ -26,11 +22,9 @@ namespace SyncClipboard.Control
 
         private void InitializeComponent()
         {
-            this.开机启动MenuItem = new System.Windows.Forms.ToolStripMenuItem("开机启动");
             this.上传本机MenuItem = new System.Windows.Forms.ToolStripMenuItem("上传本机");
             this.下载远程MenuItem = new System.Windows.Forms.ToolStripMenuItem("下载远程");
 
-            this.开机启动MenuItem.Click += this.开机启动MenuItem_Click;
             this.上传本机MenuItem.Click += this.上传本机MenuItem_Click;
             this.下载远程MenuItem.Click += this.下载远程MenuItem_Click;
 
@@ -39,7 +33,6 @@ namespace SyncClipboard.Control
                 Renderer = new ToolStripProfessionalRenderer(new MenuStripColorTable())
             };
             this.contextMenu.Items.Add("-");
-            this.contextMenu.Items.Add(this.开机启动MenuItem);
             this.contextMenu.Items.Add(this.上传本机MenuItem);
             this.contextMenu.Items.Add(this.下载远程MenuItem);
 
@@ -48,29 +41,8 @@ namespace SyncClipboard.Control
 
         public void LoadConfig()
         {
-            this.开机启动MenuItem.Checked = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, null) != null;
             this.上传本机MenuItem.Checked = UserConfig.Config.SyncService.PushSwitchOn;
             this.下载远程MenuItem.Checked = UserConfig.Config.SyncService.PullSwitchOn;
-        }
-
-        private void 开机启动MenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!this.开机启动MenuItem.Checked)
-                {
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, Application.ExecutablePath);
-                }
-                else
-                {
-                    Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true).DeleteValue(Env.SoftName, false);
-                }
-                this.开机启动MenuItem.Checked = !this.开机启动MenuItem.Checked;
-            }
-            catch
-            {
-                Log.Write("设置启动项失败");
-            }
         }
 
         private void 上传本机MenuItem_Click(object sender, EventArgs e)
@@ -157,11 +129,29 @@ namespace SyncClipboard.Control
             var items = reverse ? menuItems.Reverse() : menuItems;
             foreach (var item in items)
             {
-                AddMenuItem(item.Text, (_) => item.Action(), false, reverse);
+                AddSingleMenuItem(item, reverse);
             }
 
             if (reverse)
                 AddSeparator(reverse);
+        }
+
+        private void AddSingleMenuItem(MenuItem menuitem, bool reverse = false)
+        {
+            var item = new ToolStripMenuItem(menuitem.Text);
+            if (menuitem is ToggleMenuItem toggleItem)
+            {
+                item.CheckOnClick = true;
+                item.Checked = toggleItem.Checked;
+                toggleItem.CheckedChanged += (bool status) => item.Checked = status;
+            }
+
+            item.Click += (sender, e) =>
+            {
+                menuitem.Action?.Invoke();
+            };
+
+            contextMenu.Items.Insert(GetIndexAndAutoIncrease(reverse), item);
         }
 
         private int GetIndexAndAutoIncrease(bool reverse)

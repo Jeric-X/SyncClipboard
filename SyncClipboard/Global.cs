@@ -69,6 +69,7 @@ namespace SyncClipboard
         {
             MenuItem[] menuItems =
             {
+                new ToggleMenuItem("开机启动", StartUpWithWindows.Status(), StartUpWithWindows.SetStartUp),
                 new MenuItem("从Nextcloud登录", Nextcloud.LogWithNextcloud),
                 new MenuItem("检查更新", UpdateChecker.Check),
                 new MenuItem("退出", Application.Exit)
