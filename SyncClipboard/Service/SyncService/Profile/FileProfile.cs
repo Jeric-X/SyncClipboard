@@ -2,7 +2,7 @@
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.IO;
 using System.Text;
@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
-using Button = SyncClipboard.Utility.Notification.Button;
+using Button = SyncClipboard.Core.Utilities.Notification.Button;
 using UserConfig = SyncClipboard.Module.UserConfig;
 
 #nullable enable
@@ -24,14 +24,14 @@ namespace SyncClipboard.Service
         private readonly IWebDav? _webDav;
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
 
-        public FileProfile(string file)
+        public FileProfile(string file, NotificationManager notificationManager) : base(notificationManager)
         {
             FileName = Path.GetFileName(file);
             fullPath = file;
             statusTip = FileName;
         }
 
-        public FileProfile(JsonProfile jsonProfile, IWebDav webDav)
+        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager) : base(notificationManager)
         {
             FileName = jsonProfile.File;
             statusTip = FileName;
@@ -213,7 +213,7 @@ namespace SyncClipboard.Service
         protected override void AfterSetLocal()
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            Toast.SendText(
+            NotificationManager.SendText(
                 "文件同步成功",
                 FileName,
                 DefaultButton(),

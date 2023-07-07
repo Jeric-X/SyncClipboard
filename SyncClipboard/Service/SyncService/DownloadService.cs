@@ -3,7 +3,7 @@ using System.Threading;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using System.Threading.Tasks;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Interfaces;
 #nullable enable
 
@@ -20,6 +20,13 @@ namespace SyncClipboard.Service
         private readonly object _pullSwitchLocker = new();
         private ProgressToastReporter? _toastReporter;
         private Profile? _remoteProfileCache;
+
+        private readonly NotificationManager _notificationManager;
+
+        public DownloadService(NotificationManager notificationManager)
+        {
+            _notificationManager = notificationManager;
+        }
 
         public override void Load()
         {
@@ -138,7 +145,7 @@ namespace SyncClipboard.Service
             Event.RegistEvent(SyncService.PULL_STOP_ENENT_NAME, pullStoppedEvent);
         }
 
-        private static void SetStatusOnError(ref int errorTimes, Exception ex)
+        private void SetStatusOnError(ref int errorTimes, Exception ex)
         {
             errorTimes++;
             Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
@@ -146,7 +153,7 @@ namespace SyncClipboard.Service
             Log.Write(ex.ToString());
             if (errorTimes == UserConfig.Config.Program.RetryTimes)
             {
-                Toast.SendText("剪切板下载失败", ex.Message);
+                _notificationManager.SendText("剪切板下载失败", ex.Message);
             }
         }
 
@@ -160,7 +167,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken).ConfigureAwait(true);
+                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken, _notificationManager).ConfigureAwait(true);
                     Log.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
                     if (await NeedUpdate(remoteProfile, cancelToken))
@@ -210,7 +217,7 @@ namespace SyncClipboard.Service
 
         private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
         {
-            Profile localProfile = ProfileFactory.CreateFromLocal();
+            Profile localProfile = ProfileFactory.CreateFromLocal(_notificationManager);
             if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
                 Log.Write("[PULL] Local profile type is Unkown, stop sync.");
@@ -224,7 +231,7 @@ namespace SyncClipboard.Service
                 {
                     if (remoteProfile is FileProfile)
                     {
-                        _toastReporter = new ProgressToastReporter(remoteProfile.FileName, "正在下载远程文件");
+                        _toastReporter = new ProgressToastReporter(remoteProfile.FileName, "正在下载远程文件", _notificationManager);
                     }
                     await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                     _toastReporter = null;

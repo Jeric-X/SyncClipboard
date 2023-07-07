@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Module;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Windows.UI.Notifications;
@@ -18,11 +18,13 @@ namespace SyncClipboard.Service.Command
         private bool canceled = false;
         private static bool IsWorking = false;
         private static readonly object IsWorkingLocker = new();
+        private readonly NotificationManager _notificationManager;
 
-        public TaskShutdown(CommandInfo info)
+        public TaskShutdown(CommandInfo info, NotificationManager notificationManager)
         {
             tagName = info.ToString() + DateTime.Now;
             shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
+            _notificationManager = notificationManager;
         }
 
         public async Task ExecuteAsync()
@@ -61,15 +63,14 @@ namespace SyncClipboard.Service.Command
 
         private ProgressBar InitToastProgressBar()
         {
-            var progressBar = new ProgressBar("远程命令")
-            {
-                Group = GROUP_NAME,
-                Tag = tagName,
-                ProgressStatus = "当前状态",
-                ProgressTitle = "正在关机",
-                ProgressValue = 0,
-                ProgressValueTip = "准备开始倒计时"
-            };
+            var progressBar = _notificationManager.CreateProgressNotification("远程命令");
+            progressBar.Group = GROUP_NAME;
+            progressBar.Tag = tagName;
+            progressBar.ProgressStatus = "当前状态";
+            progressBar.ProgressTitle = "正在关机";
+            progressBar.ProgressValue = 0;
+            progressBar.ProgressValueTip = "准备开始倒计时";
+
             progressBar.Buttons.Add(
                 new Button("取消关机", new Callbacker($"{tagName}Cancel", _ => { canceled = true; counter?.Cancle(); })));
             progressBar.Buttons.Add(

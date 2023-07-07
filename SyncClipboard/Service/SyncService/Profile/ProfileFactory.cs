@@ -1,5 +1,6 @@
 ﻿
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Image;
 using System;
@@ -26,7 +27,7 @@ namespace SyncClipboard.Service
             public DragDropEffects? Effects;
         }
 
-        public static Profile CreateFromLocal(out LocalClipboard localClipboard)
+        public static Profile CreateFromLocal(out LocalClipboard localClipboard, NotificationManager notificationManager)
         {
             localClipboard = GetLocalClipboard();
 
@@ -37,28 +38,28 @@ namespace SyncClipboard.Service
                 {
                     if (ImageHelper.FileIsImage(filename))
                     {
-                        return new ImageProfile(filename);
+                        return new ImageProfile(filename, notificationManager);
                     }
-                    return new FileProfile(filename);
+                    return new FileProfile(filename, notificationManager);
                 }
             }
 
             if (localClipboard.Text != null)
             {
-                return new TextProfile(localClipboard.Text);
+                return new TextProfile(localClipboard.Text, notificationManager);
             }
 
             if (localClipboard.Image != null)
             {
-                return ImageProfile.CreateFromImage(localClipboard.Image);
+                return ImageProfile.CreateFromImage(localClipboard.Image, notificationManager);
             }
 
             return new UnkonwnProfile();
         }
 
-        public static Profile CreateFromLocal()
+        public static Profile CreateFromLocal(NotificationManager notificationManager)
         {
-            return CreateFromLocal(out _);
+            return CreateFromLocal(out _, notificationManager);
         }
 
         private static LocalClipboard GetLocalClipboard()
@@ -97,7 +98,7 @@ namespace SyncClipboard.Service
             return localClipboard;
         }
 
-        public static async Task<Profile> CreateFromRemote(IWebDav webDav, CancellationToken cancelToken)
+        public static async Task<Profile> CreateFromRemote(IWebDav webDav, CancellationToken cancelToken, NotificationManager notificationManager)
         {
             JsonProfile? jsonProfile;
             try
@@ -108,7 +109,7 @@ namespace SyncClipboard.Service
             {
                 if (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound })
                 {
-                    var blankProfile = new TextProfile("");
+                    var blankProfile = new TextProfile("", notificationManager);
                     await blankProfile.UploadProfileAsync(webDav, cancelToken);
                     return blankProfile;
                 }
@@ -118,25 +119,25 @@ namespace SyncClipboard.Service
 
             ArgumentNullException.ThrowIfNull(jsonProfile);
             ClipboardType type = StringToClipBoardType(jsonProfile.Type);
-            return GetProfileBy(type, jsonProfile, webDav);
+            return GetProfileBy(type, jsonProfile, webDav, notificationManager);
         }
 
-        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile, IWebDav webDav)
+        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager)
         {
             switch (type)
             {
                 case ClipboardType.Text:
-                    return new TextProfile(jsonProfile.Clipboard);
+                    return new TextProfile(jsonProfile.Clipboard, notificationManager);
                 case ClipboardType.File:
                     {
                         if (ImageHelper.FileIsImage(jsonProfile.File))
                         {
-                            return new ImageProfile(jsonProfile, webDav);
+                            return new ImageProfile(jsonProfile, webDav, notificationManager);
                         }
-                        return new FileProfile(jsonProfile, webDav);
+                        return new FileProfile(jsonProfile, webDav, notificationManager);
                     }
                 case ClipboardType.Image:
-                    return new ImageProfile(jsonProfile, webDav);
+                    return new ImageProfile(jsonProfile, webDav, notificationManager);
             }
 
             return new UnkonwnProfile();

@@ -1,19 +1,19 @@
 ﻿using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
-using Button = SyncClipboard.Utility.Notification.Button;
+using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
 namespace SyncClipboard.Service
 {
     public class TextProfile : Profile
     {
-        public TextProfile(String text)
+        public TextProfile(String text, NotificationManager notificationManager) : base(notificationManager)
         {
             Text = text;
         }
@@ -58,11 +58,11 @@ namespace SyncClipboard.Service
             if (Text[..4] == "http" || Text[..4] == "www.")
             {
                 Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
-                Toast.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
+                NotificationManager.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
             }
             else
             {
-                Toast.SendText("文本同步成功", Text, DefaultButton());
+                NotificationManager.SendText("文本同步成功", Text, DefaultButton());
             }
         }
     }

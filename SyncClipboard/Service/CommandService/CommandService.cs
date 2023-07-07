@@ -4,7 +4,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using SyncClipboard.Service.Command;
 using System;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 #nullable enable
 namespace SyncClipboard.Service
 {
@@ -15,6 +15,13 @@ namespace SyncClipboard.Service
         private const string LOG_TAG = "Command";
         private readonly CancellationTokenSource _cancelSource = new();
         private bool _isError = false;
+
+        private readonly NotificationManager _notificationManager;
+
+        public CommandService(NotificationManager notificationManager)
+        {
+            _notificationManager = notificationManager;
+        }
 
         protected override void StartService()
         {
@@ -70,7 +77,7 @@ namespace SyncClipboard.Service
                         if (!_isError)
                         {
                             Console.WriteLine(ex.Message);
-                            Toast.SendText("CommandService failed", ex.ToString());
+                            _notificationManager.SendText("CommandService failed", ex.ToString());
                             _isError = true;
                         }
                     }
@@ -97,13 +104,13 @@ namespace SyncClipboard.Service
             return command;
         }
 
-        private static Task ExecuteCommand(CommandInfo command)
+        private Task ExecuteCommand(CommandInfo command)
         {
             return Task.Run(() =>
             {
                 if (command.CommandStr == "shutdown")
                 {
-                    return new TaskShutdown(command).ExecuteAsync();
+                    return new TaskShutdown(command, _notificationManager).ExecuteAsync();
                 }
                 return Task.CompletedTask;
             });

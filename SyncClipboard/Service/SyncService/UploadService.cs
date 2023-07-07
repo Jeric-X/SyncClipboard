@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -28,6 +28,14 @@ namespace SyncClipboard.Service
         public override string SERVICE_NAME => "上传本机";
 
         private bool _downServiceChangingLocal = false;
+
+
+        private readonly NotificationManager _notificationManager;
+
+        public UploadService(NotificationManager notificationManager)
+        {
+            _notificationManager = notificationManager;
+        }
 
         protected override void StartService()
         {
@@ -117,7 +125,7 @@ namespace SyncClipboard.Service
 
         private async Task UploadClipboard(CancellationToken cancelToken)
         {
-            var currentProfile = ProfileFactory.CreateFromLocal();
+            var currentProfile = ProfileFactory.CreateFromLocal(_notificationManager);
 
             if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
@@ -136,7 +144,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken);
+                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken, _notificationManager);
                     if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
                         await CleanServerTempFile(cancelToken);
@@ -163,7 +171,7 @@ namespace SyncClipboard.Service
 
                 await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
             }
-            Toast.SendText("上传失败：" + profile.ToolTip(), errMessage);
+            _notificationManager.SendText("上传失败：" + profile.ToolTip(), errMessage);
         }
 
         private static async Task CleanServerTempFile(CancellationToken cancelToken)

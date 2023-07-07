@@ -3,6 +3,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Options;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
 
 namespace SyncClipboard.Core
@@ -44,6 +45,8 @@ namespace SyncClipboard.Core
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
+
+            services.AddSingleton<NotificationManager>();
         }
 
         private static void PrepareWorkingFolder(UserConfig userConfig)

@@ -2,13 +2,14 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
-using Button = SyncClipboard.Utility.Notification.Button;
+using Button = SyncClipboard.Core.Utilities.Notification.Button;
+using SyncClipboard.Control;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -16,15 +17,15 @@ namespace SyncClipboard.Service
     public class ImageProfile : FileProfile
     {
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
-        public ImageProfile(string filepath) : base(filepath)
+        public ImageProfile(string filepath, NotificationManager notificationManager) : base(filepath, notificationManager)
         {
         }
 
-        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav) : base(jsonProfile, webdav)
+        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav, NotificationManager notificationManager) : base(jsonProfile, webdav, notificationManager)
         {
         }
 
-        public static ImageProfile CreateFromImage(Image image)
+        public static ImageProfile CreateFromImage(Image image, NotificationManager notificationManager)
         {
             if (!Directory.Exists(TEMP_FOLDER))
             {
@@ -33,7 +34,7 @@ namespace SyncClipboard.Service
             var filePath = Path.Combine(TEMP_FOLDER, $"{Path.GetRandomFileName()}.bmp");
             image.Save(filePath);
 
-            return new ImageProfile(filePath);
+            return new ImageProfile(filePath, notificationManager);
         }
 
         public override ClipboardType GetProfileType()
@@ -87,7 +88,7 @@ namespace SyncClipboard.Service
         protected override void AfterSetLocal()
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            Toast.SendImage(
+            NotificationManager.SendImage(
                 "图片同步成功",
                 FileName,
                 new Uri(path),

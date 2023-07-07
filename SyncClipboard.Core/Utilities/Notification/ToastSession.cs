@@ -1,11 +1,15 @@
 using System.Collections.Generic;
 using Microsoft.Toolkit.Uwp.Notifications;
+using SyncClipboard.Core.Interfaces;
 using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
 {
     public class ToastSession
     {
+        private readonly ToastNotifier _notifer;
+        private readonly ILogger _logger;
+
         public const string DEFAULT_GROUP = "DEFAULT_GROUP";
         public const string DEFAULT_TAG = "DEFAULT_TAG";
         private string group = DEFAULT_GROUP;
@@ -16,9 +20,11 @@ namespace SyncClipboard.Core.Utilities.Notification
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
         public List<Button> Buttons { get; set; } = new();
-        public ToastSession(string title)
+        public ToastSession(string title, ToastNotifier notifier, ILogger logger)
         {
             Title = title;
+            _notifer = notifier;
+            _logger = logger;
         }
 
         private const string TOAST_BINDING_TITLE = "TOAST_BINDING_TITLE";
@@ -54,12 +60,12 @@ namespace SyncClipboard.Core.Utilities.Notification
 
         public virtual void Show()
         {
-            Toast.Notifer.Show(GetToast(GetBuilder()));
+            _notifer.Show(GetToast(GetBuilder()));
         }
 
         public virtual void ShowSilent()
         {
-            Toast.Notifer.Show(GetToast(GetBuilder().AddAudio(null, null, true)));
+            _notifer.Show(GetToast(GetBuilder().AddAudio(null, null, true)));
         }
 
         public virtual void Remove()
@@ -70,7 +76,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             }
             catch
             {
-                Log.Write("TOAST", "remove failed");
+                _logger.Write("TOAST", "remove failed");
             }
         }
     }

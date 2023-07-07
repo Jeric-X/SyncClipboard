@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using SyncClipboard.Utility.Image;
@@ -31,6 +32,13 @@ namespace SyncClipboard.Service
             }
         }
 
+        private readonly NotificationManager _notificationManager;
+
+        public EasyCopyImageSerivce(NotificationManager notificationManager)
+        {
+            _notificationManager = notificationManager;
+        }
+
         protected override CancellationToken StopPreviousAndGetNewToken()
         {
             _progress?.CancelSicent();
@@ -52,7 +60,7 @@ namespace SyncClipboard.Service
 
         private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
         {
-            var profile = CreateFromLocal(out var localClipboard);
+            var profile = CreateFromLocal(out var localClipboard, _notificationManager);
             if (profile.GetProfileType() != ProfileType.ClipboardType.Image || !NeedAdjust(localClipboard))
             {
                 return;
@@ -70,7 +78,7 @@ namespace SyncClipboard.Service
                     {
                         localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                     }
-                    profile = new ImageProfile(localPath);
+                    profile = new ImageProfile(localPath, _notificationManager);
                 }
             }
 
@@ -112,7 +120,7 @@ namespace SyncClipboard.Service
             var filename = Regex.Match(imageUrl, "[^/]+(?!.*/)");
             lock (_progressLocker)
             {
-                _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], "正在从网站下载原图");
+                _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], "正在从网站下载原图", _notificationManager);
             }
             if (useProxy)
             {

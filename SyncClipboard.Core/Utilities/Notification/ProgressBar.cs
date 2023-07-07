@@ -1,11 +1,14 @@
 using System;
 using Microsoft.Toolkit.Uwp.Notifications;
+using SyncClipboard.Core.Interfaces;
 using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
 {
     public class ProgressBar : ToastSession
     {
+        private readonly ToastNotifier _notifer;
+
         public string? ProgressTitle { get; set; }
         public double? ProgressValue { get; set; }
         public bool IsIndeterminate { get; set; } = false;
@@ -56,12 +59,12 @@ namespace SyncClipboard.Core.Utilities.Notification
             ProgressValue = value;
             ProgressValueTip = valueTip ?? ProgressValueTip;
             ProgressStatus = status ?? ProgressStatus;
-            return Toast.Notifer.Update(SetBingData(), Tag, Group);
+            return _notifer.Update(SetBingData(), Tag, Group);
         }
 
         public NotificationUpdateResult Upadate()
         {
-            return Toast.Notifer.Update(SetBingData(), Tag, Group);
+            return _notifer.Update(SetBingData(), Tag, Group);
         }
 
         public void ForceUpdate(double value, string? valueTip = null, string? status = null)
@@ -72,8 +75,9 @@ namespace SyncClipboard.Core.Utilities.Notification
             }
         }
 
-        public ProgressBar(string title) : base(title)
+        public ProgressBar(string title, ToastNotifier notifer, ILogger logger) : base(title, notifer, logger)
         {
+            _notifer = notifer;
         }
     }
 }

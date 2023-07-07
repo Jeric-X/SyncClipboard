@@ -17,7 +17,6 @@ namespace SyncClipboard
         internal static Notifyer Notifyer;
         internal static ContextMenu Menu;
         internal static ServiceManager ServiceManager;
-        internal static string AppUserModelId;
         internal static IServiceProvider Services;
         internal static IHttp Http;
         internal static Core.Commons.UserConfig UserConfig;
@@ -28,7 +27,6 @@ namespace SyncClipboard
             new ProgramWorkflow(Services).Run();
             StartUpUI();
 
-            AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
             ServiceManager.StartUpAllService();
         }
 
@@ -68,7 +66,6 @@ namespace SyncClipboard
         internal static void EndUp()
         {
             ServiceManager?.StopAllService();
-            Utility.Notification.Register.UnRegistFromCurrentProcess();
         }
 
         private static void StartUpUI()

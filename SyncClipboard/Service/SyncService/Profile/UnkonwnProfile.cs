@@ -8,6 +8,11 @@ namespace SyncClipboard.Service
 {
     public class UnkonwnProfile : Profile
     {
+        public UnkonwnProfile() : base(null)
+        {
+
+        }
+
         public override string ToolTip()
         {
             return "Do not support this type of clipboard";

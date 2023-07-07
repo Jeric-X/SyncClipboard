@@ -4,6 +4,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Module;
 using SyncClipboard.Utility.Image;
 using static SyncClipboard.Service.ProfileFactory;
+using SyncClipboard.Core.Utilities.Notification;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -23,9 +24,17 @@ namespace SyncClipboard.Service
             }
         }
 
+
+        private readonly NotificationManager _notificationManager;
+
+        public ConvertService(NotificationManager notificationManager)
+        {
+            _notificationManager = notificationManager;
+        }
+
         protected override async void HandleClipboard(CancellationToken cancellationToken)
         {
-            var profile = CreateFromLocal(out var localClipboard);
+            var profile = CreateFromLocal(out var localClipboard, _notificationManager);
             if (profile.GetProfileType() != ProfileType.ClipboardType.File || !NeedAdjust(localClipboard))
             {
                 return;
@@ -35,7 +44,7 @@ namespace SyncClipboard.Service
             {
                 var file = localClipboard.Files![0];
                 var newPath = await ImageHelper.CompatibilityCast(file, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
-                new ImageProfile(newPath).SetLocalClipboard(cancellationToken, false);
+                new ImageProfile(newPath, _notificationManager).SetLocalClipboard(cancellationToken, false);
             }
             catch (Exception ex)
             {

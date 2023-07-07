@@ -1,13 +1,13 @@
 ﻿using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Utility.Notification;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
-using Button = SyncClipboard.Utility.Notification.Button;
+using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -19,12 +19,19 @@ namespace SyncClipboard.Service
 
         //public ClipboardType Type { get; set; }
 
+        protected NotificationManager NotificationManager;
         protected readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
 
         public abstract ClipboardType GetProfileType();
         protected abstract DataObject? CreateDataObject();
         public abstract string ToolTip();
         public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
+
+        public Profile(NotificationManager notificationManager)
+        {
+            NotificationManager = notificationManager;
+        }
+
         public virtual Action? ExecuteProfile()
         {
             return null;
@@ -38,7 +45,7 @@ namespace SyncClipboard.Service
 
         protected virtual void AfterSetLocal()
         {
-            Toast.SendText("剪切板同步成功", Text);
+            NotificationManager.SendText("剪切板同步成功", Text);
         }
 
         public void SetLocalClipboard(CancellationToken? cancelToken, bool notify = true)
