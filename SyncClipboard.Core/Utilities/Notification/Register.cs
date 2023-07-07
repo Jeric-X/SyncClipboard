@@ -1,11 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Toolkit.Uwp.Notifications;
-#nullable enable
 
-namespace SyncClipboard.Utility.Notification
+namespace SyncClipboard.Core.Utilities.Notification
 {
     // Modified from https://github.com/pr8x/DesktopNotifications
     public sealed class Register

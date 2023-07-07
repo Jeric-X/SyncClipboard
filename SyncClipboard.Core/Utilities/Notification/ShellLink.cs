@@ -1,11 +1,8 @@
-﻿using System;
-using System.IO;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
-#nullable enable
 
-namespace SyncClipboard.Utility.Notification
+namespace SyncClipboard.Core.Utilities.Notification
 {
     // Modified from https://github.com/pr8x/DesktopNotifications
     // Originally Modified from http://smdn.jp/programming/tips/createlnk/
