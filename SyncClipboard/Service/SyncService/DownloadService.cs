@@ -9,7 +9,7 @@ using SyncClipboard.Core.Interfaces;
 
 namespace SyncClipboard.Service
 {
-    public class DownloadService : Service
+    public class DownloadService : Core.Interfaces.Service
     {
         public event ProgramEvent.ProgramEventHandler? PullStarted;
         public event ProgramEvent.ProgramEventHandler? PullStopped;

@@ -2,7 +2,7 @@
 
 namespace SyncClipboard.Service
 {
-    public class ClipboardService : Service
+    public class ClipboardService : Core.Interfaces.Service
     {
         public const string CLIPBOARD_CHANGED_EVENT_NAME = "CLIPBOARD_CHANGED_EVENT";
         public event ProgramEvent.ProgramEventHandler ClipBoardChanged;

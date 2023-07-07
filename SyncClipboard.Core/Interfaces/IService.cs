@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Service
+﻿namespace SyncClipboard.Core.Interfaces
 {
     public interface IService
     {

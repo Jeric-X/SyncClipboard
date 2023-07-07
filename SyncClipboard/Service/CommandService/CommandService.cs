@@ -8,7 +8,7 @@ using SyncClipboard.Utility.Notification;
 #nullable enable
 namespace SyncClipboard.Service
 {
-    internal class CommandService : Service
+    internal class CommandService : Core.Interfaces.Service
     {
         private event Action<bool>? SwitchChanged;
         private const string COMMAND_FILE = "Command.json";

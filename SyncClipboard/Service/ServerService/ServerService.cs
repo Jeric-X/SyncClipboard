@@ -3,7 +3,7 @@ using SyncClipboard.Module;
 #nullable enable
 namespace SyncClipboard.Service
 {
-    public class ServerService : Service
+    public class ServerService : Core.Interfaces.Service
     {
         Microsoft.AspNetCore.Builder.WebApplication? app;
         private event Action<bool>? SwitchChanged;

@@ -6,7 +6,7 @@ using SyncClipboard.Utility;
 
 namespace SyncClipboard.Service
 {
-    abstract public class ClipboardHander : Service
+    abstract public class ClipboardHander : Core.Interfaces.Service
     {
         protected abstract bool SwitchOn { get; set; }
         public abstract string SERVICE_NAME { get; }

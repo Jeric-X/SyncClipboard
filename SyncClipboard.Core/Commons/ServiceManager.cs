@@ -1,18 +1,18 @@
-namespace SyncClipboard.Service
-{
-    internal class ServiceManager
-    {
-        private readonly IService[] _services = {
-            new CommandService(),
-            new ClipboardService(),
-            new UploadService(),
-            new DownloadService(),
-            new EasyCopyImageSerivce(),
-            new ConvertService(),
-            new ServerService()
-        };
+using SyncClipboard.Core.Interfaces;
 
-        internal void StartUpAllService()
+namespace SyncClipboard.Core.Commons
+{
+    public class ServiceManager
+    {
+        private readonly IEnumerable<IService> _services;
+
+        public ServiceManager(IEnumerable<IService> services, UserConfig userConfig)
+        {
+            _services = services;
+            userConfig.ConfigChanged += LoadAllService;
+        }
+
+        public void StartUpAllService()
         {
             foreach (IService service in _services)
             {
@@ -25,7 +25,7 @@ namespace SyncClipboard.Service
             }
         }
 
-        internal void LoadAllService()
+        public void LoadAllService()
         {
             foreach (IService service in _services)
             {
@@ -33,7 +33,7 @@ namespace SyncClipboard.Service
             }
         }
 
-        internal void StopAllService()
+        public void StopAllService()
         {
             foreach (IService service in _services)
             {

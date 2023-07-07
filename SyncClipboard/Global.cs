@@ -3,10 +3,11 @@ using SyncClipboard.Control;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
-using SyncClipboard.Service;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Utility;
 using System;
 using System.Windows.Forms;
+using SyncClipboard.Service;
 
 namespace SyncClipboard
 {
@@ -28,9 +29,7 @@ namespace SyncClipboard
             StartUpUI();
 
             AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
-            ServiceManager = new ServiceManager();
             ServiceManager.StartUpAllService();
-            UserConfig.ConfigChanged += ServiceManager.LoadAllService;
         }
 
         private static void ConfigurateServices()
@@ -43,13 +42,27 @@ namespace SyncClipboard
             services.AddSingleton<IContextMenu>(Menu);
             services.AddSingleton<ITrayIcon>(Notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();
+            services.AddSingleton<ServiceManager>();
+            ConfigurateProgramService(services);
 
             Services = services.BuildServiceProvider();
 
+            ServiceManager = Services.GetRequiredService<ServiceManager>();
             Http = Services.GetRequiredService<IHttp>();
             WebDav = Services.GetRequiredService<IWebDav>();
             UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
             Module.UserConfig.InitializeUserConfig(UserConfig);
+        }
+
+        private static void ConfigurateProgramService(IServiceCollection services)
+        {
+            services.AddSingleton<IService, CommandService>();
+            services.AddSingleton<IService, ClipboardService>();
+            services.AddSingleton<IService, UploadService>();
+            services.AddSingleton<IService, DownloadService>();
+            services.AddSingleton<IService, EasyCopyImageSerivce>();
+            services.AddSingleton<IService, ConvertService>();
+            services.AddSingleton<IService, ServerService>();
         }
 
         internal static void EndUp()
@@ -67,7 +80,7 @@ namespace SyncClipboard
                 new MenuItem("检查更新", UpdateChecker.Check),
                 new MenuItem("退出", Application.Exit)
             };
-            Menu.AddMenuItemGroup(menuItems, true);
+            Menu.AddMenuItemGroup(menuItems, reverse: true);
         }
     }
 }
