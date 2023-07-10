@@ -1,6 +1,6 @@
 using System.Threading;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Module;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Utility;
 #nullable enable
 

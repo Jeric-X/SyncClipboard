@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace SyncClipboard.Module
+namespace SyncClipboard.Core.Commons
 {
     public static class Event
     {

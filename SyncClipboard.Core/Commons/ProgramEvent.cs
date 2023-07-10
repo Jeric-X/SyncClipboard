@@ -1,6 +1,4 @@
-using System;
-
-namespace SyncClipboard.Module
+namespace SyncClipboard.Core.Commons
 {
     public class ProgramEvent
     {

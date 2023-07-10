@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Module;
+﻿using SyncClipboard.Core.Commons;
 
 namespace SyncClipboard.Service
 {

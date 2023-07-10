@@ -1,10 +1,11 @@
 using System;
 using System.Threading;
 using SyncClipboard.Utility;
-using SyncClipboard.Module;
+using SyncClipboard.Core.Commons;
 using System.Threading.Tasks;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Interfaces;
+using UserConfig = SyncClipboard.Module.UserConfig;
 #nullable enable
 
 namespace SyncClipboard.Service

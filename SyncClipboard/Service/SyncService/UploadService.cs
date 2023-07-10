@@ -2,9 +2,10 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using SyncClipboard.Module;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Utility;
 using SyncClipboard.Core.Utilities.Notification;
+using UserConfig = SyncClipboard.Module.UserConfig;
 #nullable enable
 
 namespace SyncClipboard.Service
