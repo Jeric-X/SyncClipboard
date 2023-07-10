@@ -23,20 +23,23 @@ namespace SyncClipboard.Service
         private string statusTip = "";
         private readonly IWebDav? _webDav;
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
+        private readonly ILogger _logger;
 
-        public FileProfile(string file, NotificationManager notificationManager) : base(notificationManager)
+        public FileProfile(string file, NotificationManager notificationManager, ILogger logger) : base(notificationManager)
         {
             FileName = Path.GetFileName(file);
             fullPath = file;
             statusTip = FileName;
+            _logger = logger;
         }
 
-        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager) : base(notificationManager)
+        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager, ILogger logger) : base(notificationManager)
         {
             FileName = jsonProfile.File;
             statusTip = FileName;
             _webDav = webDav;
             SetMd5(jsonProfile.Clipboard);
+            _logger = logger;
         }
 
         protected string GetTempLocalFilePath()
@@ -71,7 +74,7 @@ namespace SyncClipboard.Service
             var file = new FileInfo(fullPath);
             if (file.Length <= UserConfig.Config.SyncService.MaxFileByte)
             {
-                Log.Write("PUSH file " + FileName);
+                _logger.Write("PUSH file " + FileName);
                 if (!await webdav.Exist(SyncService.REMOTE_FILE_FOLDER))
                 {
                     await webdav.CreateDirectory(SyncService.REMOTE_FILE_FOLDER);
@@ -80,7 +83,7 @@ namespace SyncClipboard.Service
             }
             else
             {
-                Log.Write("file is too large, skipped " + FileName);
+                _logger.Write("file is too large, skipped " + FileName);
             }
 
             SetMd5(await GetMd5(cancelToken));
@@ -106,7 +109,7 @@ namespace SyncClipboard.Service
             await _webDav.GetFile(remotePath, localPath, progress, cancelToken);
             await CheckHash(localPath, cancelToken);
 
-            Log.Write("[PULL] download OK " + localPath);
+            _logger.Write("[PULL] download OK " + localPath);
             fullPath = localPath;
             statusTip = FileName;
         }
@@ -124,7 +127,7 @@ namespace SyncClipboard.Service
 
             if (await downloadFIleMd5 != await existedMd5)
             {
-                Log.Write("[PULL] download erro, md5 wrong");
+                _logger.Write("[PULL] download erro, md5 wrong");
                 statusTip = "Downloading erro, md5 wrong";
                 throw new Exception("FileProfile download check md5 failed");
             }
@@ -167,7 +170,7 @@ namespace SyncClipboard.Service
             }
         }
 
-        private static async Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
+        private async Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
         {
             var fileInfo = new FileInfo(fileName);
             if (fileInfo.Length > UserConfig.Config.SyncService.MaxFileByte)
@@ -176,7 +179,7 @@ namespace SyncClipboard.Service
             }
             try
             {
-                Log.Write("calc md5 start");
+                _logger.Write("calc md5 start");
                 var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                 var md5Oper = System.Security.Cryptography.MD5.Create();
                 var retVal = await md5Oper.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
@@ -188,12 +191,12 @@ namespace SyncClipboard.Service
                     sb.Append(retVal[i].ToString("x2"));
                 }
                 string md5 = sb.ToString();
-                Log.Write($"md5 {md5}");
+                _logger.Write($"md5 {md5}");
                 return md5;
             }
             catch (System.Exception ex)
             {
-                Log.Write("GetMD5HashFromFile() fail " + ex.Message);
+                _logger.Write("GetMD5HashFromFile() fail " + ex.Message);
                 throw;
             }
         }

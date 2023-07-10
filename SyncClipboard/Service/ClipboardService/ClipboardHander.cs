@@ -1,7 +1,6 @@
-using System.Threading;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Utility;
+using SyncClipboard.Core.Interfaces;
+using System.Threading;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -13,9 +12,17 @@ namespace SyncClipboard.Service
         public abstract string LOG_TAG { get; }
 
         protected ToggleMenuItem? ToggleMenuItem { get; set; }
+
+        private readonly ILogger _logger;
+
+        public ClipboardHander(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         protected override void StartService()
         {
-            Log.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
+            _logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
             ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
             Global.Menu.AddMenuItem(ToggleMenuItem);
             Load();
@@ -44,7 +51,7 @@ namespace SyncClipboard.Service
         protected override void StopSerivce()
         {
             CancelProcess();
-            Log.Write(LOG_TAG, $"Service: {SERVICE_NAME} stopped");
+            _logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} stopped");
         }
 
         private CancellationTokenSource? _cancelSource;

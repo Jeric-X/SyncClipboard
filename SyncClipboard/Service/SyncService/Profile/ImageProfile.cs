@@ -17,15 +17,15 @@ namespace SyncClipboard.Service
     public class ImageProfile : FileProfile
     {
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
-        public ImageProfile(string filepath, NotificationManager notificationManager) : base(filepath, notificationManager)
+        public ImageProfile(string filepath, NotificationManager notificationManager, ILogger logger) : base(filepath, notificationManager, logger)
         {
         }
 
-        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav, NotificationManager notificationManager) : base(jsonProfile, webdav, notificationManager)
+        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav, NotificationManager notificationManager, ILogger logger) : base(jsonProfile, webdav, notificationManager, logger)
         {
         }
 
-        public static ImageProfile CreateFromImage(Image image, NotificationManager notificationManager)
+        public static ImageProfile CreateFromImage(Image image, NotificationManager notificationManager, ILogger logger)
         {
             if (!Directory.Exists(TEMP_FOLDER))
             {
@@ -34,7 +34,7 @@ namespace SyncClipboard.Service
             var filePath = Path.Combine(TEMP_FOLDER, $"{Path.GetRandomFileName()}.bmp");
             image.Save(filePath);
 
-            return new ImageProfile(filePath, notificationManager);
+            return new ImageProfile(filePath, notificationManager, logger);
         }
 
         public override ClipboardType GetProfileType()

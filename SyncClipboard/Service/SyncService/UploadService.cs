@@ -6,6 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Utility;
 using SyncClipboard.Core.Utilities.Notification;
 using UserConfig = SyncClipboard.Module.UserConfig;
+using SyncClipboard.Core.Interfaces;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -32,10 +33,12 @@ namespace SyncClipboard.Service
 
 
         private readonly NotificationManager _notificationManager;
+        private readonly ILogger _logger;
 
-        public UploadService(NotificationManager notificationManager)
+        public UploadService(NotificationManager notificationManager, ILogger logger) : base(logger)
         {
             _notificationManager = notificationManager;
+            _logger = logger;
         }
 
         protected override void StartService()
@@ -81,13 +84,13 @@ namespace SyncClipboard.Service
 
         public void PullStartedHandler()
         {
-            Log.Write("_isChangingLocal set to TRUE");
+            _logger.Write("_isChangingLocal set to TRUE");
             _downServiceChangingLocal = true;
         }
 
         public void PullStoppedHandler()
         {
-            Log.Write("_isChangingLocal set to FALSE");
+            _logger.Write("_isChangingLocal set to FALSE");
             _downServiceChangingLocal = false;
         }
 
@@ -119,7 +122,7 @@ namespace SyncClipboard.Service
             }
             catch (OperationCanceledException)
             {
-                Log.Write("Upload", "Upload Canceled");
+                _logger.Write("Upload", "Upload Canceled");
             }
             SetWorkingEndStatus();
         }
@@ -130,7 +133,7 @@ namespace SyncClipboard.Service
 
             if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
-                Log.Write("Local profile type is Unkown, stop upload.");
+                _logger.Write("Local profile type is Unkown, stop upload.");
                 return;
             }
 
@@ -151,7 +154,7 @@ namespace SyncClipboard.Service
                         await CleanServerTempFile(cancelToken);
                         await profile.UploadProfileAsync(Global.WebDav, cancelToken);
                     }
-                    Log.Write(LOG_TAG, "remote is same as local, won't push");
+                    _logger.Write(LOG_TAG, "remote is same as local, won't push");
                     return;
                 }
                 catch (TaskCanceledException)

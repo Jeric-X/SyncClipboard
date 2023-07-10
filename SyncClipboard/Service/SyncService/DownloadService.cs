@@ -23,10 +23,12 @@ namespace SyncClipboard.Service
         private Profile? _remoteProfileCache;
 
         private readonly NotificationManager _notificationManager;
+        private readonly ILogger _logger;
 
-        public DownloadService(NotificationManager notificationManager)
+        public DownloadService(NotificationManager notificationManager, ILogger logger)
         {
             _notificationManager = notificationManager;
+            _logger = logger;
         }
 
         public override void Load()
@@ -93,7 +95,7 @@ namespace SyncClipboard.Service
             catch (OperationCanceledException)
             {
                 _toastReporter?.CancelSicent();
-                Log.Write(LOG_TAG, "Canceled");
+                _logger.Write(LOG_TAG, "Canceled");
             }
         }
 
@@ -117,13 +119,13 @@ namespace SyncClipboard.Service
 
         public void PushStartedHandler()
         {
-            Log.Write(LOG_TAG, "due to upload service start, cancel");
+            _logger.Write(LOG_TAG, "due to upload service start, cancel");
             StopPullLoop();
         }
 
         public void PushStoppedHandler()
         {
-            Log.Write(LOG_TAG, "due to upload service stop, cancel");
+            _logger.Write(LOG_TAG, "due to upload service stop, cancel");
             StopPullLoop();
             if (UserConfig.Config.SyncService.PullSwitchOn)
             {
@@ -151,7 +153,7 @@ namespace SyncClipboard.Service
             errorTimes++;
             Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
 
-            Log.Write(ex.ToString());
+            _logger.Write(ex.ToString());
             if (errorTimes == UserConfig.Config.Program.RetryTimes)
             {
                 _notificationManager.SendText("剪切板下载失败", ex.Message);
@@ -169,7 +171,7 @@ namespace SyncClipboard.Service
                 {
                     SyncService.remoteProfilemutex.WaitOne();
                     var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken, _notificationManager).ConfigureAwait(true);
-                    Log.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
+                    _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
                     if (await NeedUpdate(remoteProfile, cancelToken))
                     {
@@ -221,7 +223,7 @@ namespace SyncClipboard.Service
             Profile localProfile = ProfileFactory.CreateFromLocal(_notificationManager);
             if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
-                Log.Write("[PULL] Local profile type is Unkown, stop sync.");
+                _logger.Write("[PULL] Local profile type is Unkown, stop sync.");
                 return;
             }
 
@@ -238,7 +240,7 @@ namespace SyncClipboard.Service
                     _toastReporter = null;
                     PullStarted?.Invoke();
                     remoteProfile.SetLocalClipboard(cancelToken);
-                    Log.Write("剪切板同步成功:" + remoteProfile.Text);
+                    _logger.Write("剪切板同步成功:" + remoteProfile.Text);
                     await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
                 }
                 catch

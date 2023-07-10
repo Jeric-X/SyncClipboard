@@ -9,6 +9,7 @@ using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using SyncClipboard.Core.Utilities.Image;
 using static SyncClipboard.Service.ProfileFactory;
+using SyncClipboard.Core.Interfaces;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -33,10 +34,12 @@ namespace SyncClipboard.Service
         }
 
         private readonly NotificationManager _notificationManager;
+        private readonly ILogger _logger;
 
-        public EasyCopyImageSerivce(NotificationManager notificationManager)
+        public EasyCopyImageSerivce(NotificationManager notificationManager, ILogger logger) : base(logger)
         {
             _notificationManager = notificationManager;
+            _logger = logger;
         }
 
         protected override CancellationToken StopPreviousAndGetNewToken()
@@ -72,13 +75,13 @@ namespace SyncClipboard.Service
                 var match = Regex.Match(localClipboard.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
                 if (match.Success) // 是从浏览器复制的图片
                 {
-                    Log.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
+                    _logger.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
                     var localPath = await DownloadImage(match.Groups["imgUrl"].Value, useProxy, cancellationToken);
                     if (!ImageHelper.FileIsImage(localPath))
                     {
                         localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                     }
-                    profile = new ImageProfile(localPath, _notificationManager);
+                    profile = new ImageProfile(localPath, _notificationManager, _logger);
                 }
             }
 

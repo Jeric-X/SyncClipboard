@@ -1,5 +1,4 @@
 ﻿using System;
-using SyncClipboard.Utility;
 
 namespace SyncClipboard.Service
 {
@@ -30,7 +29,6 @@ namespace SyncClipboard.Service
             }
             catch
             {
-                Log.Write("Profile Type is Wrong");
                 throw new ArgumentException("Profile Type is Wrong");
             }
 

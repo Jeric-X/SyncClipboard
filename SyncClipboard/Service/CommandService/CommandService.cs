@@ -1,10 +1,10 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using SyncClipboard.Utility;
+﻿using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Module;
 using SyncClipboard.Service.Command;
 using System;
-using SyncClipboard.Core.Utilities.Notification;
+using System.Threading;
+using System.Threading.Tasks;
 #nullable enable
 namespace SyncClipboard.Service
 {
@@ -17,10 +17,12 @@ namespace SyncClipboard.Service
         private bool _isError = false;
 
         private readonly NotificationManager _notificationManager;
+        private readonly ILogger _logger;
 
-        public CommandService(NotificationManager notificationManager)
+        public CommandService(NotificationManager notificationManager, ILogger logger)
         {
             _notificationManager = notificationManager;
+            _logger = logger;
         }
 
         protected override void StartService()
@@ -42,7 +44,7 @@ namespace SyncClipboard.Service
             }
             catch (OperationCanceledException)
             {
-                Log.Write(LOG_TAG, "Command serivce exited");
+                _logger.Write(LOG_TAG, "Command serivce exited");
             }
         }
 
@@ -87,7 +89,7 @@ namespace SyncClipboard.Service
             }
         }
 
-        private static async Task<CommandInfo> GetRemoteCommand()
+        private async Task<CommandInfo> GetRemoteCommand()
         {
             CommandInfo? command;
             try
@@ -97,10 +99,10 @@ namespace SyncClipboard.Service
             }
             catch
             {
-                Log.Write("Get command failed");
+                _logger.Write("Get command failed");
                 throw;
             }
-            Log.Write($"Command is [{command.CommandStr}]");
+            _logger.Write($"Command is [{command.CommandStr}]");
             return command;
         }
 
@@ -116,7 +118,7 @@ namespace SyncClipboard.Service
             });
         }
 
-        private static async Task ResetRemoteCommand(CommandInfo command)
+        private async Task ResetRemoteCommand(CommandInfo command)
         {
             try
             {
@@ -124,10 +126,10 @@ namespace SyncClipboard.Service
             }
             catch
             {
-                Log.Write("Reset command failed");
+                _logger.Write("Reset command failed");
                 throw;
             }
-            Log.Write($"Command [{command.CommandStr}] has reset");
+            _logger.Write($"Command [{command.CommandStr}] has reset");
         }
     }
 }

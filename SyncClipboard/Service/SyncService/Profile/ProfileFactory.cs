@@ -38,9 +38,9 @@ namespace SyncClipboard.Service
                 {
                     if (ImageHelper.FileIsImage(filename))
                     {
-                        return new ImageProfile(filename, notificationManager);
+                        return new ImageProfile(filename, notificationManager, Global.Logger);
                     }
-                    return new FileProfile(filename, notificationManager);
+                    return new FileProfile(filename, notificationManager, Global.Logger);
                 }
             }
 
@@ -51,7 +51,7 @@ namespace SyncClipboard.Service
 
             if (localClipboard.Image != null)
             {
-                return ImageProfile.CreateFromImage(localClipboard.Image, notificationManager);
+                return ImageProfile.CreateFromImage(localClipboard.Image, notificationManager, Global.Logger);
             }
 
             return new UnkonwnProfile();
@@ -113,7 +113,7 @@ namespace SyncClipboard.Service
                     await blankProfile.UploadProfileAsync(webDav, cancelToken);
                     return blankProfile;
                 }
-                Log.Write("CreateFromRemote failed");
+                Global.Logger.Write("CreateFromRemote failed");
                 throw;
             }
 
@@ -132,12 +132,12 @@ namespace SyncClipboard.Service
                     {
                         if (ImageHelper.FileIsImage(jsonProfile.File))
                         {
-                            return new ImageProfile(jsonProfile, webDav, notificationManager);
+                            return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger);
                         }
-                        return new FileProfile(jsonProfile, webDav, notificationManager);
+                        return new FileProfile(jsonProfile, webDav, notificationManager, Global.Logger);
                     }
                 case ClipboardType.Image:
-                    return new ImageProfile(jsonProfile, webDav, notificationManager);
+                    return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger);
             }
 
             return new UnkonwnProfile();
