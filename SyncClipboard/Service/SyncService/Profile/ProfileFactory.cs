@@ -2,7 +2,7 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Image;
+using SyncClipboard.Core.Utilities.Image;
 using System;
 using System.Drawing;
 using System.IO;

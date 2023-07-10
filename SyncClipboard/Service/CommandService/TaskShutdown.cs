@@ -1,9 +1,7 @@
 using System.Threading.Tasks;
-using SyncClipboard.Utility;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Module;
-using Microsoft.Toolkit.Uwp.Notifications;
-using Windows.UI.Notifications;
 using System;
 
 #nullable enable

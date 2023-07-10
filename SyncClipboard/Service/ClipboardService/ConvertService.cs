@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using SyncClipboard.Utility;
 using SyncClipboard.Module;
-using SyncClipboard.Utility.Image;
+using SyncClipboard.Core.Utilities.Image;
 using static SyncClipboard.Service.ProfileFactory;
 using SyncClipboard.Core.Utilities.Notification;
 #nullable enable

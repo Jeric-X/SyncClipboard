@@ -20,6 +20,7 @@ namespace SyncClipboard
         internal static IServiceProvider Services;
         internal static IHttp Http;
         internal static Core.Commons.UserConfig UserConfig;
+        internal static ILogger Logger;
 
         public static void StartUp()
         {
@@ -50,6 +51,7 @@ namespace SyncClipboard
             WebDav = Services.GetRequiredService<IWebDav>();
             UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
             Module.UserConfig.InitializeUserConfig(UserConfig);
+            Logger = Services.GetRequiredService<ILogger>();
         }
 
         private static void ConfigurateProgramService(IServiceCollection services)

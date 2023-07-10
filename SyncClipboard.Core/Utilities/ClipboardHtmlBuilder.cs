@@ -1,6 +1,7 @@
-﻿using System.Text;
+﻿using System.Runtime.Versioning;
+using System.Text;
 
-namespace SyncClipboard.Utility
+namespace SyncClipboard.Core.Utilities
 {
     public static class ClipboardHtmlBuilder
     {
@@ -13,6 +14,7 @@ EndFragment:<<<<<<<<4";
         private const string StartFragment = "<!--StartFragment-->";
         private const string EndFragment = "<!--EndFragment-->";
 
+        [SupportedOSPlatform("windows")]
         public static string GetClipboardHtml(string html)
         {
             var sb = new StringBuilder();

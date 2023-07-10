@@ -1,6 +1,6 @@
 using System;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Utility;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 #nullable enable
 

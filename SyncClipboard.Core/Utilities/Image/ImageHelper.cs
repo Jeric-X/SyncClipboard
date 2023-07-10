@@ -1,10 +1,6 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using ImageMagick;
 
-namespace SyncClipboard.Utility.Image
+namespace SyncClipboard.Core.Utilities.Image
 {
     public static class ImageHelper
     {
