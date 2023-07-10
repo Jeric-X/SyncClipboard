@@ -20,8 +20,9 @@ namespace SyncClipboard.Service
         //public ClipboardType Type { get; set; }
 
         protected readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
-
         public abstract ClipboardType GetProfileType();
+        public abstract Core.Clipboard.ProfileType Type { get; }
+
         protected abstract DataObject? CreateDataObject();
         public abstract string ToolTip();
         public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);

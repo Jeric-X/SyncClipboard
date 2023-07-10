@@ -41,7 +41,7 @@ namespace SyncClipboard
             services.AddSingleton<IContextMenu>(Menu);
             services.AddSingleton<ITrayIcon>(Notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();
-            services.AddSingleton<ServiceManager>();
+            services.AddSingleton<IClipboardFactory, ClipboardFactory>();
             ConfigurateProgramService(services);
 
             Services = services.BuildServiceProvider();
@@ -50,7 +50,6 @@ namespace SyncClipboard
             Http = Services.GetRequiredService<IHttp>();
             WebDav = Services.GetRequiredService<IWebDav>();
             UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
-            // Module.UserConfig.InitializeUserConfig(UserConfig);
             Logger = Services.GetRequiredService<ILogger>();
         }
 

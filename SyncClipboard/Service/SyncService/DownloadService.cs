@@ -23,12 +23,15 @@ namespace SyncClipboard.Service
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
+        private readonly IClipboardFactory _clipboardFactory;
 
-        public DownloadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig)
+        public DownloadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig
+            , IClipboardFactory clipboardFactory)
         {
             _notificationManager = notificationManager;
             _logger = logger;
             _userConfig = userConfig;
+            _clipboardFactory = clipboardFactory;
         }
 
         public override void Load()
@@ -170,7 +173,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken, _notificationManager).ConfigureAwait(true);
+                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken).ConfigureAwait(true);
                     _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
                     if (await NeedUpdate(remoteProfile, cancelToken))
@@ -220,7 +223,7 @@ namespace SyncClipboard.Service
 
         private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
         {
-            Profile localProfile = ProfileFactory.CreateFromLocal(_notificationManager);
+            Profile localProfile = _clipboardFactory.CreateProfile();
             if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
                 _logger.Write("[PULL] Local profile type is Unkown, stop sync.");

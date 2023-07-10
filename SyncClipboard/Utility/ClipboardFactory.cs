@@ -1,22 +1,25 @@
 ﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Service;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using static SyncClipboard.Service.ProfileFactory;
-using System.Windows.Forms;
 using System.Drawing;
-using SyncClipboard.Core.Utilities.Image;
-using SyncClipboard.Core.Utilities.Notification;
+using System.IO;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace SyncClipboard.Utility;
 
 internal class ClipboardFactory : ClipboardFactoryBase
 {
+    protected override ILogger Logger { get; set; }
+    protected override UserConfig UserConfig { get; set; }
+
+    public ClipboardFactory(ILogger logger, UserConfig userConfig)
+    {
+        Logger = logger;
+        UserConfig = userConfig;
+    }
+
     public override MetaInfomation GetMetaInfomation()
     {
         MetaInfomation meta = new();

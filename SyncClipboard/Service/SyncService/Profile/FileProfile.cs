@@ -24,6 +24,8 @@ namespace SyncClipboard.Service
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
 
+        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.File;
+
         public FileProfile(string file, ILogger logger, UserConfig userConfig)
         {
             FileName = Path.GetFileName(file);

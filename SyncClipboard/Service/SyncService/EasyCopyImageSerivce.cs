@@ -11,19 +11,19 @@ using SyncClipboard.Core.Utilities.Image;
 using static SyncClipboard.Service.ProfileFactory;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Clipboard;
+using DragDropEffects = SyncClipboard.Core.Clipboard.DragDropEffects;
 #nullable enable
 
 namespace SyncClipboard.Service
 {
     public class EasyCopyImageSerivce : ClipboardHander
     {
-        private ProgressToastReporter? _progress;
-        private readonly object _progressLocker = new();
-
+        #region override ClipboardHander
         public override string SERVICE_NAME => "Easy Copy Image";
-
         public override string LOG_TAG => "EASY IMAGE";
 
+        protected override ILogger Logger => _logger;
         protected override bool SwitchOn
         {
             get => _userConfig.Config.SyncService.EasyCopyImageSwitchOn;
@@ -32,24 +32,6 @@ namespace SyncClipboard.Service
                 _userConfig.Config.SyncService.EasyCopyImageSwitchOn = value;
                 _userConfig.Save();
             }
-        }
-
-        private readonly NotificationManager _notificationManager;
-        private readonly ILogger _logger;
-        private readonly UserConfig _userConfig;
-
-        public EasyCopyImageSerivce(NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(logger)
-        {
-            _notificationManager = notificationManager;
-            _logger = logger;
-            _userConfig = userConfig;
-        }
-
-        protected override CancellationToken StopPreviousAndGetNewToken()
-        {
-            _progress?.CancelSicent();
-            _progress = null;
-            return base.StopPreviousAndGetNewToken();
         }
 
         protected override void HandleClipboard(CancellationToken cancelToken)
@@ -64,18 +46,44 @@ namespace SyncClipboard.Service
             }
         }
 
+        protected override CancellationToken StopPreviousAndGetNewToken()
+        {
+            _progress?.CancelSicent();
+            _progress = null;
+            return base.StopPreviousAndGetNewToken();
+        }
+        #endregion
+
+        private ProgressToastReporter? _progress;
+        private readonly object _progressLocker = new();
+
+        private readonly NotificationManager _notificationManager;
+        private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
+        private readonly IClipboardFactory _clipboardFactory;
+
+        public EasyCopyImageSerivce(NotificationManager notificationManager, ILogger logger,
+            UserConfig userConfig, IClipboardFactory clipboardFactory)
+        {
+            _notificationManager = notificationManager;
+            _logger = logger;
+            _userConfig = userConfig;
+            _clipboardFactory = clipboardFactory;
+        }
+
         private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
         {
-            var profile = CreateFromLocal(out var localClipboard, _notificationManager);
-            if (profile.GetProfileType() != ProfileType.ClipboardType.Image || !NeedAdjust(localClipboard))
+            var metaInfo = _clipboardFactory.GetMetaInfomation();
+            var profile = _clipboardFactory.CreateProfile(metaInfo);
+            if (profile.Type != Core.Clipboard.ProfileType.Image || !NeedAdjust(metaInfo))
             {
                 return;
             }
 
-            if (!string.IsNullOrEmpty(localClipboard.Html))
+            if (!string.IsNullOrEmpty(metaInfo.Html))
             {
                 const string Expression = @"<!--StartFragment--><img src=(?<qoute>[""'])(?<imgUrl>https?://.*?)\k<qoute>.*/><!--EndFragment-->";
-                var match = Regex.Match(localClipboard.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
+                var match = Regex.Match(metaInfo.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
                 if (match.Success) // 是从浏览器复制的图片
                 {
                     _logger.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
@@ -91,18 +99,18 @@ namespace SyncClipboard.Service
             await AdjustClipboard(profile, cancellationToken);
         }
 
-        private static bool NeedAdjust(LocalClipboard localClipboard)
+        private static bool NeedAdjust(MetaInfomation metaInfo)
         {
-            if (localClipboard.Files?.Length > 1)
+            if (metaInfo.Files?.Length > 1)
             {
                 return false;
             }
 
-            if ((localClipboard.Effects & DragDropEffects.Move) == DragDropEffects.Move)
+            if ((metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move)
             {
                 return false;
             }
-            return localClipboard.Files is null || localClipboard.Html is null || localClipboard.Image is null;
+            return metaInfo.Files is null || metaInfo.Html is null || metaInfo.Image is null;
         }
 
         private static async Task AdjustClipboard(Profile profile, CancellationToken cancellationToken)

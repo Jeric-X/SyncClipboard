@@ -8,10 +8,7 @@ namespace SyncClipboard.Service
 {
     public class UnkonwnProfile : Profile
     {
-        public UnkonwnProfile()
-        {
-
-        }
+        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Unknown;
 
         public override string ToolTip()
         {

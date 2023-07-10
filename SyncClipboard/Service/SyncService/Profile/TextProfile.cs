@@ -13,6 +13,8 @@ namespace SyncClipboard.Service
 {
     public class TextProfile : Profile
     {
+        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Text;
+
         public TextProfile(String text)
         {
             Text = text;

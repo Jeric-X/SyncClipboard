@@ -2,19 +2,20 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Image;
-using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Threading;
-using static SyncClipboard.Service.ProfileFactory;
 #nullable enable
 
 namespace SyncClipboard.Service
 {
     public class ConvertService : ClipboardHander
     {
+        #region override ClipboardHander
+
         public override string SERVICE_NAME => "图片兼容性优化";
         public override string LOG_TAG => "COMPATIBILITY";
 
+        protected override ILogger Logger => _logger;
         protected override bool SwitchOn
         {
             get => _userConfig.Config.ClipboardService.ConvertSwitchOn;
@@ -25,34 +26,18 @@ namespace SyncClipboard.Service
             }
         }
 
-
-        private readonly NotificationManager _notificationManager;
-        private readonly ILogger _logger;
-        private readonly UserConfig _userConfig;
-        private readonly IClipboardFactory _clipboardFactory;
-
-        public ConvertService(NotificationManager notificationManager, ILogger logger,
-            UserConfig userConfig, IClipboardFactory clipboardFactory) : base(logger)
-        {
-            _notificationManager = notificationManager;
-            _logger = logger;
-            _userConfig = userConfig;
-            _clipboardFactory = clipboardFactory;
-        }
-
         protected override async void HandleClipboard(CancellationToken cancellationToken)
         {
-            var profile = CreateFromLocal(out var localClipboard, _notificationManager);
             var metaInfo = _clipboardFactory.GetMetaInfomation();
             var clipboardProfile = _clipboardFactory.CreateProfile(metaInfo);
-            if (profile.GetProfileType() != ProfileType.ClipboardType.File || !NeedAdjust(localClipboard))
+            if (clipboardProfile.Type != Core.Clipboard.ProfileType.File || !NeedAdjust(metaInfo))
             {
                 return;
             }
 
             try
             {
-                var file = localClipboard.Files![0];
+                var file = metaInfo.Files![0];
                 var newPath = await ImageHelper.CompatibilityCast(file, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                 new ImageProfile(newPath, _logger, _userConfig).SetLocalClipboard();
             }
@@ -63,19 +48,32 @@ namespace SyncClipboard.Service
             }
         }
 
-        private static bool NeedAdjust(LocalClipboard localClipboard)
+        #endregion
+
+        private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
+        private readonly IClipboardFactory _clipboardFactory;
+
+        public ConvertService(ILogger logger, UserConfig userConfig, IClipboardFactory clipboardFactory)
         {
-            if (localClipboard.Files is null)
+            _logger = logger;
+            _userConfig = userConfig;
+            _clipboardFactory = clipboardFactory;
+        }
+
+        private static bool NeedAdjust(MetaInfomation metaInfo)
+        {
+            if (metaInfo.Files is null)
             {
                 return false;
             }
 
-            if (localClipboard.Files.Length != 1)
+            if (metaInfo.Files.Length != 1)
             {
                 return false;
             }
 
-            if (!ImageHelper.IsComplexImage(localClipboard.Files[0]))
+            if (!ImageHelper.IsComplexImage(metaInfo.Files[0]))
             {
                 return false;
             }

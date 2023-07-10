@@ -8,21 +8,15 @@ namespace SyncClipboard.Service
     abstract public class ClipboardHander : Core.Interfaces.Service
     {
         protected abstract bool SwitchOn { get; set; }
+        protected abstract ILogger Logger { get; }
         public abstract string SERVICE_NAME { get; }
         public abstract string LOG_TAG { get; }
 
         protected ToggleMenuItem? ToggleMenuItem { get; set; }
 
-        private readonly ILogger _logger;
-
-        public ClipboardHander(ILogger logger)
-        {
-            _logger = logger;
-        }
-
         protected override void StartService()
         {
-            _logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
+            Logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
             ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
             Global.Menu.AddMenuItem(ToggleMenuItem);
             Load();
@@ -51,7 +45,7 @@ namespace SyncClipboard.Service
         protected override void StopSerivce()
         {
             CancelProcess();
-            _logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} stopped");
+            Logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} stopped");
         }
 
         private CancellationTokenSource? _cancelSource;

@@ -15,7 +15,10 @@ namespace SyncClipboard.Service
         public event ProgramEvent.ProgramEventHandler? PushStopped;
 
         private const string SERVICE_NAME_SIMPLE = "⬆⬆";
+        public override string SERVICE_NAME => "上传本机";
         public override string LOG_TAG => "PUSH";
+
+        protected override ILogger Logger => _logger;
         protected override bool SwitchOn
         {
             get => _userConfig.Config.SyncService.PushSwitchOn;
@@ -25,20 +28,21 @@ namespace SyncClipboard.Service
                 _userConfig.Save();
             }
         }
-        public override string SERVICE_NAME => "上传本机";
 
         private bool _downServiceChangingLocal = false;
-
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
+        private readonly IClipboardFactory _clipboardFactory;
 
-        public UploadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(logger)
+        public UploadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig
+            , IClipboardFactory clipboardFactory)
         {
             _notificationManager = notificationManager;
             _logger = logger;
             _userConfig = userConfig;
+            _clipboardFactory = clipboardFactory;
         }
 
         protected override void StartService()
@@ -129,7 +133,7 @@ namespace SyncClipboard.Service
 
         private async Task UploadClipboard(CancellationToken cancelToken)
         {
-            var currentProfile = ProfileFactory.CreateFromLocal(_notificationManager);
+            var currentProfile = _clipboardFactory.CreateProfile();
 
             if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
             {
@@ -148,7 +152,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken, _notificationManager);
+                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken);
                     if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
                         await CleanServerTempFile(cancelToken);

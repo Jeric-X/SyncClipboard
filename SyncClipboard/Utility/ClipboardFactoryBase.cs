@@ -1,11 +1,15 @@
 ﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Image;
-using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Service;
 
 public abstract class ClipboardFactoryBase : IClipboardFactory
 {
+    protected abstract ILogger Logger { get; set; }
+    protected abstract UserConfig UserConfig { get; set; }
+
     public abstract MetaInfomation GetMetaInfomation();
 
     public Profile CreateProfile(MetaInfomation metaInfomation = null)

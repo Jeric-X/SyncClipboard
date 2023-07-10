@@ -45,8 +45,8 @@ namespace SyncClipboard.Core
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
-
             services.AddSingleton<NotificationManager>();
+            services.AddSingleton<ServiceManager>();
         }
 
         private static void PrepareWorkingFolder(UserConfig userConfig)

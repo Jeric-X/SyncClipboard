@@ -17,6 +17,8 @@ namespace SyncClipboard.Service
 {
     public class ImageProfile : FileProfile
     {
+        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Image;
+
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
         public ImageProfile(string filepath, ILogger logger, UserConfig userConfig) : base(filepath, logger, userConfig)
         {
