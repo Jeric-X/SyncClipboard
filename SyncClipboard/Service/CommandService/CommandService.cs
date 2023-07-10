@@ -1,6 +1,6 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
-using SyncClipboard.Module;
 using SyncClipboard.Service.Command;
 using System;
 using System.Threading;
@@ -18,11 +18,13 @@ namespace SyncClipboard.Service
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
 
-        public CommandService(NotificationManager notificationManager, ILogger logger)
+        public CommandService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig)
         {
             _notificationManager = notificationManager;
             _logger = logger;
+            _userConfig = userConfig;
         }
 
         protected override void StartService()
@@ -31,12 +33,12 @@ namespace SyncClipboard.Service
                 new string[] { "Remote Command" },
                 new Action<bool>[] {
                     (switchOn) => {
-                        UserConfig.Config.CommandService.SwitchOn = switchOn;
-                        UserConfig.Save();
+                        _userConfig.Config.CommandService.SwitchOn = switchOn;
+                        _userConfig.Save();
                     }
                 }
             )[0];
-            SwitchChanged?.Invoke(UserConfig.Config.CommandService.SwitchOn);
+            SwitchChanged?.Invoke(_userConfig.Config.CommandService.SwitchOn);
 
             try
             {
@@ -50,7 +52,7 @@ namespace SyncClipboard.Service
 
         public override void Load()
         {
-            SwitchChanged?.Invoke(UserConfig.Config.CommandService.SwitchOn);
+            SwitchChanged?.Invoke(_userConfig.Config.CommandService.SwitchOn);
         }
 
         protected override void StopSerivce()
@@ -62,7 +64,7 @@ namespace SyncClipboard.Service
         {
             while (true)
             {
-                if (UserConfig.Config.CommandService.SwitchOn)
+                if (_userConfig.Config.CommandService.SwitchOn)
                 {
                     try
                     {
@@ -85,7 +87,7 @@ namespace SyncClipboard.Service
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
+                await Task.Delay(TimeSpan.FromSeconds(_userConfig.Config.Program.IntervalTime), cancelToken);
             }
         }
 
@@ -112,7 +114,7 @@ namespace SyncClipboard.Service
             {
                 if (command.CommandStr == "shutdown")
                 {
-                    return new TaskShutdown(command, _notificationManager).ExecuteAsync();
+                    return new TaskShutdown(command, _notificationManager, _userConfig).ExecuteAsync();
                 }
                 return Task.CompletedTask;
             });

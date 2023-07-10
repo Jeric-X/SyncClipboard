@@ -3,6 +3,7 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Module;
 using System;
+using SyncClipboard.Core.Commons;
 
 #nullable enable
 namespace SyncClipboard.Service.Command
@@ -18,10 +19,10 @@ namespace SyncClipboard.Service.Command
         private static readonly object IsWorkingLocker = new();
         private readonly NotificationManager _notificationManager;
 
-        public TaskShutdown(CommandInfo info, NotificationManager notificationManager)
+        public TaskShutdown(CommandInfo info, NotificationManager notificationManager, UserConfig userConfig)
         {
             tagName = info.ToString() + DateTime.Now;
-            shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
+            shutdownTime = userConfig.Config.CommandService.Shutdowntime;
             _notificationManager = notificationManager;
         }
 
@@ -80,7 +81,6 @@ namespace SyncClipboard.Service.Command
         {
             await Task.Run(() =>
             {
-                var shutdownTime = UserConfig.Config.CommandService.Shutdowntime;
                 var process = new System.Diagnostics.Process();
                 process.StartInfo.FileName = "cmd";
                 process.StartInfo.Arguments = @"/k shutdown.exe /s /t 5 /c ""use [ shutdown /a ] in 5s to undo shutdown.""";

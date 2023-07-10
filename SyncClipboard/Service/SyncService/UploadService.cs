@@ -1,12 +1,10 @@
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Utility;
-using SyncClipboard.Core.Utilities.Notification;
-using UserConfig = SyncClipboard.Module.UserConfig;
-using SyncClipboard.Core.Interfaces;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -20,11 +18,11 @@ namespace SyncClipboard.Service
         public override string LOG_TAG => "PUSH";
         protected override bool SwitchOn
         {
-            get => UserConfig.Config.SyncService.PushSwitchOn;
+            get => _userConfig.Config.SyncService.PushSwitchOn;
             set
             {
-                UserConfig.Config.SyncService.PushSwitchOn = value;
-                UserConfig.Save();
+                _userConfig.Config.SyncService.PushSwitchOn = value;
+                _userConfig.Save();
             }
         }
         public override string SERVICE_NAME => "上传本机";
@@ -34,11 +32,13 @@ namespace SyncClipboard.Service
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
 
-        public UploadService(NotificationManager notificationManager, ILogger logger) : base(logger)
+        public UploadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(logger)
         {
             _notificationManager = notificationManager;
             _logger = logger;
+            _userConfig = userConfig;
         }
 
         protected override void StartService()
@@ -143,7 +143,7 @@ namespace SyncClipboard.Service
         private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
         {
             string errMessage = "";
-            for (int i = 0; i < UserConfig.Config.Program.RetryTimes; i++)
+            for (int i = 0; i < _userConfig.Config.Program.RetryTimes; i++)
             {
                 try
                 {
@@ -173,14 +173,14 @@ namespace SyncClipboard.Service
                     SyncService.remoteProfilemutex.ReleaseMutex();
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken);
+                await Task.Delay(TimeSpan.FromSeconds(_userConfig.Config.Program.IntervalTime), cancelToken);
             }
             _notificationManager.SendText("上传失败：" + profile.ToolTip(), errMessage);
         }
 
-        private static async Task CleanServerTempFile(CancellationToken cancelToken)
+        private async Task CleanServerTempFile(CancellationToken cancelToken)
         {
-            if (UserConfig.Config.SyncService.DeletePreviousFilesOnPush)
+            if (_userConfig.Config.SyncService.DeletePreviousFilesOnPush)
             {
                 try
                 {

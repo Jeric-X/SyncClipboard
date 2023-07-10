@@ -1,11 +1,10 @@
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Image;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Threading;
-using SyncClipboard.Utility;
-using SyncClipboard.Module;
-using SyncClipboard.Core.Utilities.Image;
 using static SyncClipboard.Service.ProfileFactory;
-using SyncClipboard.Core.Utilities.Notification;
-using SyncClipboard.Core.Interfaces;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -17,22 +16,24 @@ namespace SyncClipboard.Service
 
         protected override bool SwitchOn
         {
-            get => UserConfig.Config.ClipboardService.ConvertSwitchOn;
+            get => _userConfig.Config.ClipboardService.ConvertSwitchOn;
             set
             {
-                UserConfig.Config.ClipboardService.ConvertSwitchOn = value;
-                UserConfig.Save();
+                _userConfig.Config.ClipboardService.ConvertSwitchOn = value;
+                _userConfig.Save();
             }
         }
 
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
 
-        public ConvertService(NotificationManager notificationManager, ILogger logger) : base(logger)
+        public ConvertService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(logger)
         {
             _notificationManager = notificationManager;
             _logger = logger;
+            _userConfig = userConfig;
         }
 
         protected override async void HandleClipboard(CancellationToken cancellationToken)
@@ -47,7 +48,7 @@ namespace SyncClipboard.Service
             {
                 var file = localClipboard.Files![0];
                 var newPath = await ImageHelper.CompatibilityCast(file, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
-                new ImageProfile(newPath, _notificationManager, _logger).SetLocalClipboard(cancellationToken, false);
+                new ImageProfile(newPath, _notificationManager, _logger, _userConfig).SetLocalClipboard(cancellationToken, false);
             }
             catch (Exception ex)
             {

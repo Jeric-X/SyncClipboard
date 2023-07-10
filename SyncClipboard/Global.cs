@@ -50,7 +50,7 @@ namespace SyncClipboard
             Http = Services.GetRequiredService<IHttp>();
             WebDav = Services.GetRequiredService<IWebDav>();
             UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
-            Module.UserConfig.InitializeUserConfig(UserConfig);
+            // Module.UserConfig.InitializeUserConfig(UserConfig);
             Logger = Services.GetRequiredService<ILogger>();
         }
 

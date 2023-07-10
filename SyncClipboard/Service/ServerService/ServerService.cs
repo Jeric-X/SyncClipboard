@@ -1,5 +1,5 @@
+using SyncClipboard.Core.Commons;
 using System;
-using SyncClipboard.Module;
 #nullable enable
 namespace SyncClipboard.Service
 {
@@ -9,14 +9,22 @@ namespace SyncClipboard.Service
         private event Action<bool>? SwitchChanged;
         public const string SERVICE_NAME = "内置服务器";
         public const string LOG_TAG = "INNERSERVER";
+
+        private readonly UserConfig _userConfig;
+
+        public ServerService(UserConfig userConfig)
+        {
+            _userConfig = userConfig;
+        }
+
         protected override void StartService()
         {
             SwitchChanged += Global.Menu.AddMenuItemGroup(
                 new string[] { SERVICE_NAME },
                 new Action<bool>[] {
                     (switchOn) => {
-                        UserConfig.Config.ServerService.SwitchOn = switchOn;
-                        UserConfig.Save();
+                        _userConfig.Config.ServerService.SwitchOn = switchOn;
+                        _userConfig.Save();
                     }
                 }
             )[0];
@@ -25,15 +33,15 @@ namespace SyncClipboard.Service
 
         public override void Load()
         {
-            SwitchChanged?.Invoke(UserConfig.Config.ServerService.SwitchOn);
+            SwitchChanged?.Invoke(_userConfig.Config.ServerService.SwitchOn);
             app?.StopAsync();
-            if (UserConfig.Config.ServerService.SwitchOn)
+            if (_userConfig.Config.ServerService.SwitchOn)
             {
                 app = Server.Program.Start(
-                    UserConfig.Config.ServerService.Port,
+                    _userConfig.Config.ServerService.Port,
                     Env.Directory,
-                    UserConfig.Config.ServerService.UserName,
-                    UserConfig.Config.ServerService.Password);
+                    _userConfig.Config.ServerService.UserName,
+                    _userConfig.Config.ServerService.Password);
             }
         }
 

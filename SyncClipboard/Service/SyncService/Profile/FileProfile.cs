@@ -1,7 +1,7 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Utility;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.IO;
@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
-using UserConfig = SyncClipboard.Module.UserConfig;
-
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -24,22 +22,25 @@ namespace SyncClipboard.Service
         private readonly IWebDav? _webDav;
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
         private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
 
-        public FileProfile(string file, NotificationManager notificationManager, ILogger logger) : base(notificationManager)
+        public FileProfile(string file, NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(notificationManager)
         {
             FileName = Path.GetFileName(file);
             fullPath = file;
             statusTip = FileName;
             _logger = logger;
+            _userConfig = userConfig;
         }
 
-        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager, ILogger logger) : base(notificationManager)
+        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(notificationManager)
         {
             FileName = jsonProfile.File;
             statusTip = FileName;
             _webDav = webDav;
             SetMd5(jsonProfile.Clipboard);
             _logger = logger;
+            _userConfig = userConfig;
         }
 
         protected string GetTempLocalFilePath()
@@ -72,7 +73,7 @@ namespace SyncClipboard.Service
 
             ArgumentNullException.ThrowIfNull(fullPath);
             var file = new FileInfo(fullPath);
-            if (file.Length <= UserConfig.Config.SyncService.MaxFileByte)
+            if (file.Length <= _userConfig.Config.SyncService.MaxFileByte)
             {
                 _logger.Write("PUSH file " + FileName);
                 if (!await webdav.Exist(SyncService.REMOTE_FILE_FOLDER))
@@ -173,7 +174,7 @@ namespace SyncClipboard.Service
         private async Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
         {
             var fileInfo = new FileInfo(fileName);
-            if (fileInfo.Length > UserConfig.Config.SyncService.MaxFileByte)
+            if (fileInfo.Length > _userConfig.Config.SyncService.MaxFileByte)
             {
                 return MD5_FOR_OVERSIZED_FILE;
             }

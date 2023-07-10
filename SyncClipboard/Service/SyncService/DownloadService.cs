@@ -1,11 +1,9 @@
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Threading;
-using SyncClipboard.Utility;
-using SyncClipboard.Core.Commons;
 using System.Threading.Tasks;
-using SyncClipboard.Core.Utilities.Notification;
-using SyncClipboard.Core.Interfaces;
-using UserConfig = SyncClipboard.Module.UserConfig;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -24,16 +22,18 @@ namespace SyncClipboard.Service
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
 
-        public DownloadService(NotificationManager notificationManager, ILogger logger)
+        public DownloadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig)
         {
             _notificationManager = notificationManager;
             _logger = logger;
+            _userConfig = userConfig;
         }
 
         public override void Load()
         {
-            if (UserConfig.Config.SyncService.PullSwitchOn)
+            if (_userConfig.Config.SyncService.PullSwitchOn)
             {
                 SwitchOnPullLoop();
             }
@@ -49,8 +49,8 @@ namespace SyncClipboard.Service
         {
             var ToggleMenuItem = new ToggleMenuItem("下载远程", false, (status) =>
             {
-                UserConfig.Config.SyncService.PullSwitchOn = status;
-                UserConfig.Save();
+                _userConfig.Config.SyncService.PullSwitchOn = status;
+                _userConfig.Save();
             });
             Global.Menu.AddMenuItem(ToggleMenuItem);
             Load();
@@ -127,7 +127,7 @@ namespace SyncClipboard.Service
         {
             _logger.Write(LOG_TAG, "due to upload service stop, cancel");
             StopPullLoop();
-            if (UserConfig.Config.SyncService.PullSwitchOn)
+            if (_userConfig.Config.SyncService.PullSwitchOn)
             {
                 StartPullLoop();
             }
@@ -154,7 +154,7 @@ namespace SyncClipboard.Service
             Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
 
             _logger.Write(ex.ToString());
-            if (errorTimes == UserConfig.Config.Program.RetryTimes)
+            if (errorTimes == _userConfig.Config.Program.RetryTimes)
             {
                 _notificationManager.SendText("剪切板下载失败", ex.Message);
             }
@@ -197,7 +197,7 @@ namespace SyncClipboard.Service
                     SyncService.remoteProfilemutex.ReleaseMutex();
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(UserConfig.Config.Program.IntervalTime), cancelToken).ConfigureAwait(true);
+                await Task.Delay(TimeSpan.FromSeconds(_userConfig.Config.Program.IntervalTime), cancelToken).ConfigureAwait(true);
             }
         }
 

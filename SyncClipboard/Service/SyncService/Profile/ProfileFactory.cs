@@ -38,9 +38,9 @@ namespace SyncClipboard.Service
                 {
                     if (ImageHelper.FileIsImage(filename))
                     {
-                        return new ImageProfile(filename, notificationManager, Global.Logger);
+                        return new ImageProfile(filename, notificationManager, Global.Logger, Global.UserConfig);
                     }
-                    return new FileProfile(filename, notificationManager, Global.Logger);
+                    return new FileProfile(filename, notificationManager, Global.Logger, Global.UserConfig);
                 }
             }
 
@@ -51,7 +51,7 @@ namespace SyncClipboard.Service
 
             if (localClipboard.Image != null)
             {
-                return ImageProfile.CreateFromImage(localClipboard.Image, notificationManager, Global.Logger);
+                return ImageProfile.CreateFromImage(localClipboard.Image, notificationManager, Global.Logger, Global.UserConfig);
             }
 
             return new UnkonwnProfile();
@@ -132,12 +132,12 @@ namespace SyncClipboard.Service
                     {
                         if (ImageHelper.FileIsImage(jsonProfile.File))
                         {
-                            return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger);
+                            return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger, Global.UserConfig);
                         }
-                        return new FileProfile(jsonProfile, webDav, notificationManager, Global.Logger);
+                        return new FileProfile(jsonProfile, webDav, notificationManager, Global.Logger, Global.UserConfig);
                     }
                 case ClipboardType.Image:
-                    return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger);
+                    return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger, Global.UserConfig);
             }
 
             return new UnkonwnProfile();

@@ -10,6 +10,7 @@ using SyncClipboard.Utility;
 using SyncClipboard.Core.Utilities.Image;
 using static SyncClipboard.Service.ProfileFactory;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Commons;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -25,21 +26,23 @@ namespace SyncClipboard.Service
 
         protected override bool SwitchOn
         {
-            get => UserConfig.Config.SyncService.EasyCopyImageSwitchOn;
+            get => _userConfig.Config.SyncService.EasyCopyImageSwitchOn;
             set
             {
-                UserConfig.Config.SyncService.EasyCopyImageSwitchOn = value;
-                UserConfig.Save();
+                _userConfig.Config.SyncService.EasyCopyImageSwitchOn = value;
+                _userConfig.Save();
             }
         }
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
+        private readonly UserConfig _userConfig;
 
-        public EasyCopyImageSerivce(NotificationManager notificationManager, ILogger logger) : base(logger)
+        public EasyCopyImageSerivce(NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(logger)
         {
             _notificationManager = notificationManager;
             _logger = logger;
+            _userConfig = userConfig;
         }
 
         protected override CancellationToken StopPreviousAndGetNewToken()
@@ -81,7 +84,7 @@ namespace SyncClipboard.Service
                     {
                         localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                     }
-                    profile = new ImageProfile(localPath, _notificationManager, _logger);
+                    profile = new ImageProfile(localPath, _notificationManager, _logger, _userConfig);
                 }
             }
 
