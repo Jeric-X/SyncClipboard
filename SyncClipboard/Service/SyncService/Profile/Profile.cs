@@ -19,18 +19,12 @@ namespace SyncClipboard.Service
 
         //public ClipboardType Type { get; set; }
 
-        protected NotificationManager NotificationManager;
         protected readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
 
         public abstract ClipboardType GetProfileType();
         protected abstract DataObject? CreateDataObject();
         public abstract string ToolTip();
         public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
-
-        public Profile(NotificationManager notificationManager)
-        {
-            NotificationManager = notificationManager;
-        }
 
         public virtual Action? ExecuteProfile()
         {
@@ -43,12 +37,12 @@ namespace SyncClipboard.Service
             return Task.CompletedTask;
         }
 
-        protected virtual void AfterSetLocal()
+        protected virtual void SetNotification(NotificationManager notificationManager)
         {
-            NotificationManager.SendText("剪切板同步成功", Text);
+            notificationManager.SendText("剪切板同步成功", Text);
         }
 
-        public void SetLocalClipboard(CancellationToken? cancelToken, bool notify = true)
+        public void SetLocalClipboard(NotificationManager? notificationManager = null)
         {
             var dataObject = CreateDataObject();
             if (dataObject is null)
@@ -56,7 +50,6 @@ namespace SyncClipboard.Service
                 return;
             }
 
-            cancelToken?.ThrowIfCancellationRequested();
             lock (SyncService.localProfilemutex)
             {
                 if (MainThreadSynContext == SynchronizationContext.Current)
@@ -68,9 +61,9 @@ namespace SyncClipboard.Service
                     MainThreadSynContext?.Send((_) => Clipboard.SetDataObject(dataObject, true), null);
                 }
             }
-            if (notify)
+            if (notificationManager is not null)
             {
-                AfterSetLocal();
+                SetNotification(notificationManager);
             }
         }
 
@@ -128,7 +121,7 @@ namespace SyncClipboard.Service
 
         protected Button DefaultButton()
         {
-            return new Button("复制", new(Guid.NewGuid().ToString(), (_) => SetLocalClipboard(null, false)));
+            return new Button("复制", new(Guid.NewGuid().ToString(), (_) => SetLocalClipboard()));
         }
     }
 }

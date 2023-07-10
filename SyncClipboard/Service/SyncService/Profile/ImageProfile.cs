@@ -18,15 +18,15 @@ namespace SyncClipboard.Service
     public class ImageProfile : FileProfile
     {
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
-        public ImageProfile(string filepath, NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(filepath, notificationManager, logger, userConfig)
+        public ImageProfile(string filepath, ILogger logger, UserConfig userConfig) : base(filepath, logger, userConfig)
         {
         }
 
-        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav, NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(jsonProfile, webdav, notificationManager, logger, userConfig)
+        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav, ILogger logger, UserConfig userConfig) : base(jsonProfile, webdav, logger, userConfig)
         {
         }
 
-        public static ImageProfile CreateFromImage(Image image, NotificationManager notificationManager, ILogger logger, UserConfig userConfig)
+        public static ImageProfile CreateFromImage(Image image, ILogger logger, UserConfig userConfig)
         {
             if (!Directory.Exists(TEMP_FOLDER))
             {
@@ -35,7 +35,7 @@ namespace SyncClipboard.Service
             var filePath = Path.Combine(TEMP_FOLDER, $"{Path.GetRandomFileName()}.bmp");
             image.Save(filePath);
 
-            return new ImageProfile(filePath, notificationManager, logger, userConfig);
+            return new ImageProfile(filePath, logger, userConfig);
         }
 
         public override ClipboardType GetProfileType()
@@ -86,10 +86,10 @@ namespace SyncClipboard.Service
             return dataObject;
         }
 
-        protected override void AfterSetLocal()
+        protected override void SetNotification(NotificationManager notification)
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            NotificationManager.SendImage(
+            notification.SendImage(
                 "图片同步成功",
                 FileName,
                 new Uri(path),

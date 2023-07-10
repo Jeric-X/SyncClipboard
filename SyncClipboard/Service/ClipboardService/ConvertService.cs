@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Image;
@@ -28,17 +29,22 @@ namespace SyncClipboard.Service
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
+        private readonly IClipboardFactory _clipboardFactory;
 
-        public ConvertService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(logger)
+        public ConvertService(NotificationManager notificationManager, ILogger logger,
+            UserConfig userConfig, IClipboardFactory clipboardFactory) : base(logger)
         {
             _notificationManager = notificationManager;
             _logger = logger;
             _userConfig = userConfig;
+            _clipboardFactory = clipboardFactory;
         }
 
         protected override async void HandleClipboard(CancellationToken cancellationToken)
         {
             var profile = CreateFromLocal(out var localClipboard, _notificationManager);
+            var metaInfo = _clipboardFactory.GetMetaInfomation();
+            var clipboardProfile = _clipboardFactory.CreateProfile(metaInfo);
             if (profile.GetProfileType() != ProfileType.ClipboardType.File || !NeedAdjust(localClipboard))
             {
                 return;
@@ -48,7 +54,7 @@ namespace SyncClipboard.Service
             {
                 var file = localClipboard.Files![0];
                 var newPath = await ImageHelper.CompatibilityCast(file, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
-                new ImageProfile(newPath, _notificationManager, _logger, _userConfig).SetLocalClipboard(cancellationToken, false);
+                new ImageProfile(newPath, _logger, _userConfig).SetLocalClipboard();
             }
             catch (Exception ex)
             {

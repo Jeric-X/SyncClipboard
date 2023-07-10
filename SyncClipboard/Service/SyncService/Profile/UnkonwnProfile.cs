@@ -8,7 +8,7 @@ namespace SyncClipboard.Service
 {
     public class UnkonwnProfile : Profile
     {
-        public UnkonwnProfile() : base(null)
+        public UnkonwnProfile()
         {
 
         }

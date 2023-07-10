@@ -24,7 +24,7 @@ namespace SyncClipboard.Service
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
 
-        public FileProfile(string file, NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(notificationManager)
+        public FileProfile(string file, ILogger logger, UserConfig userConfig)
         {
             FileName = Path.GetFileName(file);
             fullPath = file;
@@ -33,7 +33,7 @@ namespace SyncClipboard.Service
             _userConfig = userConfig;
         }
 
-        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager, ILogger logger, UserConfig userConfig) : base(notificationManager)
+        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, ILogger logger, UserConfig userConfig)
         {
             FileName = jsonProfile.File;
             statusTip = FileName;
@@ -214,10 +214,10 @@ namespace SyncClipboard.Service
             };
         }
 
-        protected override void AfterSetLocal()
+        protected override void SetNotification(NotificationManager notification)
         {
             var path = fullPath ?? GetTempLocalFilePath();
-            NotificationManager.SendText(
+            notification.SendText(
                 "文件同步成功",
                 FileName,
                 DefaultButton(),

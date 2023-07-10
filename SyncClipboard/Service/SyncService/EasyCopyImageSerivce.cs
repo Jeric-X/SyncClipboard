@@ -84,7 +84,7 @@ namespace SyncClipboard.Service
                     {
                         localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                     }
-                    profile = new ImageProfile(localPath, _notificationManager, _logger, _userConfig);
+                    profile = new ImageProfile(localPath, _logger, _userConfig);
                 }
             }
 
@@ -111,7 +111,7 @@ namespace SyncClipboard.Service
             {
                 try
                 {
-                    profile.SetLocalClipboard(null, false);
+                    profile.SetLocalClipboard();
                     break;
                 }
                 catch

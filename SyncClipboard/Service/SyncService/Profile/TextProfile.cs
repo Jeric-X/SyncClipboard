@@ -13,7 +13,7 @@ namespace SyncClipboard.Service
 {
     public class TextProfile : Profile
     {
-        public TextProfile(String text, NotificationManager notificationManager) : base(notificationManager)
+        public TextProfile(String text)
         {
             Text = text;
         }
@@ -53,16 +53,16 @@ namespace SyncClipboard.Service
             return dataObject;
         }
 
-        protected override void AfterSetLocal()
+        protected override void SetNotification(NotificationManager notification)
         {
             if (Text[..4] == "http" || Text[..4] == "www.")
             {
                 Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
-                NotificationManager.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
+                notification.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
             }
             else
             {
-                NotificationManager.SendText("文本同步成功", Text, DefaultButton());
+                notification.SendText("文本同步成功", Text, DefaultButton());
             }
         }
     }

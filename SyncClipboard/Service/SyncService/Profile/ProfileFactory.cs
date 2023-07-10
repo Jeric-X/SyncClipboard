@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
+using SyncClipboard.Core.Clipboard;
+using DragDropEffects = System.Windows.Forms.DragDropEffects;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -38,9 +40,9 @@ namespace SyncClipboard.Service
                 {
                     if (ImageHelper.FileIsImage(filename))
                     {
-                        return new ImageProfile(filename, notificationManager, Global.Logger, Global.UserConfig);
+                        return new ImageProfile(filename, Global.Logger, Global.UserConfig);
                     }
-                    return new FileProfile(filename, notificationManager, Global.Logger, Global.UserConfig);
+                    return new FileProfile(filename, Global.Logger, Global.UserConfig);
                 }
             }
 
@@ -51,7 +53,7 @@ namespace SyncClipboard.Service
 
             if (localClipboard.Image != null)
             {
-                return ImageProfile.CreateFromImage(localClipboard.Image, notificationManager, Global.Logger, Global.UserConfig);
+                return ImageProfile.CreateFromImage(localClipboard.Image, Global.Logger, Global.UserConfig);
             }
 
             return new UnkonwnProfile();
@@ -98,7 +100,7 @@ namespace SyncClipboard.Service
             return localClipboard;
         }
 
-        public static async Task<Profile> CreateFromRemote(IWebDav webDav, CancellationToken cancelToken, NotificationManager notificationManager)
+        public static async Task<Profile> CreateFromRemote(IWebDav webDav, CancellationToken cancelToken)
         {
             JsonProfile? jsonProfile;
             try
@@ -109,7 +111,7 @@ namespace SyncClipboard.Service
             {
                 if (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound })
                 {
-                    var blankProfile = new TextProfile("", notificationManager);
+                    var blankProfile = new TextProfile("");
                     await blankProfile.UploadProfileAsync(webDav, cancelToken);
                     return blankProfile;
                 }
@@ -119,25 +121,25 @@ namespace SyncClipboard.Service
 
             ArgumentNullException.ThrowIfNull(jsonProfile);
             ClipboardType type = StringToClipBoardType(jsonProfile.Type);
-            return GetProfileBy(type, jsonProfile, webDav, notificationManager);
+            return GetProfileBy(type, jsonProfile, webDav);
         }
 
-        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile, IWebDav webDav, NotificationManager notificationManager)
+        private static Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile, IWebDav webDav)
         {
             switch (type)
             {
                 case ClipboardType.Text:
-                    return new TextProfile(jsonProfile.Clipboard, notificationManager);
+                    return new TextProfile(jsonProfile.Clipboard);
                 case ClipboardType.File:
                     {
                         if (ImageHelper.FileIsImage(jsonProfile.File))
                         {
-                            return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger, Global.UserConfig);
+                            return new ImageProfile(jsonProfile, webDav, Global.Logger, Global.UserConfig);
                         }
-                        return new FileProfile(jsonProfile, webDav, notificationManager, Global.Logger, Global.UserConfig);
+                        return new FileProfile(jsonProfile, webDav, Global.Logger, Global.UserConfig);
                     }
                 case ClipboardType.Image:
-                    return new ImageProfile(jsonProfile, webDav, notificationManager, Global.Logger, Global.UserConfig);
+                    return new ImageProfile(jsonProfile, webDav, Global.Logger, Global.UserConfig);
             }
 
             return new UnkonwnProfile();
