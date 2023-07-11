@@ -1,4 +1,6 @@
-﻿using SyncClipboard.Core.Commons;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
@@ -23,16 +25,27 @@ namespace SyncClipboard.Service
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
+        protected override IClipboardSetter<Profile>? ClipboardSetter { get; set; }
 
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.File;
 
-        public FileProfile(string file, ILogger logger, UserConfig userConfig)
+        //public FileProfile(string file, ILogger logger, UserConfig userConfig)
+        //{
+        //    FileName = Path.GetFileName(file);
+        //    fullPath = file;
+        //    statusTip = FileName;
+        //    _logger = logger;
+        //    _userConfig = userConfig;
+        //}
+
+        public FileProfile(string file, IServiceProvider serviceProvider)
         {
+            ClipboardSetter = serviceProvider.GetService<IClipboardSetter<FileProfile>>();
             FileName = Path.GetFileName(file);
             fullPath = file;
             statusTip = FileName;
-            _logger = logger;
-            _userConfig = userConfig;
+            _logger = serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = serviceProvider.GetRequiredService<UserConfig>();
         }
 
         public FileProfile(JsonProfile jsonProfile, IWebDav webDav, ILogger logger, UserConfig userConfig)

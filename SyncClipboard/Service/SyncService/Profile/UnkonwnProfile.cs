@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using static SyncClipboard.Service.ProfileType;
 
@@ -9,6 +10,8 @@ namespace SyncClipboard.Service
     public class UnkonwnProfile : Profile
     {
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Unknown;
+
+        protected override IClipboardSetter<Profile> ClipboardSetter { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
         public override string ToolTip()
         {

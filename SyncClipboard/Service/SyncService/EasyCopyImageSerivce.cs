@@ -1,18 +1,16 @@
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Image;
+using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using SyncClipboard.Core.Utilities.Notification;
-using SyncClipboard.Module;
-using SyncClipboard.Utility;
-using SyncClipboard.Core.Utilities.Image;
-using static SyncClipboard.Service.ProfileFactory;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Clipboard;
 using DragDropEffects = SyncClipboard.Core.Clipboard.DragDropEffects;
+
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -20,10 +18,12 @@ namespace SyncClipboard.Service
     public class EasyCopyImageSerivce : ClipboardHander
     {
         #region override ClipboardHander
+
         public override string SERVICE_NAME => "Easy Copy Image";
         public override string LOG_TAG => "EASY IMAGE";
 
         protected override ILogger Logger => _logger;
+
         protected override bool SwitchOn
         {
             get => _userConfig.Config.SyncService.EasyCopyImageSwitchOn;
@@ -52,7 +52,8 @@ namespace SyncClipboard.Service
             _progress = null;
             return base.StopPreviousAndGetNewToken();
         }
-        #endregion
+
+        #endregion override ClipboardHander
 
         private ProgressToastReporter? _progress;
         private readonly object _progressLocker = new();
@@ -61,14 +62,15 @@ namespace SyncClipboard.Service
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
+        private readonly IServiceProvider _serviceProvider;
 
-        public EasyCopyImageSerivce(NotificationManager notificationManager, ILogger logger,
-            UserConfig userConfig, IClipboardFactory clipboardFactory)
+        public EasyCopyImageSerivce(IServiceProvider serviceProvider)
         {
-            _notificationManager = notificationManager;
-            _logger = logger;
-            _userConfig = userConfig;
-            _clipboardFactory = clipboardFactory;
+            _serviceProvider = serviceProvider;
+            _logger = _serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+            _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
+            _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         }
 
         private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
@@ -92,7 +94,7 @@ namespace SyncClipboard.Service
                     {
                         localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
                     }
-                    profile = new ImageProfile(localPath, _logger, _userConfig);
+                    profile = new ImageProfile(localPath, _serviceProvider);
                 }
             }
 

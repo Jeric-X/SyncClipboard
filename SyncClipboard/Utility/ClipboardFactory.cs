@@ -1,23 +1,30 @@
-﻿using SyncClipboard.Core.Clipboard;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Service;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
 
+#nullable enable
 namespace SyncClipboard.Utility;
 
 internal class ClipboardFactory : ClipboardFactoryBase
 {
     protected override ILogger Logger { get; set; }
     protected override UserConfig UserConfig { get; set; }
+    protected override IServiceProvider ServiceProvider { get; set; }
+    protected override IWebDav WebDav { get; set; }
 
-    public ClipboardFactory(ILogger logger, UserConfig userConfig)
+    public ClipboardFactory(IServiceProvider serviceProvider)
     {
-        Logger = logger;
-        UserConfig = userConfig;
+        ServiceProvider = serviceProvider;
+        Logger = ServiceProvider.GetRequiredService<ILogger>();
+        UserConfig = ServiceProvider.GetRequiredService<UserConfig>();
+        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
     }
 
     public override MetaInfomation GetMetaInfomation()

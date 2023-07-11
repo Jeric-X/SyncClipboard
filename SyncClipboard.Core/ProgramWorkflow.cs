@@ -37,6 +37,7 @@ namespace SyncClipboard.Core
 
         public static void ConfigCommonService(ServiceCollection services)
         {
+            services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<UserConfig>();
             services.Configure<UserConfigOption>(x => x.Path = Env.UserConfigFile);
 

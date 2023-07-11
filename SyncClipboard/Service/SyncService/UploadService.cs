@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
@@ -35,14 +36,15 @@ namespace SyncClipboard.Service
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
+        private readonly IServiceProvider _serviceProvider;
 
-        public UploadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig
-            , IClipboardFactory clipboardFactory)
+        public UploadService(IServiceProvider serviceProvider)
         {
-            _notificationManager = notificationManager;
-            _logger = logger;
-            _userConfig = userConfig;
-            _clipboardFactory = clipboardFactory;
+            _serviceProvider = serviceProvider;
+            _logger = _serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+            _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
+            _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         }
 
         protected override void StartService()
@@ -152,7 +154,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken);
+                    var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
                     if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
                         await CleanServerTempFile(cancelToken);

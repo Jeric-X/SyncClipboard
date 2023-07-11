@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
@@ -24,14 +25,15 @@ namespace SyncClipboard.Service
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
+        private readonly IServiceProvider _serviceProvider;
 
-        public DownloadService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig
-            , IClipboardFactory clipboardFactory)
+        public DownloadService(IServiceProvider serviceProvider)
         {
-            _notificationManager = notificationManager;
-            _logger = logger;
-            _userConfig = userConfig;
-            _clipboardFactory = clipboardFactory;
+            _serviceProvider = serviceProvider;
+            _logger = _serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+            _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
+            _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         }
 
         public override void Load()
@@ -50,7 +52,7 @@ namespace SyncClipboard.Service
 
         protected override void StartService()
         {
-            var ToggleMenuItem = new ToggleMenuItem("下载远程", false, (status) =>
+            var ToggleMenuItem = new ToggleMenuItem("下载远程", _userConfig.Config.SyncService.PullSwitchOn, (status) =>
             {
                 _userConfig.Config.SyncService.PullSwitchOn = status;
                 _userConfig.Save();
@@ -173,7 +175,7 @@ namespace SyncClipboard.Service
                 try
                 {
                     SyncService.remoteProfilemutex.WaitOne();
-                    var remoteProfile = await ProfileFactory.CreateFromRemote(Global.WebDav, cancelToken).ConfigureAwait(true);
+                    var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken).ConfigureAwait(true);
                     _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
                     if (await NeedUpdate(remoteProfile, cancelToken))

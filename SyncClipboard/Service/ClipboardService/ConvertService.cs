@@ -1,7 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Image;
+using SyncClipboard.Utility;
 using System;
 using System.Threading;
 #nullable enable
@@ -39,7 +41,7 @@ namespace SyncClipboard.Service
             {
                 var file = metaInfo.Files![0];
                 var newPath = await ImageHelper.CompatibilityCast(file, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
-                new ImageProfile(newPath, _logger, _userConfig).SetLocalClipboard();
+                new ImageProfile(newPath, _serviceProvider).SetLocalClipboard();
             }
             catch (Exception ex)
             {
@@ -53,12 +55,14 @@ namespace SyncClipboard.Service
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
+        private readonly IServiceProvider _serviceProvider;
 
-        public ConvertService(ILogger logger, UserConfig userConfig, IClipboardFactory clipboardFactory)
+        public ConvertService(IServiceProvider serviceProvider)
         {
-            _logger = logger;
-            _userConfig = userConfig;
-            _clipboardFactory = clipboardFactory;
+            _serviceProvider = serviceProvider;
+            _logger = _serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+            _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>(); ;
         }
 
         private static bool NeedAdjust(MetaInfomation metaInfo)

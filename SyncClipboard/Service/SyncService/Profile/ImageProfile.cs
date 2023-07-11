@@ -11,6 +11,7 @@ using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 using SyncClipboard.Control;
 using SyncClipboard.Core.Commons;
+using Microsoft.Extensions.DependencyInjection;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -20,7 +21,7 @@ namespace SyncClipboard.Service
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Image;
 
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
-        public ImageProfile(string filepath, ILogger logger, UserConfig userConfig) : base(filepath, logger, userConfig)
+        public ImageProfile(string filepath, IServiceProvider serviceProvider) : base(filepath, serviceProvider)
         {
         }
 
@@ -28,7 +29,7 @@ namespace SyncClipboard.Service
         {
         }
 
-        public static ImageProfile CreateFromImage(Image image, ILogger logger, UserConfig userConfig)
+        public static ImageProfile CreateFromImage(Image image, IServiceProvider serviceProvider)
         {
             if (!Directory.Exists(TEMP_FOLDER))
             {
@@ -37,7 +38,7 @@ namespace SyncClipboard.Service
             var filePath = Path.Combine(TEMP_FOLDER, $"{Path.GetRandomFileName()}.bmp");
             image.Save(filePath);
 
-            return new ImageProfile(filePath, logger, userConfig);
+            return new ImageProfile(filePath, serviceProvider);
         }
 
         public override ClipboardType GetProfileType()

@@ -1,4 +1,6 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
@@ -15,9 +17,12 @@ namespace SyncClipboard.Service
     {
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Text;
 
-        public TextProfile(String text)
+        protected override IClipboardSetter<Profile>? ClipboardSetter { get; set; }
+
+        public TextProfile(String text, IServiceProvider serviceProvider)
         {
             Text = text;
+            ClipboardSetter = serviceProvider.GetService<IClipboardSetter<TextProfile>>();
         }
 
         public override ClipboardType GetProfileType()
