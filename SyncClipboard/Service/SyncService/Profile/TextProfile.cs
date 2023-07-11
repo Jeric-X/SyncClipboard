@@ -55,7 +55,7 @@ namespace SyncClipboard.Service
 
         protected override void AfterSetLocal()
         {
-            if (Text[..4] == "http" || Text[..4] == "www.")
+            if (Text.Length >= 4 && (Text[..4] == "http" || Text[..4] == "www."))
             {
                 Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
                 Toast.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
