@@ -2,7 +2,6 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Service;
 using System;
 using System.Drawing;
 using System.IO;
@@ -10,7 +9,7 @@ using System.Threading;
 using System.Windows.Forms;
 
 #nullable enable
-namespace SyncClipboard.Utility;
+namespace SyncClipboard.ClipboardWinform;
 
 internal class ClipboardFactory : ClipboardFactoryBase
 {

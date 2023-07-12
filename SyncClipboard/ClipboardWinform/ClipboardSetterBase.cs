@@ -1,8 +1,7 @@
 ﻿using SyncClipboard.Core.Clipboard;
-using SyncClipboard.Service;
 using System.Windows.Forms;
 
-namespace SyncClipboard.Utility;
+namespace SyncClipboard.ClipboardWinform;
 
 internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<ProfileType> where ProfileType : Profile
 {

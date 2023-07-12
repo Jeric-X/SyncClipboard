@@ -9,6 +9,7 @@ using System;
 using System.Windows.Forms;
 using SyncClipboard.Service;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.ClipboardWinform;
 
 namespace SyncClipboard
 {
