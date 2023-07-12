@@ -6,7 +6,6 @@ using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
@@ -51,13 +50,6 @@ namespace SyncClipboard.Service
         public override async Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
         {
             await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
-        }
-
-        protected override DataObject CreateDataObject()
-        {
-            var dataObject = new DataObject();
-            dataObject.SetData(DataFormats.Text, this.Text);
-            return dataObject;
         }
 
         protected override void SetNotification(NotificationManager notification)

@@ -1,8 +1,7 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using SyncClipboard.Core.Clipboard;
+﻿using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
+using System.Threading;
+using System.Threading.Tasks;
 using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
@@ -21,11 +20,6 @@ namespace SyncClipboard.Service
         public override ClipboardType GetProfileType()
         {
             return ClipboardType.Unknown;
-        }
-
-        protected override DataObject CreateDataObject()
-        {
-            return null;
         }
 
         public override Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)

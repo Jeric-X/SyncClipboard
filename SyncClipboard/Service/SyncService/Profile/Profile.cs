@@ -18,24 +18,24 @@ namespace SyncClipboard.Service
         public string FileName { get; set; } = "";
         public string Text { get; set; } = "";
 
-        protected readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
+        #region abstract
+
+        protected abstract IClipboardSetter<Profile> ClipboardSetter { get; set; }
+        protected abstract MetaInfomation CreateMetaInformation();
+
+        #endregion
+
+        private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
         public abstract ClipboardType GetProfileType();
         public abstract Core.Clipboard.ProfileType Type { get; }
 
-
-        protected abstract DataObject? CreateDataObject();
-        // protected abstract object? CreateClipboardObject();
-        // protected abstract void SetObjectToClipboard(object obj);
-        protected abstract IClipboardSetter<Profile> ClipboardSetter { get; set; }
-
-        protected abstract MetaInfomation CreateMetaInformation();
         private MetaInfomation? @metaInfomation;
         public MetaInfomation MetaInfomation
         {
             get
             {
                 @metaInfomation ??= CreateMetaInformation();
-                return metaInfomation;
+                return @metaInfomation;
             }
         }
 

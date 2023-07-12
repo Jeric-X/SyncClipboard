@@ -43,7 +43,10 @@ namespace SyncClipboard
             services.AddSingleton<ITrayIcon>(Notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();
             services.AddSingleton<IClipboardFactory, ClipboardFactory>();
-            services.AddSingleton<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+
+            services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+            services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
+            services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
 
             ConfigurateProgramService(services);
 

@@ -1,19 +1,17 @@
 ﻿using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Service;
 using System;
+using System.Windows.Forms;
 
 namespace SyncClipboard.Utility
 {
-    internal class FileClipboardSetter : IClipboardSetter<FileProfile>
+    internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
     {
-        public object CreateClipboardObjectContainer(MetaInfomation metaInfomation)
+        public override object CreateClipboardObjectContainer(MetaInfomation metaInfomation)
         {
-            throw new NotImplementedException();
-        }
-
-        public void SetLocalClipboard(object obj)
-        {
-            throw new NotImplementedException();
+            var dataObject = new DataObject();
+            dataObject.SetFileDropList(new System.Collections.Specialized.StringCollection { metaInfomation.Files[0] });
+            return dataObject;
         }
     }
 }

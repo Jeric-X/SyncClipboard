@@ -1,17 +1,10 @@
-﻿using ImageMagick;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities;
-using SyncClipboard.Utility;
+﻿using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Drawing;
 using System.IO;
-using System.Windows.Forms;
 using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
-using SyncClipboard.Control;
-using SyncClipboard.Core.Commons;
-using Microsoft.Extensions.DependencyInjection;
 #nullable enable
 
 namespace SyncClipboard.Service
@@ -25,7 +18,7 @@ namespace SyncClipboard.Service
         {
         }
 
-        public ImageProfile(JsonProfile jsonProfile, IWebDav webdav, ILogger logger, UserConfig userConfig) : base(jsonProfile, webdav, logger, userConfig)
+        public ImageProfile(JsonProfile jsonProfile, IServiceProvider serviceProvider) : base(jsonProfile, serviceProvider)
         {
         }
 
@@ -44,49 +37,6 @@ namespace SyncClipboard.Service
         public override ClipboardType GetProfileType()
         {
             return ClipboardType.Image;
-        }
-
-        private static void SetBitmap(DataObject dataObject, string imagePath)
-        {
-            using var image = new MagickImage(imagePath);
-            dataObject.SetData(DataFormats.Bitmap, image.ToBitmap());
-        }
-
-        private static void SetHtml(DataObject dataObject, string imagePath)
-        {
-            string html = $@"<img src=""file:///{imagePath}"">";
-            string clipboardHtml = ClipboardHtmlBuilder.GetClipboardHtml(html);
-            dataObject.SetData(DataFormats.Html, clipboardHtml);
-        }
-
-        private const string clipboardQqFormat = @"<QQRichEditFormat>
-<Info version=""1001"">
-</Info>
-<EditElement type=""1"" imagebiztype=""0"" textsummary="""" filepath=""<<<<<<"" shortcut="""">
-</EditElement>
-</QQRichEditFormat>";
-
-        private static void SetQqFormat(DataObject dataObject, string imagePath)
-        {
-            string clipboardQq = clipboardQqFormat.Replace("<<<<<<", imagePath);
-            MemoryStream ms = new(System.Text.Encoding.UTF8.GetBytes(clipboardQq));
-            dataObject.SetData("QQ_Unicode_RichEdit_Format", ms);
-        }
-
-        protected override DataObject? CreateDataObject()
-        {
-            var dataObject = base.CreateDataObject();
-            if (dataObject is null)
-            {
-                return null;
-            }
-
-            ArgumentNullException.ThrowIfNull(fullPath);
-            SetHtml(dataObject, fullPath);
-            SetQqFormat(dataObject, fullPath);
-            SetBitmap(dataObject, fullPath);
-
-            return dataObject;
         }
 
         protected override void SetNotification(NotificationManager notification)

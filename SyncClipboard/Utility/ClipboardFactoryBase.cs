@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 #nullable enable
 
 namespace SyncClipboard.Service;
@@ -85,12 +86,12 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
                 {
                     if (ImageHelper.FileIsImage(jsonProfile.File))
                     {
-                        return new ImageProfile(jsonProfile, WebDav, Logger, UserConfig);
+                        return new ImageProfile(jsonProfile, ServiceProvider);
                     }
-                    return new FileProfile(jsonProfile, WebDav, Logger, UserConfig);
+                    return new FileProfile(jsonProfile, ServiceProvider);
                 }
             case ClipboardType.Image:
-                return new ImageProfile(jsonProfile, WebDav, Logger, UserConfig);
+                return new ImageProfile(jsonProfile, ServiceProvider);
         }
 
         return new UnkonwnProfile();

@@ -25,28 +25,30 @@ namespace SyncClipboard.Service
         private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
-        protected override IClipboardSetter<Profile>? ClipboardSetter { get; set; }
+        protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
 
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.File;
 
-        public FileProfile(string file, IServiceProvider serviceProvider)
+        public FileProfile(string file, IServiceProvider serviceProvider) : this(serviceProvider)
         {
-            ClipboardSetter = serviceProvider.GetService<IClipboardSetter<FileProfile>>();
             FileName = Path.GetFileName(file);
             fullPath = file;
             statusTip = FileName;
-            _logger = serviceProvider.GetRequiredService<ILogger>();
-            _userConfig = serviceProvider.GetRequiredService<UserConfig>();
         }
 
-        public FileProfile(JsonProfile jsonProfile, IWebDav webDav, ILogger logger, UserConfig userConfig)
+        public FileProfile(JsonProfile jsonProfile, IServiceProvider serviceProvider) : this(serviceProvider)
         {
             FileName = jsonProfile.File;
             statusTip = FileName;
-            _webDav = webDav;
             SetMd5(jsonProfile.Clipboard);
-            _logger = logger;
-            _userConfig = userConfig;
+        }
+
+        private FileProfile(IServiceProvider serviceProvider)
+        {
+            ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
+            _webDav = serviceProvider.GetRequiredService<IWebDav>();
+            _logger = serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = serviceProvider.GetRequiredService<UserConfig>();
         }
 
         protected string GetTempLocalFilePath()
@@ -145,20 +147,6 @@ namespace SyncClipboard.Service
             return statusTip;
         }
 
-        protected override DataObject? CreateDataObject()
-        {
-            if (string.IsNullOrEmpty(fullPath))
-            {
-                return null;
-            }
-
-            var dataObject = new DataObject();
-
-            dataObject.SetFileDropList(new System.Collections.Specialized.StringCollection { fullPath });
-
-            return dataObject;
-        }
-
         protected override async Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
         {
             try
@@ -239,7 +227,8 @@ namespace SyncClipboard.Service
 
         protected override MetaInfomation CreateMetaInformation()
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(fullPath);
+            return new MetaInfomation() { Files = new string[] { fullPath } };
         }
     }
 }
