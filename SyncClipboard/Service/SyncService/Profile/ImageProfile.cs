@@ -1,10 +1,10 @@
 ﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Drawing;
 using System.IO;
-using static SyncClipboard.Service.ProfileType3;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -19,7 +19,7 @@ namespace SyncClipboard.Service
         {
         }
 
-        public ImageProfile(JsonProfile jsonProfile, IServiceProvider serviceProvider) : base(jsonProfile, serviceProvider)
+        public ImageProfile(ClipboardProfileDTO profileDTO, IServiceProvider serviceProvider) : base(profileDTO, serviceProvider)
         {
         }
 

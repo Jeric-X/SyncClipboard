@@ -1,14 +1,13 @@
 ﻿using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Image;
 using System;
-using static SyncClipboard.Service.ProfileType3;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 #nullable enable
 
 namespace SyncClipboard.Service;
@@ -54,10 +53,10 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
 
     public async Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken)
     {
-        JsonProfile? jsonProfile;
+        ClipboardProfileDTO? profileDTO;
         try
         {
-            jsonProfile = await WebDav.GetJson<JsonProfile>(SyncService.REMOTE_RECORD_FILE, cancelToken);
+            profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(SyncService.REMOTE_RECORD_FILE, cancelToken);
         }
         catch (Exception ex)
         {
@@ -71,27 +70,27 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             throw;
         }
 
-        ArgumentNullException.ThrowIfNull(jsonProfile);
-        ProfileType type = ProfileTypeHelper.StringToProfileType(jsonProfile.Type);
-        return GetProfileBy(type, jsonProfile);
+        ArgumentNullException.ThrowIfNull(profileDTO);
+        ProfileType type = ProfileTypeHelper.StringToProfileType(profileDTO.Type);
+        return GetProfileBy(type, profileDTO);
     }
 
-    private Profile GetProfileBy(ProfileType type, JsonProfile jsonProfile)
+    private Profile GetProfileBy(ProfileType type, ClipboardProfileDTO profileDTO)
     {
         switch (type)
         {
             case ProfileType.Text:
-                return new TextProfile(jsonProfile.Clipboard, ServiceProvider);
+                return new TextProfile(profileDTO.Clipboard, ServiceProvider);
             case ProfileType.File:
                 {
-                    if (ImageHelper.FileIsImage(jsonProfile.File))
+                    if (ImageHelper.FileIsImage(profileDTO.File))
                     {
-                        return new ImageProfile(jsonProfile, ServiceProvider);
+                        return new ImageProfile(profileDTO, ServiceProvider);
                     }
-                    return new FileProfile(jsonProfile, ServiceProvider);
+                    return new FileProfile(profileDTO, ServiceProvider);
                 }
             case ProfileType.Image:
-                return new ImageProfile(jsonProfile, ServiceProvider);
+                return new ImageProfile(profileDTO, ServiceProvider);
         }
 
         return new UnkonwnProfile();

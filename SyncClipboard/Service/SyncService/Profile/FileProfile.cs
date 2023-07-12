@@ -10,8 +10,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using static SyncClipboard.Service.ProfileType3;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -36,11 +34,11 @@ namespace SyncClipboard.Service
             statusTip = FileName;
         }
 
-        public FileProfile(JsonProfile jsonProfile, IServiceProvider serviceProvider) : this(serviceProvider)
+        public FileProfile(ClipboardProfileDTO profileDTO, IServiceProvider serviceProvider) : this(serviceProvider)
         {
-            FileName = jsonProfile.File;
+            FileName = profileDTO.File;
             statusTip = FileName;
-            SetMd5(jsonProfile.Clipboard);
+            SetMd5(profileDTO.Clipboard);
         }
 
         private FileProfile(IServiceProvider serviceProvider)

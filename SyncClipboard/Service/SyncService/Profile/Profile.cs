@@ -6,7 +6,6 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using static SyncClipboard.Service.ProfileType3;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -79,13 +78,7 @@ namespace SyncClipboard.Service
 
         public string ToJsonString()
         {
-            JsonProfile jsonProfile = new()
-            {
-                File = FileName,
-                Clipboard = Text,
-                Type = ProfileTypeHelper.ClipBoardTypeToString(Type)
-            };
-
+            ClipboardProfileDTO jsonProfile = new(FileName, Text, ProfileTypeHelper.ClipBoardTypeToString(Type));
             return JsonSerializer.Serialize(jsonProfile);
         }
 
