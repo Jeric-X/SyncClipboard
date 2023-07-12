@@ -17,12 +17,12 @@ namespace SyncClipboard.Service
     {
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Text;
 
-        protected override IClipboardSetter<Profile>? ClipboardSetter { get; set; }
+        protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
 
-        public TextProfile(String text, IServiceProvider serviceProvider)
+        public TextProfile(string text, IServiceProvider serviceProvider)
         {
             Text = text;
-            ClipboardSetter = serviceProvider.GetService<IClipboardSetter<TextProfile>>();
+            ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<TextProfile>>();
         }
 
         public override ClipboardType GetProfileType()
@@ -71,6 +71,11 @@ namespace SyncClipboard.Service
             {
                 notification.SendText("文本同步成功", Text, DefaultButton());
             }
+        }
+
+        protected override MetaInfomation CreateMetaInformation()
+        {
+            return new MetaInfomation { Text = Text };
         }
     }
 }

@@ -29,15 +29,6 @@ namespace SyncClipboard.Service
 
         public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.File;
 
-        //public FileProfile(string file, ILogger logger, UserConfig userConfig)
-        //{
-        //    FileName = Path.GetFileName(file);
-        //    fullPath = file;
-        //    statusTip = FileName;
-        //    _logger = logger;
-        //    _userConfig = userConfig;
-        //}
-
         public FileProfile(string file, IServiceProvider serviceProvider)
         {
             ClipboardSetter = serviceProvider.GetService<IClipboardSetter<FileProfile>>();
@@ -244,6 +235,11 @@ namespace SyncClipboard.Service
         public async Task<bool> Oversized(CancellationToken cancelToken)
         {
             return await GetMd5(cancelToken) == MD5_FOR_OVERSIZED_FILE;
+        }
+
+        protected override MetaInfomation CreateMetaInformation()
+        {
+            throw new NotImplementedException();
         }
     }
 }

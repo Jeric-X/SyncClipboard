@@ -6,7 +6,7 @@ namespace SyncClipboard.Utility
 {
     internal class FileClipboardSetter : IClipboardSetter<FileProfile>
     {
-        public object CreateClipboardObjectContainer(Profile profile)
+        public object CreateClipboardObjectContainer(MetaInfomation metaInfomation)
         {
             throw new NotImplementedException();
         }

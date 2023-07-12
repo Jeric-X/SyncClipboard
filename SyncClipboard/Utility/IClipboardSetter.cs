@@ -4,6 +4,6 @@ namespace SyncClipboard.Core.Clipboard;
 
 public interface IClipboardSetter<out ProfileType> where ProfileType : Profile
 {
-    object CreateClipboardObjectContainer(Profile profile);
+    object CreateClipboardObjectContainer(MetaInfomation metaInfomation);
     void SetLocalClipboard(object obj);
 }

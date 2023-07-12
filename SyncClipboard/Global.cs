@@ -8,6 +8,7 @@ using SyncClipboard.Utility;
 using System;
 using System.Windows.Forms;
 using SyncClipboard.Service;
+using SyncClipboard.Core.Clipboard;
 
 namespace SyncClipboard
 {
@@ -42,6 +43,8 @@ namespace SyncClipboard
             services.AddSingleton<ITrayIcon>(Notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();
             services.AddSingleton<IClipboardFactory, ClipboardFactory>();
+            services.AddSingleton<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+
             ConfigurateProgramService(services);
 
             Services = services.BuildServiceProvider();

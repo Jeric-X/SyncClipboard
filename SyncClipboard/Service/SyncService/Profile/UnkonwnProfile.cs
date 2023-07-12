@@ -45,5 +45,10 @@ namespace SyncClipboard.Service
                 return Task.FromResult(false);
             }
         }
+
+        protected override MetaInfomation CreateMetaInformation()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

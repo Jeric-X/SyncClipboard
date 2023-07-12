@@ -15,26 +15,32 @@ namespace SyncClipboard.Service
 {
     public abstract class Profile
     {
-        public String FileName { get; set; } = "";
-        public String Text { get; set; } = "";
-
-        //public ClipboardType Type { get; set; }
+        public string FileName { get; set; } = "";
+        public string Text { get; set; } = "";
 
         protected readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
         public abstract ClipboardType GetProfileType();
         public abstract Core.Clipboard.ProfileType Type { get; }
 
+
         protected abstract DataObject? CreateDataObject();
         // protected abstract object? CreateClipboardObject();
         // protected abstract void SetObjectToClipboard(object obj);
-        protected abstract IClipboardSetter<Profile>? ClipboardSetter { get; set; }
+        protected abstract IClipboardSetter<Profile> ClipboardSetter { get; set; }
+
+        protected abstract MetaInfomation CreateMetaInformation();
+        private MetaInfomation? @metaInfomation;
+        public MetaInfomation MetaInfomation
+        {
+            get
+            {
+                @metaInfomation ??= CreateMetaInformation();
+                return metaInfomation;
+            }
+        }
+
         public abstract string ToolTip();
         public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
-
-        public virtual Action? ExecuteProfile()
-        {
-            return null;
-        }
 
         public virtual Task BeforeSetLocal(CancellationToken cancelToken,
             IProgress<HttpDownloadProgress>? progress = null)
@@ -49,32 +55,7 @@ namespace SyncClipboard.Service
 
         public void SetLocalClipboard(NotificationManager? notificationManager = null)
         {
-            var dataObject = CreateDataObject();
-            if (dataObject is null)
-            {
-                return;
-            }
-
-            lock (SyncService.localProfilemutex)
-            {
-                if (MainThreadSynContext == SynchronizationContext.Current)
-                {
-                    Clipboard.SetDataObject(dataObject, true);
-                }
-                else
-                {
-                    MainThreadSynContext?.Send((_) => Clipboard.SetDataObject(dataObject, true), null);
-                }
-            }
-            if (notificationManager is not null)
-            {
-                SetNotification(notificationManager);
-            }
-        }
-
-        public void SetLocalClipboard2(NotificationManager? notificationManager = null)
-        {
-            var ClipboardObjectContainer = ClipboardSetter?.CreateClipboardObjectContainer(this);
+            var ClipboardObjectContainer = ClipboardSetter.CreateClipboardObjectContainer(MetaInfomation);
             if (ClipboardObjectContainer is null)
             {
                 return;
@@ -84,11 +65,11 @@ namespace SyncClipboard.Service
             {
                 if (MainThreadSynContext == SynchronizationContext.Current)
                 {
-                    ClipboardSetter?.SetLocalClipboard(ClipboardObjectContainer);
+                    ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer);
                 }
                 else
                 {
-                    MainThreadSynContext?.Send((_) => ClipboardSetter?.SetLocalClipboard(ClipboardObjectContainer), null);
+                    MainThreadSynContext?.Send((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer), null);
                 }
             }
 
