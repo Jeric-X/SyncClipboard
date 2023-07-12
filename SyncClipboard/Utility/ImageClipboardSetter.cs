@@ -6,7 +6,7 @@ using System.Windows.Forms;
 
 namespace SyncClipboard.Utility
 {
-    internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Service.ImageProfile>
+    internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core.Clipboard.ImageProfile>
     {
         public override object CreateClipboardObjectContainer(MetaInfomation metaInfomation)
         {
