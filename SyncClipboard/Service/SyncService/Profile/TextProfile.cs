@@ -41,7 +41,7 @@ namespace SyncClipboard.Service
             }
         }
 
-        public override async Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
+        public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
         {
             await webdav.PutText(SyncService.REMOTE_RECORD_FILE, this.ToJsonString(), cancelToken);
         }

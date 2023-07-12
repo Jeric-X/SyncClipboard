@@ -16,7 +16,7 @@ namespace SyncClipboard.Service
             return "Do not support this type of clipboard";
         }
 
-        public override Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
+        public override Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
         {
             return Task.CompletedTask;
         }

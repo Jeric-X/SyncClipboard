@@ -159,7 +159,7 @@ namespace SyncClipboard.Service
                     if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
                         await CleanServerTempFile(cancelToken);
-                        await profile.UploadProfileAsync(Global.WebDav, cancelToken);
+                        await profile.UploadProfile(Global.WebDav, cancelToken);
                     }
                     _logger.Write(LOG_TAG, "remote is same as local, won't push");
                     return;

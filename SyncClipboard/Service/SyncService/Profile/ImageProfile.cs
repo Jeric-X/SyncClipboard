@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Core.Clipboard;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
@@ -13,14 +14,17 @@ namespace SyncClipboard.Service
     public class ImageProfile : FileProfile
     {
         public override ProfileType Type => ProfileType.Image;
+        protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
 
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
         public ImageProfile(string filepath, IServiceProvider serviceProvider) : base(filepath, serviceProvider)
         {
+            ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
         }
 
         public ImageProfile(ClipboardProfileDTO profileDTO, IServiceProvider serviceProvider) : base(profileDTO, serviceProvider)
         {
+            ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
         }
 
         public static ImageProfile CreateFromImage(Image image, IServiceProvider serviceProvider)
@@ -37,7 +41,7 @@ namespace SyncClipboard.Service
 
         protected override void SetNotification(NotificationManager notification)
         {
-            var path = fullPath ?? GetTempLocalFilePath();
+            var path = FullPath ?? GetTempLocalFilePath();
             notification.SendImage(
                 "图片同步成功",
                 FileName,

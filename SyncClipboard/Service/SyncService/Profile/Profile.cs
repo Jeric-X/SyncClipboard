@@ -13,18 +13,27 @@ namespace SyncClipboard.Service
 {
     public abstract class Profile
     {
-        public string FileName { get; set; } = "";
-        public string Text { get; set; } = "";
+        #region ClipboardProfileDTO Field
+
+        public virtual string FileName { get; set; } = "";
+        public virtual string Text { get; set; } = "";
+        public string TypeString => ProfileTypeHelper.ClipBoardTypeToString(Type);
+
+        #endregion
 
         #region abstract
 
+        public abstract ProfileType Type { get; }
+        public abstract string ToolTip();
+        public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
+
         protected abstract IClipboardSetter<Profile> ClipboardSetter { get; set; }
+        protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
         protected abstract MetaInfomation CreateMetaInformation();
 
         #endregion
 
         private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
-        public abstract ProfileType Type { get; }
 
         private MetaInfomation? @metaInfomation;
         public MetaInfomation MetaInfomation
@@ -35,9 +44,6 @@ namespace SyncClipboard.Service
                 return @metaInfomation;
             }
         }
-
-        public abstract string ToolTip();
-        public abstract Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken);
 
         public virtual Task BeforeSetLocal(CancellationToken cancelToken,
             IProgress<HttpDownloadProgress>? progress = null)
@@ -78,11 +84,9 @@ namespace SyncClipboard.Service
 
         public string ToJsonString()
         {
-            ClipboardProfileDTO jsonProfile = new(FileName, Text, ProfileTypeHelper.ClipBoardTypeToString(Type));
+            ClipboardProfileDTO jsonProfile = new(FileName, Text, TypeString);
             return JsonSerializer.Serialize(jsonProfile);
         }
-
-        protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
 
         public static async Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken cancellationToken)
         {

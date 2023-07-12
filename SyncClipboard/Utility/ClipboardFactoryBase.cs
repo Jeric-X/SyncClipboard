@@ -63,7 +63,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             if (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound })
             {
                 var blankProfile = new TextProfile("", ServiceProvider);
-                await blankProfile.UploadProfileAsync(WebDav, cancelToken);
+                await blankProfile.UploadProfile(WebDav, cancelToken);
                 return blankProfile;
             }
             Logger.Write("CreateFromRemote failed");
