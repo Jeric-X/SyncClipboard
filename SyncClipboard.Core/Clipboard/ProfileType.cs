@@ -1,11 +1,10 @@
-﻿namespace SyncClipboard.Core.Clipboard
+﻿namespace SyncClipboard.Core.Clipboard;
+
+public enum ProfileType
 {
-    public enum ProfileType
-    {
-        Text,
-        File,
-        Image,
-        Unknown,
-        None
-    }
+    Text,
+    File,
+    Image,
+    Unknown,
+    None
 }

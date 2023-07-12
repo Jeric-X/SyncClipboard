@@ -3,7 +3,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Image;
 using System;
-using static SyncClipboard.Service.ProfileType;
+using static SyncClipboard.Service.ProfileType3;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
@@ -72,17 +72,17 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         }
 
         ArgumentNullException.ThrowIfNull(jsonProfile);
-        ClipboardType type = StringToClipBoardType(jsonProfile.Type);
+        ProfileType type = ProfileTypeHelper.StringToProfileType(jsonProfile.Type);
         return GetProfileBy(type, jsonProfile);
     }
 
-    private Profile GetProfileBy(ClipboardType type, JsonProfile jsonProfile)
+    private Profile GetProfileBy(ProfileType type, JsonProfile jsonProfile)
     {
         switch (type)
         {
-            case ClipboardType.Text:
+            case ProfileType.Text:
                 return new TextProfile(jsonProfile.Clipboard, ServiceProvider);
-            case ClipboardType.File:
+            case ProfileType.File:
                 {
                     if (ImageHelper.FileIsImage(jsonProfile.File))
                     {
@@ -90,7 +90,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
                     }
                     return new FileProfile(jsonProfile, ServiceProvider);
                 }
-            case ClipboardType.Image:
+            case ProfileType.Image:
                 return new ImageProfile(jsonProfile, ServiceProvider);
         }
 

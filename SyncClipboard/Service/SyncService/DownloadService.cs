@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
+using SyncClipboard.Core.Clipboard;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -226,7 +227,7 @@ namespace SyncClipboard.Service
         private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
         {
             Profile localProfile = _clipboardFactory.CreateProfile();
-            if (localProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            if (localProfile.Type == ProfileType.Unknown)
             {
                 _logger.Write("[PULL] Local profile type is Unkown, stop sync.");
                 return;

@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static SyncClipboard.Service.ProfileType;
+using static SyncClipboard.Service.ProfileType3;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -27,7 +27,7 @@ namespace SyncClipboard.Service
         private readonly UserConfig _userConfig;
         protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
 
-        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.File;
+        public override ProfileType Type => ProfileType.File;
 
         public FileProfile(string file, IServiceProvider serviceProvider) : this(serviceProvider)
         {
@@ -54,11 +54,6 @@ namespace SyncClipboard.Service
         protected string GetTempLocalFilePath()
         {
             return Path.Combine(SyncService.LOCAL_FILE_FOLDER, FileName);
-        }
-
-        public override ClipboardType GetProfileType()
-        {
-            return ClipboardType.File;
         }
 
         private void SetMd5(string md5)

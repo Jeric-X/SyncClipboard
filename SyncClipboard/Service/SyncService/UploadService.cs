@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
@@ -137,7 +138,7 @@ namespace SyncClipboard.Service
         {
             var currentProfile = _clipboardFactory.CreateProfile();
 
-            if (currentProfile.GetProfileType() == ProfileType.ClipboardType.Unknown)
+            if (currentProfile.Type == ProfileType.Unknown)
             {
                 _logger.Write("Local profile type is Unkown, stop upload.");
                 return;

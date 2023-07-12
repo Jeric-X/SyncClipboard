@@ -6,8 +6,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using static SyncClipboard.Service.ProfileType;
+using static SyncClipboard.Service.ProfileType3;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -26,8 +25,7 @@ namespace SyncClipboard.Service
         #endregion
 
         private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
-        public abstract ClipboardType GetProfileType();
-        public abstract Core.Clipboard.ProfileType Type { get; }
+        public abstract ProfileType Type { get; }
 
         private MetaInfomation? @metaInfomation;
         public MetaInfomation MetaInfomation
@@ -79,18 +77,13 @@ namespace SyncClipboard.Service
             }
         }
 
-        static private string ClipBoardTypeToString(ClipboardType type)
-        {
-            return Enum.GetName(typeof(ClipboardType), type) ?? "Undefined";
-        }
-
         public string ToJsonString()
         {
             JsonProfile jsonProfile = new()
             {
                 File = FileName,
                 Clipboard = Text,
-                Type = ClipBoardTypeToString(GetProfileType())
+                Type = ProfileTypeHelper.ClipBoardTypeToString(Type)
             };
 
             return JsonSerializer.Serialize(jsonProfile);

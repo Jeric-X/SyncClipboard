@@ -6,7 +6,6 @@ using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using static SyncClipboard.Service.ProfileType;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -14,7 +13,7 @@ namespace SyncClipboard.Service
 {
     public class TextProfile : Profile
     {
-        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Text;
+        public override ProfileType Type => ProfileType.Text;
 
         protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
 
@@ -22,11 +21,6 @@ namespace SyncClipboard.Service
         {
             Text = text;
             ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<TextProfile>>();
-        }
-
-        public override ClipboardType GetProfileType()
-        {
-            return ClipboardType.Text;
         }
 
         public override string ToolTip()

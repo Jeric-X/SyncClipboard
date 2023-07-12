@@ -32,7 +32,7 @@ namespace SyncClipboard.Service
         {
             var metaInfo = _clipboardFactory.GetMetaInfomation();
             var clipboardProfile = _clipboardFactory.CreateProfile(metaInfo);
-            if (clipboardProfile.Type != Core.Clipboard.ProfileType.File || !NeedAdjust(metaInfo))
+            if (clipboardProfile.Type != ProfileType.File || !NeedAdjust(metaInfo))
             {
                 return;
             }

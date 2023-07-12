@@ -77,7 +77,7 @@ namespace SyncClipboard.Service
         {
             var metaInfo = _clipboardFactory.GetMetaInfomation();
             var profile = _clipboardFactory.CreateProfile(metaInfo);
-            if (profile.Type != Core.Clipboard.ProfileType.Image || !NeedAdjust(metaInfo))
+            if (profile.Type != ProfileType.Image || !NeedAdjust(metaInfo))
             {
                 return;
             }

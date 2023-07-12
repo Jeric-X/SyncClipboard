@@ -1,9 +1,10 @@
-﻿using SyncClipboard.Core.Utilities;
+﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Drawing;
 using System.IO;
-using static SyncClipboard.Service.ProfileType;
+using static SyncClipboard.Service.ProfileType3;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
 #nullable enable
 
@@ -11,7 +12,7 @@ namespace SyncClipboard.Service
 {
     public class ImageProfile : FileProfile
     {
-        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Image;
+        public override ProfileType Type => ProfileType.Image;
 
         private readonly static string TEMP_FOLDER = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "temp images");
         public ImageProfile(string filepath, IServiceProvider serviceProvider) : base(filepath, serviceProvider)
@@ -32,11 +33,6 @@ namespace SyncClipboard.Service
             image.Save(filePath);
 
             return new ImageProfile(filePath, serviceProvider);
-        }
-
-        public override ClipboardType GetProfileType()
-        {
-            return ClipboardType.Image;
         }
 
         protected override void SetNotification(NotificationManager notification)

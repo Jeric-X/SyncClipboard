@@ -2,24 +2,18 @@
 using SyncClipboard.Core.Interfaces;
 using System.Threading;
 using System.Threading.Tasks;
-using static SyncClipboard.Service.ProfileType;
 
 namespace SyncClipboard.Service
 {
     public class UnkonwnProfile : Profile
     {
-        public override Core.Clipboard.ProfileType Type => Core.Clipboard.ProfileType.Unknown;
+        public override ProfileType Type => ProfileType.Unknown;
 
         protected override IClipboardSetter<Profile> ClipboardSetter { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
         public override string ToolTip()
         {
             return "Do not support this type of clipboard";
-        }
-
-        public override ClipboardType GetProfileType()
-        {
-            return ClipboardType.Unknown;
         }
 
         public override Task UploadProfileAsync(IWebDav webdav, CancellationToken cancelToken)
