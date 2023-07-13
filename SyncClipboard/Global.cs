@@ -21,19 +21,26 @@ namespace SyncClipboard
         internal static ServiceManager ServiceManager;
         internal static IServiceProvider Services;
         internal static IHttp Http;
-        internal static Core.Commons.UserConfig UserConfig;
+        internal static UserConfig UserConfig;
         internal static ILogger Logger;
 
         public static void StartUp()
         {
-            ConfigurateServices();
+            Services = ConfigurateServices();
+
+            ServiceManager = Services.GetRequiredService<ServiceManager>();
+            Http = Services.GetRequiredService<IHttp>();
+            WebDav = Services.GetRequiredService<IWebDav>();
+            UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
+            Logger = Services.GetRequiredService<ILogger>();
+
             new ProgramWorkflow(Services).Run();
             StartUpUI();
 
             ServiceManager.StartUpAllService();
         }
 
-        private static void ConfigurateServices()
+        public static IServiceProvider ConfigurateServices()
         {
             var services = new ServiceCollection();
             ProgramWorkflow.ConfigCommonService(services);
@@ -51,13 +58,7 @@ namespace SyncClipboard
 
             ConfigurateProgramService(services);
 
-            Services = services.BuildServiceProvider();
-
-            ServiceManager = Services.GetRequiredService<ServiceManager>();
-            Http = Services.GetRequiredService<IHttp>();
-            WebDav = Services.GetRequiredService<IWebDav>();
-            UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
-            Logger = Services.GetRequiredService<ILogger>();
+            return services.BuildServiceProvider();
         }
 
         private static void ConfigurateProgramService(IServiceCollection services)
