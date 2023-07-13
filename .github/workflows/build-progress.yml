@@ -23,6 +23,9 @@ jobs:
       with:
         msbuild-architecture: x64
 
+    - name: Setup VSTest Path
+      uses: darenm/Setup-VSTest@v1.2
+
     - name: Install dependencies
       run: dotnet restore
 
