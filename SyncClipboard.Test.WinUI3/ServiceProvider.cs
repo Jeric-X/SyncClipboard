@@ -1,21 +1,29 @@
-//using SyncClipboard.WinUI3;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.WinUI3;
 
 namespace SyncClipboard.Test.WinUI3;
 
 [TestClass]
 public class ServiceProvider
 {
-    IServiceProvider? Services { get; set; }
-    //public ServiceProvider()
-    //{
-    //    //Services = new App().Services;
-    //}
+    IServiceProvider Services { get; set; }
+
+    public ServiceProvider()
+    {
+        var servicesCollection = App.ConfigureServices();
+
+        servicesCollection.AddSingleton<IMainWindow>(new Mock<IMainWindow>().Object);
+        servicesCollection.AddSingleton<IContextMenu>(new Mock<IContextMenu>().Object);
+        Services = servicesCollection.BuildServiceProvider();
+    }
 
     [TestMethod]
     [SystemServiceProviderDataSource]
     [PlatformServiceProviderDataSource]
     public void ConfigedServices(Type type)
     {
-        Assert.IsNotNull(null);
+        Assert.IsNotNull(Services.GetService(type));
     }
 }
