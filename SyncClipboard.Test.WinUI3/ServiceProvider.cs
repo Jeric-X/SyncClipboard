@@ -8,12 +8,12 @@ namespace SyncClipboard.Test.WinUI3;
 [TestClass]
 public class ServiceProvider
 {
-    IServiceProvider Services { get; set; }
+    IServiceProvider? Services { get; set; }
 
-    public ServiceProvider()
+    [TestInitialize]
+    public void InitializeServices()
     {
-        var servicesCollection = App.ConfigureServices();
-
+        var servicesCollection = AppServices.ConfigureServices();
         servicesCollection.AddSingleton<IMainWindow>(new Mock<IMainWindow>().Object);
         servicesCollection.AddSingleton<IContextMenu>(new Mock<IContextMenu>().Object);
         Services = servicesCollection.BuildServiceProvider();
@@ -24,6 +24,6 @@ public class ServiceProvider
     [PlatformServiceProviderDataSource]
     public void ConfigedServices(Type type)
     {
-        Assert.IsNotNull(Services.GetService(type));
+        Assert.IsNotNull(Services?.GetService(type));
     }
 }

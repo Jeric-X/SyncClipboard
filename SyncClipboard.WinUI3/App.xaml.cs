@@ -28,7 +28,7 @@ namespace SyncClipboard.WinUI3
         public App()
         {
             UnhandledException += App_UnhandledException;
-            Services = ConfigureServices().BuildServiceProvider();
+            Services = AppServices.ConfigureServices().BuildServiceProvider();
             Logger = Services.GetRequiredService<ILogger>();
             this.InitializeComponent();
         }
@@ -36,19 +36,6 @@ namespace SyncClipboard.WinUI3
         private static void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             Trace.WriteLine(e.Message);
-        }
-
-        public static ServiceCollection ConfigureServices()
-        {
-            var services = new ServiceCollection();
-
-            ProgramWorkflow.ConfigCommonService(services);
-
-            services.AddSingleton<IMainWindow, SettingWindow>();
-            services.AddSingleton<ITrayIcon, TrayIcon>();
-            services.AddSingleton<IContextMenu>((sp) => new TrayIconContextMenu((TrayIcon)sp.GetRequiredService<ITrayIcon>()));
-
-            return services;
         }
 
         /// <summary>
