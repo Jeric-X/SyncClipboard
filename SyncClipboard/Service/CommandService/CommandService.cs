@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Core.Commons;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Service.Command;
@@ -10,35 +11,45 @@ namespace SyncClipboard.Service
 {
     internal class CommandService : Core.Interfaces.Service
     {
-        private event Action<bool>? SwitchChanged;
         private const string COMMAND_FILE = "Command.json";
         private const string LOG_TAG = "Command";
         private readonly CancellationTokenSource _cancelSource = new();
         private bool _isError = false;
+        private readonly ToggleMenuItem _toggleMenuItem;
 
         private readonly NotificationManager _notificationManager;
         private readonly ILogger _logger;
         private readonly UserConfig _userConfig;
+        private readonly IWebDav _webDav;
+        private readonly IContextMenu _contextMenu;
 
-        public CommandService(NotificationManager notificationManager, ILogger logger, UserConfig userConfig)
+        private bool SwitchOn
         {
-            _notificationManager = notificationManager;
-            _logger = logger;
-            _userConfig = userConfig;
+            get => _userConfig.Config.CommandService.SwitchOn;
+            set
+            {
+                _userConfig.Config.CommandService.SwitchOn = value;
+                _userConfig.Save();
+            }
+        }
+
+        public CommandService(IServiceProvider serviceProvider)
+        {
+            _notificationManager = serviceProvider.GetRequiredService<NotificationManager>();
+            _logger = serviceProvider.GetRequiredService<ILogger>();
+            _userConfig = serviceProvider.GetRequiredService<UserConfig>();
+            _webDav = serviceProvider.GetRequiredService<IWebDav>();
+            _contextMenu = serviceProvider.GetRequiredService<IContextMenu>();
+            _toggleMenuItem = new ToggleMenuItem(
+                "Remote Command",
+                _userConfig.Config.CommandService.SwitchOn,
+                (status) => SwitchOn = status
+            );
         }
 
         protected override void StartService()
         {
-            SwitchChanged += Global.Menu.AddMenuItemGroup(
-                new string[] { "Remote Command" },
-                new Action<bool>[] {
-                    (switchOn) => {
-                        _userConfig.Config.CommandService.SwitchOn = switchOn;
-                        _userConfig.Save();
-                    }
-                }
-            )[0];
-            SwitchChanged?.Invoke(_userConfig.Config.CommandService.SwitchOn);
+            _contextMenu.AddMenuItem(_toggleMenuItem);
 
             try
             {
@@ -52,7 +63,7 @@ namespace SyncClipboard.Service
 
         public override void Load()
         {
-            SwitchChanged?.Invoke(_userConfig.Config.CommandService.SwitchOn);
+            _toggleMenuItem.Checked = SwitchOn;
         }
 
         protected override void StopSerivce()
@@ -64,7 +75,7 @@ namespace SyncClipboard.Service
         {
             while (true)
             {
-                if (_userConfig.Config.CommandService.SwitchOn)
+                if (SwitchOn)
                 {
                     try
                     {
@@ -96,7 +107,7 @@ namespace SyncClipboard.Service
             CommandInfo? command;
             try
             {
-                command = await Global.WebDav.GetJson<CommandInfo>(COMMAND_FILE);
+                command = await _webDav.GetJson<CommandInfo>(COMMAND_FILE);
                 ArgumentNullException.ThrowIfNull(command);
             }
             catch
@@ -124,7 +135,7 @@ namespace SyncClipboard.Service
         {
             try
             {
-                await Global.WebDav.PutJson(COMMAND_FILE, command);
+                await _webDav.PutJson(COMMAND_FILE, command);
             }
             catch
             {

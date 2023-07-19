@@ -3,7 +3,6 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Image;
-using SyncClipboard.Utility;
 using System;
 using System.Threading;
 #nullable enable
@@ -17,6 +16,7 @@ namespace SyncClipboard.Service
         public override string SERVICE_NAME => "图片兼容性优化";
         public override string LOG_TAG => "COMPATIBILITY";
 
+        protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
         protected override ILogger Logger => _logger;
         protected override bool SwitchOn
         {

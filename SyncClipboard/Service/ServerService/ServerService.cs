@@ -1,39 +1,43 @@
 using SyncClipboard.Core.Commons;
-using System;
+using SyncClipboard.Core.Interfaces;
 #nullable enable
 namespace SyncClipboard.Service
 {
     public class ServerService : Core.Interfaces.Service
     {
         Microsoft.AspNetCore.Builder.WebApplication? app;
-        private event Action<bool>? SwitchChanged;
         public const string SERVICE_NAME = "内置服务器";
         public const string LOG_TAG = "INNERSERVER";
 
         private readonly UserConfig _userConfig;
+        private readonly ToggleMenuItem _toggleMenuItem;
 
-        public ServerService(UserConfig userConfig)
+        private readonly IContextMenu _contextMenu;
+
+        public ServerService(UserConfig userConfig, IContextMenu contextMenu)
         {
             _userConfig = userConfig;
+            _contextMenu = contextMenu;
+            _toggleMenuItem = new ToggleMenuItem(
+                SERVICE_NAME,
+                _userConfig.Config.ServerService.SwitchOn,
+                (status) =>
+                {
+                    _userConfig.Config.ServerService.SwitchOn = status;
+                    _userConfig.Save();
+                }
+            );
         }
 
         protected override void StartService()
         {
-            SwitchChanged += Global.Menu.AddMenuItemGroup(
-                new string[] { SERVICE_NAME },
-                new Action<bool>[] {
-                    (switchOn) => {
-                        _userConfig.Config.ServerService.SwitchOn = switchOn;
-                        _userConfig.Save();
-                    }
-                }
-            )[0];
+            _contextMenu.AddMenuItem(_toggleMenuItem);
             Load();
         }
 
         public override void Load()
         {
-            SwitchChanged?.Invoke(_userConfig.Config.ServerService.SwitchOn);
+            _toggleMenuItem.Checked = _userConfig.Config.ServerService.SwitchOn;
             app?.StopAsync();
             if (_userConfig.Config.ServerService.SwitchOn)
             {
@@ -41,7 +45,8 @@ namespace SyncClipboard.Service
                     _userConfig.Config.ServerService.Port,
                     Env.Directory,
                     _userConfig.Config.ServerService.UserName,
-                    _userConfig.Config.ServerService.Password);
+                    _userConfig.Config.ServerService.Password
+                );
             }
         }
 

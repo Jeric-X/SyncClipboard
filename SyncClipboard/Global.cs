@@ -15,26 +15,24 @@ namespace SyncClipboard
 {
     public static class Global
     {
-        internal static IWebDav WebDav;
+        private static ContextMenu Menu;
+        private static ServiceManager ServiceManager;
+
         internal static Notifyer Notifyer;
-        internal static ContextMenu Menu;
-        internal static ServiceManager ServiceManager;
-        internal static IServiceProvider Services;
         internal static IHttp Http;
         internal static UserConfig UserConfig;
         internal static ILogger Logger;
 
         public static void StartUp()
         {
-            Services = ConfigurateServices();
+            var services = ConfigurateServices();
 
-            ServiceManager = Services.GetRequiredService<ServiceManager>();
-            Http = Services.GetRequiredService<IHttp>();
-            WebDav = Services.GetRequiredService<IWebDav>();
-            UserConfig = Services.GetRequiredService<Core.Commons.UserConfig>();
-            Logger = Services.GetRequiredService<ILogger>();
+            ServiceManager = services.GetRequiredService<ServiceManager>();
+            Http = services.GetRequiredService<IHttp>();
+            UserConfig = services.GetRequiredService<Core.Commons.UserConfig>();
+            Logger = services.GetRequiredService<ILogger>();
 
-            new ProgramWorkflow(Services).Run();
+            new ProgramWorkflow(services).Run();
             StartUpUI();
 
             ServiceManager.StartUpAllService();

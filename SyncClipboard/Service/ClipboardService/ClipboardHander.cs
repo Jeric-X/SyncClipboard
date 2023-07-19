@@ -13,12 +13,13 @@ namespace SyncClipboard.Service
         public abstract string LOG_TAG { get; }
 
         protected ToggleMenuItem? ToggleMenuItem { get; set; }
+        protected abstract IContextMenu? ContextMenu { get; }
 
         protected override void StartService()
         {
             Logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
             ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
-            Global.Menu.AddMenuItem(ToggleMenuItem);
+            ContextMenu?.AddMenuItem(ToggleMenuItem);
             Load();
         }
 

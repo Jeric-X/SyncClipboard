@@ -58,7 +58,7 @@ namespace SyncClipboard.Service
                 _userConfig.Config.SyncService.PullSwitchOn = status;
                 _userConfig.Save();
             });
-            Global.Menu.AddMenuItem(ToggleMenuItem);
+            _serviceProvider.GetRequiredService<IContextMenu>().AddMenuItem(ToggleMenuItem);
             Load();
         }
 

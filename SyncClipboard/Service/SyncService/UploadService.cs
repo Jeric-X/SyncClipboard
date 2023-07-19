@@ -21,6 +21,8 @@ namespace SyncClipboard.Service
         public override string LOG_TAG => "PUSH";
 
         protected override ILogger Logger => _logger;
+        protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
+
         protected override bool SwitchOn
         {
             get => _userConfig.Config.SyncService.PushSwitchOn;
@@ -38,6 +40,7 @@ namespace SyncClipboard.Service
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IWebDav _webDav;
 
         public UploadService(IServiceProvider serviceProvider)
         {
@@ -46,6 +49,7 @@ namespace SyncClipboard.Service
             _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
             _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
             _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
+            _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         }
 
         protected override void StartService()
@@ -159,7 +163,7 @@ namespace SyncClipboard.Service
                     if (!await Profile.Same(remoteProfile, profile, cancelToken))
                     {
                         await CleanServerTempFile(cancelToken);
-                        await profile.UploadProfile(Global.WebDav, cancelToken);
+                        await profile.UploadProfile(_webDav, cancelToken);
                     }
                     _logger.Write(LOG_TAG, "remote is same as local, won't push");
                     return;
@@ -191,7 +195,7 @@ namespace SyncClipboard.Service
             {
                 try
                 {
-                    await Global.WebDav.Delete(SyncService.REMOTE_FILE_FOLDER, cancelToken);
+                    await _webDav.Delete(SyncService.REMOTE_FILE_FOLDER, cancelToken);
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
                 {

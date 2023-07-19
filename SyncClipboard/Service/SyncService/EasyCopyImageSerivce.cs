@@ -23,6 +23,7 @@ namespace SyncClipboard.Service
         public override string LOG_TAG => "EASY IMAGE";
 
         protected override ILogger Logger => _logger;
+        protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
 
         protected override bool SwitchOn
         {
@@ -63,6 +64,7 @@ namespace SyncClipboard.Service
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
         private readonly IServiceProvider _serviceProvider;
+        private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
 
         public EasyCopyImageSerivce(IServiceProvider serviceProvider)
         {
@@ -141,13 +143,13 @@ namespace SyncClipboard.Service
             if (useProxy)
             {
                 var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "proxy " + filename.Value);
-                await Global.Http.GetFile(imageUrl, fullPath, _progress, cancellationToken, true);
+                await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken, true);
                 return fullPath;
             }
             else
             {
                 var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, filename.Value);
-                await Global.Http.GetFile(imageUrl, fullPath, _progress, cancellationToken);
+                await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken);
                 return fullPath;
             }
         }
