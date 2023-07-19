@@ -37,4 +37,42 @@
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Assets\default.ico" />
+    <Resource Include="Assets\download001.ico" />
+    <Resource Include="Assets\download002.ico" />
+    <Resource Include="Assets\download003.ico" />
+    <Resource Include="Assets\download004.ico" />
+    <Resource Include="Assets\download005.ico" />
+    <Resource Include="Assets\download006.ico" />
+    <Resource Include="Assets\download007.ico" />
+    <Resource Include="Assets\download008.ico" />
+    <Resource Include="Assets\download009.ico" />
+    <Resource Include="Assets\download010.ico" />
+    <Resource Include="Assets\download011.ico" />
+    <Resource Include="Assets\download012.ico" />
+    <Resource Include="Assets\download013.ico" />
+    <Resource Include="Assets\download014.ico" />
+    <Resource Include="Assets\download015.ico" />
+    <Resource Include="Assets\download016.ico" />
+    <Resource Include="Assets\download017.ico" />
+    <Resource Include="Assets\upload001.ico" />
+    <Resource Include="Assets\upload002.ico" />
+    <Resource Include="Assets\upload003.ico" />
+    <Resource Include="Assets\upload004.ico" />
+    <Resource Include="Assets\upload005.ico" />
+    <Resource Include="Assets\upload006.ico" />
+    <Resource Include="Assets\upload007.ico" />
+    <Resource Include="Assets\upload008.ico" />
+    <Resource Include="Assets\upload009.ico" />
+    <Resource Include="Assets\upload010.ico" />
+    <Resource Include="Assets\upload011.ico" />
+    <Resource Include="Assets\upload012.ico" />
+    <Resource Include="Assets\upload013.ico" />
+    <Resource Include="Assets\upload014.ico" />
+    <Resource Include="Assets\upload015.ico" />
+    <Resource Include="Assets\upload016.ico" />
+    <Resource Include="Assets\upload017.ico" />
+  </ItemGroup>
+
 </Project>

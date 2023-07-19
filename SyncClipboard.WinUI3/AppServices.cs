@@ -19,8 +19,9 @@ public class AppServices
         ProgramWorkflow.ConfigCommonService(services);
 
         services.AddSingleton<IMainWindow, SettingWindow>();
-        services.AddSingleton<ITrayIcon, TrayIcon>();
-        services.AddSingleton<IContextMenu>((sp) => new TrayIconContextMenu((TrayIcon)sp.GetRequiredService<ITrayIcon>()));
+        services.AddSingleton<TrayIcon>();
+        services.AddSingleton<ITrayIcon, TrayIconImpl>();
+        services.AddSingleton<IContextMenu, TrayIconContextMenu>();
 
         return services;
     }

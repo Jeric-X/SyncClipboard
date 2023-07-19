@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.WinUI3.Views;
 using System;
 using System.Diagnostics;
+using System.Threading;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -20,6 +21,7 @@ namespace SyncClipboard.WinUI3
         public new static App Current => (App)Application.Current;
         public IServiceProvider Services { get; private set; }
         public ILogger Logger { get; private set; }
+        internal SynchronizationContext MainThreadContext { get; private set; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -30,6 +32,7 @@ namespace SyncClipboard.WinUI3
             UnhandledException += App_UnhandledException;
             Services = AppServices.ConfigureServices().BuildServiceProvider();
             Logger = Services.GetRequiredService<ILogger>();
+            MainThreadContext = SynchronizationContext.Current ?? throw new Exception();
             this.InitializeComponent();
         }
 

@@ -27,6 +27,7 @@ namespace SyncClipboard.Service
         private readonly UserConfig _userConfig;
         private readonly IClipboardFactory _clipboardFactory;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ITrayIcon _trayIcon;
 
         public DownloadService(IServiceProvider serviceProvider)
         {
@@ -35,6 +36,7 @@ namespace SyncClipboard.Service
             _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
             _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
             _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
+            _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         }
 
         public override void Load()
@@ -235,7 +237,7 @@ namespace SyncClipboard.Service
 
             if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
             {
-                SetDownloadingIcon();
+                _trayIcon.ShowDownloadAnimation();
                 try
                 {
                     if (remoteProfile is FileProfile)
@@ -255,30 +257,10 @@ namespace SyncClipboard.Service
                 }
                 finally
                 {
-                    StopDownloadingIcon();
+                    _trayIcon.StopAnimation();
                     PullStopped?.Invoke();
                 }
             }
-        }
-
-        private static void SetDownloadingIcon()
-        {
-            System.Drawing.Icon[] icon =
-            {
-                Properties.Resources.download001, Properties.Resources.download002, Properties.Resources.download003,
-                Properties.Resources.download004, Properties.Resources.download005, Properties.Resources.download006,
-                Properties.Resources.download007, Properties.Resources.download008, Properties.Resources.download009,
-                Properties.Resources.download010, Properties.Resources.download011, Properties.Resources.download012,
-                Properties.Resources.download013, Properties.Resources.download014, Properties.Resources.download015,
-                Properties.Resources.download016, Properties.Resources.download017,
-            };
-
-            Global.Notifyer.SetDynamicNotifyIcon(icon, 150);
-        }
-
-        private static void StopDownloadingIcon()
-        {
-            Global.Notifyer.StopDynamicNotifyIcon();
         }
     }
 }

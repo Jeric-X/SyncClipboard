@@ -1,6 +1,9 @@
 using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
+using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media.Imaging;
+using SyncClipboard.Core.AbstractClasses;
 using SyncClipboard.Core.Interfaces;
 using System;
 using System.Diagnostics;
@@ -11,7 +14,7 @@ using Windows.Foundation;
 
 namespace SyncClipboard.WinUI3.Views
 {
-    public sealed partial class TrayIcon : TaskbarIcon, ITrayIcon
+    public sealed partial class TrayIcon : TaskbarIcon
     {
         // 1 MenuFlyout's Width is wrong when first poping up
         // 2 new MenuFlyoutSeparator()'s DesiredSize is (0.0, 0.0)
@@ -32,25 +35,12 @@ namespace SyncClipboard.WinUI3.Views
         public TrayIcon()
         {
             this.InitializeComponent();
-            DoubleClickCommand = new RelayCommand(() => DoubleClick?.Invoke());
-        }
-
-        private event Action? DoubleClick;
-        event Action ITrayIcon.MainWindowWakedUp
-        {
-            add => DoubleClick += value;
-            remove => DoubleClick -= value;
         }
 
         private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
         {
             Environment.Exit(0);
             this.Dispose();
-        }
-
-        void ITrayIcon.Create()
-        {
-            this.ForceCreate();
         }
     }
 }

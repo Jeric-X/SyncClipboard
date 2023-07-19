@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using SyncClipboard.Core.AbstractClasses;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -6,7 +6,7 @@ using System.Windows.Forms;
 
 namespace SyncClipboard.Control
 {
-    public class Notifyer : ITrayIcon
+    public class Notifyer : TrayIconBase<Icon>
     {
         private readonly Icon DefaultIcon = Properties.Resources.upload;
         private readonly Icon ErrorIcon = Properties.Resources.erro;
@@ -15,11 +15,7 @@ namespace SyncClipboard.Control
         private readonly NotifyIcon _notifyIcon;
         private event Action ToastClicked;
 
-        private System.Timers.Timer _iconTimer;
-        private Icon[] _dynamicIcons;
         private Icon _staticIcon = Properties.Resources.upload;
-        private int _iconIndex = 1;
-        private bool _isShowingDanamicIcon = false;
 
         private readonly Dictionary<string, string> _statusList = new();
 
@@ -34,15 +30,10 @@ namespace SyncClipboard.Control
             };
             this._notifyIcon.BalloonTipClicked += SetToastClickedHandler;   // to be modified
             this._notifyIcon.BalloonTipClosed += ClearToastClickedHandler;
-            this._notifyIcon.DoubleClick += (_, _) => DoubleClick?.Invoke();
+            this._notifyIcon.DoubleClick += (_, _) => MainWindowWakedUp?.Invoke();
         }
 
-        private event Action DoubleClick;
-        event Action ITrayIcon.MainWindowWakedUp
-        {
-            add => DoubleClick += value;
-            remove => DoubleClick -= value;
-        }
+        public override event Action MainWindowWakedUp;
 
         public void SetContextMenu(ContextMenuStrip contextMenu)
         {
@@ -74,58 +65,12 @@ namespace SyncClipboard.Control
             }
         }
 
-        public void SetDynamicNotifyIcon(Icon[] icons, int delayTime)
-        {
-            if (icons.Length == 0)
-            {
-                return;
-            }
-
-            StopDynamicNotifyIcon();
-
-            _dynamicIcons = icons;
-            _notifyIcon.Icon = _dynamicIcons[0];
-            _iconTimer = new System.Timers.Timer(delayTime);
-            _iconTimer.Elapsed += SetNextDynamicNotifyIcon;
-            _iconTimer.AutoReset = true;
-            _isShowingDanamicIcon = true;
-            _iconTimer.Start();
-        }
-
-        public void StopDynamicNotifyIcon()
-        {
-            _iconTimer?.Stop();
-            _iconTimer?.Close();
-            _iconTimer = null;
-
-            _dynamicIcons = null;
-            _iconIndex = 1;
-            _isShowingDanamicIcon = false;
-            ActiveStaticIcon();
-        }
-
         private void ActiveStaticIcon()
         {
             if (!_isShowingDanamicIcon)
             {
                 _notifyIcon.Icon = _staticIcon;
             }
-        }
-
-        private void SetNextDynamicNotifyIcon(object sender, EventArgs e)
-        {
-            if (_dynamicIcons is null || _dynamicIcons.Length == 0)
-            {
-                return;
-            }
-
-            if (_iconIndex >= _dynamicIcons.Length)
-            {
-                _iconIndex = 0;
-            }
-
-            _notifyIcon.Icon = _dynamicIcons[_iconIndex];
-            _iconIndex++;
         }
 
         private void ActiveStatusString()
@@ -169,9 +114,45 @@ namespace SyncClipboard.Control
             ActiveStatusString();
         }
 
-        void ITrayIcon.Create()
+        public override void Create()
         {
             _notifyIcon.Visible = true;
+        }
+
+        protected override void SetIcon(Icon icon)
+        {
+            _notifyIcon.Icon = icon;
+        }
+
+        protected override void SetDefaultIcon()
+        {
+            SetIcon(DefaultIcon);
+        }
+
+        protected override Icon[] UploadIcons()
+        {
+            return new Icon[]
+            {
+                Properties.Resources.upload001, Properties.Resources.upload002, Properties.Resources.upload003,
+                Properties.Resources.upload004, Properties.Resources.upload005, Properties.Resources.upload006,
+                Properties.Resources.upload007, Properties.Resources.upload008, Properties.Resources.upload009,
+                Properties.Resources.upload010, Properties.Resources.upload011, Properties.Resources.upload012,
+                Properties.Resources.upload013, Properties.Resources.upload014, Properties.Resources.upload015,
+                Properties.Resources.upload016, Properties.Resources.upload017,
+            };
+        }
+
+        protected override Icon[] DownloadIcons()
+        {
+            return new Icon[]
+            {
+                Properties.Resources.download001, Properties.Resources.download002, Properties.Resources.download003,
+                Properties.Resources.download004, Properties.Resources.download005, Properties.Resources.download006,
+                Properties.Resources.download007, Properties.Resources.download008, Properties.Resources.download009,
+                Properties.Resources.download010, Properties.Resources.download011, Properties.Resources.download012,
+                Properties.Resources.download013, Properties.Resources.download014, Properties.Resources.download015,
+                Properties.Resources.download016, Properties.Resources.download017,
+            };
         }
     }
 }

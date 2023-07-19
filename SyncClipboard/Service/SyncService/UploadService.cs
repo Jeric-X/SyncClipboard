@@ -41,6 +41,7 @@ namespace SyncClipboard.Service
         private readonly IClipboardFactory _clipboardFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly IWebDav _webDav;
+        private readonly ITrayIcon _trayIcon;
 
         public UploadService(IServiceProvider serviceProvider)
         {
@@ -50,6 +51,7 @@ namespace SyncClipboard.Service
             _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
             _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
             _webDav = _serviceProvider.GetRequiredService<IWebDav>();
+            _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         }
 
         protected override void StartService()
@@ -107,14 +109,14 @@ namespace SyncClipboard.Service
 
         private void SetWorkingStartStatus()
         {
-            SetUploadingIcon();
+            _trayIcon.ShowUploadAnimation();
             Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Uploading.");
             PushStarted?.Invoke();
         }
 
         private void SetWorkingEndStatus()
         {
-            StopUploadingIcon();
+            _trayIcon.StopAnimation();
             Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
             PushStopped?.Invoke();
         }
@@ -201,26 +203,6 @@ namespace SyncClipboard.Service
                 {
                 }
             }
-        }
-
-        private static void SetUploadingIcon()
-        {
-            System.Drawing.Icon[] icon =
-            {
-                Properties.Resources.upload001, Properties.Resources.upload002, Properties.Resources.upload003,
-                Properties.Resources.upload004, Properties.Resources.upload005, Properties.Resources.upload006,
-                Properties.Resources.upload007, Properties.Resources.upload008, Properties.Resources.upload009,
-                Properties.Resources.upload010, Properties.Resources.upload011, Properties.Resources.upload012,
-                Properties.Resources.upload013, Properties.Resources.upload014, Properties.Resources.upload015,
-                Properties.Resources.upload016, Properties.Resources.upload017,
-            };
-
-            Global.Notifyer.SetDynamicNotifyIcon(icon, 150);
-        }
-
-        private static void StopUploadingIcon()
-        {
-            Global.Notifyer.StopDynamicNotifyIcon();
         }
     }
 }
