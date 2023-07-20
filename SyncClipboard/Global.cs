@@ -7,7 +7,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Utility;
 using System;
 using System.Windows.Forms;
-using SyncClipboard.Service;
+using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.ClipboardWinform;
 
