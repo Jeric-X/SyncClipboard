@@ -61,6 +61,7 @@ public class EasyCopyImageSerivce : ClipboardHander
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
+    private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
     public EasyCopyImageSerivce(IServiceProvider serviceProvider)
     {
@@ -89,7 +90,7 @@ public class EasyCopyImageSerivce : ClipboardHander
                 var localPath = await DownloadImage(match.Groups["imgUrl"].Value, useProxy, cancellationToken);
                 if (!ImageHelper.FileIsImage(localPath))
                 {
-                    localPath = await ImageHelper.CompatibilityCast(localPath, SyncService.LOCAL_FILE_FOLDER, cancellationToken);
+                    localPath = await ImageHelper.CompatibilityCast(localPath, AppConfig.LocalTemplateFolder, cancellationToken);
                 }
                 profile = new ImageProfile(localPath, _serviceProvider);
             }
@@ -137,13 +138,13 @@ public class EasyCopyImageSerivce : ClipboardHander
         }
         if (useProxy)
         {
-            var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, "proxy " + filename.Value);
+            var fullPath = Path.Combine(AppConfig.LocalTemplateFolder, "proxy " + filename.Value);
             await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken, true);
             return fullPath;
         }
         else
         {
-            var fullPath = Path.Combine(SyncService.LOCAL_FILE_FOLDER, filename.Value);
+            var fullPath = Path.Combine(AppConfig.LocalTemplateFolder, filename.Value);
             await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken);
             return fullPath;
         }

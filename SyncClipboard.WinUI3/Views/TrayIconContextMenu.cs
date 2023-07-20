@@ -47,7 +47,7 @@ namespace SyncClipboard.WinUI3.Views
 
         #endregion
 
-        public TrayIconContextMenu(TrayIcon trayIcon)
+        public TrayIconContextMenu(TrayIcon trayIcon, ITrayIcon icon)
         {
             _trayIcon = trayIcon;
 
@@ -78,6 +78,17 @@ namespace SyncClipboard.WinUI3.Views
                 throw new Exception("Can not get Property of TrayIcon");
             }
             # endregion
+
+            AddMenuItemGroup(new MenuItem[]
+            {
+                new MenuItem("start", icon.ShowUploadAnimation),
+                new MenuItem("end", icon.StopAnimation),
+                new MenuItem("ToolTipText", delegate
+                {
+                    App.Current.MainThreadContext.Post((_)=>_trayIcon.ToolTipText  = $"123", null);
+                    //_trayIcon.ToolTipText  = $"{1:d63}";
+                })
+            });
         }
 
         public void AddMenuItemGroup(MenuItem[] menuItems)

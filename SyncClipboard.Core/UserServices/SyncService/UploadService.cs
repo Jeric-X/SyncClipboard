@@ -40,6 +40,8 @@ public class UploadService : ClipboardHander
     private readonly IWebDav _webDav;
     private readonly ITrayIcon _trayIcon;
 
+    private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
+
     public UploadService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
@@ -194,7 +196,7 @@ public class UploadService : ClipboardHander
         {
             try
             {
-                await _webDav.Delete(SyncService.REMOTE_FILE_FOLDER, cancelToken);
+                await _webDav.Delete(AppConfig.RemoteFileFolder, cancelToken);
             }
             catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
             {
