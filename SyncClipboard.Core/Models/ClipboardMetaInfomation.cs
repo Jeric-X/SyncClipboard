@@ -1,7 +1,8 @@
 ﻿using System.Drawing;
-namespace SyncClipboard.Core.Clipboard;
 
-public class MetaInfomation
+namespace SyncClipboard.Core.Models;
+
+public class ClipboardMetaInfomation
 {
     public string? Text;
     public string? Html;

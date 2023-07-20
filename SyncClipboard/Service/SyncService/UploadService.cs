@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
 using System.Net.Http;
@@ -22,6 +23,7 @@ namespace SyncClipboard.Service
 
         protected override ILogger Logger => _logger;
         protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
+        protected override IClipboardChangingListener ClipboardChangingListener => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
 
         protected override bool SwitchOn
         {
@@ -121,7 +123,7 @@ namespace SyncClipboard.Service
             PushStopped?.Invoke();
         }
 
-        protected override async void HandleClipboard(CancellationToken cancellationToken)
+        protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancellationToken)
         {
             if (_downServiceChangingLocal)
             {
@@ -131,7 +133,7 @@ namespace SyncClipboard.Service
             SetWorkingStartStatus();
             try
             {
-                await UploadClipboard(cancellationToken);
+                await UploadClipboard(meta, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -140,9 +142,9 @@ namespace SyncClipboard.Service
             SetWorkingEndStatus();
         }
 
-        private async Task UploadClipboard(CancellationToken cancelToken)
+        private async Task UploadClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
         {
-            var currentProfile = _clipboardFactory.CreateProfile();
+            var currentProfile = _clipboardFactory.CreateProfile(meta);
 
             if (currentProfile.Type == ProfileType.Unknown)
             {

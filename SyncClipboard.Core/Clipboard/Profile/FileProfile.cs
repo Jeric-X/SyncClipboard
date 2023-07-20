@@ -226,9 +226,9 @@ public class FileProfile : Profile
         return await GetFileHash(cancelToken) == MD5_FOR_OVERSIZED_FILE;
     }
 
-    protected override MetaInfomation CreateMetaInformation()
+    protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         ArgumentNullException.ThrowIfNull(FullPath);
-        return new MetaInfomation() { Files = new string[] { FullPath } };
+        return new ClipboardMetaInfomation() { Files = new string[] { FullPath } };
     }
 }

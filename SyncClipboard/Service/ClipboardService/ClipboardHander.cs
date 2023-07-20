@@ -1,5 +1,5 @@
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using System.Threading;
 #nullable enable
 
@@ -12,11 +12,15 @@ namespace SyncClipboard.Service
         public abstract string SERVICE_NAME { get; }
         public abstract string LOG_TAG { get; }
 
+        protected abstract IClipboardChangingListener ClipboardChangingListener { get; }
+
         protected ToggleMenuItem? ToggleMenuItem { get; set; }
         protected abstract IContextMenu? ContextMenu { get; }
 
         protected override void StartService()
         {
+            ClipboardChangingListener.Changed += ClipBoardChangedHandler;
+
             Logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
             ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
             ContextMenu?.AddMenuItem(ToggleMenuItem);
@@ -65,25 +69,15 @@ namespace SyncClipboard.Service
             }
         }
 
-        private void ClipBoardChangedHandler()
+        private void ClipBoardChangedHandler(ClipboardMetaInfomation clipboardMetaInfomation)
         {
             if (SwitchOn)
             {
                 CancellationToken cancelToken = StopPreviousAndGetNewToken();
-                HandleClipboard(cancelToken);
+                HandleClipboard(clipboardMetaInfomation, cancelToken);
             }
         }
 
-        protected abstract void HandleClipboard(CancellationToken cancelToken);
-
-        public override void RegistEventHandler()
-        {
-            Event.RegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
-        }
-
-        public override void UnRegistEventHandler()
-        {
-            Event.UnRegistEventHandler(ClipboardService.CLIPBOARD_CHANGED_EVENT_NAME, ClipBoardChangedHandler);
-        }
+        protected abstract void HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, CancellationToken cancelToken);
     }
 }

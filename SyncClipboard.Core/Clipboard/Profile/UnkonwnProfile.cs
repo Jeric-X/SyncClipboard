@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -32,7 +33,7 @@ public class UnkonwnProfile : Profile
         }
     }
 
-    protected override MetaInfomation CreateMetaInformation()
+    protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         throw new System.NotImplementedException();
     }

@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using System.IO;
 using System.Windows.Forms;
@@ -8,7 +9,7 @@ namespace SyncClipboard.ClipboardWinform;
 
 internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core.Clipboard.ImageProfile>
 {
-    public override object CreateClipboardObjectContainer(MetaInfomation metaInfomation)
+    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
     {
         var obj = base.CreateClipboardObjectContainer(metaInfomation);
         var dataObject = obj as DataObject;

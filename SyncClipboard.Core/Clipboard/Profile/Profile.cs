@@ -26,7 +26,7 @@ public abstract class Profile
     protected abstract IClipboardSetter<Profile> ClipboardSetter { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
     protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
-    protected abstract MetaInfomation CreateMetaInformation();
+    protected abstract ClipboardMetaInfomation CreateMetaInformation();
 
     #endregion
 
@@ -35,8 +35,8 @@ public abstract class Profile
 
     private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
 
-    private MetaInfomation? @metaInfomation;
-    public MetaInfomation MetaInfomation
+    private ClipboardMetaInfomation? @metaInfomation;
+    public ClipboardMetaInfomation MetaInfomation
     {
         get
         {

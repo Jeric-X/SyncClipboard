@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
@@ -56,8 +57,8 @@ public class TextProfile : Profile
         }
     }
 
-    protected override MetaInfomation CreateMetaInformation()
+    protected override ClipboardMetaInfomation CreateMetaInformation()
     {
-        return new MetaInfomation { Text = Text };
+        return new ClipboardMetaInfomation { Text = Text };
     }
 }

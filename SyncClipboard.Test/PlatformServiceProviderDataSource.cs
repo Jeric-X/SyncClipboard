@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Interfaces;
 using System.Reflection;
 
 namespace SyncClipboard.Test;
@@ -10,6 +11,7 @@ public class PlatformServiceProviderDataSource : ServiceProviderDataSourceBase
     {
         Type[] requiredService = {
             typeof(IClipboardFactory),
+            typeof(IClipboardChangingListener),
             typeof(IClipboardSetter<TextProfile>),
             typeof(IClipboardSetter<FileProfile>),
             typeof(IClipboardSetter<ImageProfile>)

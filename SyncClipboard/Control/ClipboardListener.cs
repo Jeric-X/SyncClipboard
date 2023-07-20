@@ -1,41 +1,37 @@
-﻿using System;
+﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
+using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace SyncClipboard
 {
-    public class ClipboardListener : System.Windows.Forms.Control
+    public class ClipboardListener : System.Windows.Forms.Control, IClipboardChangingListener
     {
         public delegate void ClipBoardChangedHandler();
 
         private const int WM_CLIPBOARDUPDATE = 0x031D;
-        private event ClipBoardChangedHandler ClipBoardChanged;
+        public event Action<ClipboardMetaInfomation> Changed;
+
+        private readonly IClipboardFactory _clipboardFactory;
 
         [DllImport("user32.dll")]
         private static extern bool AddClipboardFormatListener(IntPtr hwnd);
         [DllImport("user32.dll")]
         private static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
-        public ClipboardListener()
+        public ClipboardListener(IClipboardFactory clipboardFactory)
         {
             AddClipboardFormatListener(this.Handle);
-        }
-
-        public void AddHandler(ClipBoardChangedHandler handler)
-        {
-            ClipBoardChanged += handler;
-        }
-
-        public void RemoveHandler(ClipBoardChangedHandler handler)
-        {
-            ClipBoardChanged -= handler;
+            _clipboardFactory = clipboardFactory;
         }
 
         protected override void DefWndProc(ref Message m)
         {
             if (m.Msg == WM_CLIPBOARDUPDATE)
             {
-                ClipBoardChanged?.Invoke();
+                Changed?.Invoke(_clipboardFactory.GetMetaInfomation());
             }
             base.DefWndProc(ref m);
         }

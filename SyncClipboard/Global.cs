@@ -48,6 +48,7 @@ namespace SyncClipboard
             services.AddSingleton<ITrayIcon>(notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();
             services.AddSingleton<IClipboardFactory, ClipboardFactory>();
+            services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
 
             services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
             services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
@@ -61,7 +62,7 @@ namespace SyncClipboard
         private static void ConfigurateProgramService(IServiceCollection services)
         {
             services.AddSingleton<IService, CommandService>();
-            services.AddSingleton<IService, ClipboardService>();
+            // services.AddSingleton<IService, ClipboardService>();
             services.AddSingleton<IService, UploadService>();
             services.AddSingleton<IService, DownloadService>();
             services.AddSingleton<IService, EasyCopyImageSerivce>();

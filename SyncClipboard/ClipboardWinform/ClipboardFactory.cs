@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using System;
 using System.Drawing;
 using System.IO;
@@ -26,9 +27,9 @@ internal class ClipboardFactory : ClipboardFactoryBase
         WebDav = ServiceProvider.GetRequiredService<IWebDav>();
     }
 
-    public override MetaInfomation GetMetaInfomation()
+    public override ClipboardMetaInfomation GetMetaInfomation()
     {
-        MetaInfomation meta = new();
+        ClipboardMetaInfomation meta = new();
         for (int i = 0; i < 3; i++)
         {
             try
@@ -47,7 +48,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
                 meta.Text = (string)ClipboardData.GetData(DataFormats.Text) ?? meta.Text;
                 meta.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                 meta.Html = (string)ClipboardData.GetData(DataFormats.Html);
-                meta.Effects = (Core.Clipboard.DragDropEffects?)(ClipboardData.GetData("Preferred DropEffect") as MemoryStream)?.ReadByte();
+                meta.Effects = (Core.Models.DragDropEffects?)(ClipboardData.GetData("Preferred DropEffect") as MemoryStream)?.ReadByte();
                 break;
             }
             catch

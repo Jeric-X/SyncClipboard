@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Image;
 using System;
 using System.Threading;
@@ -17,6 +18,8 @@ namespace SyncClipboard.Service
         public override string LOG_TAG => "COMPATIBILITY";
 
         protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
+        protected override IClipboardChangingListener ClipboardChangingListener
+                                                      => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
         protected override ILogger Logger => _logger;
         protected override bool SwitchOn
         {
@@ -28,9 +31,8 @@ namespace SyncClipboard.Service
             }
         }
 
-        protected override async void HandleClipboard(CancellationToken cancellationToken)
+        protected override async void HandleClipboard(ClipboardMetaInfomation metaInfo, CancellationToken cancellationToken)
         {
-            var metaInfo = _clipboardFactory.GetMetaInfomation();
             var clipboardProfile = _clipboardFactory.CreateProfile(metaInfo);
             if (clipboardProfile.Type != ProfileType.File || !NeedAdjust(metaInfo))
             {
@@ -65,7 +67,7 @@ namespace SyncClipboard.Service
             _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>(); ;
         }
 
-        private static bool NeedAdjust(MetaInfomation metaInfo)
+        private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)
         {
             if (metaInfo.Files is null)
             {

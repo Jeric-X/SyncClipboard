@@ -2,14 +2,16 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Image;
 using SyncClipboard.Core.Utilities.Notification;
 using System;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DragDropEffects = SyncClipboard.Core.Clipboard.DragDropEffects;
+using DragDropEffects = SyncClipboard.Core.Models.DragDropEffects;
 
 #nullable enable
 
@@ -24,6 +26,8 @@ namespace SyncClipboard.Service
 
         protected override ILogger Logger => _logger;
         protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
+        protected override IClipboardChangingListener ClipboardChangingListener
+                                                      => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
 
         protected override bool SwitchOn
         {
@@ -35,11 +39,11 @@ namespace SyncClipboard.Service
             }
         }
 
-        protected override void HandleClipboard(CancellationToken cancelToken)
+        protected override void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
         {
             Task[] tasks = {
-                ProcessClipboard(false, cancelToken),
-                ProcessClipboard(true, cancelToken)
+                ProcessClipboard(meta, false, cancelToken),
+                ProcessClipboard(meta, true, cancelToken)
             };
             foreach (var task in tasks)
             {
@@ -75,9 +79,8 @@ namespace SyncClipboard.Service
             _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         }
 
-        private async Task ProcessClipboard(bool useProxy, CancellationToken cancellationToken)
+        private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
         {
-            var metaInfo = _clipboardFactory.GetMetaInfomation();
             var profile = _clipboardFactory.CreateProfile(metaInfo);
             if (profile.Type != ProfileType.Image || !NeedAdjust(metaInfo))
             {
@@ -103,7 +106,7 @@ namespace SyncClipboard.Service
             await AdjustClipboard(profile, cancellationToken);
         }
 
-        private static bool NeedAdjust(MetaInfomation metaInfo)
+        private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)
         {
             if (metaInfo.Files?.Length > 1)
             {

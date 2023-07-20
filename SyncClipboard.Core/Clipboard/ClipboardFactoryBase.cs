@@ -14,11 +14,11 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
     protected abstract IServiceProvider ServiceProvider { get; set; }
     protected abstract IWebDav WebDav { get; set; }
 
-    public abstract MetaInfomation GetMetaInfomation();
+    public abstract ClipboardMetaInfomation GetMetaInfomation();
 
     private string RemoteProfilePath => ServiceProvider.GetRequiredService<IAppConfig>().RemoteProfilePath;
 
-    public Profile CreateProfile(MetaInfomation? metaInfomation = null)
+    public Profile CreateProfile(ClipboardMetaInfomation? metaInfomation = null)
     {
         metaInfomation ??= GetMetaInfomation();
 
