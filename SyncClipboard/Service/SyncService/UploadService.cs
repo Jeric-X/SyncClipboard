@@ -56,13 +56,13 @@ namespace SyncClipboard.Service
 
         protected override void StartService()
         {
-            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Running.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.");
             base.StartService();
         }
 
         protected override void StopSerivce()
         {
-            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
             base.StopSerivce();
         }
 
@@ -110,14 +110,14 @@ namespace SyncClipboard.Service
         private void SetWorkingStartStatus()
         {
             _trayIcon.ShowUploadAnimation();
-            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Uploading.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Uploading.");
             PushStarted?.Invoke();
         }
 
         private void SetWorkingEndStatus()
         {
             _trayIcon.StopAnimation();
-            Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
             PushStopped?.Invoke();
         }
 
@@ -173,13 +173,13 @@ namespace SyncClipboard.Service
                 catch (TaskCanceledException)
                 {
                     cancelToken.ThrowIfCancellationRequested();
-                    Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
+                    _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
                     errMessage = "连接超时";
                 }
                 catch (Exception ex)
                 {
                     errMessage = ex.Message;
-                    Global.Notifyer.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
+                    _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
                 }
                 finally
                 {

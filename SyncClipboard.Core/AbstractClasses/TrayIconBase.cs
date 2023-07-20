@@ -2,7 +2,7 @@
 
 namespace SyncClipboard.Core.AbstractClasses;
 
-public abstract class TrayIconBase<IconType> : ITrayIcon
+public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 {
     public abstract event Action MainWindowWakedUp;
     public abstract void Create();
@@ -11,11 +11,18 @@ public abstract class TrayIconBase<IconType> : ITrayIcon
     private const int ANIMATED_ICON_DELAY_TIME = 150;
     private Timer? _iconTimer;
     private int _iconIndex = 1;
+    private bool _isShowingDanamicIcon;
     private IconType[]? _dynamicIcons;
-    protected bool _isShowingDanamicIcon;
+    private IconType? @staticIcon = null;
+    private IconType StaticIcon { get => @staticIcon ?? DefaultIcon; set => @staticIcon = value; }
+    private readonly Dictionary<string, string> _statusList = new();
+
+    protected abstract IconType DefaultIcon { get; }
+    protected abstract IconType ErrorIcon { get; }
+    protected abstract int MaxToolTipLenth { get; }
 
     protected abstract void SetIcon(IconType icon);
-    protected abstract void SetDefaultIcon();
+    protected abstract void SetToolTip(string text);
     protected abstract IconType[] UploadIcons();
     protected abstract IconType[] DownloadIcons();
     #endregion
@@ -53,7 +60,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon
         _dynamicIcons = null;
         _iconIndex = 1;
         _isShowingDanamicIcon = false;
-        SetDefaultIcon();
+        SetStaticIcon();
     }
 
     private void SetNextDynamicNotifyIcon(object? _)
@@ -69,5 +76,54 @@ public abstract class TrayIconBase<IconType> : ITrayIcon
         }
         SetIcon(_dynamicIcons[_iconIndex]);
         _iconIndex++;
+    }
+
+    public void SetStatusString(string key, string statusStr, bool error)
+    {
+        SetStatusString(key, statusStr);
+
+        if (error)
+        {
+            StaticIcon = ErrorIcon;
+        }
+        else
+        {
+            StaticIcon = DefaultIcon;
+        }
+        SetStaticIcon();
+    }
+
+    public void SetStatusString(string key, string statusStr)
+    {
+        if (!string.IsNullOrEmpty(key))
+        {
+            _statusList[key] = statusStr;
+        }
+        ActiveStatusString();
+    }
+
+    private void SetStaticIcon()
+    {
+        if (!_isShowingDanamicIcon)
+        {
+            SetIcon(StaticIcon);
+        }
+    }
+
+    private void ActiveStatusString()
+    {
+        var eachMaxLenth = MaxToolTipLenth / _statusList.Count;
+
+        var ajustedList = _statusList.Select(status =>
+        {
+            var oneServiceStr = $"{status.Key}: {status.Value}";
+            if (oneServiceStr.Length > eachMaxLenth)
+            {
+                oneServiceStr = oneServiceStr[..(eachMaxLenth - 1)];
+            }
+            return oneServiceStr;
+        });
+
+        SetToolTip(string.Join(Environment.NewLine, ajustedList));
     }
 }

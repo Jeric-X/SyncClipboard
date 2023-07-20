@@ -18,7 +18,6 @@ namespace SyncClipboard
         private static ContextMenu Menu;
         private static ServiceManager ServiceManager;
 
-        internal static Notifyer Notifyer;
         internal static IHttp Http;
         internal static UserConfig UserConfig;
         internal static ILogger Logger;
@@ -43,10 +42,10 @@ namespace SyncClipboard
             var services = new ServiceCollection();
             ProgramWorkflow.ConfigCommonService(services);
 
-            Notifyer = new Notifyer();
-            Menu = new ContextMenu(Notifyer);
+            var notifyer = new Notifyer();
+            Menu = new ContextMenu(notifyer);
             services.AddSingleton<IContextMenu>(Menu);
-            services.AddSingleton<ITrayIcon>(Notifyer);
+            services.AddSingleton<ITrayIcon>(notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();
             services.AddSingleton<IClipboardFactory, ClipboardFactory>();
 

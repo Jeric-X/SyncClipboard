@@ -1,5 +1,4 @@
 ﻿using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Module;
 using System;
 using System.Linq;
 using System.Windows.Forms;
@@ -9,7 +8,7 @@ namespace SyncClipboard.Control
     public class ContextMenu : IContextMenu
     {
         private readonly Notifyer Notifyer;
-        private System.Windows.Forms.ContextMenuStrip contextMenu;
+        private ContextMenuStrip contextMenu;
 
         public ContextMenu(Notifyer notifyer)
         {

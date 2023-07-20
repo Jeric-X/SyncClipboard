@@ -8,4 +8,7 @@ public interface ITrayIcon
     void ShowUploadAnimation();
     void ShowDownloadAnimation();
     void StopAnimation();
+
+    public void SetStatusString(string key, string statusStr, bool error);
+    public void SetStatusString(string key, string statusStr);
 }

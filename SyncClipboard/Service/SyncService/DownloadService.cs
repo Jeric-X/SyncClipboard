@@ -159,7 +159,7 @@ namespace SyncClipboard.Service
         private void SetStatusOnError(ref int errorTimes, Exception ex)
         {
             errorTimes++;
-            Global.Notifyer.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
+            _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
 
             _logger.Write(ex.ToString());
             if (errorTimes == _userConfig.Config.Program.RetryTimes)
@@ -173,7 +173,7 @@ namespace SyncClipboard.Service
             int errorTimes = 0;
             while (!cancelToken.IsCancellationRequested)
             {
-                Global.Notifyer.SetStatusString(SERVICE_NAME, "Reading remote profile.");
+                _trayIcon.SetStatusString(SERVICE_NAME, "Reading remote profile.");
 
                 try
                 {
@@ -186,7 +186,7 @@ namespace SyncClipboard.Service
                         await SetRemoteProfileToLocal(remoteProfile, cancelToken).ConfigureAwait(true);
                         _remoteProfileCache = remoteProfile;
                     }
-                    Global.Notifyer.SetStatusString(SERVICE_NAME, "Running.", false);
+                    _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
                     errorTimes = 0;
                 }
                 catch (TaskCanceledException)

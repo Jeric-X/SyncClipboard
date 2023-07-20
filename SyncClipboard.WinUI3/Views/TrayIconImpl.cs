@@ -15,6 +15,10 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     private readonly TrayIcon _trayIcon;
 
+    protected override BitmapImage DefaultIcon => new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
+    protected override BitmapImage ErrorIcon => new BitmapImage(new Uri("ms-appx:///Assets/erro.ico"));
+    protected override int MaxToolTipLenth => 60;
+
     public TrayIconImpl(TrayIcon trayIcon)
     {
         _trayIcon = trayIcon;
@@ -31,11 +35,6 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
         App.Current.MainThreadContext.Post((_) => _trayIcon.IconSource = icon, null);
     }
 
-    protected override void SetDefaultIcon()
-    {
-        SetIcon(new BitmapImage(new Uri("ms-appx:///Assets/default.ico")));
-    }
-
     protected override BitmapImage[] UploadIcons()
     {
         return Enumerable.Range(1, 17)
@@ -50,5 +49,10 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
            .Select(x => $"ms-appx:///Assets/download{x:d3}.ico")
            .Select(x => new BitmapImage(new Uri(x)))
            .ToArray();
+    }
+
+    protected override void SetToolTip(string text)
+    {
+        // Not Support, do nothing;
     }
 }
