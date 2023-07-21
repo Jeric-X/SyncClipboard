@@ -1,12 +1,9 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.WinUI3.Views;
 using System;
 using System.Diagnostics;
-using System.Threading;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -21,18 +18,16 @@ namespace SyncClipboard.WinUI3
         public new static App Current => (App)Application.Current;
         public IServiceProvider Services { get; private set; }
         public ILogger Logger { get; private set; }
-        internal SynchronizationContext MainThreadContext { get; private set; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
+#pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
         public App()
+#pragma warning restore CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
         {
             UnhandledException += App_UnhandledException;
-            Services = AppServices.ConfigureServices().BuildServiceProvider();
-            Logger = Services.GetRequiredService<ILogger>();
-            MainThreadContext = SynchronizationContext.Current ?? throw new Exception();
             this.InitializeComponent();
         }
 
@@ -47,6 +42,8 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            Services = AppServices.ConfigureServices().BuildServiceProvider();
+            Logger = Services.GetRequiredService<ILogger>();
             Logger?.Write("App started");
             new ProgramWorkflow(Services).Run();
         }

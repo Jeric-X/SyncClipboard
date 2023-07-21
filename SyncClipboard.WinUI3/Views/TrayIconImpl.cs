@@ -1,11 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.WinUI;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.AbstractClasses;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncClipboard.WinUI3.Views;
 
@@ -32,7 +30,14 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     protected override void SetIcon(BitmapImage icon)
     {
-        App.Current.MainThreadContext.Post((_) => _trayIcon.IconSource = icon, null);
+        if (_trayIcon.DispatcherQueue.HasThreadAccess)
+        {
+            _trayIcon.IconSource = icon;
+        }
+        else
+        {
+            _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.IconSource = icon).Wait();
+        }
     }
 
     protected override BitmapImage[] UploadIcons()

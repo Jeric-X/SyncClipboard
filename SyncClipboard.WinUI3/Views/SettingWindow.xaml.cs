@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using System;
+using System.Diagnostics;
 using Windows.UI.WindowManagement;
 using Application = Microsoft.UI.Xaml.Application;
 

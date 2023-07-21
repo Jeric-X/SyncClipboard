@@ -82,12 +82,7 @@ namespace SyncClipboard.WinUI3.Views
             AddMenuItemGroup(new MenuItem[]
             {
                 new MenuItem("start", icon.ShowUploadAnimation),
-                new MenuItem("end", icon.StopAnimation),
-                new MenuItem("ToolTipText", delegate
-                {
-                    App.Current.MainThreadContext.Post((_)=>_trayIcon.ToolTipText  = $"123", null);
-                    //_trayIcon.ToolTipText  = $"{1:d63}";
-                })
+                new MenuItem("end", icon.StopAnimation)
             });
         }
 
