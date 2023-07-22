@@ -49,7 +49,7 @@ namespace SyncClipboard
 
             services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
             services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
-            services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>()
+            services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
 
             return services.BuildServiceProvider();
         }

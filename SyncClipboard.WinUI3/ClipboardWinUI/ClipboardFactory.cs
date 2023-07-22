@@ -30,10 +30,19 @@ internal class ClipboardFactory : ClipboardFactoryBase
     {
         [StandardDataFormats.Text] = HanleText,
         ["DeviceIndependentBitmap"] = HanleDib,
+        [StandardDataFormats.Bitmap] = HanleBitmap,
         [StandardDataFormats.Html] = HanleHtml,
         [StandardDataFormats.StorageItems] = HanleFiles,
         ["Preferred DropEffect"] = HanleDropEffect,
     }.ToList();
+
+    private static void HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
+    {
+        if (meta.Image is not null) return;
+        using var stream = ClipboardData.GetBitmapAsync().AsTask().Result.OpenReadAsync().AsTask().Result.AsStream();
+        using MagickImage image = new(stream);
+        meta.Image = image.ToBitmap();
+    }
 
     private static void HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
     {

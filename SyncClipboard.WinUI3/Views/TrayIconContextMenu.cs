@@ -3,16 +3,16 @@ using H.NotifyIcon;
 using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SyncClipboard.Core.AbstractClasses;
 using SyncClipboard.Core.Interfaces;
 using System;
 using System.Reflection;
 
 namespace SyncClipboard.WinUI3.Views
 {
-    public class TrayIconContextMenu : IContextMenu
+    public class TrayIconContextMenu : ContextMenuBase
     {
         private readonly TrayIcon _trayIcon;
-        private ushort _index = default;
 
         # region H.NotifyIcon.TaskbarIcon反射信息
 
@@ -86,26 +86,6 @@ namespace SyncClipboard.WinUI3.Views
             });
         }
 
-        public void AddMenuItemGroup(MenuItem[] menuItems)
-        {
-            foreach (var item in menuItems)
-            {
-                MenuFlyoutItem flyoutItem = new()
-                {
-                    Text = item.Text,
-                };
-
-                if (item.Action is not null)
-                {
-                    flyoutItem.Command = new RelayCommand(item.Action);
-                }
-
-                InsertItem(_index++, flyoutItem);
-            }
-
-            InsertItem(_index++, CreateSeparator());
-        }
-
         private MenuFlyoutSeparator CreateSeparator()
         {
             return new MenuFlyoutSeparator
@@ -115,9 +95,39 @@ namespace SyncClipboard.WinUI3.Views
             };
         }
 
-        public void AddMenuItem(MenuItem menuItem)
+        protected override void InsertToggleMenuItem(int index, ToggleMenuItem menuitem)
         {
-            AddMenuItemGroup(new MenuItem[] { menuItem });
+            ToggleMenuFlyoutItem flyoutItem = new()
+            {
+                Text = menuitem.Text,
+                IsChecked = menuitem.Checked
+            };
+            menuitem.CheckedChanged += (bool status) => flyoutItem.IsChecked = status;
+
+            if (menuitem.Action is not null)
+            {
+                flyoutItem.Command = new RelayCommand(menuitem.Action);
+            }
+            InsertItem((ushort)index, flyoutItem);
+        }
+
+        protected override void InsertMenuItem(int index, MenuItem menuitem)
+        {
+            MenuFlyoutItem flyoutItem = new()
+            {
+                Text = menuitem.Text,
+            };
+
+            if (menuitem.Action is not null)
+            {
+                flyoutItem.Command = new RelayCommand(menuitem.Action);
+            }
+            InsertItem((ushort)index, flyoutItem);
+        }
+
+        protected override void InsertSeparator(int index)
+        {
+            InsertItem((ushort)index, CreateSeparator());
         }
     }
 }

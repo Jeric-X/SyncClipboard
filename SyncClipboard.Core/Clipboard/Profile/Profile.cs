@@ -70,7 +70,7 @@ public abstract class Profile
         }
         else
         {
-            MainThreadSynContext?.Send((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer), null);
+            MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer), null);
         }
 
         if (notificationManager is not null)
