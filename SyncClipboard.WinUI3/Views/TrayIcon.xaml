@@ -10,7 +10,7 @@
                 mc:Ignorable="d">
     <tb:TaskbarIcon.ContextFlyout>
         <MenuFlyout>
-            <MenuFlyoutSeparator x:Name="_Separator" MinWidth="200" Visibility="Collapsed"/>
+            <MenuFlyoutSeparator x:Name="_Separator" MinWidth="200" Visibility="Visible"/>
             <MenuFlyoutItem Text="退出" Click="MenuFlyoutItem_Click" />
         </MenuFlyout>
     </tb:TaskbarIcon.ContextFlyout>

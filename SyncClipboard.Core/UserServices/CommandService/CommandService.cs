@@ -84,14 +84,15 @@ public class CommandService : Service
                     }
                     _isError = false;
                 }
-                catch (Exception ex)
+                catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    if (!_isError)
-                    {
-                        Console.WriteLine(ex.Message);
-                        _notificationManager.SendText("CommandService failed", ex.ToString());
-                        _isError = true;
-                    }
+                    await ResetRemoteCommand(new CommandInfo());
+                }
+                catch (Exception ex) when (!_isError)
+                {
+                    Console.WriteLine(ex.Message);
+                    _notificationManager.SendText("CommandService failed", ex.ToString());
+                    _isError = true;
                 }
             }
 

@@ -24,10 +24,11 @@ namespace SyncClipboard.WinUI3.Views
         {
             get
             {
+                var visibilityBackUp = _Separator.Visibility;
                 _Separator.Visibility = Visibility.Visible;
                 _Separator.Measure(new(10000.0, 10000.0));
                 var desiredSize = _Separator.DesiredSize;
-                _Separator.Visibility = Visibility.Collapsed;
+                _Separator.Visibility = visibilityBackUp;
                 return desiredSize;
             }
         }

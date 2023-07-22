@@ -78,12 +78,6 @@ namespace SyncClipboard.WinUI3.Views
                 throw new Exception("Can not get Property of TrayIcon");
             }
             # endregion
-
-            AddMenuItemGroup(new MenuItem[]
-            {
-                new MenuItem("start", icon.ShowUploadAnimation),
-                new MenuItem("end", icon.StopAnimation)
-            });
         }
 
         private MenuFlyoutSeparator CreateSeparator()
