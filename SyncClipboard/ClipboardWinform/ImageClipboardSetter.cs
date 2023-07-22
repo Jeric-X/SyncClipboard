@@ -1,7 +1,6 @@
 ﻿using ImageMagick;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Utilities;
 using System.IO;
 using System.Windows.Forms;
 
@@ -18,7 +17,6 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core
         SetQqFormat(dataObject, metaInfomation.Files[0]);
         SetBitmap(dataObject, metaInfomation.Files[0]);
 
-        dataObject.SetFileDropList(new System.Collections.Specialized.StringCollection { metaInfomation.Files[0] });
         return dataObject;
     }
 
@@ -30,21 +28,13 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core
 
     private static void SetHtml(DataObject dataObject, string imagePath)
     {
-        string html = $@"<img src=""file:///{imagePath}"">";
-        string clipboardHtml = ClipboardHtmlBuilder.GetClipboardHtml(html);
+        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
         dataObject.SetData(DataFormats.Html, clipboardHtml);
     }
 
-    private const string clipboardQqFormat = @"<QQRichEditFormat>
-<Info version=""1001"">
-</Info>
-<EditElement type=""1"" imagebiztype=""0"" textsummary="""" filepath=""<<<<<<"" shortcut="""">
-</EditElement>
-</QQRichEditFormat>";
-
     private static void SetQqFormat(DataObject dataObject, string imagePath)
     {
-        string clipboardQq = clipboardQqFormat.Replace("<<<<<<", imagePath);
+        string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(imagePath);
         MemoryStream ms = new(System.Text.Encoding.UTF8.GetBytes(clipboardQq));
         dataObject.SetData("QQ_Unicode_RichEdit_Format", ms);
     }

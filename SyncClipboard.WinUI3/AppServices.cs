@@ -29,6 +29,10 @@ public class AppServices
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
 
+        services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+        services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
+        services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
+
         return services;
     }
 }
