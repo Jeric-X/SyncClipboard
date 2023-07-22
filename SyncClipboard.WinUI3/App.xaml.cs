@@ -19,6 +19,8 @@ namespace SyncClipboard.WinUI3
         public IServiceProvider Services { get; private set; }
         public ILogger Logger { get; private set; }
 
+        private ProgramWorkflow ProgramWorkflow;
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -29,6 +31,13 @@ namespace SyncClipboard.WinUI3
         {
             UnhandledException += App_UnhandledException;
             this.InitializeComponent();
+        }
+
+        internal void ExitApp()
+        {
+            ProgramWorkflow.Stop();
+            UnhandledException -= App_UnhandledException;
+            Environment.Exit(0);
         }
 
         private static void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -45,7 +54,8 @@ namespace SyncClipboard.WinUI3
             Services = AppServices.ConfigureServices().BuildServiceProvider();
             Logger = Services.GetRequiredService<ILogger>();
             Logger?.Write("App started");
-            new ProgramWorkflow(Services).Run();
+            ProgramWorkflow = new ProgramWorkflow(Services);
+            ProgramWorkflow.Run();
         }
     }
 }

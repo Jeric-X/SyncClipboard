@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Options;
+using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
@@ -11,10 +12,12 @@ namespace SyncClipboard.Core
     public class ProgramWorkflow
     {
         public IServiceProvider Services { get; }
+        public ServiceManager ServiceManager { get; }
 
         public ProgramWorkflow(IServiceProvider serviceProvider)
         {
             Services = serviceProvider;
+            ServiceManager = Services.GetRequiredService<ServiceManager>();
         }
 
         public void Run()
@@ -33,6 +36,12 @@ namespace SyncClipboard.Core
             webdav.TestAlive();
 
             PrepareWorkingFolder(userConfig);
+            ServiceManager.StartUpAllService();
+        }
+
+        public void Stop()
+        {
+            ServiceManager.StopAllService();
         }
 
         public static void ConfigCommonService(ServiceCollection services)
@@ -49,6 +58,18 @@ namespace SyncClipboard.Core
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<NotificationManager>();
             services.AddSingleton<ServiceManager>();
+
+            ConfigurateUserService(services);
+        }
+
+        private static void ConfigurateUserService(IServiceCollection services)
+        {
+            services.AddSingleton<IService, CommandService>();
+            services.AddSingleton<IService, UploadService>();
+            services.AddSingleton<IService, DownloadService>();
+            services.AddSingleton<IService, EasyCopyImageSerivce>();
+            services.AddSingleton<IService, ConvertService>();
+            services.AddSingleton<IService, ServerService>();
         }
 
         private static void PrepareWorkingFolder(UserConfig userConfig)

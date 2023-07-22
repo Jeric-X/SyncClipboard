@@ -39,6 +39,7 @@ namespace SyncClipboard.WinUI3.Views
 
         private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
         {
+            App.Current.ExitApp();
             Environment.Exit(0);
             this.Dispose();
         }

@@ -1,22 +1,21 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.ClipboardWinform;
 using SyncClipboard.Control;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Module;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Utility;
 using System;
 using System.Windows.Forms;
-using SyncClipboard.Core.UserServices;
-using SyncClipboard.Core.Clipboard;
-using SyncClipboard.ClipboardWinform;
 
 namespace SyncClipboard
 {
     public static class Global
     {
         private static ContextMenu Menu;
-        private static ServiceManager ServiceManager;
+        private static ProgramWorkflow ProgramWorkflow;
 
         internal static IHttp Http;
         internal static UserConfig UserConfig;
@@ -26,15 +25,13 @@ namespace SyncClipboard
         {
             var services = ConfigurateServices();
 
-            ServiceManager = services.GetRequiredService<ServiceManager>();
             Http = services.GetRequiredService<IHttp>();
             UserConfig = services.GetRequiredService<Core.Commons.UserConfig>();
             Logger = services.GetRequiredService<ILogger>();
 
-            new ProgramWorkflow(services).Run();
+            ProgramWorkflow = new ProgramWorkflow(services);
+            ProgramWorkflow.Run();
             StartUpUI();
-
-            ServiceManager.StartUpAllService();
         }
 
         public static IServiceProvider ConfigurateServices()
@@ -52,27 +49,14 @@ namespace SyncClipboard
 
             services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
             services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
-            services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
-
-            ConfigurateProgramService(services);
+            services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>()
 
             return services.BuildServiceProvider();
         }
 
-        private static void ConfigurateProgramService(IServiceCollection services)
-        {
-            services.AddSingleton<IService, CommandService>();
-            // services.AddSingleton<IService, ClipboardService>();
-            services.AddSingleton<IService, UploadService>();
-            services.AddSingleton<IService, DownloadService>();
-            services.AddSingleton<IService, EasyCopyImageSerivce>();
-            services.AddSingleton<IService, ConvertService>();
-            services.AddSingleton<IService, ServerService>();
-        }
-
         internal static void EndUp()
         {
-            ServiceManager?.StopAllService();
+            ProgramWorkflow.Stop();
         }
 
         private static void StartUpUI()
