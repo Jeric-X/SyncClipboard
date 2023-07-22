@@ -1,11 +1,10 @@
-﻿using SyncClipboard.Core.Interfaces;
-using System;
-using System.Linq;
+﻿using SyncClipboard.Core.AbstractClasses;
+using SyncClipboard.Core.Interfaces;
 using System.Windows.Forms;
 
 namespace SyncClipboard.Control
 {
-    public class ContextMenu : IContextMenu
+    public class ContextMenu : ContextMenuBase
     {
         private readonly Notifyer Notifyer;
         private ContextMenuStrip contextMenu;
@@ -26,71 +25,29 @@ namespace SyncClipboard.Control
             Notifyer.SetContextMenu(this.contextMenu);
         }
 
-        private int _index = 0;
-
-        public void AddMenuItemGroup(MenuItem[] menuItems, bool reverse = false)
+        protected override void InsertToggleMenuItem(int index, ToggleMenuItem menuitem)
         {
-            if (!reverse)
-                AddSeparator(reverse);
-
-            var items = reverse ? menuItems.Reverse() : menuItems;
-            foreach (var item in items)
+            var item = new ToolStripMenuItem(menuitem.Text)
             {
-                AddSingleMenuItem(item, reverse);
-            }
-
-            if (reverse)
-                AddSeparator(reverse);
-        }
-
-        private void AddSingleMenuItem(MenuItem menuitem, bool reverse = false)
-        {
-            var item = new ToolStripMenuItem(menuitem.Text);
-            if (menuitem is ToggleMenuItem toggleItem)
-            {
-                item.CheckOnClick = true;
-                item.Checked = toggleItem.Checked;
-                toggleItem.CheckedChanged += (bool status) => item.Checked = status;
-            }
-
-            item.Click += (sender, e) =>
-            {
-                menuitem.Action?.Invoke();
+                CheckOnClick = true,
+                Checked = menuitem.Checked,
             };
 
-            contextMenu.Items.Insert(GetIndexAndAutoIncrease(reverse), item);
+            item.Click += (sender, e) => menuitem.Action?.Invoke();
+            menuitem.CheckedChanged += (bool status) => item.Checked = status;
+            contextMenu.Items.Insert(index, item);
         }
 
-        private int GetIndexAndAutoIncrease(bool reverse)
+        protected override void InsertMenuItem(int index, MenuItem menuitem)
         {
-            if (reverse)
-            {
-                return _index;
-            }
-            return _index++;
+            var item = new ToolStripMenuItem(menuitem.Text);
+            item.Click += (sender, e) => menuitem.Action?.Invoke();
+            contextMenu.Items.Insert(index, item);
         }
 
-        public void AddMenuItem(MenuItem item, bool reverse = false)
+        protected override void InsertSeparator(int index)
         {
-            AddMenuItemGroup(new MenuItem[] { item }, reverse);
-        }
-
-        private void AddSeparator(bool reverse)
-        {
-            if (_index != 0)
-            {
-                contextMenu.Items.Insert(GetIndexAndAutoIncrease(reverse), new ToolStripSeparator());
-            }
-        }
-
-        public void AddMenuItemGroup(MenuItem[] menuItems)
-        {
-            AddMenuItemGroup(menuItems, false);
-        }
-
-        public void AddMenuItem(MenuItem menuItem)
-        {
-            AddMenuItem(menuItem, false);
+            contextMenu.Items.Insert(index, new ToolStripSeparator());
         }
     }
 }

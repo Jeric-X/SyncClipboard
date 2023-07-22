@@ -126,16 +126,18 @@ public class FileProfile : Profile
 
     private async Task CheckHash(string localPath, CancellationToken cancelToken)
     {
-        var downloadFIleMd5 = GetMD5HashFromFile(localPath, cancelToken);
-        var existedMd5 = GetFileHash(cancelToken);
-        if (string.IsNullOrEmpty(await existedMd5))
+        var downloadFIleMd5 = await GetMD5HashFromFile(localPath, cancelToken);
+        var existedMd5 = await GetFileHash(cancelToken);
+        if (string.IsNullOrEmpty(existedMd5))
         {
-            SetFileHash(await downloadFIleMd5);
+            SetFileHash(downloadFIleMd5);
             await (WebDav?.PutText(RemoteProfilePath, ToJsonString(), cancelToken) ?? Task.CompletedTask);
             return;
         }
 
-        if (await downloadFIleMd5 != await existedMd5)
+        if (downloadFIleMd5 != MD5_FOR_OVERSIZED_FILE
+            && existedMd5 != MD5_FOR_OVERSIZED_FILE
+            && downloadFIleMd5 != existedMd5)
         {
             Logger.Write("[PULL] download erro, md5 wrong");
             _statusTip = "Downloading erro, md5 wrong";

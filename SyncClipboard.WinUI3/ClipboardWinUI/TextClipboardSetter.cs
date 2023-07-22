@@ -9,6 +9,7 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
     public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
     {
         var dataObject = new DataPackage();
+        dataObject.SetText(metaInfomation.Text);
         return dataObject;
     }
 }

@@ -10,6 +10,19 @@ public class ImageProfile : FileProfile
 {
     public override ProfileType Type => ProfileType.Image;
     protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
+    public override string FileName
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(base.FileName))
+            {
+                FileName = Path.GetFileName(FullPath)!;
+            }
+            return base.FileName;
+        }
+        set => base.FileName = value;
+    }
+
     protected override string? FullPath
     {
         get
