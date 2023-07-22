@@ -28,66 +28,6 @@ namespace SyncClipboard.Control
 
         private int _index = 0;
 
-        public void AddMenuItemGroup(string[] texts, Action[] actions)
-        {
-            if (texts.Length == 0)
-            {
-                throw new ArgumentException("参数为零");
-            }
-
-            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
-            for (var i = 0; i < texts.Length; i++)
-            {
-                var iCopy = i;
-                AddMenuItem(texts[i], (_) => actions[iCopy](), false);
-            }
-        }
-
-        public Action<bool>[] AddMenuItemGroup(string[] texts, Action<bool>[] actions, bool[] withCheckBox)
-        {
-            if (texts.Length == 0)
-            {
-                throw new ArgumentException("参数为零");
-            }
-
-            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
-
-            var setters = new Action<bool>[texts.Length];
-            for (var i = 0; i < texts.Length; i++)
-            {
-                setters[i] = AddMenuItem(texts[i], actions[i], withCheckBox[i]);
-            }
-            return setters;
-        }
-
-        public Action<bool>[] AddMenuItemGroup(string[] texts, Action<bool>[] actions)
-        {
-            if (texts.Length == 0)
-            {
-                throw new ArgumentException("参数为零");
-            }
-
-            contextMenu.Items.Insert(_index++, new ToolStripSeparator());
-
-            var setters = new Action<bool>[texts.Length];
-            for (var i = 0; i < texts.Length; i++)
-            {
-                setters[i] = AddMenuItem(texts[i], actions[i], true);
-            }
-            return setters;
-        }
-
-        private Action<bool> AddMenuItem(string texts, Action<bool> actions, bool withCheckBox, bool reverse = false)
-        {
-            var item = new ToolStripMenuItem(texts)
-            {
-                CheckOnClick = withCheckBox
-            };
-            item.Click += (sender, e) => actions(item.Checked);
-            contextMenu.Items.Insert(GetIndexAndAutoIncrease(reverse), item);
-            return (status) => item.Checked = status;
-        }
-
         public void AddMenuItemGroup(MenuItem[] menuItems, bool reverse = false)
         {
             if (!reverse)
