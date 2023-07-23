@@ -47,7 +47,7 @@ namespace SyncClipboard.WinUI3.Views
 
         #endregion
 
-        public TrayIconContextMenu(TrayIcon trayIcon, ITrayIcon icon)
+        public TrayIconContextMenu(TrayIcon trayIcon)
         {
             _trayIcon = trayIcon;
 
@@ -122,6 +122,11 @@ namespace SyncClipboard.WinUI3.Views
         protected override void InsertSeparator(int index)
         {
             InsertItem((ushort)index, CreateSeparator());
+        }
+
+        protected override int MenuItemsCount()
+        {
+            return _menuFlyout.Items.Count - 1;
         }
     }
 }

@@ -1,4 +1,7 @@
 ﻿using SyncClipboard.Core.Interfaces;
+using System.Collections;
+using System.Collections.Specialized;
+using WinRT;
 
 namespace SyncClipboard.Core.AbstractClasses
 {
@@ -7,55 +10,92 @@ namespace SyncClipboard.Core.AbstractClasses
         protected abstract void InsertToggleMenuItem(int index, ToggleMenuItem menuitem);
         protected abstract void InsertMenuItem(int index, MenuItem menuitem);
         protected abstract void InsertSeparator(int index);
+        protected abstract int MenuItemsCount();
 
-        private int _index = 0;
-        public void AddMenuItemGroup(MenuItem[] menuItems, bool reverse = false)
+        private record class GroupInfo
         {
-            if (!reverse)
-                AddSeparator(reverse);
-
-            var items = reverse ? menuItems.Reverse() : menuItems;
-            foreach (var item in items)
-            {
-                AddSingleMenuItem(item, reverse);
-            }
-
-            if (reverse)
-                AddSeparator(reverse);
+            public int Index { get; set; }
+            public bool Created { get; set; } = false;
         }
 
-        private void AddSingleMenuItem(MenuItem menuitem, bool reverse = false)
+        private readonly OrderedDictionary _groupInfos = new();
+
+        public void AddMenuItemGroup(MenuItem[] menuItems, string? group = null)
+        {
+            group ??= Guid.NewGuid().ToString();
+
+            foreach (var item in menuItems)
+            {
+                AddSingleMenuItem(item, group);
+            }
+        }
+
+        private void AddSingleMenuItem(MenuItem menuitem, string group = "default")
         {
             if (menuitem is ToggleMenuItem toggleItem)
             {
-                InsertToggleMenuItem(GetIndexAndAutoIncrease(reverse), toggleItem);
+                InsertToggleMenuItem(GetIndexAndAutoIncrease(group), toggleItem);
             }
             else
             {
-                InsertMenuItem(GetIndexAndAutoIncrease(reverse), menuitem);
+                InsertMenuItem(GetIndexAndAutoIncrease(group), menuitem);
             }
         }
 
-        private int GetIndexAndAutoIncrease(bool reverse)
+        private int GetIndexAndAutoIncrease(string group)
         {
-            if (reverse)
+            if (!_groupInfos.Contains(group))
             {
-                return _index;
+                CreateGroup(group);
             }
-            return _index++;
-        }
 
-        public void AddMenuItem(MenuItem item, bool reverse = false)
-        {
-            AddMenuItemGroup(new MenuItem[] { item }, reverse);
-        }
-
-        private void AddSeparator(bool reverse)
-        {
-            if (_index != 0)
+            var info = (GroupInfo)_groupInfos[group]!;
+            if (!info.Created)
             {
-                InsertSeparator(GetIndexAndAutoIncrease(reverse));
+                if (info.Index == 0)
+                {
+                    if (MenuItemsCount() != 0)
+                        AddSeparator(info.Index);
+                }
+                else
+                {
+                    AddSeparator(info.Index++);
+                }
             }
+
+            int step = info.Created ? 1 : 2;
+            info.Created = true;
+            bool find = false;
+            foreach (DictionaryEntry groupInfo in _groupInfos)
+            {
+                if (find)
+                    groupInfo.Value.As<GroupInfo>().Index += step;
+                if (groupInfo.Key.As<string>() == group)
+                    find = true;
+            }
+
+            return info.Index++;
+        }
+
+        public void AddMenuItem(MenuItem item, string? group)
+        {
+            group ??= "Default";
+            AddSingleMenuItem(item, group);
+        }
+
+        private void AddSeparator(int index)
+        {
+            InsertSeparator(index);
+        }
+
+        private void CreateGroup(string group)
+        {
+            if (_groupInfos.Contains(group))
+            {
+                return;
+            }
+
+            _groupInfos.Add(group, new GroupInfo { Index = MenuItemsCount() });
         }
     }
 }

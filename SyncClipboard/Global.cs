@@ -68,7 +68,7 @@ namespace SyncClipboard
                 new MenuItem("检查更新", UpdateChecker.Check),
                 new MenuItem("退出", Application.Exit)
             };
-            Menu.AddMenuItemGroup(menuItems, reverse: true);
+            Menu.AddMenuItemGroup(menuItems);
         }
     }
 }

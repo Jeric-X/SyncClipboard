@@ -1,11 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
-using SyncClipboard.Core.Clipboard;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -59,7 +56,7 @@ public class DownloadService : Service
             _userConfig.Config.SyncService.PullSwitchOn = status;
             _userConfig.Save();
         });
-        _serviceProvider.GetRequiredService<IContextMenu>().AddMenuItem(ToggleMenuItem);
+        _serviceProvider.GetRequiredService<IContextMenu>().AddMenuItem(ToggleMenuItem, SyncService.ContextMenuGroupName);
         Load();
     }
 

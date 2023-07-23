@@ -49,5 +49,10 @@ namespace SyncClipboard.Control
         {
             contextMenu.Items.Insert(index, new ToolStripSeparator());
         }
+
+        protected override int MenuItemsCount()
+        {
+            return contextMenu.Items.Count;
+        }
     }
 }

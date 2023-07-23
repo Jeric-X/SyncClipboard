@@ -47,7 +47,7 @@
 
     public interface IContextMenu
     {
-        public void AddMenuItemGroup(MenuItem[] menuItems, bool reverse = false);
-        public void AddMenuItem(MenuItem menuItem, bool reverse = false);
+        public void AddMenuItemGroup(MenuItem[] menuItems, string? group = null);
+        public void AddMenuItem(MenuItem menuItem, string? group = null);
     }
 }

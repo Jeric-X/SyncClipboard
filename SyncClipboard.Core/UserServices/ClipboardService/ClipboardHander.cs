@@ -13,6 +13,7 @@ abstract public class ClipboardHander : Service
     protected abstract IClipboardChangingListener ClipboardChangingListener { get; }
 
     protected ToggleMenuItem? ToggleMenuItem { get; set; }
+    protected virtual string? ContextMenuGroupName { get; } = null;
     protected abstract IContextMenu? ContextMenu { get; }
 
     protected override void StartService()
@@ -21,7 +22,7 @@ abstract public class ClipboardHander : Service
 
         Logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
         ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
-        ContextMenu?.AddMenuItem(ToggleMenuItem);
+        ContextMenu?.AddMenuItem(ToggleMenuItem, ContextMenuGroupName);
         Load();
     }
 

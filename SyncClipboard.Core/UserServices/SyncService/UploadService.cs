@@ -17,6 +17,7 @@ public class UploadService : ClipboardHander
     public override string LOG_TAG => "PUSH";
 
     protected override ILogger Logger => _logger;
+    protected override string? ContextMenuGroupName { get; } = SyncService.ContextMenuGroupName;
     protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
     protected override IClipboardChangingListener ClipboardChangingListener => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
 

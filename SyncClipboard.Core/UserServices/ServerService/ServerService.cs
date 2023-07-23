@@ -31,7 +31,7 @@ public class ServerService : Service
 
     protected override void StartService()
     {
-        _contextMenu.AddMenuItem(_toggleMenuItem);
+        _contextMenu.AddMenuItem(_toggleMenuItem, SyncService.ContextMenuGroupName);
         Load();
     }
 
