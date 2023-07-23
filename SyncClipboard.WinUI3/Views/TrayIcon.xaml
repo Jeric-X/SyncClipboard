@@ -6,8 +6,10 @@
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:tb="using:H.NotifyIcon"
                 ContextMenuMode="SecondWindow"
-                IconSource="ms-appx:///Assets/default.ico"
                 mc:Ignorable="d">
+    <tb:TaskbarIcon.IconSource>
+        <tb:GeneratedIconSource Text="❤️" Foreground="Red" />
+    </tb:TaskbarIcon.IconSource>
     <tb:TaskbarIcon.ContextFlyout>
         <MenuFlyout>
             <MenuFlyoutSeparator x:Name="_Separator" MinWidth="200" Visibility="Collapsed"/>

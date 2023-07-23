@@ -132,7 +132,7 @@ public class DownloadService : Service
 
     public void PushStoppedHandler()
     {
-        _logger.Write(LOG_TAG, "due to upload service stop, restart");
+        _logger.Write(LOG_TAG, "due to upload service stop, cancel");
         StopPullLoop();
         if (_userConfig.Config.SyncService.PullSwitchOn)
         {

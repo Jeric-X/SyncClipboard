@@ -50,7 +50,7 @@ public class CommandService : Service
 
         try
         {
-            _ = StartServiceAsync(_cancelSource.Token);
+            StartServiceAsync(_cancelSource.Token);
         }
         catch (OperationCanceledException)
         {
@@ -68,7 +68,7 @@ public class CommandService : Service
         _cancelSource?.Cancel();
     }
 
-    private async Task StartServiceAsync(CancellationToken cancelToken)
+    private async void StartServiceAsync(CancellationToken cancelToken)
     {
         while (true)
         {
