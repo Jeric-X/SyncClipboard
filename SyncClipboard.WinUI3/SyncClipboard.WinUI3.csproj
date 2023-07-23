@@ -16,9 +16,23 @@
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AssemblyName>SyncClipboard</AssemblyName>
+    <!--PublishSingleFile winui3 not supported-->
+    <!--<PublishSingleFile>true</PublishSingleFile>-->
     <!--<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>-->
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(Platform)'=='x64'">
+    <PackageReference Include="Magick.NET-Q16-x64" Version="13.1.3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='x86'">
+    <PackageReference Include="Magick.NET-Q16-x86" Version="13.1.3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='ARM64'">
+    <PackageReference Include="Magick.NET-Q16-arm64" Version="13.1.3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='AnyCPU'">
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.1.3" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CodeCracker.CSharp" Version="1.1.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -28,7 +42,6 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.0" />
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.108" />
     <PackageReference Include="Magick.NET.SystemDrawing" Version="7.0.5" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.1.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.3.230502000" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
