@@ -35,10 +35,10 @@ jobs:
         exit 0
 
     - name: Build test Winform
-      run: dotnet publish SyncClipboard.Test.Winform\SyncClipboard.Test.Winform.csproj --configuration Release --no-restore
+      run: dotnet publish SyncClipboard.Test.Winform\SyncClipboard.Test.Winform.csproj -c Release -r win10-x64 --no-self-contained
 
     - name: Run test Winform
-      run: dotnet test SyncClipboard.Test.Winform\bin\Release\net6.0-windows10.0.17763.0\win-x64\publish\SyncClipboard.Test.Winform.dll
+      run: dotnet test SyncClipboard.Test.Winform\bin\Release\net6.0-windows10.0.17763.0\win10-x64\publish\SyncClipboard.Test.Winform.dll
 
     # stucking in github action, no idea why
     #- name: Build test WinUI3
