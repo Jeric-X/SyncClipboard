@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using System;
-using System.Diagnostics;
 using Windows.UI.WindowManagement;
 using Application = Microsoft.UI.Xaml.Application;
 
@@ -46,6 +45,7 @@ namespace SyncClipboard.WinUI3.Views
             string pageName = "SyncClipboard.WinUI3.Views." + (((SettingItem)selectedItem).Name + "Page");
             Type? pageType = Type.GetType(pageName);
             SettingContentFrame.Navigate(pageType ?? throw new Exception($"Page View not Found: {pageName}"));
+            _SettingTitle.Text = ((SettingItem)selectedItem).Tag;
 
             if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
             {
@@ -66,6 +66,7 @@ namespace SyncClipboard.WinUI3.Views
                 SplitPane.DisplayMode = SplitViewDisplayMode.Inline;
                 SplitPane.IsPaneOpen = true;
                 _AppTitleBar.ShowNavigationButton();
+                SplitPane.PaneBackground = (Brush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
             }
         }
 

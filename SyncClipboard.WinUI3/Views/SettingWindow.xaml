@@ -31,10 +31,11 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0"
-                           Margin="20,0,20,8"
+                <TextBlock x:Name="_SettingTitle"
+                           Grid.Row="0"
+                           Margin="20,0,20,20"
                            Text="设置"
-                           FontSize="20" />
+                           FontSize="30" />
                 <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
                     <Frame x:Name="SettingContentFrame" Margin="20,0,20,0" />
                 </ScrollViewer>

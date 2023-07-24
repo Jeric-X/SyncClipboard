@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.ViewModels
 
         public SettingWindowViewModel()
         {
-            SettingItems.Add(new("SyncSetting", "同步"));
+            SettingItems.Add(new("SyncSetting", "剪切板同步"));
             SettingItems.Add(new("NetwordSetting", "网络"));
         }
     }

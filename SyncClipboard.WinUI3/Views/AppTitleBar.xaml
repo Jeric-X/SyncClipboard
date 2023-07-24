@@ -20,8 +20,10 @@
     </StackPanel.Resources>
 
     <Button x:Name="_NavigationButton"
-            Width="38"
+            Width="32"
+            Height="32"
             Margin="10,2,0,0"
+            Padding="7,7,7,7"
             Click="NavigationButton_Click"
             BorderThickness="0">
         <AnimatedIcon x:Name="AnimatedIcon">
