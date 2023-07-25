@@ -16,6 +16,7 @@
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AssemblyName>SyncClipboard</AssemblyName>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <!--PublishSingleFile winui3 not supported-->
     <!--<PublishSingleFile>true</PublishSingleFile>-->
     <!--<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>-->

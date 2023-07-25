@@ -5,6 +5,8 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <Page.Resources>
@@ -17,12 +19,14 @@
             <Setter Property="Width" Value="32" />
             <Setter Property="Padding" Value="0,0,0,0" />
             <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />
             <Setter Property="Padding" Value="0,0,0,0" />
             <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
         </Style>
     </Page.Resources>
     <StackPanel Margin="0,0,0,0" Spacing="10">
@@ -30,9 +34,43 @@
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <ToggleSwitch />
+            <ToggleSwitch IsOn="{Binding ServerEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="认证信息" Description="用户名: admin&#10;密　码: ******">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ToggleButton>
+                            <FontIcon Glyph="&#xF78D;" FontFamily="Segoe Fluent Icons" />
+                        </ToggleButton>
+                        <Button ToolTipService.ToolTip="复制服务器和认证信息">
+                            <FontIcon Glyph="&#xE16F;" FontFamily="Segoe Fluent Icons" />
+                            <Button.Flyout>
+                                <Flyout>
+                                    <StackPanel Margin="0,0,0,0" Padding="0,0,0,0" Spacing="5">
+                                        <Button Content="地址" />
+                                        <Button Content="用户名" />
+                                        <Button Content="密码" />
+                                        <Button Content="全部" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button>
+                            <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
+                        </Button>
+                    </StackPanel>
+                </labs:SettingsCard>
+            </labs:SettingsExpander.Items>
+        </labs:SettingsExpander>
+        <labs:SettingsExpander Header="剪切板同步" Description="自动将本机和设置了相同服务器的其他设备的剪切板同步">
+            <labs:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
+            </labs:SettingsExpander.HeaderIcon>
+            <ToggleSwitch />
+            <labs:SettingsExpander.Items>
+                <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
+                    <ToggleSwitch />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="服务器" Description="用户名: admin&#10;密　码: ******" IsEnabled="False">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton>
                             <FontIcon Glyph="&#xF78D;" FontFamily="Segoe Fluent Icons" />
@@ -57,12 +95,5 @@
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsCard x:Name="settingsCard2" Description="This is a default card" Header="This is the Header">
-            <ComboBox SelectedIndex="0">
-                <ComboBoxItem>Option 1</ComboBoxItem>
-                <ComboBoxItem>Option 2</ComboBoxItem>
-                <ComboBoxItem>Option 3</ComboBoxItem>
-            </ComboBox>
-        </labs:SettingsCard>
     </StackPanel>
 </Page>

@@ -6,6 +6,7 @@ using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
+using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core
 {
@@ -60,6 +61,11 @@ namespace SyncClipboard.Core
             services.AddSingleton<ServiceManager>();
 
             ConfigurateUserService(services);
+        }
+
+        public static void ConfigurateViewModels(IServiceCollection services)
+        {
+            services.AddTransient<SyncSettingViewModel>();
         }
 
         private static void ConfigurateUserService(IServiceCollection services)
