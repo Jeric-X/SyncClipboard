@@ -12,7 +12,7 @@ namespace SyncClipboard.Core.Commons
 
         public class Configuration
         {
-            public class CProgram
+            public record class CProgram
             {
                 public int IntervalTime { get; set; } = 3;
                 public int RetryTimes { get; set; } = 3;
@@ -22,7 +22,7 @@ namespace SyncClipboard.Core.Commons
                 public int LogRemainDays { get; set; } = 30;
             }
 
-            public class CSyncService
+            public record class CSyncService
             {
                 public string RemoteURL { get; set; } = "";
                 public string UserName { get; set; } = "";
@@ -34,18 +34,18 @@ namespace SyncClipboard.Core.Commons
                 public int MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 10MB
             }
 
-            public class CCommandService
+            public record class CCommandService
             {
                 public bool SwitchOn { get; set; } = false;
                 public int Shutdowntime { get; set; } = 30;
             }
 
-            public class CClipboardService
+            public record class CClipboardService
             {
                 public bool ConvertSwitchOn { get; set; } = false;
             }
 
-            public class CServerService
+            public record class CServerService
             {
                 public bool SwitchOn { get; set; } = false;
                 public short Port { get; set; } = 5033;
@@ -84,28 +84,12 @@ namespace SyncClipboard.Core.Commons
 
         public void Load()
         {
-            string text;
             try
             {
-                text = File.ReadAllText(_path);
-            }
-            catch (FileNotFoundException)
-            {
-                WriteDefaultConfigFile();
-                return;
-            }
-
-            try
-            {
+                var text = File.ReadAllText(_path);
                 var config = JsonSerializer.Deserialize<Configuration>(text);
-                if (config is null)
-                {
-                    WriteDefaultConfigFile();
-                }
-                else
-                {
-                    Config = config;
-                }
+                ArgumentNullException.ThrowIfNull(config);
+                Config = config;
                 ConfigChanged?.Invoke();
             }
             catch
