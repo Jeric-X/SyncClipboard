@@ -1,16 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core;
-using SyncClipboard.WinUI3.Views;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
 using SyncClipboard.Core.Clipboard;
-using Microsoft.UI.Xaml;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.WinUI3.ClipboardWinUI;
+using SyncClipboard.WinUI3.Views;
 
 namespace SyncClipboard.WinUI3;
 

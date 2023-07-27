@@ -51,6 +51,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<UserConfig>();
             services.AddTransient<IAppConfig, AppConfig>();
             services.Configure<UserConfigOption>(x => x.Path = Env.UserConfigFile);
+            services.AddSingleton<UserConfig2>();
 
             services.AddSingleton<ILogger, Logger>();
             services.Configure<LoggerOption>(x => x.Path = Env.LogFolder);
