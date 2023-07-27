@@ -32,6 +32,8 @@ namespace SyncClipboard.Core
 
             var userConfig = Services.GetRequiredService<UserConfig>();
             userConfig.AddMenuItems();
+            var userConfig2 = Services.GetRequiredService<UserConfig2>();
+            userConfig2.AddMenuItems();
 
             var webdav = Services.GetRequiredService<IWebDav>();
             webdav.TestAlive();

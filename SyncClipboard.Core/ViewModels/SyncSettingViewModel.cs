@@ -1,12 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.Commons;
-using System;
-using System.Collections.Generic;
+using SyncClipboard.Core.UserServices;
 using System.ComponentModel;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -15,28 +10,24 @@ public partial class SyncSettingViewModel : ObservableObject
     [ObservableProperty]
     bool serverEnable;
 
-    private readonly UserConfig _userConfig;
+    private readonly UserConfig2 _userConfig;
 
-    public SyncSettingViewModel(UserConfig userConfig)
+    public SyncSettingViewModel(UserConfig2 userConfig)
     {
         _userConfig = userConfig;
-        _userConfig.ConfigChanged += LoadFromConfig;
-        serverEnable = userConfig.Config.ServerService.SwitchOn;
+        _userConfig.ListenConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY, LoadFromConfig);
+        serverEnable = _userConfig.GetConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY)?.SwitchOn ?? false;
     }
 
-    private void LoadFromConfig()
+    private void LoadFromConfig(object? config)
     {
-        ServerEnable = _userConfig.Config.ServerService.SwitchOn;
-    }
-
-    partial void OnServerEnableChanged(bool value)
-    {
-        _userConfig.Config.ServerService.SwitchOn = value;
+        var newConfig = config as ServerConfig ?? new();
+        ServerEnable = newConfig.SwitchOn;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
-        _userConfig.Save();
+        _userConfig.SetConfig(ServerService.SERVER_CONFIG_KEY, new ServerConfig() { SwitchOn = ServerEnable });
         base.OnPropertyChanged(e);
     }
 }

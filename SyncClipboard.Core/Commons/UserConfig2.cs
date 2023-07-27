@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Interfaces;
+using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -23,6 +24,7 @@ namespace SyncClipboard.Core.Commons
             _appConfig = appConfig;
             _contextMenu = contextMenu;
             _path = appConfig.UserConfigFile + ".json";
+            Load();
         }
 
         public T? GetConfig<T>(string key)
@@ -50,7 +52,7 @@ namespace SyncClipboard.Core.Commons
             _registedTypeList.Add(key, type);
         }
 
-        public void RegistConfigChangedHandler<T>(string key, Action<object?> action)
+        public void ListenConfig<T>(string key, Action<object?> action)
         {
             RegistConfigType(key, typeof(T));
             if (_registedChangedHandlerList.ContainsKey(key))
@@ -102,7 +104,7 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
-        public void Save()
+        private void Save()
         {
             var jsonString = _jsonNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_path, jsonString);
@@ -124,6 +126,30 @@ namespace SyncClipboard.Core.Commons
                 Save();
             }
             NotifyAllRegistedHandler();
+        }
+
+        [SupportedOSPlatform("windows")]
+        public void AddMenuItems()
+        {
+            MenuItem[] menuItems =
+            {
+                new MenuItem(
+                    "打开配置文件", () => {
+                        var open = new System.Diagnostics.Process();
+                        open.StartInfo.FileName = "notepad";
+                        open.StartInfo.Arguments = _path;
+                        open.Start();
+                    } )  ,
+                new MenuItem(
+                    "打开配置文件所在位置", () => {
+                        var open = new System.Diagnostics.Process();
+                        open.StartInfo.FileName = "explorer";
+                        open.StartInfo.Arguments = "/e,/select," + _path;
+                        open.Start();
+                    }),
+                new MenuItem("重新载入配置文件", () => this.Load())
+            };
+            _contextMenu.AddMenuItemGroup(menuItems);
         }
     }
 }
