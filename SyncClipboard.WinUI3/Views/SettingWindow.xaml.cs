@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using System;
 using Windows.UI.WindowManagement;
+using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -85,7 +86,7 @@ namespace SyncClipboard.WinUI3.Views
 
         void IMainWindow.Show()
         {
-            this.Activate();
+            this.CenterOnScreen();
         }
     }
 }

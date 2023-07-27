@@ -6,10 +6,12 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <Page.Resources>
+        <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordIconConverter" />
         <!--<Thickness x:Key="SettingsCardPadding">16,16,60,16</Thickness>
         <Thickness x:Key="SettingsExpanderItemPadding">58,8,60,8</Thickness>
         <Thickness x:Key="ClickableSettingsExpanderItemPadding">58,0,32,0</Thickness>
@@ -38,8 +40,8 @@
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="认证信息" Description="用户名: admin&#10;密　码: ******">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton>
-                            <FontIcon Glyph="&#xF78D;" FontFamily="Segoe Fluent Icons" />
+                        <ToggleButton x:Name="_ShowHidePasswordToggleButton">
+                            <FontIcon Glyph="{Binding ElementName=_ShowHidePasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
                         </ToggleButton>
                         <Button ToolTipService.ToolTip="复制服务器和认证信息">
                             <FontIcon Glyph="&#xE16F;" FontFamily="Segoe Fluent Icons" />
