@@ -6,6 +6,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
@@ -32,7 +33,11 @@
         </Style>
     </Page.Resources>
     <StackPanel Margin="0,0,0,0" Spacing="10">
-        <labs:SettingsExpander Margin="0,0,0,0" Header="同步服务器" Description="作为本机和其他设备的服务器">
+        <local:ServerSettingDialog x:Name="_ServerSettingDialog" />
+        <labs:SettingsExpander Margin="0,0,0,0"
+                               Header="同步服务器"
+                               Description="作为本机和其他设备的服务器"
+                               IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
@@ -56,14 +61,14 @@
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
-                        <Button>
+                        <Button Command="{x:Bind SetServerAsyncCommand}">
                             <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="剪切板同步" Description="自动将本机和设置了相同服务器的其他设备的剪切板同步">
+        <labs:SettingsExpander Header="剪切板同步" Description="自动将本机和设置了相同服务器的其他设备的剪切板同步" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
