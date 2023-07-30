@@ -22,6 +22,11 @@
     <!--<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>-->
   </PropertyGroup>
 
+  <Target Name="DeleteServerAppsettings" AfterTargets="Build">
+    <Message Text="Deleting appsettings.json"/>
+    <Delete Files="$(OutputPath)\appsettings.json" />
+  </Target>
+
   <ItemGroup Condition="'$(Platform)'=='x64'">
     <PackageReference Include="Magick.NET-Q16-x64" Version="13.1.3" />
   </ItemGroup>

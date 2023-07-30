@@ -53,7 +53,7 @@ namespace SyncClipboard.Server
             app.Run();
         }
 
-        public static WebApplication Start(short prot, string path, string userName, string password)
+        public static WebApplication Start(ushort prot, string path, string userName, string password)
         {
             var builder = WebApplication.CreateBuilder(
                 new WebApplicationOptions
