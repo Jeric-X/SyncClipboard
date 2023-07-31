@@ -11,12 +11,12 @@
     <ContentDialog.Resources>
         <Style TargetType="local:ServerSettingDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
-    <ScrollViewer Padding="10,0,10,0" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Padding="0,0,10,0" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
         <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="12">
-            <TextBox Header="端口号" />
-            <TextBox Header="用户名" />
-            <PasswordBox Header="密码" IsPasswordRevealButtonEnabled="True" />
-            <TextBlock />
+            <TextBox x:Name="_Url" Header="端口号" />
+            <TextBox x:Name="_UserName" Header="用户名" />
+            <PasswordBox x:Name="_Password" Header="密码" IsPasswordRevealButtonEnabled="True" />
+            <TextBlock x:Name="_ErrorTip" Foreground="Red"/>
         </StackPanel>
     </ScrollViewer>
 </ContentDialog>

@@ -26,16 +26,33 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class SyncSettingPage : Page
     {
+        private readonly SyncSettingViewModel _viewModel;
+
         public SyncSettingPage()
         {
             this.InitializeComponent();
-            this.DataContext = App.Current.Services.GetRequiredService<SyncSettingViewModel>();
+            _viewModel = App.Current.Services.GetRequiredService<SyncSettingViewModel>();
+            this.DataContext = _viewModel;
         }
 
         [RelayCommand]
         private async void SetServerAsync()
         {
             await _ServerSettingDialog.ShowAsync();
+        }
+
+        private void ServerSettingDialog_OkClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        {
+            var res = _viewModel.SetServerConfig(_ServerSettingDialog.Url, _ServerSettingDialog.UserName, _ServerSettingDialog.Password);
+            if (string.IsNullOrEmpty(res))
+            {
+                _ServerSettingDialog.ErrorTip = "";
+                return;
+            }
+
+            _ServerSettingDialog.ErrorTip = res;
+            args.Cancel = true;
+            return;
         }
     }
 }

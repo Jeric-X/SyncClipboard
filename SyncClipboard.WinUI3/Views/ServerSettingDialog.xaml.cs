@@ -23,6 +23,14 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class ServerSettingDialog : ContentDialog
     {
+        public string Url => _Url.Text;
+        public string UserName => _UserName.Text;
+        public string Password => _Password.Password;
+        public string ErrorTip
+        {
+            get => _ErrorTip.Text;
+            set => _ErrorTip.Text = value;
+        }
 
         public ServerSettingDialog()
         {
