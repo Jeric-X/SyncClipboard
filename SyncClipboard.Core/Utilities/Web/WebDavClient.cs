@@ -2,6 +2,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Configs;
+using SyncClipboard.Core.UserServices;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -13,37 +14,12 @@ namespace SyncClipboard.Core.Utilities.Web
         private const string USER_AGENT = Env.SoftName + Env.VERSION;
         private readonly ILogger _logger;
         private SyncConfig _syncConfig;
+        private ServerConfig _serverConfig;
 
-        public int? IntervalTime { get; set; }
-        public int? RetryTimes { get; set; }
-        private int? _timeout;
-        public int Timeout
-        {
-            get => _timeout ?? (int)httpClient.Timeout.TotalSeconds;
-            set => _timeout = value;
-        }
-
-        private string? _user;
-        public string? User
-        {
-            get => _user;
-            set
-            {
-                _user = value;
-                SetAuthHeader();
-            }
-        }
-
-        private string? _token;
-        public string? Token
-        {
-            get => _token;
-            set
-            {
-                _token = value;
-                SetAuthHeader();
-            }
-        }
+        private uint Timeout => _syncConfig.TimeOut != 0 ? _syncConfig.TimeOut : (uint)httpClient.Timeout.TotalSeconds;
+        private string User => _syncConfig.UseLocalServer ? _serverConfig.UserName : _syncConfig.UserName;
+        private string Token => _syncConfig.UseLocalServer ? _serverConfig.Password : _syncConfig.Password;
+        private string BaseAddress => _syncConfig.UseLocalServer ? $"http://127.0.0.1:{_serverConfig.Port}" : _syncConfig.RemoteURL;
 
         private HttpClient httpClient;
 
@@ -51,26 +27,20 @@ namespace SyncClipboard.Core.Utilities.Web
         {
             userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, UserConfigChangedHandler);
             _syncConfig = userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+
+            userConfig.ListenConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY, (config) => _serverConfig = (ServerConfig)config!);
+            _serverConfig = userConfig.GetConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY) ?? new();
             _logger = logger;
 
             httpClient = CreateHttpClient();
-            LoadUserConfig();
-        }
-
-        private void LoadUserConfig()
-        {
-            User = _syncConfig.UserName;
-            Token = _syncConfig.Password;
-            IntervalTime = _syncConfig.IntervalTime;
-            RetryTimes = _syncConfig.RetryTimes;
-            Timeout = _syncConfig.TimeOut;
+            SetAuthHeader();
         }
 
         private void UserConfigChangedHandler(object? newConfig)
         {
             _syncConfig = newConfig as SyncConfig ?? new();
             httpClient = CreateHttpClient();
-            LoadUserConfig();
+            SetAuthHeader();
         }
 
         private HttpClient CreateHttpClient()
@@ -82,7 +52,7 @@ namespace SyncClipboard.Core.Utilities.Web
 
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
 
-            if (Uri.TryCreate(_syncConfig.RemoteURL?.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
+            if (Uri.TryCreate(BaseAddress.TrimEnd('/', '\\') + '/', UriKind.Absolute, out Uri? uri))
             {
                 httpClient.BaseAddress = uri;
             }

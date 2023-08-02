@@ -82,12 +82,12 @@
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <!--<ToggleSwitch />-->
+            <ToggleSwitch IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}"/>
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
-                    <ToggleSwitch x:Name="_UseLocalServerToggle" />
+                    <ToggleSwitch x:Name="_UseLocalServerToggle" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="服务器" Description="用户名: admin&#10;密　码: ******" IsEnabled="{x:Bind _UseLocalServerToggle.IsOn, Mode=OneWay}">
+                <labs:SettingsCard Header="服务器" Description="用户名: admin&#10;密　码: ******" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton>
                             <FontIcon Glyph="&#xF78D;" FontFamily="Segoe Fluent Icons" />

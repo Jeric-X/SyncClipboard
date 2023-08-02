@@ -39,7 +39,7 @@ public class DownloadService : Service
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
-    }                   
+    }
 
     private void SyncConfigChanged(object? newConfig)
     {

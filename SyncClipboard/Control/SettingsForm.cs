@@ -73,7 +73,7 @@ namespace SyncClipboard
             if (this.textBox8.Text != "")
                 _syncConfig.IntervalTime = Convert.ToInt32(this.textBox8.Text);
             if (this.textBox7.Text != "")
-                _syncConfig.TimeOut = Convert.ToInt32(this.textBox7.Text);
+                _syncConfig.TimeOut = Convert.ToUInt32(this.textBox7.Text);
             if (this.textBox6.Text != "")
                 _syncConfig.RetryTimes = Convert.ToInt32(this.textBox6.Text);
             _userConfig.SetConfig(ConfigKey.Sync, _syncConfig);

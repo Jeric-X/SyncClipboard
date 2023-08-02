@@ -6,10 +6,11 @@ namespace SyncClipboard.Core.Commons
     {
         private readonly IEnumerable<IService> _services;
 
-        public ServiceManager(IEnumerable<IService> services, UserConfig userConfig)
+        public ServiceManager(IEnumerable<IService> services, UserConfig userConfig, UserConfig2 userConfig2)
         {
             _services = services;
             userConfig.ConfigChanged += LoadAllService;
+            userConfig2.ConfigChanged += LoadAllService;
         }
 
         public void StartUpAllService()

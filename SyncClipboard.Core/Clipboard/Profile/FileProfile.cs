@@ -21,7 +21,7 @@ public class FileProfile : Profile
     protected virtual string? FullPath { get; set; }
 
     private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
-    private int _maxFileByte;
+    private readonly int _maxFileByte;
     private string _fileMd5Hash = "";
     private string _statusTip = "";
 

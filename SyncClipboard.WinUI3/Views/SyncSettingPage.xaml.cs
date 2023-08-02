@@ -32,7 +32,7 @@ namespace SyncClipboard.WinUI3.Views
             await _ServerSettingDialog.ShowAsync();
         }
 
-        private void ServerSettingDialog_OkClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        private void ServerSettingDialog_OkClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
         {
             var res = _viewModel.SetServerConfig(_ServerSettingDialog.Url, _ServerSettingDialog.UserName, _ServerSettingDialog.Password);
             if (string.IsNullOrEmpty(res))
@@ -50,5 +50,7 @@ namespace SyncClipboard.WinUI3.Views
         {
             return show ?? false ? origin : "*********";
         }
+
+        private bool Not(bool value) => !value;
     }
 }

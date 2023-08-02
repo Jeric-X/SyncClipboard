@@ -7,12 +7,6 @@ namespace SyncClipboard.Core.Interfaces
 {
     public interface IWebDav
     {
-        int? IntervalTime { get; set; }
-        int? RetryTimes { get; set; }
-        int Timeout { get; set; }
-        string? User { get; set; }
-        string? Token { get; set; }
-
         Task<string> GetText(string url, CancellationToken? cancelToken = null);
         Task PutText(string url, string text, CancellationToken? cancelToken = null);
         Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null);

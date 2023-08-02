@@ -82,6 +82,10 @@ namespace SyncClipboard.Core.Commons
                 }
             }
 
+#if DEBUG
+            _logger.Write("[Writting Config] " + newValue.ToString() ?? "");
+#endif
+
             _jsonNode[key] = JsonSerializer.SerializeToNode(newValue);
             NotifyRegistedHandler(key, newValue);
             ConfigChanged?.Invoke();
