@@ -1,12 +1,11 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.UserServices;
 
 public class ServerService : Service
 {
-    public const string SERVER_CONFIG_KEY = "ServerService";
-
     Microsoft.AspNetCore.Builder.WebApplication? app;
     public const string SERVICE_NAME = "内置服务器";
     public const string LOG_TAG = "INNERSERVER";
@@ -26,15 +25,15 @@ public class ServerService : Service
             _serverConfig.SwitchOn,
             (status) =>
             {
-                _userConfig.SetConfig(SERVER_CONFIG_KEY, _serverConfig with { SwitchOn = status });
+                _userConfig.SetConfig(ConfigKey.Server, _serverConfig with { SwitchOn = status });
             }
         );
     }
 
     protected override void StartService()
     {
-        _userConfig.ListenConfig<ServerConfig>(SERVER_CONFIG_KEY, ConfigChanged);
-        _serverConfig = _userConfig.GetConfig<ServerConfig>(SERVER_CONFIG_KEY) ?? new();
+        _userConfig.ListenConfig<ServerConfig>(ConfigKey.Server, ConfigChanged);
+        _serverConfig = _userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         _contextMenu.AddMenuItem(_toggleMenuItem, SyncService.ContextMenuGroupName);
         RestartServer();
     }

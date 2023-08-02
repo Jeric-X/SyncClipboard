@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Models.Configs;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -16,7 +16,7 @@ public partial class SyncSettingViewModel : ObservableObject
     private ServerConfig serverConfig;
     partial void OnServerConfigChanged(ServerConfig value)
     {
-        _userConfig.SetConfig(ServerService.SERVER_CONFIG_KEY, value);
+        _userConfig.SetConfig(ConfigKey.Server, value);
         OnPropertyChanged(nameof(ServerUserName));
         OnPropertyChanged(nameof(ServerPassword));
         OnPropertyChanged(nameof(ServerPort));
@@ -49,8 +49,8 @@ public partial class SyncSettingViewModel : ObservableObject
     public SyncSettingViewModel(UserConfig2 userConfig)
     {
         _userConfig = userConfig;
-        _userConfig.ListenConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY, LoadSeverConfig);
-        serverConfig = _userConfig.GetConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY) ?? new();
+        _userConfig.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
+        serverConfig = _userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         serverEnable = serverConfig.SwitchOn;
 
         _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);

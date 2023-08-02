@@ -19,6 +19,7 @@ namespace SyncClipboard
 
         internal static IHttp Http;
         internal static UserConfig UserConfig;
+        internal static UserConfig2 UserConfig2;
         internal static ILogger Logger;
 
         public static void StartUp()
@@ -26,7 +27,8 @@ namespace SyncClipboard
             var services = ConfigurateServices();
 
             Http = services.GetRequiredService<IHttp>();
-            UserConfig = services.GetRequiredService<Core.Commons.UserConfig>();
+            UserConfig = services.GetRequiredService<UserConfig>();
+            UserConfig2 = services.GetRequiredService<UserConfig2>();
             Logger = services.GetRequiredService<ILogger>();
 
             ProgramWorkflow = new ProgramWorkflow(services);

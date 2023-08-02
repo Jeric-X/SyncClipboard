@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Models;
+﻿namespace SyncClipboard.Core.Models.UserConfigs;
 
 public record ChangeableAppConfig
 {

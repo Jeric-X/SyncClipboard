@@ -1,6 +1,7 @@
 using SyncClipboard.Control;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Net.Http;
@@ -19,10 +20,15 @@ public static class Nextcloud
             return;
         }
 
-        Global.UserConfig.Config.SyncService.UserName = nextcloudInfo.Username;
-        Global.UserConfig.Config.SyncService.Password = nextcloudInfo.Password;
-        Global.UserConfig.Config.SyncService.RemoteURL = nextcloudInfo.Url;
-        Global.UserConfig.Save();
+        SyncConfig config = Global.UserConfig2.GetConfig<SyncConfig>(ConfigKey.Sync);
+        Global.UserConfig2.SetConfig(
+            ConfigKey.Sync,
+            config with
+            {
+                UserName = nextcloudInfo.Username,
+                Password = nextcloudInfo.Password,
+                RemoteURL = nextcloudInfo.Url
+            });
     }
 
     public static async Task<WebDavCredential> SignInFlowAsync()

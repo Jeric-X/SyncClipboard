@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.UserServices;
+﻿namespace SyncClipboard.Core.Models.UserConfigs;
 
 public record class ServerConfig
 {

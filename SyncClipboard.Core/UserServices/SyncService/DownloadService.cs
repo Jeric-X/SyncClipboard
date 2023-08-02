@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.Configs;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;

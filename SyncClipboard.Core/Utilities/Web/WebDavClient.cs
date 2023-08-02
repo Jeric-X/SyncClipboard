@@ -1,7 +1,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.Configs;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -28,8 +28,8 @@ namespace SyncClipboard.Core.Utilities.Web
             userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, UserConfigChangedHandler);
             _syncConfig = userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
 
-            userConfig.ListenConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY, (config) => _serverConfig = (ServerConfig)config!);
-            _serverConfig = userConfig.GetConfig<ServerConfig>(ServerService.SERVER_CONFIG_KEY) ?? new();
+            userConfig.ListenConfig<ServerConfig>(ConfigKey.Server, (config) => _serverConfig = (ServerConfig)config!);
+            _serverConfig = userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
             _logger = logger;
 
             httpClient = CreateHttpClient();

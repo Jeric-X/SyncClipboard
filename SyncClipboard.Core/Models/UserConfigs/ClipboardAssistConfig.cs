@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Models.Configs;
+﻿namespace SyncClipboard.Core.Models.UserConfigs;
 
 public record class ClipboardAssistConfig
 {

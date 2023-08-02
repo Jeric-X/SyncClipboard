@@ -1,6 +1,6 @@
 ﻿using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.Configs;
+using SyncClipboard.Core.Models.UserConfigs;
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;
