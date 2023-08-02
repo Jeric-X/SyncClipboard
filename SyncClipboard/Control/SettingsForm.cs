@@ -1,10 +1,9 @@
-﻿using System;
+﻿using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.Configs;
+using System;
 using System.ComponentModel;
 using System.Windows.Forms;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.UserServices;
-using SyncClipboard.Core.Models;
 
 namespace SyncClipboard
 {
@@ -12,7 +11,6 @@ namespace SyncClipboard
     {
         private readonly UserConfig2 _userConfig;
         private SyncConfig _syncConfig;
-        private ChangeableAppConfig _appConfig;
 
         public SettingsForm(UserConfig2 userConfig)
         {
@@ -21,10 +19,8 @@ namespace SyncClipboard
             this.textBox7.KeyPress += OnlyNum;
             this.textBox8.KeyPress += OnlyNum;
             _userConfig = userConfig;
-            LoadSyncConfig(_userConfig.GetConfig<SyncConfig>(SyncService.CONFIG_KEY));
-            LoadAppConfig(_userConfig.GetConfig<ChangeableAppConfig>("Program"));
-            _userConfig.ListenConfig<SyncConfig>(SyncService.CONFIG_KEY, LoadSyncConfig);
-            _userConfig.ListenConfig<ChangeableAppConfig>("Program", LoadAppConfig);
+            LoadSyncConfig(_userConfig.GetConfig<SyncConfig>(ConfigKey.Sync));
+            _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadSyncConfig);
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -47,14 +43,9 @@ namespace SyncClipboard
             this.textBox1.Text = _syncConfig.RemoteURL;
             this.textBox2.Text = _syncConfig.UserName;
             this.textBox3.Text = _syncConfig.Password;
-        }
-
-        private void LoadAppConfig(object newConfig)
-        {
-            _appConfig = newConfig as ChangeableAppConfig ?? new();
-            this.textBox6.Text = _appConfig.RetryTimes.ToString();
-            this.textBox7.Text = _appConfig.TimeOut.ToString();
-            this.textBox8.Text = _appConfig.IntervalTime.ToString();
+            this.textBox6.Text = _syncConfig.RetryTimes.ToString();
+            this.textBox7.Text = _syncConfig.TimeOut.ToString();
+            this.textBox8.Text = _syncConfig.IntervalTime.ToString();
         }
 
         private void OKButtenClicked(object sender, EventArgs e)
@@ -78,15 +69,14 @@ namespace SyncClipboard
             _syncConfig.RemoteURL = this.textBox1.Text;
             _syncConfig.UserName = this.textBox2.Text;
             _syncConfig.Password = this.textBox3.Text;
-            _userConfig.SetConfig(SyncService.CONFIG_KEY, _syncConfig);
 
             if (this.textBox8.Text != "")
-                _appConfig.IntervalTime = Convert.ToInt32(this.textBox8.Text);
+                _syncConfig.IntervalTime = Convert.ToInt32(this.textBox8.Text);
             if (this.textBox7.Text != "")
-                _appConfig.TimeOut = Convert.ToInt32(this.textBox7.Text);
+                _syncConfig.TimeOut = Convert.ToInt32(this.textBox7.Text);
             if (this.textBox6.Text != "")
-                _appConfig.RetryTimes = Convert.ToInt32(this.textBox6.Text);
-            _userConfig.SetConfig("Program", _appConfig);
+                _syncConfig.RetryTimes = Convert.ToInt32(this.textBox6.Text);
+            _userConfig.SetConfig(ConfigKey.Sync, _syncConfig);
         }
     }
 }

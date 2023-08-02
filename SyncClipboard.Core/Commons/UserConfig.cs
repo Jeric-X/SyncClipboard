@@ -15,8 +15,8 @@ namespace SyncClipboard.Core.Commons
             public record class CProgram
             {
                 public int IntervalTime { get; set; } = 3;
-                public int RetryTimes { get; set; } = 3;
-                public int TimeOut { get; set; } = 10;
+                //public int RetryTimes { get; set; } = 3;
+                //public int TimeOut { get; set; } = 10;
                 public string Proxy { get; set; } = "";
                 public bool DeleteTempFilesOnStartUp { get; set; } = false;
                 public int LogRemainDays { get; set; } = 30;
@@ -53,11 +53,11 @@ namespace SyncClipboard.Core.Commons
                 public string Password { get; set; } = "admin";
             }
 
-            public CSyncService SyncService { get; set; } = new CSyncService();
+            //public CSyncService SyncService { get; set; } = new CSyncService();
             public CCommandService CommandService { get; set; } = new CCommandService();
             public CClipboardService ClipboardService { get; set; } = new CClipboardService();
             public CProgram Program { get; set; } = new CProgram();
-            public CServerService ServerService { get; set; } = new CServerService();
+            //public CServerService ServerService { get; set; } = new CServerService();
         }
 
         public Configuration Config = new();

@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Configs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using System.Security.Cryptography;
@@ -20,12 +21,12 @@ public class FileProfile : Profile
     protected virtual string? FullPath { get; set; }
 
     private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
+    private int _maxFileByte;
     private string _fileMd5Hash = "";
     private string _statusTip = "";
 
     private readonly IWebDav? WebDav;
     private readonly ILogger Logger;
-    private readonly UserConfig UserConfig;
     private readonly string RemoteFileFolder;
 
     public FileProfile(string file, IServiceProvider serviceProvider) : this(serviceProvider)
@@ -47,9 +48,12 @@ public class FileProfile : Profile
         ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
         WebDav = serviceProvider.GetRequiredService<IWebDav>();
         Logger = serviceProvider.GetRequiredService<ILogger>();
-        UserConfig = serviceProvider.GetRequiredService<UserConfig>();
         ServiceProvider = serviceProvider;
         RemoteFileFolder = serviceProvider.GetRequiredService<IAppConfig>().RemoteFileFolder;
+
+        var configManager = serviceProvider.GetRequiredService<UserConfig2>();
+        var syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new SyncConfig();
+        _maxFileByte = syncConfig.MaxFileByte;
     }
 
     protected string GetTempLocalFilePath()
@@ -82,7 +86,7 @@ public class FileProfile : Profile
 
         ArgumentNullException.ThrowIfNull(FullPath);
         var file = new FileInfo(FullPath);
-        if (file.Length <= UserConfig.Config.SyncService.MaxFileByte)
+        if (file.Length <= _maxFileByte)
         {
             Logger.Write("PUSH file " + FileName);
             if (!await webdav.Exist(RemoteFileFolder))
@@ -171,7 +175,7 @@ public class FileProfile : Profile
     private async Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
-        if (fileInfo.Length > UserConfig.Config.SyncService.MaxFileByte)
+        if (fileInfo.Length > _maxFileByte)
         {
             return MD5_FOR_OVERSIZED_FILE;
         }

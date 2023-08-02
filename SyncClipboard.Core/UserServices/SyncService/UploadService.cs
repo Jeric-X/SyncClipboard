@@ -3,6 +3,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Configs;
 using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
@@ -13,7 +14,7 @@ public class UploadService : ClipboardHander
     public event ProgramEvent.ProgramEventHandler? PushStopped;
 
     private const string SERVICE_NAME_SIMPLE = "⬆⬆";
-    public override string SERVICE_NAME => "上传本机";
+    public override string SERVICE_NAME => "同步剪切板";
     public override string LOG_TAG => "PUSH";
 
     protected override ILogger Logger => _logger;
@@ -23,11 +24,11 @@ public class UploadService : ClipboardHander
 
     protected override bool SwitchOn
     {
-        get => _userConfig.Config.SyncService.PushSwitchOn;
+        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn;
         set
         {
-            _userConfig.Config.SyncService.PushSwitchOn = value;
-            _userConfig.Save();
+            _syncConfig.SyncSwitchOn = value;
+            _userConfig.SetConfig(ConfigKey.Sync, _syncConfig);
         }
     }
 
@@ -35,11 +36,12 @@ public class UploadService : ClipboardHander
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig _userConfig;
+    private readonly UserConfig2 _userConfig;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private readonly IWebDav _webDav;
     private readonly ITrayIcon _trayIcon;
+    private SyncConfig _syncConfig;
 
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
@@ -47,11 +49,18 @@ public class UploadService : ClipboardHander
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
+        _syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+    }
+
+    public override void Load()
+    {
+        _syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        base.Load();
     }
 
     protected override void StartService()
@@ -156,7 +165,7 @@ public class UploadService : ClipboardHander
     private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
     {
         string errMessage = "";
-        for (int i = 0; i < _userConfig.Config.Program.RetryTimes; i++)
+        for (int i = 0; i < _syncConfig.RetryTimes; i++)
         {
             try
             {
@@ -186,14 +195,14 @@ public class UploadService : ClipboardHander
                 SyncService.remoteProfilemutex.ReleaseMutex();
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(_userConfig.Config.Program.IntervalTime), cancelToken);
+            await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
         _notificationManager.SendText("上传失败：" + profile.ToolTip(), errMessage);
     }
 
     private async Task CleanServerTempFile(CancellationToken cancelToken)
     {
-        if (_userConfig.Config.SyncService.DeletePreviousFilesOnPush)
+        if (_syncConfig.DeletePreviousFilesOnPush)
         {
             try
             {

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.Configs;
 using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
@@ -13,31 +14,42 @@ public class DownloadService : Service
 
     private const string SERVICE_NAME = "⬇⬇";
     private const string LOG_TAG = "PULL";
-    private bool _pullSwitchOn = false;
-    private readonly object _pullSwitchLocker = new();
+    private bool _isPullLoopRunning = false;
+    private readonly object _isPullLoopRunningLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig _userConfig;
+    private readonly UserConfig2 _userConfig;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private readonly ITrayIcon _trayIcon;
+    private SyncConfig _syncConfig;
+
+    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn;
 
     public DownloadService(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
+        _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, SyncConfigChanged);
+        _syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
+    }                   
+
+    private void SyncConfigChanged(object? newConfig)
+    {
+        _syncConfig = newConfig as SyncConfig ?? new();
+        ReLoad();
     }
 
-    public override void Load()
+    private void ReLoad()
     {
-        if (_userConfig.Config.SyncService.PullSwitchOn)
+        if (SwitchOn)
         {
             SwitchOnPullLoop();
         }
@@ -51,13 +63,7 @@ public class DownloadService : Service
 
     protected override void StartService()
     {
-        var ToggleMenuItem = new ToggleMenuItem("下载远程", _userConfig.Config.SyncService.PullSwitchOn, (status) =>
-        {
-            _userConfig.Config.SyncService.PullSwitchOn = status;
-            _userConfig.Save();
-        });
-        _serviceProvider.GetRequiredService<IContextMenu>().AddMenuItem(ToggleMenuItem, SyncService.ContextMenuGroupName);
-        Load();
+        ReLoad();
     }
 
     protected override void StopSerivce()
@@ -67,11 +73,11 @@ public class DownloadService : Service
 
     private void SwitchOnPullLoop()
     {
-        lock (_pullSwitchLocker)
+        lock (_isPullLoopRunningLocker)
         {
-            if (!_pullSwitchOn)
+            if (!_isPullLoopRunning)
             {
-                _pullSwitchOn = true;
+                _isPullLoopRunning = true;
                 StartPullLoop();
             }
         }
@@ -79,11 +85,11 @@ public class DownloadService : Service
 
     private void SwitchOffPullLoop()
     {
-        lock (_pullSwitchLocker)
+        lock (_isPullLoopRunningLocker)
         {
-            if (_pullSwitchOn)
+            if (_isPullLoopRunning)
             {
-                _pullSwitchOn = false;
+                _isPullLoopRunning = false;
                 StopPullLoop();
             }
         }
@@ -131,10 +137,7 @@ public class DownloadService : Service
     {
         _logger.Write(LOG_TAG, "due to upload service stop, restart");
         StopPullLoop();
-        if (_userConfig.Config.SyncService.PullSwitchOn)
-        {
-            StartPullLoop();
-        }
+        ReLoad();
     }
 
     public override void RegistEvent()
@@ -158,7 +161,7 @@ public class DownloadService : Service
         _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
 
         _logger.Write(ex.ToString());
-        if (errorTimes == _userConfig.Config.Program.RetryTimes)
+        if (errorTimes == _syncConfig.RetryTimes)
         {
             _notificationManager.SendText("剪切板下载失败", ex.Message);
         }
@@ -201,7 +204,7 @@ public class DownloadService : Service
                 SyncService.remoteProfilemutex.ReleaseMutex();
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(_userConfig.Config.Program.IntervalTime), cancelToken).ConfigureAwait(true);
+            await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken).ConfigureAwait(true);
         }
     }
 

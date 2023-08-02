@@ -3,6 +3,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Configs;
 using SyncClipboard.Core.Utilities.Image;
 using SyncClipboard.Core.Utilities.Notification;
 using System.Text.RegularExpressions;
@@ -20,14 +21,13 @@ public class EasyCopyImageSerivce : ClipboardHander
     protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
     protected override IClipboardChangingListener ClipboardChangingListener
                                                   => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
-
     protected override bool SwitchOn
     {
-        get => _userConfig.Config.SyncService.EasyCopyImageSwitchOn;
+        get => _clipboardAssistConfig.EasyCopyImageSwitchOn;
         set
         {
-            _userConfig.Config.SyncService.EasyCopyImageSwitchOn = value;
-            _userConfig.Save();
+            _clipboardAssistConfig.EasyCopyImageSwitchOn = value;
+            _userConfig.SetConfig(ConfigKey.ClipboardAssist, _clipboardAssistConfig);
         }
     }
 
@@ -57,19 +57,27 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig _userConfig;
+    private readonly UserConfig2 _userConfig;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
+    private ClipboardAssistConfig _clipboardAssistConfig;
 
     public EasyCopyImageSerivce(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
+        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
+        _clipboardAssistConfig = _userConfig.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+    }
+
+    public override void Load()
+    {
+        _clipboardAssistConfig = _userConfig.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        base.Load();
     }
 
     private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
