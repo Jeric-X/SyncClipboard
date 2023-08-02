@@ -1,10 +1,11 @@
 ﻿namespace SyncClipboard.Core.Models;
 
-public record ChangeableAppConfig(
-    int IntervalTime = 3,
-    int RetryTimes = 3,
-    int TimeOut = 100,
-    string Proxy = "",
-    bool DeleteTempFilesOnStartUp = false,
-    int LogRemainDays = 8
-);
+public record ChangeableAppConfig
+{
+    public int IntervalTime { get; set; } = 3;
+    public int RetryTimes { get; set; } = 3;
+    public int TimeOut { get; set; } = 100;
+    public string Proxy { get; set; } = "";
+    public bool DeleteTempFilesOnStartUp { get; set; } = false;
+    public int LogRemainDays { get; set; } = 8;
+};

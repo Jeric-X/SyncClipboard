@@ -10,12 +10,13 @@ public class AppConfig : IAppConfig
     public string LocalTemplateFolder => Env.TemplateFileFolder;
     public string UserConfigFile => Env.FullPath("SyncClipboard.json");
 
-    public ChangeableAppConfig ProgramWideUserConfig => new ChangeableAppConfig(
-        IntervalTime: 3,
-        RetryTimes: 3,
-        TimeOut: 100,
-        Proxy: "",
-        DeleteTempFilesOnStartUp: false,
-        LogRemainDays: 8
-    );
+    public ChangeableAppConfig ProgramWideUserConfig => new ChangeableAppConfig()
+    {
+        IntervalTime = 3,
+        RetryTimes = 3,
+        TimeOut = 100,
+        Proxy = "",
+        DeleteTempFilesOnStartUp = false,
+        LogRemainDays = 8
+    };
 }

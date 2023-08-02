@@ -8,4 +8,5 @@ public static class SyncService
     public const string PULL_STOP_ENENT_NAME = "PULL_STOP_ENENT";
     public const string PUSH_START_ENENT_NAME = "PUSH_START_ENENT";
     public const string PUSH_STOP_ENENT_NAME = "PUSH_STOP_ENENT";
+    public const string CONFIG_KEY = "SyncService";
 }

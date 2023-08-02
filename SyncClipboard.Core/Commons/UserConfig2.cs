@@ -7,6 +7,8 @@ namespace SyncClipboard.Core.Commons
 {
     public class UserConfig2
     {
+        public event Action? ConfigChanged;
+
         private readonly ILogger _logger;
         private readonly IContextMenu _contextMenu;
         private readonly IAppConfig _appConfig;
@@ -23,7 +25,7 @@ namespace SyncClipboard.Core.Commons
             _logger = logger;
             _appConfig = appConfig;
             _contextMenu = contextMenu;
-            _path = appConfig.UserConfigFile + ".json";
+            _path = appConfig.UserConfigFile /*+ ".json"*/;
             Load();
         }
 
@@ -82,6 +84,7 @@ namespace SyncClipboard.Core.Commons
 
             _jsonNode[key] = JsonSerializer.SerializeToNode(newValue);
             NotifyRegistedHandler(key, newValue);
+            ConfigChanged?.Invoke();
             Save();
         }
 
@@ -126,6 +129,7 @@ namespace SyncClipboard.Core.Commons
                 Save();
             }
             NotifyAllRegistedHandler();
+            ConfigChanged?.Invoke();
         }
 
         [SupportedOSPlatform("windows")]
