@@ -54,6 +54,11 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
+        private string GetItemTag(object item)
+        {
+            return (item as SettingItem)?.Tag ?? "";
+        }
+
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
         {
             if (args.Size.Width < 800)

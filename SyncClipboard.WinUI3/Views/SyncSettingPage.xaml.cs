@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System;
 
@@ -26,10 +27,19 @@ namespace SyncClipboard.WinUI3.Views
         [RelayCommand]
         private async void SetServerAsync()
         {
-            _ServerSettingDialog.Password = _viewModel.ServerPassword;
-            _ServerSettingDialog.UserName = _viewModel.ServerUserName;
-            _ServerSettingDialog.Url = _viewModel.ServerPort.ToString();
+            _ServerSettingDialog.Password = _viewModel.ServerConfig.Password;
+            _ServerSettingDialog.UserName = _viewModel.ServerConfig.Password;
+            _ServerSettingDialog.Url = _viewModel.ServerConfig.Port.ToString();
             await _ServerSettingDialog.ShowAsync();
+        }
+
+        [RelayCommand]
+        private async void SetSyncAsync()
+        {
+            _SyncSettingDialog.Password = _viewModel.ClientConfig.Password;
+            _SyncSettingDialog.UserName = _viewModel.ClientConfig.UserName;
+            _SyncSettingDialog.Url = _viewModel.ClientConfig.RemoteURL;
+            await _SyncSettingDialog.ShowAsync();
         }
 
         private void ServerSettingDialog_OkClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
@@ -46,11 +56,41 @@ namespace SyncClipboard.WinUI3.Views
             return;
         }
 
+        private void SyncSettingDialog_OkClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
+        {
+            var res = _viewModel.SetClientConfig(_SyncSettingDialog.Url, _SyncSettingDialog.UserName, _SyncSettingDialog.Password);
+            if (string.IsNullOrEmpty(res))
+            {
+                _SyncSettingDialog.ErrorTip = "";
+                return;
+            }
+
+            _SyncSettingDialog.ErrorTip = res;
+            args.Cancel = true;
+            return;
+        }
+
         private string GetPasswordString(string origin, bool? show)
         {
             return show ?? false ? origin : "*********";
         }
 
         private bool Not(bool value) => !value;
+
+        private string ServerConfigDescription(ServerConfig config, bool? show)
+        {
+            return
+@$"端　口：{config.Port}
+用户名：{config.UserName}
+密　码：{GetPasswordString(config.Password, show)}";
+        }
+
+        private string ClientConfigDescription(SyncConfig config, bool? show)
+        {
+            return
+@$"地　址：{config.RemoteURL}
+用户名：{config.UserName}
+密　码：{GetPasswordString(config.Password, show)}";
+        }
     }
 }

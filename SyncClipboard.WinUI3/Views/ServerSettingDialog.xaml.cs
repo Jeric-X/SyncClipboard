@@ -31,6 +31,11 @@ namespace SyncClipboard.WinUI3.Views
             set => _ErrorTip.Text = value;
         }
 
+        public string TextBoxName
+        {
+            set => _Url.Header = value;
+        }
+
         public ServerSettingDialog()
         {
             this.InitializeComponent();

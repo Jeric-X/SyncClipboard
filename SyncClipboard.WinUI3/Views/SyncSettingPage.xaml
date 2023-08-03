@@ -8,6 +8,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      MinWidth="550"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
       mc:Ignorable="d">
@@ -34,6 +35,7 @@
     </Page.Resources>
     <StackPanel Margin="0,0,0,0" Spacing="10">
         <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />
+        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="地址" />
         <labs:SettingsExpander Margin="0,0,0,0"
                                Header="同步服务器"
                                Description="作为本机和其他设备的服务器"
@@ -43,38 +45,15 @@
             </labs:SettingsExpander.HeaderIcon>
             <ToggleSwitch IsOn="{Binding ServerEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" ContentAlignment="Vertical">
-                    <Grid Margin="0,-10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Vertical">
-                            <StackPanel.Resources>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
-                                    <Setter Property="FontSize" Value="12" />
-                                    <Setter Property="Foreground" Value="{ThemeResource SystemControlDescriptionTextForegroundBrush}" />
-                                </Style>
-                            </StackPanel.Resources>
-                            <TextBlock Grid.Column="0">
-                                <Run Text="端　口：" /><Run Text="{Binding ServerPort}" />
-                                <LineBreak />
-                                <Run Text="用户名：" /><Run Text="{Binding ServerUserName}" />
-                            </TextBlock>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="密　码：" />
-                                <TextBlock Text="{x:Bind GetPasswordString(_viewModel.ServerPassword, _ShowHidePasswordToggleButton.IsChecked), Mode=OneWay}" />
-                            </StackPanel>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
-                            <ToggleButton x:Name="_ShowHidePasswordToggleButton">
-                                <FontIcon Glyph="{Binding ElementName=_ShowHidePasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
-                            </ToggleButton>
-                            <Button Command="{x:Bind SetServerAsyncCommand}">
-                                <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
-                            </Button>
-                        </StackPanel>
-                    </Grid>
+                <labs:SettingsCard Description="{x:Bind ServerConfigDescription(_viewModel.ServerConfig, _ShowHidePasswordToggleButton.IsChecked), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ToggleButton x:Name="_ShowHidePasswordToggleButton">
+                            <FontIcon Glyph="{Binding ElementName=_ShowHidePasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                        </ToggleButton>
+                        <Button Command="{x:Bind SetServerAsyncCommand}">
+                            <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
+                        </Button>
+                    </StackPanel>
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
@@ -82,30 +61,17 @@
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <ToggleSwitch IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}"/>
+            <ToggleSwitch IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
                     <ToggleSwitch x:Name="_UseLocalServerToggle" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="服务器" Description="用户名: admin&#10;密　码: ******" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
+                <labs:SettingsCard Description="{x:Bind ClientConfigDescription(_viewModel.ClientConfig, _ShowClientPasswordToggleButton.IsChecked), Mode=OneWay}" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton>
-                            <FontIcon Glyph="&#xF78D;" FontFamily="Segoe Fluent Icons" />
+                        <ToggleButton x:Name="_ShowClientPasswordToggleButton">
+                            <FontIcon Glyph="{Binding ElementName=_ShowClientPasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
                         </ToggleButton>
-                        <Button ToolTipService.ToolTip="复制服务器和认证信息" Background="Transparent">
-                            <FontIcon Glyph="&#xE16F;" FontFamily="Segoe Fluent Icons" />
-                            <Button.Flyout>
-                                <Flyout>
-                                    <StackPanel Margin="0,0,0,0" Padding="0,0,0,0" Spacing="5">
-                                        <Button Content="地址" />
-                                        <Button Content="用户名" />
-                                        <Button Content="密码" />
-                                        <Button Content="全部" />
-                                    </StackPanel>
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button>
+                        <Button Command="{x:Bind SetSyncAsyncCommand}">
                             <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
                         </Button>
                     </StackPanel>

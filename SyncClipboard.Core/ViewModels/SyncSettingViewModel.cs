@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.UserServices;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -17,14 +16,8 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnServerConfigChanged(ServerConfig value)
     {
         _userConfig.SetConfig(ConfigKey.Server, value);
-        OnPropertyChanged(nameof(ServerUserName));
-        OnPropertyChanged(nameof(ServerPassword));
-        OnPropertyChanged(nameof(ServerPort));
     }
 
-    public string ServerUserName => ServerConfig.UserName;
-    public string ServerPassword => ServerConfig.Password;
-    public ushort ServerPort => ServerConfig.Port;
     #endregion
 
     #region client
@@ -84,6 +77,12 @@ public partial class SyncSettingViewModel : ObservableObject
 
         ServerConfig = ServerConfig with { Password = password, Port = port, UserName = username };
 
+        return null;
+    }
+
+    public string? SetClientConfig(string url, string username, string password)
+    {
+        ClientConfig = ClientConfig with { RemoteURL = url, UserName = username, Password = password };
         return null;
     }
 }

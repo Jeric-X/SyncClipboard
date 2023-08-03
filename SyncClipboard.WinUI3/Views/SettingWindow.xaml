@@ -33,8 +33,8 @@
                 </Grid.RowDefinitions>
                 <TextBlock x:Name="_SettingTitle"
                            Grid.Row="0"
-                           Margin="20,0,20,20"
-                           Text="设置"
+                           Margin="20,0,20,0"
+                           Text="{x:Bind GetItemTag(_MenuList.SelectedItem)}"
                            FontSize="30" />
                 <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
                     <Frame x:Name="SettingContentFrame" Margin="20,0,20,0" />
