@@ -76,6 +76,21 @@
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
+                <labs:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}" ContentAlignment="Vertical">
+                    <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
+                        <labs:SettingsCard.Resources>
+                        <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">
+                            <Style.Setters>
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="Padding" Value="0,0,0,-1" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Style.Setters>
+                        </Style>
+                    </labs:SettingsCard.Resources>-->
+                    <labs:SettingsCard.Description>
+                        <HyperlinkButton Content="登录到Nextcloud" />
+                    </labs:SettingsCard.Description>
+                </labs:SettingsCard>
                 <labs:SettingsCard Header="轮询服务器间隔（秒）">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
                 </labs:SettingsCard>
