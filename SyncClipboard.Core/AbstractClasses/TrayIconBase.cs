@@ -76,6 +76,9 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         }
         SetIcon(_dynamicIcons[_iconIndex]);
         _iconIndex++;
+
+        // 在设置Icon的过程中其他线程可能会停止动态图标
+        SetStaticIcon();
     }
 
     public void SetStatusString(string key, string statusStr, bool error)

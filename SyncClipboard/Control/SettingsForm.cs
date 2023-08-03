@@ -71,7 +71,7 @@ namespace SyncClipboard
             _syncConfig.Password = this.textBox3.Text;
 
             if (this.textBox8.Text != "")
-                _syncConfig.IntervalTime = Convert.ToInt32(this.textBox8.Text);
+                _syncConfig.IntervalTime = Convert.ToUInt32(this.textBox8.Text);
             if (this.textBox7.Text != "")
                 _syncConfig.TimeOut = Convert.ToUInt32(this.textBox7.Text);
             if (this.textBox6.Text != "")

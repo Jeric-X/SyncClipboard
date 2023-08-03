@@ -130,13 +130,13 @@ public class DownloadService : Service
     public void PushStartedHandler()
     {
         _logger.Write(LOG_TAG, "due to upload service start, cancel");
-        StopPullLoop();
+        SwitchOffPullLoop();
     }
 
     public void PushStoppedHandler()
     {
         _logger.Write(LOG_TAG, "due to upload service stop, restart");
-        StopPullLoop();
+        SwitchOffPullLoop();
         ReLoad();
     }
 

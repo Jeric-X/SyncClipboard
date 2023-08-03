@@ -76,6 +76,12 @@
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
+                <labs:SettingsCard Header="轮询服务器间隔（秒）">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="超时时间（秒）">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
+                </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
     </StackPanel>

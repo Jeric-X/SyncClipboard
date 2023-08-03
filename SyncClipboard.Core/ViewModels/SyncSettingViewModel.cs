@@ -30,9 +30,25 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnUseLocalServerChanged(bool value) => ClientConfig = ClientConfig with { UseLocalServer = value };
 
     [ObservableProperty]
+    private uint intervalTime;
+    partial void OnIntervalTimeChanged(uint value) => ClientConfig = ClientConfig with { IntervalTime = value };
+
+    [ObservableProperty]
+    private uint timeOut;
+    partial void OnTimeOutChanged(uint value) => ClientConfig = ClientConfig with { TimeOut = value };
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IntervalTime))]
+    [NotifyPropertyChangedFor(nameof(SyncEnable))]
+    [NotifyPropertyChangedFor(nameof(UseLocalServer))]
+    [NotifyPropertyChangedFor(nameof(TimeOut))]
     private SyncConfig clientConfig;
     partial void OnClientConfigChanged(SyncConfig value)
     {
+        IntervalTime = value.IntervalTime;
+        SyncEnable = value.SyncSwitchOn;
+        UseLocalServer = value.UseLocalServer;
+        TimeOut = value.TimeOut;
         _userConfig.SetConfig(ConfigKey.Sync, value);
     }
     #endregion
@@ -47,9 +63,7 @@ public partial class SyncSettingViewModel : ObservableObject
         serverEnable = serverConfig.SwitchOn;
 
         _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);
-        clientConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
-        syncEnable = clientConfig.SyncSwitchOn;
-        useLocalServer = clientConfig.UseLocalServer;
+        ClientConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
     }
 
     private void LoadSeverConfig(object? config)
@@ -61,7 +75,6 @@ public partial class SyncSettingViewModel : ObservableObject
     private void LoadClientConfig(object? config)
     {
         ClientConfig = config as SyncConfig ?? new();
-        SyncEnable = ClientConfig.SyncSwitchOn;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

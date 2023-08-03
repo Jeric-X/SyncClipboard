@@ -37,7 +37,7 @@
                            Text="{x:Bind GetItemTag(_MenuList.SelectedItem)}"
                            FontSize="30" />
                 <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
-                    <Frame x:Name="SettingContentFrame" Margin="20,0,20,0" />
+                    <Frame x:Name="SettingContentFrame" Margin="20,0,20,20" />
                 </ScrollViewer>
             </Grid>
             <SplitView.Pane>
