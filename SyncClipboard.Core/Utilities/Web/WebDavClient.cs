@@ -2,7 +2,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.UserServices;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -15,6 +14,7 @@ namespace SyncClipboard.Core.Utilities.Web
         private readonly ILogger _logger;
         private SyncConfig _syncConfig;
         private ServerConfig _serverConfig;
+        private readonly UserConfig2 _userConfig;
 
         private uint Timeout => _syncConfig.TimeOut != 0 ? _syncConfig.TimeOut : (uint)httpClient.Timeout.TotalSeconds;
         private string User => _syncConfig.UseLocalServer ? _serverConfig.UserName : _syncConfig.UserName;
@@ -25,10 +25,9 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public WebDavClient(UserConfig2 userConfig, ILogger logger)
         {
-            userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, UserConfigChangedHandler);
+            _userConfig = userConfig;
+            userConfig.ConfigChanged += UserConfigChanged;
             _syncConfig = userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
-
-            userConfig.ListenConfig<ServerConfig>(ConfigKey.Server, (config) => _serverConfig = (ServerConfig)config!);
             _serverConfig = userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
             _logger = logger;
 
@@ -36,11 +35,18 @@ namespace SyncClipboard.Core.Utilities.Web
             SetAuthHeader();
         }
 
-        private void UserConfigChangedHandler(object? newConfig)
+        private void UserConfigChanged()
         {
-            _syncConfig = newConfig as SyncConfig ?? new();
-            httpClient = CreateHttpClient();
-            SetAuthHeader();
+            var syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+            var serverConfig = _userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+
+            if (_serverConfig != serverConfig || syncConfig != _syncConfig)
+            {
+                _serverConfig = serverConfig;
+                _syncConfig = syncConfig;
+                httpClient = CreateHttpClient();
+                SetAuthHeader();
+            }
         }
 
         private HttpClient CreateHttpClient()
