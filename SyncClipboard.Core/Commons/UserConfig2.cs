@@ -142,20 +142,20 @@ namespace SyncClipboard.Core.Commons
             MenuItem[] menuItems =
             {
                 new MenuItem(
-                    "´ò¿ªÅäÖÃÎÄ¼þ", () => {
+                    "æ‰“å¼€é…ç½®æ–‡ä»¶", () => {
                         var open = new System.Diagnostics.Process();
                         open.StartInfo.FileName = "notepad";
                         open.StartInfo.Arguments = _path;
                         open.Start();
                     } )  ,
                 new MenuItem(
-                    "´ò¿ªÅäÖÃÎÄ¼þËùÔÚÎ»ÖÃ", () => {
+                    "æ‰“å¼€é…ç½®æ–‡ä»¶æ‰€åœ¨ä½ç½®", () => {
                         var open = new System.Diagnostics.Process();
                         open.StartInfo.FileName = "explorer";
                         open.StartInfo.Arguments = "/e,/select," + _path;
                         open.Start();
                     }),
-                new MenuItem("ÖØÐÂÔØÈëÅäÖÃÎÄ¼þ", () => this.Load())
+                new MenuItem("é‡æ–°è½½å…¥é…ç½®æ–‡ä»¶", () => this.Load())
             };
             _contextMenu.AddMenuItemGroup(menuItems);
         }

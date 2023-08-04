@@ -58,7 +58,7 @@
                         <DataTemplate>
                             <ListViewItem Tag="{Binding Name}" >
                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <FontIcon FontSize="15" Glyph="{Binding Name, Converter={StaticResource SettingTagToIcon}}" FontFamily="Segoe Fluent Icons" />
+                                    <FontIcon FontSize="16" Glyph="{Binding Name, Converter={StaticResource SettingTagToIcon}}" FontFamily="Segoe Fluent Icons" />
                                     <TextBlock Text="{Binding Tag}" />
                                 </StackPanel>
                             </ListViewItem>
