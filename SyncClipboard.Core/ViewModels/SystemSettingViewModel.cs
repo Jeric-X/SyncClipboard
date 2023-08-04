@@ -1,13 +1,20 @@
-﻿using SyncClipboard.Core.Commons;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public class SystemSettingViewModel
+public class SystemSettingViewModel : ObservableObject
 {
-    public string Version => "v" + Env.VERSION;
+    public static string Version => "v" + Env.VERSION;
+
+    public bool StartUpWithSystem
+    {
+        get => StartUpHelper.Status();
+        set
+        {
+            StartUpHelper.Set(value);
+            OnPropertyChanged(nameof(StartUpWithSystem));
+        }
+    }
 }

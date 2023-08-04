@@ -5,6 +5,7 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using System;
@@ -65,7 +66,7 @@ namespace SyncClipboard
         {
             MenuItem[] menuItems =
             {
-                new ToggleMenuItem("开机启动", StartUpWithWindows.Status(), StartUpWithWindows.SetStartUp),
+                new ToggleMenuItem("开机启动", StartUpHelper.Status(), StartUpHelper.Set),
                 new MenuItem("从Nextcloud登录", Nextcloud.LogWithNextcloud),
                 new MenuItem("检查更新", UpdateChecker.Check),
                 new MenuItem("退出", Application.Exit)

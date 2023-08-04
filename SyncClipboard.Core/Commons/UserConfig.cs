@@ -15,23 +15,9 @@ namespace SyncClipboard.Core.Commons
             public record class CProgram
             {
                 public int IntervalTime { get; set; } = 3;
-                //public int RetryTimes { get; set; } = 3;
-                //public int TimeOut { get; set; } = 10;
                 public string Proxy { get; set; } = "";
                 public bool DeleteTempFilesOnStartUp { get; set; } = false;
                 public int LogRemainDays { get; set; } = 30;
-            }
-
-            public record class CSyncService
-            {
-                public string RemoteURL { get; set; } = "";
-                public string UserName { get; set; } = "";
-                public string Password { get; set; } = "";
-                public bool PullSwitchOn { get; set; } = false;
-                public bool PushSwitchOn { get; set; } = false;
-                public bool DeletePreviousFilesOnPush { get; set; } = true;
-                public bool EasyCopyImageSwitchOn { get; set; } = false;
-                public int MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 10MB
             }
 
             public record class CCommandService
@@ -45,19 +31,9 @@ namespace SyncClipboard.Core.Commons
                 public bool ConvertSwitchOn { get; set; } = false;
             }
 
-            public record class CServerService
-            {
-                public bool SwitchOn { get; set; } = false;
-                public short Port { get; set; } = 5033;
-                public string UserName { get; set; } = "admin";
-                public string Password { get; set; } = "admin";
-            }
-
-            //public CSyncService SyncService { get; set; } = new CSyncService();
             public CCommandService CommandService { get; set; } = new CCommandService();
             public CClipboardService ClipboardService { get; set; } = new CClipboardService();
             public CProgram Program { get; set; } = new CProgram();
-            //public CServerService ServerService { get; set; } = new CServerService();
         }
 
         public Configuration Config = new();

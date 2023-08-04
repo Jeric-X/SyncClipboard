@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.SystemSettingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:local="using:SyncClipboard.WinUI3"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
       MinWidth="550"
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <labs:SettingsExpander Header="SyncClipboard" Description="{x:Bind _viewModel.Version}" IsExpanded="True">
+        <labs:SettingsExpander Header="SyncClipboard" Description="{x:Bind vm:SystemSettingViewModel.Version}" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <ImageIcon Source="ms-appx:///Assets/icon.ico" />
             </labs:SettingsExpander.HeaderIcon>
@@ -25,7 +25,7 @@
             <labs:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE770;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>
-            <ToggleSwitch />
+            <ToggleSwitch IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
         </labs:SettingsCard>
     </StackPanel>
 </Page>
