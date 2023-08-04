@@ -69,6 +69,7 @@ namespace SyncClipboard.Core
         public static void ConfigurateViewModels(IServiceCollection services)
         {
             services.AddTransient<SyncSettingViewModel>();
+            services.AddTransient<SystemSettingViewModel>();
         }
 
         private static void ConfigurateUserService(IServiceCollection services)

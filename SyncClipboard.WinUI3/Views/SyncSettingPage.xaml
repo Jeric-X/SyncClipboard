@@ -33,13 +33,8 @@
             <Setter Property="Background" Value="Transparent" />
         </Style>
     </Page.Resources>
-    <StackPanel Margin="0,0,0,0" Spacing="10">
-        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />
-        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="地址" />
-        <labs:SettingsExpander Margin="0,0,0,0"
-                               Header="同步服务器"
-                               Description="作为本机和其他设备的服务器"
-                               IsExpanded="True">
+    <StackPanel Spacing="10">
+        <labs:SettingsExpander Header="同步服务器" Description="作为本机和其他设备的服务器" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
@@ -99,5 +94,7 @@
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
+        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />
+        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="地址" />
     </StackPanel>
 </Page>
