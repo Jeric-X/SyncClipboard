@@ -6,6 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:SyncClipboard.Core.ViewModels"
+        xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
         Title="SyncClipboard"
         SizeChanged="Window_SizeChanged"
         mc:Ignorable="d">
@@ -13,6 +14,9 @@
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <Grid>
+        <Grid.Resources>
+            <vc:SettingTagToIcon x:Key="SettingTagToIcon" />
+        </Grid.Resources>
         <Grid.DataContext>
             <vm:SettingWindowViewModel />
         </Grid.DataContext>
@@ -52,7 +56,12 @@
                           SelectionChanged="ListView_SelectionChanged">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <ListViewItem Content="{Binding Tag}" Tag="{Binding Name}" />
+                            <ListViewItem Tag="{Binding Name}" >
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontSize="15" Glyph="{Binding Name, Converter={StaticResource SettingTagToIcon}}" FontFamily="Segoe Fluent Icons" />
+                                    <TextBlock Text="{Binding Tag}" />
+                                </StackPanel>
+                            </ListViewItem>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
