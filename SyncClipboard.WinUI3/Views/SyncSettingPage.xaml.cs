@@ -80,17 +80,17 @@ namespace SyncClipboard.WinUI3.Views
         private string ServerConfigDescription(ServerConfig config, bool? show)
         {
             return
-@$"�ˡ��ڣ�{config.Port}
-�û�����{config.UserName}
-�ܡ��룺{GetPasswordString(config.Password, show)}";
+@$"端　口：{config.Port}
+用户名：{config.UserName}
+密　码：{GetPasswordString(config.Password, show)}";
         }
 
         private string ClientConfigDescription(SyncConfig config, bool? show)
         {
             return
-@$"�ء�ַ��{config.RemoteURL}
-�û�����{config.UserName}
-�ܡ��룺{GetPasswordString(config.Password, show)}";
+@$"地　址：{config.RemoteURL}
+用户名：{config.UserName}
+密　码：{GetPasswordString(config.Password, show)}";
         }
     }
 }
