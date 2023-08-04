@@ -4,7 +4,7 @@ using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
 {
-    public class NotificationManager
+    public class NotificationManager : IDisposable
     {
         public readonly ToastNotifier Notifer;
         private readonly ILogger _logger;
@@ -15,10 +15,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             _logger = logger;
         }
 
-        ~NotificationManager()
-        {
-            Register.UnRegistFromCurrentProcess();
-        }
+        ~NotificationManager() => Dispose();
 
         public void SendText(string title, string text, params Button[] buttons)
         {
@@ -43,6 +40,12 @@ namespace SyncClipboard.Core.Utilities.Notification
         public ProgressBar CreateProgressNotification(string title)
         {
             return new ProgressBar(title, Notifer, _logger);
+        }
+
+        public void Dispose()
+        {
+            Register.UnRegistFromCurrentProcess();
+            GC.SuppressFinalize(this);
         }
     }
 }

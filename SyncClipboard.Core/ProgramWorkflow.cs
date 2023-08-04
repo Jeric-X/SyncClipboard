@@ -45,6 +45,8 @@ namespace SyncClipboard.Core
         public void Stop()
         {
             ServiceManager.StopAllService();
+            var disposable = Services as IDisposable;
+            disposable?.Dispose();
         }
 
         public static void ConfigCommonService(ServiceCollection services)
