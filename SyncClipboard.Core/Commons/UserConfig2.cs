@@ -92,6 +92,11 @@ namespace SyncClipboard.Core.Commons
 
         private void NotifyRegistedHandler(string key, object? newValue)
         {
+            //var a = _registedChangedHandlerList[key];
+            if (!_registedChangedHandlerList.ContainsKey(key))
+            {
+                return;
+            }
             foreach (var handler in _registedChangedHandlerList[key])
             {
                 handler(newValue);

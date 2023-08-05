@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices.Command;
 using SyncClipboard.Core.Utilities.Notification;
 
@@ -16,32 +17,47 @@ public class CommandService : Service
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig _userConfig;
+    private readonly UserConfig2 _userConfig;
     private readonly IWebDav _webDav;
     private readonly IContextMenu _contextMenu;
 
+    private CommandConfig _commandConfig;
+
     private bool SwitchOn
     {
-        get => _userConfig.Config.CommandService.SwitchOn;
+        get => _commandConfig.SwitchOn;
         set
         {
-            _userConfig.Config.CommandService.SwitchOn = value;
-            _userConfig.Save();
+            _commandConfig.SwitchOn = value;
+            _userConfig.SetConfig(ConfigKey.Command, _commandConfig);
         }
     }
+
+    private uint ShutdownDelay => _commandConfig.Shutdowntime;
+    private uint IntervalTime => _commandConfig.IntervalTime;
 
     public CommandService(IServiceProvider serviceProvider)
     {
         _notificationManager = serviceProvider.GetRequiredService<NotificationManager>();
         _logger = serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = serviceProvider.GetRequiredService<UserConfig>();
+        _userConfig = serviceProvider.GetRequiredService<UserConfig2>();
         _webDav = serviceProvider.GetRequiredService<IWebDav>();
         _contextMenu = serviceProvider.GetRequiredService<IContextMenu>();
+
+        _commandConfig = _userConfig.GetConfig<CommandConfig>(ConfigKey.Command) ?? new();
+
         _toggleMenuItem = new ToggleMenuItem(
             "Remote Command",
-            _userConfig.Config.CommandService.SwitchOn,
+            _commandConfig.SwitchOn,
             (status) => SwitchOn = status
         );
+
+        _userConfig.ListenConfig<CommandConfig>(ConfigKey.Command,
+            (config) =>
+            {
+                _commandConfig = (config as CommandConfig) ?? new();
+                _toggleMenuItem.Checked = SwitchOn;
+            });
     }
 
     protected override void StartService()
@@ -56,11 +72,6 @@ public class CommandService : Service
         {
             _logger.Write(LOG_TAG, "Command serivce exited");
         }
-    }
-
-    public override void Load()
-    {
-        _toggleMenuItem.Checked = SwitchOn;
     }
 
     protected override void StopSerivce()
@@ -96,7 +107,7 @@ public class CommandService : Service
                 }
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(_userConfig.Config.Program.IntervalTime), cancelToken);
+            await Task.Delay(TimeSpan.FromSeconds(IntervalTime), cancelToken);
         }
     }
 
@@ -123,7 +134,7 @@ public class CommandService : Service
         {
             if (command.CommandStr == "shutdown")
             {
-                return new TaskShutdown(command, _notificationManager, _userConfig).ExecuteAsync();
+                return new TaskShutdown(command, _notificationManager, ShutdownDelay).ExecuteAsync();
             }
             return Task.CompletedTask;
         });

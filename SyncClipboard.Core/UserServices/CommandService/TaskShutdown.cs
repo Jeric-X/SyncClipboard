@@ -6,7 +6,7 @@ namespace SyncClipboard.Core.UserServices.Command;
 
 public sealed class TaskShutdown
 {
-    private readonly int shutdownTime;
+    private readonly uint shutdownTime;
     private readonly string tagName = "";
     private const string GROUP_NAME = "Command";
     private Counter? counter;
@@ -15,10 +15,10 @@ public sealed class TaskShutdown
     private static readonly object IsWorkingLocker = new();
     private readonly NotificationManager _notificationManager;
 
-    public TaskShutdown(CommandInfo info, NotificationManager notificationManager, UserConfig userConfig)
+    public TaskShutdown(CommandInfo info, NotificationManager notificationManager, uint delay)
     {
         tagName = info.ToString() + DateTime.Now;
-        shutdownTime = userConfig.Config.CommandService.Shutdowntime;
+        shutdownTime = delay;
         _notificationManager = notificationManager;
     }
 

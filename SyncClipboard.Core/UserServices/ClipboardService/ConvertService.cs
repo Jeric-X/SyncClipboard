@@ -3,6 +3,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Image;
 
 namespace SyncClipboard.Core.UserServices;
@@ -20,11 +21,11 @@ public class ConvertService : ClipboardHander
     protected override ILogger Logger => _logger;
     protected override bool SwitchOn
     {
-        get => _userConfig.Config.ClipboardService.ConvertSwitchOn;
+        get => _clipboardConfig.ConvertSwitchOn;
         set
         {
-            _userConfig.Config.ClipboardService.ConvertSwitchOn = value;
-            _userConfig.Save();
+            _clipboardConfig.ConvertSwitchOn = value;
+            _userConfig.SetConfig(ConfigKey.ClipboardAssist, _clipboardConfig);
         }
     }
 
@@ -52,9 +53,11 @@ public class ConvertService : ClipboardHander
     #endregion
 
     private readonly ILogger _logger;
-    private readonly UserConfig _userConfig;
+    private readonly UserConfig2 _userConfig;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
+
+    private ClipboardAssistConfig _clipboardConfig;
 
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
@@ -62,8 +65,11 @@ public class ConvertService : ClipboardHander
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig>();
-        _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>(); ;
+        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
+        _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
+
+        _clipboardConfig = _userConfig.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _userConfig.ListenConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist, config => _clipboardConfig = config as ClipboardAssistConfig ?? new());
     }
 
     private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)

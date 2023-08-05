@@ -14,26 +14,12 @@ namespace SyncClipboard.Core.Commons
         {
             public record class CProgram
             {
-                public int IntervalTime { get; set; } = 3;
                 public string Proxy { get; set; } = "";
                 public bool DeleteTempFilesOnStartUp { get; set; } = false;
                 public int LogRemainDays { get; set; } = 30;
             }
 
-            public record class CCommandService
-            {
-                public bool SwitchOn { get; set; } = false;
-                public int Shutdowntime { get; set; } = 30;
-            }
-
-            public record class CClipboardService
-            {
-                public bool ConvertSwitchOn { get; set; } = false;
-            }
-
-            public CCommandService CommandService { get; set; } = new CCommandService();
-            public CClipboardService ClipboardService { get; set; } = new CClipboardService();
-            public CProgram Program { get; set; } = new CProgram();
+            //public CProgram Program { get; set; } = new CProgram();
         }
 
         public Configuration Config = new();

@@ -1,6 +1,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.Utilities.Web
 {
@@ -9,20 +10,21 @@ namespace SyncClipboard.Core.Utilities.Web
         public const string USER_AGENT = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36";
 
         private string _proxy;
-        private readonly UserConfig _userConfig;
 
-        public Http(UserConfig userConfig)
+        public Http(UserConfig2 userConfig)
         {
-            _proxy = userConfig.Config.Program.Proxy;
-            _userConfig = userConfig;
-            userConfig.ConfigChanged += UserConfig_ConfigChanged;
+            userConfig.ListenConfig<ProgramConfig>(ConfigKey.Program, ConfigChanged);
+            var programConfig = userConfig.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+
+            _proxy = programConfig.Proxy;
         }
 
-        private void UserConfig_ConfigChanged()
+        private void ConfigChanged(object? config)
         {
-            if (_proxy != _userConfig.Config.Program.Proxy)
+            var newConfig = config as ProgramConfig ?? new();
+            if (newConfig.Proxy != _proxy)
             {
-                _proxy = _userConfig.Config.Program.Proxy;
+                _proxy = newConfig.Proxy;
                 HttpClientProxy.Dispose();
                 _lazyHttpClientProxy = null;
             }
