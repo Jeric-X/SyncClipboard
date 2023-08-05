@@ -17,7 +17,7 @@
             <Button Content="检查更新" Command="{x:Bind _viewModel.CheckForUpdateCommand}"/>
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="启动时检查更新">
-                    <ToggleSwitch />
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>

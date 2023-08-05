@@ -10,7 +10,7 @@ public class AppConfig : IAppConfig
     public string LocalTemplateFolder => Env.TemplateFileFolder;
     public string UserConfigFile => Env.FullPath("SyncClipboard.json");
 
-    public ChangeableAppConfig ProgramWideUserConfig => new ChangeableAppConfig()
+    public ProgramConfig ProgramWideUserConfig => new ProgramConfig()
     {
         IntervalTime = 3,
         RetryTimes = 3,

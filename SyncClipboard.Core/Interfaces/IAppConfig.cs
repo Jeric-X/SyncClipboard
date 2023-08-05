@@ -9,5 +9,5 @@ public interface IAppConfig
     public string RemoteFileFolder { get; }
     public string UserConfigFile { get; }
 
-    public ChangeableAppConfig ProgramWideUserConfig { get; }
+    public ProgramConfig ProgramWideUserConfig { get; }
 }

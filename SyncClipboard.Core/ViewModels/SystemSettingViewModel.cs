@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 
@@ -11,14 +12,31 @@ public partial class SystemSettingViewModel : ObservableObject
 {
     public static string Version => "v" + Env.VERSION;
 
+    [ObservableProperty]
+    private bool checkUpdateOnStartUp;
+    partial void OnCheckUpdateOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { CheckUpdateOnStartUp = value };
+
+    [ObservableProperty]
+    private ProgramConfig programConfig;
+    partial void OnProgramConfigChanged(ProgramConfig value)
+    {
+        CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
+        _userConfig.SetConfig(ConfigKey.Program, value);
+    }
+
     private readonly IServiceProvider _serviceProvider;
+    private readonly UserConfig2 _userConfig;
 
     private UpdateChecker UpdateChecker => _serviceProvider.GetRequiredService<UpdateChecker>();
     private NotificationManager NotificationManager => _serviceProvider.GetRequiredService<NotificationManager>();
 
-    public SystemSettingViewModel(IServiceProvider serviceProvider)
+    public SystemSettingViewModel(IServiceProvider serviceProvider, UserConfig2 userConfig)
     {
         _serviceProvider = serviceProvider;
+        _userConfig = userConfig;
+
+        _userConfig.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
+        ProgramConfig = _userConfig.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
     }
 
     public bool StartUpWithSystem

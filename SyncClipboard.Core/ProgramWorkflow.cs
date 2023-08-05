@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Options;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
@@ -39,7 +40,35 @@ namespace SyncClipboard.Core
             webdav.TestAlive();
 
             PrepareWorkingFolder(userConfig);
+            CheckUpdate();
             ServiceManager.StartUpAllService();
+        }
+
+        private async void CheckUpdate()
+        {
+            var userConfig = Services.GetRequiredService<UserConfig2>();
+            var updateChecker = Services.GetRequiredService<UpdateChecker>();
+            var notificationManager = Services.GetRequiredService<NotificationManager>();
+
+            bool checkOnStartup = userConfig.GetConfig<ProgramConfig>(ConfigKey.Program)?.CheckUpdateOnStartUp ?? false;
+            if (checkOnStartup)
+            {
+                try
+                {
+                    var (needUpdate, newVersion) = await updateChecker.Check();
+                    if (needUpdate)
+                    {
+                        notificationManager.SendText(
+                            "检测到新版本",
+                            $"v{Env.VERSION} -> {newVersion}",
+                            new Button("打开下载页面", () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
+                        );
+                    }
+                }
+                catch
+                {
+                }
+            }
         }
 
         public void Stop()
