@@ -120,6 +120,6 @@ public abstract class Profile
 
     protected Button DefaultButton()
     {
-        return new Button("复制", new(Guid.NewGuid().ToString(), (_) => SetLocalClipboard()));
+        return new Button("复制", new Callbacker(Guid.NewGuid().ToString(), (_) => SetLocalClipboard()));
     }
 }

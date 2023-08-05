@@ -64,6 +64,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<NotificationManager>();
             services.AddSingleton<ServiceManager>();
+            services.AddTransient<UpdateChecker>();
 
             ConfigurateUserService(services);
         }

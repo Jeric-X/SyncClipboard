@@ -9,7 +9,7 @@ namespace SyncClipboard.Module
 {
     internal static class UpdateChecker
     {
-        public const string Version = Env.VERSION;
+        public const string Version = Core.Commons.Env.VERSION;
         private const string GITHUB_JSON_VERSION_TAG = "name";
         public const int VersionPartNumber = 3;
         public const string UpdateUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";

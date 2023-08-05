@@ -22,5 +22,11 @@ namespace SyncClipboard.Core.Utilities.Notification
             Text = text;
             Callbacker = callbacker;
         }
+
+        public Button(string text, Action action)
+        {
+            Text = text;
+            Callbacker = new(Guid.NewGuid().ToString(), (_) => action());
+        }
     }
 }
