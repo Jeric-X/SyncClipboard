@@ -39,8 +39,36 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## 客户端
-### Windows  
-下载最新的[Release](https://github.com/Jeric-X/SyncClipboard/releases/)，依赖.NET6([桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)和[ASP.NET Core 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，没安装会弹窗提醒并跳转到浏览器下载，两个部分会分别提醒)，Windows 10 17763。后台运行，自动同步
+### Windows   
+分为Winform版和WinUI版，可以自行选择下载  
+客户端依赖：   
+- [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
+- [ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
+- Windows10 1809及以上
+#### WinUI版
+
+- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.WinUI3.zip`，解压缩后运行`SyncClipboard.exe`  
+- 额外运行依赖：
+  - Windows10 2004及以上  
+  - 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
+
+<details>
+<summary>展开/折叠截图</summary>
+
+![](assets/WinUI.png)
+
+</details>
+
+#### Winform版
+- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.exe`，独立文件直接运行（运行后会在同目录额外释放文件）
+- 界面上的可设置项较少（已停止更新），可以通过手动修改配置文件设置功能
+
+<details>
+<summary>展开/折叠截图</summary>
+
+![](assets/Winform.png)
+
+</details>
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
