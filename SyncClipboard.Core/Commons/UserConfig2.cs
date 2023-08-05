@@ -11,7 +11,6 @@ namespace SyncClipboard.Core.Commons
 
         private readonly ILogger _logger;
         private readonly IContextMenu _contextMenu;
-        private readonly IAppConfig _appConfig;
         private readonly string _path;
 
         private delegate void ConfigChangedHandler(object obj);
@@ -23,9 +22,8 @@ namespace SyncClipboard.Core.Commons
         public UserConfig2(ILogger logger, IAppConfig appConfig, IContextMenu contextMenu)
         {
             _logger = logger;
-            _appConfig = appConfig;
             _contextMenu = contextMenu;
-            _path = appConfig.UserConfigFile /*+ ".json"*/;
+            _path = appConfig.UserConfigFile;
             Load();
         }
 
@@ -126,10 +124,7 @@ namespace SyncClipboard.Core.Commons
             }
             catch
             {
-                _jsonNode = new JsonObject
-                {
-                    { "Program", JsonSerializer.SerializeToNode(_appConfig.ProgramWideUserConfig) }
-                };
+                _jsonNode = new JsonObject();
                 Save();
             }
             NotifyAllRegistedHandler();

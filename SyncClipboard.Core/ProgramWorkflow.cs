@@ -29,7 +29,6 @@ namespace SyncClipboard.Core
 
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
             trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
-            trayIcon.Create();
 
             var userConfig = Services.GetRequiredService<UserConfig>();
             userConfig.AddMenuItems();
@@ -42,6 +41,7 @@ namespace SyncClipboard.Core
             PrepareWorkingFolder(userConfig);
             CheckUpdate();
             ServiceManager.StartUpAllService();
+            trayIcon.Create();
         }
 
         private async void CheckUpdate()

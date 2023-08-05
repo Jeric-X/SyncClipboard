@@ -8,6 +8,4 @@ public interface IAppConfig
     public string LocalTemplateFolder { get; }
     public string RemoteFileFolder { get; }
     public string UserConfigFile { get; }
-
-    public ProgramConfig ProgramWideUserConfig { get; }
 }
