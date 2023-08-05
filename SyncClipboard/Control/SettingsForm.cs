@@ -9,18 +9,18 @@ namespace SyncClipboard
 {
     public partial class SettingsForm : Form, IMainWindow
     {
-        private readonly UserConfig2 _userConfig;
+        private readonly ConfigManager _configManager;
         private SyncConfig _syncConfig;
 
-        public SettingsForm(UserConfig2 userConfig)
+        public SettingsForm(ConfigManager configManager)
         {
             InitializeComponent();
             this.textBox6.KeyPress += OnlyNum;
             this.textBox7.KeyPress += OnlyNum;
             this.textBox8.KeyPress += OnlyNum;
-            _userConfig = userConfig;
-            LoadSyncConfig(_userConfig.GetConfig<SyncConfig>(ConfigKey.Sync));
-            _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadSyncConfig);
+            _configManager = configManager;
+            LoadSyncConfig(_configManager.GetConfig<SyncConfig>(ConfigKey.Sync));
+            _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadSyncConfig);
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -76,7 +76,7 @@ namespace SyncClipboard
                 _syncConfig.TimeOut = Convert.ToUInt32(this.textBox7.Text);
             if (this.textBox6.Text != "")
                 _syncConfig.RetryTimes = Convert.ToInt32(this.textBox6.Text);
-            _userConfig.SetConfig(ConfigKey.Sync, _syncConfig);
+            _configManager.SetConfig(ConfigKey.Sync, _syncConfig);
         }
     }
 }

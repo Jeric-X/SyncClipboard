@@ -11,10 +11,10 @@ namespace SyncClipboard.Core.Utilities.Web
 
         private string _proxy;
 
-        public Http(UserConfig2 userConfig)
+        public Http(ConfigManager configManager)
         {
-            userConfig.ListenConfig<ProgramConfig>(ConfigKey.Program, ConfigChanged);
-            var programConfig = userConfig.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+            configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, ConfigChanged);
+            var programConfig = configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
 
             _proxy = programConfig.Proxy;
         }

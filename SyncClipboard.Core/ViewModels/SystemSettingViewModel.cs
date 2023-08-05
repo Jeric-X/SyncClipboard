@@ -21,22 +21,22 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
         CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
-        _userConfig.SetConfig(ConfigKey.Program, value);
+        _configManager.SetConfig(ConfigKey.Program, value);
     }
 
     private readonly IServiceProvider _serviceProvider;
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
 
     private UpdateChecker UpdateChecker => _serviceProvider.GetRequiredService<UpdateChecker>();
     private NotificationManager NotificationManager => _serviceProvider.GetRequiredService<NotificationManager>();
 
-    public SystemSettingViewModel(IServiceProvider serviceProvider, UserConfig2 userConfig)
+    public SystemSettingViewModel(IServiceProvider serviceProvider, ConfigManager configManager)
     {
         _serviceProvider = serviceProvider;
-        _userConfig = userConfig;
+        _configManager = configManager;
 
-        _userConfig.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
-        ProgramConfig = _userConfig.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+        _configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
+        ProgramConfig = _configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
     }
 
     public bool StartUpWithSystem

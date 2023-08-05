@@ -25,7 +25,7 @@ public class ConvertService : ClipboardHander
         set
         {
             _clipboardConfig.ConvertSwitchOn = value;
-            _userConfig.SetConfig(ConfigKey.ClipboardAssist, _clipboardConfig);
+            _configManager.SetConfig(ConfigKey.ClipboardAssist, _clipboardConfig);
         }
     }
 
@@ -53,7 +53,7 @@ public class ConvertService : ClipboardHander
     #endregion
 
     private readonly ILogger _logger;
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
 
@@ -65,11 +65,11 @@ public class ConvertService : ClipboardHander
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
+        _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
 
-        _clipboardConfig = _userConfig.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
-        _userConfig.ListenConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist, config => _clipboardConfig = config as ClipboardAssistConfig ?? new());
+        _clipboardConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _configManager.ListenConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist, config => _clipboardConfig = config as ClipboardAssistConfig ?? new());
     }
 
     private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)

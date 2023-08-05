@@ -19,7 +19,6 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 internal class ClipboardFactory : ClipboardFactoryBase
 {
     protected override ILogger Logger { get; set; }
-    protected override UserConfig UserConfig { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
     protected override IWebDav WebDav { get; set; }
 
@@ -75,7 +74,6 @@ internal class ClipboardFactory : ClipboardFactoryBase
     {
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
-        UserConfig = ServiceProvider.GetRequiredService<UserConfig>();
         WebDav = ServiceProvider.GetRequiredService<IWebDav>();
     }
 

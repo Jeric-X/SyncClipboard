@@ -28,7 +28,7 @@ public class UploadService : ClipboardHander
         set
         {
             _syncConfig.SyncSwitchOn = value;
-            _userConfig.SetConfig(ConfigKey.Sync, _syncConfig);
+            _configManager.SetConfig(ConfigKey.Sync, _syncConfig);
         }
     }
 
@@ -36,7 +36,7 @@ public class UploadService : ClipboardHander
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private readonly IWebDav _webDav;
@@ -49,17 +49,17 @@ public class UploadService : ClipboardHander
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
+        _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
-        _syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
     }
 
     public override void Load()
     {
-        _syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
         base.Load();
     }
 

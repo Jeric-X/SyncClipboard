@@ -30,15 +30,13 @@ namespace SyncClipboard.Core
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
             trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
 
-            var userConfig = Services.GetRequiredService<UserConfig>();
-            userConfig.AddMenuItems();
-            var userConfig2 = Services.GetRequiredService<UserConfig2>();
-            userConfig2.AddMenuItems();
+            var configManager = Services.GetRequiredService<ConfigManager>();
+            configManager.AddMenuItems();
 
             var webdav = Services.GetRequiredService<IWebDav>();
             webdav.TestAlive();
 
-            PrepareWorkingFolder(userConfig2);
+            PrepareWorkingFolder(configManager);
             CheckUpdate();
             ServiceManager.StartUpAllService();
             trayIcon.Create();
@@ -46,11 +44,11 @@ namespace SyncClipboard.Core
 
         private async void CheckUpdate()
         {
-            var userConfig = Services.GetRequiredService<UserConfig2>();
+            var configManager = Services.GetRequiredService<ConfigManager>();
             var updateChecker = Services.GetRequiredService<UpdateChecker>();
             var notificationManager = Services.GetRequiredService<NotificationManager>();
 
-            bool checkOnStartup = userConfig.GetConfig<ProgramConfig>(ConfigKey.Program)?.CheckUpdateOnStartUp ?? false;
+            bool checkOnStartup = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.CheckUpdateOnStartUp ?? false;
             if (checkOnStartup)
             {
                 try
@@ -81,10 +79,9 @@ namespace SyncClipboard.Core
         public static void ConfigCommonService(ServiceCollection services)
         {
             services.AddSingleton((serviceProvider) => serviceProvider);
-            services.AddSingleton<UserConfig>();
             services.AddTransient<IAppConfig, AppConfig>();
             services.Configure<UserConfigOption>(x => x.Path = Env.UserConfigFile);
-            services.AddSingleton<UserConfig2>();
+            services.AddSingleton<ConfigManager>();
 
             services.AddSingleton<ILogger, Logger>();
             services.Configure<LoggerOption>(x => x.Path = Env.LogFolder);
@@ -114,9 +111,9 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, DownloadService>();
         }
 
-        private static void PrepareWorkingFolder(UserConfig2 userConfig)
+        private static void PrepareWorkingFolder(ConfigManager configManager)
         {
-            var config = userConfig.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+            var config = configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
             if (Directory.Exists(Env.TemplateFileFolder))
             {
                 if (config.DeleteTempFilesOnStartUp)

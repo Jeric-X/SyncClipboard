@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Image;
@@ -10,7 +9,6 @@ namespace SyncClipboard.Core.Clipboard;
 public abstract class ClipboardFactoryBase : IClipboardFactory
 {
     protected abstract ILogger Logger { get; set; }
-    protected abstract UserConfig UserConfig { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
     protected abstract IWebDav WebDav { get; set; }
 
@@ -25,7 +23,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         if (metaInfomation.Files != null)
         {
             var filename = metaInfomation.Files[0];
-            if (System.IO.File.Exists(filename))
+            if (File.Exists(filename))
             {
                 if (ImageHelper.FileIsImage(filename))
                 {

@@ -27,7 +27,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         set
         {
             _clipboardAssistConfig.EasyCopyImageSwitchOn = value;
-            _userConfig.SetConfig(ConfigKey.ClipboardAssist, _clipboardAssistConfig);
+            _configManager.SetConfig(ConfigKey.ClipboardAssist, _clipboardAssistConfig);
         }
     }
 
@@ -57,7 +57,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
@@ -68,15 +68,15 @@ public class EasyCopyImageSerivce : ClipboardHander
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
+        _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
-        _clipboardAssistConfig = _userConfig.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
     }
 
     public override void Load()
     {
-        _clipboardAssistConfig = _userConfig.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
         base.Load();
     }
 

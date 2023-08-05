@@ -14,7 +14,7 @@ namespace SyncClipboard.Core.Utilities.Web
         private readonly ILogger _logger;
         private SyncConfig _syncConfig;
         private ServerConfig _serverConfig;
-        private readonly UserConfig2 _userConfig;
+        private readonly ConfigManager _configManager;
 
         private uint Timeout => _syncConfig.TimeOut != 0 ? _syncConfig.TimeOut : (uint)httpClient.Timeout.TotalSeconds;
         private string User => _syncConfig.UseLocalServer ? _serverConfig.UserName : _syncConfig.UserName;
@@ -23,12 +23,12 @@ namespace SyncClipboard.Core.Utilities.Web
 
         private HttpClient httpClient;
 
-        public WebDavClient(UserConfig2 userConfig, ILogger logger)
+        public WebDavClient(ConfigManager configManager, ILogger logger)
         {
-            _userConfig = userConfig;
-            userConfig.ConfigChanged += UserConfigChanged;
-            _syncConfig = userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
-            _serverConfig = userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+            _configManager = configManager;
+            configManager.ConfigChanged += UserConfigChanged;
+            _syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+            _serverConfig = configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
             _logger = logger;
 
             httpClient = CreateHttpClient();
@@ -37,8 +37,8 @@ namespace SyncClipboard.Core.Utilities.Web
 
         private void UserConfigChanged()
         {
-            var syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
-            var serverConfig = _userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+            var syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+            var serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
 
             if (_serverConfig != serverConfig || syncConfig != _syncConfig)
             {

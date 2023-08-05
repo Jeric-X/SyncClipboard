@@ -12,7 +12,7 @@ public class SystemServiceProviderDataSource : ServiceProviderDataSourceBase
     {
         Type[] requiredService = {
             typeof(IServiceProvider),
-            typeof(UserConfig),
+            typeof(ConfigManager),
             typeof(IAppConfig),
             typeof(ILogger),
             typeof(IWebDav),

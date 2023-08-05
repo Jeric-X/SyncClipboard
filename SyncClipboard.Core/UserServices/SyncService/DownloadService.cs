@@ -21,7 +21,7 @@ public class DownloadService : Service
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private readonly ITrayIcon _trayIcon;
@@ -33,9 +33,9 @@ public class DownloadService : Service
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = _serviceProvider.GetRequiredService<UserConfig2>();
-        _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, SyncConfigChanged);
-        _syncConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
+        _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, SyncConfigChanged);
+        _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();

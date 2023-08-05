@@ -15,7 +15,7 @@ public partial class SyncSettingViewModel : ObservableObject
     private ServerConfig serverConfig;
     partial void OnServerConfigChanged(ServerConfig value)
     {
-        _userConfig.SetConfig(ConfigKey.Server, value);
+        _configManager.SetConfig(ConfigKey.Server, value);
     }
 
     #endregion
@@ -49,21 +49,21 @@ public partial class SyncSettingViewModel : ObservableObject
         SyncEnable = value.SyncSwitchOn;
         UseLocalServer = value.UseLocalServer;
         TimeOut = value.TimeOut;
-        _userConfig.SetConfig(ConfigKey.Sync, value);
+        _configManager.SetConfig(ConfigKey.Sync, value);
     }
     #endregion
 
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
 
-    public SyncSettingViewModel(UserConfig2 userConfig)
+    public SyncSettingViewModel(ConfigManager configManager)
     {
-        _userConfig = userConfig;
-        _userConfig.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
-        serverConfig = _userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+        _configManager = configManager;
+        _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
+        serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         serverEnable = serverConfig.SwitchOn;
 
-        _userConfig.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);
-        ClientConfig = _userConfig.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);
+        ClientConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
     }
 
     private void LoadSeverConfig(object? config)

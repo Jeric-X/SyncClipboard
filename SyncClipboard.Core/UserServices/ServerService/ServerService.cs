@@ -10,30 +10,30 @@ public class ServerService : Service
     public const string SERVICE_NAME = "内置服务器";
     public const string LOG_TAG = "INNERSERVER";
 
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
     private ServerConfig _serverConfig = new();
     private readonly ToggleMenuItem _toggleMenuItem;
 
     private readonly IContextMenu _contextMenu;
 
-    public ServerService(UserConfig2 userConfig, IContextMenu contextMenu)
+    public ServerService(ConfigManager configManager, IContextMenu contextMenu)
     {
-        _userConfig = userConfig;
+        _configManager = configManager;
         _contextMenu = contextMenu;
         _toggleMenuItem = new ToggleMenuItem(
             SERVICE_NAME,
             _serverConfig.SwitchOn,
             (status) =>
             {
-                _userConfig.SetConfig(ConfigKey.Server, _serverConfig with { SwitchOn = status });
+                _configManager.SetConfig(ConfigKey.Server, _serverConfig with { SwitchOn = status });
             }
         );
     }
 
     protected override void StartService()
     {
-        _userConfig.ListenConfig<ServerConfig>(ConfigKey.Server, ConfigChanged);
-        _serverConfig = _userConfig.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+        _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, ConfigChanged);
+        _serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         _contextMenu.AddMenuItem(_toggleMenuItem, SyncService.ContextMenuGroupName);
         RestartServer();
     }

@@ -17,7 +17,7 @@ public class CommandService : Service
 
     private readonly NotificationManager _notificationManager;
     private readonly ILogger _logger;
-    private readonly UserConfig2 _userConfig;
+    private readonly ConfigManager _configManager;
     private readonly IWebDav _webDav;
     private readonly IContextMenu _contextMenu;
 
@@ -29,7 +29,7 @@ public class CommandService : Service
         set
         {
             _commandConfig.SwitchOn = value;
-            _userConfig.SetConfig(ConfigKey.Command, _commandConfig);
+            _configManager.SetConfig(ConfigKey.Command, _commandConfig);
         }
     }
 
@@ -40,11 +40,11 @@ public class CommandService : Service
     {
         _notificationManager = serviceProvider.GetRequiredService<NotificationManager>();
         _logger = serviceProvider.GetRequiredService<ILogger>();
-        _userConfig = serviceProvider.GetRequiredService<UserConfig2>();
+        _configManager = serviceProvider.GetRequiredService<ConfigManager>();
         _webDav = serviceProvider.GetRequiredService<IWebDav>();
         _contextMenu = serviceProvider.GetRequiredService<IContextMenu>();
 
-        _commandConfig = _userConfig.GetConfig<CommandConfig>(ConfigKey.Command) ?? new();
+        _commandConfig = _configManager.GetConfig<CommandConfig>(ConfigKey.Command) ?? new();
 
         _toggleMenuItem = new ToggleMenuItem(
             "Remote Command",
@@ -52,7 +52,7 @@ public class CommandService : Service
             (status) => SwitchOn = status
         );
 
-        _userConfig.ListenConfig<CommandConfig>(ConfigKey.Command,
+        _configManager.ListenConfig<CommandConfig>(ConfigKey.Command,
             (config) =>
             {
                 _commandConfig = (config as CommandConfig) ?? new();

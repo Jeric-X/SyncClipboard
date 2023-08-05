@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 
 namespace SyncClipboard.Core.Commons
 {
-    public class UserConfig2
+    public class ConfigManager
     {
         public event Action? ConfigChanged;
 
@@ -19,7 +19,7 @@ namespace SyncClipboard.Core.Commons
 
         JsonNode _jsonNode = new JsonObject();
 
-        public UserConfig2(ILogger logger, IAppConfig appConfig, IContextMenu contextMenu)
+        public ConfigManager(ILogger logger, IAppConfig appConfig, IContextMenu contextMenu)
         {
             _logger = logger;
             _contextMenu = contextMenu;

@@ -6,7 +6,6 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Module;
 using SyncClipboard.Utility;
 using System;
 using System.Windows.Forms;
@@ -19,8 +18,7 @@ namespace SyncClipboard
         private static ProgramWorkflow ProgramWorkflow;
 
         internal static IHttp Http;
-        internal static UserConfig UserConfig;
-        internal static UserConfig2 UserConfig2;
+        internal static ConfigManager ConfigManager;
         internal static ILogger Logger;
 
         public static void StartUp()
@@ -28,8 +26,7 @@ namespace SyncClipboard
             var services = ConfigurateServices();
 
             Http = services.GetRequiredService<IHttp>();
-            UserConfig = services.GetRequiredService<UserConfig>();
-            UserConfig2 = services.GetRequiredService<UserConfig2>();
+            ConfigManager = services.GetRequiredService<ConfigManager>();
             Logger = services.GetRequiredService<ILogger>();
 
             ProgramWorkflow = new ProgramWorkflow(services);

@@ -51,7 +51,7 @@ public class FileProfile : Profile
         ServiceProvider = serviceProvider;
         RemoteFileFolder = serviceProvider.GetRequiredService<IAppConfig>().RemoteFileFolder;
 
-        var configManager = serviceProvider.GetRequiredService<UserConfig2>();
+        var configManager = serviceProvider.GetRequiredService<ConfigManager>();
         var syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new SyncConfig();
         _maxFileByte = syncConfig.MaxFileByte;
     }

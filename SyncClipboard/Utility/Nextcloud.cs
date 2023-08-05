@@ -20,8 +20,8 @@ public static class Nextcloud
             return;
         }
 
-        SyncConfig config = Global.UserConfig2.GetConfig<SyncConfig>(ConfigKey.Sync);
-        Global.UserConfig2.SetConfig(
+        SyncConfig config = Global.ConfigManager.GetConfig<SyncConfig>(ConfigKey.Sync);
+        Global.ConfigManager.SetConfig(
             ConfigKey.Sync,
             config with
             {
