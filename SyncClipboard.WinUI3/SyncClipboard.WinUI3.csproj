@@ -27,6 +27,66 @@
     <Delete Files="$(OutputPath)\appsettings.json" />
   </Target>
 
+  <Target Name="DeleteWindowsAppSdkSelfContainedLanguage" AfterTargets="Build">
+    <Message Text="Deleting Windows App Sdk self contained language"/>
+    <RemoveDir Directories="$(OutputPath)\af-ZA" />
+    <RemoveDir Directories="$(OutputPath)\ar-SA" />
+    <RemoveDir Directories="$(OutputPath)\az-Latn-AZ" />
+    <RemoveDir Directories="$(OutputPath)\bg-BG" />
+    <RemoveDir Directories="$(OutputPath)\bs-Latn-BA" />
+    <RemoveDir Directories="$(OutputPath)\ca-ES" />
+    <RemoveDir Directories="$(OutputPath)\cs-CZ" />
+    <RemoveDir Directories="$(OutputPath)\cy-GB" />
+    <RemoveDir Directories="$(OutputPath)\da-DK" />
+    <RemoveDir Directories="$(OutputPath)\de-DE" />
+    <RemoveDir Directories="$(OutputPath)\el-GR" />
+    <RemoveDir Directories="$(OutputPath)\en-GB" />
+    <RemoveDir Directories="$(OutputPath)\es-ES" />
+    <RemoveDir Directories="$(OutputPath)\es-MX" />
+    <RemoveDir Directories="$(OutputPath)\et-EE" />
+    <RemoveDir Directories="$(OutputPath)\eu-ES" />
+    <RemoveDir Directories="$(OutputPath)\fa-IR" />
+    <RemoveDir Directories="$(OutputPath)\fi-FI" />
+    <RemoveDir Directories="$(OutputPath)\fr-CA" />
+    <RemoveDir Directories="$(OutputPath)\fr-FR" />
+    <RemoveDir Directories="$(OutputPath)\gl-ES" />
+    <RemoveDir Directories="$(OutputPath)\he-IL" />
+    <RemoveDir Directories="$(OutputPath)\hi-IN" />
+    <RemoveDir Directories="$(OutputPath)\hr-HR" />
+    <RemoveDir Directories="$(OutputPath)\hu-HU" />
+    <RemoveDir Directories="$(OutputPath)\id-ID" />
+    <RemoveDir Directories="$(OutputPath)\is-IS" />
+    <RemoveDir Directories="$(OutputPath)\it-IT" />
+    <RemoveDir Directories="$(OutputPath)\ja-JP" />
+    <RemoveDir Directories="$(OutputPath)\ka-GE" />
+    <RemoveDir Directories="$(OutputPath)\kk-KZ" />
+    <RemoveDir Directories="$(OutputPath)\ko-KR" />
+    <RemoveDir Directories="$(OutputPath)\lt-LT" />
+    <RemoveDir Directories="$(OutputPath)\lv-LV" />
+    <RemoveDir Directories="$(OutputPath)\ms-MY" />
+    <RemoveDir Directories="$(OutputPath)\nb-NO" />
+    <RemoveDir Directories="$(OutputPath)\nl-NL" />
+    <RemoveDir Directories="$(OutputPath)\pt-PT" />
+    <RemoveDir Directories="$(OutputPath)\nn-NO" />
+    <RemoveDir Directories="$(OutputPath)\ro-RO" />
+    <RemoveDir Directories="$(OutputPath)\pl-PL" />
+    <RemoveDir Directories="$(OutputPath)\pt-BR" />
+    <RemoveDir Directories="$(OutputPath)\ru-RU" />
+    <RemoveDir Directories="$(OutputPath)\sk-SK" />
+    <RemoveDir Directories="$(OutputPath)\sl-SI" />
+    <RemoveDir Directories="$(OutputPath)\sq-AL" />
+    <RemoveDir Directories="$(OutputPath)\sr-Cyrl-RS" />
+    <RemoveDir Directories="$(OutputPath)\sr-Latn-RS" />
+    <RemoveDir Directories="$(OutputPath)\sv-SE" />
+    <RemoveDir Directories="$(OutputPath)\th-TH" />
+    <RemoveDir Directories="$(OutputPath)\tr-TR" />
+    <RemoveDir Directories="$(OutputPath)\vi-VN" />
+    <RemoveDir Directories="$(OutputPath)\uk-UA" />
+    <RemoveDir Directories="$(OutputPath)\zh-CN" />
+    <RemoveDir Directories="$(OutputPath)\th-TH" />
+    <RemoveDir Directories="$(OutputPath)\zh-TW" />
+  </Target>
+
   <ItemGroup Condition="'$(Platform)'=='x64'">
     <PackageReference Include="Magick.NET-Q16-x64" Version="13.1.3" />
   </ItemGroup>
@@ -57,6 +117,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\LICENSES\**" LinkBase="LICENSES" CopyToPublishDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <ItemGroup>
