@@ -173,6 +173,7 @@ public class UploadService : ClipboardHander
                 var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
                 if (!await Profile.Same(remoteProfile, profile, cancelToken))
                 {
+                    _logger.Write(LOG_TAG, "Start: " + profile.ToJsonString());
                     await CleanServerTempFile(cancelToken);
                     await profile.UploadProfile(_webDav, cancelToken);
                 }

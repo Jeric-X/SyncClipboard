@@ -52,6 +52,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         try
         {
             profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(RemoteProfilePath, cancelToken);
+            Logger.Write(nameof(ClipboardFactoryBase), profileDTO?.ToString() ?? "null");
         }
         catch (Exception ex)
         {

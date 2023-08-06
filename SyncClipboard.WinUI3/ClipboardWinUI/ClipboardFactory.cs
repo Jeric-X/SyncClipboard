@@ -1,7 +1,6 @@
 ﻿using ImageMagick;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System;
@@ -86,8 +85,16 @@ internal class ClipboardFactory : ClipboardFactoryBase
             return meta;
         }
 
+        for (int i = 0; ClipboardData.AvailableFormats.Count == 0 && i < 3; i++)
+        {
+            Thread.Sleep(200);
+            ClipboardData = Clipboard.GetContent();
+            Logger.Write(LOG_TAG, "retry times: " + (i + 1));
+        }
+
         if (ClipboardData.AvailableFormats.Count == 0)
         {
+            Logger.Write(LOG_TAG, "ClipboardData.AvailableFormats.Count is 0");
             meta.Text = "";
             return meta;
         }
@@ -111,7 +118,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
             }
         }
 
-        Logger.Write(LOG_TAG, errortimes.ToString());
+        Logger.Write(LOG_TAG, "Text: " + meta.Text ?? "");
         return meta;
     }
 }
