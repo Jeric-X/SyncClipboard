@@ -92,6 +92,12 @@
                 <labs:SettingsCard Header="超时时间（秒）">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
                 </labs:SettingsCard>
+                <labs:SettingsCard Header="最大上传文件大小（MB）">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="自动删除服务器上的临时文件">
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
+                </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
         <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />

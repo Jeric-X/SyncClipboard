@@ -38,6 +38,14 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnTimeOutChanged(uint value) => ClientConfig = ClientConfig with { TimeOut = value };
 
     [ObservableProperty]
+    private uint maxFileSize;
+    partial void OnMaxFileSizeChanged(uint value) => ClientConfig = ClientConfig with { MaxFileByte = value * 1024 * 1024 };
+
+    [ObservableProperty]
+    private bool autoDeleleServerFile;
+    partial void OnAutoDeleleServerFileChanged(bool value) => ClientConfig = ClientConfig with { DeletePreviousFilesOnPush = value};
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IntervalTime))]
     [NotifyPropertyChangedFor(nameof(SyncEnable))]
     [NotifyPropertyChangedFor(nameof(UseLocalServer))]
@@ -49,6 +57,8 @@ public partial class SyncSettingViewModel : ObservableObject
         SyncEnable = value.SyncSwitchOn;
         UseLocalServer = value.UseLocalServer;
         TimeOut = value.TimeOut;
+        MaxFileSize = value.MaxFileByte / 1024 / 1024;
+        AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
         _configManager.SetConfig(ConfigKey.Sync, value);
     }
     #endregion

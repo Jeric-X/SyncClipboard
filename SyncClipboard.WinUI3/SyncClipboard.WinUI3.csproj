@@ -82,9 +82,10 @@
     <RemoveDir Directories="$(OutputPath)\tr-TR" />
     <RemoveDir Directories="$(OutputPath)\vi-VN" />
     <RemoveDir Directories="$(OutputPath)\uk-UA" />
-    <RemoveDir Directories="$(OutputPath)\zh-CN" />
     <RemoveDir Directories="$(OutputPath)\th-TH" />
     <RemoveDir Directories="$(OutputPath)\zh-TW" />
+    <!--<RemoveDir Directories="$(OutputPath)\zh-CN" />-->
+    <!--<RemoveDir Directories="$(OutputPath)\en-us" />-->
   </Target>
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
