@@ -43,7 +43,7 @@ public partial class SyncSettingViewModel : ObservableObject
 
     [ObservableProperty]
     private bool autoDeleleServerFile;
-    partial void OnAutoDeleleServerFileChanged(bool value) => ClientConfig = ClientConfig with { DeletePreviousFilesOnPush = value};
+    partial void OnAutoDeleleServerFileChanged(bool value) => ClientConfig = ClientConfig with { DeletePreviousFilesOnPush = value };
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IntervalTime))]

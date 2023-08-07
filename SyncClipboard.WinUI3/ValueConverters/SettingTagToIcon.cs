@@ -12,6 +12,7 @@ public class SettingTagToIcon : IValueConverter
         {
             "SyncSetting" => "\uEBD3",
             "SystemSetting" => "\uE115",
+            "About" => "\uE946",
             _ => "\uE115",
         };
     }

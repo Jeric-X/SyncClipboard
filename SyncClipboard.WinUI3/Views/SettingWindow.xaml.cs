@@ -91,7 +91,7 @@ namespace SyncClipboard.WinUI3.Views
 
         void IMainWindow.Show()
         {
-            if (this.Visible == false)
+            if (!this.Visible)
             {
                 this.CenterOnScreen();
                 this.SetForegroundWindow();

@@ -9,7 +9,7 @@
     <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <PublishTrimmed>false</PublishTrimmed>
     <SelfContained>false</SelfContained>
     <PublishReadyToRun>false</PublishReadyToRun>
@@ -23,12 +23,12 @@
   </PropertyGroup>
 
   <Target Name="DeleteServerAppsettings" AfterTargets="Build">
-    <Message Text="Deleting appsettings.json"/>
+    <Message Text="Deleting appsettings.json" />
     <Delete Files="$(OutputPath)\appsettings.json" />
   </Target>
 
   <Target Name="DeleteWindowsAppSdkSelfContainedLanguage" AfterTargets="Build">
-    <Message Text="Deleting Windows App Sdk self contained language"/>
+    <Message Text="Deleting Windows App Sdk self contained language" />
     <RemoveDir Directories="$(OutputPath)\af-ZA" />
     <RemoveDir Directories="$(OutputPath)\ar-SA" />
     <RemoveDir Directories="$(OutputPath)\az-Latn-AZ" />
@@ -121,7 +121,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\LICENSES\**" LinkBase="LICENSES" CopyToPublishDirectory="PreserveNewest"/>
+    <Content Include="..\LICENSES\**" LinkBase="LICENSES" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -160,6 +160,12 @@
     <Resource Include="Assets\upload015.ico" />
     <Resource Include="Assets\upload016.ico" />
     <Resource Include="Assets\upload017.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Views\AboutPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
 </Project>

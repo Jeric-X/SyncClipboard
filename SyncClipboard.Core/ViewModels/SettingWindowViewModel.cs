@@ -12,6 +12,7 @@ namespace SyncClipboard.Core.ViewModels
         {
             SettingItems.Add(new("SyncSetting", "剪切板同步"));
             SettingItems.Add(new("SystemSetting", "系统设置"));
+            SettingItems.Add(new("About", "关于"));
         }
     }
 }
