@@ -104,7 +104,6 @@ namespace SyncClipboard.Core
 
         private static void ConfigurateUserService(IServiceCollection services)
         {
-            services.AddSingleton<IService, CommandService>();
             services.AddSingleton<IService, EasyCopyImageSerivce>();
             services.AddSingleton<IService, ConvertService>();
             services.AddSingleton<IService, ServerService>();
