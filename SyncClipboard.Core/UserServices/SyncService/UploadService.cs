@@ -64,12 +64,15 @@ public class UploadService : ClipboardHander
         {
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
         }
+        else
+        {
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.");
+        }
         base.Load();
     }
 
     protected override void StartService()
     {
-        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.");
         base.StartService();
     }
 
