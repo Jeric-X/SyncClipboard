@@ -5,16 +5,15 @@ namespace SyncClipboard.Core.ViewModels
 {
     public partial class SettingWindowViewModel : ObservableObject
     {
-        [ObservableProperty]
-        public ObservableCollection<SettingItem> settingItems = new();
-
-        public SettingWindowViewModel()
+        public ObservableCollection<SettingItem> SettingItems = new()
         {
-            SettingItems.Add(new("SyncSetting", "剪切板同步"));
-            SettingItems.Add(new("CliboardAssistant", "剪切板助手"));
-            SettingItems.Add(new("ServiceStatus", "服务状态"));
-            SettingItems.Add(new("SystemSetting", "系统设置"));
-            SettingItems.Add(new("About", "关于"));
-        }
+            new ("SyncSetting", "剪切板同步"),
+            new ("CliboardAssistant", "剪切板助手"),
+            new ("ServiceStatus", "服务状态"),
+            new ("SystemSetting", "系统设置"),
+            new ("About", "关于"),
+        };
+
+        public ObservableCollection<SettingItem> BreadcrumbList { get; } = new();
     }
 }

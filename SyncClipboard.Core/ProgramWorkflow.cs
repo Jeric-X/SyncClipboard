@@ -102,6 +102,7 @@ namespace SyncClipboard.Core
             services.AddTransient<AboutViewModel>();
             services.AddTransient<CliboardAssistantViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
+            services.AddSingleton<SettingWindowViewModel>();
         }
 
         private static void ConfigurateUserService(IServiceCollection services)

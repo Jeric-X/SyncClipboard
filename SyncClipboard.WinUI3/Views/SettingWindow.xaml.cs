@@ -1,7 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using System;
@@ -19,9 +21,12 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class SettingWindow : Window, IMainWindow
     {
+        private readonly SettingWindowViewModel _viewModel;
+
         public SettingWindow()
         {
             this.InitializeComponent();
+            _viewModel = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
 
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(_AppTitleBar.DraggableArea);
@@ -33,6 +38,13 @@ namespace SyncClipboard.WinUI3.Views
             _MenuList.SelectedIndex = 0;
         }
 
+        internal void NavigateTo(SettingItem item, SlideNavigationTransitionEffect effect = SlideNavigationTransitionEffect.FromBottom)
+        {
+            string pageName = "SyncClipboard.WinUI3.Views." + item.Name + "Page";
+            Type? pageType = Type.GetType(pageName);
+            SettingContentFrame.Navigate(pageType, null, new SlideNavigationTransitionInfo { Effect = effect });
+        }
+
         private void SettingWindow_Closed(object sender, WindowEventArgs args)
         {
             this.AppWindow.Hide();
@@ -42,11 +54,14 @@ namespace SyncClipboard.WinUI3.Views
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedItem = ((ListView)sender).SelectedItem;
+            var itemName = ((SettingItem)selectedItem).Name;
+            var itemDisplayName = ((SettingItem)selectedItem).Tag;
 
-            string pageName = "SyncClipboard.WinUI3.Views." + (((SettingItem)selectedItem).Name + "Page");
-            Type? pageType = Type.GetType(pageName);
-            SettingContentFrame.Navigate(pageType ?? throw new Exception($"Page View not Found: {pageName}"));
-            _SettingTitle.Text = ((SettingItem)selectedItem).Tag;
+            var item = new SettingItem(itemName, itemDisplayName);
+            NavigateTo(item);
+
+            _viewModel.BreadcrumbList.Clear();
+            _viewModel.BreadcrumbList.Add(item);
 
             if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
             {
@@ -54,9 +69,32 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        private string GetItemTag(object item)
+        private void ListView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            return (item as SettingItem)?.Tag ?? "";
+            if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
+            {
+                SplitPane.IsPaneOpen = false;
+            }
+
+            var newItem = (SettingItem)e.ClickedItem;
+            var oldItem = _viewModel.BreadcrumbList[0];
+
+            if (newItem.Name == oldItem.Name && _viewModel.BreadcrumbList.Count > 1)
+            {
+                NavigateTo(oldItem, SlideNavigationTransitionEffect.FromLeft);
+                _viewModel.BreadcrumbList.Clear();
+                _viewModel.BreadcrumbList.Add(newItem);
+            }
+        }
+
+        private void BreadcrumbBar_ItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
+        {
+            for (int i = _viewModel.BreadcrumbList.Count - 1; i >= args.Index + 1; i--)
+            {
+                _viewModel.BreadcrumbList.RemoveAt(i);
+            }
+
+            NavigateTo(_viewModel.BreadcrumbList[0], SlideNavigationTransitionEffect.FromLeft);
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
@@ -94,8 +132,8 @@ namespace SyncClipboard.WinUI3.Views
             if (!this.Visible)
             {
                 this.CenterOnScreen();
-                this.SetForegroundWindow();
             }
+            this.SetForegroundWindow();
         }
     }
 }

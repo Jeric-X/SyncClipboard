@@ -96,7 +96,7 @@ namespace SyncClipboard.Core.Commons
                 }
                 catch
                 {
-                    await Task.Delay(INTERVAL_TIME, cancellationToken ?? token);
+                    await Task.Delay(INTERVAL_TIME, token);
                 }
             }
         }

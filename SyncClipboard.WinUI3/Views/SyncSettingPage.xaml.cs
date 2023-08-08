@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System;
@@ -16,11 +18,15 @@ namespace SyncClipboard.WinUI3.Views
     public sealed partial class SyncSettingPage : Page
     {
         private readonly SyncSettingViewModel _viewModel;
+        private readonly SettingWindowViewModel _mainWindowVM;
+        private readonly SettingWindow _mainWindow;
 
         public SyncSettingPage()
         {
             this.InitializeComponent();
             _viewModel = App.Current.Services.GetRequiredService<SyncSettingViewModel>();
+            _mainWindowVM = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
+            _mainWindow = (SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>();
             this.DataContext = _viewModel;
         }
 
@@ -91,6 +97,12 @@ namespace SyncClipboard.WinUI3.Views
 @$"地　址：{config.RemoteURL}
 用户名：{config.UserName}
 密　码：{GetPasswordString(config.Password, show)}";
+        }
+
+        private void HyperlinkButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            _mainWindowVM.BreadcrumbList.Add(new("About", "关于"));
+            _mainWindow.NavigateTo(new("About", "关于"), SlideNavigationTransitionEffect.FromRight);
         }
     }
 }

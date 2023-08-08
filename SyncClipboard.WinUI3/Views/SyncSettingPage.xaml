@@ -83,7 +83,7 @@
                         </Style>
                     </labs:SettingsCard.Resources>-->
                     <labs:SettingsCard.Description>
-                        <HyperlinkButton Content="登录到Nextcloud" />
+                        <HyperlinkButton Content="登录到Nextcloud" Click="HyperlinkButton_Click"/>
                     </labs:SettingsCard.Description>
                 </labs:SettingsCard>
                 <labs:SettingsCard Header="轮询服务器间隔（秒）">
