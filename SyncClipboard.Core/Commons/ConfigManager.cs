@@ -85,31 +85,30 @@ namespace SyncClipboard.Core.Commons
 #endif
 
             _jsonNode[key] = JsonSerializer.SerializeToNode(newValue);
-            NotifyRegistedHandler(key, newValue);
+            NotifyRegistedHandler(key, typeof(T), _jsonNode[key]);
             ConfigChanged?.Invoke();
             Save();
         }
 
-        private void NotifyRegistedHandler(string key, object? newValue)
+        private void NotifyRegistedHandler(string key, Type type, JsonNode? jsonNode)
         {
-            //var a = _registedChangedHandlerList[key];
             if (!_registedChangedHandlerList.ContainsKey(key))
             {
                 return;
             }
             foreach (var handler in _registedChangedHandlerList[key])
             {
-                handler(newValue);
+                handler(jsonNode.Deserialize(type));
             }
         }
 
         private void NotifyAllRegistedHandler()
         {
-            foreach (var handler in _jsonNode.AsObject())
+            foreach (var configNode in _jsonNode.AsObject())
             {
-                if (_registedTypeList.ContainsKey(handler.Key))
+                if (_registedTypeList.ContainsKey(configNode.Key))
                 {
-                    NotifyRegistedHandler(handler.Key, handler.Value.Deserialize(_registedTypeList[handler.Key]));
+                    NotifyRegistedHandler(configNode.Key, _registedTypeList[configNode.Key], configNode.Value);
                 }
             }
         }

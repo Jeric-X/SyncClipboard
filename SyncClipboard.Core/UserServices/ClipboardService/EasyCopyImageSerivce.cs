@@ -14,7 +14,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 {
     #region override ClipboardHander
 
-    public override string SERVICE_NAME => "Easy Copy Image";
+    public override string SERVICE_NAME => "图片轻松拷贝";
     public override string LOG_TAG => "EASY IMAGE";
 
     protected override ILogger Logger => _logger;
@@ -30,6 +30,8 @@ public class EasyCopyImageSerivce : ClipboardHander
             _configManager.SetConfig(ConfigKey.ClipboardAssist, _clipboardAssistConfig);
         }
     }
+
+    private bool DownloadWebImageEnabled => _clipboardAssistConfig.DownloadWebImage;
 
     protected override void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
     {
@@ -88,7 +90,7 @@ public class EasyCopyImageSerivce : ClipboardHander
             return;
         }
 
-        if (!string.IsNullOrEmpty(metaInfo.Html))
+        if (DownloadWebImageEnabled && !string.IsNullOrEmpty(metaInfo.Html))
         {
             const string Expression = @"<!--StartFragment--><img src=(?<qoute>[""'])(?<imgUrl>https?://.*?)\k<qoute>.*/><!--EndFragment-->";
             var match = Regex.Match(metaInfo.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s

@@ -162,10 +162,4 @@
     <Resource Include="Assets\upload017.ico" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Page Update="Views\AboutPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-
 </Project>

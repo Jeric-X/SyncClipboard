@@ -11,6 +11,7 @@ namespace SyncClipboard.Core.ViewModels
         public SettingWindowViewModel()
         {
             SettingItems.Add(new("SyncSetting", "剪切板同步"));
+            SettingItems.Add(new("CliboardAssistant", "剪切板助手"));
             SettingItems.Add(new("SystemSetting", "系统设置"));
             SettingItems.Add(new("About", "关于"));
         }

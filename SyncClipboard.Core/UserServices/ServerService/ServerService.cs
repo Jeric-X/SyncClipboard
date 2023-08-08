@@ -7,7 +7,7 @@ namespace SyncClipboard.Core.UserServices;
 public class ServerService : Service
 {
     Microsoft.AspNetCore.Builder.WebApplication? app;
-    public const string SERVICE_NAME = "内置服务器";
+    public const string SERVICE_NAME = "同步服务器";
     public const string LOG_TAG = "INNERSERVER";
 
     private readonly ConfigManager _configManager;

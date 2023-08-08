@@ -13,6 +13,7 @@ public class SettingTagToIcon : IValueConverter
             "SyncSetting" => "\uEBD3",
             "SystemSetting" => "\uE115",
             "About" => "\uE946",
+            "CliboardAssistant" => "\uF406",
             _ => "\uE115",
         };
     }

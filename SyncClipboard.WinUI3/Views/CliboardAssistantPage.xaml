@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.CliboardAssistantPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      MinWidth="550"
+      BorderBrush="Transparent"
+      mc:Ignorable="d">
+    <StackPanel Spacing="10">
+        <labs:SettingsExpander Header="图片轻松拷贝" Description="随时随地粘贴图片" IsExpanded="True">
+            <labs:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE158;" FontFamily="Segoe Fluent Icons" />
+            </labs:SettingsExpander.HeaderIcon>
+            <ToggleSwitch IsOn="{x:Bind _viewModel.EasyCopyImageSwitchOn, Mode=TwoWay}" />
+            <labs:SettingsExpander.Items>
+                <labs:SettingsCard Header="文件系统和文本框互操作" Description="复制图片类文件可以直接向文本框内粘贴，反之亦然" />
+                <labs:SettingsCard Header="复制网页图片时下载原图" Description="解决在网页上无法直接复制动态图片的问题">
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.DownloadWebImage, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="图片兼容性优化" Description="复制单个heic/webp等格式文件时改为复制转换后的jpg或gif临时文件以增加兼容性">
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.ConvertSwitchOn, Mode=TwoWay}" />
+                </labs:SettingsCard>
+            </labs:SettingsExpander.Items>
+        </labs:SettingsExpander>
+    </StackPanel>
+</Page>
