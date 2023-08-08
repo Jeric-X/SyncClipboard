@@ -15,9 +15,13 @@ public class ServerService : Service
     private readonly ToggleMenuItem _toggleMenuItem;
 
     private readonly IContextMenu _contextMenu;
+    private readonly ILogger _logger;
+    private readonly ITrayIcon _trayIcon;
 
-    public ServerService(ConfigManager configManager, IContextMenu contextMenu)
+    public ServerService(ConfigManager configManager, IContextMenu contextMenu, ILogger logger, ITrayIcon trayIcon)
     {
+        _trayIcon = trayIcon;
+        _logger = logger;
         _configManager = configManager;
         _contextMenu = contextMenu;
         _toggleMenuItem = new ToggleMenuItem(
@@ -48,23 +52,33 @@ public class ServerService : Service
         }
     }
 
-    public void RestartServer()
+    public async void RestartServer()
     {
         _toggleMenuItem.Checked = _serverConfig.SwitchOn;
-        app?.StopAsync();
+        StopSerivce();
         if (_serverConfig.SwitchOn)
         {
-            app = Server.Program.Start(
-                _serverConfig.Port,
-                Env.Directory,
-                _serverConfig.UserName,
-                _serverConfig.Password
-            );
+            try
+            {
+                app = await Server.Program.StartAsync(
+                    _serverConfig.Port,
+                    Env.Directory,
+                    _serverConfig.UserName,
+                    _serverConfig.Password
+                );
+                _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
+            }
+            catch (Exception ex)
+            {
+                _logger.Write(LOG_TAG, ex.ToString());
+                _trayIcon.SetStatusString(SERVICE_NAME, ex.Message, true);
+            }
         }
     }
 
     protected override void StopSerivce()
     {
+        _trayIcon.SetStatusString(SERVICE_NAME, "Stopped.");
         app?.StopAsync();
     }
 }

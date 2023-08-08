@@ -97,6 +97,7 @@ public class DownloadService : Service
 
     private void StartPullLoop()
     {
+        _trayIcon.SetStatusString(SERVICE_NAME, "Running.");
         _cancelSource = new CancellationTokenSource();
         try
         {
@@ -111,6 +112,7 @@ public class DownloadService : Service
 
     private void StopPullLoop()
     {
+        _trayIcon.SetStatusString(SERVICE_NAME, "Stopped.");
         _cancelSource?.Cancel();
         _cancelSource = null;
     }
@@ -158,7 +160,7 @@ public class DownloadService : Service
     private void SetStatusOnError(ref int errorTimes, Exception ex)
     {
         errorTimes++;
-        _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.", true);
+        _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.\n{ex.Message}", true);
 
         _logger.Write(ex.ToString());
         if (errorTimes == _syncConfig.RetryTimes)

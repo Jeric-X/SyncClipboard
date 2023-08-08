@@ -60,6 +60,10 @@ public class UploadService : ClipboardHander
     public override void Load()
     {
         _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        if (!SwitchOn)
+        {
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
+        }
         base.Load();
     }
 
@@ -126,7 +130,6 @@ public class UploadService : ClipboardHander
     private void SetWorkingEndStatus()
     {
         _trayIcon.StopAnimation();
-        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
         PushStopped?.Invoke();
     }
 
@@ -178,6 +181,7 @@ public class UploadService : ClipboardHander
                     await profile.UploadProfile(_webDav, cancelToken);
                 }
                 _logger.Write(LOG_TAG, "remote is same as local, won't push");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
             catch (TaskCanceledException)
@@ -199,6 +203,7 @@ public class UploadService : ClipboardHander
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
         _notificationManager.SendText("上传失败：" + profile.ToolTip(), errMessage);
+        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"上传失败：{profile.ToolTip().Take(50)}\n{errMessage}", true);
     }
 
     private async Task CleanServerTempFile(CancellationToken cancelToken)
