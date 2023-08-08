@@ -13,7 +13,7 @@ public class UploadService : ClipboardHander
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
 
-    private const string SERVICE_NAME_SIMPLE = "⬆⬆";
+    private const string SERVICE_NAME_SIMPLE = "上传";
     public override string SERVICE_NAME => "同步剪切板";
     public override string LOG_TAG => "PUSH";
 

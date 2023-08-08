@@ -14,6 +14,7 @@ public class SettingTagToIcon : IValueConverter
             "SystemSetting" => "\uE115",
             "About" => "\uE946",
             "CliboardAssistant" => "\uF406",
+            "ServiceStatus" => "\uE9D2",
             _ => "\uE115",
         };
     }

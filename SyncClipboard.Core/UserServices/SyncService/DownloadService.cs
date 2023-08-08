@@ -12,7 +12,7 @@ public class DownloadService : Service
     public event ProgramEvent.ProgramEventHandler? PullStarted;
     public event ProgramEvent.ProgramEventHandler? PullStopped;
 
-    private const string SERVICE_NAME = "⬇⬇";
+    private const string SERVICE_NAME = "下载";
     private const string LOG_TAG = "PULL";
     private bool _isPullLoopRunning = false;
     private readonly object _isPullLoopRunningLocker = new();
@@ -172,8 +172,6 @@ public class DownloadService : Service
         int errorTimes = 0;
         while (!cancelToken.IsCancellationRequested)
         {
-            _trayIcon.SetStatusString(SERVICE_NAME, "Reading remote profile.");
-
             try
             {
                 SyncService.remoteProfilemutex.WaitOne();
@@ -236,6 +234,7 @@ public class DownloadService : Service
 
         if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
         {
+            _trayIcon.SetStatusString(SERVICE_NAME, "Downloading");
             _trayIcon.ShowDownloadAnimation();
             try
             {

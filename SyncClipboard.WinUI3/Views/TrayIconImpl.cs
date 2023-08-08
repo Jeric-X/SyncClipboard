@@ -2,6 +2,7 @@
 using CommunityToolkit.WinUI;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.AbstractClasses;
+using SyncClipboard.Core.ViewModels;
 using System;
 using System.Linq;
 
@@ -12,15 +13,17 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
     public override event Action? MainWindowWakedUp;
 
     private readonly TrayIcon _trayIcon;
+    private readonly ServiceStatusViewModel _serviceStatusViewModel;
 
     protected override BitmapImage DefaultIcon => new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
     protected override BitmapImage ErrorIcon => new BitmapImage(new Uri("ms-appx:///Assets/erro.ico"));
     protected override int MaxToolTipLenth => 60;
 
-    public TrayIconImpl(TrayIcon trayIcon)
+    public TrayIconImpl(TrayIcon trayIcon, ServiceStatusViewModel serviceStatusViewModel)
     {
         _trayIcon = trayIcon;
         _trayIcon.DoubleClickCommand = new RelayCommand(() => MainWindowWakedUp?.Invoke());
+        _serviceStatusViewModel = serviceStatusViewModel;
     }
 
     public override void Create()
@@ -59,5 +62,17 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
     protected override void SetToolTip(string text)
     {
         // Not Support, do nothing;
+    }
+
+    public override void SetStatusString(string key, string statusStr, bool error)
+    {
+        _serviceStatusViewModel.SetStatusString(key, statusStr, error);
+        base.SetStatusString(key, statusStr, error);
+    }
+
+    public override void SetStatusString(string key, string statusStr)
+    {
+        _serviceStatusViewModel.SetStatusString(key, statusStr);
+        base.SetStatusString(key, statusStr);
     }
 }

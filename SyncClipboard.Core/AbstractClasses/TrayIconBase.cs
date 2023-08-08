@@ -81,7 +81,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         SetStaticIcon();
     }
 
-    public void SetStatusString(string key, string statusStr, bool error)
+    public virtual void SetStatusString(string key, string statusStr, bool error)
     {
         SetStatusString(key, statusStr);
 
@@ -96,7 +96,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         SetStaticIcon();
     }
 
-    public void SetStatusString(string key, string statusStr)
+    public virtual void SetStatusString(string key, string statusStr)
     {
         if (!string.IsNullOrEmpty(key))
         {
