@@ -38,9 +38,9 @@ namespace SyncClipboard.WinUI3.Views
             _MenuList.SelectedIndex = 0;
         }
 
-        internal void NavigateTo(SettingItem item, SlideNavigationTransitionEffect effect = SlideNavigationTransitionEffect.FromBottom)
+        internal void NavigateTo(PageDefinition page, SlideNavigationTransitionEffect effect = SlideNavigationTransitionEffect.FromBottom)
         {
-            string pageName = "SyncClipboard.WinUI3.Views." + item.Name + "Page";
+            string pageName = "SyncClipboard.WinUI3.Views." + page.Name + "Page";
             Type? pageType = Type.GetType(pageName);
             SettingContentFrame.Navigate(pageType, null, new SlideNavigationTransitionInfo { Effect = effect });
         }
@@ -51,17 +51,15 @@ namespace SyncClipboard.WinUI3.Views
             args.Handled = true;
         }
 
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs _)
         {
             var selectedItem = ((ListView)sender).SelectedItem;
-            var itemName = ((SettingItem)selectedItem).Name;
-            var itemDisplayName = ((SettingItem)selectedItem).Tag;
+            var page = (PageDefinition)selectedItem;
 
-            var item = new SettingItem(itemName, itemDisplayName);
-            NavigateTo(item);
+            NavigateTo(page);
 
             _viewModel.BreadcrumbList.Clear();
-            _viewModel.BreadcrumbList.Add(item);
+            _viewModel.BreadcrumbList.Add(page);
 
             if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
             {
@@ -69,25 +67,25 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        private void ListView_ItemClick(object sender, ItemClickEventArgs e)
+        private void ListView_ItemClick(object _, ItemClickEventArgs e)
         {
             if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
             {
                 SplitPane.IsPaneOpen = false;
             }
 
-            var newItem = (SettingItem)e.ClickedItem;
-            var oldItem = _viewModel.BreadcrumbList[0];
+            var newPage = (PageDefinition)e.ClickedItem;
+            var oldPage = _viewModel.BreadcrumbList[0];
 
-            if (newItem.Name == oldItem.Name && _viewModel.BreadcrumbList.Count > 1)
+            if (newPage.Equals(oldPage) && _viewModel.BreadcrumbList.Count > 1)
             {
-                NavigateTo(oldItem, SlideNavigationTransitionEffect.FromLeft);
+                NavigateTo(oldPage, SlideNavigationTransitionEffect.FromLeft);
                 _viewModel.BreadcrumbList.Clear();
-                _viewModel.BreadcrumbList.Add(newItem);
+                _viewModel.BreadcrumbList.Add(newPage);
             }
         }
 
-        private void BreadcrumbBar_ItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
+        private void BreadcrumbBar_ItemClicked(BreadcrumbBar _, BreadcrumbBarItemClickedEventArgs args)
         {
             for (int i = _viewModel.BreadcrumbList.Count - 1; i >= args.Index + 1; i--)
             {

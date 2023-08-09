@@ -38,11 +38,11 @@
                             <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
                         </BreadcrumbBar.Resources>
                         <BreadcrumbBar.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SettingItem">
+                            <DataTemplate x:DataType="vm:PageDefinition">
                                 <BreadcrumbBarItem Content="{Binding}" FontSize="30">
                                     <BreadcrumbBarItem.ContentTemplate>
                                         <DataTemplate>
-                                            <TextBlock Margin="0,0,0,4" Text="{Binding Tag}" Tag="{Binding Name}" />
+                                            <TextBlock Margin="0,0,0,4" Text="{Binding Title}" />
                                         </DataTemplate>
                                     </BreadcrumbBarItem.ContentTemplate>
                                 </BreadcrumbBarItem>
@@ -62,15 +62,15 @@
                           Margin="8,36,0,0"
                           SelectionMode="Single"
                           IsItemClickEnabled="true"
-                          ItemsSource="{x:Bind _viewModel.SettingItems}"
+                          ItemsSource="{x:Bind _viewModel.MainWindowPage}"
                           ItemClick="ListView_ItemClick"
                           SelectionChanged="ListView_SelectionChanged">
                     <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SettingItem">
-                            <ListViewItem Tag="{x:Bind Name}">
+                        <DataTemplate x:DataType="vm:PageDefinition">
+                            <ListViewItem>
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <FontIcon FontSize="16" Glyph="{Binding Name, Converter={StaticResource SettingTagToIcon}}" FontFamily="Segoe Fluent Icons" />
-                                    <TextBlock Text="{x:Bind Tag}" />
+                                    <TextBlock Text="{x:Bind Title}" />
                                 </StackPanel>
                             </ListViewItem>
                         </DataTemplate>

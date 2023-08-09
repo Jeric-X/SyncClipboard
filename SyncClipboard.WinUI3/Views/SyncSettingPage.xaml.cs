@@ -99,10 +99,10 @@ namespace SyncClipboard.WinUI3.Views
 密　码：{GetPasswordString(config.Password, show)}";
         }
 
-        private void HyperlinkButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        private void HyperlinkButton_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs _1)
         {
-            _mainWindowVM.BreadcrumbList.Add(new("About", "关于"));
-            _mainWindow.NavigateTo(new("About", "关于"), SlideNavigationTransitionEffect.FromRight);
+            _mainWindowVM.BreadcrumbList.Add(PageDefinition.About);
+            _mainWindow.NavigateTo(PageDefinition.About, SlideNavigationTransitionEffect.FromRight);
         }
     }
 }
