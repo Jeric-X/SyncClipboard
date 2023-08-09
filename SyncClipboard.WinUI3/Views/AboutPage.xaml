@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      xmlns:m="using:SyncClipboard.Core.Models"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       MinWidth="550"
       BorderBrush="Transparent"
@@ -19,12 +20,29 @@
                 <labs:SettingsCard Header="启动时检查更新">
                     <ToggleSwitch IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="项目地址" MinHeight="0">
+                <labs:SettingsCard Header="项目地址">
                     <labs:SettingsCard.Description>
-                        <HyperlinkButton Content="{x:Bind vm:AboutViewModel.HomePage}" Command="{x:Bind _aboutViewModel.OpenHomePageCommand}" />
+                        <HyperlinkButton Content="{x:Bind vm:AboutViewModel.HomePage}" Click="HyperlinkButton_Click" />
                     </labs:SettingsCard.Description>
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
+        </labs:SettingsExpander>
+        <labs:SettingsExpander Header="开源软件依赖" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
+            <labs:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE1D3;" FontFamily="Segoe Fluent Icons" />
+            </labs:SettingsExpander.HeaderIcon>
+            <labs:SettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="m:OpenSourceSoftware">
+                    <labs:SettingsCard Header="{x:Bind Name}"
+                                       IsClickEnabled="True"
+                                       Click="DependencyItem_Click"
+                                       Tag="{x:Bind LicensePath}">
+                        <labs:SettingsCard.Description>
+                            <HyperlinkButton Content="{x:Bind HomePage}" Click="HyperlinkButton_Click" />
+                        </labs:SettingsCard.Description>
+                    </labs:SettingsCard>
+                </DataTemplate>
+            </labs:SettingsExpander.ItemTemplate>
         </labs:SettingsExpander>
     </StackPanel>
 </Page>

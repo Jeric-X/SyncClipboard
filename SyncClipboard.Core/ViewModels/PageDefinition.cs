@@ -10,6 +10,7 @@ public class PageDefinition
     public static readonly PageDefinition ServiceStatus = new("ServiceStatus", "服务状态");
     public static readonly PageDefinition SystemSetting = new("SystemSetting", "系统设置");
     public static readonly PageDefinition About = new("About", "关于");
+    public static readonly PageDefinition License = new("License", "License");
 
     private PageDefinition(string name, string title)
     {

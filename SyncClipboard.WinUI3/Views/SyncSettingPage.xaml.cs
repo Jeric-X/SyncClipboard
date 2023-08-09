@@ -18,15 +18,11 @@ namespace SyncClipboard.WinUI3.Views
     public sealed partial class SyncSettingPage : Page
     {
         private readonly SyncSettingViewModel _viewModel;
-        private readonly SettingWindowViewModel _mainWindowVM;
-        private readonly SettingWindow _mainWindow;
 
         public SyncSettingPage()
         {
             this.InitializeComponent();
             _viewModel = App.Current.Services.GetRequiredService<SyncSettingViewModel>();
-            _mainWindowVM = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
-            _mainWindow = (SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>();
             this.DataContext = _viewModel;
         }
 
@@ -101,8 +97,11 @@ namespace SyncClipboard.WinUI3.Views
 
         private void HyperlinkButton_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs _1)
         {
-            _mainWindowVM.BreadcrumbList.Add(PageDefinition.About);
-            _mainWindow.NavigateTo(PageDefinition.About, SlideNavigationTransitionEffect.FromRight);
+            var mainWindowVM = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
+            var mainWindow = (SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>();
+
+            mainWindowVM.BreadcrumbList.Add(PageDefinition.About);
+            mainWindow.NavigateTo(PageDefinition.About, SlideNavigationTransitionEffect.FromRight);
         }
     }
 }

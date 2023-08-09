@@ -38,11 +38,13 @@ namespace SyncClipboard.WinUI3.Views
             _MenuList.SelectedIndex = 0;
         }
 
-        internal void NavigateTo(PageDefinition page, SlideNavigationTransitionEffect effect = SlideNavigationTransitionEffect.FromBottom)
+        internal void NavigateTo(PageDefinition page,
+            SlideNavigationTransitionEffect effect = SlideNavigationTransitionEffect.FromBottom,
+            object? parameter = null)
         {
             string pageName = "SyncClipboard.WinUI3.Views." + page.Name + "Page";
             Type? pageType = Type.GetType(pageName);
-            SettingContentFrame.Navigate(pageType, null, new SlideNavigationTransitionInfo { Effect = effect });
+            SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
         }
 
         private void SettingWindow_Closed(object sender, WindowEventArgs args)
@@ -92,7 +94,7 @@ namespace SyncClipboard.WinUI3.Views
                 _viewModel.BreadcrumbList.RemoveAt(i);
             }
 
-            NavigateTo(_viewModel.BreadcrumbList[0], SlideNavigationTransitionEffect.FromLeft);
+            NavigateTo(_viewModel.BreadcrumbList[args.Index], SlideNavigationTransitionEffect.FromLeft);
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
