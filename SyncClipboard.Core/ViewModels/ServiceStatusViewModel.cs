@@ -19,10 +19,6 @@ public partial class ServiceStatusViewModel : ObservableObject
 {
     public BindingList<ServiceStatus> StatusList { get; } = new();
 
-    public ServiceStatusViewModel()
-    {
-    }
-
     public void SetStatusString(string name, string statusStr, bool? error = null)
     {
         foreach (var item in StatusList)

@@ -23,7 +23,7 @@ public class PageDefinition
         if (obj == null) return false;
         if (obj is not PageDefinition pageObj) return false;
 
-        return this == pageObj;
+        return this.Name == pageObj.Name;
     }
 
     public override int GetHashCode()
