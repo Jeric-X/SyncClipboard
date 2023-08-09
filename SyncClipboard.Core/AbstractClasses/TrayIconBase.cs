@@ -115,11 +115,12 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     private void ActiveStatusString()
     {
-        var eachMaxLenth = MaxToolTipLenth / _statusList.Count;
+        var eachMaxLenth = MaxToolTipLenth / _statusList.Count - 1;
 
         var ajustedList = _statusList.Select(status =>
         {
-            var oneServiceStr = $"{status.Key}: {status.Value}";
+            var firstLine = status.Value.Split('\n')[0];
+            var oneServiceStr = $"{status.Key}: {firstLine}";
             if (oneServiceStr.Length > eachMaxLenth)
             {
                 oneServiceStr = oneServiceStr[..(eachMaxLenth - 1)];

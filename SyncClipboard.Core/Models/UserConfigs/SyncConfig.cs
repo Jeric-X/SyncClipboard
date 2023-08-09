@@ -8,7 +8,7 @@ public record class SyncConfig
     public bool SyncSwitchOn { get; set; } = false;
     public bool PullSwitchOn { get; set; } = true;
     public bool PushSwitchOn { get; set; } = true;
-    public bool UseLocalServer { get; set; } = true;
+    public bool UseLocalServer { get; set; } = false;
     public bool DeletePreviousFilesOnPush { get; set; } = true;
     public uint MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 20MB 
     public uint IntervalTime { get; set; } = 3;
