@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.NextCloudLogInPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      MinWidth="550"
+      BorderBrush="Transparent"
+      mc:Ignorable="d">
+    <Page.Resources>
+        <Style TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="16,16,16,16" />
+        </Style>
+    </Page.Resources>
+    <StackPanel Orientation="Vertical">
+        <Border>
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="5">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE12B;" FontSize="15" FontFamily="Segoe Fluent Icons" />
+                            <TextBlock Margin="0,0,0,0" Text="地址" FontSize="15" />
+                        </StackPanel>
+                        <TextBox PlaceholderText="https://" Text="{x:Bind _viewModel.UserInputUrl, Mode=TwoWay}" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            MinWidth="40"
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Bottom"
+                            Content="使用浏览器登录"
+                            Command="{x:Bind _viewModel.ComfirmUrlCommand}" />
+                    <Button Grid.Column="2"
+                            MinWidth="40"
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Bottom"
+                            Visibility="{x:Bind BoolToVisibility(_viewModel.CanCancel), Mode=OneWay}"
+                            Content="取消"
+                            Command="{x:Bind _viewModel.CancelCommand}" />
+
+                </Grid>
+                <ProgressBar Grid.Row="1"
+                             Margin="0,4,0,0"
+                             Opacity="{x:Bind BoolToHide(_viewModel.ShowProgressBar), Mode=OneWay}"
+                             IsIndeterminate="True" />
+            </StackPanel>
+        </Border>
+        <Border>
+            <TreeView ItemsSource="{x:Bind _viewModel.TreeList}" Expanding="TreeView_Expanding" >
+                <TreeView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TreeViewModel">
+                        <TreeViewItem ItemsSource="{x:Bind Children}" Content="{x:Bind Content}"/>
+                    </DataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </Border>
+    </StackPanel>
+</Page>

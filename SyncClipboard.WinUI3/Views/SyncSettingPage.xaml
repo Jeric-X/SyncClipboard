@@ -71,7 +71,7 @@
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
-                <labs:SettingsCard Visibility="Collapsed" VerticalContentAlignment="Stretch" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}" ContentAlignment="Vertical">
+                <labs:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}" ContentAlignment="Vertical">
                     <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
                         <labs:SettingsCard.Resources>
                         <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">

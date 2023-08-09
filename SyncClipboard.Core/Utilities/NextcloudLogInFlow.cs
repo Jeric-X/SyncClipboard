@@ -1,7 +1,7 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 
-namespace SyncClipboard.Core.Commons
+namespace SyncClipboard.Core.Utilities
 {
     public class NextcloudLogInFlow
     {
@@ -46,10 +46,10 @@ namespace SyncClipboard.Core.Commons
             _httpClient = httpClient;
         }
 
-        public async Task<string> GetUserLoginUrl()
+        public async Task<string> GetUserLoginUrl(CancellationToken? cancellationToken = null)
         {
             var loginUrl = _server + VERIFICATION_URL;
-            var firstResponse = await _httpClient.PostTextRecieveJson<FirstResponseJson>(loginUrl);
+            var firstResponse = await _httpClient.PostTextRecieveJson<FirstResponseJson>(loginUrl, null, cancellationToken);
 
             ArgumentNullException.ThrowIfNull(firstResponse);
             _firstResponse = firstResponse;

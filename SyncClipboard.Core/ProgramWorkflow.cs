@@ -101,6 +101,7 @@ namespace SyncClipboard.Core
             services.AddTransient<SystemSettingViewModel>();
             services.AddTransient<AboutViewModel>();
             services.AddTransient<CliboardAssistantViewModel>();
+            services.AddTransient<NextCloudLogInViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<SettingWindowViewModel>();
         }

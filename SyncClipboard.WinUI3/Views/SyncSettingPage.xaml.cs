@@ -100,8 +100,8 @@ namespace SyncClipboard.WinUI3.Views
             var mainWindowVM = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
             var mainWindow = (SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>();
 
-            mainWindowVM.BreadcrumbList.Add(PageDefinition.About);
-            mainWindow.NavigateTo(PageDefinition.About, SlideNavigationTransitionEffect.FromRight);
+            mainWindowVM.BreadcrumbList.Add(PageDefinition.NextCloudLogIn);
+            mainWindow.NavigateTo(PageDefinition.NextCloudLogIn, SlideNavigationTransitionEffect.FromRight);
         }
     }
 }

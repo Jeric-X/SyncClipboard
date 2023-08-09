@@ -11,6 +11,7 @@ public class PageDefinition
     public static readonly PageDefinition SystemSetting = new("SystemSetting", "系统设置");
     public static readonly PageDefinition About = new("About", "关于");
     public static readonly PageDefinition License = new("License", "License");
+    public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", "登录到Nextcloud");
 
     private PageDefinition(string name, string title)
     {
