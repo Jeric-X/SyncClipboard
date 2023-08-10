@@ -47,6 +47,27 @@ namespace SyncClipboard.WinUI3.Views
             SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
         }
 
+        internal void NavigateToLastLevel()
+        {
+            if (_viewModel.BreadcrumbList.Count > 1)
+            {
+                _viewModel.BreadcrumbList.RemoveAt(_viewModel.BreadcrumbList.Count - 1);
+                NavigateTo(_viewModel.BreadcrumbList[^1], SlideNavigationTransitionEffect.FromLeft);
+            }
+        }
+
+        internal void DispableScrollViewer()
+        {
+            _ScrollViewer.VerticalScrollMode = ScrollMode.Disabled;
+            _ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        }
+
+        internal void EnableScrollViewer()
+        {
+            _ScrollViewer.VerticalScrollMode = ScrollMode.Enabled;
+            _ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+        }
+
         private void SettingWindow_Closed(object sender, WindowEventArgs args)
         {
             this.AppWindow.Hide();

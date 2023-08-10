@@ -85,7 +85,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
             return meta;
         }
 
-        for (int i = 0; ClipboardData.AvailableFormats.Count == 0 && i < 3; i++)
+        for (int i = 0; ClipboardData.AvailableFormats.Count == 0 && i < 10; i++)
         {
             Thread.Sleep(200);
             ClipboardData = Clipboard.GetContent();

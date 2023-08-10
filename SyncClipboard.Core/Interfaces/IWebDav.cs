@@ -19,5 +19,6 @@ namespace SyncClipboard.Core.Interfaces
         Task<bool> Exist(string url, CancellationToken? cancelToken = null);
         Task CreateDirectory(string url, CancellationToken? cancelToken = null);
         Task Delete(string url, CancellationToken? cancelToken = null);
+        public Task<List<WebDavNode>> GetFolderSubList(string url, CancellationToken? cancelToken = null);
     }
 }
