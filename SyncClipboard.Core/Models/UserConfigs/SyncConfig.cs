@@ -10,6 +10,7 @@ public record class SyncConfig
     public bool PushSwitchOn { get; set; } = true;
     public bool UseLocalServer { get; set; } = true;
     public bool DeletePreviousFilesOnPush { get; set; } = true;
+    public bool NotifyOnDownloaded { get; set; } = true;
     public uint MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 20MB 
     public uint IntervalTime { get; set; } = 3;
     public int RetryTimes { get; set; } = 3;

@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -14,16 +16,20 @@ public class ServerService : Service
     private ServerConfig _serverConfig = new();
     private readonly ToggleMenuItem _toggleMenuItem;
 
+    private readonly IServiceProvider _serviceProvider;
     private readonly IContextMenu _contextMenu;
     private readonly ILogger _logger;
     private readonly ITrayIcon _trayIcon;
 
-    public ServerService(ConfigManager configManager, IContextMenu contextMenu, ILogger logger, ITrayIcon trayIcon)
+    private NotificationManager NotificationManager => _serviceProvider.GetRequiredService<NotificationManager>();
+
+    public ServerService(IServiceProvider serviceProvider)
     {
-        _trayIcon = trayIcon;
-        _logger = logger;
-        _configManager = configManager;
-        _contextMenu = contextMenu;
+        _serviceProvider = serviceProvider;
+        _trayIcon = serviceProvider.GetRequiredService<ITrayIcon>();
+        _logger = serviceProvider.GetRequiredService<ILogger>();
+        _configManager = serviceProvider.GetRequiredService<ConfigManager>();
+        _contextMenu = serviceProvider.GetRequiredService<IContextMenu>();
         _toggleMenuItem = new ToggleMenuItem(
             SERVICE_NAME,
             _serverConfig.SwitchOn,
@@ -72,6 +78,7 @@ public class ServerService : Service
             {
                 _logger.Write(LOG_TAG, ex.ToString());
                 _trayIcon.SetStatusString(SERVICE_NAME, ex.Message, true);
+                NotificationManager.SendText("服务器启动失败", ex.Message);
             }
         }
     }

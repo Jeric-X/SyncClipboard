@@ -46,6 +46,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnAutoDeleleServerFileChanged(bool value) => ClientConfig = ClientConfig with { DeletePreviousFilesOnPush = value };
 
     [ObservableProperty]
+    private bool notifyOnDownloaded;
+    partial void OnNotifyOnDownloadedChanged(bool value) => ClientConfig = ClientConfig with { NotifyOnDownloaded = value };
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IntervalTime))]
     [NotifyPropertyChangedFor(nameof(SyncEnable))]
     [NotifyPropertyChangedFor(nameof(UseLocalServer))]
@@ -59,6 +63,7 @@ public partial class SyncSettingViewModel : ObservableObject
         TimeOut = value.TimeOut;
         MaxFileSize = value.MaxFileByte / 1024 / 1024;
         AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
+        NotifyOnDownloaded = value.NotifyOnDownloaded;
         _configManager.SetConfig(ConfigKey.Sync, value);
     }
     #endregion

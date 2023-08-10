@@ -95,6 +95,9 @@
                 <labs:SettingsCard Header="最大上传文件大小（MB）">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
                 </labs:SettingsCard>
+                <labs:SettingsCard Header="下载远程剪切板后发送通知">
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
+                </labs:SettingsCard>
                 <labs:SettingsCard Header="自动删除服务器上的临时文件">
                     <ToggleSwitch IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
                 </labs:SettingsCard>
