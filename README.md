@@ -8,7 +8,7 @@
   - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件
   - 从文件系统复制图片类的文件时，可以直接向支持图片的文本框粘贴图片
   - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器拷贝动态图的问题（大多网站有认证，适用范围有限，支持bilibili动态图片）
-  - 从文件系统复制较新格式类型的图片类的文件时（webp/heic等），在剪切板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
+  - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪切板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
 
 ## 服务器
 ### 独立服务器
@@ -24,11 +24,11 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 内置服务器并不是WebDAV实现
 
 ### Windows客户端内置服务器
-[Windows客户端](#Windows)自带服务器实现，可以作为自身和其他客户端的服务器。  
-通过右键菜单开启关闭，可以在配置文件`SyncClipboard.json`中的`ServerService`部分修改`端口号`，`用户名`，`密码`，服务器注意事项同上
+[Windows客户端](#Windows)自带服务器实现，可以作为本机和其他客户端的服务器。  
+在配置文件`SyncClipboard.json`中的`ServerService`部分修改`端口号`，`用户名`，`密码`，服务器注意事项同上
 
 ### 其他WebDAV服务器
-理论支持任何支持WebDAV协议的网盘、web服务器  
+可以使用支持WebDAV协议的网盘作为服务器  
 测试过的服务器：   
 - [x] NextCloud  
 - [x] 坚果云  
@@ -39,7 +39,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 
 ## 客户端
 ### Windows   
-分为Winform版和WinUI版，可以自行选择下载  
+分为WinUI版和Winform版，可以自行选择下载  
 客户端依赖：   
 - [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
 - [ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
@@ -60,7 +60,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 
 #### Winform版
 - 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.exe`，独立文件直接运行（运行后会在同目录额外释放文件）
-- 界面上的可设置项较少（已停止更新），可以通过手动修改配置文件设置功能
+- 界面上的可设置项较少，可以通过手动修改配置文件设置功能
 
 <details>
 <summary>展开/折叠截图</summary>
