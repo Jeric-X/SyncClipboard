@@ -63,6 +63,10 @@ namespace SyncClipboard.WinUI3
                 MenuItem[] menuItems = { new MenuItem("退出", ExitApp) };
                 Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
             }
+            else
+            {
+                Environment.Exit(0);
+            }
         }
     }
 }
