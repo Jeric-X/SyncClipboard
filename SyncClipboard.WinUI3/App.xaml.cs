@@ -4,6 +4,7 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using System;
 using System.Diagnostics;
+using System.Threading;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -49,17 +50,19 @@ namespace SyncClipboard.WinUI3
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            Services = AppServices.ConfigureServices().BuildServiceProvider();
-            Logger = Services.GetRequiredService<ILogger>();
-            Logger?.Write("App started");
-            ProgramWorkflow = new ProgramWorkflow(Services);
-            ProgramWorkflow.Run();
-            MenuItem[] menuItems = {
-                new MenuItem("退出", ExitApp)
-            };
-            Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
+            Mutex mutex = new(false, "SyncClipboard.WinUI3", out bool creetedNew);
+            if (creetedNew)
+            {
+                Services = AppServices.ConfigureServices().BuildServiceProvider();
+                Logger = Services.GetRequiredService<ILogger>();
+                Logger?.Write("App started");
+                ProgramWorkflow = new ProgramWorkflow(Services);
+                ProgramWorkflow.Run();
+                MenuItem[] menuItems = { new MenuItem("退出", ExitApp) };
+                Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
+            }
         }
     }
 }
