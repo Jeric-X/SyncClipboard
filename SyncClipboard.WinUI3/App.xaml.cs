@@ -52,21 +52,13 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            Mutex mutex = new(false, "SyncClipboard.WinUI3", out bool creetedNew);
-            if (creetedNew)
-            {
-                Services = AppServices.ConfigureServices().BuildServiceProvider();
-                Logger = Services.GetRequiredService<ILogger>();
-                Logger?.Write("App started");
-                ProgramWorkflow = new ProgramWorkflow(Services);
-                ProgramWorkflow.Run();
-                MenuItem[] menuItems = { new MenuItem("退出", ExitApp) };
-                Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
-            }
-            else
-            {
-                Environment.Exit(0);
-            }
+            Services = AppServices.ConfigureServices().BuildServiceProvider();
+            Logger = Services.GetRequiredService<ILogger>();
+            Logger?.Write("App started");
+            ProgramWorkflow = new ProgramWorkflow(Services);
+            ProgramWorkflow.Run();
+            MenuItem[] menuItems = { new MenuItem("退出", ExitApp) };
+            Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
         }
     }
 }
