@@ -55,6 +55,10 @@ public class UpdateChecker
             {
                 return true;
             }
+            if (newVersionNum < oldVersionNum)
+            {
+                return false;
+            }
         }
         return false;
     }

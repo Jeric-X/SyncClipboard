@@ -75,6 +75,10 @@ namespace SyncClipboard.Module
                 {
                     return true;
                 }
+                if (newVersionNum < oldVersionNum)
+                {
+                    return false;
+                }
             }
             return false;
         }
