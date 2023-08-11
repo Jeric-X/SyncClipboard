@@ -53,7 +53,7 @@ namespace SyncClipboard.Server
             app.Run();
         }
 
-        public static WebApplication Start(short prot, string path, string userName, string password)
+        public static async Task<WebApplication> StartAsync(ushort prot, string path, string userName, string password)
         {
             var builder = WebApplication.CreateBuilder(
                 new WebApplicationOptions
@@ -65,7 +65,7 @@ namespace SyncClipboard.Server
             builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(userName, password));
             var app = Configure(builder);
             Route(app);
-            app.StartAsync();
+            await app.StartAsync();
             return app;
         }
 

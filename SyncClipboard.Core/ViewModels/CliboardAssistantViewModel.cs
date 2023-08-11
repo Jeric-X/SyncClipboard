@@ -1,0 +1,43 @@
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models.UserConfigs;
+
+namespace SyncClipboard.Core.ViewModels;
+
+public partial class CliboardAssistantViewModel : ObservableObject
+{
+    private const string CONFIG_KEY = ConfigKey.ClipboardAssist;
+
+    [ObservableProperty]
+    private bool easyCopyImageSwitchOn;
+    partial void OnEasyCopyImageSwitchOnChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { EasyCopyImageSwitchOn = value };
+
+    [ObservableProperty]
+    private bool downloadWebImage;
+    partial void OnDownloadWebImageChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { DownloadWebImage = value };
+
+    [ObservableProperty]
+    private bool convertSwitchOn;
+    partial void OnConvertSwitchOnChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { ConvertSwitchOn = value };
+
+
+    [ObservableProperty]
+    private ClipboardAssistConfig clipboardAssistConfig;
+    partial void OnClipboardAssistConfigChanged(ClipboardAssistConfig value)
+    {
+        EasyCopyImageSwitchOn = value.EasyCopyImageSwitchOn;
+        DownloadWebImage = value.DownloadWebImage;
+        ConvertSwitchOn = value.ConvertSwitchOn;
+        _configManager.SetConfig(CONFIG_KEY, value);
+    }
+
+    private readonly ConfigManager _configManager;
+
+    public CliboardAssistantViewModel(ConfigManager configManager)
+    {
+        _configManager = configManager;
+
+        _configManager.ListenConfig<ClipboardAssistConfig>(CONFIG_KEY, (config) => ClipboardAssistConfig = (config as ClipboardAssistConfig) ?? new());
+        ClipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(CONFIG_KEY) ?? new();
+    }
+}

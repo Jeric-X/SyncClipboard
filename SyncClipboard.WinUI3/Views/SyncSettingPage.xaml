@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.SyncSettingPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:local="using:SyncClipboard.WinUI3.Views"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      MinWidth="550"
+      d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
+      BorderBrush="Transparent"
+      mc:Ignorable="d">
+    <Page.Resources>
+        <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordIconConverter" />
+        <!--<Thickness x:Key="SettingsCardPadding">16,16,60,16</Thickness>
+        <Thickness x:Key="SettingsExpanderItemPadding">58,8,60,8</Thickness>
+        <Thickness x:Key="ClickableSettingsExpanderItemPadding">58,0,32,0</Thickness>
+        <Thickness x:Key="SettingsExpanderItemBorderThickness">0,0,0,0</Thickness>-->
+        <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0,0,0,0" />
+            <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0,0,0,0" />
+            <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </Page.Resources>
+    <StackPanel Spacing="10">
+        <labs:SettingsExpander Header="同步服务器" Description="作为本机和其他设备的服务器" IsExpanded="True">
+            <labs:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
+            </labs:SettingsExpander.HeaderIcon>
+            <ToggleSwitch IsOn="{Binding ServerEnable, Mode=TwoWay}" />
+            <labs:SettingsExpander.Items>
+                <labs:SettingsCard Description="{x:Bind ServerConfigDescription(_viewModel.ServerConfig, _ShowHidePasswordToggleButton.IsChecked), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ToggleButton x:Name="_ShowHidePasswordToggleButton">
+                            <FontIcon Glyph="{Binding ElementName=_ShowHidePasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                        </ToggleButton>
+                        <Button Command="{x:Bind SetServerAsyncCommand}">
+                            <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
+                        </Button>
+                    </StackPanel>
+                </labs:SettingsCard>
+            </labs:SettingsExpander.Items>
+        </labs:SettingsExpander>
+        <labs:SettingsExpander Header="剪切板同步" Description="自动将本机和设置了相同服务器的其他设备的剪切板同步" IsExpanded="True">
+            <labs:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
+            </labs:SettingsExpander.HeaderIcon>
+            <ToggleSwitch IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
+            <labs:SettingsExpander.Items>
+                <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
+                    <ToggleSwitch x:Name="_UseLocalServerToggle" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Description="{x:Bind ClientConfigDescription(_viewModel.ClientConfig, _ShowClientPasswordToggleButton.IsChecked), Mode=OneWay}" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ToggleButton x:Name="_ShowClientPasswordToggleButton">
+                            <FontIcon Glyph="{Binding ElementName=_ShowClientPasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                        </ToggleButton>
+                        <Button Command="{x:Bind SetSyncAsyncCommand}">
+                            <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
+                        </Button>
+                    </StackPanel>
+                </labs:SettingsCard>
+                <labs:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}" ContentAlignment="Vertical">
+                    <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
+                        <labs:SettingsCard.Resources>
+                        <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">
+                            <Style.Setters>
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="Padding" Value="0,0,0,-1" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Style.Setters>
+                        </Style>
+                    </labs:SettingsCard.Resources>-->
+                    <labs:SettingsCard.Description>
+                        <HyperlinkButton Content="登录到Nextcloud" Click="HyperlinkButton_Click"/>
+                    </labs:SettingsCard.Description>
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="轮询服务器间隔（秒）">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="超时时间（秒）">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="最大上传文件大小（MB）">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="下载远程剪切板后发送通知">
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
+                </labs:SettingsCard>
+                <labs:SettingsCard Header="自动删除服务器上的临时文件">
+                    <ToggleSwitch IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
+                </labs:SettingsCard>
+            </labs:SettingsExpander.Items>
+        </labs:SettingsExpander>
+        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />
+        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="地址" />
+    </StackPanel>
+</Page>

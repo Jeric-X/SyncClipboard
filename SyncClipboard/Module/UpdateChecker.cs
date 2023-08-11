@@ -1,16 +1,15 @@
-﻿using System;
+﻿using SyncClipboard.Core.Utilities;
+using System;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SyncClipboard.Utility;
-using SyncClipboard.Utility.Web;
 #nullable enable
 
 namespace SyncClipboard.Module
 {
     internal static class UpdateChecker
     {
-        public const string Version = Env.VERSION;
+        public const string Version = Core.Commons.Env.VERSION;
         private const string GITHUB_JSON_VERSION_TAG = "name";
         public const int VersionPartNumber = 3;
         public const string UpdateUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";
@@ -42,7 +41,7 @@ namespace SyncClipboard.Module
             string gitHubReply;
             try
             {
-                gitHubReply = await Http.HttpClient.GetStringAsync(UpdateUrl);
+                gitHubReply = await Global.Http.GetHttpClient().GetStringAsync(UpdateUrl);
             }
             catch
             {
@@ -75,6 +74,10 @@ namespace SyncClipboard.Module
                 if (newVersionNum > oldVersionNum)
                 {
                     return true;
+                }
+                if (newVersionNum < oldVersionNum)
+                {
+                    return false;
                 }
             }
             return false;

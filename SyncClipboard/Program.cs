@@ -12,7 +12,6 @@ namespace SyncClipboard
         [STAThread]
         private static void Main()
         {
-            Log.Write("[Program] started");
             Application.EnableVisualStyles();
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
@@ -39,18 +38,18 @@ namespace SyncClipboard
 
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
         {
-            Log.Write("未知错误:" + e.Exception.Message);
+            Global.Logger?.Write("未知错误:" + e.Exception.Message);
         }
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            Log.Write("未知错误:" + e.ExceptionObject.ToString());
+            Global.Logger?.Write("未知错误:" + e.ExceptionObject.ToString());
         }
         private static void Application_ApplicationExit(object sender, EventArgs e)
         {
             Global.EndUp();
             Application.ApplicationExit -= Application_ApplicationExit;
             Application.ThreadException -= Application_ThreadException;
-            Log.Write("[Program] exited");
+            Global.Logger?.Write("[Program] exited");
         }
     }
 }

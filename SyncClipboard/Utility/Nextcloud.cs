@@ -1,119 +1,101 @@
+using SyncClipboard.Control;
+using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using System;
-using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SyncClipboard.Control;
-using SyncClipboard.Utility.Web;
 
-namespace SyncClipboard.Utility
+namespace SyncClipboard.Utility;
+
+public static class Nextcloud
 {
-    public class NextcloudCredential
+    public static async void LogWithNextcloud()
     {
-        public string Username;
-        public string Password;
-        public string Url;
-    }
-
-    # region nextcloud official response defination
-    internal class FistResponseJson
-    {
-        public class CPoll
+        WebDavCredential nextcloudInfo = await SignInFlowAsync();
+        if (nextcloudInfo is null)
         {
-            public string Token { get; set; } = null;
-            public string Endpoint { get; set; } = null;
-        }
-        public CPoll Poll { get; set; } = null;
-        public string Login { get; set; } = null;
-    }
-
-    internal class SecondResponse
-    {
-        public string Server { get; set; } = null;
-        public string LoginName { get; set; } = null;
-        public string AppPassword { get; set; } = null;
-    }
-
-    #endregion
-
-    public static class Nextcloud
-    {
-        private const string VERIFICATION_URL = "/index.php/login/v2";
-        private const string WEBDAV_URL = "remote.php/dav/files";
-        private const int VERIFICATION_LIMITED_TIME = 60000;
-        private const int INTERVAL_TIME = 1000;
-
-        public static async Task<NextcloudCredential> SignInFlowAsync()
-        {
-            string server = InputBox.Show("Please input Nextcloud server address", $"https://[请在确定后{VERIFICATION_LIMITED_TIME / 1000}秒内完成网页认证]");
-            if (string.IsNullOrEmpty(server))
-            {
-                return null;
-            }
-
-            var firstResponse = await GetFirstResponse(server).ConfigureAwait(false);
-            if (firstResponse == null)
-            {
-                return null;
-            }
-
-            Sys.OpenWithDefaultApp(firstResponse.Login);
-
-            var secondResponse = await GetSecondResponse(firstResponse).ConfigureAwait(false);
-            if (secondResponse == null)
-            {
-                MessageBox.Show("认证中发生错误：" + Environment.NewLine + "Pelease Login using broswer", "Error");
-                return null;
-            }
-
-            var path = InputBox.Show("Please input syncClipboard folder path");
-            if (string.IsNullOrEmpty(path))
-            {
-                return null;
-            }
-
-            return new NextcloudCredential
-            {
-                Username = secondResponse.LoginName,
-                Password = secondResponse.AppPassword,
-                Url = $"{secondResponse.Server}/{WEBDAV_URL}/{secondResponse.LoginName}/{path}"
-            };
+            return;
         }
 
-        private static async Task<FistResponseJson> GetFirstResponse(string server)
-        {
-            var loginUrl = server + VERIFICATION_URL;
-            try
+        SyncConfig config = Global.ConfigManager.GetConfig<SyncConfig>(ConfigKey.Sync);
+        Global.ConfigManager.SetConfig(
+            ConfigKey.Sync,
+            config with
             {
-                return await Http.PostTextRecieveJson<FistResponseJson>(loginUrl);
-            }
-            catch (System.Net.WebException)
-            {
-                MessageBox.Show("认证中发生错误：" + Environment.NewLine + "Can not connect to the server", "Error");
-                return null;
-            }
-            catch (UriFormatException)
-            {
-                MessageBox.Show("认证中发生错误：" + Environment.NewLine + "URL format is wrong", "Error");
-                return null;
-            }
-        }
+                UserName = nextcloudInfo.Username,
+                Password = nextcloudInfo.Password,
+                RemoteURL = nextcloudInfo.Url
+            });
+    }
 
-        private static async Task<SecondResponse> GetSecondResponse(FistResponseJson firstResponse)
+    public static async Task<WebDavCredential> SignInFlowAsync()
+    {
+        try
         {
-            var url = firstResponse.Poll.Endpoint;
-            for (int i = 0; i < VERIFICATION_LIMITED_TIME / INTERVAL_TIME; i++)
-            {
-                try
-                {
-                    KeyValuePair<string, string>[] list = { KeyValuePair.Create("token", firstResponse.Poll.Token) };
-                    return await Http.PostTextRecieveJson<SecondResponse>(url, list);
-                }
-                catch
-                {
-                    await Task.Delay(INTERVAL_TIME);
-                }
-            }
+            return await SignInFlow();
+        }
+        catch
+        {
             return null;
+        }
+    }
+
+    private static async Task<WebDavCredential> SignInFlow()
+    {
+        string server = InputBox.Show("Please input Nextcloud server address", $"https://[请在确定后{NextcloudLogInFlow.VERIFICATION_LIMITED_TIME / 1000}秒内完成网页认证]");
+        ArgumentNullException.ThrowIfNull(server);
+
+        var loginFlow = new NextcloudLogInFlow(server, Global.Http);
+        var userloginUrl = await GetLoginUrl(loginFlow);
+
+        Sys.OpenWithDefaultApp(userloginUrl);
+
+        var credential = await WaitUserLogin(loginFlow);
+
+        var path = InputBox.Show("Please input syncClipboard folder path");
+        ArgumentNullException.ThrowIfNull(path);
+
+        return credential with
+        {
+            Url = $"{credential.Url}/{path}"
+        };
+    }
+
+    private static async Task<string> GetLoginUrl(NextcloudLogInFlow loginFlow)
+    {
+        try
+        {
+            return await loginFlow.GetUserLoginUrl();
+        }
+        catch (HttpRequestException)
+        {
+            MessageBox.Show("认证中发生错误：" + Environment.NewLine + "Can not connect to the server", "Error");
+            throw;
+        }
+        catch (UriFormatException)
+        {
+            MessageBox.Show("认证中发生错误：" + Environment.NewLine + "URL format is wrong", "Error");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("认证中发生错误：" + Environment.NewLine + ex.Message, "Error");
+            throw;
+        }
+    }
+
+    private static async Task<WebDavCredential> WaitUserLogin(NextcloudLogInFlow loginFlow)
+    {
+        try
+        {
+            return await loginFlow.WaitUserLogin();
+        }
+        catch
+        {
+            MessageBox.Show("认证中发生错误：" + Environment.NewLine + "Out of time", "Error");
+            throw;
         }
     }
 }

@@ -1,126 +1,74 @@
-﻿using System;
-using System.IO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.ClipboardWinform;
 using SyncClipboard.Control;
-using SyncClipboard.Module;
-using SyncClipboard.Service;
+using SyncClipboard.Core;
+using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Utility;
-using SyncClipboard.Utility.Web;
+using System;
+using System.Windows.Forms;
 
 namespace SyncClipboard
 {
-    internal static class Global
+    public static class Global
     {
-        internal static IWebDav WebDav;
-        internal static Notifyer Notifyer;
-        internal static MainController Menu;
-        internal static ServiceManager ServiceManager;
-        internal static string AppUserModelId;
+        private static ContextMenu Menu;
+        private static ProgramWorkflow ProgramWorkflow;
 
-        internal static void StartUp()
+        internal static IHttp Http;
+        internal static ConfigManager ConfigManager;
+        internal static ILogger Logger;
+
+        public static void StartUp()
         {
+            var services = ConfigurateServices();
+
+            Http = services.GetRequiredService<IHttp>();
+            ConfigManager = services.GetRequiredService<ConfigManager>();
+            Logger = services.GetRequiredService<ILogger>();
+
+            ProgramWorkflow = new ProgramWorkflow(services);
+            ProgramWorkflow.Run();
             StartUpUI();
-            StartUpUserConfig();
-            LoadGlobalWebDavSession();
-            PrepareWorkingFolder();
-            AppUserModelId = Utility.Notification.Register.RegistFromCurrentProcess();
-            ServiceManager = new ServiceManager();
-            ServiceManager.StartUpAllService();
         }
 
-        internal static void ReloadConfig()
+        public static IServiceProvider ConfigurateServices()
         {
-            ReloadUI();
-            LoadGlobalWebDavSession();
-            ServiceManager?.LoadAllService();
+            var services = new ServiceCollection();
+            ProgramWorkflow.ConfigCommonService(services);
+
+            var notifyer = new Notifyer();
+            Menu = new ContextMenu(notifyer);
+            services.AddSingleton<IContextMenu>(Menu);
+            services.AddSingleton<ITrayIcon>(notifyer);
+            services.AddSingleton<IMainWindow, SettingsForm>();
+            services.AddSingleton<IClipboardFactory, ClipboardFactory>();
+            services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
+
+            services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+            services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
+            services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
+
+            return services.BuildServiceProvider();
         }
 
         internal static void EndUp()
         {
-            ServiceManager?.StopAllService();
-            Utility.Notification.Register.UnRegistFromCurrentProcess();
-        }
-
-        private static void LoadGlobalWebDavSession()
-        {
-            WebDav = new WebDavClient(UserConfig.Config.SyncService.RemoteURL)
-            {
-                User = UserConfig.Config.SyncService.UserName,
-                Token = UserConfig.Config.SyncService.Password,
-                IntervalTime = UserConfig.Config.Program.IntervalTime,
-                RetryTimes = UserConfig.Config.Program.RetryTimes,
-                Timeout = UserConfig.Config.Program.TimeOut
-            };
-
-            WebDav.TestAlive().ContinueWith(
-                (res) => Log.Write("[WebDavClient] test sucess = " + res.Result.ToString()),
-                System.Threading.Tasks.TaskContinuationOptions.NotOnFaulted
-            );
+            ProgramWorkflow.Stop();
         }
 
         private static void StartUpUI()
         {
-            Menu = new MainController();
-            Notifyer = Menu.Notifyer;
-            ReloadUI();
-        }
-
-        private static void ReloadUI()
-        {
-            Menu?.LoadConfig();
-        }
-
-        private static void StartUpUserConfig()
-        {
-            UserConfig.ConfigChanged += ReloadConfig;
-            UserConfig.Load();
-            Menu.AddMenuItemGroup(
-                new string[] { "打开配置文件", "打开配置文件所在位置", "重新载入配置文件" },
-                new System.Action[] {
-                    () => {
-                        var open = new System.Diagnostics.Process();
-                        open.StartInfo.FileName = "notepad";
-                        open.StartInfo.Arguments = Env.FullPath(UserConfig.CONFIG_FILE);
-                        open.Start();
-                    },
-                    () => {
-                        var open = new System.Diagnostics.Process();
-                        open.StartInfo.FileName = "explorer";
-                        open.StartInfo.Arguments = "/e,/select," + Env.FullPath(UserConfig.CONFIG_FILE);
-                        open.Start();
-                    },
-                    () => UserConfig.Load()
-                }
-            );
-        }
-
-        private static void PrepareWorkingFolder()
-        {
-            if (Directory.Exists(Env.LOCAL_FILE_FOLDER))
+            MenuItem[] menuItems =
             {
-                if (UserConfig.Config.Program.DeleteTempFilesOnStartUp)
-                {
-                    Directory.Delete(Env.LOCAL_FILE_FOLDER);
-                    Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(Env.LOCAL_FILE_FOLDER);
-            }
-
-            var logFolder = new DirectoryInfo(Env.LOCAL_LOG_FOLDER);
-            if (logFolder.Exists && UserConfig.Config.Program.LogRemainDays != 0)
-            {
-                var today = DateTime.Today;
-                foreach (var log in logFolder.EnumerateFileSystemInfos("????????.txt"))
-                {
-                    var createTime = log.CreationTime.Date;
-                    if ((today - createTime) > TimeSpan.FromDays(UserConfig.Config.Program.LogRemainDays))
-                    {
-                        log.Delete();
-                    }
-                }
-            }
+                new ToggleMenuItem("开机启动", StartUpHelper.Status(), StartUpHelper.Set),
+                new MenuItem("从Nextcloud登录", Nextcloud.LogWithNextcloud),
+                new MenuItem("检查更新", Module.UpdateChecker.Check),
+                new MenuItem("退出", Application.Exit)
+            };
+            Menu.AddMenuItemGroup(menuItems);
         }
     }
 }

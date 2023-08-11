@@ -1,0 +1,19 @@
+[*.cs]
+
+# CC0105: You should use 'var' whenever possible.
+dotnet_diagnostic.CC0105.severity = none
+
+# CC0001: You should use 'var' whenever possible.
+dotnet_diagnostic.CC0001.severity = none
+
+# CC0034: https://code-cracker.github.io/diagnostics/CC0034.html
+dotnet_diagnostic.CC0034.severity = none
+
+# CC0057: Unused Parameter
+dotnet_diagnostic.CC0057.severity = none
+
+# CA1416: 验证平台兼容性
+dotnet_diagnostic.CA1416.severity = none
+
+#https://learn.microsoft.com/zh-cn/dotnet/fundamentals/code-analysis/style-rules/ide0090
+dotnet_diagnostic.IDE0090.severity = none
