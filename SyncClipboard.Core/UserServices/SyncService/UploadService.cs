@@ -205,8 +205,9 @@ public class UploadService : ClipboardHander
 
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
-        _notificationManager.SendText("上传失败：" + profile.ToolTip(), errMessage);
-        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"上传失败：{profile.ToolTip().Take(50)}\n{errMessage}", true);
+        var status = profile.ToolTip();
+        _notificationManager.SendText("上传失败：" + status, errMessage);
+        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"上传失败：{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
     }
 
     private async Task CleanServerTempFile(CancellationToken cancelToken)

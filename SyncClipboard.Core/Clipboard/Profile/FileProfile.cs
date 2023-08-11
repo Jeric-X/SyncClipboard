@@ -23,7 +23,8 @@ public class FileProfile : Profile
     private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
     private readonly uint _maxFileByte;
     private string _fileMd5Hash = "";
-    private string _statusTip = "";
+    private string? _statusTip;
+    private string StatusTip => string.IsNullOrEmpty(_statusTip) ? FileName : _statusTip;
 
     private readonly IWebDav? WebDav;
     private readonly ILogger Logger;
@@ -33,13 +34,11 @@ public class FileProfile : Profile
     {
         FileName = Path.GetFileName(file);
         FullPath = file;
-        _statusTip = FileName;
     }
 
     public FileProfile(ClipboardProfileDTO profileDTO, IServiceProvider serviceProvider) : this(serviceProvider)
     {
         FileName = profileDTO.File;
-        _statusTip = FileName;
         SetFileHash(profileDTO.Clipboard);
     }
 
@@ -151,7 +150,7 @@ public class FileProfile : Profile
 
     public override string ToolTip()
     {
-        return _statusTip;
+        return StatusTip;
     }
 
     protected override async Task<bool> Same(Profile rhs, CancellationToken cancellationToken)

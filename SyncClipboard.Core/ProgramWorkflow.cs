@@ -122,7 +122,7 @@ namespace SyncClipboard.Core
             {
                 if (config.DeleteTempFilesOnStartUp)
                 {
-                    Directory.Delete(Env.TemplateFileFolder);
+                    Directory.Delete(Env.TemplateFileFolder, true);
                     Directory.CreateDirectory(Env.TemplateFileFolder);
                 }
             }
