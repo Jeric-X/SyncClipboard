@@ -1,4 +1,4 @@
-v2.0.0-preview
+v2.0.1
 - WinUI:
 	- 基于WinUI3的全新界面
 - Winform:

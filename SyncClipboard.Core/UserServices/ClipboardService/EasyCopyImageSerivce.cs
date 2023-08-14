@@ -33,20 +33,22 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private bool DownloadWebImageEnabled => _clipboardAssistConfig.DownloadWebImage;
 
-    protected override void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
+    protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
     {
-        Task[] tasks = {
-            ProcessClipboard(meta, false, cancelToken),
-            ProcessClipboard(meta, true, cancelToken)
-        };
-        foreach (var task in tasks)
-        {
-            task.ContinueWith((_) => this.CancelProcess(), TaskContinuationOptions.OnlyOnRanToCompletion);
-        }
+        await ProcessClipboard(meta, false, cancelToken);
+        //Task[] tasks = {
+        //    ProcessClipboard(meta, false, cancelToken),
+        //    ProcessClipboard(meta, true, cancelToken)
+        //};
+        //foreach (var task in tasks)
+        //{
+        //    task.ContinueWith((_) => this.CancelProcess(), TaskContinuationOptions.OnlyOnRanToCompletion);
+        //}
     }
 
     protected override CancellationToken StopPreviousAndGetNewToken()
     {
+        TrayIcon.SetStatusString(SERVICE_NAME, "Running.");
         _progress?.CancelSicent();
         _progress = null;
         return base.StopPreviousAndGetNewToken();
@@ -62,9 +64,10 @@ public class EasyCopyImageSerivce : ClipboardHander
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
+    private ClipboardAssistConfig _clipboardAssistConfig;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
-    private ClipboardAssistConfig _clipboardAssistConfig;
+    private ITrayIcon TrayIcon => _serviceProvider.GetRequiredService<ITrayIcon>();
 
     public EasyCopyImageSerivce(IServiceProvider serviceProvider)
     {
@@ -84,6 +87,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
     {
+        TrayIcon.SetStatusString(SERVICE_NAME, "Running.");
         var profile = _clipboardFactory.CreateProfile(metaInfo);
         if (profile.Type != ProfileType.Image || !NeedAdjust(metaInfo))
         {
@@ -92,6 +96,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
         if (DownloadWebImageEnabled && !string.IsNullOrEmpty(metaInfo.Html))
         {
+            TrayIcon.SetStatusString(SERVICE_NAME, "Downloading web image.");
             const string Expression = @"<!--StartFragment--><img src=(?<qoute>[""'])(?<imgUrl>https?://.*?)\k<qoute>.*/><!--EndFragment-->";
             var match = Regex.Match(metaInfo.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
             if (match.Success) // 是从浏览器复制的图片
@@ -100,6 +105,7 @@ public class EasyCopyImageSerivce : ClipboardHander
                 var localPath = await DownloadImage(match.Groups["imgUrl"].Value, useProxy, cancellationToken);
                 if (!ImageHelper.FileIsImage(localPath))
                 {
+                    TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
                     localPath = await ImageHelper.CompatibilityCast(localPath, AppConfig.LocalTemplateFolder, cancellationToken);
                 }
                 profile = new ImageProfile(localPath, _serviceProvider);
@@ -107,6 +113,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         }
 
         await AdjustClipboard(profile, cancellationToken);
+        TrayIcon.SetStatusString(SERVICE_NAME, "Running.");
     }
 
     private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)

@@ -37,7 +37,7 @@ namespace SyncClipboard.Core.Utilities.Image
         public static async Task<string> CompatibilityCast(string filePath, string newFileDir, CancellationToken cancelToken)
         {
             using var image = new MagickImageCollection();
-            await image.ReadAsync(filePath, cancelToken);
+            await image.ReadAsync(filePath, cancelToken).ConfigureAwait(false);
             var newPath = Path.Combine(newFileDir, Path.GetFileNameWithoutExtension(filePath));
             if (image.Count >= 2)
             {
