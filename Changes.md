@@ -1,3 +1,7 @@
+v2.0.1.1 (working)
+- WinUI:
+	- 支持托盘图标tooltip
+
 v2.0.1
 - WinUI:
 	- 基于WinUI3的全新界面

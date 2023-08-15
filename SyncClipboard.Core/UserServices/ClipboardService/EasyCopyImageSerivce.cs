@@ -17,6 +17,9 @@ public class EasyCopyImageSerivce : ClipboardHander
     public override string SERVICE_NAME => "图片轻松拷贝";
     public override string LOG_TAG => "EASY IMAGE";
 
+    private const string STOPPED_STATUS = "Stopped.";
+    private const string RUNNING_STATUS = "Running.";
+
     protected override ILogger Logger => _logger;
     protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
     protected override IClipboardChangingListener ClipboardChangingListener
@@ -48,7 +51,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     protected override CancellationToken StopPreviousAndGetNewToken()
     {
-        TrayIcon.SetStatusString(SERVICE_NAME, "Running.");
+        TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
         _progress?.CancelSicent();
         _progress = null;
         return base.StopPreviousAndGetNewToken();
@@ -82,12 +85,14 @@ public class EasyCopyImageSerivce : ClipboardHander
     public override void Load()
     {
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        var status = SwitchOn ? RUNNING_STATUS : STOPPED_STATUS;
+        TrayIcon.SetStatusString(SERVICE_NAME, status);
         base.Load();
     }
 
     private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
     {
-        TrayIcon.SetStatusString(SERVICE_NAME, "Running.");
+        TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
         var profile = _clipboardFactory.CreateProfile(metaInfo);
         if (profile.Type != ProfileType.Image || !NeedAdjust(metaInfo))
         {
@@ -113,7 +118,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         }
 
         await AdjustClipboard(profile, cancellationToken);
-        TrayIcon.SetStatusString(SERVICE_NAME, "Running.");
+        TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
     }
 
     private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)

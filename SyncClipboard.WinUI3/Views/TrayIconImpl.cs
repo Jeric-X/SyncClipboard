@@ -17,7 +17,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     protected override BitmapImage DefaultIcon => new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
     protected override BitmapImage ErrorIcon => new BitmapImage(new Uri("ms-appx:///Assets/erro.ico"));
-    protected override int MaxToolTipLenth => 60;
+    protected override int MaxToolTipLenth => 255;
 
     public TrayIconImpl(TrayIcon trayIcon, ServiceStatusViewModel serviceStatusViewModel)
     {
@@ -61,7 +61,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     protected override void SetToolTip(string text)
     {
-        // Not Support, do nothing;
+        _trayIcon.ToolTipText = text;
     }
 
     public override void SetStatusString(string key, string statusStr, bool error)

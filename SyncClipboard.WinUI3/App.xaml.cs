@@ -41,9 +41,9 @@ namespace SyncClipboard.WinUI3
             Environment.Exit(0);
         }
 
-        private static void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
-            Trace.WriteLine(e.Message);
+            Logger?.Write("UnhandledException" + e.Message);
         }
 
         /// <summary>
