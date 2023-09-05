@@ -67,10 +67,14 @@ public class ServerService : Service
             try
             {
                 app = await Server.Program.StartAsync(
-                    _serverConfig.Port,
-                    Env.Directory,
-                    _serverConfig.UserName,
-                    _serverConfig.Password
+                    new Abstract.ServerPara(
+                        _serverConfig.Port,
+                        Env.Directory,
+                        _serverConfig.UserName,
+                        _serverConfig.Password,
+                        false,
+                        _serviceProvider
+                    )
                 );
                 _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
             }

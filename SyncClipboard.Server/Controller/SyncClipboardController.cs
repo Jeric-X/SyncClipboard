@@ -2,13 +2,8 @@
 
 namespace SyncClipboard.Server.Controller;
 
-public static class SyncClipboardController
+public class SyncClipboardController
 {
-    public static void UseSyncCliboardServer(this WebApplication webApplication, bool passive = false)
-    {
-        webApplication.Route(passive);
-    }
-
     private static async Task<IResult> PutFile(HttpContext content, string rootPath, string path)
     {
         var pathFolder = Path.Combine(rootPath, "file");
@@ -50,19 +45,19 @@ public static class SyncClipboardController
         return Results.NotFound();
     }
 
-    private static IResult GetSyncProfile(string path, bool passive)
+    protected virtual IResult GetSyncProfile(string path)
     {
         return GetFile(path);
     }
 
-    private static async Task<IResult> PutSyncProfile(HttpContext content, string path, bool passive)
+    protected virtual async Task<IResult> PutSyncProfile(HttpContext content, string path)
     {
         using var fs = new FileStream(path, FileMode.Create);
         await content.Request.Body.CopyToAsync(fs);
         return Results.Ok();
     }
 
-    private static void Route(this WebApplication app, bool passive)
+    public void Route(WebApplication app)
     {
         var rootPath = app.Environment.WebRootPath;
         app.MapMethods("/file", new string[] { "HEAD" }, () =>
@@ -78,10 +73,10 @@ public static class SyncClipboardController
             PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName))).RequireAuthorization();
 
         app.MapGet("/SyncClipboard.json", () =>
-            GetSyncProfile(Path.Combine(rootPath, "SyncClipboard.json"), passive)).RequireAuthorization();
+            GetSyncProfile(Path.Combine(rootPath, "SyncClipboard.json"))).RequireAuthorization();
 
         app.MapPut("/SyncClipboard.json", (HttpContext content) =>
-            PutSyncProfile(content, Path.Combine(rootPath, "SyncClipboard.json"), passive)).RequireAuthorization();
+            PutSyncProfile(content, Path.Combine(rootPath, "SyncClipboard.json"))).RequireAuthorization();
 
         app.MapGet("/{name}", (string name) =>
             GetFile(Path.Combine(rootPath, name))).RequireAuthorization();

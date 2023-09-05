@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using SyncClipboard.Abstract;
 using SyncClipboard.Server.Controller;
 
 namespace SyncClipboard.Server
@@ -50,18 +51,18 @@ namespace SyncClipboard.Server
             app.Run();
         }
 
-        public static async Task<WebApplication> StartAsync(ushort prot, string path, string userName, string password)
+        public static async Task<WebApplication> StartAsync(ServerPara serverConfig)
         {
             var builder = WebApplication.CreateBuilder(
                 new WebApplicationOptions
                 {
-                    WebRootPath = path + "server",
+                    WebRootPath = serverConfig.Path + "server",
                 }
             );
-            builder.WebHost.UseUrls($"http://*:{prot}");
-            builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(userName, password));
+            builder.WebHost.UseUrls($"http://*:{serverConfig.Port}");
+            builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
             var app = Configure(builder);
-            app.UseSyncCliboardServer();
+            app.UseSyncCliboardServer(serverConfig);
             await app.StartAsync();
             return app;
         }
