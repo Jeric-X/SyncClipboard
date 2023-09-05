@@ -37,13 +37,13 @@ namespace SyncClipboard.Server
                 }
 
                 Response.StatusCode = 401;
-                Response.Headers.Add("WWW-Authenticate", "Basic realm=\"dotnetthoughts.net\"");
+                Response.Headers.Add("WWW-Authenticate", "Basic realm=\"SyncClipboard\"");
                 return Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
             }
             else
             {
                 Response.StatusCode = 401;
-                Response.Headers.Add("WWW-Authenticate", "Basic realm=\"dotnetthoughts.net\"");
+                Response.Headers.Add("WWW-Authenticate", "Basic realm=\"SyncClipboard\"");
                 return Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
             }
         }

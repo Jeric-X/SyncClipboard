@@ -24,6 +24,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Test.Winform"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Test.WinUI3", "SyncClipboard.Test\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj", "{D9DDC695-D4ED-45D0-B4A3-EFB3A094BB51}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncClipboard.Abstract", "SyncClipboard.Abstract\SyncClipboard.Abstract.csproj", "{DEB12046-0106-4C38-A7F1-4B733204C225}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -148,6 +150,22 @@ Global
 		{D9DDC695-D4ED-45D0-B4A3-EFB3A094BB51}.Release|x64.Build.0 = Release|x64
 		{D9DDC695-D4ED-45D0-B4A3-EFB3A094BB51}.Release|x86.ActiveCfg = Release|x86
 		{D9DDC695-D4ED-45D0-B4A3-EFB3A094BB51}.Release|x86.Build.0 = Release|x86
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|x64.Build.0 = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Debug|x86.Build.0 = Debug|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|ARM64.Build.0 = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|x64.ActiveCfg = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|x64.Build.0 = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|x86.ActiveCfg = Release|Any CPU
+		{DEB12046-0106-4C38-A7F1-4B733204C225}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
