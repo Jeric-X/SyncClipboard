@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Notification;
 using System.Text.Json;
 using Button = SyncClipboard.Core.Utilities.Notification.Button;
@@ -34,6 +36,8 @@ public abstract class Profile
     protected string LocalTemplateFolder => ServiceProvider.GetRequiredService<IAppConfig>().LocalTemplateFolder;
 
     private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
+    private NotificationManager NotificationManager => ServiceProvider.GetRequiredService<NotificationManager>();
+    private bool? EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>(ConfigKey.Sync)?.NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
     public ClipboardMetaInfomation MetaInfomation
@@ -56,7 +60,7 @@ public abstract class Profile
         notificationManager.SendText("剪切板同步成功", Text);
     }
 
-    public void SetLocalClipboard(NotificationManager? notificationManager = null)
+    public void SetLocalClipboard()
     {
         var ClipboardObjectContainer = ClipboardSetter.CreateClipboardObjectContainer(MetaInfomation);
         if (ClipboardObjectContainer is null)
@@ -73,9 +77,9 @@ public abstract class Profile
             MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer), null);
         }
 
-        if (notificationManager is not null)
+        if (EnableNotify ?? true)
         {
-            SetNotification(notificationManager);
+            SetNotification(NotificationManager);
         }
     }
 

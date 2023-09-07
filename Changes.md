@@ -1,4 +1,5 @@
-v2.0.1.1 (working)
+v2.0.1.2 (working)
+- 支持被动模式
 - WinUI:
 	- 支持托盘图标tooltip
 

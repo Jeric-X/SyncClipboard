@@ -16,14 +16,14 @@ public class SyncClipboardController
         return Results.Ok();
     }
 
-    private static IResult GetFile(string path)
+    private static Task<IResult> GetFile(string path)
     {
         if (!File.Exists(path))
         {
-            return Results.NotFound();
+            return Task.FromResult(Results.NotFound());
         }
         new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
-        return Results.File(path, contentType);
+        return Task.FromResult(Results.File(path, contentType));
     }
 
     private static IResult ExistOrCreateFolder(string path)
@@ -45,14 +45,14 @@ public class SyncClipboardController
         return Results.NotFound();
     }
 
-    protected virtual IResult GetSyncProfile(string path)
+    protected virtual Task<IResult> GetSyncProfile(string rootPath, string path)
     {
-        return GetFile(path);
+        return GetFile(Path.Combine(rootPath, path));
     }
 
-    protected virtual async Task<IResult> PutSyncProfile(HttpContext content, string path)
+    protected virtual async Task<IResult> PutSyncProfile(HttpContext content, string rootPath, string path)
     {
-        using var fs = new FileStream(path, FileMode.Create);
+        using var fs = new FileStream(Path.Combine(rootPath, path), FileMode.Create);
         await content.Request.Body.CopyToAsync(fs);
         return Results.Ok();
     }
@@ -73,10 +73,10 @@ public class SyncClipboardController
             PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName))).RequireAuthorization();
 
         app.MapGet("/SyncClipboard.json", () =>
-            GetSyncProfile(Path.Combine(rootPath, "SyncClipboard.json"))).RequireAuthorization();
+            GetSyncProfile(rootPath, "SyncClipboard.json")).RequireAuthorization();
 
         app.MapPut("/SyncClipboard.json", (HttpContext content) =>
-            PutSyncProfile(content, Path.Combine(rootPath, "SyncClipboard.json"))).RequireAuthorization();
+            PutSyncProfile(content, rootPath, "SyncClipboard.json")).RequireAuthorization();
 
         app.MapGet("/{name}", (string name) =>
             GetFile(Path.Combine(rootPath, name))).RequireAuthorization();

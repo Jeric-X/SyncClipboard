@@ -18,7 +18,7 @@ public class FileProfile : Profile
     protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
 
-    protected virtual string? FullPath { get; set; }
+    public virtual string? FullPath { get; set; }
 
     private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
     private readonly uint _maxFileByte;

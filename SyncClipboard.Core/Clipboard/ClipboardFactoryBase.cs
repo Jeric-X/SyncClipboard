@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Image;
 using System.Net;
+using System.Text.Json;
 
 namespace SyncClipboard.Core.Clipboard;
 
-public abstract class ClipboardFactoryBase : IClipboardFactory
+public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelper
 {
     protected abstract ILogger Logger { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
@@ -90,5 +92,30 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         }
 
         return new UnkonwnProfile();
+    }
+
+    public string CreateProfileDto(out string? extraFilePath)
+    {
+        extraFilePath = null;
+        var profile = CreateProfile();
+        if (profile is FileProfile fileProfile)
+        {
+            extraFilePath = fileProfile.FullPath;
+        }
+        return profile.ToJsonString();
+    }
+
+    public void SetLocalClipboardWithDto(string profileDtoString, string fileFolder)
+    {
+        var profileDTO = JsonSerializer.Deserialize<ClipboardProfileDTO>(profileDtoString);
+        ArgumentNullException.ThrowIfNull(profileDTO);
+        ProfileType type = ProfileTypeHelper.StringToProfileType(profileDTO.Type);
+        var profile = GetProfileBy(type, profileDTO);
+        if (profile is FileProfile fileProfile)
+        {
+            fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
+        }
+
+        profile.SetLocalClipboard();
     }
 }

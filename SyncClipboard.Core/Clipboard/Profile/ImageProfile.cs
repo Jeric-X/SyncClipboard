@@ -23,7 +23,7 @@ public class ImageProfile : FileProfile
         set => base.FileName = value;
     }
 
-    protected override string? FullPath
+    public override string? FullPath
     {
         get
         {

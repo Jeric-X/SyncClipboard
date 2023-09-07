@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
@@ -18,7 +19,9 @@ public class AppServices
 
         services.AddSingleton<IMainWindow, SettingWindow>();
         services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
-        services.AddSingleton<IClipboardFactory, ClipboardFactory>();
+        services.AddSingleton<ClipboardFactory>();
+        services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());
+        services.AddSingleton<IProfileDtoHelper>(sp => sp.GetRequiredService<ClipboardFactory>());
         services.AddSingleton<TrayIcon>();
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();

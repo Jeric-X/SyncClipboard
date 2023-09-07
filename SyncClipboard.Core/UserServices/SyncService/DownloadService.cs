@@ -247,8 +247,7 @@ public class DownloadService : Service
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 _toastReporter = null;
                 PullStarted?.Invoke();
-                var notifyer = _syncConfig.NotifyOnDownloaded ? _notificationManager : null;
-                remoteProfile.SetLocalClipboard(notifyer);
+                remoteProfile.SetLocalClipboard();
                 _logger.Write("剪切板同步成功:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
             }
