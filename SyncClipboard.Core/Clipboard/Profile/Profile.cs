@@ -60,7 +60,7 @@ public abstract class Profile
         notificationManager.SendText("剪切板同步成功", Text);
     }
 
-    public void SetLocalClipboard()
+    public void SetLocalClipboard(bool notify = false)
     {
         var ClipboardObjectContainer = ClipboardSetter.CreateClipboardObjectContainer(MetaInfomation);
         if (ClipboardObjectContainer is null)
@@ -77,7 +77,7 @@ public abstract class Profile
             MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer), null);
         }
 
-        if (EnableNotify ?? true)
+        if (notify && (EnableNotify ?? true))
         {
             SetNotification(NotificationManager);
         }
