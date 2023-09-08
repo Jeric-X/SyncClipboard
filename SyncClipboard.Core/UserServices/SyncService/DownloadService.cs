@@ -26,8 +26,9 @@ public class DownloadService : Service
     private readonly IServiceProvider _serviceProvider;
     private readonly ITrayIcon _trayIcon;
     private SyncConfig _syncConfig;
+    private ServerConfig _serverConfig;
 
-    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn;
+    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && !_serverConfig.ClientMixedMode;
 
     public DownloadService(IServiceProvider serviceProvider)
     {
@@ -36,6 +37,8 @@ public class DownloadService : Service
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, SyncConfigChanged);
         _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, ServerConfigChanged);
+        _serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
@@ -44,6 +47,12 @@ public class DownloadService : Service
     private void SyncConfigChanged(object? newConfig)
     {
         _syncConfig = newConfig as SyncConfig ?? new();
+        ReLoad();
+    }
+
+    private void ServerConfigChanged(object? newConfig)
+    {
+        _serverConfig = newConfig as ServerConfig ?? new();
         ReLoad();
     }
 

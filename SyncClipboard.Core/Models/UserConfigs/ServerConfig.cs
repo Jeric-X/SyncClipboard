@@ -6,4 +6,5 @@ public record class ServerConfig
     public ushort Port { get; set; } = 5033;
     public string UserName { get; set; } = "admin";
     public string Password { get; set; } = "admin";
+    public bool ClientMixedMode { get; set; } = false;
 }

@@ -12,6 +12,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnServerEnableChanged(bool value) => ServerConfig = ServerConfig with { SwitchOn = value };
 
     [ObservableProperty]
+    private bool clientMixedMode;
+    partial void OnClientMixedModeChanged(bool value) => ServerConfig = ServerConfig with { ClientMixedMode = value };
+
+    [ObservableProperty]
     private ServerConfig serverConfig;
     partial void OnServerConfigChanged(ServerConfig value)
     {
@@ -76,6 +80,7 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
         serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         serverEnable = serverConfig.SwitchOn;
+        clientMixedMode = serverConfig.ClientMixedMode;
 
         _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);
         ClientConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
@@ -85,6 +90,7 @@ public partial class SyncSettingViewModel : ObservableObject
     {
         ServerConfig = config as ServerConfig ?? new();
         ServerEnable = ServerConfig.SwitchOn;
+        ClientMixedMode = ServerConfig.ClientMixedMode;
     }
 
     private void LoadClientConfig(object? config)

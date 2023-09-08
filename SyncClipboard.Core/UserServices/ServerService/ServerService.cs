@@ -72,7 +72,7 @@ public class ServerService : Service
                         Env.Directory,
                         _serverConfig.UserName,
                         _serverConfig.Password,
-                        true,
+                        _serverConfig.ClientMixedMode,
                         _serviceProvider
                     )
                 );

@@ -24,7 +24,7 @@ public class UploadService : ClipboardHander
 
     protected override bool SwitchOn
     {
-        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn;
+        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn && !_serverConfig.ClientMixedMode;
         set
         {
             _syncConfig.SyncSwitchOn = value;
@@ -42,6 +42,7 @@ public class UploadService : ClipboardHander
     private readonly IWebDav _webDav;
     private readonly ITrayIcon _trayIcon;
     private SyncConfig _syncConfig;
+    private ServerConfig _serverConfig;
 
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
@@ -55,11 +56,13 @@ public class UploadService : ClipboardHander
         _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
     }
 
     public override void Load()
     {
         _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         if (!SwitchOn)
         {
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
