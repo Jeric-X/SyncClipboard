@@ -1,6 +1,26 @@
 # SyncClipboard
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=WinUI3)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3AWinUI3)
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)
+
+- [SyncClipboard](#syncclipboard)
+  - [功能](#功能)
+  - [服务器](#服务器)
+    - [独立服务器](#独立服务器)
+    - [Windows客户端内置服务器](#windows客户端内置服务器)
+    - [其他WebDAV服务器](#其他webdav服务器)
+  - [客户端](#客户端)
+    - [Windows](#windows)
+      - [WinUI版](#winui版)
+      - [Winform版](#winform版)
+    - [IOS](#ios)
+      - [使用快捷指令](#使用快捷指令)
+      - [使用JSBox](#使用jsbox)
+    - [Android](#android)
+      - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
+    - [客户端配置](#客户端配置)
+  - [项目依赖](#项目依赖)
+
+
 ## 功能
 
 - 剪切板同步，使用WebDAV服务器作为中转站，支持文字、图片和文件  
@@ -78,7 +98,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件
 
 ### Android
-### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
+#### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
 导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
 ### 客户端配置
