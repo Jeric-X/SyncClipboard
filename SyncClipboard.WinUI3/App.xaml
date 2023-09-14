@@ -13,6 +13,9 @@
             <!-- Other app resources here -->
             <SolidColorBrush x:Key="WindowCaptionBackground">Transparent</SolidColorBrush>
             <SolidColorBrush x:Key="WindowCaptionBackgroundDisabled">Transparent</SolidColorBrush>
+            <Style TargetType="TextBox">
+                <Setter Property="IsSpellCheckEnabled" Value="False"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
