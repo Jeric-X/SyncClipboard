@@ -79,7 +79,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 </details>
 
 #### Winform版
-- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.exe`，独立文件直接运行（运行后会在同目录额外释放文件）
+- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.exe`，独立文件直接运行
 - 界面上的可设置项较少，可以通过手动修改配置文件设置功能
 
 <details>

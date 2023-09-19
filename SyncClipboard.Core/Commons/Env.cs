@@ -4,8 +4,9 @@
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
-        public const string VERSION = "2.0.1.2";
+        public const string VERSION = "2.0.1.3";
         public static readonly string Directory = AppDomain.CurrentDomain.BaseDirectory;
+        public static readonly string AppDataDirectory = GetAppDataDirectory();
         public static readonly string ProgramPath = Environment.ProcessPath ?? "";
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
         public static readonly string TemplateFileFolder = FullPath("file");
@@ -13,7 +14,28 @@
 
         public static string FullPath(string relativePath)
         {
-            return Path.Combine(Directory, relativePath);
+            return Path.Combine(AppDataDirectory, relativePath);
+        }
+
+        private static string GetAppDataDirectory()
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.ApplicationData,
+                    Environment.SpecialFolderOption.DoNotVerify),
+                SoftName);
+        }
+
+        static Env()
+        {
+            var appDataParent = Environment.GetFolderPath(
+                   Environment.SpecialFolder.ApplicationData,
+                   Environment.SpecialFolderOption.Create) ?? throw new Exception("Can not open system app data folder.");
+            var appDataDirectory = Path.Combine(appDataParent, SoftName);
+            if (System.IO.Directory.Exists(appDataDirectory) is false)
+            {
+                System.IO.Directory.CreateDirectory(appDataDirectory);
+            }
         }
     }
 }

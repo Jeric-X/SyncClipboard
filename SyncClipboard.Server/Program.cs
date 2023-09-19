@@ -56,7 +56,7 @@ namespace SyncClipboard.Server
             var builder = WebApplication.CreateBuilder(
                 new WebApplicationOptions
                 {
-                    WebRootPath = serverConfig.Path + "server",
+                    WebRootPath = Path.Combine(serverConfig.Path, "server"),
                 }
             );
             builder.WebHost.UseUrls($"http://*:{serverConfig.Port}");

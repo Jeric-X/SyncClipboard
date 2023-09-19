@@ -1,4 +1,5 @@
-v2.0.1.2 (working)
+v2.0.1.3 (working)
+- 更改临时文件储存位置到系统appdata目录
 - 支持被动模式
 - WinUI:
 	- 支持托盘图标tooltip

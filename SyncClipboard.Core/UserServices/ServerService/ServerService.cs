@@ -69,7 +69,7 @@ public class ServerService : Service
                 app = await Server.Program.StartAsync(
                     new Abstract.ServerPara(
                         _serverConfig.Port,
-                        Env.Directory,
+                        Env.AppDataDirectory,
                         _serverConfig.UserName,
                         _serverConfig.Password,
                         _serverConfig.ClientMixedMode,
