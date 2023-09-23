@@ -19,15 +19,6 @@
 
         private static string GetAppDataDirectory()
         {
-            return Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.ApplicationData,
-                    Environment.SpecialFolderOption.DoNotVerify),
-                SoftName);
-        }
-
-        static Env()
-        {
             var appDataParent = Environment.GetFolderPath(
                    Environment.SpecialFolder.ApplicationData,
                    Environment.SpecialFolderOption.Create) ?? throw new Exception("Can not open system app data folder.");
@@ -36,6 +27,7 @@
             {
                 System.IO.Directory.CreateDirectory(appDataDirectory);
             }
+            return appDataDirectory;
         }
     }
 }
