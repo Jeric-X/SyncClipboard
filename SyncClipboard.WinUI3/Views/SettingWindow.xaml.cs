@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.WinUI3.Win32;
 using System;
 using Windows.UI.WindowManagement;
 using WinUIEx;
@@ -32,6 +33,8 @@ namespace SyncClipboard.WinUI3.Views
             SetTitleBar(_AppTitleBar.DraggableArea);
             _AppTitleBar.NavigeMenuButtonClicked += () => SplitPane.IsPaneOpen = !SplitPane.IsPaneOpen;
 
+            // AppWindow.SetIcon() has issue https://github.com/microsoft/microsoft-ui-xaml/issues/8134, so use P/Invoke
+            this.SetWindowIcon("Assets/icon.ico");
             AppWindow.ResizeClient(new(1200, 700));
             Closed += SettingWindow_Closed;
 
