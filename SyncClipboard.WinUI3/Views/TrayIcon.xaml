@@ -9,7 +9,7 @@
                 IconSource="ms-appx:///Assets/default.ico"
                 mc:Ignorable="d">
     <tb:TaskbarIcon.ContextFlyout>
-        <MenuFlyout>
+        <MenuFlyout AreOpenCloseAnimationsEnabled="False">
             <MenuFlyoutSeparator x:Name="_Separator" MinWidth="200" Visibility="Collapsed"/>
             <!--<MenuFlyoutItem Text="退出" Click="MenuFlyoutItem_Click" />-->
         </MenuFlyout>
