@@ -24,7 +24,7 @@ namespace SyncClipboard.Core.Utilities.Web
             Logger = logger;
         }
 
-        private void UserConfigChanged()
+        private async void UserConfigChanged()
         {
             var syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
             var serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
@@ -34,6 +34,13 @@ namespace SyncClipboard.Core.Utilities.Web
                 _serverConfig = serverConfig;
                 _syncConfig = syncConfig;
                 ReInitHttpClient();
+                try
+                {
+                    await CreateDirectory(Env.RemoteFileFolder);
+                }
+                catch
+                {
+                }
             }
         }
     }

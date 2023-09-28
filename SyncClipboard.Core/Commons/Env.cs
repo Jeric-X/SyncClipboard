@@ -10,6 +10,7 @@
         public static readonly string ProgramPath = Environment.ProcessPath ?? "";
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
         public static readonly string TemplateFileFolder = FullPath("file");
+        public static readonly string RemoteFileFolder = "file";
         public static readonly string LogFolder = FullPath("log");
 
         public static string FullPath(string relativePath)

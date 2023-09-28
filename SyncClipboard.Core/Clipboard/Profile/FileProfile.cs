@@ -48,7 +48,7 @@ public class FileProfile : Profile
         WebDav = serviceProvider.GetRequiredService<IWebDav>();
         Logger = serviceProvider.GetRequiredService<ILogger>();
         ServiceProvider = serviceProvider;
-        RemoteFileFolder = serviceProvider.GetRequiredService<IAppConfig>().RemoteFileFolder;
+        RemoteFileFolder = Env.RemoteFileFolder;
 
         var configManager = serviceProvider.GetRequiredService<ConfigManager>();
         var syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new SyncConfig();
