@@ -140,6 +140,12 @@ public partial class NextCloudLogInViewModel : ObservableObject
         ShowFolderProgressBar = false;
     }
 
+    [RelayCommand]
+    public async Task Refresh()
+    {
+        TreeList = WebDavModelToViewModel(await _tempWebDav!.GetFolderSubList(""));
+    }
+
     private static string GetErrorMessage(Exception ex)
     {
         return ex switch

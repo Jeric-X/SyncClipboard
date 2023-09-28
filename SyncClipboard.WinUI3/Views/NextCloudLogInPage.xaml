@@ -89,8 +89,9 @@
                         </TreeView>
                     </ScrollViewer>
                 </Grid>
-                <StackPanel Grid.Column="1" Margin="16,0,0,0" Orientation="Vertical">
+                <StackPanel Grid.Column="1" Margin="16,0,0,0" Orientation="Vertical" Spacing="10">
                     <Button Content="选择文件夹" Click="Button_Click" IsEnabled="{x:Bind ItemSeleted(_TreeView.SelectedItem), Mode=OneWay}" />
+                    <Button Content="刷新" Command="{x:Bind _viewModel.RefreshCommand}" HorizontalAlignment="Stretch"/>
                 </StackPanel>
             </Grid>
         </Border>
