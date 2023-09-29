@@ -17,7 +17,12 @@
       - [使用JSBox](#使用jsbox)
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
-    - [客户端配置](#客户端配置)
+    - [客户端配置说明](#客户端配置说明)
+  - [API](#api)
+    - [获取/上传剪切板（文字）](#获取上传剪切板文字)
+    - [获取/上传剪切板（图片/文件）](#获取上传剪切板图片文件)
+    - [SyncClipboard.json](#syncclipboardjson)
+    - [查询/创建/删除文件中转目录](#查询创建删除文件中转目录)
   - [项目依赖](#项目依赖)
 
 
@@ -92,7 +97,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
 
-导入这个[快捷指令](https://www.icloud.com/shortcuts/9e2f44bd12a84935b715aac9b488f6ee)。从组件栏和分享菜单中使用
+导入这个[快捷指令](https://www.icloud.com/shortcuts/9e2f44bd12a84935b715aac9b488f6ee)，跟随引导填写配置信息。从组件栏和分享菜单中使用
 
 #### 使用[JSBox](https://apps.apple.com/cn/app/jsbox-%E5%AD%A6%E4%B9%A0%E5%86%99%E4%BB%A3%E7%A0%81/id1312014438)
 导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件
@@ -101,12 +106,53 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 #### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
 导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
-### 客户端配置
+### 客户端配置说明
 
-全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。windows端可以在配置文件中修改更多配置
+全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。windows端可以自定义修改更多配置
 - user
 - password
 - url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，不使用windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端会在设置服务器时自动创建`file`文件夹
+
+## API
+
+完全基于WebDAV，以下是SyncClipboard用到的且SyncClipboard.Server实现了的接口
+
+### 获取/上传剪切板（文字）
+```
+GET /SyncClipboard.json
+PUT /SyncClipboard.json
+```
+
+### 获取/上传剪切板（图片/文件）
+```
+GET /SyncClipboard.json
+GET /file/filename
+
+PUT /file/filename
+PUT /SyncClipboard.json
+```
+
+### SyncClipboard.json
+```
+{
+    "Type" : "Text"
+    "Clipboard" : "Content",
+    "File":""
+}
+
+{
+    "Type": "Image", // or "File"
+    "Clipboard": "md5 hash, optional",
+    "File": "filename"
+}
+```
+
+### 查询/创建/删除文件中转目录
+```
+HEAD    /file
+MKCOL   /file
+DELETE  /file
+```
 
 ## 项目依赖
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  
