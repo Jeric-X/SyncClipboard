@@ -23,6 +23,12 @@ public sealed partial class NextCloudLogInPage : Page
     {
         this.InitializeComponent();
         _viewModel = App.Current.Services.GetRequiredService<NextCloudLogInViewModel>();
+
+        _SetFolderButton.IsEnabled = false;
+        _TreeView.RegisterPropertyChangedCallback(TreeView.SelectedItemProperty, (_, _) =>
+        {
+            _SetFolderButton.IsEnabled = _TreeView.SelectedItem is not null;
+        });
     }
 
     private Visibility BoolToVisibility(bool value)
@@ -53,11 +59,6 @@ public sealed partial class NextCloudLogInPage : Page
         _TreeView.IsEnabled = false;
         await _viewModel.SetChildren((FileTreeViewModel)args.Item);
         _TreeView.IsEnabled = true;
-    }
-
-    private bool ItemSeleted(object? obj)
-    {
-        return obj is not null;
     }
 
     private void Button_Click(object _, RoutedEventArgs _1)

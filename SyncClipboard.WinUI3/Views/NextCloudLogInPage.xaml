@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.NextCloudLogInPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       MinWidth="550"
@@ -89,9 +89,12 @@
                         </TreeView>
                     </ScrollViewer>
                 </Grid>
-                <StackPanel Grid.Column="1" Margin="16,0,0,0" Orientation="Vertical" Spacing="10">
-                    <Button Content="选择文件夹" Click="Button_Click" IsEnabled="{x:Bind ItemSeleted(_TreeView.SelectedItem), Mode=OneWay}" />
-                    <Button Content="刷新" Command="{x:Bind _viewModel.RefreshCommand}" HorizontalAlignment="Stretch"/>
+                <StackPanel Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Orientation="Vertical"
+                            Spacing="10">
+                    <Button x:Name="_SetFolderButton" Content="选择文件夹" Click="Button_Click" />
+                    <Button HorizontalAlignment="Stretch" Content="刷新" Command="{x:Bind _viewModel.RefreshCommand}" />
                 </StackPanel>
             </Grid>
         </Border>
