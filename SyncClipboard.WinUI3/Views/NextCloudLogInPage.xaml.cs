@@ -69,7 +69,7 @@ public sealed partial class NextCloudLogInPage : Page
         }
         catch (Exception ex)
         {
-            App.Current.Services.GetRequiredService<NotificationManager>().SendText("ÉèÖÃÊ§°Ü", ex.Message);
+            App.Current.Services.GetRequiredService<NotificationManager>().SendText("è®¾ç½®å¤±è´¥", ex.Message);
         }
     }
 }
