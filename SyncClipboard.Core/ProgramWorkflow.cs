@@ -34,7 +34,13 @@ namespace SyncClipboard.Core
             configManager.AddMenuItems();
 
             var webdav = Services.GetRequiredService<IWebDav>();
-            webdav.TestAlive();
+            webdav.TestAlive().ContinueWith(async res =>
+            {
+                if (await res)
+                {
+                    await webdav.CreateDirectory(Env.RemoteFileFolder);
+                }
+            });
 
             PrepareWorkingFolder(configManager);
             CheckUpdate();

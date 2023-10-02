@@ -168,7 +168,8 @@ namespace SyncClipboard.Core.Utilities.Web
 
             try
             {
-                await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+                var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+                res.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
             {
