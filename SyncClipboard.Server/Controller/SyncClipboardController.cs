@@ -60,13 +60,17 @@ public class SyncClipboardController
     public void Route(WebApplication app)
     {
         var rootPath = app.Environment.WebRootPath;
+
+        app.MapMethods("/", new string[] { "HEAD" }, () =>
+            Results.Ok()).RequireAuthorization();
+
         app.MapMethods("/file", new string[] { "HEAD", "MKCOL" }, () =>
             ExistOrCreateFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
 
         app.MapDelete("/file", () =>
             DeleteFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
 
-        app.MapGet("/file/{fileName}", (string fileName) =>
+        app.MapMethods("/file/{fileName}", new string[] { "HEAD", "GET" }, (string fileName) =>
             GetFile(Path.Combine(rootPath, "file", fileName))).RequireAuthorization();
 
         app.MapPut("/file/{fileName}", (HttpContext content, string fileName) =>

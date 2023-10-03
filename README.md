@@ -55,7 +55,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ### 其他WebDAV服务器
 可以使用支持WebDAV协议的网盘作为服务器  
 测试过的服务器：   
-- [x] NextCloud  
+- [x] NextCloud 
 - [x] 坚果云  
 - [x] [AList](https://alist.nn.ci/)
 
@@ -105,6 +105,10 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ### Android
 #### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
 导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
+<details>
+<summary>图片、文件展示页面无法保存的问题，或设备未安装Chrome浏览器</summary>
+https://github.com/Jeric-X/SyncClipboard/issues/16
+</details>
 
 ### 客户端配置说明
 
@@ -115,7 +119,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 
 ## API
 
-完全基于WebDAV，以下是SyncClipboard用到的且SyncClipboard.Server实现了的接口
+以下是SyncClipboard用到的且SyncClipboard.Server实现了的接口
 
 ### 获取/上传剪切板（文字）
 ```
@@ -125,8 +129,9 @@ PUT /SyncClipboard.json
 
 ### 获取/上传剪切板（图片/文件）
 ```
-GET /SyncClipboard.json
-GET /file/filename
+GET  /SyncClipboard.json
+HEAD /file/filename         // optional
+GET  /file/filename
 
 PUT /file/filename
 PUT /SyncClipboard.json
@@ -147,8 +152,9 @@ PUT /SyncClipboard.json
 }
 ```
 
-### 查询/创建/删除文件中转目录
+### 其他查询/创建/删除
 ```
+HEAD    /
 HEAD    /file
 MKCOL   /file
 DELETE  /file
