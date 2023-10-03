@@ -142,7 +142,7 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public async Task<bool> Exist(string url, CancellationToken? cancelToken = null)
         {
-            var requestMessage = new HttpRequestMessage(new HttpMethod("HEAD"), url);
+            var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
             var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
             if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -163,7 +163,7 @@ namespace SyncClipboard.Core.Utilities.Web
         {
             HttpRequestMessage requestMessage = new()
             {
-                Method = HttpMethod.Head
+                Method = new HttpMethod("PROPFIND")
             };
 
             try

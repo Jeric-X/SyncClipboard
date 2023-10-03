@@ -61,10 +61,10 @@ public class SyncClipboardController
     {
         var rootPath = app.Environment.WebRootPath;
 
-        app.MapMethods("/", new string[] { "HEAD" }, () =>
+        app.MapMethods("/", new string[] { "PROPFIND" }, () =>
             Results.Ok()).RequireAuthorization();
 
-        app.MapMethods("/file", new string[] { "HEAD", "MKCOL" }, () =>
+        app.MapMethods("/file", new string[] { "PROPFIND", "MKCOL" }, () =>
             ExistOrCreateFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
 
         app.MapDelete("/file", () =>

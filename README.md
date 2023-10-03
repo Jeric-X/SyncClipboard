@@ -154,10 +154,10 @@ PUT /SyncClipboard.json
 
 ### 其他查询/创建/删除
 ```
-HEAD    /
-HEAD    /file
-MKCOL   /file
-DELETE  /file
+PROPFIND    /           // always return http code 200
+PROPFIND    /file       // always return http code 200
+MKCOL       /file
+DELETE      /file
 ```
 
 ## 项目依赖
