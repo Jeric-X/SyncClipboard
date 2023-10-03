@@ -64,12 +64,13 @@
       "shortcuts": [
         {
           "browserPackageName": "com.android.chrome",
-          "codeOnPrepare": "let url \u003d getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/)\nconst user \u003d getVariable(/*[variable]*/\"719f997c-6bf6-458f-a148-3c2a8ac5e405\"/*[/variable]*/)\nconst pass \u003d getVariable(/*[variable]*/\"9421719b-086f-4799-8432-158b84b6e05a\"/*[/variable]*/)\nurl \u003d url.replace(\"://\", `://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@`)\nsetVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/, url)",
+          "codeOnPrepare": "let url \u003d getVariable(\"downloadUrl\")\r\nconst user \u003d getVariable(\"UserName\")\r\nconst pass \u003d getVariable(\"UserToken\")\r\nurl \u003d url.replace(\"://\", `://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@`)\r\nsetVariable(\"downloadUrl\", url)\r\ncopyToClipboard(url);\r\nshowToast(\u0027已拷贝下载链接到剪切板\\n如果自动下载失败请尝试手动粘贴到地址栏访问\\n\u0027);",
           "description": "使用chrome访问指定的网页",
           "executionType": "browser",
           "iconName": "flat_color_global",
           "id": "ec5b4427-b36f-463e-aea1-7299a5ab197f",
           "name": "使用浏览器下载",
+          "responseHandling": {},
           "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}"
         },
         {
@@ -92,7 +93,7 @@
           "authentication": "basic",
           "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
           "codeOnFailure": "const inputPara \u003d { \u0027downloadUrl\u0027: getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/) }\r\nenqueueShortcut(\u0027分析文件(GET)\u0027, inputPara)",
-          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/) }\r\n\r\nshowToast(\u0027文件大小\\n\u0027 + contentLength);\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
+          "codeOnSuccess": "const contentLength \u003d response.getHeader(\u0027Content-Length\u0027);\r\nconst inputPara \u003d { \u0027downloadUrl\u0027: getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/) }\r\n\r\n//showToast(\u0027文件大小\\n\u0027 + contentLength);\r\nif (contentLength \u003e 2 * 1024 * 1024) {\r\n    enqueueShortcut(\u0027使用浏览器下载\u0027, inputPara)\r\n} else {\r\n    enqueueShortcut(\u0027展示文件\u0027, inputPara)\r\n}",
           "contentType": "application/json",
           "description": "根据文件大小，选择内部展示还是使用浏览器下载",
           "iconName": "flat_color_folder",
@@ -180,5 +181,5 @@
       "value": ""
     }
   ],
-  "version": 56
+  "version": 59
 }
