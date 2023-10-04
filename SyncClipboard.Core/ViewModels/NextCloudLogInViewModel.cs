@@ -57,7 +57,7 @@ public partial class NextCloudLogInViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowTreeList))]
     public List<FileTreeViewModel>? treeList;
 
-    public bool ShowTreeList => TreeList?.Count > 0;
+    public bool ShowTreeList => TreeList is not null;
 
     [ObservableProperty]
     private string userInputUrl;
