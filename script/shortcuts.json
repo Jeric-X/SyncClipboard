@@ -66,18 +66,6 @@
       "shortcutClickBehavior": "edit",
       "shortcuts": [
         {
-          "browserPackageName": "com.android.chrome",
-          "codeOnPrepare": "let url \u003d getVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/)\r\nconst user \u003d getVariable(/*[variable]*/\"719f997c-6bf6-458f-a148-3c2a8ac5e405\"/*[/variable]*/)\r\nconst pass \u003d getVariable(/*[variable]*/\"9421719b-086f-4799-8432-158b84b6e05a\"/*[/variable]*/)\r\nurl \u003d url.replace(\"://\", `://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@`)\r\nsetVariable(/*[variable]*/\"5989c421-2669-4424-80c3-69ba7995524a\"/*[/variable]*/, url)\r\ncopyToClipboard(url);\r\nshowToast(\u0027已拷贝下载链接到剪切板\\n如果自动下载失败请尝试手动粘贴到地址栏访问\\n\u0027);",
-          "description": "使用chrome访问指定的网页",
-          "executionType": "browser",
-          "iconName": "flat_color_global",
-          "id": "ec5b4427-b36f-463e-aea1-7299a5ab197f",
-          "name": "使用浏览器下载",
-          "proxy": "",
-          "responseHandling": {},
-          "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}"
-        },
-        {
           "authentication": "basic",
           "bodyContent": "{\"File\":\"{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}\",\"Clipboard\":\"\",\"Type\":\"File\"}",
           "codeOnSuccess": "showToast(\u0027已上传\u0027);",

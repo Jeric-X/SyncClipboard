@@ -22,7 +22,7 @@
     - [获取/上传剪切板（文字）](#获取上传剪切板文字)
     - [获取/上传剪切板（图片/文件）](#获取上传剪切板图片文件)
     - [SyncClipboard.json](#syncclipboardjson)
-    - [查询/创建/删除文件中转目录](#查询创建删除文件中转目录)
+    - [其他查询/创建/删除](#其他查询创建删除)
   - [项目依赖](#项目依赖)
 
 
@@ -105,10 +105,6 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ### Android
 #### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
 导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
-<details>
-<summary>图片、文件展示页面无法保存的问题，或设备未安装Chrome浏览器</summary>
-https://github.com/Jeric-X/SyncClipboard/issues/16
-</details>
 
 ### 客户端配置说明
 
