@@ -198,7 +198,8 @@ namespace SyncClipboard.Core.Utilities.Web
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(await res.Content.ReadAsStringAsync(token));
-            XmlNodeList elemList = doc.GetElementsByTagName("d:response");
+            const string ns = "DAV:";
+            XmlNodeList elemList = doc.GetElementsByTagName("response", ns);
             foreach (XmlNode elem in elemList)
             {
                 var fullPath = elem["d:href"]!.InnerText;
@@ -207,7 +208,7 @@ namespace SyncClipboard.Core.Utilities.Web
                 subName = subName.Trim('/');
                 if (!string.IsNullOrEmpty(subName))
                 {
-                    var isFolder = elem["d:propstat"]?["d:prop"]?["d:resourcetype"]?["d:collection"];
+                    var isFolder = elem["propstat", ns]?["prop", ns]?["resourcetype", ns]?["collection", ns];
                     list.Add(new(relativePath, HttpUtility.UrlDecode(subName), isFolder is not null));
                 }
             }
