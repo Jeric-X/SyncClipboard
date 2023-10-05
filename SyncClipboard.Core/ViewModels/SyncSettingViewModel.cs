@@ -8,10 +8,12 @@ public partial class SyncSettingViewModel : ObservableObject
 {
     #region server
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNormalClientEnable))]
     private bool serverEnable;
     partial void OnServerEnableChanged(bool value) => ServerConfig = ServerConfig with { SwitchOn = value };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNormalClientEnable))]
     private bool clientMixedMode;
     partial void OnClientMixedModeChanged(bool value) => ServerConfig = ServerConfig with { ClientMixedMode = value };
 
@@ -22,6 +24,7 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager.SetConfig(ConfigKey.Server, value);
     }
 
+    public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
     #endregion
 
     #region client

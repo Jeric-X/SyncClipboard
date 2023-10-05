@@ -75,8 +75,8 @@
         </labs:SettingsExpander>
         <labs:SettingsExpander Header="剪切板同步"
                                Description="自动将本机和设置了相同服务器的其他设备的剪切板同步"
-                               IsExpanded="{x:Bind Not(_viewModel.ClientMixedMode), Mode=OneWay}"
-                               IsEnabled="{x:Bind Not(_viewModel.ClientMixedMode), Mode=OneWay}">
+                               IsExpanded="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}"
+                               IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
