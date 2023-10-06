@@ -4,7 +4,7 @@
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
-        public const string VERSION = "2.1.0.1";
+        public const string VERSION = "2.2.0";
         public static readonly string Directory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetAppDataDirectory();
         public static readonly string ProgramPath = Environment.ProcessPath ?? "";
