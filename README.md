@@ -45,7 +45,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 如需修改工作目录，拷贝一份appsettings.json到新工作目录并修改`--contentRoot`后的路径  
 注意：
 - 客户端处填写`http://ip:端口号`，`http`不可省略
-- http使用明文传输，在公网部署考虑使用反向代理工具配置SSL
+- http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
 
 ### Windows客户端内置服务器
