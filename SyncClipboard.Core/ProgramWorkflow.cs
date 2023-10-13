@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Options;
@@ -8,6 +9,7 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
+using System.Globalization;
 
 namespace SyncClipboard.Core
 {
@@ -22,15 +24,28 @@ namespace SyncClipboard.Core
             ServiceManager = Services.GetRequiredService<ServiceManager>();
         }
 
+        private static void InitLanguage(ConfigManager configManager)
+        {
+            I18nHelper.SaveDefaultUICultureInfo();
+            var langTag = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.Language;
+            if (string.IsNullOrEmpty(langTag))
+            {
+                return;
+            }
+            CultureInfo.CurrentUICulture = CultureInfo.CreateSpecificCulture(langTag);
+        }
+
         public void Run()
         {
+            var configManager = Services.GetRequiredService<ConfigManager>();
+            InitLanguage(configManager);
+
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             contextMenu.AddMenuItem(new MenuItem("设置", Services.GetRequiredService<IMainWindow>().Show), "Top Group");
 
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
             trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
 
-            var configManager = Services.GetRequiredService<ConfigManager>();
             configManager.AddMenuItems();
 
             var webdav = Services.GetRequiredService<IWebDav>();

@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 
@@ -23,40 +25,18 @@ public partial class SystemSettingViewModel : ObservableObject
     {
         CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
         LogRemainDays = value.LogRemainDays;
-        Language = Languages.FirstOrDefault(x => x.Tag == value.Language) ?? Languages[0];
+        Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
         _configManager.SetConfig(ConfigKey.Program, value);
     }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ChangingLangInfo))]
-    private LanguageDefine language;
-    partial void OnLanguageChanged(LanguageDefine value) => ProgramConfig = ProgramConfig with { Language = value.Tag };
+    private LanguageModel language;
+    partial void OnLanguageChanged(LanguageModel value) => ProgramConfig = ProgramConfig with { Language = value.LocaleTag };
 
-    public string? ChangingLangInfo => I18n.Strings.ResourceManager.GetString(
-        nameof(I18n.Strings.ChangingLangInfo), new System.Globalization.CultureInfo(Language.Tag));
-
-    private const string DefaultLangTag = "Default";
-    public record class LanguageDefine
-    {
-        public string LocalName { get; }
-        public string Tag { get; }
-        public string DisplayName => Tag switch
-        {
-            DefaultLangTag => LocalName,
-            _ => $"{LocalName} ({Tag})"
-        };
-        public LanguageDefine(string localName, string tag)
-        {
-            LocalName = localName;
-            Tag = tag;
-        }
-    }
-    public static List<LanguageDefine> Languages => new()
-    {
-        new (I18n.Strings.DefaultLanguage, DefaultLangTag),
-        new("English", "en-US"),
-        new("简体中文", "zh-CN"),
-    };
+    public static readonly LanguageModel[] Languages = I18nHelper.SupportedLanguage;
+    public string DisplayMemberPath = nameof(LanguageModel.DisplayName);
+    public string? ChangingLangInfo => I18nHelper.GetChangingLanguageInfo(Language);
 
     private readonly ConfigManager _configManager;
 
@@ -66,7 +46,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
         _configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
         ProgramConfig = _configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
-        language = Languages.FirstOrDefault(x => x.Tag == ProgramConfig.Language) ?? Languages[0];
+        language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
         checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;
         logRemainDays = ProgramConfig.LogRemainDays;
     }
