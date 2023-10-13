@@ -126,4 +126,7 @@
   <data name="DefaultLanguage" xml:space="preserve">
     <value>跟随系统</value>
   </data>
+  <data name="ChangingLangInfo" xml:space="preserve">
+    <value>重启后生效</value>
+  </data>
 </root>

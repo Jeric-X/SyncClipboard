@@ -126,4 +126,7 @@
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="ChangingLangInfo" xml:space="preserve">
+    <value>This change effects after restart</value>
+  </data>
 </root>

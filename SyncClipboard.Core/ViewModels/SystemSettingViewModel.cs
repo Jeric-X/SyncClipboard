@@ -28,8 +28,12 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ChangingLangInfo))]
     private LanguageDefine language;
     partial void OnLanguageChanged(LanguageDefine value) => ProgramConfig = ProgramConfig with { Language = value.Tag };
+
+    public string? ChangingLangInfo => I18n.Strings.ResourceManager.GetString(
+        nameof(I18n.Strings.ChangingLangInfo), new System.Globalization.CultureInfo(Language.Tag));
 
     private const string DefaultLangTag = "Default";
     public record class LanguageDefine

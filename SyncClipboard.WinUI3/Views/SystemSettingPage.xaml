@@ -22,7 +22,7 @@
             </labs:SettingsCard.HeaderIcon>
             <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
         </labs:SettingsCard>
-        <labs:SettingsCard Header="语言">
+        <labs:SettingsCard Header="语言" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
             <labs:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xF2B7;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>

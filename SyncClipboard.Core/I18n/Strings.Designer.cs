@@ -61,6 +61,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 This change effects after restart 的本地化字符串。
+        /// </summary>
+        public static string ChangingLangInfo {
+            get {
+                return ResourceManager.GetString("ChangingLangInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Default 的本地化字符串。
         /// </summary>
         public static string DefaultLanguage {
