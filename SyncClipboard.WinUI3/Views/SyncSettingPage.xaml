@@ -8,6 +8,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      xmlns:I18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
@@ -34,7 +35,7 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
-        <labs:SettingsExpander Header="同步服务器" Description="作为本机和其他设备的服务器" IsExpanded="True">
+        <labs:SettingsExpander Header="{x:Bind I18n:Strings.Server}" Description="作为本机和其他设备的服务器" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>

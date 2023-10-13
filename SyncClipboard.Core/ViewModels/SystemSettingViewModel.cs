@@ -23,8 +23,36 @@ public partial class SystemSettingViewModel : ObservableObject
     {
         CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
         LogRemainDays = value.LogRemainDays;
+        Language = Languages.FirstOrDefault(x => x.Tag == value.Language) ?? Languages[0];
         _configManager.SetConfig(ConfigKey.Program, value);
     }
+
+    [ObservableProperty]
+    private LanguageDefine language;
+    partial void OnLanguageChanged(LanguageDefine value) => ProgramConfig = ProgramConfig with { Language = value.Tag };
+
+    private const string DefaultLangTag = "Default";
+    public record class LanguageDefine
+    {
+        public string LocalName { get; }
+        public string Tag { get; }
+        public string DisplayName => Tag switch
+        {
+            DefaultLangTag => LocalName,
+            _ => $"{LocalName} ({Tag})"
+        };
+        public LanguageDefine(string localName, string tag)
+        {
+            LocalName = localName;
+            Tag = tag;
+        }
+    }
+    public static List<LanguageDefine> Languages => new()
+    {
+        new (I18n.Strings.DefaultLanguage, DefaultLangTag),
+        new("English", "en-US"),
+        new("简体中文", "zh-CN"),
+    };
 
     private readonly ConfigManager _configManager;
 
@@ -34,6 +62,9 @@ public partial class SystemSettingViewModel : ObservableObject
 
         _configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
         ProgramConfig = _configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+        language = Languages.FirstOrDefault(x => x.Tag == ProgramConfig.Language) ?? Languages[0];
+        checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;
+        logRemainDays = ProgramConfig.LogRemainDays;
     }
 
     public bool StartUpWithSystem
