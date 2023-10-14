@@ -70,11 +70,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Address 的本地化字符串。
+        /// </summary>
+        public static string Address {
+            get {
+                return ResourceManager.GetString("Address", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Assistant 的本地化字符串。
         /// </summary>
         public static string Assistant {
             get {
                 return ResourceManager.GetString("Assistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Cancel 的本地化字符串。
+        /// </summary>
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
             }
         }
         
@@ -88,11 +106,47 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Confirm 的本地化字符串。
+        /// </summary>
+        public static string Confirm {
+            get {
+                return ResourceManager.GetString("Confirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Auto Detect 的本地化字符串。
         /// </summary>
         public static string DefaultLanguage {
             get {
                 return ResourceManager.GetString("DefaultLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mixed Client Mode 的本地化字符串。
+        /// </summary>
+        public static string MixedClientMode {
+            get {
+                return ResourceManager.GetString("MixedClientMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Off: Use standalone files to save clients&apos; clipboard information. 的本地化字符串。
+        /// </summary>
+        public static string MixedClientOffInfo {
+            get {
+                return ResourceManager.GetString("MixedClientOffInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 On: When clients update/get clipboard info from this server, directly operate this machie&apos;s clipboard. So this machine&apos;s clipboard is shared forcely and with no delay. 的本地化字符串。
+        /// </summary>
+        public static string MixedClientOnInfo {
+            get {
+                return ResourceManager.GetString("MixedClientOnInfo", resourceCulture);
             }
         }
         
@@ -124,11 +178,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 1 的本地化字符串。
+        /// </summary>
+        public static string PasswordTabRepeat {
+            get {
+                return ResourceManager.GetString("PasswordTabRepeat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Port 的本地化字符串。
         /// </summary>
         public static string Port {
             get {
                 return ResourceManager.GetString("Port", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 1 的本地化字符串。
+        /// </summary>
+        public static string PortTabRepeat {
+            get {
+                return ResourceManager.GetString("PortTabRepeat", resourceCulture);
             }
         }
         
@@ -169,11 +241,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Settings 的本地化字符串。
+        /// </summary>
+        public static string SystemSettings {
+            get {
+                return ResourceManager.GetString("SystemSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 User Name 的本地化字符串。
         /// </summary>
         public static string UserName {
             get {
                 return ResourceManager.GetString("UserName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 1 的本地化字符串。
+        /// </summary>
+        public static string UserNameTabRepeat {
+            get {
+                return ResourceManager.GetString("UserNameTabRepeat", resourceCulture);
             }
         }
     }

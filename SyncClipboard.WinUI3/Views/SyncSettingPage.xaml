@@ -51,7 +51,7 @@
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="客户端混合模式">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.MixedClientMode}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Width="32"
                                 Height="32"
@@ -62,9 +62,8 @@
                             <Button.Flyout>
                                 <Flyout>
                                     <TextBlock Width="400" TextWrapping="WrapWholeWords">
-                                        <Run>开启：使用本机剪切板作为剪切板内容中转，“剪切板同步”开关和子选项失效，强制开启本机同步，不会有普通客户端的同步延迟</Run>
-                                        <LineBreak /><LineBreak /><Run>关闭：使用独立文件作为剪切板内容中转，服务器与本机剪切板无关联</Run>
-                                        <LineBreak /><LineBreak /><Run>普通客户端：在下载远程的方向上有同步延迟，延迟最大值为“轮询服务器间隔（秒）”</Run>
+                                        <Run Text="{x:Bind i18n:Strings.MixedClientOnInfo}" />
+                                        <LineBreak /><LineBreak /><Run Text="{x:Bind i18n:Strings.MixedClientOffInfo}" />
                                     </TextBlock>
                                 </Flyout>
                             </Button.Flyout>
@@ -138,7 +137,7 @@
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />
-        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="地址" />
+        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Port}" />
+        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Address}" />
     </StackPanel>
 </Page>
