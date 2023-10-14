@@ -6,6 +6,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
       mc:Ignorable="d">
@@ -14,7 +15,7 @@
             <labs:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE770;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>
-            <ToggleSwitch IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
         </labs:SettingsCard>
         <labs:SettingsCard Header="日志保留时长（日）">
             <labs:SettingsCard.HeaderIcon>

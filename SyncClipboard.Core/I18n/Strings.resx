@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="DefaultLanguage" xml:space="preserve">
-    <value>Default</value>
+    <value>Auto Detect</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>Server</value>
+    <value>Self-Host Server</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
@@ -146,5 +146,14 @@
   </data>
   <data name="Off" xml:space="preserve">
     <value>Off</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>User Name</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
   </data>
 </root>

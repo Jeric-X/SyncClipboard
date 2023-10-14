@@ -88,7 +88,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Default 的本地化字符串。
+        ///   查找类似 Auto Detect 的本地化字符串。
         /// </summary>
         public static string DefaultLanguage {
             get {
@@ -115,7 +115,25 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Server 的本地化字符串。
+        ///   查找类似 Password 的本地化字符串。
+        /// </summary>
+        public static string Password {
+            get {
+                return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Port 的本地化字符串。
+        /// </summary>
+        public static string Port {
+            get {
+                return ResourceManager.GetString("Port", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Self-Host Server 的本地化字符串。
         /// </summary>
         public static string Server {
             get {
@@ -147,6 +165,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Syncing {
             get {
                 return ResourceManager.GetString("Syncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 User Name 的本地化字符串。
+        /// </summary>
+        public static string UserName {
+            get {
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
     }

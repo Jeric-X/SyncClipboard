@@ -7,6 +7,7 @@
       xmlns:labs="using:CommunityToolkit.Labs.WinUI"
       xmlns:m="using:SyncClipboard.Core.Models"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
       mc:Ignorable="d">
@@ -18,7 +19,7 @@
             <Button Content="检查更新" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="启动时检查更新">
-                    <ToggleSwitch IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </labs:SettingsCard>
                 <labs:SettingsCard Header="项目地址">
                     <labs:SettingsCard.Description>

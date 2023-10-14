@@ -8,7 +8,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
-      xmlns:I18n="using:SyncClipboard.Core.I18n"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
@@ -35,11 +35,11 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
-        <labs:SettingsExpander Header="{x:Bind I18n:Strings.Server}" Description="作为本机和其他设备的服务器" IsExpanded="True">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.Server}" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <ToggleSwitch IsOn="{Binding ServerEnable, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{Binding ServerEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Description="{x:Bind ServerConfigDescription(_viewModel.ServerConfig, _ShowHidePasswordToggleButton.IsChecked), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
@@ -69,7 +69,7 @@
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
-                        <ToggleSwitch IsOn="{x:Bind _viewModel.ClientMixedMode, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ClientMixedMode, Mode=TwoWay}" />
                     </StackPanel>
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
@@ -81,10 +81,13 @@
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <ToggleSwitch IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
-                    <ToggleSwitch x:Name="_UseLocalServerToggle" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
+                    <ToggleSwitch x:Name="_UseLocalServerToggle"
+                                  OnContent="{x:Bind i18n:Strings.On}"
+                                  OffContent="{x:Bind i18n:Strings.Off}"
+                                  IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </labs:SettingsCard>
                 <labs:SettingsCard Description="{x:Bind ClientConfigDescription(_viewModel.ClientConfig, _ShowClientPasswordToggleButton.IsChecked), Mode=OneWay}" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
@@ -121,7 +124,7 @@
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
                 </labs:SettingsCard>
                 <labs:SettingsCard Header="自动删除服务器上的临时文件">
-                    <ToggleSwitch IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
@@ -131,7 +134,7 @@
             </labs:SettingsExpander.HeaderIcon>
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="下载远程剪切板后发送通知">
-                    <ToggleSwitch IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
