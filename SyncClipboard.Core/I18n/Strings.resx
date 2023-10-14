@@ -129,4 +129,22 @@
   <data name="ChangingLangInfo" xml:space="preserve">
     <value>This change effects after restart</value>
   </data>
+  <data name="Syncing" xml:space="preserve">
+    <value>Syncing</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
 </root>

@@ -24,4 +24,11 @@ public class I18nHelper
             nameof(Strings.ChangingLangInfo),
             language.IsDefault ? DefaultUICulture : new CultureInfo(language.LocaleTag))!;
     }
+
+    public static void SetProgramLanguage(string languageTag)
+    {
+        var oldCulture = CultureInfo.CurrentUICulture;
+        Interlocked.CompareExchange(ref DefaultUICulture, oldCulture, null);
+        CultureInfo.CurrentUICulture = new CultureInfo(languageTag);
+    }
 }

@@ -9,7 +9,6 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
-using System.Globalization;
 
 namespace SyncClipboard.Core
 {
@@ -26,13 +25,12 @@ namespace SyncClipboard.Core
 
         private static void InitLanguage(ConfigManager configManager)
         {
-            I18nHelper.SaveDefaultUICultureInfo();
             var langTag = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.Language;
             if (string.IsNullOrEmpty(langTag))
             {
                 return;
             }
-            CultureInfo.CurrentUICulture = CultureInfo.CreateSpecificCulture(langTag);
+            I18nHelper.SetProgramLanguage(langTag);
         }
 
         public void Run()

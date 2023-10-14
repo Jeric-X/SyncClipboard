@@ -61,6 +61,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 About 的本地化字符串。
+        /// </summary>
+        public static string About {
+            get {
+                return ResourceManager.GetString("About", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Assistant 的本地化字符串。
+        /// </summary>
+        public static string Assistant {
+            get {
+                return ResourceManager.GetString("Assistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 This change effects after restart 的本地化字符串。
         /// </summary>
         public static string ChangingLangInfo {
@@ -79,6 +97,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Off 的本地化字符串。
+        /// </summary>
+        public static string Off {
+            get {
+                return ResourceManager.GetString("Off", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 On 的本地化字符串。
+        /// </summary>
+        public static string On {
+            get {
+                return ResourceManager.GetString("On", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Server 的本地化字符串。
         /// </summary>
         public static string Server {
@@ -93,6 +129,24 @@ namespace SyncClipboard.Core.I18n {
         public static string Settings {
             get {
                 return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Status 的本地化字符串。
+        /// </summary>
+        public static string Status {
+            get {
+                return ResourceManager.GetString("Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Syncing 的本地化字符串。
+        /// </summary>
+        public static string Syncing {
+            get {
+                return ResourceManager.GetString("Syncing", resourceCulture);
             }
         }
     }

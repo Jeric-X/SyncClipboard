@@ -121,12 +121,30 @@
     <value>同步服务器</value>
   </data>
   <data name="Settings" xml:space="preserve">
-    <value>Settings</value>
+    <value>系统设置</value>
   </data>
   <data name="DefaultLanguage" xml:space="preserve">
     <value>跟随系统</value>
   </data>
   <data name="ChangingLangInfo" xml:space="preserve">
     <value>重启后生效</value>
+  </data>
+  <data name="Syncing" xml:space="preserve">
+    <value>剪切板同步</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>剪切板助手</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>服务状态</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>开</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>关</value>
   </data>
 </root>
