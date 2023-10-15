@@ -35,7 +35,7 @@ namespace SyncClipboard.WinUI3.Views
 
             // AppWindow.SetIcon() has issue https://github.com/microsoft/microsoft-ui-xaml/issues/8134, so use P/Invoke
             this.SetWindowIcon("Assets/icon.ico");
-            AppWindow.ResizeClient(new(1200, 700));
+            this.SetWindowSize(850, 530);
             Closed += SettingWindow_Closed;
 
             _MenuList.SelectedIndex = 0;
