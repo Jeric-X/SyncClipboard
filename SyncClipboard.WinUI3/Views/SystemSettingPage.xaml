@@ -11,19 +11,19 @@
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <labs:SettingsCard Header="开机启动">
+        <labs:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}">
             <labs:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE770;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
         </labs:SettingsCard>
-        <labs:SettingsCard Header="日志保留时长（日）">
+        <labs:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
             <labs:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE9F9;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>
             <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
         </labs:SettingsCard>
-        <labs:SettingsCard Header="语言" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
+        <labs:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
             <labs:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xF2B7;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>

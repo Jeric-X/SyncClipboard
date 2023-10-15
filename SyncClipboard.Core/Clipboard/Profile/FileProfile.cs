@@ -218,11 +218,11 @@ public class FileProfile : Profile
     {
         var path = FullPath ?? GetTempLocalFilePath();
         notification.SendText(
-            "文件同步成功",
+            I18n.Strings.ClipboardFileUpdated,
             FileName,
             DefaultButton(),
-            new Button("打开文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
-            new Button("打开", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
+            new Button(I18n.Strings.OpenFolder, new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+            new Button(I18n.Strings.Open, new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
         );
     }
 

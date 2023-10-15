@@ -14,7 +14,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 {
     #region override ClipboardHander
 
-    public override string SERVICE_NAME => "图片轻松拷贝";
+    public override string SERVICE_NAME => I18n.Strings.ImageAssistant;
     public override string LOG_TAG => "EASY IMAGE";
 
     private const string STOPPED_STATUS = "Stopped.";
@@ -156,7 +156,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         var filename = Regex.Match(imageUrl, "[^/]+(?!.*/)");
         lock (_progressLocker)
         {
-            _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], "正在从网站下载原图", _notificationManager);
+            _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], I18n.Strings.DownloadingWebImage, _notificationManager);
         }
         if (useProxy)
         {

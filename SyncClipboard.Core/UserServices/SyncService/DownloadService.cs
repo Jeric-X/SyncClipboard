@@ -12,7 +12,7 @@ public class DownloadService : Service
     public event ProgramEvent.ProgramEventHandler? PullStarted;
     public event ProgramEvent.ProgramEventHandler? PullStopped;
 
-    private const string SERVICE_NAME = "下载";
+    private readonly static string SERVICE_NAME = I18n.Strings.DownloadService;
     private const string LOG_TAG = "PULL";
     private bool _isPullLoopRunning = false;
     private readonly object _isPullLoopRunningLocker = new();
@@ -174,7 +174,7 @@ public class DownloadService : Service
         _logger.Write(ex.ToString());
         if (errorTimes == _syncConfig.RetryTimes)
         {
-            _notificationManager.SendText("剪切板下载失败", ex.Message);
+            _notificationManager.SendText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
     }
 
@@ -201,7 +201,7 @@ public class DownloadService : Service
             {
                 cancelToken.ThrowIfCancellationRequested();
                 _toastReporter?.Cancel();
-                SetStatusOnError(ref errorTimes, new Exception("请求超时"));
+                SetStatusOnError(ref errorTimes, new Exception("Request timeout"));
             }
             catch (Exception ex)
             {
@@ -251,13 +251,13 @@ public class DownloadService : Service
             {
                 if (remoteProfile is FileProfile)
                 {
-                    _toastReporter = new ProgressToastReporter(remoteProfile.FileName, "正在下载远程文件", _notificationManager);
+                    _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
                 }
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 _toastReporter = null;
                 PullStarted?.Invoke();
                 remoteProfile.SetLocalClipboard(true);
-                _logger.Write("剪切板同步成功:" + remoteProfile.Text);
+                _logger.Write("Success download:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
             }
             catch

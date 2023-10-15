@@ -16,19 +16,19 @@
             <labs:SettingsExpander.HeaderIcon>
                 <ImageIcon Source="ms-appx:///Assets/icon.ico" />
             </labs:SettingsExpander.HeaderIcon>
-            <Button Content="检查更新" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
+            <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard Header="启动时检查更新">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateOnStartup}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="项目地址">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.SoftwareHomePage}">
                     <labs:SettingsCard.Description>
                         <HyperlinkButton Content="{x:Bind vm:AboutViewModel.HomePage}" Click="HyperlinkButton_Click" />
                     </labs:SettingsCard.Description>
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="开源软件依赖" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE1D3;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>

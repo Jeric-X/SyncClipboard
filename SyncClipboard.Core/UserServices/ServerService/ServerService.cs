@@ -9,7 +9,7 @@ namespace SyncClipboard.Core.UserServices;
 public class ServerService : Service
 {
     Microsoft.AspNetCore.Builder.WebApplication? app;
-    public const string SERVICE_NAME = "同步服务器";
+    public readonly static string SERVICE_NAME = I18n.Strings.Server;
     public const string LOG_TAG = "INNERSERVER";
 
     private readonly ConfigManager _configManager;
@@ -82,7 +82,7 @@ public class ServerService : Service
             {
                 _logger.Write(LOG_TAG, ex.ToString());
                 _trayIcon.SetStatusString(SERVICE_NAME, ex.Message, true);
-                NotificationManager.SendText("服务器启动失败", ex.Message);
+                NotificationManager.SendText(I18n.Strings.FailedToStartServer, ex.Message);
             }
         }
     }

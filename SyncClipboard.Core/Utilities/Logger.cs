@@ -12,7 +12,7 @@ namespace SyncClipboard.Core.Utilities
 
         public Logger(IOptions<LoggerOption> option)
         {
-            LOG_FOLDER = option.Value.Path ?? throw new ArgumentNullException(nameof(option.Value.Path), "日志路径为null"); ;
+            LOG_FOLDER = option.Value.Path ?? throw new ArgumentNullException(I18n.Strings.LogPathNull, null as Exception);
         }
 
         public void Write(string? tag, string str, StackFrame? stackFrame = null)

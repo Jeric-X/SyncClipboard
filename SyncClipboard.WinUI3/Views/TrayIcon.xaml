@@ -11,7 +11,6 @@
     <tb:TaskbarIcon.ContextFlyout>
         <MenuFlyout AreOpenCloseAnimationsEnabled="False">
             <MenuFlyoutSeparator x:Name="_Separator" MinWidth="200" Visibility="Collapsed"/>
-            <!--<MenuFlyoutItem Text="退出" Click="MenuFlyoutItem_Click" />-->
         </MenuFlyout>
     </tb:TaskbarIcon.ContextFlyout>
 </tb:TaskbarIcon>

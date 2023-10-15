@@ -105,11 +105,11 @@ public partial class SyncSettingViewModel : ObservableObject
     {
         if (!ushort.TryParse(portString, out var port))
         {
-            return "端口号的范围是1~65535";
+            return I18n.Strings.PortRangeIs;
         }
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
-            return "用户名或密码不能为空";
+            return I18n.Strings.UsernameOrPasswordBlank;
         }
 
         ServerConfig = ServerConfig with { Password = password, Port = port, UserName = username };

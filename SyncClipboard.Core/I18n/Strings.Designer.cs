@@ -97,6 +97,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Canceled 的本地化字符串。
+        /// </summary>
+        public static string Canceled {
+            get {
+                return ResourceManager.GetString("Canceled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 This change effects after restart 的本地化字符串。
         /// </summary>
         public static string ChangingLangInfo {
@@ -106,7 +115,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Check Update 的本地化字符串。
+        ///   查找类似 Check update 的本地化字符串。
         /// </summary>
         public static string CheckUpdate {
             get {
@@ -115,7 +124,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Check Update On Startup 的本地化字符串。
+        ///   查找类似 Check update on startup 的本地化字符串。
         /// </summary>
         public static string CheckUpdateOnStartup {
             get {
@@ -124,7 +133,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Client General 的本地化字符串。
+        ///   查找类似 Client general 的本地化字符串。
         /// </summary>
         public static string ClientGeneral {
             get {
@@ -133,11 +142,47 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Clipboard Syncing 的本地化字符串。
+        ///   查找类似 Clipboard file updated 的本地化字符串。
+        /// </summary>
+        public static string ClipboardFileUpdated {
+            get {
+                return ResourceManager.GetString("ClipboardFileUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard image updated 的本地化字符串。
+        /// </summary>
+        public static string ClipboardImageUpdated {
+            get {
+                return ResourceManager.GetString("ClipboardImageUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard syncing 的本地化字符串。
         /// </summary>
         public static string ClipboardSyncing {
             get {
                 return ResourceManager.GetString("ClipboardSyncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard text updated 的本地化字符串。
+        /// </summary>
+        public static string ClipboardTextUpdated {
+            get {
+                return ResourceManager.GetString("ClipboardTextUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard updated 的本地化字符串。
+        /// </summary>
+        public static string ClipboardUpdated {
+            get {
+                return ResourceManager.GetString("ClipboardUpdated", resourceCulture);
             }
         }
         
@@ -151,7 +196,16 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Auto Detect 的本地化字符串。
+        ///   查找类似 Copy 的本地化字符串。
+        /// </summary>
+        public static string Copy {
+            get {
+                return ResourceManager.GetString("Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Auto detect 的本地化字符串。
         /// </summary>
         public static string DefaultLanguage {
             get {
@@ -160,11 +214,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Delete Server&apos;s Template File Autoly 的本地化字符串。
+        ///   查找类似 Delete server&apos;s temporary file autoly 的本地化字符串。
         /// </summary>
-        public static string DeleteServerTemplateFileAutoly {
+        public static string DeleteServerTemporaryFileAutoly {
             get {
-                return ResourceManager.GetString("DeleteServerTemplateFileAutoly", resourceCulture);
+                return ResourceManager.GetString("DeleteServerTemporaryFileAutoly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download file 的本地化字符串。
+        /// </summary>
+        public static string DownloadingFile {
+            get {
+                return ResourceManager.GetString("DownloadingFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Downloading web image 的本地化字符串。
+        /// </summary>
+        public static string DownloadingWebImage {
+            get {
+                return ResourceManager.GetString("DownloadingWebImage", resourceCulture);
             }
         }
         
@@ -178,7 +250,16 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Download Web Image 的本地化字符串。
+        ///   查找类似 Downloading status 的本地化字符串。
+        /// </summary>
+        public static string DownloadStatus {
+            get {
+                return ResourceManager.GetString("DownloadStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download web image 的本地化字符串。
         /// </summary>
         public static string DownloadWebImage {
             get {
@@ -196,7 +277,88 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Image Assistant 的本地化字符串。
+        ///   查找类似 Exit 的本地化字符串。
+        /// </summary>
+        public static string Exit {
+            get {
+                return ResourceManager.GetString("Exit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 User Login Failed 的本地化字符串。
+        /// </summary>
+        public static string FailedToAuth {
+            get {
+                return ResourceManager.GetString("FailedToAuth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to check update 的本地化字符串。
+        /// </summary>
+        public static string FailedToCheck {
+            get {
+                return ResourceManager.GetString("FailedToCheck", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to download clipboard 的本地化字符串。
+        /// </summary>
+        public static string FailedToDownloadClipboard {
+            get {
+                return ResourceManager.GetString("FailedToDownloadClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to set 的本地化字符串。
+        /// </summary>
+        public static string FailedToSet {
+            get {
+                return ResourceManager.GetString("FailedToSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to start server 的本地化字符串。
+        /// </summary>
+        public static string FailedToStartServer {
+            get {
+                return ResourceManager.GetString("FailedToStartServer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to Upload 的本地化字符串。
+        /// </summary>
+        public static string FailedToUpload {
+            get {
+                return ResourceManager.GetString("FailedToUpload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Fail to parse version from Github 的本地化字符串。
+        /// </summary>
+        public static string FailToParseVersion {
+            get {
+                return ResourceManager.GetString("FailToParseVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Found new version 的本地化字符串。
+        /// </summary>
+        public static string FoundNewVersion {
+            get {
+                return ResourceManager.GetString("FoundNewVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Image assistant 的本地化字符串。
         /// </summary>
         public static string ImageAssistant {
             get {
@@ -214,7 +376,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Image Compatibility 的本地化字符串。
+        ///   查找类似 Image compatibility 的本地化字符串。
         /// </summary>
         public static string ImageCompatibility {
             get {
@@ -232,7 +394,52 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Login With Browser 的本地化字符串。
+        ///   查找类似 It&apos;s the latest version 的本地化字符串。
+        /// </summary>
+        public static string ItsLatestVersion {
+            get {
+                return ResourceManager.GetString("ItsLatestVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Language 的本地化字符串。
+        /// </summary>
+        public static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Latest released version 的本地化字符串。
+        /// </summary>
+        public static string LatestReleasedVersion {
+            get {
+                return ResourceManager.GetString("LatestReleasedVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 License 的本地化字符串。
+        /// </summary>
+        public static string License {
+            get {
+                return ResourceManager.GetString("License", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Local version 的本地化字符串。
+        /// </summary>
+        public static string LocalVersion {
+            get {
+                return ResourceManager.GetString("LocalVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Login with browser 的本地化字符串。
         /// </summary>
         public static string LoginWithBrowser {
             get {
@@ -241,7 +448,25 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Max File Size To Upload (MB) 的本地化字符串。
+        ///   查找类似 Log path is null 的本地化字符串。
+        /// </summary>
+        public static string LogPathNull {
+            get {
+                return ResourceManager.GetString("LogPathNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Log remain days 的本地化字符串。
+        /// </summary>
+        public static string LogRemainDays {
+            get {
+                return ResourceManager.GetString("LogRemainDays", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Max file size to upload (MB) 的本地化字符串。
         /// </summary>
         public static string MaxFileSizeToUpload {
             get {
@@ -250,7 +475,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Mixed Client Mode 的本地化字符串。
+        ///   查找类似 Mixed client mode 的本地化字符串。
         /// </summary>
         public static string MixedClientMode {
             get {
@@ -295,7 +520,61 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Open Source Dependencies 的本地化字符串。
+        ///   查找类似 Open 的本地化字符串。
+        /// </summary>
+        public static string Open {
+            get {
+                return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open config file 的本地化字符串。
+        /// </summary>
+        public static string OpenConfigFile {
+            get {
+                return ResourceManager.GetString("OpenConfigFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open config file folder 的本地化字符串。
+        /// </summary>
+        public static string OpenConfigFileFolder {
+            get {
+                return ResourceManager.GetString("OpenConfigFileFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Update 的本地化字符串。
+        /// </summary>
+        public static string OpenDownloadPage {
+            get {
+                return ResourceManager.GetString("OpenDownloadPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open folder 的本地化字符串。
+        /// </summary>
+        public static string OpenFolder {
+            get {
+                return ResourceManager.GetString("OpenFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open in browser 的本地化字符串。
+        /// </summary>
+        public static string OpenInBrowser {
+            get {
+                return ResourceManager.GetString("OpenInBrowser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open source dependencies 的本地化字符串。
         /// </summary>
         public static string OpenSourceDependencies {
             get {
@@ -331,6 +610,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Port range is 1~65535 的本地化字符串。
+        /// </summary>
+        public static string PortRangeIs {
+            get {
+                return ResourceManager.GetString("PortRangeIs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 1 的本地化字符串。
         /// </summary>
         public static string PortTabRepeat {
@@ -340,7 +628,16 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Query Interval (sec) 的本地化字符串。
+        ///   查找类似 Preparing 的本地化字符串。
+        /// </summary>
+        public static string Preparing {
+            get {
+                return ResourceManager.GetString("Preparing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Query interval (sec) 的本地化字符串。
         /// </summary>
         public static string QueryInterval {
             get {
@@ -358,6 +655,33 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Reload config file 的本地化字符串。
+        /// </summary>
+        public static string ReloadConfigFile {
+            get {
+                return ResourceManager.GetString("ReloadConfigFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Request timeout 的本地化字符串。
+        /// </summary>
+        public static string RequestTimeout {
+            get {
+                return ResourceManager.GetString("RequestTimeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Run at system startup 的本地化字符串。
+        /// </summary>
+        public static string RunAtSystemStartup {
+            get {
+                return ResourceManager.GetString("RunAtSystemStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Select 的本地化字符串。
         /// </summary>
         public static string SelectFolder {
@@ -367,7 +691,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Send Notification After Update Local Clipboard 的本地化字符串。
+        ///   查找类似 Send notification after update local clipboard 的本地化字符串。
         /// </summary>
         public static string SendNotificationAfterUpdateLocalClipboard {
             get {
@@ -376,7 +700,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Self-Host Server 的本地化字符串。
+        ///   查找类似 Self-host server 的本地化字符串。
         /// </summary>
         public static string Server {
             get {
@@ -394,11 +718,20 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Software Home Page 的本地化字符串。
+        ///   查找类似 Software home page 的本地化字符串。
         /// </summary>
         public static string SoftwareHomePage {
             get {
                 return ResourceManager.GetString("SoftwareHomePage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Local version v{0}. Lasted released version {1}. 的本地化字符串。
+        /// </summary>
+        public static string SoftwareUpdateInfo {
+            get {
+                return ResourceManager.GetString("SoftwareUpdateInfo", resourceCulture);
             }
         }
         
@@ -430,11 +763,47 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Timeout Period (sec) 的本地化字符串。
+        ///   查找类似 Timeout 的本地化字符串。
+        /// </summary>
+        public static string Timeout {
+            get {
+                return ResourceManager.GetString("Timeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Timeout period (sec) 的本地化字符串。
         /// </summary>
         public static string TimeoutPeriod {
             get {
                 return ResourceManager.GetString("TimeoutPeriod", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 200 的本地化字符串。
+        /// </summary>
+        public static string TrayIconContextMenuMinWidth {
+            get {
+                return ResourceManager.GetString("TrayIconContextMenuMinWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed, tried {0} times, error message: {1} 的本地化字符串。
+        /// </summary>
+        public static string UploadFailedStatus {
+            get {
+                return ResourceManager.GetString("UploadFailedStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed, tried {0} times, error message: timeout 的本地化字符串。
+        /// </summary>
+        public static string UploadFailedStatusTimeout {
+            get {
+                return ResourceManager.GetString("UploadFailedStatusTimeout", resourceCulture);
             }
         }
         
@@ -457,11 +826,20 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 User Name 的本地化字符串。
+        ///   查找类似 User name 的本地化字符串。
         /// </summary>
         public static string UserName {
             get {
                 return ResourceManager.GetString("UserName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Username or password can&apos;t be blank 的本地化字符串。
+        /// </summary>
+        public static string UsernameOrPasswordBlank {
+            get {
+                return ResourceManager.GetString("UsernameOrPasswordBlank", resourceCulture);
             }
         }
         
@@ -475,7 +853,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Use Self-Host Server 的本地化字符串。
+        ///   查找类似 Use self-host server 的本地化字符串。
         /// </summary>
         public static string UseSelfHostServer {
             get {

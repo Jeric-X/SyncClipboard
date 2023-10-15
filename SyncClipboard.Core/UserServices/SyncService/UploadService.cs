@@ -13,8 +13,8 @@ public class UploadService : ClipboardHander
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
 
-    private const string SERVICE_NAME_SIMPLE = "上传";
-    public override string SERVICE_NAME => "同步剪切板";
+    private readonly static string SERVICE_NAME_SIMPLE = I18n.Strings.UploadService;
+    public override string SERVICE_NAME => I18n.Strings.ClipboardSyncing;
     public override string LOG_TAG => "PUSH";
 
     protected override ILogger Logger => _logger;
@@ -191,13 +191,13 @@ public class UploadService : ClipboardHander
             catch (TaskCanceledException)
             {
                 cancelToken.ThrowIfCancellationRequested();
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：请求超时", true);
-                errMessage = "连接超时";
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, string.Format(I18n.Strings.UploadFailedStatusTimeout, i + 1), true);
+                errMessage = I18n.Strings.Timeout;
             }
             catch (Exception ex)
             {
                 errMessage = ex.Message;
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"失败，正在第{i + 1}次尝试，错误原因：{errMessage}", true);
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, string.Format(I18n.Strings.UploadFailedStatus, i + 1, errMessage), true);
             }
             finally
             {
@@ -207,8 +207,8 @@ public class UploadService : ClipboardHander
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
         var status = profile.ToolTip();
-        _notificationManager.SendText("上传失败：" + status, errMessage);
-        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"上传失败：{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
+        _notificationManager.SendText(I18n.Strings.FailedToUpload + status, errMessage);
+        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
     }
 
     private async Task CleanServerTempFile(CancellationToken cancelToken)

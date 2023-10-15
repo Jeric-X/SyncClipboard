@@ -119,7 +119,7 @@
                 <labs:SettingsCard Header="{x:Bind i18n:Strings.MaxFileSizeToUpload}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemplateFileAutoly}">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemporaryFileAutoly}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>

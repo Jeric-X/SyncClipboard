@@ -71,12 +71,12 @@ public class ImageProfile : FileProfile
     {
         var path = FullPath ?? GetTempLocalFilePath();
         notification.SendImage(
-            "图片同步成功",
+            I18n.Strings.ClipboardImageUpdated,
             FileName,
             new Uri(path),
             DefaultButton(),
-            new Button("打开文件夹", new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
-            new Button("打开", new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
+            new Button(I18n.Strings.OpenFolder, new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+            new Button(I18n.Strings.Open, new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
         );
     }
 }

@@ -70,7 +70,7 @@ public sealed partial class NextCloudLogInPage : Page
         }
         catch (Exception ex)
         {
-            App.Current.Services.GetRequiredService<NotificationManager>().SendText("设置失败", ex.Message);
+            App.Current.Services.GetRequiredService<NotificationManager>().SendText(Core.I18n.Strings.FailedToSet, ex.Message);
         }
     }
 }

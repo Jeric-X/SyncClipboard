@@ -40,19 +40,21 @@ public partial class AboutViewModel
             if (needUpdate)
             {
                 NotificationManager.SendText(
-                    "检测到新版本",
+                    I18n.Strings.FoundNewVersion,
                     $"v{Env.VERSION} -> {newVersion}",
-                    new Button("打开下载页面", () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
+                    new Button(I18n.Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
                 );
             }
             else
             {
-                NotificationManager.SendText("当前版本为最新版本", $"本地版本v{Env.VERSION}，最新发布版本{newVersion}");
+                NotificationManager.SendText(
+                    I18n.Strings.ItsLatestVersion,
+                    string.Format(I18n.Strings.SoftwareUpdateInfo, Env.VERSION, newVersion));
             }
         }
         catch (Exception ex)
         {
-            NotificationManager.SendText("检查更新失败", ex.Message);
+            NotificationManager.SendText(I18n.Strings.FailedToCheck, ex.Message);
         }
     }
 }

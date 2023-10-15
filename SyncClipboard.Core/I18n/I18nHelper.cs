@@ -29,6 +29,8 @@ public class I18nHelper
     {
         var oldCulture = CultureInfo.CurrentUICulture;
         Interlocked.CompareExchange(ref DefaultUICulture, oldCulture, null);
-        CultureInfo.CurrentUICulture = new CultureInfo(languageTag);
+        var newCulture = new CultureInfo(languageTag);
+        CultureInfo.CurrentUICulture = newCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = newCulture;
     }
 }

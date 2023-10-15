@@ -15,12 +15,11 @@ namespace SyncClipboard.Core
     public class ProgramWorkflow
     {
         public IServiceProvider Services { get; }
-        public ServiceManager ServiceManager { get; }
+        private ServiceManager? ServiceManager { get; set; }
 
         public ProgramWorkflow(IServiceProvider serviceProvider)
         {
             Services = serviceProvider;
-            ServiceManager = Services.GetRequiredService<ServiceManager>();
         }
 
         private static void InitLanguage(ConfigManager configManager)
@@ -39,7 +38,7 @@ namespace SyncClipboard.Core
             InitLanguage(configManager);
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
-            contextMenu.AddMenuItem(new MenuItem("设置", Services.GetRequiredService<IMainWindow>().Show), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, Services.GetRequiredService<IMainWindow>().Show), "Top Group");
 
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
             trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
@@ -57,6 +56,7 @@ namespace SyncClipboard.Core
 
             PrepareWorkingFolder(configManager);
             CheckUpdate();
+            ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
             trayIcon.Create();
         }
@@ -76,9 +76,9 @@ namespace SyncClipboard.Core
                     if (needUpdate)
                     {
                         notificationManager.SendText(
-                            "检测到新版本",
+                            Strings.FoundNewVersion,
                             $"v{Env.VERSION} -> {newVersion}",
-                            new Button("打开下载页面", () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
+                            new Button(Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
                         );
                     }
                 }
@@ -90,7 +90,7 @@ namespace SyncClipboard.Core
 
         public void Stop()
         {
-            ServiceManager.StopAllService();
+            ServiceManager?.StopAllService();
             var disposable = Services as IDisposable;
             disposable?.Dispose();
         }
