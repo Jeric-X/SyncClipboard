@@ -331,7 +331,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Failed to Upload 的本地化字符串。
+        ///   查找类似 Failed to Upload:  的本地化字符串。
         /// </summary>
         public static string FailedToUpload {
             get {
@@ -664,15 +664,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Request timeout 的本地化字符串。
-        /// </summary>
-        public static string RequestTimeout {
-            get {
-                return ResourceManager.GetString("RequestTimeout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Run at system startup 的本地化字符串。
         /// </summary>
         public static string RunAtSystemStartup {
@@ -700,7 +691,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Self-host server 的本地化字符串。
+        ///   查找类似 Built-in server 的本地化字符串。
         /// </summary>
         public static string Server {
             get {
@@ -853,7 +844,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Use self-host server 的本地化字符串。
+        ///   查找类似 Use built-in server 的本地化字符串。
         /// </summary>
         public static string UseSelfHostServer {
             get {

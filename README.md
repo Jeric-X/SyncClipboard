@@ -1,6 +1,11 @@
 # SyncClipboard
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=WinUI3)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3AWinUI3)
-[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)
+[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)  
+
+中文 | [English](docs/README_EN.md)  
+
+<details>
+<summary>目录</summary>
 
 - [SyncClipboard](#syncclipboard)
   - [功能](#功能)
@@ -25,13 +30,13 @@
     - [其他查询/创建/删除](#其他查询创建删除)
   - [项目依赖](#项目依赖)
 
+</details>
 
 ## 功能
 
-- 剪切板同步，使用WebDAV服务器作为中转站，支持文字、图片和文件  
+- 剪切板同步，使用WebDAV服务器（或软件内置服务器）作为中转站，支持文字、图片和文件  
 - 优化图片类型的剪切板，功能有：
-  - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件
-  - 从文件系统复制图片类的文件时，可以直接向支持图片的文本框粘贴图片
+  - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件，反之亦然
   - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器拷贝动态图的问题（大多网站有认证，适用范围有限，支持bilibili动态图片）
   - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪切板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
 
@@ -49,18 +54,14 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 内置服务器并不是WebDAV实现
 
 ### Windows客户端内置服务器
-[Windows客户端](#Windows)自带服务器实现，可以作为本机和其他客户端的服务器。  
-在配置文件`SyncClipboard.json`中的`ServerService`部分修改`端口号`，`用户名`，`密码`，服务器注意事项同上
+[Windows客户端](#Windows)内置了服务器。  
 
 ### 其他WebDAV服务器
 可以使用支持WebDAV协议的网盘作为服务器  
 测试过的服务器：   
-- [x] NextCloud 
-- [x] 坚果云  
+- [x] [Nextcloud](https://nextcloud.com/) 
+- [x] [坚果云](https://www.jianguoyun.com/)
 - [x] [AList](https://alist.nn.ci/)
-
-注：
-- 坚果云需要开启WebDAV独立密码，并且一定时间内有请求次数限制
 
 ## 客户端
 ### Windows   
@@ -79,7 +80,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 <details>
 <summary>展开/折叠截图</summary>
 
-![](assets/WinUI.png)
+![](docs/image/WinUI.png)
 
 </details>
 
@@ -90,7 +91,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 <details>
 <summary>展开/折叠截图</summary>
 
-![](assets/Winform.png)
+![](docs/image/Winform.png)
 
 </details>
 
@@ -111,7 +112,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。windows端可以自定义修改更多配置
 - user
 - password
-- url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，不使用windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端会在设置服务器时自动创建`file`文件夹
+- url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，例如`https://domain.com/dav/folder1/working%20folder`，不要使用这个文件夹存储其他文件。不使用windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端会在设置服务器时自动创建`file`文件夹
 
 ## API
 
@@ -150,8 +151,8 @@ PUT /SyncClipboard.json
 
 ### 其他查询/创建/删除
 ```
-PROPFIND    /           // always return http code 200
-PROPFIND    /file       // always return http code 200
+PROPFIND    /
+PROPFIND    /file
 MKCOL       /file
 DELETE      /file
 ```

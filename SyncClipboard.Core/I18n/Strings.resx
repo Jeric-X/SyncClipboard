@@ -121,7 +121,7 @@
     <value>Auto detect</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>Self-host server</value>
+    <value>Built-in server</value>
   </data>
   <data name="SystemSettings" xml:space="preserve">
     <value>Settings</value>
@@ -190,7 +190,7 @@
     <value>Clipboard syncing</value>
   </data>
   <data name="UseSelfHostServer" xml:space="preserve">
-    <value>Use self-host server</value>
+    <value>Use built-in server</value>
   </data>
   <data name="UseNextcloud" xml:space="preserve">
     <value>Use Nextcloud</value>
