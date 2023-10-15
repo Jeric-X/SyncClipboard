@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
       mc:Ignorable="d">
@@ -33,7 +34,7 @@
                     <StackPanel Grid.Column="0" Spacing="5">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <FontIcon Glyph="&#xE12B;" FontSize="15" FontFamily="Segoe Fluent Icons" />
-                            <TextBlock Margin="0,0,0,0" Text="地址" FontSize="15" />
+                            <TextBlock Margin="0,0,0,0" Text="{x:Bind i18n:Strings.Address}" FontSize="15" />
                         </StackPanel>
                         <TextBox PlaceholderText="https://" Text="{x:Bind _viewModel.UserInputUrl, Mode=TwoWay}" />
                     </StackPanel>
@@ -41,14 +42,14 @@
                             MinWidth="40"
                             Margin="10,0,0,0"
                             VerticalAlignment="Bottom"
-                            Content="使用浏览器登录"
+                            Content="{x:Bind i18n:Strings.LoginWithBrowser}"
                             Command="{x:Bind _viewModel.ComfirmUrlCommand}" />
                     <Button Grid.Column="2"
                             MinWidth="40"
                             Margin="10,0,0,0"
                             VerticalAlignment="Bottom"
                             Visibility="{x:Bind BoolToVisibility(_viewModel.CanCancel), Mode=OneWay}"
-                            Content="取消"
+                            Content="{x:Bind i18n:Strings.Cancel}"
                             Command="{x:Bind _viewModel.CancelCommand}" />
 
                 </Grid>
@@ -93,8 +94,11 @@
                             Margin="16,0,0,0"
                             Orientation="Vertical"
                             Spacing="10">
-                    <Button x:Name="_SetFolderButton" Content="选择文件夹" Click="Button_Click" />
-                    <Button HorizontalAlignment="Stretch" Content="刷新" Command="{x:Bind _viewModel.RefreshCommand}" />
+                    <Button x:Name="_SetFolderButton"
+                            HorizontalAlignment="Stretch"
+                            Content="{x:Bind i18n:Strings.SelectFolder}"
+                            Click="Button_Click" />
+                    <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Refresh}" Command="{x:Bind _viewModel.RefreshCommand}" />
                 </StackPanel>
             </Grid>
         </Border>

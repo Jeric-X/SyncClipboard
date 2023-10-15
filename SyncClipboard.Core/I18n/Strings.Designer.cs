@@ -106,6 +106,42 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Check Update 的本地化字符串。
+        /// </summary>
+        public static string CheckUpdate {
+            get {
+                return ResourceManager.GetString("CheckUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Check Update On Startup 的本地化字符串。
+        /// </summary>
+        public static string CheckUpdateOnStartup {
+            get {
+                return ResourceManager.GetString("CheckUpdateOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Client General 的本地化字符串。
+        /// </summary>
+        public static string ClientGeneral {
+            get {
+                return ResourceManager.GetString("ClientGeneral", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard Syncing 的本地化字符串。
+        /// </summary>
+        public static string ClipboardSyncing {
+            get {
+                return ResourceManager.GetString("ClipboardSyncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Confirm 的本地化字符串。
         /// </summary>
         public static string Confirm {
@@ -120,6 +156,96 @@ namespace SyncClipboard.Core.I18n {
         public static string DefaultLanguage {
             get {
                 return ResourceManager.GetString("DefaultLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Delete Server&apos;s Template File Autoly 的本地化字符串。
+        /// </summary>
+        public static string DeleteServerTemplateFileAutoly {
+            get {
+                return ResourceManager.GetString("DeleteServerTemplateFileAutoly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download Service 的本地化字符串。
+        /// </summary>
+        public static string DownloadService {
+            get {
+                return ResourceManager.GetString("DownloadService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download Web Image 的本地化字符串。
+        /// </summary>
+        public static string DownloadWebImage {
+            get {
+                return ResourceManager.GetString("DownloadWebImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download the original file and copy it after copying a image in browser 的本地化字符串。
+        /// </summary>
+        public static string DownloadWebImageDescription {
+            get {
+                return ResourceManager.GetString("DownloadWebImageDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Image Assistant 的本地化字符串。
+        /// </summary>
+        public static string ImageAssistant {
+            get {
+                return ResourceManager.GetString("ImageAssistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Paste image to a textbox directly after copying a image file from file system, and vice versa 的本地化字符串。
+        /// </summary>
+        public static string ImageAssistantDescription {
+            get {
+                return ResourceManager.GetString("ImageAssistantDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Image Compatibility 的本地化字符串。
+        /// </summary>
+        public static string ImageCompatibility {
+            get {
+                return ResourceManager.GetString("ImageCompatibility", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Copy the transcoded temporary image file (jpg or gif) after copying a modern image file (heic, webp, etc.) 的本地化字符串。
+        /// </summary>
+        public static string ImageCompatibilityDescription {
+            get {
+                return ResourceManager.GetString("ImageCompatibilityDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Login With Browser 的本地化字符串。
+        /// </summary>
+        public static string LoginWithBrowser {
+            get {
+                return ResourceManager.GetString("LoginWithBrowser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Max File Size To Upload (MB) 的本地化字符串。
+        /// </summary>
+        public static string MaxFileSizeToUpload {
+            get {
+                return ResourceManager.GetString("MaxFileSizeToUpload", resourceCulture);
             }
         }
         
@@ -169,6 +295,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Open Source Dependencies 的本地化字符串。
+        /// </summary>
+        public static string OpenSourceDependencies {
+            get {
+                return ResourceManager.GetString("OpenSourceDependencies", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Password 的本地化字符串。
         /// </summary>
         public static string Password {
@@ -205,6 +340,42 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Query Interval (sec) 的本地化字符串。
+        /// </summary>
+        public static string QueryInterval {
+            get {
+                return ResourceManager.GetString("QueryInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Refresh 的本地化字符串。
+        /// </summary>
+        public static string Refresh {
+            get {
+                return ResourceManager.GetString("Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Select 的本地化字符串。
+        /// </summary>
+        public static string SelectFolder {
+            get {
+                return ResourceManager.GetString("SelectFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Send Notification After Update Local Clipboard 的本地化字符串。
+        /// </summary>
+        public static string SendNotificationAfterUpdateLocalClipboard {
+            get {
+                return ResourceManager.GetString("SendNotificationAfterUpdateLocalClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Self-Host Server 的本地化字符串。
         /// </summary>
         public static string Server {
@@ -219,6 +390,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Settings {
             get {
                 return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Software Home Page 的本地化字符串。
+        /// </summary>
+        public static string SoftwareHomePage {
+            get {
+                return ResourceManager.GetString("SoftwareHomePage", resourceCulture);
             }
         }
         
@@ -250,6 +430,33 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Timeout Period (sec) 的本地化字符串。
+        /// </summary>
+        public static string TimeoutPeriod {
+            get {
+                return ResourceManager.GetString("TimeoutPeriod", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Upload Service 的本地化字符串。
+        /// </summary>
+        public static string UploadService {
+            get {
+                return ResourceManager.GetString("UploadService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Use Nextcloud 的本地化字符串。
+        /// </summary>
+        public static string UseNextcloud {
+            get {
+                return ResourceManager.GetString("UseNextcloud", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 User Name 的本地化字符串。
         /// </summary>
         public static string UserName {
@@ -264,6 +471,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UserNameTabRepeat {
             get {
                 return ResourceManager.GetString("UserNameTabRepeat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Use Self-Host Server 的本地化字符串。
+        /// </summary>
+        public static string UseSelfHostServer {
+            get {
+                return ResourceManager.GetString("UseSelfHostServer", resourceCulture);
             }
         }
     }

@@ -73,16 +73,13 @@
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="剪切板同步"
-                               Description="自动将本机和设置了相同服务器的其他设备的剪切板同步"
-                               IsExpanded="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}"
-                               IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.UseSelfHostServer}">
                     <ToggleSwitch x:Name="_UseLocalServerToggle"
                                   OnContent="{x:Bind i18n:Strings.On}"
                                   OffContent="{x:Bind i18n:Strings.Off}"
@@ -110,29 +107,29 @@
                         </Style>
                     </labs:SettingsCard.Resources>-->
                     <labs:SettingsCard.Description>
-                        <HyperlinkButton Content="登录到Nextcloud" Click="HyperlinkButton_Click" />
+                        <HyperlinkButton Content="{x:Bind i18n:Strings.UseNextcloud}" Click="HyperlinkButton_Click" />
                     </labs:SettingsCard.Description>
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="轮询服务器间隔（秒）">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="超时时间（秒）">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="最大上传文件大小（MB）">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.MaxFileSizeToUpload}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="自动删除服务器上的临时文件">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemplateFileAutoly}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="通用设置" Description="普通模式和混合模式都涉及的选项" IsExpanded="True">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.ClientGeneral}" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE90F;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard Header="下载远程剪切板后发送通知">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>

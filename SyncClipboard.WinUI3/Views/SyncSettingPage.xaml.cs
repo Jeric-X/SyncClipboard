@@ -91,9 +91,9 @@ namespace SyncClipboard.WinUI3.Views
         private string ClientConfigDescription(SyncConfig config, bool? show)
         {
             return
-@$"地　址：{config.RemoteURL}
-用户名：{config.UserName}
-密　码：{GetPasswordString(config.Password, show)}";
+@$"{Strings.Address}{new string('\t', int.Parse(Strings.PortTabRepeat))}: {config.RemoteURL}
+{Strings.UserName}{new string('\t', int.Parse(Strings.UserNameTabRepeat))}: {config.UserName}
+{Strings.Password}{new string('\t', int.Parse(Strings.PasswordTabRepeat))}: {GetPasswordString(config.Password, show)}";
         }
 
         private void HyperlinkButton_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs _1)

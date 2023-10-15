@@ -11,7 +11,7 @@ public class PageDefinition
     public static readonly PageDefinition SystemSetting = new("SystemSetting", I18n.Strings.SystemSettings);
     public static readonly PageDefinition About = new("About", I18n.Strings.About);
     public static readonly PageDefinition License = new("License", "License");
-    public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", "登录到Nextcloud");
+    public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", I18n.Strings.UseNextcloud);
 
     private PageDefinition(string name, string title)
     {

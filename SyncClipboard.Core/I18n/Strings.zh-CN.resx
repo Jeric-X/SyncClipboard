@@ -186,4 +186,76 @@
   <data name="Address" xml:space="preserve">
     <value>地　址</value>
   </data>
+  <data name="ClipboardSyncing" xml:space="preserve">
+    <value>剪切板同步</value>
+  </data>
+  <data name="UseSelfHostServer" xml:space="preserve">
+    <value>使用本机服务器</value>
+  </data>
+  <data name="UseNextcloud" xml:space="preserve">
+    <value>登录到Nextcloud</value>
+  </data>
+  <data name="QueryInterval" xml:space="preserve">
+    <value>轮询服务器间隔（秒）</value>
+  </data>
+  <data name="TimeoutPeriod" xml:space="preserve">
+    <value>超时时间（秒）</value>
+  </data>
+  <data name="MaxFileSizeToUpload" xml:space="preserve">
+    <value>最大上传文件大小（MB）</value>
+  </data>
+  <data name="DeleteServerTemplateFileAutoly" xml:space="preserve">
+    <value>自动删除服务器上的临时文件</value>
+  </data>
+  <data name="ClientGeneral" xml:space="preserve">
+    <value>客户端通用</value>
+  </data>
+  <data name="SendNotificationAfterUpdateLocalClipboard" xml:space="preserve">
+    <value>更新本机剪切板后发送通知</value>
+  </data>
+  <data name="LoginWithBrowser" xml:space="preserve">
+    <value>使用浏览器登录</value>
+  </data>
+  <data name="SelectFolder" xml:space="preserve">
+    <value>选择文件夹</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="ImageAssistant" xml:space="preserve">
+    <value>图片轻松拷贝</value>
+  </data>
+  <data name="ImageAssistantDescription" xml:space="preserve">
+    <value>复制图片文件后可以直接向文本框内粘贴，反之亦然</value>
+  </data>
+  <data name="ImageCompatibility" xml:space="preserve">
+    <value>图片兼容性优化</value>
+  </data>
+  <data name="ImageCompatibilityDescription" xml:space="preserve">
+    <value>复制单个heic/webp等格式文件时改为复制转换后的jpg或gif临时文件</value>
+  </data>
+  <data name="DownloadWebImage" xml:space="preserve">
+    <value>下载网页原图</value>
+  </data>
+  <data name="DownloadWebImageDescription" xml:space="preserve">
+    <value>复制网页图片时下载原图到剪切板</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>检查更新</value>
+  </data>
+  <data name="CheckUpdateOnStartup" xml:space="preserve">
+    <value>启动时检查更新</value>
+  </data>
+  <data name="SoftwareHomePage" xml:space="preserve">
+    <value>软件主页</value>
+  </data>
+  <data name="OpenSourceDependencies" xml:space="preserve">
+    <value>开源软件依赖</value>
+  </data>
+  <data name="UploadService" xml:space="preserve">
+    <value>上传服务</value>
+  </data>
+  <data name="DownloadService" xml:space="preserve">
+    <value>下载服务</value>
+  </data>
 </root>

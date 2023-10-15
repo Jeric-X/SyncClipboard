@@ -186,4 +186,76 @@
   <data name="Address" xml:space="preserve">
     <value>Address</value>
   </data>
+  <data name="ClipboardSyncing" xml:space="preserve">
+    <value>Clipboard Syncing</value>
+  </data>
+  <data name="UseSelfHostServer" xml:space="preserve">
+    <value>Use Self-Host Server</value>
+  </data>
+  <data name="UseNextcloud" xml:space="preserve">
+    <value>Use Nextcloud</value>
+  </data>
+  <data name="QueryInterval" xml:space="preserve">
+    <value>Query Interval (sec)</value>
+  </data>
+  <data name="TimeoutPeriod" xml:space="preserve">
+    <value>Timeout Period (sec)</value>
+  </data>
+  <data name="MaxFileSizeToUpload" xml:space="preserve">
+    <value>Max File Size To Upload (MB)</value>
+  </data>
+  <data name="DeleteServerTemplateFileAutoly" xml:space="preserve">
+    <value>Delete Server's Template File Autoly</value>
+  </data>
+  <data name="ClientGeneral" xml:space="preserve">
+    <value>Client General</value>
+  </data>
+  <data name="SendNotificationAfterUpdateLocalClipboard" xml:space="preserve">
+    <value>Send Notification After Update Local Clipboard</value>
+  </data>
+  <data name="LoginWithBrowser" xml:space="preserve">
+    <value>Login With Browser</value>
+  </data>
+  <data name="SelectFolder" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ImageAssistant" xml:space="preserve">
+    <value>Image Assistant</value>
+  </data>
+  <data name="ImageAssistantDescription" xml:space="preserve">
+    <value>Paste image to a textbox directly after copying a image file from file system, and vice versa</value>
+  </data>
+  <data name="ImageCompatibility" xml:space="preserve">
+    <value>Image Compatibility</value>
+  </data>
+  <data name="ImageCompatibilityDescription" xml:space="preserve">
+    <value>Copy the transcoded temporary image file (jpg or gif) after copying a modern image file (heic, webp, etc.)</value>
+  </data>
+  <data name="DownloadWebImage" xml:space="preserve">
+    <value>Download Web Image</value>
+  </data>
+  <data name="DownloadWebImageDescription" xml:space="preserve">
+    <value>Download the original file and copy it after copying a image in browser</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Check Update</value>
+  </data>
+  <data name="CheckUpdateOnStartup" xml:space="preserve">
+    <value>Check Update On Startup</value>
+  </data>
+  <data name="SoftwareHomePage" xml:space="preserve">
+    <value>Software Home Page</value>
+  </data>
+  <data name="OpenSourceDependencies" xml:space="preserve">
+    <value>Open Source Dependencies</value>
+  </data>
+  <data name="UploadService" xml:space="preserve">
+    <value>Upload Service</value>
+  </data>
+  <data name="DownloadService" xml:space="preserve">
+    <value>Download Service</value>
+  </data>
 </root>
