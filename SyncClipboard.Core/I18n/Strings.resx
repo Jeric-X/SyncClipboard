@@ -169,7 +169,7 @@
     <value>Mixed client mode</value>
   </data>
   <data name="MixedClientOnInfo" xml:space="preserve">
-    <value>On: When clients update/get clipboard info from this server, directly operate this machie's clipboard. So this machine's clipboard is shared forcely and with no delay.</value>
+    <value>On: When clients update/get clipboard infomation to/from this server, directly operate this machie's clipboard. So this machine's clipboard is shared forcely and with no delay.</value>
   </data>
   <data name="MixedClientOffInfo" xml:space="preserve">
     <value>Off: Use standalone files to save clients' clipboard information.</value>
@@ -205,13 +205,13 @@
     <value>Max file size to upload (MB)</value>
   </data>
   <data name="DeleteServerTemporaryFileAutoly" xml:space="preserve">
-    <value>Delete server's temporary file autoly</value>
+    <value>Delete server's temporary file automatically</value>
   </data>
   <data name="ClientGeneral" xml:space="preserve">
     <value>Client general</value>
   </data>
   <data name="SendNotificationAfterUpdateLocalClipboard" xml:space="preserve">
-    <value>Send notification after update local clipboard</value>
+    <value>Send notification after updating local clipboard</value>
   </data>
   <data name="LoginWithBrowser" xml:space="preserve">
     <value>Login with browser</value>

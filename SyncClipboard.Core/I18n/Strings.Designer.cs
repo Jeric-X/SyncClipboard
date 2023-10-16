@@ -214,7 +214,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Delete server&apos;s temporary file autoly 的本地化字符串。
+        ///   查找类似 Delete server&apos;s temporary file automatically 的本地化字符串。
         /// </summary>
         public static string DeleteServerTemporaryFileAutoly {
             get {
@@ -493,7 +493,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 On: When clients update/get clipboard info from this server, directly operate this machie&apos;s clipboard. So this machine&apos;s clipboard is shared forcely and with no delay. 的本地化字符串。
+        ///   查找类似 On: When clients update/get clipboard infomation to/from this server, directly operate this machie&apos;s clipboard. So this machine&apos;s clipboard is shared forcely and with no delay. 的本地化字符串。
         /// </summary>
         public static string MixedClientOnInfo {
             get {
@@ -682,7 +682,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Send notification after update local clipboard 的本地化字符串。
+        ///   查找类似 Send notification after updating local clipboard 的本地化字符串。
         /// </summary>
         public static string SendNotificationAfterUpdateLocalClipboard {
             get {

@@ -1,0 +1,146 @@
+{
+  "categories": [
+    {
+      "id": "accb6a5b-60a3-4ba5-921a-f9cd772067aa",
+      "name": "Shortcuts",
+      "shortcuts": [
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "codeOnSuccess": "showToast(\u0027uploaded\u0027);",
+          "contentType": "application/json",
+          "description": "",
+          "iconName": "freepik_upload",
+          "id": "d6a958cb-3fa6-4c79-b342-229008bfac8a",
+          "method": "PUT",
+          "name": "Upload",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "proxy": "",
+          "quickSettingsTileShortcut": true,
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/SyncClipboard.json",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\nconst type \u003d profile.Type\n\nif (type \u003d\u003d \u0027Text\u0027) {\n    const ClibboardText \u003d profile.Clipboard;\n    copyToClipboard(ClibboardText);\n    showToast(\u0027Copied\\n\u0027 + ClibboardText);\n\n    const httpstr \u003d httpString(ClibboardText);\n\n    if (httpstr) {\n        if (confirm(\u0027Open Url in Browser?\u0027)) {\n            openUrl(httpstr[0]);\n        }\n    }\n}\n\nif (type \u003d\u003d \u0027File\u0027 || type \u003d\u003d \u0027Image\u0027) {\n    const downloadUrl \u003d getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.File)\n    copyToClipboard(profile.File);\n    showToast(\u0027File name copied, downloading\\n\u0027 + profile.File);\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\n    enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n}\n\nfunction httpString(s) {\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\n    s \u003d s.match(reg);\n    return (s)\n}",
+          "iconName": "freepik_download",
+          "id": "91cf41c5-da0c-45b5-988c-9f636e135abd",
+          "name": "Download",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "proxy": "",
+          "quickSettingsTileShortcut": true,
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/SyncClipboard.json",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "codeOnPrepare": "setVariable(/*[variable]*/\"d12cab01-6d2b-44aa-a1fb-dfddc6fe7895\"/*[/variable]*/, selectedFiles[0].name);",
+          "codeOnSuccess": "enqueueShortcut(\u0027Upload File Base\u0027)",
+          "contentType": "application/json",
+          "description": "Use from share sheet",
+          "iconName": "freepik_upload",
+          "id": "2b8e95a4-2ece-41a1-aace-f8f80c0497fb",
+          "method": "PUT",
+          "name": "Upload File",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "proxy": "",
+          "requestBodyType": "file",
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/file/{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        }
+      ]
+    },
+    {
+      "id": "316553f3-4bb0-4e10-806b-0de26e10fb2a",
+      "name": "Base",
+      "shortcutClickBehavior": "edit",
+      "shortcuts": [
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}\",\"Clipboard\":\"\",\"Type\":\"File\"}",
+          "codeOnSuccess": "showToast(\u0027Uploaded\u0027);",
+          "contentType": "application/json",
+          "iconName": "freepik_upload",
+          "id": "2424dcac-6fa0-4ff9-849b-63a56d63c79f",
+          "method": "PUT",
+          "name": "Upload File Base",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "proxy": "",
+          "responseHandling": {
+            "successOutput": "none"
+          },
+          "url": "{{136751b5-5f38-49fc-81dc-80a825804203}}/SyncClipboard.json",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        },
+        {
+          "authentication": "basic",
+          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
+          "contentType": "application/json",
+          "description": "",
+          "iconName": "flat_color_folder",
+          "id": "1e693964-ab59-4e9c-902b-6b94b90ff2f0",
+          "name": "Showcase",
+          "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "proxy": "",
+          "requestBodyType": "file",
+          "responseHandling": {
+            "actions": [
+              "share",
+              "copy",
+              "save"
+            ]
+          },
+          "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}",
+          "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
+        }
+      ]
+    }
+  ],
+  "compatibilityVersion": 71,
+  "variables": [
+    {
+      "id": "719f997c-6bf6-458f-a148-3c2a8ac5e405",
+      "key": "UserName",
+      "value": "ChangeIt"
+    },
+    {
+      "id": "9421719b-086f-4799-8432-158b84b6e05a",
+      "key": "UserToken",
+      "value": "ChangeIt"
+    },
+    {
+      "flags": 1,
+      "id": "76b1e948-84b3-497e-8ec5-b911d00f8f0f",
+      "jsonEncode": true,
+      "key": "Clipboard",
+      "type": "clipboard"
+    },
+    {
+      "id": "d12cab01-6d2b-44aa-a1fb-dfddc6fe7895",
+      "jsonEncode": true,
+      "key": "FileName",
+      "value": ""
+    },
+    {
+      "id": "136751b5-5f38-49fc-81dc-80a825804203",
+      "key": "url",
+      "value": "ChangeIt"
+    },
+    {
+      "id": "5989c421-2669-4424-80c3-69ba7995524a",
+      "key": "downloadUrl",
+      "value": ""
+    }
+  ],
+  "version": 71
+}

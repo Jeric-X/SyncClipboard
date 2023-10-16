@@ -2,7 +2,7 @@
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=WinUI3)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3AWinUI3)
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)  
 
-[中文](../README.md) | English
+[中文](https://github.com/Jeric-X/SyncClipboard/tree/i18n#syncclipboard) | English
 
 <details>
 <summary>Contents</summary>
@@ -43,13 +43,13 @@
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
-content root folder is the same as `SyncClipboard.Server.dll`, there will be temporary files created when running  
+Content root folder is `SyncClipboard.Server.dll`'s parent folder, there will be temporary folders created when running  
 Port, username, password can be changed in `appsettings.json`  
 Choosing a different content root folder is possible. Copy a new `appsettings.json` to the folder and run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
 ```
-Note：
+Notes：
 - Address to fill in client is `http://ip(or domain name):port`，nothing can be omitted
 - Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network
 
@@ -84,18 +84,18 @@ Dependencies：
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
-Import this [Shortcuts](https://www.icloud.com/shortcuts/9e2f44bd12a84935b715aac9b488f6ee). Use it from widget or share sheet.
+Import this [Shortcuts](https://www.icloud.com/shortcuts/2fc4453de31442118fccea7488caa881). Use it from widget or share sheet.
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
-Import this [Config](/script/shortcuts.zip)，Change the `UserName`，`UserToken`，`url` in `Variables` to yours。`HTTP Request Shortcuts` supports drop-down menu, home screen widget, home screen icon and share sheet
+Import this [file](/script/en/shortcuts.zip)，Change the `UserName`，`UserToken`，`url` in `Variables` to yours。`HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet
 
 ### Notes for Clients
 
 There are three necessery config(maybe different words, same uses).
 - username
 - password
-- url，format is `http://ip(or domain name):port`。When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. And do not use this folder to do anything else. If not use a desktop client, create a `file` folder in the working folder to sync files. Desktop clients create this folder automatically.
+- url，format is `http://ip(or domain name):port`。When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. And do not use this folder to do anything else. If not use a desktop client, create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
 
 ## API
 
