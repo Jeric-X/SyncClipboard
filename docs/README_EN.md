@@ -31,30 +31,30 @@
 
 ## Features
 
-- Clipboard syncing，using a WebDAV server or built-in server, supporting text/image/file  
-- Optimize image type clipboard：
-  - Paste image to a textbox directly after copying a image file from file system, and vice versa
-  - Download the original file and copy it after copying a image in web browser. This is helpful for copying an animated image in browser. Web sites always prevent downloads from non-browser, so this feature isn't always usable
-  - Copy the transcoded temporary image file (jpg or gif) after copying a modern image file type (heic, webp, etc.)
+- Clipboard syncing, using a WebDAV server or built-in server, supporting text/image/file.  
+- Optimize image type clipboard:
+  - Paste image to a textbox directly after copying a image file from file system, and vice versa.
+  - Download the original file and copy it after copying a image in web browser. This is helpful for copying an animated image in browser. Web sites always prevent downloads from non-browser, so this feature isn't always usable.
+  - Copy the transcoded temporary image file (jpg or gif) after copying a modern image file type (heic, webp, etc.).
 
 ## Server
 ### Standalone Server
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform，depends on [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)，run with:
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0). Run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
-Content root folder is `SyncClipboard.Server.dll`'s parent folder, there will be temporary folders created when running  
-Port, username, password can be changed in `appsettings.json`  
+Content root folder is `SyncClipboard.Server.dll`'s parent folder, there will be temporary folders created when running.  
+Port, username, password can be changed in `appsettings.json`.  
 Choosing a different content root folder is possible. Copy a new `appsettings.json` to the folder and run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
 ```
 Notes：
-- Address to fill in client is `http://ip(or domain name):port`，nothing can be omitted
-- Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network
+- Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
+- Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network.
 
 ### Client Built-in Server
-[Windows client](#Windows) has a built-in server, basically the same as standalone server but can be configured with GUI
+[Windows client](#Windows) has a built-in server, basically the same as standalone server but can be configured with GUI.
 
 ### WebDAV Server
   
@@ -65,14 +65,14 @@ Tested server：
 
 ## Client
 ### Windows   
-Download the `SyncClipboard.WinUI3.zip` from [Release](https://github.com/Jeric-X/SyncClipboard/releases/) Page  
-After extracting, run `SyncClipboard.exe`  
+Download the `SyncClipboard.WinUI3.zip` from [Release](https://github.com/Jeric-X/SyncClipboard/releases/) Page.  
+After extracting, run `SyncClipboard.exe`.  
   
 Dependencies：   
 - [.NET 6.0 Desktop](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer) runtime
 - [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer) runtime    
 - Windows10 2004 or above
-- Microsoft [Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font). It is included by default on Windows 11. You can download it [here](https://aka.ms/SegoeFluentIcons)
+- Microsoft [Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font). It is included by default on Windows 11. You can download it [here](https://aka.ms/SegoeFluentIcons).
 
 <details>
 <summary>Screenshots</summary>
@@ -88,14 +88,14 @@ Import this [Shortcuts](https://www.icloud.com/shortcuts/2fc4453de31442118fccea7
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
-Import this [file](/script/en/shortcuts.zip)，Change the `UserName`，`UserToken`，`url` in `Variables` to yours。`HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet
+Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
 
 ### Notes for Clients
 
 There are three necessery config(maybe different words, same uses).
 - username
 - password
-- url，format is `http://ip(or domain name):port`。When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. And do not use this folder to do anything else. If not use a desktop client, create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
+- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. And do not use this folder to do anything else. If not use a desktop client, create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
 
 ## API
 
