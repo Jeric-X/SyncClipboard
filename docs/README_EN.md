@@ -2,7 +2,7 @@
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=WinUI3)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3AWinUI3)
 [![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)  
 
-[中文](https://github.com/Jeric-X/SyncClipboard/tree/i18n#syncclipboard) | English
+[中文](https://github.com/Jeric-X/SyncClipboard#syncclipboard) | English
 
 <details>
 <summary>Contents</summary>

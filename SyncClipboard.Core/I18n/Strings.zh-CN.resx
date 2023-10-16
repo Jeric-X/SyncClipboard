@@ -319,7 +319,7 @@
     <value>打开配置文件</value>
   </data>
   <data name="OpenConfigFileFolder" xml:space="preserve">
-    <value>打开配置文件所在位置</value>
+    <value>打开应用数据文件夹</value>
   </data>
   <data name="ReloadConfigFile" xml:space="preserve">
     <value>重新载入配置文件</value>

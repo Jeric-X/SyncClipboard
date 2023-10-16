@@ -115,7 +115,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Check update 的本地化字符串。
+        ///   查找类似 Check Update 的本地化字符串。
         /// </summary>
         public static string CheckUpdate {
             get {
@@ -124,7 +124,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Check update on startup 的本地化字符串。
+        ///   查找类似 Check Update on Startup 的本地化字符串。
         /// </summary>
         public static string CheckUpdateOnStartup {
             get {
@@ -133,7 +133,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Client general 的本地化字符串。
+        ///   查找类似 Client General 的本地化字符串。
         /// </summary>
         public static string ClientGeneral {
             get {
@@ -160,7 +160,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Clipboard syncing 的本地化字符串。
+        ///   查找类似 Clipboard Syncing 的本地化字符串。
         /// </summary>
         public static string ClipboardSyncing {
             get {
@@ -259,7 +259,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Download web image 的本地化字符串。
+        ///   查找类似 Download Web Image 的本地化字符串。
         /// </summary>
         public static string DownloadWebImage {
             get {
@@ -358,7 +358,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Image assistant 的本地化字符串。
+        ///   查找类似 Image Assistant 的本地化字符串。
         /// </summary>
         public static string ImageAssistant {
             get {
@@ -376,7 +376,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Image compatibility 的本地化字符串。
+        ///   查找类似 Image Compatibility 的本地化字符串。
         /// </summary>
         public static string ImageCompatibility {
             get {
@@ -439,7 +439,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Login with browser 的本地化字符串。
+        ///   查找类似 Login with Browser 的本地化字符串。
         /// </summary>
         public static string LoginWithBrowser {
             get {
@@ -457,7 +457,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Log remain days 的本地化字符串。
+        ///   查找类似 Log Remain Days 的本地化字符串。
         /// </summary>
         public static string LogRemainDays {
             get {
@@ -466,7 +466,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Max file size to upload (MB) 的本地化字符串。
+        ///   查找类似 Max File Size to Upload (MB) 的本地化字符串。
         /// </summary>
         public static string MaxFileSizeToUpload {
             get {
@@ -475,7 +475,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Mixed client mode 的本地化字符串。
+        ///   查找类似 Mixed Client Mode 的本地化字符串。
         /// </summary>
         public static string MixedClientMode {
             get {
@@ -529,7 +529,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Open config file 的本地化字符串。
+        ///   查找类似 Open Config File 的本地化字符串。
         /// </summary>
         public static string OpenConfigFile {
             get {
@@ -538,7 +538,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Open config file folder 的本地化字符串。
+        ///   查找类似 Open App Data Folder 的本地化字符串。
         /// </summary>
         public static string OpenConfigFileFolder {
             get {
@@ -574,7 +574,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Open source dependencies 的本地化字符串。
+        ///   查找类似 Open Source Dependencies 的本地化字符串。
         /// </summary>
         public static string OpenSourceDependencies {
             get {
@@ -637,7 +637,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Query interval (sec) 的本地化字符串。
+        ///   查找类似 Query Interval (sec) 的本地化字符串。
         /// </summary>
         public static string QueryInterval {
             get {
@@ -655,7 +655,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Reload config file 的本地化字符串。
+        ///   查找类似 Reload Config File 的本地化字符串。
         /// </summary>
         public static string ReloadConfigFile {
             get {
@@ -664,7 +664,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Run at system startup 的本地化字符串。
+        ///   查找类似 Run at System Startup 的本地化字符串。
         /// </summary>
         public static string RunAtSystemStartup {
             get {
@@ -691,7 +691,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Built-in server 的本地化字符串。
+        ///   查找类似 Built-In Server 的本地化字符串。
         /// </summary>
         public static string Server {
             get {
@@ -709,7 +709,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Software home page 的本地化字符串。
+        ///   查找类似 Software Home Page 的本地化字符串。
         /// </summary>
         public static string SoftwareHomePage {
             get {
@@ -763,7 +763,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Timeout period (sec) 的本地化字符串。
+        ///   查找类似 Timeout Period (sec) 的本地化字符串。
         /// </summary>
         public static string TimeoutPeriod {
             get {
@@ -817,7 +817,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 User name 的本地化字符串。
+        ///   查找类似 User Name 的本地化字符串。
         /// </summary>
         public static string UserName {
             get {
@@ -844,7 +844,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Use built-in server 的本地化字符串。
+        ///   查找类似 Use Built-In Server 的本地化字符串。
         /// </summary>
         public static string UseSelfHostServer {
             get {

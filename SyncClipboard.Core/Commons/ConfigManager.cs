@@ -146,7 +146,8 @@ namespace SyncClipboard.Core.Commons
                         open.StartInfo.FileName = "notepad";
                         open.StartInfo.Arguments = _path;
                         open.Start();
-                    } )  ,
+                    } ),
+                new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load()),
                 new MenuItem(
                     I18n.Strings.OpenConfigFileFolder, () => {
                         var open = new System.Diagnostics.Process();
@@ -154,7 +155,6 @@ namespace SyncClipboard.Core.Commons
                         open.StartInfo.Arguments = "/e,/select," + _path;
                         open.Start();
                     }),
-                new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load())
             };
             _contextMenu.AddMenuItemGroup(menuItems);
         }

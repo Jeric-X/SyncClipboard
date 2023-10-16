@@ -121,7 +121,7 @@
     <value>Auto detect</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>Built-in server</value>
+    <value>Built-In Server</value>
   </data>
   <data name="SystemSettings" xml:space="preserve">
     <value>Settings</value>
@@ -151,7 +151,7 @@
     <value>Port</value>
   </data>
   <data name="UserName" xml:space="preserve">
-    <value>User name</value>
+    <value>User Name</value>
   </data>
   <data name="Password" xml:space="preserve">
     <value>Password</value>
@@ -166,7 +166,7 @@
     <value>1</value>
   </data>
   <data name="MixedClientMode" xml:space="preserve">
-    <value>Mixed client mode</value>
+    <value>Mixed Client Mode</value>
   </data>
   <data name="MixedClientOnInfo" xml:space="preserve">
     <value>On: When clients update/get clipboard infomation to/from this server, directly operate this machie's clipboard. So this machine's clipboard is shared forcely and with no delay.</value>
@@ -187,34 +187,34 @@
     <value>Address</value>
   </data>
   <data name="ClipboardSyncing" xml:space="preserve">
-    <value>Clipboard syncing</value>
+    <value>Clipboard Syncing</value>
   </data>
   <data name="UseSelfHostServer" xml:space="preserve">
-    <value>Use built-in server</value>
+    <value>Use Built-In Server</value>
   </data>
   <data name="UseNextcloud" xml:space="preserve">
     <value>Use Nextcloud</value>
   </data>
   <data name="QueryInterval" xml:space="preserve">
-    <value>Query interval (sec)</value>
+    <value>Query Interval (sec)</value>
   </data>
   <data name="TimeoutPeriod" xml:space="preserve">
-    <value>Timeout period (sec)</value>
+    <value>Timeout Period (sec)</value>
   </data>
   <data name="MaxFileSizeToUpload" xml:space="preserve">
-    <value>Max file size to upload (MB)</value>
+    <value>Max File Size to Upload (MB)</value>
   </data>
   <data name="DeleteServerTemporaryFileAutoly" xml:space="preserve">
     <value>Delete server's temporary file automatically</value>
   </data>
   <data name="ClientGeneral" xml:space="preserve">
-    <value>Client general</value>
+    <value>Client General</value>
   </data>
   <data name="SendNotificationAfterUpdateLocalClipboard" xml:space="preserve">
     <value>Send notification after updating local clipboard</value>
   </data>
   <data name="LoginWithBrowser" xml:space="preserve">
-    <value>Login with browser</value>
+    <value>Login with Browser</value>
   </data>
   <data name="SelectFolder" xml:space="preserve">
     <value>Select</value>
@@ -223,34 +223,34 @@
     <value>Refresh</value>
   </data>
   <data name="ImageAssistant" xml:space="preserve">
-    <value>Image assistant</value>
+    <value>Image Assistant</value>
   </data>
   <data name="ImageAssistantDescription" xml:space="preserve">
     <value>Paste image to a textbox directly after copying a image file from file system, and vice versa</value>
   </data>
   <data name="ImageCompatibility" xml:space="preserve">
-    <value>Image compatibility</value>
+    <value>Image Compatibility</value>
   </data>
   <data name="ImageCompatibilityDescription" xml:space="preserve">
     <value>Copy the transcoded temporary image file (jpg or gif) after copying a modern image file (heic, webp, etc.)</value>
   </data>
   <data name="DownloadWebImage" xml:space="preserve">
-    <value>Download web image</value>
+    <value>Download Web Image</value>
   </data>
   <data name="DownloadWebImageDescription" xml:space="preserve">
     <value>Download the original file and copy it after copying a image in browser</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
-    <value>Check update</value>
+    <value>Check Update</value>
   </data>
   <data name="CheckUpdateOnStartup" xml:space="preserve">
-    <value>Check update on startup</value>
+    <value>Check Update on Startup</value>
   </data>
   <data name="SoftwareHomePage" xml:space="preserve">
-    <value>Software home page</value>
+    <value>Software Home Page</value>
   </data>
   <data name="OpenSourceDependencies" xml:space="preserve">
-    <value>Open source dependencies</value>
+    <value>Open Source Dependencies</value>
   </data>
   <data name="UploadService" xml:space="preserve">
     <value>Upload Service</value>
@@ -262,10 +262,10 @@
     <value>License</value>
   </data>
   <data name="LogRemainDays" xml:space="preserve">
-    <value>Log remain days</value>
+    <value>Log Remain Days</value>
   </data>
   <data name="RunAtSystemStartup" xml:space="preserve">
-    <value>Run at system startup</value>
+    <value>Run at System Startup</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>Language</value>
@@ -316,13 +316,13 @@
     <value>Open in browser</value>
   </data>
   <data name="OpenConfigFile" xml:space="preserve">
-    <value>Open config file</value>
+    <value>Open Config File</value>
   </data>
   <data name="OpenConfigFileFolder" xml:space="preserve">
-    <value>Open config file folder</value>
+    <value>Open App Data Folder</value>
   </data>
   <data name="ReloadConfigFile" xml:space="preserve">
-    <value>Reload config file</value>
+    <value>Reload Config File</value>
   </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>Downloading web image</value>
