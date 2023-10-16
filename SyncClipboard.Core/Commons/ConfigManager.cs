@@ -141,20 +141,20 @@ namespace SyncClipboard.Core.Commons
             MenuItem[] menuItems =
             {
                 new MenuItem(
-                    "打开配置文件", () => {
+                    I18n.Strings.OpenConfigFile, () => {
                         var open = new System.Diagnostics.Process();
                         open.StartInfo.FileName = "notepad";
                         open.StartInfo.Arguments = _path;
                         open.Start();
                     } )  ,
                 new MenuItem(
-                    "打开配置文件所在位置", () => {
+                    I18n.Strings.OpenConfigFileFolder, () => {
                         var open = new System.Diagnostics.Process();
                         open.StartInfo.FileName = "explorer";
                         open.StartInfo.Arguments = "/e,/select," + _path;
                         open.Start();
                     }),
-                new MenuItem("重新载入配置文件", () => this.Load())
+                new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load())
             };
             _contextMenu.AddMenuItemGroup(menuItems);
         }

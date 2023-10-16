@@ -102,7 +102,7 @@ public partial class NextCloudLogInViewModel : ObservableObject
         catch (TaskCanceledException) { }
         catch (Exception ex)
         {
-            NotificationManager.SendText("认证中发生错误", GetErrorMessage(ex));
+            NotificationManager.SendText(I18n.Strings.FailedToAuth, GetErrorMessage(ex));
         }
         finally
         {

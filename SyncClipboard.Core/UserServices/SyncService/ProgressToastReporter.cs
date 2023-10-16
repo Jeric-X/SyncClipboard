@@ -14,9 +14,9 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar = notificationManager.CreateProgressNotification(title);
         _progressBar.Tag = title + filename;
         _progressBar.ProgressTitle = filename;
-        _progressBar.ProgressStatus = "当前状态";
+        _progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
         _progressBar.ProgressValue = 0;
-        _progressBar.ProgressValueTip = "准备下载";
+        _progressBar.ProgressValueTip = I18n.Strings.Preparing;
 
         _progressBar.ShowSilent();
         _counter = new Counter((_) => _progressBar.Upadate(), 500, ulong.MaxValue);
@@ -25,7 +25,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
     public void Cancel()
     {
         _counter.Cancle();
-        _progressBar.ProgressValueTip = "已取消";
+        _progressBar.ProgressValueTip = I18n.Strings.Canceled;
         _progressBar.Upadate();
     }
 

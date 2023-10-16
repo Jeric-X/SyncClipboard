@@ -6,4 +6,5 @@ public record ProgramConfig
     public bool DeleteTempFilesOnStartUp { get; set; } = true;
     public uint LogRemainDays { get; set; } = 8;
     public bool CheckUpdateOnStartUp { get; set; } = true;
+    public string Language { get; set; } = "";
 };

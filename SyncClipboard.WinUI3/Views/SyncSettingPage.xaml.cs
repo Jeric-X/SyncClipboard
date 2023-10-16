@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System;
+using SyncClipboard.Core.I18n;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -82,17 +83,17 @@ namespace SyncClipboard.WinUI3.Views
         private string ServerConfigDescription(ServerConfig config, bool? show)
         {
             return
-@$"端　口：{config.Port}
-用户名：{config.UserName}
-密　码：{GetPasswordString(config.Password, show)}";
+@$"{Strings.Port}{new string('\t', int.Parse(Strings.PortTabRepeat))}: {config.Port}
+{Strings.UserName}{new string('\t', int.Parse(Strings.UserNameTabRepeat))}: {config.UserName}
+{Strings.Password}{new string('\t', int.Parse(Strings.PasswordTabRepeat))}: {GetPasswordString(config.Password, show)}";
         }
 
         private string ClientConfigDescription(SyncConfig config, bool? show)
         {
             return
-@$"地　址：{config.RemoteURL}
-用户名：{config.UserName}
-密　码：{GetPasswordString(config.Password, show)}";
+@$"{Strings.Address}{new string('\t', int.Parse(Strings.PortTabRepeat))}: {config.RemoteURL}
+{Strings.UserName}{new string('\t', int.Parse(Strings.UserNameTabRepeat))}: {config.UserName}
+{Strings.Password}{new string('\t', int.Parse(Strings.PasswordTabRepeat))}: {GetPasswordString(config.Password, show)}";
         }
 
         private void HyperlinkButton_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs _1)

@@ -12,7 +12,7 @@ public class ConvertService : ClipboardHander
 {
     #region override ClipboardHander
 
-    public override string SERVICE_NAME => "图片兼容性优化";
+    public override string SERVICE_NAME => I18n.Strings.ImageCompatibility;
     public override string LOG_TAG => "COMPATIBILITY";
 
     protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();

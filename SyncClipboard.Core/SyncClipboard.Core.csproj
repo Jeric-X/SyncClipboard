@@ -32,4 +32,19 @@
     <ProjectReference Include="..\SyncClipboard.Server\SyncClipboard.Server.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="I18n\Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="I18n\Strings.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

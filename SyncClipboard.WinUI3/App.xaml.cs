@@ -57,7 +57,7 @@ namespace SyncClipboard.WinUI3
             Logger?.Write("App started");
             ProgramWorkflow = new ProgramWorkflow(Services);
             ProgramWorkflow.Run();
-            MenuItem[] menuItems = { new MenuItem("退出", ExitApp) };
+            MenuItem[] menuItems = { new MenuItem(Core.I18n.Strings.Exit, ExitApp) };
             Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
         }
     }

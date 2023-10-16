@@ -4,19 +4,20 @@
                xmlns:local="using:SyncClipboard.WinUI3.Views"
                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-               Title="设置"
-               PrimaryButtonText="确定"
-               CloseButtonText="取消"
+               xmlns:i18n="using:SyncClipboard.Core.I18n"
+               Title="{x:Bind i18n:Strings.Settings}"
+               PrimaryButtonText="{x:Bind i18n:Strings.Confirm}"
+               CloseButtonText="{x:Bind i18n:Strings.Cancel}"
                mc:Ignorable="d">
     <ContentDialog.Resources>
         <Style TargetType="local:ServerSettingDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
     <ScrollViewer Padding="0,0,10,0" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
         <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="12">
-            <TextBox x:Name="_Url" Header="端口号" />
-            <TextBox x:Name="_UserName" Header="用户名" />
-            <PasswordBox x:Name="_Password" Header="密码" IsPasswordRevealButtonEnabled="True" />
-            <TextBlock x:Name="_ErrorTip" Foreground="Red"/>
+            <TextBox x:Name="_Url" />
+            <TextBox x:Name="_UserName" Header="{x:Bind i18n:Strings.UserName}" />
+            <PasswordBox x:Name="_Password" Header="{x:Bind i18n:Strings.Password}" IsPasswordRevealButtonEnabled="True" />
+            <TextBlock x:Name="_ErrorTip" Foreground="Red" />
         </StackPanel>
     </ScrollViewer>
 </ContentDialog>

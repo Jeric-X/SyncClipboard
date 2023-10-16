@@ -49,11 +49,11 @@ public class TextProfile : Profile
         if (Text.Length >= 4 && (Text[..4] == "http" || Text[..4] == "www."))
         {
             Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
-            notification.SendText("文本同步成功", Text, DefaultButton(), new Button("在浏览器中打开", callbacker));
+            notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton(), new Button(I18n.Strings.OpenInBrowser, callbacker));
         }
         else
         {
-            notification.SendText("文本同步成功", Text, DefaultButton());
+            notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton());
         }
     }
 

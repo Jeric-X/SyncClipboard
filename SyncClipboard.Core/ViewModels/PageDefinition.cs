@@ -5,13 +5,13 @@ public class PageDefinition
     public string Name { get; set; }
     public string Title { get; set; }
 
-    public static readonly PageDefinition SyncSetting = new("SyncSetting", "剪切板同步");
-    public static readonly PageDefinition CliboardAssistant = new("CliboardAssistant", "剪切板助手");
-    public static readonly PageDefinition ServiceStatus = new("ServiceStatus", "服务状态");
-    public static readonly PageDefinition SystemSetting = new("SystemSetting", "系统设置");
-    public static readonly PageDefinition About = new("About", "关于");
-    public static readonly PageDefinition License = new("License", "License");
-    public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", "登录到Nextcloud");
+    public static readonly PageDefinition SyncSetting = new("SyncSetting", I18n.Strings.Syncing);
+    public static readonly PageDefinition CliboardAssistant = new("CliboardAssistant", I18n.Strings.Assistant);
+    public static readonly PageDefinition ServiceStatus = new("ServiceStatus", I18n.Strings.Status);
+    public static readonly PageDefinition SystemSetting = new("SystemSetting", I18n.Strings.SystemSettings);
+    public static readonly PageDefinition About = new("About", I18n.Strings.About);
+    public static readonly PageDefinition License = new("License", I18n.Strings.License);
+    public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", I18n.Strings.UseNextcloud);
 
     private PageDefinition(string name, string title)
     {

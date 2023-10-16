@@ -8,6 +8,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
@@ -34,11 +35,11 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
-        <labs:SettingsExpander Header="同步服务器" Description="作为本机和其他设备的服务器" IsExpanded="True">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.Server}" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <ToggleSwitch IsOn="{Binding ServerEnable, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{Binding ServerEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Description="{x:Bind ServerConfigDescription(_viewModel.ServerConfig, _ShowHidePasswordToggleButton.IsChecked), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
@@ -50,7 +51,7 @@
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="客户端混合模式">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.MixedClientMode}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Width="32"
                                 Height="32"
@@ -61,29 +62,28 @@
                             <Button.Flyout>
                                 <Flyout>
                                     <TextBlock Width="400" TextWrapping="WrapWholeWords">
-                                        <Run>开启：使用本机剪切板作为剪切板内容中转，“剪切板同步”开关和子选项失效，强制开启本机同步，不会有普通客户端的同步延迟</Run>
-                                        <LineBreak /><LineBreak /><Run>关闭：使用独立文件作为剪切板内容中转，服务器与本机剪切板无关联</Run>
-                                        <LineBreak /><LineBreak /><Run>普通客户端：在下载远程的方向上有同步延迟，延迟最大值为“轮询服务器间隔（秒）”</Run>
+                                        <Run Text="{x:Bind i18n:Strings.MixedClientOnInfo}" />
+                                        <LineBreak /><LineBreak /><Run Text="{x:Bind i18n:Strings.MixedClientOffInfo}" />
                                     </TextBlock>
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
-                        <ToggleSwitch IsOn="{x:Bind _viewModel.ClientMixedMode, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ClientMixedMode, Mode=TwoWay}" />
                     </StackPanel>
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="剪切板同步"
-                               Description="自动将本机和设置了相同服务器的其他设备的剪切板同步"
-                               IsExpanded="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}"
-                               IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
-            <ToggleSwitch IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard Header="使用本机服务器" Description="关闭后可以设置自定义服务器">
-                    <ToggleSwitch x:Name="_UseLocalServerToggle" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.UseSelfHostServer}">
+                    <ToggleSwitch x:Name="_UseLocalServerToggle"
+                                  OnContent="{x:Bind i18n:Strings.On}"
+                                  OffContent="{x:Bind i18n:Strings.Off}"
+                                  IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </labs:SettingsCard>
                 <labs:SettingsCard Description="{x:Bind ClientConfigDescription(_viewModel.ClientConfig, _ShowClientPasswordToggleButton.IsChecked), Mode=OneWay}" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
@@ -107,34 +107,34 @@
                         </Style>
                     </labs:SettingsCard.Resources>-->
                     <labs:SettingsCard.Description>
-                        <HyperlinkButton Content="登录到Nextcloud" Click="HyperlinkButton_Click" />
+                        <HyperlinkButton Content="{x:Bind i18n:Strings.UseNextcloud}" Click="HyperlinkButton_Click" />
                     </labs:SettingsCard.Description>
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="轮询服务器间隔（秒）">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="超时时间（秒）">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="最大上传文件大小（MB）">
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.MaxFileSizeToUpload}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Header="自动删除服务器上的临时文件">
-                    <ToggleSwitch IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemporaryFileAutoly}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="通用设置" Description="普通模式和混合模式都涉及的选项" IsExpanded="True">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.ClientGeneral}" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE90F;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard Header="下载远程剪切板后发送通知">
-                    <ToggleSwitch IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
+                <labs:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" />
-        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="地址" />
+        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Port}" />
+        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Address}" />
     </StackPanel>
 </Page>

@@ -35,7 +35,7 @@ public class UpdateChecker
 
         if (!Regex.IsMatch(versionStr, GITHUB_VERSION_PATTERN))
         {
-            throw new Exception("从Github解析version失败");
+            throw new Exception(I18n.Strings.FailToParseVersion);
         }
 
         return versionStr;
