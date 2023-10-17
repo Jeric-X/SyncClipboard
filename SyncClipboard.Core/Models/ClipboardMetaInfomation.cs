@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+﻿using SyncClipboard.Abstract;
 
 namespace SyncClipboard.Core.Models;
 
@@ -6,7 +6,7 @@ public class ClipboardMetaInfomation
 {
     public string? Text;
     public string? Html;
-    public Image? Image;
+    public IClipboardImage? Image;
     public string[]? Files;
     public DragDropEffects? Effects;
 }

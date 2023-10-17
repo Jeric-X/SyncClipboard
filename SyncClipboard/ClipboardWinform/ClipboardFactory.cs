@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Windows;
 using System;
 using System.Drawing;
 using System.IO;
@@ -41,7 +42,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
                     meta.Text = "";
                     break;
                 }
-                meta.Image = (Image)ClipboardData.GetData(DataFormats.Bitmap);
+                meta.Image = WinBitmap.FromImage((Image)ClipboardData.GetData(DataFormats.Bitmap));
                 meta.Text = (string)ClipboardData.GetData(DataFormats.Text) ?? meta.Text;
                 meta.Files = (string[])ClipboardData.GetData(DataFormats.FileDrop);
                 meta.Html = (string)ClipboardData.GetData(DataFormats.Html);

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Windows;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -39,7 +40,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
         if (meta.Image is not null) return;
         using var stream = ClipboardData.GetBitmapAsync().AsTask().Result.OpenReadAsync().AsTask().Result.AsStream();
         using MagickImage image = new(stream);
-        meta.Image = image.ToBitmap();
+        meta.Image = WinBitmap.FromImage(image.ToBitmap());
     }
 
     private static void HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
@@ -47,7 +48,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
         var res = ClipboardData.GetDataAsync("DeviceIndependentBitmap").AsTask().Result;
         using var stream = res.As<IRandomAccessStream>().AsStream();
         using MagickImage image = new(stream);
-        meta.Image = image.ToBitmap();
+        meta.Image = WinBitmap.FromImage(image.ToBitmap());
     }
 
     private static void HanleDropEffect(DataPackageView ClipboardData, ClipboardMetaInfomation meta)

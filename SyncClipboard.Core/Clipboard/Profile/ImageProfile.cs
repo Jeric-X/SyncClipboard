@@ -2,7 +2,6 @@
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
-using System.Drawing;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -36,7 +35,7 @@ public class ImageProfile : FileProfile
         set => base.FullPath = value;
     }
 
-    private Image? Image { get; set; }
+    private IClipboardImage? Image { get; set; }
     private string ImageTemplateFolder => Path.Combine(LocalTemplateFolder, "temp images");
 
     public ImageProfile(string filepath, IServiceProvider serviceProvider) : base(filepath, serviceProvider)
@@ -49,7 +48,7 @@ public class ImageProfile : FileProfile
         ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
     }
 
-    public ImageProfile(Image image, IServiceProvider serviceProvider) : base("", serviceProvider)
+    public ImageProfile(IClipboardImage image, IServiceProvider serviceProvider) : base("", serviceProvider)
     {
         ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
         Image = image;
