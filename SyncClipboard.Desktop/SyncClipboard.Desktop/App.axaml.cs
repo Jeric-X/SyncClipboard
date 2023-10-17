@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
@@ -12,6 +13,9 @@ namespace SyncClipboard.Desktop;
 public partial class App : Application
 {
     public IServiceProvider Services { get; private set; }
+    public Window? MainWindow { get; private set; }
+
+    public new static App Current => (App)Application.Current!;
 
     public App()
     {
@@ -31,10 +35,11 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
+            MainWindow = new MainWindow
             {
                 DataContext = new MainViewModel()
             };
+            desktop.MainWindow = MainWindow;
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
