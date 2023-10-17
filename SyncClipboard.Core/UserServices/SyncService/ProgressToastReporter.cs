@@ -1,15 +1,16 @@
 using System;
+using SyncClipboard.Abstract;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
 
 public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 {
-    private readonly ProgressBar _progressBar;
+    private readonly IProgressBar _progressBar;
     private readonly Counter _counter;
-    public ProgressToastReporter(string filename, string title, NotificationManager notificationManager)
+    public ProgressToastReporter(string filename, string title, INotification notificationManager)
     {
         _progressBar = notificationManager.CreateProgressNotification(title);
         _progressBar.Tag = title + filename;

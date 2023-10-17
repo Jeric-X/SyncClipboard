@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
-using Button = SyncClipboard.Core.Utilities.Notification.Button;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -44,7 +43,7 @@ public class TextProfile : Profile
         await webdav.PutText(RemoteProfilePath, this.ToJsonString(), cancelToken);
     }
 
-    protected override void SetNotification(NotificationManager notification)
+    protected override void SetNotification(INotification notification)
     {
         if (Text.Length >= 4 && (Text[..4] == "http" || Text[..4] == "www."))
         {

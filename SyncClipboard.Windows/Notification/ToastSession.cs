@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using Microsoft.Toolkit.Uwp.Notifications;
-using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Abstract;
 using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
@@ -8,7 +7,6 @@ namespace SyncClipboard.Core.Utilities.Notification
     public class ToastSession
     {
         private readonly ToastNotifier _notifer;
-        private readonly ILogger _logger;
 
         public const string DEFAULT_GROUP = "DEFAULT_GROUP";
         public const string DEFAULT_TAG = "DEFAULT_TAG";
@@ -20,11 +18,10 @@ namespace SyncClipboard.Core.Utilities.Notification
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
         public List<Button> Buttons { get; set; } = new();
-        public ToastSession(string title, ToastNotifier notifier, ILogger logger)
+        public ToastSession(string title, ToastNotifier notifier)
         {
             Title = title;
             _notifer = notifier;
-            _logger = logger;
         }
 
         private const string TOAST_BINDING_TITLE = "TOAST_BINDING_TITLE";
@@ -76,7 +73,6 @@ namespace SyncClipboard.Core.Utilities.Notification
             }
             catch
             {
-                _logger.Write("TOAST", "remove failed");
             }
         }
     }

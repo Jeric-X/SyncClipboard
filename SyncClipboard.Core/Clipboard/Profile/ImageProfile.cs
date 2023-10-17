@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
 using System.Drawing;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -67,7 +67,7 @@ public class ImageProfile : FileProfile
         FullPath = filePath;
     }
 
-    protected override void SetNotification(NotificationManager notification)
+    protected override void SetNotification(INotification notification)
     {
         var path = FullPath ?? GetTempLocalFilePath();
         notification.SendImage(

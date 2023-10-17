@@ -3,6 +3,7 @@ using SyncClipboard.Abstract;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.WinUI3.ClipboardWinUI;
 using SyncClipboard.WinUI3.Views;
 
@@ -25,6 +26,7 @@ public class AppServices
         services.AddSingleton<TrayIcon>();
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
+        services.AddSingleton<INotification, NotificationManager>();
 
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();

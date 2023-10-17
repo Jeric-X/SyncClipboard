@@ -1,7 +1,6 @@
 ﻿using SyncClipboard.Core.Interfaces;
 using System.Collections;
 using System.Collections.Specialized;
-using WinRT;
 
 namespace SyncClipboard.Core.AbstractClasses
 {
@@ -69,8 +68,8 @@ namespace SyncClipboard.Core.AbstractClasses
             foreach (DictionaryEntry groupInfo in _groupInfos)
             {
                 if (find)
-                    groupInfo.Value.As<GroupInfo>().Index += step;
-                if (groupInfo.Key.As<string>() == group)
+                    ((GroupInfo)groupInfo.Value!).Index += step;
+                if (((string)groupInfo.Key!) == group)
                     find = true;
             }
 

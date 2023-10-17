@@ -1,9 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -14,7 +15,7 @@ public partial class AboutViewModel
     private readonly IServiceProvider _serviceProvider;
 
     private UpdateChecker UpdateChecker => _serviceProvider.GetRequiredService<UpdateChecker>();
-    private NotificationManager NotificationManager => _serviceProvider.GetRequiredService<NotificationManager>();
+    private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
 
     public AboutViewModel(IServiceProvider serviceProvider)
     {

@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Notification;
 using System.Text.Json;
-using Button = SyncClipboard.Core.Utilities.Notification.Button;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -36,7 +35,7 @@ public abstract class Profile
     protected string LocalTemplateFolder => ServiceProvider.GetRequiredService<IAppConfig>().LocalTemplateFolder;
 
     private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
-    private NotificationManager NotificationManager => ServiceProvider.GetRequiredService<NotificationManager>();
+    private INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
     private bool? EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>(ConfigKey.Sync)?.NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
@@ -55,7 +54,7 @@ public abstract class Profile
         return Task.CompletedTask;
     }
 
-    protected virtual void SetNotification(NotificationManager notificationManager)
+    protected virtual void SetNotification(INotification notificationManager)
     {
         notificationManager.SendText(I18n.Strings.ClipboardUpdated, Text);
     }

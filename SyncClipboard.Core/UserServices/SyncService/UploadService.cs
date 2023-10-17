@@ -1,10 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -34,7 +34,7 @@ public class UploadService : ClipboardHander
 
     private bool _downServiceChangingLocal = false;
 
-    private readonly NotificationManager _notificationManager;
+    private readonly INotification _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
@@ -50,7 +50,7 @@ public class UploadService : ClipboardHander
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
-        _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
+        _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();

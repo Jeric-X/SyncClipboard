@@ -118,6 +118,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+    <ProjectReference Include="..\SyncClipboard.Windows\SyncClipboard.Windows.csproj" />
   </ItemGroup>
 
   <ItemGroup>

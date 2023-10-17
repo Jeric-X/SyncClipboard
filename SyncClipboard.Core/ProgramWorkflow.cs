@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
@@ -6,7 +7,6 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Options;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
 
@@ -65,7 +65,7 @@ namespace SyncClipboard.Core
         {
             var configManager = Services.GetRequiredService<ConfigManager>();
             var updateChecker = Services.GetRequiredService<UpdateChecker>();
-            var notificationManager = Services.GetRequiredService<NotificationManager>();
+            var notificationManager = Services.GetRequiredService<INotification>();
 
             bool checkOnStartup = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.CheckUpdateOnStartUp ?? false;
             if (checkOnStartup)
@@ -107,7 +107,6 @@ namespace SyncClipboard.Core
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
-            services.AddSingleton<NotificationManager>();
             services.AddSingleton<ServiceManager>();
             services.AddTransient<UpdateChecker>();
 

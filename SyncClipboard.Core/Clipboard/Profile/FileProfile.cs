@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -214,7 +214,7 @@ public class FileProfile : Profile
         };
     }
 
-    protected override void SetNotification(NotificationManager notification)
+    protected override void SetNotification(INotification notification)
     {
         var path = FullPath ?? GetTempLocalFilePath();
         notification.SendText(

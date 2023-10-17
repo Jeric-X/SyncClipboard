@@ -1,6 +1,6 @@
-﻿using SyncClipboard.Core.Commons;
+﻿using SyncClipboard.Abstract;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities.Notification;
 using System.Reflection;
 
 namespace SyncClipboard.Test;
@@ -17,7 +17,7 @@ public class SystemServiceProviderDataSource : ServiceProviderDataSourceBase
             typeof(ILogger),
             typeof(IWebDav),
             typeof(IHttp),
-            typeof(NotificationManager)
+            typeof(INotification)
         };
 
         List<object[]> res = new();

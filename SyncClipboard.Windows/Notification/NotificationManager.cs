@@ -1,30 +1,26 @@
 using Microsoft.Toolkit.Uwp.Notifications;
-using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Abstract;
 using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
 {
-    public class NotificationManager : IDisposable
+    public class NotificationManager : IDisposable, INotification
     {
         public readonly ToastNotifier Notifer;
-        private readonly ILogger _logger;
 
-        public NotificationManager(ILogger logger)
+        public NotificationManager()
         {
             Notifer = ToastNotificationManager.CreateToastNotifier(Register.RegistFromCurrentProcess());
-            _logger = logger;
         }
 
         ~NotificationManager() => Dispose();
 
         public void SendText(string title, string text, params Button[] buttons)
         {
-            new ToastSession(title, Notifer, _logger) { Text1 = text, Buttons = new(buttons) }.Show();
+            new ToastSession(title, Notifer) { Text1 = text, Buttons = new(buttons) }.Show();
         }
 
-#pragma warning disable CA1822 // 将成员标记为 static, 必须为non static, Notifer在内部被隐藏使用
         public void SendImage(string title, string text, Uri uri, params Button[] buttons)
-#pragma warning restore CA1822 // 将成员标记为 static
         {
             var content = new ToastContentBuilder()
                 .AddHeroImage(uri, "alternateText")
@@ -37,9 +33,9 @@ namespace SyncClipboard.Core.Utilities.Notification
             content.Show();
         }
 
-        public ProgressBar CreateProgressNotification(string title)
+        public IProgressBar CreateProgressNotification(string title)
         {
-            return new ProgressBar(title, Notifer, _logger);
+            return new ProgressBar(title, Notifer);
         }
 
         public void Dispose()

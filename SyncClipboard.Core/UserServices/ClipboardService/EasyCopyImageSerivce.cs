@@ -1,11 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Image;
-using SyncClipboard.Core.Utilities.Notification;
 using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.UserServices;
@@ -62,7 +62,7 @@ public class EasyCopyImageSerivce : ClipboardHander
     private ProgressToastReporter? _progress;
     private readonly object _progressLocker = new();
 
-    private readonly NotificationManager _notificationManager;
+    private readonly INotification _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
@@ -78,7 +78,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
-        _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
+        _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
     }
 

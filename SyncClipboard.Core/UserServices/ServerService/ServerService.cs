@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -21,7 +21,7 @@ public class ServerService : Service
     private readonly ILogger _logger;
     private readonly ITrayIcon _trayIcon;
 
-    private NotificationManager NotificationManager => _serviceProvider.GetRequiredService<NotificationManager>();
+    private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
 
     public ServerService(IServiceProvider serviceProvider)
     {

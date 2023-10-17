@@ -1,12 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.Utilities.Web;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -31,7 +31,7 @@ public partial class FileTreeViewModel : ObservableObject
 public partial class NextCloudLogInViewModel : ObservableObject
 {
     private readonly IServiceProvider _serviceProvider;
-    private NotificationManager NotificationManager => _serviceProvider.GetRequiredService<NotificationManager>();
+    private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
     private ConfigManager ConfigManager => _serviceProvider.GetRequiredService<ConfigManager>();
 

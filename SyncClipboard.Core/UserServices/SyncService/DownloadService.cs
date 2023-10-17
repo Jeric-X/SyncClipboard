@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Notification;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -19,7 +19,7 @@ public class DownloadService : Service
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
 
-    private readonly NotificationManager _notificationManager;
+    private readonly INotification _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
@@ -40,7 +40,7 @@ public class DownloadService : Service
         _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, ServerConfigChanged);
         _serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
-        _notificationManager = _serviceProvider.GetRequiredService<NotificationManager>();
+        _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
     }
 

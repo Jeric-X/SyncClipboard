@@ -2,8 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Core.ViewModels;
 using System;
 
@@ -70,7 +70,7 @@ public sealed partial class NextCloudLogInPage : Page
         }
         catch (Exception ex)
         {
-            App.Current.Services.GetRequiredService<NotificationManager>().SendText(Core.I18n.Strings.FailedToSet, ex.Message);
+            App.Current.Services.GetRequiredService<INotification>().SendText(Core.I18n.Strings.FailedToSet, ex.Message);
         }
     }
 }

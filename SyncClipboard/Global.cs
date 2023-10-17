@@ -7,6 +7,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.Utility;
 using System;
 using System.Windows.Forms;
@@ -49,6 +50,7 @@ namespace SyncClipboard
             services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());
             services.AddSingleton<IProfileDtoHelper>(sp => sp.GetRequiredService<ClipboardFactory>());
             services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
+            services.AddSingleton<INotification, NotificationManager>();
 
             services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
             services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
