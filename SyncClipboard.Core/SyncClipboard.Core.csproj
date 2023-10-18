@@ -10,22 +10,22 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
-    <PackageReference Include="Magick.NET-Q16-x64" Version="13.1.3" />
+    <PackageReference Include="Magick.NET-Q16-x64"/>
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='x86'">
-    <PackageReference Include="Magick.NET-Q16-x86" Version="13.1.3" />
+    <PackageReference Include="Magick.NET-Q16-x86" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='ARM64'">
-    <PackageReference Include="Magick.NET-Q16-arm64" Version="13.1.3" />
+    <PackageReference Include="Magick.NET-Q16-arm64" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='AnyCPU'">
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.1.3" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
-    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
   </ItemGroup>
 
   <ItemGroup>

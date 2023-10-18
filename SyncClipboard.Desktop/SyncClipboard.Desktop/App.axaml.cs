@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core;
 using SyncClipboard.Desktop.ViewModels;
 using SyncClipboard.Desktop.Views;
 using System;
@@ -14,7 +15,7 @@ public partial class App : Application
 {
     public IServiceProvider Services { get; private set; }
     public Window? MainWindow { get; private set; }
-
+    private ProgramWorkflow? ProgramWorkflow;
     public new static App Current => (App)Application.Current!;
 
     public App()
@@ -49,6 +50,8 @@ public partial class App : Application
             };
         }
 
+        ProgramWorkflow = new ProgramWorkflow(Services);
+        ProgramWorkflow.Run();
         base.OnFrameworkInitializationCompleted();
     }
 }

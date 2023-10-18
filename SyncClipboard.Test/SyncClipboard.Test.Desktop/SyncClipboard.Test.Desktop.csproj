@@ -4,11 +4,9 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
 
     <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
-    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+    <ProjectReference Include="..\..\SyncClipboard.Desktop\SyncClipboard.Desktop\SyncClipboard.Desktop.csproj" />
+    <ProjectReference Include="..\SyncClipboard.Test\SyncClipboard.Test.csproj" />
   </ItemGroup>
-
 </Project>
