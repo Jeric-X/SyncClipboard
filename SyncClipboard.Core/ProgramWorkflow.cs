@@ -65,7 +65,11 @@ namespace SyncClipboard.Core
         {
             var configManager = Services.GetRequiredService<ConfigManager>();
             var updateChecker = Services.GetRequiredService<UpdateChecker>();
-            var notificationManager = Services.GetRequiredService<INotification>();
+            var notificationManager = Services.GetService<INotification>();
+            if (notificationManager is null)
+            {
+                return;
+            }
 
             bool checkOnStartup = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.CheckUpdateOnStartUp ?? false;
             if (checkOnStartup)
@@ -126,11 +130,11 @@ namespace SyncClipboard.Core
 
         private static void ConfigurateUserService(IServiceCollection services)
         {
-            services.AddSingleton<IService, EasyCopyImageSerivce>();
-            services.AddSingleton<IService, ConvertService>();
-            services.AddSingleton<IService, ServerService>();
-            services.AddSingleton<IService, UploadService>();
-            services.AddSingleton<IService, DownloadService>();
+            //services.AddSingleton<IService, EasyCopyImageSerivce>();
+            //services.AddSingleton<IService, ConvertService>();
+            //services.AddSingleton<IService, ServerService>();
+            //services.AddSingleton<IService, UploadService>();
+            //services.AddSingleton<IService, DownloadService>();
         }
 
         private static void PrepareWorkingFolder(ConfigManager configManager)

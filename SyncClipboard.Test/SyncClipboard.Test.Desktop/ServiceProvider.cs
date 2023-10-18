@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-//using Moq;
+using Moq;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop;
 
@@ -15,7 +15,7 @@ public class ServiceProvider
     {
         var servicesCollection = AppServices.ConfigureServices();
         //servicesCollection.AddSingleton<IMainWindow>(new Mock<IMainWindow>().Object);
-        //servicesCollection.AddSingleton<IContextMenu>(new Mock<IContextMenu>().Object);
+        servicesCollection.AddSingleton<IContextMenu>(new Mock<IContextMenu>().Object);
         Services = servicesCollection.BuildServiceProvider();
     }
 

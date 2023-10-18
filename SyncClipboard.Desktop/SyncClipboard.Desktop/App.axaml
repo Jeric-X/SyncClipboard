@@ -13,16 +13,7 @@
         <TrayIcons>
             <TrayIcon Icon="/Assets/default.ico" ToolTipText="Avalonia Tray Icon ToolTip">
                 <TrayIcon.Menu>
-                    <NativeMenu>
-                        <NativeMenuItem Header="Settings">
-                            <NativeMenu>
-                                <NativeMenuItem Header="Option 1" />
-                                <NativeMenuItem Header="Option 2" />
-                                <NativeMenuItemSeparator />
-                                <NativeMenuItem Header="Option 3" />
-                            </NativeMenu>
-                        </NativeMenuItem>
-                    </NativeMenu>
+                    <NativeMenu />
                 </TrayIcon.Menu>
             </TrayIcon>
         </TrayIcons>
