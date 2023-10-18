@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
 using SyncClipboard.Desktop.ViewModels;
@@ -17,6 +18,7 @@ public partial class App : Application
     public Window? MainWindow { get; private set; }
     private ProgramWorkflow? ProgramWorkflow;
     public new static App Current => (App)Application.Current!;
+    private IClassicDesktopStyleApplicationLifetime appLife;
 
     public App()
     {
@@ -41,6 +43,7 @@ public partial class App : Application
                 DataContext = new MainViewModel()
             };
             desktop.MainWindow = MainWindow;
+            appLife = desktop;
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
@@ -50,8 +53,8 @@ public partial class App : Application
             };
         }
 
-        ProgramWorkflow = new ProgramWorkflow(Services);
-        ProgramWorkflow.Run();
+        //ProgramWorkflow = new ProgramWorkflow(Services);
+        //ProgramWorkflow.Run();
         base.OnFrameworkInitializationCompleted();
     }
 }
