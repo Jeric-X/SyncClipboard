@@ -7,6 +7,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System;
 using SyncClipboard.Core.I18n;
+using System.Threading.Tasks;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -28,7 +29,7 @@ namespace SyncClipboard.WinUI3.Views
         }
 
         [RelayCommand]
-        private async void SetServerAsync()
+        private async Task SetServerAsync()
         {
             _ServerSettingDialog.Password = _viewModel.ServerConfig.Password;
             _ServerSettingDialog.UserName = _viewModel.ServerConfig.Password;
@@ -37,7 +38,7 @@ namespace SyncClipboard.WinUI3.Views
         }
 
         [RelayCommand]
-        private async void SetSyncAsync()
+        private async Task SetSyncAsync()
         {
             _SyncSettingDialog.Password = _viewModel.ClientConfig.Password;
             _SyncSettingDialog.UserName = _viewModel.ClientConfig.UserName;

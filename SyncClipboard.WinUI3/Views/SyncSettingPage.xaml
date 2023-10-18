@@ -46,7 +46,7 @@
                         <ToggleButton x:Name="_ShowHidePasswordToggleButton">
                             <FontIcon Glyph="{Binding ElementName=_ShowHidePasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
                         </ToggleButton>
-                        <Button Command="{x:Bind SetServerAsyncCommand}">
+                        <Button Command="{x:Bind SetServerCommand}">
                             <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
                         </Button>
                     </StackPanel>
@@ -90,7 +90,7 @@
                         <ToggleButton x:Name="_ShowClientPasswordToggleButton">
                             <FontIcon Glyph="{Binding ElementName=_ShowClientPasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
                         </ToggleButton>
-                        <Button Command="{x:Bind SetSyncAsyncCommand}">
+                        <Button Command="{x:Bind SetSyncCommand}">
                             <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
                         </Button>
                     </StackPanel>
