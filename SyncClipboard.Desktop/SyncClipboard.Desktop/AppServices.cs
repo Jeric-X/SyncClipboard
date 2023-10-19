@@ -7,6 +7,7 @@ using SyncClipboard.Core.UserServices;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.Utilities;
 using SyncClipboard.Desktop.Views;
+using SyncClipboard.WinUI3.ClipboardAva;
 
 namespace SyncClipboard.Desktop;
 
@@ -34,6 +35,9 @@ public class AppServices
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
 
         services.AddSingleton<IClipboardFactory, ClipboardFactory>();
+        services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
+        services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+
         services.AddSingleton<INotification, Notification>();
 
         return services;

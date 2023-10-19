@@ -1,15 +1,18 @@
 ﻿using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
-using Windows.ApplicationModel.DataTransfer;
+using System.Threading;
 
-namespace SyncClipboard.WinUI3.ClipboardWinUI;
+namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class ClipboardListener : ClipboardChangingListenerBase
 {
-    private Action<ClipboardMetaInfomation>? _action;
     private readonly IClipboardFactory _clipboardFactory;
     protected override IClipboardFactory ClipboardFactory => _clipboardFactory;
+
+    private Timer? _timer;
+    private Action<ClipboardMetaInfomation>? _action;
+    private ClipboardMetaInfomation? _meta;
 
     public ClipboardListener(IClipboardFactory clipboardFactory)
     {
@@ -19,16 +22,22 @@ internal class ClipboardListener : ClipboardChangingListenerBase
     protected override void RegistSystemEvent(Action<ClipboardMetaInfomation> action)
     {
         _action = action;
-        Clipboard.ContentChanged += HandleClipboardChanged;
+        _timer = new Timer(InvokeTick, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
     protected override void UnRegistSystemEvent(Action<ClipboardMetaInfomation> action)
     {
-        Clipboard.ContentChanged -= HandleClipboardChanged;
+        _timer?.Dispose();
+        _action = null;
     }
 
-    private void HandleClipboardChanged(object? _, object _1)
+    private void InvokeTick(object? _)
     {
-        _action?.Invoke(_clipboardFactory.GetMetaInfomation());
+        var meta = _clipboardFactory.GetMetaInfomation();
+        if (meta != _meta)
+        {
+            _action?.Invoke(meta);
+            _meta = meta;
+        }
     }
 }

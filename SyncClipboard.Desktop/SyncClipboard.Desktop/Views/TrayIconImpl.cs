@@ -37,19 +37,24 @@ internal class TrayIconImpl : TrayIconBase<WindowIcon>
 
     protected override void SetIcon(WindowIcon icon)
     {
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            _trayIcon.Icon = icon;
-        }
-        else
-        {
-            Dispatcher.UIThread.Post(() => _trayIcon.Icon = icon, DispatcherPriority.Send);
-        }
+        ActionInUIThread(() => _trayIcon.Icon = icon);
     }
 
     protected override void SetToolTip(string text)
     {
-        _trayIcon.ToolTipText = text;
+        ActionInUIThread(() => _trayIcon.ToolTipText = text);
+    }
+
+    private static void ActionInUIThread(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action.Invoke();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(action, DispatcherPriority.Send);
+        }
     }
 
     protected override WindowIcon[] UploadIcons()

@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
@@ -16,6 +17,7 @@ public partial class App : Application
     public IServiceProvider Services { get; private set; }
     public new static App Current => (App)Application.Current!;
     public Window MainWindow => (Window)Services.GetRequiredService<IMainWindow>();
+    public IClipboard Clipboard => MainWindow.Clipboard!;
 
     private IClassicDesktopStyleApplicationLifetime _appLife;
     private ProgramWorkflow? _programWorkflow;
@@ -53,8 +55,6 @@ public partial class App : Application
         _programWorkflow.Run();
         MenuItem[] menuItems = { new MenuItem(Core.I18n.Strings.Exit, ExitApp) };
         Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
-
-        Services.GetRequiredService<ITrayIcon>().ShowUploadAnimation();
     }
 
     internal void ExitApp()

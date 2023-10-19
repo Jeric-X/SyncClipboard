@@ -2,7 +2,7 @@
 
 namespace SyncClipboard.Core.Models;
 
-public class ClipboardMetaInfomation
+public record class ClipboardMetaInfomation
 {
     public string? Text;
     public string? Html;
