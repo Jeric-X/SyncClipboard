@@ -14,9 +14,11 @@ namespace SyncClipboard.Desktop;
 public partial class App : Application
 {
     public IServiceProvider Services { get; private set; }
-    private ProgramWorkflow? ProgramWorkflow;
     public new static App Current => (App)Application.Current!;
-    private IClassicDesktopStyleApplicationLifetime appLife;
+    public Window MainWindow => (Window)Services.GetRequiredService<IMainWindow>();
+
+    private IClassicDesktopStyleApplicationLifetime _appLife;
+    private ProgramWorkflow? _programWorkflow;
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     public App()
@@ -39,7 +41,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            appLife = desktop;
+            _appLife = desktop;
         }
         else
         {
@@ -47,8 +49,8 @@ public partial class App : Application
         }
         base.OnFrameworkInitializationCompleted();
 
-        ProgramWorkflow = new ProgramWorkflow(Services);
-        ProgramWorkflow.Run();
+        _programWorkflow = new ProgramWorkflow(Services);
+        _programWorkflow.Run();
         MenuItem[] menuItems = { new MenuItem(Core.I18n.Strings.Exit, ExitApp) };
         Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
 
@@ -57,7 +59,7 @@ public partial class App : Application
 
     internal void ExitApp()
     {
-        ProgramWorkflow?.Stop();
-        appLife.Shutdown();
+        _programWorkflow?.Stop();
+        _appLife.Shutdown();
     }
 }

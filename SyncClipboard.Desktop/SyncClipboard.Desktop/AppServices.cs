@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.Views;
 
 namespace SyncClipboard.Desktop;
@@ -17,6 +19,8 @@ public class AppServices
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
+
+        services.AddSingleton<IClipboardFactory, ClipboardFactory>();
 
         return services;
     }

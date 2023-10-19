@@ -12,7 +12,7 @@ internal class TrayIconImpl : TrayIconBase<WindowIcon>
 {
     private static readonly WindowIcon _DefaultIcon = new WindowIcon(AssetLoader.Open(new Uri("avares://SyncClipboard.Desktop/Assets/default.ico")));
     private static readonly WindowIcon _ErrorIcon = new WindowIcon(AssetLoader.Open(new Uri("avares://SyncClipboard.Desktop/Assets/erro.ico")));
-    
+
     protected override WindowIcon DefaultIcon => _DefaultIcon;
     protected override WindowIcon ErrorIcon => _ErrorIcon;
     protected override int MaxToolTipLenth => 255;
