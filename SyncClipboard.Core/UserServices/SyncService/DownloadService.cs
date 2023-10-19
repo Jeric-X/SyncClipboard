@@ -185,7 +185,7 @@ public class DownloadService : Service
         {
             try
             {
-                SyncService.remoteProfilemutex.WaitOne();
+                await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
                 var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken).ConfigureAwait(true);
                 _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
@@ -210,7 +210,7 @@ public class DownloadService : Service
             }
             finally
             {
-                SyncService.remoteProfilemutex.ReleaseMutex();
+                SyncService.remoteProfilemutex.Release();
             }
 
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken).ConfigureAwait(true);
