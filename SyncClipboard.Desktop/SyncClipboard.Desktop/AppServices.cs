@@ -7,7 +7,6 @@ using SyncClipboard.Core.UserServices;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.Utilities;
 using SyncClipboard.Desktop.Views;
-using SyncClipboard.WinUI3.ClipboardAva;
 
 namespace SyncClipboard.Desktop;
 
@@ -17,9 +16,9 @@ public class AppServices
     {
         //services.AddSingleton<IService, EasyCopyImageSerivce>();
         //services.AddSingleton<IService, ConvertService>();
-        //services.AddSingleton<IService, ServerService>();
+        services.AddSingleton<IService, ServerService>();
         services.AddSingleton<IService, UploadService>();
-        //services.AddSingleton<IService, DownloadService>();
+        services.AddSingleton<IService, DownloadService>();
     }
 
     public static ServiceCollection ConfigureServices()
@@ -37,6 +36,8 @@ public class AppServices
         services.AddSingleton<IClipboardFactory, ClipboardFactory>();
         services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
+        services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
+        services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
 
         services.AddSingleton<INotification, Notification>();
 

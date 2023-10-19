@@ -1,9 +1,9 @@
 ﻿using Avalonia.Input;
+using Avalonia.Threading;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Desktop;
 
-namespace SyncClipboard.WinUI3.ClipboardAva;
+namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<ProfileType> where ProfileType : Profile
 {
@@ -11,6 +11,16 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 
     public void SetLocalClipboard(object obj)
     {
-        App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj);
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).Wait();
+        }
+        else
+        {
+            Dispatcher.UIThread.Invoke(
+                () => App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj),
+                DispatcherPriority.Send
+            ).Wait();
+        }
     }
 }

@@ -234,6 +234,6 @@ public class FileProfile : Profile
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         ArgumentNullException.ThrowIfNull(FullPath);
-        return new ClipboardMetaInfomation() { Files = new string[] { FullPath } };
+        return new ClipboardMetaInfomation() { Files = new string[] { FullPath }, Text = FileName };
     }
 }

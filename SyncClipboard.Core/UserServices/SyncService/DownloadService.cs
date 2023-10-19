@@ -237,11 +237,6 @@ public class DownloadService : Service
     private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
         Profile localProfile = _clipboardFactory.CreateProfile();
-        if (localProfile.Type == ProfileType.Unknown)
-        {
-            _logger.Write("[PULL] Local profile type is Unkown, stop sync.");
-            return;
-        }
 
         if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
         {
