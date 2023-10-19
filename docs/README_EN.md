@@ -90,6 +90,15 @@ Import this [Shortcuts](https://www.icloud.com/shortcuts/2fc4453de31442118fccea7
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
 Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
 
+<details>
+<summary>Screenshots</summary>
+
+![](image/android1_EN.jpg)
+![](image/android2_EN.jpg)
+![](image/android3_EN.jpg)
+
+</details>
+
 ### Notes for Clients
 
 There are three necessery config(maybe different words, same uses).
