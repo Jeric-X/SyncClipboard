@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Options;
-using SyncClipboard.Core.Commons;
+﻿using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using System.Diagnostics;
 
@@ -10,9 +9,9 @@ namespace SyncClipboard.Core.Utilities
         private readonly string LOG_FOLDER;
         private static readonly object LOCKER = new();
 
-        public Logger(IOptions<LoggerOption> option)
+        public Logger()
         {
-            LOG_FOLDER = option.Value.Path ?? throw new ArgumentNullException(I18n.Strings.LogPathNull, null as Exception);
+            LOG_FOLDER = Env.LogFolder;
         }
 
         public void Write(string? tag, string str, StackFrame? stackFrame = null)

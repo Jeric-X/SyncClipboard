@@ -40,7 +40,7 @@ public class ConvertService : ClipboardHander
         try
         {
             var file = metaInfo.Files![0];
-            var newPath = await ImageHelper.CompatibilityCast(file, AppConfig.LocalTemplateFolder, cancellationToken);
+            var newPath = await ImageHelper.CompatibilityCast(file, Env.TemplateFileFolder, cancellationToken);
             new ImageProfile(newPath, _serviceProvider).SetLocalClipboard();
         }
         catch (Exception ex)
@@ -58,8 +58,6 @@ public class ConvertService : ClipboardHander
     private readonly IServiceProvider _serviceProvider;
 
     private ClipboardAssistConfig _clipboardConfig;
-
-    private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
     public ConvertService(IServiceProvider serviceProvider)
     {

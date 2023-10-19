@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
+﻿using SyncClipboard.Abstract;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.Image;
@@ -15,8 +15,6 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     protected abstract IWebDav WebDav { get; set; }
 
     public abstract ClipboardMetaInfomation GetMetaInfomation();
-
-    private string RemoteProfilePath => ServiceProvider.GetRequiredService<IAppConfig>().RemoteProfilePath;
 
     public Profile CreateProfile(ClipboardMetaInfomation? metaInfomation = null)
     {
@@ -53,7 +51,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         ClipboardProfileDTO? profileDTO;
         try
         {
-            profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(RemoteProfilePath, cancelToken);
+            profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(Env.RemoteProfilePath, cancelToken);
             Logger.Write(nameof(ClipboardFactoryBase), profileDTO?.ToString() ?? "null");
         }
         catch (Exception ex)

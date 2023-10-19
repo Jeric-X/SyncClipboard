@@ -4,7 +4,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Options;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Web;
@@ -103,18 +102,14 @@ namespace SyncClipboard.Core
         {
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddTransient<IAppConfig, AppConfig>();
-            services.Configure<UserConfigOption>(x => x.Path = Env.UserConfigFile);
             services.AddSingleton<ConfigManager>();
 
             services.AddSingleton<ILogger, Logger>();
-            services.Configure<LoggerOption>(x => x.Path = Env.LogFolder);
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<ServiceManager>();
             services.AddTransient<UpdateChecker>();
-
-            ConfigurateUserService(services);
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)
@@ -128,13 +123,13 @@ namespace SyncClipboard.Core
             services.AddSingleton<SettingWindowViewModel>();
         }
 
-        private static void ConfigurateUserService(IServiceCollection services)
+        public static void ConfigurateUserService(IServiceCollection services)
         {
-            //services.AddSingleton<IService, EasyCopyImageSerivce>();
-            //services.AddSingleton<IService, ConvertService>();
-            //services.AddSingleton<IService, ServerService>();
-            //services.AddSingleton<IService, UploadService>();
-            //services.AddSingleton<IService, DownloadService>();
+            services.AddSingleton<IService, EasyCopyImageSerivce>();
+            services.AddSingleton<IService, ConvertService>();
+            services.AddSingleton<IService, ServerService>();
+            services.AddSingleton<IService, UploadService>();
+            services.AddSingleton<IService, DownloadService>();
         }
 
         private static void PrepareWorkingFolder(ConfigManager configManager)

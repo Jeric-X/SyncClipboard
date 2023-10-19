@@ -19,11 +19,11 @@ namespace SyncClipboard.Core.Commons
 
         JsonNode _jsonNode = new JsonObject();
 
-        public ConfigManager(ILogger logger, IAppConfig appConfig, IContextMenu contextMenu)
+        public ConfigManager(ILogger logger, IContextMenu contextMenu)
         {
             _logger = logger;
             _contextMenu = contextMenu;
-            _path = appConfig.UserConfigFile;
+            _path = Env.UserConfigFile;
             Load();
         }
 

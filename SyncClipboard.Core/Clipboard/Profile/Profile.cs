@@ -31,8 +31,8 @@ public abstract class Profile
 
     #endregion
 
-    protected string RemoteProfilePath => ServiceProvider.GetRequiredService<IAppConfig>().RemoteProfilePath;
-    protected string LocalTemplateFolder => ServiceProvider.GetRequiredService<IAppConfig>().LocalTemplateFolder;
+    protected const string RemoteProfilePath = Env.RemoteProfilePath;
+    protected readonly static string LocalTemplateFolder = Env.TemplateFileFolder;
 
     private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
     private INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();

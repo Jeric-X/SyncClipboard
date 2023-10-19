@@ -36,7 +36,7 @@ public class ImageProfile : FileProfile
     }
 
     private IClipboardImage? Image { get; set; }
-    private string ImageTemplateFolder => Path.Combine(LocalTemplateFolder, "temp images");
+    private readonly static string ImageTemplateFolder = Path.Combine(LocalTemplateFolder, "temp images");
 
     public ImageProfile(string filepath, IServiceProvider serviceProvider) : base(filepath, serviceProvider)
     {

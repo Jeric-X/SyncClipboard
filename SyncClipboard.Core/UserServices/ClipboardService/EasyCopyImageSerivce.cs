@@ -69,7 +69,6 @@ public class EasyCopyImageSerivce : ClipboardHander
     private readonly IServiceProvider _serviceProvider;
     private ClipboardAssistConfig _clipboardAssistConfig;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
-    private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
     private ITrayIcon TrayIcon => _serviceProvider.GetRequiredService<ITrayIcon>();
 
     public EasyCopyImageSerivce(IServiceProvider serviceProvider)
@@ -111,7 +110,7 @@ public class EasyCopyImageSerivce : ClipboardHander
                 if (!ImageHelper.FileIsImage(localPath))
                 {
                     TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
-                    localPath = await ImageHelper.CompatibilityCast(localPath, AppConfig.LocalTemplateFolder, cancellationToken);
+                    localPath = await ImageHelper.CompatibilityCast(localPath, Env.TemplateFileFolder, cancellationToken);
                 }
                 profile = new ImageProfile(localPath, _serviceProvider);
             }
@@ -160,13 +159,13 @@ public class EasyCopyImageSerivce : ClipboardHander
         }
         if (useProxy)
         {
-            var fullPath = Path.Combine(AppConfig.LocalTemplateFolder, "proxy " + filename.Value);
+            var fullPath = Path.Combine(Env.TemplateFileFolder, "proxy " + filename.Value);
             await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken, true);
             return fullPath;
         }
         else
         {
-            var fullPath = Path.Combine(AppConfig.LocalTemplateFolder, filename.Value);
+            var fullPath = Path.Combine(Env.TemplateFileFolder, filename.Value);
             await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken);
             return fullPath;
         }

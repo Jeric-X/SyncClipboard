@@ -40,6 +40,7 @@ namespace SyncClipboard
         {
             var services = new ServiceCollection();
             ProgramWorkflow.ConfigCommonService(services);
+            ProgramWorkflow.ConfigurateUserService(services);
 
             var notifyer = new Notifyer();
             Menu = new ContextMenu(notifyer);

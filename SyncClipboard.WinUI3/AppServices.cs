@@ -17,6 +17,7 @@ public class AppServices
 
         ProgramWorkflow.ConfigCommonService(services);
         ProgramWorkflow.ConfigurateViewModels(services);
+        ProgramWorkflow.ConfigurateUserService(services);
 
         services.AddSingleton<IMainWindow, SettingWindow>();
         services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
