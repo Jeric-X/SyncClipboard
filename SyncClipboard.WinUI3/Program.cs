@@ -2,6 +2,7 @@
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using SyncClipboard.Core.Utilities;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,6 +21,7 @@ public static class Program
         Mutex mutex = new(false, WinUIEnv.SoftName, out bool creetedNew);
         if (!creetedNew)
         {
+            AppInstance.ActiveOtherInstance(SyncClipboard.Core.Commons.Env.Appid).Wait();
             return;
         }
 

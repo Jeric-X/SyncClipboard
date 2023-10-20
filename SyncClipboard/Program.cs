@@ -1,7 +1,7 @@
-﻿using System;
+﻿using SyncClipboard.Core.Utilities;
+using System;
 using System.Threading;
 using System.Windows.Forms;
-using SyncClipboard.Utility;
 namespace SyncClipboard
 {
     internal static class Program
@@ -32,6 +32,7 @@ namespace SyncClipboard
             }
             else
             {
+                AppInstance.ActiveOtherInstance(SyncClipboard.Core.Commons.Env.Appid).Wait();
                 MessageBox.Show("已经存在一个正在运行中的实例！", Env.SoftName);
             }
         }

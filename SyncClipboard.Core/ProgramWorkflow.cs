@@ -58,6 +58,7 @@ namespace SyncClipboard.Core
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
             trayIcon.Create();
+            Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
         }
 
         private async void CheckUpdate()
@@ -110,6 +111,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<ServiceManager>();
             services.AddTransient<UpdateChecker>();
+
+            services.AddTransient<AppInstance>();
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)

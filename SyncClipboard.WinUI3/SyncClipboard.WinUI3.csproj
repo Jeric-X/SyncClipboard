@@ -29,6 +29,36 @@
 
   <Target Name="DeleteWindowsAppSdkSelfContainedLanguage" AfterTargets="Build">
     <Message Text="Deleting Windows App Sdk self contained language" />
+    <RemoveDir Directories="$(OutputPath)\am-ET" />
+    <RemoveDir Directories="$(OutputPath)\as-IN" />
+    <RemoveDir Directories="$(OutputPath)\bn-IN" />
+    <RemoveDir Directories="$(OutputPath)\ca-Es-VALENCIA" />
+    <RemoveDir Directories="$(OutputPath)\fil-PH" />
+    <RemoveDir Directories="$(OutputPath)\ga-IE" />
+    <RemoveDir Directories="$(OutputPath)\gd-gb" />
+    <RemoveDir Directories="$(OutputPath)\gu-IN" />
+    <RemoveDir Directories="$(OutputPath)\hy-AM" />
+    <RemoveDir Directories="$(OutputPath)\km-KH" />
+    <RemoveDir Directories="$(OutputPath)\kn-IN" />
+    <RemoveDir Directories="$(OutputPath)\kok-IN" />
+    <RemoveDir Directories="$(OutputPath)\lb-LU" />
+    <RemoveDir Directories="$(OutputPath)\lo-LA" />
+    <RemoveDir Directories="$(OutputPath)\mi-NZ" />
+    <RemoveDir Directories="$(OutputPath)\mk-MK" />
+    <RemoveDir Directories="$(OutputPath)\ml-IN" />
+    <RemoveDir Directories="$(OutputPath)\mr-IN" />
+    <RemoveDir Directories="$(OutputPath)\mt-MT" />
+    <RemoveDir Directories="$(OutputPath)\ne-NP" />
+    <RemoveDir Directories="$(OutputPath)\or-IN" />
+    <RemoveDir Directories="$(OutputPath)\pa-IN" />
+    <RemoveDir Directories="$(OutputPath)\quz-PE" />
+    <RemoveDir Directories="$(OutputPath)\sr-Cyrl-BA" />
+    <RemoveDir Directories="$(OutputPath)\ta-IN" />
+    <RemoveDir Directories="$(OutputPath)\te-IN" />
+    <RemoveDir Directories="$(OutputPath)\tt-RU" />
+    <RemoveDir Directories="$(OutputPath)\ug-CN" />
+    <RemoveDir Directories="$(OutputPath)\ur-PK" />
+    <RemoveDir Directories="$(OutputPath)\uz-Latn-UZ" />
     <RemoveDir Directories="$(OutputPath)\af-ZA" />
     <RemoveDir Directories="$(OutputPath)\ar-SA" />
     <RemoveDir Directories="$(OutputPath)\az-Latn-AZ" />
