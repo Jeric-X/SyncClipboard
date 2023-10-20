@@ -29,6 +29,8 @@ public class AppServices
         ProgramWorkflow.ConfigurateViewModels(services);
         ConfigurateUserService(services);
 
+        services.AddTransient<IAppConfig, AppConfig>();
+
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddSingleton<ITrayIcon, TrayIconImpl>();

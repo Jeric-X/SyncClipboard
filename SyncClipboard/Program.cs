@@ -16,8 +16,8 @@ namespace SyncClipboard
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Mutex mutex = new(false, Env.AppId, out bool creetedNew);
-            if (creetedNew)
+            using var _ = new Mutex(false, Env.AppId, out bool createdNew);
+            if (createdNew)
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
                 // handle UI exceptions

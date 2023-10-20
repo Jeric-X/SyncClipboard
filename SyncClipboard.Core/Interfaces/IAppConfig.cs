@@ -2,5 +2,5 @@
 
 public interface IAppConfig
 {
-    string AppId { get; }    
+    string AppId { get; }
 }

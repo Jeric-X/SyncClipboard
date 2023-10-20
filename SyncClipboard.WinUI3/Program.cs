@@ -18,8 +18,8 @@ public static class Program
     [STAThread]
     private static void Main(string[] _)
     {
-        Mutex mutex = new(false, Env.AppId, out bool creetedNew);
-        if (!creetedNew)
+        using Mutex mutex = new(false, Env.AppId, out bool createdNew);
+        if (!createdNew)
         {
             AppInstance.ActiveOtherInstance(Env.AppId).Wait();
             return;
