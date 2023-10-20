@@ -102,7 +102,6 @@ namespace SyncClipboard.Core
         public static void ConfigCommonService(ServiceCollection services)
         {
             services.AddSingleton((serviceProvider) => serviceProvider);
-            services.AddTransient<IAppConfig, AppConfig>();
             services.AddSingleton<ConfigManager>();
 
             services.AddSingleton<ILogger, Logger>();

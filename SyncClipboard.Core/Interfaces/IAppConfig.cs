@@ -2,4 +2,5 @@
 
 public interface IAppConfig
 {
+    string AppId { get; }    
 }

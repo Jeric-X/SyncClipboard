@@ -25,7 +25,7 @@ public sealed partial class LicensePage : Page
         var path = e.Parameter as string;
         if (path is not null)
         {
-            _TextBlock.Text = File.ReadAllText(Path.Combine(Env.Directory, $"LICENSES/{path}"));
+            _TextBlock.Text = File.ReadAllText(Path.Combine(Core.Commons.Env.Directory, $"LICENSES/{path}"));
         }
         base.OnNavigatedTo(e);
     }

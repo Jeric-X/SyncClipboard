@@ -44,6 +44,9 @@ namespace SyncClipboard
 
             var notifyer = new Notifyer();
             Menu = new ContextMenu(notifyer);
+
+            services.AddTransient<IAppConfig, AppConfig>();
+
             services.AddSingleton<IContextMenu>(Menu);
             services.AddSingleton<ITrayIcon>(notifyer);
             services.AddSingleton<IMainWindow, SettingsForm>();

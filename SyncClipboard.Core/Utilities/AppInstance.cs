@@ -15,9 +15,9 @@ public sealed class AppInstance : IDisposable
 
     private CancellationTokenSource? _cancellationSource = null;
 
-    public AppInstance(IMainWindow window, ILogger logger)
+    public AppInstance(IMainWindow window, ILogger logger, IAppConfig appConfig)
     {
-        _appId = Commons.Env.Appid;
+        _appId = appConfig.AppId;
         _mainWindow = window;
         _logger = logger;
     }

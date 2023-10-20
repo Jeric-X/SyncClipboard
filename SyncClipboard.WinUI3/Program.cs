@@ -18,10 +18,10 @@ public static class Program
     [STAThread]
     private static void Main(string[] _)
     {
-        Mutex mutex = new(false, WinUIEnv.SoftName, out bool creetedNew);
+        Mutex mutex = new(false, Env.AppId, out bool creetedNew);
         if (!creetedNew)
         {
-            AppInstance.ActiveOtherInstance(SyncClipboard.Core.Commons.Env.Appid).Wait();
+            AppInstance.ActiveOtherInstance(Env.AppId).Wait();
             return;
         }
 

@@ -3,7 +3,6 @@
     public static class Env
     {
         public const string SoftName = "SyncClipboard";
-        public const string Appid = "SyncClipboard_ID";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
         public const string VERSION = "2.3.0";
 

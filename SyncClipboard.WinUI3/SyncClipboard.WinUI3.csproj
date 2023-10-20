@@ -131,7 +131,7 @@
     <PackageReference Include="Magick.NET-Q16-AnyCPU" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CodeCracker.CSharp" >
+    <PackageReference Include="CodeCracker.CSharp">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

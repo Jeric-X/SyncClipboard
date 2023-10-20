@@ -16,7 +16,7 @@ namespace SyncClipboard
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Mutex mutex = new(false, Env.SoftName, out bool creetedNew);
+            Mutex mutex = new(false, Env.AppId, out bool creetedNew);
             if (creetedNew)
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -32,7 +32,7 @@ namespace SyncClipboard
             }
             else
             {
-                AppInstance.ActiveOtherInstance(SyncClipboard.Core.Commons.Env.Appid).Wait();
+                AppInstance.ActiveOtherInstance(Env.AppId).Wait();
                 MessageBox.Show("已经存在一个正在运行中的实例！", Env.SoftName);
             }
         }
