@@ -9,7 +9,7 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 {
     public abstract object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation);
 
-    public void SetLocalClipboard(object obj)
+    public virtual void SetLocalClipboard(object obj)
     {
         if (Dispatcher.UIThread.CheckAccess())
         {

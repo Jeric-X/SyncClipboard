@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -141,12 +142,7 @@ namespace SyncClipboard.Core.Commons
             MenuItem[] menuItems =
             {
                 new MenuItem(
-                    I18n.Strings.OpenConfigFile, () => {
-                        var open = new System.Diagnostics.Process();
-                        open.StartInfo.FileName = "notepad";
-                        open.StartInfo.Arguments = _path;
-                        open.Start();
-                    } ),
+                    I18n.Strings.OpenConfigFile, OpenConfigFile),
                 new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load()),
                 new MenuItem(
                     I18n.Strings.OpenConfigFileFolder, () => {
@@ -158,5 +154,18 @@ namespace SyncClipboard.Core.Commons
             };
             _contextMenu.AddMenuItemGroup(menuItems);
         }
+
+        private Action OpenConfigFile => () =>
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                var open = new System.Diagnostics.Process();
+                open.StartInfo.FileName = "notepad";
+                open.StartInfo.Arguments = _path;
+                open.Start();
+            }
+
+            Sys.OpenWithDefaultApp(_path);
+        };
     }
 }
