@@ -20,14 +20,14 @@ namespace SyncClipboard.WinUI3.Views
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class SettingWindow : Window, IMainWindow
+    public sealed partial class MainWindow : Window, IMainWindow
     {
-        private readonly SettingWindowViewModel _viewModel;
+        private readonly MainViewModel _viewModel;
 
-        public SettingWindow()
+        public MainWindow()
         {
             this.InitializeComponent();
-            _viewModel = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
+            _viewModel = App.Current.Services.GetRequiredService<MainViewModel>();
 
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(_AppTitleBar.DraggableArea);

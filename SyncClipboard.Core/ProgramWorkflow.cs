@@ -122,7 +122,7 @@ namespace SyncClipboard.Core
             services.AddTransient<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
-            services.AddSingleton<SettingWindowViewModel>();
+            services.AddSingleton<MainViewModel>();
         }
 
         public static void ConfigurateUserService(IServiceCollection services)

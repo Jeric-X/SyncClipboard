@@ -99,8 +99,8 @@ namespace SyncClipboard.WinUI3.Views
 
         private void HyperlinkButton_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs _1)
         {
-            var mainWindowVM = App.Current.Services.GetRequiredService<SettingWindowViewModel>();
-            var mainWindow = (SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>();
+            var mainWindowVM = App.Current.Services.GetRequiredService<MainViewModel>();
+            var mainWindow = (MainWindow)App.Current.Services.GetRequiredService<IMainWindow>();
 
             mainWindowVM.BreadcrumbList.Add(PageDefinition.NextCloudLogIn);
             mainWindow.NavigateTo(PageDefinition.NextCloudLogIn, SlideNavigationTransitionEffect.FromRight);

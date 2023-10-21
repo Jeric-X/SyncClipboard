@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels
 {
-    public partial class SettingWindowViewModel : ObservableObject
+    public partial class MainViewModel : ObservableObject
     {
         public List<PageDefinition> MainWindowPage = new()
         {

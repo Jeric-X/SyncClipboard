@@ -44,14 +44,14 @@ public sealed partial class NextCloudLogInPage : Page
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
-        ((SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>()).EnableScrollViewer();
+        ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>()).EnableScrollViewer();
         _viewModel.Cancel();
         base.OnNavigatedFrom(e);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs _)
     {
-        ((SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>()).DispableScrollViewer();
+        ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>()).DispableScrollViewer();
     }
 
     private async void TreeView_ExpandingAsync(TreeView _, TreeViewExpandingEventArgs args)
@@ -66,7 +66,7 @@ public sealed partial class NextCloudLogInPage : Page
         try
         {
             _viewModel.SetFolder((FileTreeViewModel)_TreeView.SelectedItem);
-            ((SettingWindow)App.Current.Services.GetRequiredService<IMainWindow>()).NavigateToLastLevel();
+            ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>()).NavigateToLastLevel();
         }
         catch (Exception ex)
         {

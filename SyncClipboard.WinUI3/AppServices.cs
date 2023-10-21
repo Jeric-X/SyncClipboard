@@ -21,7 +21,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
 
-        services.AddSingleton<IMainWindow, SettingWindow>();
+        services.AddSingleton<IMainWindow, MainWindow>();
         services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
         services.AddSingleton<ClipboardFactory>();
         services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());

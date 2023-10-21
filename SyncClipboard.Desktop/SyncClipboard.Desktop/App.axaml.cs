@@ -62,4 +62,9 @@ public partial class App : Application
         _programWorkflow?.Stop();
         _appLife.Shutdown();
     }
+
+    private void NativeMenuItem_Click(object? sender, System.EventArgs e)
+    {
+        ExitApp();
+    }
 }

@@ -3,12 +3,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:sty="using:FluentAvalonia.Styling"
              xmlns:local="using:SyncClipboard.Desktop.Views"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
              RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
 
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
     </Application.Styles>
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="{x:Static i18n:Strings.Exit}" Click="NativeMenuItem_Click" />
+        </NativeMenu>
+    </NativeMenu.Menu>
     <TrayIcon.Icons>
         <TrayIcons>
             <TrayIcon Icon="/Assets/default.ico" ToolTipText="Avalonia Tray Icon ToolTip">

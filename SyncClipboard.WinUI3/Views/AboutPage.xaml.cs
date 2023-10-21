@@ -34,11 +34,11 @@ namespace SyncClipboard.WinUI3.Views
 
         private void DependencyItem_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs _)
         {
-            var window = App.Current.Services.GetService<IMainWindow>() as SettingWindow;
+            var window = App.Current.Services.GetService<IMainWindow>() as MainWindow;
             var settingsCard = (SettingsCard)sender;
             var path = $"{settingsCard.Header}/{settingsCard.Tag}";
 
-            var mainWindowVM = App.Current.Services.GetService<SettingWindowViewModel>();
+            var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
             mainWindowVM?.BreadcrumbList.Add(PageDefinition.License);
             window?.NavigateTo(PageDefinition.License, SlideNavigationTransitionEffect.FromRight, path);
         }
