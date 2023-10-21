@@ -9,6 +9,7 @@
 
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
+        <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
     </Application.Styles>
     <NativeMenu.Menu>
         <NativeMenu>

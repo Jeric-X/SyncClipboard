@@ -5,7 +5,7 @@ namespace SyncClipboard.Core.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
-        public List<PageDefinition> MainWindowPage = new()
+        public List<PageDefinition> MainWindowPage { get; } = new()
         {
             PageDefinition.SyncSetting,
             PageDefinition.CliboardAssistant,

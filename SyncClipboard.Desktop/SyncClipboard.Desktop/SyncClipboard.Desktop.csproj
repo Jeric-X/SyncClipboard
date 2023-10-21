@@ -20,6 +20,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="FluentAvalonia.BreadcrumbBar" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="FluentAvaloniaUI" />
 

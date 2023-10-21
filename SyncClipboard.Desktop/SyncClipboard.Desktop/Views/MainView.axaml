@@ -4,80 +4,68 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              d:DesignWidth="800"
              d:DesignHeight="450"
-             x:DataType="vm:SettingWindowViewModel"
+             x:DataType="vm:MainViewModel"
              mc:Ignorable="d">
     <Design.DataContext>
-        <!--
-            This only sets the DataContext for the previewer in an IDE,
-            to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs)
-        -->
-        <vm:SettingWindowViewModel />
+        <vm:MainViewModel />
     </Design.DataContext>
     <Grid>
         <SplitView x:Name="SplitPane"
+                   IsPaneOpen="True"
                    OpenPaneLength="200"
-                   DisplayMode="Inline"
-                   PaneClosed="SplitPane_PaneClosed"
-                   PaneOpening="SplitPane_PaneOpening"
-                   PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
+                   DisplayMode="Inline">
             <Grid Margin="0,36,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Row="0" Orientation="Vertical">
-                    <BreadcrumbBar Margin="20,0,20,0" ItemsSource="{x:Bind _viewModel.BreadcrumbList}" ItemClicked="BreadcrumbBar_ItemClicked">
-                        <BreadcrumbBar.Resources>
+                    <ui:BreadcrumbBar ItemsSource="{Binding BreadcrumbList}" ItemClicked="BreadcrumbBar_ItemClicked">
+                        <ui:BreadcrumbBar.Resources>
                             <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
-                        </BreadcrumbBar.Resources>
-                        <BreadcrumbBar.ItemTemplate>
+                            <x:Double x:Key="BreadcrumbBarItemThemeFontSize">30</x:Double>
+                            <x:Double x:Key="BreadcrumbBarChevronPadding">0,0,0,0</x:Double>
+                        </ui:BreadcrumbBar.Resources>
+                        <ui:BreadcrumbBar.ItemTemplate>
                             <DataTemplate x:DataType="vm:PageDefinition">
-                                <BreadcrumbBarItem Content="{Binding}" FontSize="30">
-                                    <BreadcrumbBarItem.ContentTemplate>
-                                        <DataTemplate>
+                                <ui:BreadcrumbBarItem Content="{Binding Title}" />
+                                <!--<ui:BreadcrumbBarItem Content="{Binding}">
+                                    <ui:BreadcrumbBarItem.ContentTemplate>
+                                        <DataTemplate DataType="vm:PageDefinition">
                                             <TextBlock Margin="0,0,0,4" Text="{Binding Title}" />
                                         </DataTemplate>
-                                    </BreadcrumbBarItem.ContentTemplate>
-                                </BreadcrumbBarItem>
+                                    </ui:BreadcrumbBarItem.ContentTemplate>
+                                </ui:BreadcrumbBarItem>-->
                             </DataTemplate>
-                        </BreadcrumbBar.ItemTemplate>
-                    </BreadcrumbBar>
+                        </ui:BreadcrumbBar.ItemTemplate>
+                    </ui:BreadcrumbBar>
                 </StackPanel>
                 <ScrollViewer x:Name="_ScrollViewer"
                               Grid.Row="1"
                               Margin="0,10,0,0"
-                              VerticalScrollMode="Enabled"
                               VerticalScrollBarVisibility="Auto">
-                    <Frame x:Name="SettingContentFrame" Margin="20,0,20,20" />
+                    <ui:Frame x:Name="SettingContentFrame" Margin="20,0,20,20" />
                 </ScrollViewer>
             </Grid>
             <SplitView.Pane>
-                <ListView x:Name="_MenuList"
-                          Margin="8,36,0,0"
-                          SelectionMode="Single"
-                          IsItemClickEnabled="true"
-                          ItemsSource="{x:Bind _viewModel.MainWindowPage}"
-                          ItemClick="ListView_ItemClick"
-                          SelectionChanged="ListView_SelectionChanged">
-                    <ListView.ItemTemplate>
+                <ListBox x:Name="_MenuList"
+                         Margin="8,36,0,0"
+                         SelectionMode="Single"
+                         ItemsSource="{Binding MainWindowPage}"
+                         SelectionChanged="ListView_SelectionChanged">
+                    <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:PageDefinition">
-                            <ListViewItem>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <FontIcon FontSize="16" Glyph="{Binding Name, Converter={StaticResource SettingTagToIcon}}" FontFamily="Segoe Fluent Icons" />
-                                    <TextBlock Text="{x:Bind Title}" />
-                                </StackPanel>
-                            </ListViewItem>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <ui:FontIcon FontSize="16" Glyph="{Binding FontIcon}" FontFamily="Segoe Fluent Icons" />
+                                <TextBlock FontSize="16" Text="{Binding Title}" />
+                            </StackPanel>
                         </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </SplitView.Pane>
         </SplitView>
-        <StackPanel>
-            <Button Content="Refresh" Command="{Binding RereshCommand}" />
-            <ListBox ItemsSource="{Binding Clipboards}">
-            </ListBox>
-        </StackPanel>
     </Grid>
 </UserControl>
