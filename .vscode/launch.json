@@ -20,6 +20,38 @@
             }
         },
         {
+            "name": "DebugAva",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugAva",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop/bin/Debug/net6.0/linux-x64/publish/SyncClipboard.Desktop",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
+            "name": "ReleaseAva",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "ReleaseAva",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop/bin/Release/net6.0/linux-x64/publish/SyncClipboard.Desktop",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Production",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
             "name": "Release",
             "type": "coreclr",
             "request": "launch",

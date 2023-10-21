@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using System.Diagnostics;
 using System.IO.Pipes;
 
@@ -7,6 +8,8 @@ namespace SyncClipboard.Core.Utilities;
 public sealed class AppInstance : IDisposable
 {
     private const string ActiveCommand = "Active";
+    private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
+    private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
 
     private readonly string _appId;
     private readonly IMainWindow _mainWindow;
@@ -50,7 +53,7 @@ public sealed class AppInstance : IDisposable
         {
             try
             {
-                using var pipeServer = new NamedPipeServerStream(_appId, PipeDirection.InOut, 1);
+                using var pipeServer = new NamedPipeServerStream(PipePrefix + _appId, PipeDirection.InOut, 1);
                 await pipeServer.WaitForConnectionAsync(cancellationToken);
                 using var reader = new StreamReader(pipeServer);
                 var command = await reader.ReadLineAsync().WaitAsync(cancellationToken);
@@ -75,9 +78,9 @@ public sealed class AppInstance : IDisposable
         _cancellationSource = null;
     }
 
-    public static async Task ActiveOtherInstance(string appId)
+    private static async Task ActiveOtherInstance(string appId)
     {
-        using var pipeClient = new NamedPipeClientStream(".", appId, PipeDirection.InOut);
+        using var pipeClient = new NamedPipeClientStream(".", PipePrefix + appId, PipeDirection.InOut);
         var token = new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token;
         try
         {
@@ -86,9 +89,20 @@ public sealed class AppInstance : IDisposable
             writer.WriteLine(ActiveCommand);
             writer.Flush();
         }
-        catch
+        catch (Exception ex)
         {
-            Trace.WriteLine("Failed to call the existed instance");
+            Trace.WriteLine("Failed to call the existed instance, ex is " + ex.Message);
         }
+    }
+
+    public static Mutex? EnsureSingleInstance(string appId)
+    {
+        Mutex mutex = new(false, MutexPrefix + appId, out bool createdNew);
+        if (!createdNew)
+        {
+            ActiveOtherInstance(appId).Wait();
+            return null;
+        }
+        return mutex;
     }
 }

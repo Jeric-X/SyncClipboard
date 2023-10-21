@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using SyncClipboard.Core.Utilities;
 using System;
-using System.Threading;
 
 namespace SyncClipboard.Desktop.Desktop;
 
@@ -13,13 +12,11 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        using var _ = new Mutex(false, Env.AppId, out bool createdNew);
-        if (!createdNew)
+        using var mutex = AppInstance.EnsureSingleInstance(Env.AppId);
+        if (mutex is null)
         {
-            AppInstance.ActiveOtherInstance(Env.AppId).Wait();
             return;
         }
-
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
