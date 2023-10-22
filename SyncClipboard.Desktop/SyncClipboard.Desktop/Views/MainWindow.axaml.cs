@@ -2,6 +2,7 @@
 using FluentAvalonia.UI.Media.Animation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
+using System;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -9,6 +10,10 @@ public partial class MainWindow : Window, IMainWindow
 {
     public MainWindow()
     {
+        if (OperatingSystem.IsLinux() is false)
+        {
+            this.ExtendClientAreaToDecorationsHint = true;
+        }
         InitializeComponent();
     }
 
