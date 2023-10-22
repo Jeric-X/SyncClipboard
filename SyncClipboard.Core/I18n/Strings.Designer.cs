@@ -115,6 +115,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Checking for update…… 的本地化字符串。
+        /// </summary>
+        public static string CheckingUpdate {
+            get {
+                return ResourceManager.GetString("CheckingUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Check Update 的本地化字符串。
         /// </summary>
         public static string CheckUpdate {

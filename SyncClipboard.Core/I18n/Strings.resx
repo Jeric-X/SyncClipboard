@@ -381,4 +381,7 @@
   <data name="TrayIconContextMenuMinWidth" xml:space="preserve">
     <value>200</value>
   </data>
+  <data name="CheckingUpdate" xml:space="preserve">
+    <value>Checking for update……</value>
+  </data>
 </root>

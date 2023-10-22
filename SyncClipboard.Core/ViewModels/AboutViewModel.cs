@@ -1,28 +1,45 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public partial class AboutViewModel
+public partial class AboutViewModel : ObservableObject
 {
     public static string HomePage => Env.HomePage;
 
     private readonly IServiceProvider _serviceProvider;
 
     private UpdateChecker UpdateChecker => _serviceProvider.GetRequiredService<UpdateChecker>();
-    private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
 
     public AboutViewModel(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
+        if (_checkedUpdate is false)
+        {
+            CheckForUpdateCommand.ExecuteAsync(null);
+        }
     }
 
-    public List<OpenSourceSoftware> Dependencies = new()
+    public OpenSourceSoftware SyncClipboard { get; } = new("软件地址", Env.HomePage, "");
+
+    // TODO：change this to false
+    private static bool _checkedUpdate = true;
+    private static string _updateInfo = I18n.Strings.CheckingUpdate;
+    public string UpdateInfo
+    {
+        get => _updateInfo;
+        private set
+        {
+            _updateInfo = value;
+            OnPropertyChanged(nameof(UpdateInfo));
+        }
+    }
+
+    public List<OpenSourceSoftware> Dependencies { get; } = new()
     {
         new OpenSourceSoftware("Magick.NET", "https://github.com/dlemstra/Magick.NET","License.txt"),
         new OpenSourceSoftware("Windows Community Toolkit Labs", "https://github.com/CommunityToolkit/Labs-Windows","License.md"),
@@ -33,29 +50,31 @@ public partial class AboutViewModel
     };
 
     [RelayCommand]
+    public static void OpenUpdateUrl()
+    {
+        Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl);
+    }
+
+    [RelayCommand]
     public async Task CheckForUpdate()
     {
+        _checkedUpdate = true;
+        UpdateInfo = I18n.Strings.CheckingUpdate;
         try
         {
             var (needUpdate, newVersion) = await UpdateChecker.Check();
             if (needUpdate)
             {
-                NotificationManager.SendText(
-                    I18n.Strings.FoundNewVersion,
-                    $"v{Env.VERSION} -> {newVersion}",
-                    new Button(I18n.Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
-                );
+                UpdateInfo = $"{I18n.Strings.FoundNewVersion}\nv{Env.VERSION} -> {newVersion}";
             }
             else
             {
-                NotificationManager.SendText(
-                    I18n.Strings.ItsLatestVersion,
-                    string.Format(I18n.Strings.SoftwareUpdateInfo, Env.VERSION, newVersion));
+                UpdateInfo = $"{I18n.Strings.ItsLatestVersion}\n{string.Format(I18n.Strings.SoftwareUpdateInfo, Env.VERSION, newVersion)}";
             }
         }
-        catch (Exception ex)
+        catch
         {
-            NotificationManager.SendText(I18n.Strings.FailedToCheck, ex.Message);
+            UpdateInfo = I18n.Strings.FailedToCheck;
         }
     }
 }

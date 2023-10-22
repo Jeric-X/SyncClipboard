@@ -7,6 +7,8 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="SyncClipboard.Desktop.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
+        Width="850"
+        Height="530"
         Title="SyncClipboard.Desktop">
-        <views:MainView />
+        <views:MainView x:Name="_MainView" />
 </Window>
