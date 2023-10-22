@@ -23,6 +23,9 @@
                     </ui:SettingsExpander.Footer>
                 </ui:SettingsExpander>
             </OnPlatform.Windows>
+            <OnPlatform.Default>
+                <UserControl />
+            </OnPlatform.Default>
         </OnPlatform>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.LogRemainDays}">
             <ui:SettingsExpander.IconSource>
