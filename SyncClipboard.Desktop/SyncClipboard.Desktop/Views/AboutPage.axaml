@@ -49,7 +49,7 @@
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{Binding Dependencies}">
             <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="Segoe Fluent Icons" />
+                <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="m:OpenSourceSoftware">

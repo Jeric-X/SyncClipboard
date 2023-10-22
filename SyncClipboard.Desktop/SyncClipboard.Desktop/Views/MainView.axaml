@@ -52,7 +52,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:PageDefinition">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <ui:FontIcon FontSize="16" Glyph="{Binding FontIcon}" FontFamily="Segoe Fluent Icons" />
+                                <ui:FontIcon FontSize="20" Glyph="{Binding FontIcon}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 <TextBlock FontSize="16" Text="{Binding Title}" />
                             </StackPanel>
                         </DataTemplate>
