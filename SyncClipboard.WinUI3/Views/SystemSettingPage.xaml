@@ -25,7 +25,7 @@
         </labs:SettingsCard>
         <labs:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
             <labs:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xF2B7;" FontFamily="Segoe Fluent Icons" />
+                <FontIcon Glyph="&#xE128;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsCard.HeaderIcon>
             <ComboBox SelectedItem="{x:Bind _viewModel.Language, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Languages}" DisplayMemberPath="{x:Bind _viewModel.DisplayMemberPath, Mode=OneTime}" />
         </labs:SettingsCard>
