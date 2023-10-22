@@ -14,6 +14,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     private readonly TrayIcon _trayIcon;
     private readonly ServiceStatusViewModel _serviceStatusViewModel;
+    protected override ServiceStatusViewModel? ServiceStatusViewModel => _serviceStatusViewModel;
 
     protected override BitmapImage DefaultIcon => new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
     protected override BitmapImage ErrorIcon => new BitmapImage(new Uri("ms-appx:///Assets/erro.ico"));
@@ -66,13 +67,11 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     public override void SetStatusString(string key, string statusStr, bool error)
     {
-        _serviceStatusViewModel.SetStatusString(key, statusStr, error);
         base.SetStatusString(key, statusStr, error);
     }
 
     public override void SetStatusString(string key, string statusStr)
     {
-        _serviceStatusViewModel.SetStatusString(key, statusStr);
         base.SetStatusString(key, statusStr);
     }
 }

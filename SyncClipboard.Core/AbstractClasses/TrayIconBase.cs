@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.AbstractClasses;
 
@@ -25,6 +26,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     protected abstract void SetToolTip(string text);
     protected abstract IconType[] UploadIcons();
     protected abstract IconType[] DownloadIcons();
+    protected abstract ServiceStatusViewModel? ServiceStatusViewModel { get; }
     #endregion
 
     public void ShowDownloadAnimation()
@@ -84,6 +86,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     public virtual void SetStatusString(string key, string statusStr, bool error)
     {
         SetStatusString(key, statusStr);
+        ServiceStatusViewModel?.SetStatusString(key, statusStr, error);
 
         if (error)
         {
@@ -98,6 +101,8 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     public virtual void SetStatusString(string key, string statusStr)
     {
+        ServiceStatusViewModel?.SetStatusString(key, statusStr);
+
         if (!string.IsNullOrEmpty(key))
         {
             _statusList[key] = statusStr;

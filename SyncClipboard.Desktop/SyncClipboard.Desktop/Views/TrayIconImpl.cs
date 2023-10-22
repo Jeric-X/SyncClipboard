@@ -3,6 +3,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.AbstractClasses;
+using SyncClipboard.Core.ViewModels;
 using System;
 using System.Linq;
 
@@ -17,11 +18,14 @@ internal class TrayIconImpl : TrayIconBase<WindowIcon>
     protected override WindowIcon ErrorIcon => _ErrorIcon;
     protected override int MaxToolTipLenth => 255;
 
+    private readonly ServiceStatusViewModel _serviceStatusViewModel;
+    protected override ServiceStatusViewModel? ServiceStatusViewModel => _serviceStatusViewModel;
+
     public override event Action? MainWindowWakedUp;
 
     private readonly TrayIcon _trayIcon;
 
-    public TrayIconImpl()
+    public TrayIconImpl(ServiceStatusViewModel serviceStatusViewModel)
     {
         var icons = TrayIcon.GetIcons(App.Current);
         var trayIcon = icons?[0];
@@ -29,6 +33,7 @@ internal class TrayIconImpl : TrayIconBase<WindowIcon>
         _trayIcon = trayIcon;
         _trayIcon.Command = new RelayCommand(() => MainWindowWakedUp?.Invoke());
         _trayIcon.ToolTipText = string.Empty;
+        _serviceStatusViewModel = serviceStatusViewModel;
     }
 
     public override void Create()
