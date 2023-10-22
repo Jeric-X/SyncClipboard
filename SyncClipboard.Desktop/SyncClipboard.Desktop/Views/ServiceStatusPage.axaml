@@ -25,7 +25,7 @@
                 <DataTemplate x:DataType="vm:ServiceStatus">
                     <ui:SettingsExpander Header="{Binding Name, Mode=OneWay}" Description="{Binding StatusString, Mode=OneWay}">
                         <ui:SettingsExpander.IconSource>
-                            <ui:FontIconSource Glyph="{Binding IsError, Converter={StaticResource BoolToFontIcon}}" FontFamily="Segoe Fluent Icons" />
+                            <ui:FontIconSource Glyph="{Binding IsError, Converter={StaticResource BoolToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </ui:SettingsExpander.IconSource>
                     </ui:SettingsExpander>
                 </DataTemplate>

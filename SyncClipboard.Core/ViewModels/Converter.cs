@@ -4,6 +4,6 @@ public class Converter
 {
     public static string ServiceStatusToFontIcon(bool isError)
     {
-        return isError ? "\uE17A" : "\uE17B";
+        return isError ? "\uE10A" : "\uE17B";
     }
 }

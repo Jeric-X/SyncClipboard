@@ -19,9 +19,4 @@ public sealed partial class ServiceStatusPage : Page
         this.InitializeComponent();
         _viewModel = App.Current.Services.GetRequiredService<ServiceStatusViewModel>();
     }
-
-    public static string GetIcon(bool isError)
-    {
-        return isError ? "\uEA39" : "\uEC76";
-    }
 }
