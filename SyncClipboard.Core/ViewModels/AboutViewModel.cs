@@ -24,7 +24,7 @@ public partial class AboutViewModel : ObservableObject
         }
     }
 
-    public OpenSourceSoftware SyncClipboard { get; } = new("软件地址", Env.HomePage, "");
+    public OpenSourceSoftware SyncClipboard { get; } = new(I18n.Strings.SoftwareHomePage, Env.HomePage, "");
 
     // TODO：change this to false
     private static bool _checkedUpdate = true;

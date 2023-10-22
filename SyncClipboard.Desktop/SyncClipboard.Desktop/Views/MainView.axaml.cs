@@ -4,12 +4,22 @@ using FluentAvalonia.UI.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.ViewModels;
 using System;
+using System.Collections.Generic;
 
 namespace SyncClipboard.Desktop.Views;
 
 public partial class MainView : UserControl
 {
     readonly MainViewModel _viewModel;
+
+
+    public static List<PageDefinition> MainWindowPage { get; } = new()
+    {
+        PageDefinition.SyncSetting,
+        PageDefinition.ServiceStatus,
+        PageDefinition.SystemSetting,
+        PageDefinition.About,
+    };
 
     public MainView()
     {

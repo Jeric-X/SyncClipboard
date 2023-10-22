@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:local="using:SyncClipboard.Desktop.Views"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              d:DesignWidth="800"
              d:DesignHeight="450"
@@ -42,7 +43,9 @@
                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="SyncClipboard" />
                 </StackPanel>
             </OnPlatform.Default>
-            <OnPlatform.Linux />
+            <OnPlatform.Linux>
+                <StackPanel Height="0" />
+            </OnPlatform.Linux>
         </OnPlatform>
         <SplitView x:Name="SplitPane"
                    Grid.Row="1"
@@ -79,7 +82,7 @@
                 <ListBox x:Name="_MenuList"
                          Margin="8,0,0,0"
                          SelectionMode="Single"
-                         ItemsSource="{Binding MainWindowPage}"
+                         ItemsSource="{x:Static local:MainView.MainWindowPage}"
                          SelectionChanged="ListView_SelectionChanged">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:PageDefinition">
