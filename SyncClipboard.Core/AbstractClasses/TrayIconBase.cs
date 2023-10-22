@@ -26,7 +26,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     protected abstract void SetToolTip(string text);
     protected abstract IconType[] UploadIcons();
     protected abstract IconType[] DownloadIcons();
-    protected abstract ServiceStatusViewModel? ServiceStatusViewModel { get; }
+    protected virtual ServiceStatusViewModel? ServiceStatusViewModel { get; }
     #endregion
 
     public void ShowDownloadAnimation()

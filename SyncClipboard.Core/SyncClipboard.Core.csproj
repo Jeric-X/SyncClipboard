@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
-    <PackageReference Include="Magick.NET-Q16-x64"/>
+    <PackageReference Include="Magick.NET-Q16-x64" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='x86'">
     <PackageReference Include="Magick.NET-Q16-x86" />

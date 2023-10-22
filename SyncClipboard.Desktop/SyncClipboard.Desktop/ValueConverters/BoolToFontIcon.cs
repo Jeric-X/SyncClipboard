@@ -1,4 +1,5 @@
 ﻿using Avalonia.Data.Converters;
+using SyncClipboard.Core.ViewModels;
 using System;
 using System.Globalization;
 
@@ -10,7 +11,7 @@ public class BoolToFontIcon : IValueConverter
     {
         var isError = value as bool?;
         ArgumentNullException.ThrowIfNull(nameof(isError));
-        return isError!.Value ? "\uEA39" : "\uEC76"; ;
+        return Converter.ServiceStatusToFontIcon(isError!.Value);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

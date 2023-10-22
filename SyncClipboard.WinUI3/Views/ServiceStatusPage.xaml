@@ -19,7 +19,7 @@
                 <DataTemplate x:DataType="vm:ServiceStatus">
                     <labs:SettingsCard MinHeight="0" Header="{x:Bind Name, Mode=OneWay}" Description="{x:Bind StatusString, Mode=OneWay}">
                         <labs:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="{x:Bind local:ServiceStatusPage.GetIcon(IsError), Mode=OneWay}" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="{x:Bind vm:Converter.ServiceStatusToFontIcon(IsError), Mode=OneWay}" FontFamily="Segoe Fluent Icons" />
                         </labs:SettingsCard.HeaderIcon>
                     </labs:SettingsCard>
                 </DataTemplate>
