@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj" />
+    <ProjectReference Include="..\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj" />
     <ProjectReference Include="..\SyncClipboard.Test\SyncClipboard.Test.csproj" />
   </ItemGroup>
 

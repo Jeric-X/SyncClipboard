@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+    <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
   </ItemGroup>
 
 </Project>

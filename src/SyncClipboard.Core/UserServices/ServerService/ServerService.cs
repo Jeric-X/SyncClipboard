@@ -66,7 +66,7 @@ public class ServerService : Service
         {
             try
             {
-                app = await Server.Program.StartAsync(
+                app = await Server.Web.StartAsync(
                     new Abstract.ServerPara(
                         _serverConfig.Port,
                         Env.AppDataDirectory,

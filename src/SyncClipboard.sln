@@ -5,14 +5,14 @@ VisualStudioVersion = 17.1.32414.318
 MinimumVisualStudioVersion = 16.0.30907.101
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{64D61E6B-DE25-4B6A-BCF9-2B92A244B082}"
 	ProjectSection(SolutionItems) = preProject
-		..\Changes.md = ..\Changes.md
-		..\README.md = ..\README.md
-		nuget.config = nuget.config
-		Directory.Packages.props = Directory.Packages.props
 		.editorconfig = .editorconfig
+		..\Changes.md = ..\Changes.md
+		Directory.Packages.props = Directory.Packages.props
+		nuget.config = nuget.config
+		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Server", "SyncClipboard.Server\SyncClipboard.Server.csproj", "{8C51D47C-0012-4202-B0BF-23ADB8E574F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Server.Core", "SyncClipboard.Server.Core\SyncClipboard.Server.Core.csproj", "{8C51D47C-0012-4202-B0BF-23ADB8E574F4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.WinUI3", "SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj", "{A01DFDF8-02B4-4FAC-8B75-2D927FB62758}"
 EndProject
@@ -29,6 +29,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Windows", "SyncClipboard.Windows\SyncClipboard.Windows.csproj", "{27091DDD-7CA5-4524-A245-3F11D99FCD99}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Test.Desktop", "SyncClipboard.Test.Desktop\SyncClipboard.Test.Desktop.csproj", "{8E781CEB-3316-47DE-8CA8-A41BCEB3EEA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncClipboard.Server", "SyncClipboard.Server\SyncClipboard.Server.csproj", "{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -186,6 +188,22 @@ Global
 		{8E781CEB-3316-47DE-8CA8-A41BCEB3EEA6}.Release|x64.Build.0 = Release|x64
 		{8E781CEB-3316-47DE-8CA8-A41BCEB3EEA6}.Release|x86.ActiveCfg = Release|x86
 		{8E781CEB-3316-47DE-8CA8-A41BCEB3EEA6}.Release|x86.Build.0 = Release|x86
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|x64.Build.0 = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Debug|x86.Build.0 = Debug|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|ARM64.Build.0 = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|x64.ActiveCfg = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|x64.Build.0 = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|x86.ActiveCfg = Release|Any CPU
+		{FC9A45DF-D737-498B-8974-5A5FDCAF76B3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
