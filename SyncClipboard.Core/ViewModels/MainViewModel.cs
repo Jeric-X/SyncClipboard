@@ -29,5 +29,14 @@ namespace SyncClipboard.Core.ViewModels
         {
             _services.GetService<IMainWindow>()?.NavigateTo(page, effect);
         }
+
+        public void NavigateToLastLevel()
+        {
+            if (BreadcrumbList.Count > 1)
+            {
+                BreadcrumbList.RemoveAt(BreadcrumbList.Count - 1);
+                NavigateTo(BreadcrumbList[^1], NavigationTransitionEffect.FromLeft);
+            }
+        }
     }
 }

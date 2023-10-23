@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using FluentAvalonia.UI.Controls;
 using FluentAvalonia.UI.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,5 +65,16 @@ public partial class MainView : UserControl
 
         _viewModel.BreadcrumbList.Clear();
         _viewModel.BreadcrumbList.Add(page);
+    }
+
+    internal void DispableScrollViewer()
+    {
+        //_ScrollViewer.IsEnabled = false;
+        _ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+    }
+
+    internal void EnableScrollViewer()
+    {
+        _ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
     }
 }

@@ -66,7 +66,6 @@ public sealed partial class NextCloudLogInPage : Page
         try
         {
             _viewModel.SetFolder((FileTreeViewModel)_TreeView.SelectedItem);
-            ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>()).NavigateToLastLevel();
         }
         catch (Exception ex)
         {

@@ -1,6 +1,7 @@
 ﻿using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.ViewModels;
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -77,6 +78,10 @@ namespace SyncClipboard
             if (this.textBox6.Text != "")
                 _syncConfig.RetryTimes = Convert.ToInt32(this.textBox6.Text);
             _configManager.SetConfig(ConfigKey.Sync, _syncConfig);
+        }
+
+        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect)
+        {
         }
     }
 }

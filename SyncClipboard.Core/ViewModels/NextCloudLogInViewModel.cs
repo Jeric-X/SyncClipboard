@@ -13,9 +13,9 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class FileTreeViewModel : ObservableObject
 {
-    public string FullPath;
-    public string Name;
-    public bool IsFolder;
+    public string FullPath { get; }
+    public string Name { get; }
+    public bool IsFolder { get; }
 
     [ObservableProperty]
     public List<FileTreeViewModel>? children;
@@ -125,11 +125,12 @@ public partial class NextCloudLogInViewModel : ObservableObject
                 RemoteURL = $"{tempWebDavCredential.Url.Trim('/')}/{node.FullPath.Trim('/')}"
             }
         );
+        _serviceProvider.GetRequiredService<MainViewModel>().NavigateToLastLevel();
     }
 
-    public async Task SetChildren(FileTreeViewModel node)
+    public async Task SetChildren(FileTreeViewModel? node)
     {
-        if (_tempWebDav is null || node.Children is not null)
+        if (_tempWebDav is null || node is null || node.Children is not null)
         {
             return;
         }

@@ -1,0 +1,115 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.NextCloudLogInPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:NextCloudLogInViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:NextCloudLogInViewModel />
+    </Design.DataContext>
+    <UserControl.Styles>
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="16,16,16,16" />
+        </Style>
+    </UserControl.Styles>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border Classes="Card">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="8" />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="5">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ui:FontIcon Glyph="&#xE12B;" FontSize="15" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <TextBlock Margin="0,0,0,0" Text="{x:Static i18n:Strings.Address}" FontSize="15" />
+                        </StackPanel>
+                        <TextBox Text="{Binding UserInputUrl, Mode=TwoWay}" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            MinWidth="40"
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Bottom"
+                            Content="{x:Static i18n:Strings.LoginWithBrowser}"
+                            Command="{Binding ComfirmUrlCommand}" />
+                    <Button Grid.Column="2"
+                            MinWidth="40"
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Bottom"
+                            IsVisible="{Binding CanCancel}"
+                            Content="{x:Static i18n:Strings.Cancel}"
+                            Command="{Binding CancelCommand}" />
+
+                </Grid>
+                <ProgressBar x:Name="_ProgressBar"
+                             Grid.Row="1"
+                             Margin="0,4,0,0"
+                             IsVisible="{Binding CanCancel}"
+                             IsIndeterminate="True" />
+            </Grid>
+        </Border>
+        <Border Grid.Row="1"
+                Margin="0,10,0,0"
+                Classes="Card"
+                IsVisible="{Binding ShowTreeList}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="8" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <ProgressBar x:Name="_FolderProgressBar"
+                                 Grid.Row="0"
+                                 IsVisible="{Binding ShowFolderProgressBar}"
+                                 IsIndeterminate="True" />
+                    <ScrollViewer Grid.Row="1" Margin="0,4,0,0" VerticalScrollBarVisibility="Auto">
+                        <TreeView x:Name="_TreeView" ItemsSource="{Binding TreeList, Mode=OneWay}" SelectionChanged="TreeView_SelectionChanged">
+                            <TreeView.ItemTemplate>
+                                <TreeDataTemplate ItemsSource="{Binding Children, Mode=OneWay}">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <ui:FontIcon Glyph="&#xE838;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                        <TextBlock Text="{Binding Name}" />
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                    </ScrollViewer>
+                </Grid>
+                <StackPanel Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Orientation="Vertical"
+                            Spacing="10">
+                    <Button x:Name="_SetFolderButton"
+                            HorizontalAlignment="Stretch"
+                            Content="{x:Static i18n:Strings.SelectFolder}"
+                            Click="Button_Click" />
+                    <Button HorizontalAlignment="Stretch" Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

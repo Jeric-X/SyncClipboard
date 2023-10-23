@@ -63,15 +63,6 @@ namespace SyncClipboard.WinUI3.Views
             NavigateTo(page, platformEffect);
         }
 
-        internal void NavigateToLastLevel()
-        {
-            if (_viewModel.BreadcrumbList.Count > 1)
-            {
-                _viewModel.BreadcrumbList.RemoveAt(_viewModel.BreadcrumbList.Count - 1);
-                NavigateTo(_viewModel.BreadcrumbList[^1], SlideNavigationTransitionEffect.FromLeft);
-            }
-        }
-
         internal void DispableScrollViewer()
         {
             _ScrollViewer.VerticalScrollMode = ScrollMode.Disabled;

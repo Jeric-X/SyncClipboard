@@ -20,14 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Views\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EditorConfigFiles Include="Views\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />

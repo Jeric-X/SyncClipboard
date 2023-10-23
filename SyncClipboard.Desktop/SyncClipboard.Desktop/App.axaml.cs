@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Desktop.Views;
 using System;
 using MenuItem = SyncClipboard.Core.Interfaces.MenuItem;
 
@@ -16,7 +17,7 @@ public partial class App : Application
 {
     public IServiceProvider Services { get; private set; }
     public new static App Current => (App)Application.Current!;
-    public Window MainWindow => (Window)Services.GetRequiredService<IMainWindow>();
+    public MainWindow MainWindow => (MainWindow)Services.GetRequiredService<IMainWindow>();
     public IClipboard Clipboard => MainWindow.Clipboard!;
 
     private IClassicDesktopStyleApplicationLifetime _appLife;

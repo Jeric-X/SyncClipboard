@@ -43,4 +43,14 @@ public partial class MainWindow : Window, IMainWindow
         };
         _MainView.NavigateTo(page, platformEffect);
     }
+
+    internal void DispableScrollViewer()
+    {
+        _MainView.DispableScrollViewer();
+    }
+
+    internal void EnableScrollViewer()
+    {
+        _MainView.EnableScrollViewer();
+    }
 }
