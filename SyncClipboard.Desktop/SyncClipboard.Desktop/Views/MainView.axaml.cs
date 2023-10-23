@@ -26,6 +26,8 @@ public partial class MainView : UserControl
         _viewModel = App.Current.Services.GetRequiredService<MainViewModel>();
         DataContext = _viewModel;
         InitializeComponent();
+
+        _MenuList.SelectedIndex = 0;
     }
 
     internal void NavigateTo(
@@ -38,7 +40,7 @@ public partial class MainView : UserControl
         SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
     }
 
-    private void BreadcrumbBar_ItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
+    private void BreadcrumbBar_ItemClicked(BreadcrumbBar _, BreadcrumbBarItemClickedEventArgs args)
     {
         if (_viewModel.BreadcrumbList.Count - 1 == args.Index)
         {

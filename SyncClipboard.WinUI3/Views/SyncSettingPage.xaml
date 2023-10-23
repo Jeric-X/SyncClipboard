@@ -41,10 +41,10 @@
             </labs:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{Binding ServerEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
-                <labs:SettingsCard Description="{x:Bind ServerConfigDescription(_viewModel.ServerConfig, _ShowHidePasswordToggleButton.IsChecked), Mode=OneWay}">
+                <labs:SettingsCard Description="{x:Bind _viewModel.ServerConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton x:Name="_ShowHidePasswordToggleButton">
-                            <FontIcon Glyph="{Binding ElementName=_ShowHidePasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                        <ToggleButton IsChecked="{x:Bind _viewModel.ShowServerPassword, Mode=TwoWay}">
+                            <FontIcon Glyph="{x:Bind _viewModel.ShowServerPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
                         </ToggleButton>
                         <Button Command="{x:Bind SetServerCommand}">
                             <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
@@ -80,22 +80,19 @@
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <labs:SettingsExpander.Items>
                 <labs:SettingsCard Header="{x:Bind i18n:Strings.UseSelfHostServer}">
-                    <ToggleSwitch x:Name="_UseLocalServerToggle"
-                                  OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </labs:SettingsCard>
-                <labs:SettingsCard Description="{x:Bind ClientConfigDescription(_viewModel.ClientConfig, _ShowClientPasswordToggleButton.IsChecked), Mode=OneWay}" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}">
+                <labs:SettingsCard Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.UserManulServer, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton x:Name="_ShowClientPasswordToggleButton">
-                            <FontIcon Glyph="{Binding ElementName=_ShowClientPasswordToggleButton, Path=IsChecked, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                        <ToggleButton IsChecked="{x:Bind _viewModel.ShowClientPassword, Mode=TwoWay}">
+                            <FontIcon Glyph="{x:Bind _viewModel.ShowClientPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
                         </ToggleButton>
                         <Button Command="{x:Bind SetSyncCommand}">
                             <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
                         </Button>
                     </StackPanel>
                 </labs:SettingsCard>
-                <labs:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind Not(_viewModel.UseLocalServer), Mode=OneWay}" ContentAlignment="Vertical">
+                <labs:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind _viewModel.UserManulServer, Mode=OneWay}" ContentAlignment="Vertical">
                     <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
                         <labs:SettingsCard.Resources>
                         <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">
@@ -107,7 +104,7 @@
                         </Style>
                     </labs:SettingsCard.Resources>-->
                     <labs:SettingsCard.Description>
-                        <HyperlinkButton Content="{x:Bind i18n:Strings.UseNextcloud}" Click="HyperlinkButton_Click" />
+                        <HyperlinkButton Content="{x:Bind i18n:Strings.UseNextcloud}" Command="{x:Bind _viewModel.LoginWithNextcloudCommand}" />
                     </labs:SettingsCard.Description>
                 </labs:SettingsCard>
                 <labs:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">

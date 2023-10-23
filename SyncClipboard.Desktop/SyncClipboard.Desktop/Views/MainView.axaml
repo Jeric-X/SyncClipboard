@@ -57,20 +57,18 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Vertical">
-                    <ui:BreadcrumbBar ItemsSource="{Binding BreadcrumbList}" ItemClicked="BreadcrumbBar_ItemClicked">
-                        <ui:BreadcrumbBar.Resources>
-                            <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
-                            <x:Double x:Key="BreadcrumbBarItemThemeFontSize">30</x:Double>
-                            <Thickness x:Key="BreadcrumbBarChevronPadding">0,0,0,-4</Thickness>
-                        </ui:BreadcrumbBar.Resources>
-                        <ui:BreadcrumbBar.ItemTemplate>
-                            <DataTemplate x:DataType="vm:PageDefinition">
-                                <ui:BreadcrumbBarItem Content="{Binding Title}" />
-                            </DataTemplate>
-                        </ui:BreadcrumbBar.ItemTemplate>
-                    </ui:BreadcrumbBar>
-                </StackPanel>
+                <ui:BreadcrumbBar ItemsSource="{Binding BreadcrumbList}" ItemClicked="BreadcrumbBar_ItemClicked">
+                    <ui:BreadcrumbBar.Resources>
+                        <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
+                        <x:Double x:Key="BreadcrumbBarItemThemeFontSize">30</x:Double>
+                        <Thickness x:Key="BreadcrumbBarChevronPadding">0,0,0,-4</Thickness>
+                    </ui:BreadcrumbBar.Resources>
+                    <ui:BreadcrumbBar.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PageDefinition">
+                            <ui:BreadcrumbBarItem Content="{Binding Title}" />
+                        </DataTemplate>
+                    </ui:BreadcrumbBar.ItemTemplate>
+                </ui:BreadcrumbBar>
                 <ScrollViewer x:Name="_ScrollViewer"
                               Grid.Row="1"
                               Margin="0,10,0,0"

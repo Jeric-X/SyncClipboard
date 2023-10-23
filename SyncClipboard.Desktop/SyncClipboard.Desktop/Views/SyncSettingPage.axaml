@@ -1,0 +1,127 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.SyncSettingPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:local="using:SyncClipboard.Desktop.Views"
+             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+             x:DataType="vm:SyncSettingViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:SyncSettingViewModel />
+    </Design.DataContext>
+    <UserControl.Styles>
+        <Style Selector="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ToggleButton.FontIcon">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+    <UserControl.Resources>
+        <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordFontIcon" />
+    </UserControl.Resources>
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE753;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ServerEnable, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Description="{Binding ServerConfigDescription}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
+                                <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            </ToggleButton>
+                            <Button Click="SetServerConfig">
+                                <ui:FontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            </Button>
+                        </StackPanel>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="{Binding IsNormalClientEnable, Mode=OneWay}" IsEnabled="{Binding IsNormalClientEnable, Mode=OneWay}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE117;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SyncEnable, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.UseSelfHostServer}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UseLocalServer, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Description="{Binding ClientConfigDescription}" IsEnabled="{Binding UserManulServer}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowClientPassword, Mode=TwoWay}">
+                                <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            </ToggleButton>
+                            <Button Click="SetClientConfig">
+                                <ui:FontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            </Button>
+                        </StackPanel>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsEnabled="{Binding UserManulServer, Mode=OneWay}">
+                    <ui:HyperlinkButton Padding="0,0,0,-1"
+                                        Content="{x:Static i18n:Strings.UseNextcloud}"
+                                        Command="{Binding LoginWithNextcloudCommand}"
+                                        FontSize="12"
+                                        FontWeight="SemiBold" />
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding IntervalTime, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding TimeOut, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding MaxFileSize, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DeleteServerTemporaryFileAutoly}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDeleleServerFile, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClientGeneral}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>

@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -18,13 +20,13 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnClientMixedModeChanged(bool value) => ServerConfig = ServerConfig with { ClientMixedMode = value };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
     private ServerConfig serverConfig;
     partial void OnServerConfigChanged(ServerConfig value)
     {
         _configManager.SetConfig(ConfigKey.Server, value);
     }
 
-    public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
     #endregion
 
     #region client
@@ -33,6 +35,7 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnSyncEnableChanged(bool value) => ClientConfig = ClientConfig with { SyncSwitchOn = value };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UserManulServer))]
     private bool useLocalServer;
     partial void OnUseLocalServerChanged(bool value) => ClientConfig = ClientConfig with { UseLocalServer = value };
 
@@ -61,6 +64,7 @@ public partial class SyncSettingViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SyncEnable))]
     [NotifyPropertyChangedFor(nameof(UseLocalServer))]
     [NotifyPropertyChangedFor(nameof(TimeOut))]
+    [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
     private SyncConfig clientConfig;
     partial void OnClientConfigChanged(SyncConfig value)
     {
@@ -73,13 +77,54 @@ public partial class SyncSettingViewModel : ObservableObject
         NotifyOnDownloaded = value.NotifyOnDownloaded;
         _configManager.SetConfig(ConfigKey.Sync, value);
     }
+
+    [RelayCommand]
+    private void LoginWithNextcloud()
+    {
+        _mainVM.BreadcrumbList.Add(PageDefinition.NextCloudLogIn);
+        _mainVM.NavigateTo(PageDefinition.NextCloudLogIn, NavigationTransitionEffect.FromRight);
+    }
+
+    #endregion
+
+    #region for view only
+
+    public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
+
+    public bool UserManulServer => !UseLocalServer;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
+    public bool showServerPassword = false;
+
+    public string ServerConfigDescription =>
+@$"{I18n.Strings.Port}{new string('\t', int.Parse(I18n.Strings.PortTabRepeat))}: {ServerConfig.Port}
+{I18n.Strings.UserName}{new string('\t', int.Parse(I18n.Strings.UserNameTabRepeat))}: {ServerConfig.UserName}
+{I18n.Strings.Password}{new string('\t', int.Parse(I18n.Strings.PasswordTabRepeat))}: {GetPasswordString(ServerConfig.Password, ShowServerPassword)}";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
+    public bool showClientPassword = false;
+
+    public string ClientConfigDescription =>
+@$"{I18n.Strings.Address}{new string('\t', int.Parse(I18n.Strings.PortTabRepeat))}: {ClientConfig.RemoteURL}
+{I18n.Strings.UserName}{new string('\t', int.Parse(I18n.Strings.UserNameTabRepeat))}: {ClientConfig.UserName}
+{I18n.Strings.Password}{new string('\t', int.Parse(I18n.Strings.PasswordTabRepeat))}: {GetPasswordString(ClientConfig.Password, ShowClientPassword)}";
+
+    private static string GetPasswordString(string origin, bool? show)
+    {
+        return show ?? false ? origin : "*********";
+    }
+
     #endregion
 
     private readonly ConfigManager _configManager;
+    private readonly MainViewModel _mainVM;
 
-    public SyncSettingViewModel(ConfigManager configManager)
+    public SyncSettingViewModel(ConfigManager configManager, MainViewModel mainViewModel)
     {
         _configManager = configManager;
+        _mainVM = mainViewModel;
         _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
         serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
         serverEnable = serverConfig.SwitchOn;

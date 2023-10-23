@@ -1,0 +1,21 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.ServerSettingDialog"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <ScrollViewer Padding="0,0,10,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="12">
+            <TextBlock x:Name="_UrlTitle" />
+            <TextBox x:Name="_Url" />
+            <TextBlock x:Name="_UserNameTitle" Text="{x:Static i18n:Strings.UserName}" />
+            <TextBox x:Name="_UserName" />
+            <TextBlock x:Name="_PasswordTitle" Text="{x:Static i18n:Strings.Password}" />
+            <TextBox x:Name="_Password" PasswordChar="*" />
+            <TextBlock x:Name="_ErrorTip" Foreground="Red" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

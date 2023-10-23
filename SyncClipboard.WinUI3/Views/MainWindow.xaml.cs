@@ -50,6 +50,19 @@ namespace SyncClipboard.WinUI3.Views
             SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
         }
 
+        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect)
+        {
+            SlideNavigationTransitionEffect platformEffect = effect switch
+            {
+                NavigationTransitionEffect.FromBottom => SlideNavigationTransitionEffect.FromBottom,
+                NavigationTransitionEffect.FromLeft => SlideNavigationTransitionEffect.FromLeft,
+                NavigationTransitionEffect.FromRight => SlideNavigationTransitionEffect.FromRight,
+                NavigationTransitionEffect.FromTop => SlideNavigationTransitionEffect.FromBottom,
+                _ => throw new NotImplementedException()
+            };
+            NavigateTo(page, platformEffect);
+        }
+
         internal void NavigateToLastLevel()
         {
             if (_viewModel.BreadcrumbList.Count > 1)

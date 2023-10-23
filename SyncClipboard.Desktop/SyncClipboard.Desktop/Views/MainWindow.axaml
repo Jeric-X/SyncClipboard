@@ -6,7 +6,7 @@
         xmlns:views="clr-namespace:SyncClipboard.Desktop.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="SyncClipboard.Desktop.Views.MainWindow"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/icon.ico"
         Width="850"
         Height="530"
         Title="SyncClipboard.Desktop">

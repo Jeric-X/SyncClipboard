@@ -30,4 +30,17 @@ public partial class MainWindow : Window, IMainWindow
     {
         _MainView.NavigateTo(page, effect, parameter);
     }
+
+    public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect)
+    {
+        SlideNavigationTransitionEffect platformEffect = effect switch
+        {
+            NavigationTransitionEffect.FromBottom => SlideNavigationTransitionEffect.FromBottom,
+            NavigationTransitionEffect.FromLeft => SlideNavigationTransitionEffect.FromLeft,
+            NavigationTransitionEffect.FromRight => SlideNavigationTransitionEffect.FromRight,
+            NavigationTransitionEffect.FromTop => SlideNavigationTransitionEffect.FromTop,
+            _ => throw new NotImplementedException()
+        };
+        _MainView.NavigateTo(page, platformEffect);
+    }
 }

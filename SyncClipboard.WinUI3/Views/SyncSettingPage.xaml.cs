@@ -73,37 +73,5 @@ namespace SyncClipboard.WinUI3.Views
             args.Cancel = true;
             return;
         }
-
-        private string GetPasswordString(string origin, bool? show)
-        {
-            return show ?? false ? origin : "*********";
-        }
-
-        private bool Not(bool value) => !value;
-
-        private string ServerConfigDescription(ServerConfig config, bool? show)
-        {
-            return
-@$"{Strings.Port}{new string('\t', int.Parse(Strings.PortTabRepeat))}: {config.Port}
-{Strings.UserName}{new string('\t', int.Parse(Strings.UserNameTabRepeat))}: {config.UserName}
-{Strings.Password}{new string('\t', int.Parse(Strings.PasswordTabRepeat))}: {GetPasswordString(config.Password, show)}";
-        }
-
-        private string ClientConfigDescription(SyncConfig config, bool? show)
-        {
-            return
-@$"{Strings.Address}{new string('\t', int.Parse(Strings.PortTabRepeat))}: {config.RemoteURL}
-{Strings.UserName}{new string('\t', int.Parse(Strings.UserNameTabRepeat))}: {config.UserName}
-{Strings.Password}{new string('\t', int.Parse(Strings.PasswordTabRepeat))}: {GetPasswordString(config.Password, show)}";
-        }
-
-        private void HyperlinkButton_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs _1)
-        {
-            var mainWindowVM = App.Current.Services.GetRequiredService<MainViewModel>();
-            var mainWindow = (MainWindow)App.Current.Services.GetRequiredService<IMainWindow>();
-
-            mainWindowVM.BreadcrumbList.Add(PageDefinition.NextCloudLogIn);
-            mainWindow.NavigateTo(PageDefinition.NextCloudLogIn, SlideNavigationTransitionEffect.FromRight);
-        }
     }
 }

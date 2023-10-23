@@ -28,24 +28,22 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Vertical">
-                    <BreadcrumbBar Margin="20,0,20,0" ItemsSource="{x:Bind _viewModel.BreadcrumbList}" ItemClicked="BreadcrumbBar_ItemClicked">
-                        <BreadcrumbBar.Resources>
-                            <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
-                        </BreadcrumbBar.Resources>
-                        <BreadcrumbBar.ItemTemplate>
-                            <DataTemplate x:DataType="vm:PageDefinition">
-                                <BreadcrumbBarItem Content="{Binding}" FontSize="30">
-                                    <BreadcrumbBarItem.ContentTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Margin="0,0,0,4" Text="{Binding Title}" />
-                                        </DataTemplate>
-                                    </BreadcrumbBarItem.ContentTemplate>
-                                </BreadcrumbBarItem>
-                            </DataTemplate>
-                        </BreadcrumbBar.ItemTemplate>
-                    </BreadcrumbBar>
-                </StackPanel>
+                <BreadcrumbBar Margin="20,0,20,0" ItemsSource="{x:Bind _viewModel.BreadcrumbList}" ItemClicked="BreadcrumbBar_ItemClicked">
+                    <BreadcrumbBar.Resources>
+                        <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
+                    </BreadcrumbBar.Resources>
+                    <BreadcrumbBar.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PageDefinition">
+                            <BreadcrumbBarItem Content="{Binding}" FontSize="30">
+                                <BreadcrumbBarItem.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,4" Text="{Binding Title}" />
+                                    </DataTemplate>
+                                </BreadcrumbBarItem.ContentTemplate>
+                            </BreadcrumbBarItem>
+                        </DataTemplate>
+                    </BreadcrumbBar.ItemTemplate>
+                </BreadcrumbBar>
                 <ScrollViewer x:Name="_ScrollViewer"
                               Grid.Row="1"
                               Margin="0,10,0,0"
