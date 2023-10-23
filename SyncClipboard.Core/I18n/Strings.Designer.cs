@@ -196,6 +196,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Completely Exit 的本地化字符串。
+        /// </summary>
+        public static string CompletelyExit {
+            get {
+                return ResourceManager.GetString("CompletelyExit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Confirm 的本地化字符串。
         /// </summary>
         public static string Confirm {
@@ -673,6 +682,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Run 的本地化字符串。
+        /// </summary>
+        public static string Run {
+            get {
+                return ResourceManager.GetString("Run", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Run at System Startup 的本地化字符串。
         /// </summary>
         public static string RunAtSystemStartup {
@@ -750,6 +768,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Syncing {
             get {
                 return ResourceManager.GetString("Syncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 System Operations 的本地化字符串。
+        /// </summary>
+        public static string SystemOperations {
+            get {
+                return ResourceManager.GetString("SystemOperations", resourceCulture);
             }
         }
         

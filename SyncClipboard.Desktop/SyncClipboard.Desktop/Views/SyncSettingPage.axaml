@@ -99,11 +99,11 @@
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding TimeOut, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
+                <!--<ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
                     <ui:SettingsExpanderItem.Footer>
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding MaxFileSize, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
+                </ui:SettingsExpanderItem>-->
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DeleteServerTemporaryFileAutoly}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDeleleServerFile, Mode=TwoWay}" />
@@ -111,7 +111,7 @@
                 </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClientGeneral}" IsExpanded="True">
+        <!--<ui:SettingsExpander Header="{x:Static i18n:Strings.ClientGeneral}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
@@ -122,6 +122,6 @@
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
+        </ui:SettingsExpander>-->
     </StackPanel>
 </UserControl>

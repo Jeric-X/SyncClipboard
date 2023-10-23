@@ -384,4 +384,13 @@
   <data name="CheckingUpdate" xml:space="preserve">
     <value>正在检查更新……</value>
   </data>
+  <data name="SystemOperations" xml:space="preserve">
+    <value>系统操作</value>
+  </data>
+  <data name="Run" xml:space="preserve">
+    <value>执行</value>
+  </data>
+  <data name="CompletelyExit" xml:space="preserve">
+    <value>完全退出软件</value>
+  </data>
 </root>

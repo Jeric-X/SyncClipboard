@@ -11,4 +11,9 @@ public partial class SystemSettingPage : UserControl
         InitializeComponent();
         DataContext = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
     }
+
+    private void ExitApp(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        App.Current.ExitApp();
+    }
 }

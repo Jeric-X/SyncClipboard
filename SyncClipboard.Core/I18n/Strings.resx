@@ -384,4 +384,13 @@
   <data name="CheckingUpdate" xml:space="preserve">
     <value>Checking for update……</value>
   </data>
+  <data name="SystemOperations" xml:space="preserve">
+    <value>System Operations</value>
+  </data>
+  <data name="Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="CompletelyExit" xml:space="preserve">
+    <value>Completely Exit</value>
+  </data>
 </root>
