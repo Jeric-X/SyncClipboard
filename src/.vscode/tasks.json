@@ -28,7 +28,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
+                "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
                 "-c",
                 "Debug",
                 "-r",
@@ -51,7 +51,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
+                "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
                 "-c",
                 "Release",
                 "-r",

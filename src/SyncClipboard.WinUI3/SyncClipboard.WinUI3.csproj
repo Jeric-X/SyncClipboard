@@ -152,7 +152,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\LICENSES\**" LinkBase="LICENSES" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\LICENSES\**" LinkBase="LICENSES" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
