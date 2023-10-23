@@ -16,11 +16,6 @@ jobs:
     runs-on: windows-latest
     needs: build
     steps:
-      - name: Download last-job-built artifact SyncClipboard
-        uses: actions/download-artifact@v3
-        with:
-          name: SyncClipboard
-
       - name: Download last-job-built artifact SyncClipboard.Server
         uses: actions/download-artifact@v3
         with:
@@ -55,6 +50,5 @@ jobs:
           body_path: feature.txt
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           files: |
-            SyncClipboard.exe
             SyncClipboard.Server.zip
             SyncClipboard.WinUI3.zip

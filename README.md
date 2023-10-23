@@ -15,8 +15,6 @@
     - [其他WebDAV服务器](#其他webdav服务器)
   - [客户端](#客户端)
     - [Windows](#windows)
-      - [WinUI版](#winui版)
-      - [Winform版](#winform版)
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
       - [使用JSBox](#使用jsbox)
@@ -68,33 +66,18 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 
 ## 客户端
 ### Windows   
-分为WinUI版和Winform版，可以自行选择下载  
 客户端依赖：   
 - [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
 - [ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
-- Windows10 1809及以上
-#### WinUI版
+- Windows10 2004及以上
+- 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
 
-- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.WinUI3.zip`，解压缩后运行`SyncClipboard.exe`  
-- 额外运行依赖：
-  - Windows10 2004及以上  
-  - 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
+下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.WinUI3.zip`，解压缩后运行`SyncClipboard.exe`  
 
 <details>
 <summary>展开/折叠截图</summary>
 
 ![](docs/image/WinUI.png)
-
-</details>
-
-#### Winform版
-- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.exe`，独立文件直接运行
-- 界面上的可设置项较少，可以通过手动修改配置文件设置功能
-
-<details>
-<summary>展开/折叠截图</summary>
-
-![](docs/image/Winform.png)
 
 </details>
 
