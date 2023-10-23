@@ -9,6 +9,6 @@
         Icon="/Assets/icon.ico"
         Width="850"
         Height="530"
-        Title="SyncClipboard.Desktop">
+        Title="SyncClipboard">
         <views:MainView x:Name="_MainView" />
 </Window>

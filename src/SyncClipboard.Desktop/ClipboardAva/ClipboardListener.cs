@@ -45,11 +45,23 @@ internal class ClipboardListener : ClipboardChangingListenerBase
             _cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         }
 
-        var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
-        if (meta != _meta)
+        try
         {
-            _action?.Invoke(meta);
-            _meta = meta;
+            var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
+            if (meta != _meta)
+            {
+                _action?.Invoke(meta);
+                _meta = meta;
+            }
+        }
+        catch { }
+        finally
+        {
+            lock (_lock)
+            {
+                _cts.Dispose();
+                _cts = null;
+            }
         }
     }
 }
