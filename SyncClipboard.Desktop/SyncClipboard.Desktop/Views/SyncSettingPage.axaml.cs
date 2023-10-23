@@ -28,7 +28,7 @@ public partial class SyncSettingPage : UserControl
         {
             TextBoxName = Strings.Port,
             Password = _viewModel.ServerConfig.Password,
-            UserName = _viewModel.ServerConfig.Password,
+            UserName = _viewModel.ServerConfig.UserName,
             Url = _viewModel.ServerConfig.Port.ToString()
         };
         var dialog = new ContentDialog
@@ -47,9 +47,9 @@ public partial class SyncSettingPage : UserControl
         _clientConfigDialog = new ServerSettingDialog
         {
             TextBoxName = Strings.Port,
-            Password = _viewModel.ServerConfig.Password,
-            UserName = _viewModel.ServerConfig.Password,
-            Url = _viewModel.ServerConfig.Port.ToString()
+            Password = _viewModel.ClientConfig.Password,
+            UserName = _viewModel.ClientConfig.UserName,
+            Url = _viewModel.ClientConfig.RemoteURL.ToString()
         };
         var dialog = new ContentDialog
         {

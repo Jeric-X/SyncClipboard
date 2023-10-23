@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -24,7 +25,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
 
     private const string LOG_TAG = nameof(ClipboardFactory);
 
-    private delegate void FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta);
+    private delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
     private static List<KeyValuePair<string, FormatHandler>> FormatHandlerlist => new Dictionary<string, FormatHandler>
     {
         [StandardDataFormats.Text] = HanleText,
@@ -35,40 +36,41 @@ internal class ClipboardFactory : ClipboardFactoryBase
         ["Preferred DropEffect"] = HanleDropEffect,
     }.ToList();
 
-    private static void HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
+    private static async Task HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
         if (meta.Image is not null) return;
-        using var stream = ClipboardData.GetBitmapAsync().AsTask().Result.OpenReadAsync().AsTask().Result.AsStream();
-        using MagickImage image = new(stream);
+        var bitmapStrem = await ClipboardData.GetBitmapAsync();
+        using var randomStream = await bitmapStrem.OpenReadAsync();
+        using MagickImage image = new(randomStream.AsStream());
         meta.Image = WinBitmap.FromImage(image.ToBitmap());
     }
 
-    private static void HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
+    private static async Task HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
-        var res = ClipboardData.GetDataAsync("DeviceIndependentBitmap").AsTask().Result;
+        var res = await ClipboardData.GetDataAsync("DeviceIndependentBitmap");
         using var stream = res.As<IRandomAccessStream>().AsStream();
         using MagickImage image = new(stream);
         meta.Image = WinBitmap.FromImage(image.ToBitmap());
     }
 
-    private static void HanleDropEffect(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
+    private static async Task HanleDropEffect(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
-        var res = ClipboardData.GetDataAsync("Preferred DropEffect").AsTask().Result;
+        var res = await ClipboardData.GetDataAsync("Preferred DropEffect");
         using IRandomAccessStream randomAccessStream = res.As<IRandomAccessStream>();
         meta.Effects = (DragDropEffects?)randomAccessStream.AsStreamForRead().ReadByte();
     }
 
-    private static void HanleFiles(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
+    private static async Task HanleFiles(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
-        IReadOnlyList<IStorageItem> list = ClipboardData.GetStorageItemsAsync().AsTask().Result;
+        IReadOnlyList<IStorageItem> list = await ClipboardData.GetStorageItemsAsync();
         meta.Files = list.Select(storageItem => storageItem.Path).ToArray();
     }
 
-    private static void HanleHtml(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
-        => meta.Html = ClipboardData.GetHtmlFormatAsync().AsTask().Result;
+    private static async Task HanleHtml(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+        => meta.Html = await ClipboardData.GetHtmlFormatAsync();
 
-    private static void HanleText(DataPackageView ClipboardData, ClipboardMetaInfomation meta)
-        => meta.Text = ClipboardData.GetTextAsync().AsTask().Result;
+    private static async Task HanleText(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+        => meta.Text = await ClipboardData.GetTextAsync();
 
     public ClipboardFactory(IServiceProvider serviceProvider)
     {
@@ -77,7 +79,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
         WebDav = ServiceProvider.GetRequiredService<IWebDav>();
     }
 
-    public override ClipboardMetaInfomation GetMetaInfomation()
+    public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
     {
         ClipboardMetaInfomation meta = new();
         DataPackageView ClipboardData = Clipboard.GetContent();
@@ -88,7 +90,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
 
         for (int i = 0; ClipboardData.AvailableFormats.Count == 0 && i < 10; i++)
         {
-            Thread.Sleep(200);
+            await Task.Delay(200, ctk);
             ClipboardData = Clipboard.GetContent();
             Logger.Write(LOG_TAG, "retry times: " + (i + 1));
         }
@@ -108,7 +110,9 @@ internal class ClipboardFactory : ClipboardFactoryBase
                 try
                 {
                     if (ClipboardData.AvailableFormats.Contains(handler.Key))
-                        handler.Value(ClipboardData, meta);
+                    {
+                        await handler.Value(ClipboardData, meta, ctk);
+                    }
                 }
                 catch (Exception ex)
                 {

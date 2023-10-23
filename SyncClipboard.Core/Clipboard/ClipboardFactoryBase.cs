@@ -14,12 +14,10 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     protected abstract IServiceProvider ServiceProvider { get; set; }
     protected abstract IWebDav WebDav { get; set; }
 
-    public abstract ClipboardMetaInfomation GetMetaInfomation();
+    public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
 
-    public Profile CreateProfile(ClipboardMetaInfomation? metaInfomation = null)
+    public Profile CreateProfile(ClipboardMetaInfomation metaInfomation)
     {
-        metaInfomation ??= GetMetaInfomation();
-
         if (metaInfomation.Files != null)
         {
             var filename = metaInfomation.Files[0];
@@ -92,15 +90,16 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnkonwnProfile();
     }
 
-    public string CreateProfileDto(out string? extraFilePath)
+    public async Task<(string, string?)> CreateProfileDto(CancellationToken ctk)
     {
-        extraFilePath = null;
-        var profile = CreateProfile();
+        string? extraFilePath = null;
+        var meta = await GetMetaInfomation(ctk);
+        var profile = CreateProfile(meta);
         if (profile is FileProfile fileProfile)
         {
             extraFilePath = fileProfile.FullPath;
         }
-        return profile.ToJsonString();
+        return (profile.ToJsonString(), extraFilePath);
     }
 
     public void SetLocalClipboardWithDto(string profileDtoString, string fileFolder)

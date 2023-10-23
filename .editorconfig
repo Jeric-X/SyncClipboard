@@ -12,8 +12,11 @@ dotnet_diagnostic.CC0034.severity = none
 # CC0057: Unused Parameter
 dotnet_diagnostic.CC0057.severity = none
 
-# CA1416: ÑéÖ¤Æ½Ì¨¼æÈİĞÔ
+# CA1416: éªŒè¯å¹³å°å…¼å®¹æ€§
 dotnet_diagnostic.CA1416.severity = none
 
 # Simplify new expression https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0090
 dotnet_diagnostic.IDE0090.severity = none
+
+# Asynchronous method can be terminated with the 'Async' keyword.
+dotnet_diagnostic.CC0061.severity = none

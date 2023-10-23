@@ -3,6 +3,8 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
@@ -21,11 +23,11 @@ internal class ClipboardFactory : ClipboardFactoryBase
         WebDav = ServiceProvider.GetRequiredService<IWebDav>();
     }
 
-    public override ClipboardMetaInfomation GetMetaInfomation()
+    public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
     {
         ClipboardMetaInfomation meta = new();
         var clipboard = App.Current.MainWindow.Clipboard;
-        meta.Text = clipboard?.GetTextAsync().Result;
+        meta.Text = await clipboard?.GetTextAsync().WaitAsync(ctk)!;
 
         return meta;
     }

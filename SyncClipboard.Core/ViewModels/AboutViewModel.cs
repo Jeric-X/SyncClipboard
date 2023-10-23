@@ -18,7 +18,7 @@ public partial class AboutViewModel : ObservableObject
     public AboutViewModel(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        if (_checkedUpdate is false)
+        if (_alreadyCheckedUpdate is false)
         {
             CheckForUpdateCommand.ExecuteAsync(null);
         }
@@ -26,8 +26,12 @@ public partial class AboutViewModel : ObservableObject
 
     public OpenSourceSoftware SyncClipboard { get; } = new(I18n.Strings.SoftwareHomePage, Env.HomePage, "");
 
-    // TODO：change this to false
-    private static bool _checkedUpdate = true;
+#if DEBUG
+    private static bool _alreadyCheckedUpdate = true;
+#else           
+    private static bool _alreadyCheckedUpdate = false;
+#endif
+
     private static string _updateInfo = I18n.Strings.CheckingUpdate;
     public string UpdateInfo
     {
@@ -58,7 +62,7 @@ public partial class AboutViewModel : ObservableObject
     [RelayCommand]
     public async Task CheckForUpdate()
     {
-        _checkedUpdate = true;
+        _alreadyCheckedUpdate = true;
         UpdateInfo = I18n.Strings.CheckingUpdate;
         try
         {

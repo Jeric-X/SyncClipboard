@@ -1,6 +1,7 @@
 ﻿using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
+using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
 
 namespace SyncClipboard.WinUI3.ClipboardWinUI;
@@ -27,8 +28,9 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         Clipboard.ContentChanged -= HandleClipboardChanged;
     }
 
-    private void HandleClipboardChanged(object? _, object _1)
+    private async void HandleClipboardChanged(object? _, object _1)
     {
-        _action?.Invoke(_clipboardFactory.GetMetaInfomation());
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(3));
+        _action?.Invoke(await _clipboardFactory.GetMetaInfomation(cts.Token));
     }
 }

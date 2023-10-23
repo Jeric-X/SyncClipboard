@@ -2,6 +2,7 @@
 
 public interface IProfileDtoHelper
 {
-    string CreateProfileDto(out string? extraFilePath);
+    //para1 dto, para2 extraFilePath
+    Task<(string, string?)> CreateProfileDto(CancellationToken ctk);
     public void SetLocalClipboardWithDto(string profileDto, string fileFolder);
 }

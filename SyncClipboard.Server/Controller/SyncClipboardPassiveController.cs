@@ -12,7 +12,7 @@ public class SyncClipboardPassiveController : SyncClipboardController
 
     protected override async Task<IResult> GetSyncProfile(string rootPath, string path)
     {
-        var dtoString = _profileDtoHelper.CreateProfileDto(out string? filePath);
+        var (dtoString, filePath) = await _profileDtoHelper.CreateProfileDto(CancellationToken.None);
         await File.WriteAllTextAsync(Path.Combine(rootPath, path), dtoString);
 
         var fileFolder = Path.Combine(rootPath, "file");

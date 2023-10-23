@@ -14,6 +14,9 @@ internal class ClipboardListener : ClipboardChangingListenerBase
     private Action<ClipboardMetaInfomation>? _action;
     private ClipboardMetaInfomation? _meta;
 
+    private readonly object _lock = new object();
+    private CancellationTokenSource? _cts;
+
     public ClipboardListener(IClipboardFactory clipboardFactory)
     {
         _clipboardFactory = clipboardFactory;
@@ -31,9 +34,18 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         _action = null;
     }
 
-    private void InvokeTick(object? _)
+    private async void InvokeTick(object? _)
     {
-        var meta = _clipboardFactory.GetMetaInfomation();
+        lock (_lock)
+        {
+            if (_cts is not null && _cts.IsCancellationRequested is false)
+            {
+                return;
+            }
+            _cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        }
+
+        var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
         if (meta != _meta)
         {
             _action?.Invoke(meta);

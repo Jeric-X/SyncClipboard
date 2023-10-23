@@ -4,7 +4,7 @@ namespace SyncClipboard.Core.Clipboard;
 
 public interface IClipboardFactory
 {
-    ClipboardMetaInfomation GetMetaInfomation();
-    Profile CreateProfile(ClipboardMetaInfomation? metaInfomation = default);
+    Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
+    Profile CreateProfile(ClipboardMetaInfomation metaInfomation);
     Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken);
 }
