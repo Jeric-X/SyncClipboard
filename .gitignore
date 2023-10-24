@@ -452,3 +452,5 @@ version.txt
 .vscode/settings.json
 SyncClipboard.Server/server
 SyncClipboard.sln.MVVMSettings
+linux-*/
+build/output/

@@ -1,4 +1,4 @@
-#!binbash
+#!/bin/bash
 # This is a dummy bash script used for demonstration and test. It outputs a few variables
 # and creates a dummy file in the application directory which will be detected by the program.
 
@@ -17,7 +17,9 @@ echo
 
 echo Do work...
 set -x #echo on
-cp -r ../linux/ ${BUILD_APP_BIN}
+echo Copying files
+# build on Windows first, put outputs in [../linux/] foleder
+cp -r ../linux-self-contained/* ${BUILD_APP_BIN}/
 set +x #echo off
 
 echo
