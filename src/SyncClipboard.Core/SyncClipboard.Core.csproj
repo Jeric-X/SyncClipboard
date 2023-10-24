@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <DebugType>embedded</DebugType>
     <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
-    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
