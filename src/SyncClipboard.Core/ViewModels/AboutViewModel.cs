@@ -45,12 +45,12 @@ public partial class AboutViewModel : ObservableObject
 
     public List<OpenSourceSoftware> Dependencies { get; } = new()
     {
-        new OpenSourceSoftware("Magick.NET", "https://github.com/dlemstra/Magick.NET","License.txt"),
-        new OpenSourceSoftware("Windows Community Toolkit Labs", "https://github.com/CommunityToolkit/Labs-Windows","License.md"),
-        new OpenSourceSoftware(".NET Community Toolkit", "https://github.com/CommunityToolkit/dotnet","License.md"),
-        new OpenSourceSoftware("H.NotifyIcon", "https://github.com/HavenDV/H.NotifyIcon","LICENSE.md"),
-        new OpenSourceSoftware("WinUIEx", "https://github.com/dotMorten/WinUIEx","LICENSE.txt"),
-        new OpenSourceSoftware("moq", "https://github.com/moq/moq","License.txt"),
+        new OpenSourceSoftware("Magick.NET", "https://github.com/dlemstra/Magick.NET", "Magick.NET/License.txt"),
+        new OpenSourceSoftware("Windows Community ToolkitLabs", "https://github.com/CommunityToolkit/Labs-Windows", "WindowsCommunityToolkitLabs/License.md"),
+        new OpenSourceSoftware(".NET Community Toolkit", "https://github.com/CommunityToolkit/dotnet", ".NETCommunityToolkit/License.md"),
+        new OpenSourceSoftware("H.NotifyIcon", "https://github.com/HavenDV/H.NotifyIcon", "H.NotifyIcon/LICENSE.md"),
+        new OpenSourceSoftware("WinUIEx", "https://github.com/dotMorten/WinUIEx", "WinUIEx/LICENSE.txt"),
+        new OpenSourceSoftware("moq", "https://github.com/moq/moq", "moq/License.txt"),
     };
 
     [RelayCommand]

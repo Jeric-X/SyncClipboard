@@ -36,7 +36,7 @@ namespace SyncClipboard.WinUI3.Views
         {
             var window = App.Current.Services.GetService<IMainWindow>() as MainWindow;
             var settingsCard = (SettingsCard)sender;
-            var path = $"{settingsCard.Header}/{settingsCard.Tag}";
+            var path = settingsCard.Tag;
 
             var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
             mainWindowVM?.BreadcrumbList.Add(PageDefinition.License);

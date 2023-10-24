@@ -32,7 +32,7 @@ public partial class AboutPage : UserControl
             return;
         }
 
-        var path = $"{software.Name}/{software.LicensePath}";
+        var path = software.LicensePath;
 
         var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
         var window = App.Current.Services.GetService<IMainWindow>() as MainWindow;
