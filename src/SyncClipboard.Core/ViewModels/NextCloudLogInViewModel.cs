@@ -34,6 +34,7 @@ public partial class NextCloudLogInViewModel : ObservableObject
     private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
     private ConfigManager ConfigManager => _serviceProvider.GetRequiredService<ConfigManager>();
+    private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
     public NextCloudLogInViewModel(IServiceProvider serviceProvider)
     {
@@ -96,7 +97,7 @@ public partial class NextCloudLogInViewModel : ObservableObject
             Sys.OpenWithDefaultApp(userloginUrl);
             tempWebDavCredential = await loginFlow.WaitUserLogin(CancelSource.Token);
             ShowProgressBar = false;
-            _tempWebDav = new WebDav(tempWebDavCredential);
+            _tempWebDav = new WebDav(tempWebDavCredential, AppConfig);
             TreeList = WebDavModelToViewModel(await _tempWebDav.GetFolderSubList(""));
         }
         catch (TaskCanceledException) { }

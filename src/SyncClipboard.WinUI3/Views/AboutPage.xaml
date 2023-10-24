@@ -12,7 +12,7 @@
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <labs:SettingsExpander Header="SyncClipboard" Description="{x:Bind vm:SystemSettingViewModel.Version}" IsExpanded="True">
+        <labs:SettingsExpander Header="SyncClipboard" Description="{x:Bind _aboutViewModel.Version}" IsExpanded="True">
             <labs:SettingsExpander.HeaderIcon>
                 <ImageIcon Source="ms-appx:///Assets/icon.ico" />
             </labs:SettingsExpander.HeaderIcon>

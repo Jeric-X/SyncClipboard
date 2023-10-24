@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 
@@ -10,14 +11,16 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class AboutViewModel : ObservableObject
 {
     public static string HomePage => Env.HomePage;
+    public IAppConfig AppConfig => _services.GetRequiredService<IAppConfig>();
+    public string Version => AppConfig.AppVersion;
 
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceProvider _services;
 
-    private UpdateChecker UpdateChecker => _serviceProvider.GetRequiredService<UpdateChecker>();
+    private UpdateChecker UpdateChecker => _services.GetRequiredService<UpdateChecker>();
 
     public AboutViewModel(IServiceProvider serviceProvider)
     {
-        _serviceProvider = serviceProvider;
+        _services = serviceProvider;
         if (_alreadyCheckedUpdate is false)
         {
             CheckForUpdateCommand.ExecuteAsync(null);
@@ -54,9 +57,9 @@ public partial class AboutViewModel : ObservableObject
     };
 
     [RelayCommand]
-    public static void OpenUpdateUrl()
+    public void OpenUpdateUrl()
     {
-        Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl);
+        Sys.OpenWithDefaultApp(AppConfig.UpdateUrl);
     }
 
     [RelayCommand]
@@ -69,11 +72,11 @@ public partial class AboutViewModel : ObservableObject
             var (needUpdate, newVersion) = await UpdateChecker.Check();
             if (needUpdate)
             {
-                UpdateInfo = $"{I18n.Strings.FoundNewVersion}\nv{Env.VERSION} -> {newVersion}";
+                UpdateInfo = $"{I18n.Strings.FoundNewVersion}\nv{UpdateChecker.Version} -> {newVersion}";
             }
             else
             {
-                UpdateInfo = $"{I18n.Strings.ItsLatestVersion}\n{string.Format(I18n.Strings.SoftwareUpdateInfo, Env.VERSION, newVersion)}";
+                UpdateInfo = $"{I18n.Strings.ItsLatestVersion}\n{string.Format(I18n.Strings.SoftwareUpdateInfo, UpdateChecker.Version, newVersion)}";
             }
         }
         catch

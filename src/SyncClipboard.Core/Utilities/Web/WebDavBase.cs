@@ -11,9 +11,10 @@ namespace SyncClipboard.Core.Utilities.Web
 {
     abstract public class WebDavBase : IWebDav
     {
-        private const string USER_AGENT = Env.SoftName + Env.VERSION;
+        private string USER_AGENT => AppConfig.AppStringId + AppConfig.AppVersion;
 
         protected ILogger? Logger;
+        protected abstract IAppConfig AppConfig { get; }
 
         protected virtual uint Timeout => 300;
         protected abstract string User { get; }

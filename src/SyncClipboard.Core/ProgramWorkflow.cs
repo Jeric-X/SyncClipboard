@@ -81,8 +81,8 @@ namespace SyncClipboard.Core
                     {
                         notificationManager.SendText(
                             Strings.FoundNewVersion,
-                            $"v{Env.VERSION} -> {newVersion}",
-                            new Button(Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(UpdateChecker.ReleaseUrl))
+                            $"v{updateChecker.Version} -> {newVersion}",
+                            new Button(Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(updateChecker.ReleaseUrl))
                         );
                     }
                 }

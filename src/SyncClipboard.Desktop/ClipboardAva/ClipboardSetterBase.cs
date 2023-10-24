@@ -18,9 +18,9 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
         else
         {
             Dispatcher.UIThread.Invoke(
-                () => App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj),
+                () => App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).Wait(),
                 DispatcherPriority.Send
-            ).Wait();
+            );
         }
     }
 }

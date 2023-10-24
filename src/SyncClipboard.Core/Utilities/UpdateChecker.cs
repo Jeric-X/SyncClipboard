@@ -7,19 +7,21 @@ namespace SyncClipboard.Core.Utilities;
 
 public class UpdateChecker
 {
-    public const string Version = Env.VERSION;
+    public string Version => _appConfig.AppVersion;
     private const string GITHUB_JSON_VERSION_TAG = "name";
     private const int VersionPartNumber = 3;
-    private const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases/latest";
-    public const string ReleaseUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
+    private string UpdateApiUrl => _appConfig.UpdateApiUrl;
+    public string ReleaseUrl => _appConfig.UpdateUrl;
 
     private const string GITHUB_VERSION_PATTERN = @"^v\d+\.\d+\.\d+$";      // v2.250.666
 
     private readonly IHttp _http;
+    private readonly IAppConfig _appConfig;
 
-    public UpdateChecker(IHttp http)
+    public UpdateChecker(IHttp http, IAppConfig appConfig)
     {
         _http = http;
+        _appConfig = appConfig;
     }
 
     public async Task<(bool, string)> Check()
@@ -41,7 +43,7 @@ public class UpdateChecker
         return versionStr;
     }
 
-    private static bool NeedUpdate(string newVersionStr)
+    private bool NeedUpdate(string newVersionStr)
     {
         newVersionStr = newVersionStr[1..];         // 去除v1.0.0中的v
         string[] newVersion = newVersionStr.Split('.');

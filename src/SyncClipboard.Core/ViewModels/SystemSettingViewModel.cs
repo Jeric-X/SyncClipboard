@@ -9,8 +9,6 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel : ObservableObject
 {
-    public static string Version => "v" + Env.VERSION;
-
     [ObservableProperty]
     private bool checkUpdateOnStartUp;
     partial void OnCheckUpdateOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { CheckUpdateOnStartUp = value };

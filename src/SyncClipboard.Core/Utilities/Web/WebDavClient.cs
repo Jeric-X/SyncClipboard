@@ -15,13 +15,17 @@ namespace SyncClipboard.Core.Utilities.Web
         protected override string Token => _syncConfig.UseLocalServer ? _serverConfig.Password : _syncConfig.Password;
         protected override string BaseAddress => _syncConfig.UseLocalServer ? $"http://127.0.0.1:{_serverConfig.Port}" : _syncConfig.RemoteURL;
 
-        public WebDavClient(ConfigManager configManager, ILogger logger)
+        private readonly IAppConfig _appConfig;
+        protected override IAppConfig AppConfig => _appConfig;
+
+        public WebDavClient(ConfigManager configManager, ILogger logger, IAppConfig appConfig)
         {
             _configManager = configManager;
             configManager.ConfigChanged += UserConfigChanged;
             _syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
             _serverConfig = configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
             Logger = logger;
+            _appConfig = appConfig;
         }
 
         private async void UserConfigChanged()

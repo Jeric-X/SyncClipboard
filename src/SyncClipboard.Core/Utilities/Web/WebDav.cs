@@ -11,10 +11,14 @@ namespace SyncClipboard.Core.Utilities.Web
         protected override string Token => _credential.Password;
         protected override string BaseAddress => _credential.Url;
 
-        public WebDav(WebDavCredential credential, ILogger? logger = null)
+        private readonly IAppConfig _appConfig;
+        protected override IAppConfig AppConfig => _appConfig;
+
+        public WebDav(WebDavCredential credential, IAppConfig appConfig, ILogger? logger = null)
         {
             _credential = credential;
             Logger = logger;
+            _appConfig = appConfig;
         }
     }
 }

@@ -15,7 +15,12 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         }
 
         var dataObject = new DataObject();
-        dataObject.Set("Text", metaInfomation?.Text ?? "");
+        // not support, do nothing
         return dataObject;
+    }
+
+    public override void SetLocalClipboard(object obj)
+    {
+        // not support, do nothing
     }
 }

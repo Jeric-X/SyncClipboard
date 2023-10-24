@@ -28,7 +28,7 @@
         <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="SyncClipboard" Description="{x:Static vm:SystemSettingViewModel.Version}" IsExpanded="True">
+        <ui:SettingsExpander Header="SyncClipboard" Description="{Binding Version}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:ImageIconSource Source="/Assets/icon.ico" />
             </ui:SettingsExpander.IconSource>
