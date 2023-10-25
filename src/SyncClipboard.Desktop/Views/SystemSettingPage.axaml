@@ -27,6 +27,14 @@
                 <UserControl />
             </OnPlatform.Default>
         </OnPlatform>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.HideOnStartup}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE1C5;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.LogRemainDays}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE9F9;" FontFamily="{StaticResource SymbolThemeFontFamily}" />

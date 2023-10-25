@@ -376,6 +376,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Hide Window on Startup 的本地化字符串。
+        /// </summary>
+        public static string HideOnStartup {
+            get {
+                return ResourceManager.GetString("HideOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Image Assistant 的本地化字符串。
         /// </summary>
         public static string ImageAssistant {

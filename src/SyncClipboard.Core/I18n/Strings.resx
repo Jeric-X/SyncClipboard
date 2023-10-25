@@ -393,4 +393,7 @@
   <data name="CompletelyExit" xml:space="preserve">
     <value>Completely Exit</value>
   </data>
+  <data name="HideOnStartup" xml:space="preserve">
+    <value>Hide Window on Startup</value>
+  </data>
 </root>

@@ -44,21 +44,24 @@ namespace SyncClipboard.Core
 
             configManager.AddMenuItems();
 
-            var webdav = Services.GetRequiredService<IWebDav>();
-            webdav.TestAlive().ContinueWith(async res =>
-            {
-                if (await res)
-                {
-                    await webdav.CreateDirectory(Env.RemoteFileFolder);
-                }
-            });
-
+            PrepareRemoteWorkingFolder();
             PrepareWorkingFolder(configManager);
             CheckUpdate();
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
             trayIcon.Create();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
+            ShowMainWindow(configManager);
+        }
+
+        private void ShowMainWindow(ConfigManager configManager)
+        {
+            var config = configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+            if (config.HideWindowOnStartup)
+            {
+                return;
+            }
+            Services.GetRequiredService<IMainWindow>().Show();
         }
 
         private async void CheckUpdate()
@@ -132,6 +135,20 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, ServerService>();
             services.AddSingleton<IService, UploadService>();
             services.AddSingleton<IService, DownloadService>();
+        }
+
+        private async void PrepareRemoteWorkingFolder()
+        {
+            try
+            {
+                var webdav = Services.GetRequiredService<IWebDav>();
+                var res = await webdav.TestAlive();
+                if (res)
+                {
+                    await webdav.CreateDirectory(Env.RemoteFileFolder);
+                }
+            }
+            catch { }
         }
 
         private static void PrepareWorkingFolder(ConfigManager configManager)

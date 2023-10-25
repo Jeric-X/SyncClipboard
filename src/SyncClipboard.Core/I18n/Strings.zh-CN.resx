@@ -393,4 +393,7 @@
   <data name="CompletelyExit" xml:space="preserve">
     <value>完全退出软件</value>
   </data>
+  <data name="HideOnStartup" xml:space="preserve">
+    <value>启动时隐藏窗口</value>
+  </data>
 </root>

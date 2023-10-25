@@ -14,6 +14,10 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnCheckUpdateOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { CheckUpdateOnStartUp = value };
 
     [ObservableProperty]
+    private bool hideWindowOnStartUp;
+    partial void OnHideWindowOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { HideWindowOnStartup = value };
+
+    [ObservableProperty]
     private uint logRemainDays;
     partial void OnLogRemainDaysChanged(uint value) => ProgramConfig = ProgramConfig with { LogRemainDays = value };
 
@@ -22,6 +26,7 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
         CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
+        HideWindowOnStartUp = value.HideWindowOnStartup;
         LogRemainDays = value.LogRemainDays;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
         _configManager.SetConfig(ConfigKey.Program, value);
@@ -46,6 +51,7 @@ public partial class SystemSettingViewModel : ObservableObject
         ProgramConfig = _configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
         language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
         checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;
+        hideWindowOnStartUp = ProgramConfig.HideWindowOnStartup;
         logRemainDays = ProgramConfig.LogRemainDays;
     }
 
