@@ -59,7 +59,7 @@ public abstract class Profile
         notificationManager.SendText(I18n.Strings.ClipboardUpdated, Text);
     }
 
-    public void SetLocalClipboard(bool notify = false)
+    public void SetLocalClipboard(bool notify, CancellationToken ctk)
     {
         var ClipboardObjectContainer = ClipboardSetter.CreateClipboardObjectContainer(MetaInfomation);
         if (ClipboardObjectContainer is null)
@@ -69,11 +69,11 @@ public abstract class Profile
 
         if (MainThreadSynContext == SynchronizationContext.Current)
         {
-            ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer);
+            ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer, ctk);
         }
         else
         {
-            MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer), null);
+            MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer, ctk), null);
         }
 
         if (notify && (EnableNotify ?? true))
@@ -123,6 +123,6 @@ public abstract class Profile
 
     protected Button DefaultButton()
     {
-        return new Button(I18n.Strings.Copy, new Callbacker(Guid.NewGuid().ToString(), (_) => SetLocalClipboard()));
+        return new Button(I18n.Strings.Copy, new Callbacker(Guid.NewGuid().ToString(), (_) => SetLocalClipboard(false, CancellationToken.None)));
     }
 }

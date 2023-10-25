@@ -18,9 +18,4 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         // not support, do nothing
         return dataObject;
     }
-
-    public override void SetLocalClipboard(object obj)
-    {
-        // not support, do nothing
-    }
 }

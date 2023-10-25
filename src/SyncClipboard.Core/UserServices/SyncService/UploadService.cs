@@ -174,9 +174,9 @@ public class UploadService : ClipboardHander
         string errMessage = "";
         for (int i = 0; i < _syncConfig.RetryTimes; i++)
         {
+            await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
             try
             {
-                await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
                 var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
                 if (!await Profile.Same(remoteProfile, profile, cancelToken))
                 {

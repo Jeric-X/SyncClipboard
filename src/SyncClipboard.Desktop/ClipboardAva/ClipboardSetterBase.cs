@@ -2,6 +2,8 @@
 using Avalonia.Threading;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
@@ -9,18 +11,8 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 {
     public abstract object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation);
 
-    public virtual void SetLocalClipboard(object obj)
+    public virtual Task SetLocalClipboard(object obj, CancellationToken ctk)
     {
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).Wait();
-        }
-        else
-        {
-            Dispatcher.UIThread.Invoke(
-                () => App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).Wait(),
-                DispatcherPriority.Send
-            );
-        }
+        return Task.CompletedTask;
     }
 }

@@ -140,7 +140,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         {
             try
             {
-                profile.SetLocalClipboard();
+                profile.SetLocalClipboard(false, cancellationToken);
                 break;
             }
             catch

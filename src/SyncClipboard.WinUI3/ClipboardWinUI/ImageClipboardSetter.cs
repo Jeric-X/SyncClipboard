@@ -8,7 +8,7 @@ using Windows.Storage.Streams;
 
 namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
-internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core.Clipboard.ImageProfile>
+internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<ImageProfile>
 {
     public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
     {

@@ -1,7 +1,8 @@
 ﻿using Avalonia.Input;
-using Avalonia.Threading;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
@@ -16,18 +17,8 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
         return dataObject;
     }
 
-    public override void SetLocalClipboard(object obj)
+    public override async Task SetLocalClipboard(object obj, CancellationToken ctk)
     {
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            App.Current.Clipboard.SetTextAsync(_text).Wait();
-        }
-        else
-        {
-            Dispatcher.UIThread.Invoke(
-                () => App.Current.Clipboard.SetTextAsync(_text),
-                DispatcherPriority.Send
-            ).Wait();
-        }
+        await App.Current.Clipboard.SetTextAsync(_text).WaitAsync(ctk);
     }
 }

@@ -113,6 +113,6 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
         }
 
-        profile.SetLocalClipboard(true);
+        profile.SetLocalClipboard(true, CancellationToken.None);
     }
 }

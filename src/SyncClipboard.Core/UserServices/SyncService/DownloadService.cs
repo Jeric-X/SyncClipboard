@@ -183,9 +183,9 @@ public class DownloadService : Service
         int errorTimes = 0;
         while (!cancelToken.IsCancellationRequested)
         {
+            await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
             try
             {
-                await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
                 var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken).ConfigureAwait(true);
                 _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
@@ -251,7 +251,7 @@ public class DownloadService : Service
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 _toastReporter = null;
                 PullStarted?.Invoke();
-                remoteProfile.SetLocalClipboard(true);
+                remoteProfile.SetLocalClipboard(true, cancelToken);
                 _logger.Write("Success download:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
             }

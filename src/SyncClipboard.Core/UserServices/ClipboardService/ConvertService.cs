@@ -41,7 +41,7 @@ public class ConvertService : ClipboardHander
         {
             var file = metaInfo.Files![0];
             var newPath = await ImageHelper.CompatibilityCast(file, Env.TemplateFileFolder, cancellationToken);
-            new ImageProfile(newPath, _serviceProvider).SetLocalClipboard();
+            new ImageProfile(newPath, _serviceProvider).SetLocalClipboard(false, cancellationToken);
         }
         catch (Exception ex)
         {
