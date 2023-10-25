@@ -27,8 +27,27 @@ internal class ClipboardFactory : ClipboardFactoryBase
     {
         ClipboardMetaInfomation meta = new();
         var clipboard = App.Current.MainWindow.Clipboard;
-        meta.Text = await clipboard?.GetTextAsync().WaitAsync(ctk)!;
 
+        for (int i = 0; i < 5; i++)
+        {
+            try
+            {
+                var text = await clipboard?.GetTextAsync().WaitAsync(ctk)!;
+                if (text?.StartsWith('\ufffd') ?? false)
+                {
+                    throw new Exception($"wrong clipboard with: {text}");
+                }
+                meta.Text = text;
+                break;
+            }
+            catch (Exception ex) when (ctk.IsCancellationRequested is false)
+            {
+                Logger.Write(ex.Message);
+            }
+            await Task.Delay(200, ctk);
+        }
+
+        Logger.Write($"local: {meta.Text}");
         return meta;
     }
 }
