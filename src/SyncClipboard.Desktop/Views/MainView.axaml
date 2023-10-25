@@ -13,20 +13,6 @@
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
-    <UserControl.Resources>
-        <OnPlatform>
-            <OnPlatform.macOS>
-                <ResourceDictionary>
-                    <Thickness x:Key="TitleBarMargin">50,0,0,0</Thickness>
-                </ResourceDictionary>
-            </OnPlatform.macOS>
-            <OnPlatform.Default>
-                <ResourceDictionary>
-                    <Thickness x:Key="TitleBarMargin">20,0,0,0</Thickness>
-                </ResourceDictionary>
-            </OnPlatform.Default>
-        </OnPlatform>
-    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -35,7 +21,7 @@
         <OnPlatform>
             <OnPlatform.Default>
                 <StackPanel Height="36"
-                            Margin="{StaticResource TitleBarMargin}"
+                            Margin="20,0,0,0"
                             IsHitTestVisible="False"
                             Orientation="Horizontal"
                             Spacing="8">
@@ -44,7 +30,10 @@
                 </StackPanel>
             </OnPlatform.Default>
             <OnPlatform.Linux>
-                <StackPanel Height="0" />
+                <Border Height="36" />
+            </OnPlatform.Linux>
+            <OnPlatform.Linux>
+                <Border Height="0" />
             </OnPlatform.Linux>
         </OnPlatform>
         <SplitView x:Name="SplitPane"

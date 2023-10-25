@@ -48,18 +48,23 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         try
         {
             var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
-            if (meta != _meta)
+            if (meta == _meta)
+            {
+                return;
+            }
+
+            if (_meta is not null)
             {
                 _action?.Invoke(meta);
-                _meta = meta;
             }
+            _meta = meta;
         }
         catch { }
         finally
         {
             lock (_lock)
             {
-                _cts.Dispose();
+                _cts?.Dispose();
                 _cts = null;
             }
         }
