@@ -454,3 +454,5 @@ SyncClipboard.Server/server
 SyncClipboard.sln.MVVMSettings
 linux-*/
 build/output/
+build/macos/SyncClipboard.app/
+macos-*/
