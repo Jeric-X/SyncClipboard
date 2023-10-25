@@ -1,20 +1,27 @@
 ﻿using Microsoft.Win32;
 using SyncClipboard.Core.Commons;
-using System.Runtime.Versioning;
 
 namespace SyncClipboard.Core.Utilities;
 
-[SupportedOSPlatform("windows")]
 public class StartUpHelper
 {
     public static bool Status()
     {
+        if (!OperatingSystem.IsOSPlatform("windows"))
+        {
+            return false;
+        }
         var path = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, null);
         return path as string == Env.ProgramPath;
     }
 
     public static void Set(bool enabled)
     {
+        if (!OperatingSystem.IsOSPlatform("windows"))
+        {
+            return;
+        }
+
         if (enabled)
         {
             Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, Env.ProgramPath);

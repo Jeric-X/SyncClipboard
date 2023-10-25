@@ -136,26 +136,23 @@ namespace SyncClipboard.Core.Commons
             ConfigChanged?.Invoke();
         }
 
-        [SupportedOSPlatform("windows")]
         public void AddMenuItems()
         {
-            MenuItem[] menuItems =
+            List<MenuItem> menuItems = new()
             {
                 new MenuItem(
                     I18n.Strings.OpenConfigFile, OpenConfigFile),
-                new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load()),
-                new MenuItem(
-                    I18n.Strings.OpenConfigFileFolder, () => {
-                        var open = new System.Diagnostics.Process();
-                        open.StartInfo.FileName = "explorer";
-                        open.StartInfo.Arguments = "/e,/select," + _path;
-                        open.Start();
-                    }),
+                new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load())
             };
-            _contextMenu.AddMenuItemGroup(menuItems);
+
+            if (OperatingSystem.IsWindows())
+            {
+                menuItems.Add(new MenuItem(I18n.Strings.OpenConfigFileFolder, OpenConfigFileFolder));
+            }
+            _contextMenu.AddMenuItemGroup(menuItems.ToArray());
         }
 
-        private Action OpenConfigFile => () =>
+        private void OpenConfigFile()
         {
             if (OperatingSystem.IsWindows())
             {
@@ -166,6 +163,15 @@ namespace SyncClipboard.Core.Commons
             }
 
             Sys.OpenWithDefaultApp(_path);
-        };
+        }
+
+        [SupportedOSPlatform("windows")]
+        private void OpenConfigFileFolder()
+        {
+            var open = new System.Diagnostics.Process();
+            open.StartInfo.FileName = "explorer";
+            open.StartInfo.Arguments = "/e,/select," + _path;
+            open.Start();
+        }
     }
 }
