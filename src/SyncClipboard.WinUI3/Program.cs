@@ -18,7 +18,7 @@ public static class Program
     [STAThread]
     private static void Main(string[] _)
     {
-        using var mutex = AppInstance.EnsureSingleInstance(Env.AppId);
+        using var mutex = AppInstance.EnsureSingleInstance();
         if (mutex is null)
         {
             return;

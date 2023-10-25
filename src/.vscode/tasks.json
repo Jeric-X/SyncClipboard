@@ -46,6 +46,26 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "DebugDesktop",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
+                "-c",
+                "Debug",
+                // Ask dotnet build to generate full paths for file names.
+                "/property:GenerateFullPaths=true",
+                // Do not generate summary otherwise it leads to duplicate errors in Problems panel
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "ReleaseAva",
             "command": "dotnet",
             "type": "process",

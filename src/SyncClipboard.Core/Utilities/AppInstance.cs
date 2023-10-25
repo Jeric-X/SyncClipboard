@@ -11,16 +11,14 @@ public sealed class AppInstance : IDisposable
     private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
     private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
 
-    private readonly string _appId;
     private readonly IMainWindow _mainWindow;
     private readonly ILogger _logger;
     private bool _disposed = false;
 
     private CancellationTokenSource? _cancellationSource = null;
 
-    public AppInstance(IMainWindow window, ILogger logger, IAppConfig appConfig)
+    public AppInstance(IMainWindow window, ILogger logger)
     {
-        _appId = appConfig.AppId;
         _mainWindow = window;
         _logger = logger;
     }
@@ -53,7 +51,7 @@ public sealed class AppInstance : IDisposable
         {
             try
             {
-                using var pipeServer = new NamedPipeServerStream(PipePrefix + _appId, PipeDirection.InOut, 1);
+                using var pipeServer = new NamedPipeServerStream(PipePrefix, PipeDirection.InOut, 1);
                 await pipeServer.WaitForConnectionAsync(cancellationToken);
                 using var reader = new StreamReader(pipeServer);
                 var command = await reader.ReadLineAsync().WaitAsync(cancellationToken);
@@ -78,9 +76,9 @@ public sealed class AppInstance : IDisposable
         _cancellationSource = null;
     }
 
-    private static async Task ActiveOtherInstance(string appId)
+    private static async Task ActiveOtherInstance()
     {
-        using var pipeClient = new NamedPipeClientStream(".", PipePrefix + appId, PipeDirection.InOut);
+        using var pipeClient = new NamedPipeClientStream(".", PipePrefix, PipeDirection.InOut);
         var token = new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token;
         try
         {
@@ -95,12 +93,12 @@ public sealed class AppInstance : IDisposable
         }
     }
 
-    public static Mutex? EnsureSingleInstance(string appId)
+    public static Mutex? EnsureSingleInstance()
     {
-        Mutex mutex = new(false, MutexPrefix + appId, out bool createdNew);
+        Mutex mutex = new(false, MutexPrefix, out bool createdNew);
         if (!createdNew)
         {
-            ActiveOtherInstance(appId).Wait();
+            ActiveOtherInstance().Wait();
             return null;
         }
         return mutex;

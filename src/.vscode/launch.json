@@ -21,6 +21,24 @@
             }
         },
         {
+            "name": "DebugDesktop",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugDesktop",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/SyncClipboard.Desktop/bin/Debug/net6.0/publish/SyncClipboard.Desktop.dll"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
             "name": "ReleaseAva",
             "type": "coreclr",
             "request": "launch",
