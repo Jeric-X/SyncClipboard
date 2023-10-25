@@ -75,7 +75,7 @@
                         <DataTemplate x:DataType="vm:PageDefinition">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <ui:FontIcon FontSize="20" Glyph="{Binding FontIcon}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                <TextBlock FontSize="16" Text="{Binding Title}" />
+                                <TextBlock VerticalAlignment="Center" FontSize="16" Text="{Binding Title}" />
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

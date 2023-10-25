@@ -4,6 +4,8 @@
              xmlns:sty="using:FluentAvalonia.Styling"
              xmlns:local="using:SyncClipboard.Desktop.Views"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:core="using:SyncClipboard.Core.Commons"
+             Name="{x:Static core:Env.SoftName}"
              RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
 
