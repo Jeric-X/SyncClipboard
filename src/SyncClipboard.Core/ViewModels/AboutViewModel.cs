@@ -54,6 +54,9 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("H.NotifyIcon", "https://github.com/HavenDV/H.NotifyIcon", "H.NotifyIcon/LICENSE.md"),
         new OpenSourceSoftware("WinUIEx", "https://github.com/dotMorten/WinUIEx", "WinUIEx/LICENSE.txt"),
         new OpenSourceSoftware("moq", "https://github.com/moq/moq", "moq/License.txt"),
+        new OpenSourceSoftware("Avalonia", "https://avaloniaui.net/", "Avalonia/licence.md"),
+        new OpenSourceSoftware("FluentAvalonia", "https://github.com/amwx/FluentAvalonia/", "FluentAvalonia/LICENSE.txt"),
+        new OpenSourceSoftware("FluentAvalonia.BreadcrumbBar", "https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar", "FluentAvalonia.BreadcrumbBar/LICENSE.txt"),
     };
 
     [RelayCommand]
