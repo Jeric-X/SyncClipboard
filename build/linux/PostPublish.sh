@@ -19,7 +19,7 @@ echo Do work...
 set -x #echo on
 echo Copying files
 # build on Windows first, put outputs in [../linux/] foleder
-cp -r ../linux-self-contained/* ${BUILD_APP_BIN}/
+cp -r ../../linux-bin/* ${BUILD_APP_BIN}/
 set +x #echo off
 
 echo
