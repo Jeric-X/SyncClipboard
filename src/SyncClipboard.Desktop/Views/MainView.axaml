@@ -29,9 +29,9 @@
                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="SyncClipboard" />
                 </StackPanel>
             </OnPlatform.Default>
-            <OnPlatform.Linux>
+            <OnPlatform.macOS>
                 <Border Height="36" />
-            </OnPlatform.Linux>
+            </OnPlatform.macOS>
             <OnPlatform.Linux>
                 <Border Height="0" />
             </OnPlatform.Linux>
