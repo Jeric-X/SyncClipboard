@@ -12,9 +12,12 @@ on:
 
 jobs:
   winui:
-    if: ${{ !contains(github.ref_name, 'desktop') }}
     uses: ./.github/workflows/winui-package.yml
 
   deskop:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') || contains(github.ref_name, 'desktop') }} 
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
     uses: ./.github/workflows/desktop-package.yml
+    with:
+        release-repo: ${{ github.repository }}
+        checkout-repo: ${{ github.repository }}
+        checkout-ref: ${{ github.ref }}

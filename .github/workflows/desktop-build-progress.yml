@@ -83,5 +83,5 @@ jobs:
     - name: Upload version
       uses: actions/upload-artifact@v3
       with:
-        name: version
+        name: version-desktop
         path: build/version.txt

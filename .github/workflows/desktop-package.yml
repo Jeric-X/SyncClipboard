@@ -4,7 +4,17 @@ permissions:
   contents: write
 
 on:
-  workflow_call:
+  workflow_call:  
+    inputs:
+      release-repo:
+        required: true
+        type: string
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -48,9 +58,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        # with:
-        #   repository: Jeric-X/SyncClipboard
-        #   ref: avalonia
+        with:
+          repository: ${{ inputs.checkout-repo }}
+          ref: ${{ inputs.checkout-ref }}
 
       - name: Install .NET
         uses: actions/setup-dotnet@v2
@@ -108,11 +118,10 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         with:
           allowUpdates: true
-          repo: SyncClipboard.Desktop
+          repo: ${{ inputs.checkout-repo }}
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           artifacts: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
           bodyFile: feature.txt
-  
 
   package-macos:
     strategy:
@@ -125,9 +134,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        # with:
-        #   repository: Jeric-X/SyncClipboard
-        #   ref: avalonia
+        with:
+          repository: ${{ inputs.checkout-repo }}
+          ref: ${{ inputs.checkout-ref }}
 
       - name: Download last-job-built artifact
         uses: actions/download-artifact@v3
@@ -138,14 +147,14 @@ jobs:
       - name: Download version
         uses: actions/download-artifact@v3
         with:
-          name: version
-          path: ./
+          name: version-desktop
+          path: version-desktop/
 
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: version.txt
+          path: version-desktop/version.txt
 
       - name: Package app
         run: | 
@@ -189,7 +198,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         with:
           allowUpdates: true
-          repo: SyncClipboard.Desktop
+          repo: ${{ inputs.checkout-repo }}
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           artifacts: build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
           bodyFile: feature.txt
