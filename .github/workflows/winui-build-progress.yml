@@ -1,0 +1,80 @@
+name: winui-build-progress
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: windows-latest  # For a list of available runner types, refer to
+                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the .NET workload
+    - name: Install .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        msbuild-architecture: x64
+
+    - name: Install dependencies
+      working-directory: ./src
+      run: dotnet restore
+
+    - name: Check code style
+      working-directory: ./src
+      run: dotnet format --verify-no-changes --no-restore
+
+    - name: Check code style info
+      working-directory: ./src
+      run: |
+        dotnet format --severity info --verify-no-changes --no-restore
+        exit 0
+
+    # stucking in github action, no idea why
+    #- name: Build test WinUI3
+    #  run: msbuild SyncClipboard.Test\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /p:Platform=x64 /p:Configuration=Release /v:m
+
+    #- name: Run test WinUI3
+    #  run: dotnet test SyncClipboard.Test\SyncClipboard.Test.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0\SyncClipboard.Test.WinUI3.dll
+
+    - name: Build SyncClipboard.Server
+      run: dotnet publish src\SyncClipboard.Server\SyncClipboard.Server.csproj --configuration Release --no-restore
+
+    - name: Build SyncClipboard.WinUI3
+      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m
+
+    - name: copy SyncClipboard.Server
+      run: xcopy src\SyncClipboard.Server\bin\Release\net6.0\publish server\ /s /e
+
+    - name: copy SyncClipboard.WinUI3
+      run: xcopy src\SyncClipboard.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0\win10-x64 WinUI3\ /s /e
+
+    - name: Generate change log
+      run: |
+        .\PreRelease.bat
+        type feature.txt
+
+    - name: Upload build artifacts SyncClipboard.Server
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard.Server
+        path: server/
+
+    - name: Upload build artifacts SyncClipboard.WinUI3
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard.WinUI3
+        path: WinUI3/
+
+    - name: Upload change log
+      uses: actions/upload-artifact@v3
+      with:
+        name: feature
+        path: feature.txt

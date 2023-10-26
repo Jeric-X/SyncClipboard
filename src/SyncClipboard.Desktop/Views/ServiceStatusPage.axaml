@@ -1,0 +1,35 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.ServiceStatusPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             x:DataType="vm:ServiceStatusViewModel"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:ServiceStatusViewModel />
+    </Design.DataContext>
+    <UserControl.Resources>
+        <vc:BoolToFontIcon x:Key="BoolToFontIcon" />
+    </UserControl.Resources>
+    <Grid>
+        <ItemsRepeater ItemsSource="{Binding StatusList, Mode=OneWay}">
+            <ItemsRepeater.Layout>
+                <StackLayout Orientation="Vertical" Spacing="10" />
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="vm:ServiceStatus">
+                    <ui:SettingsExpander Header="{Binding Name, Mode=OneWay}" Description="{Binding StatusString, Mode=OneWay}">
+                        <ui:SettingsExpander.IconSource>
+                            <ui:FontIconSource Glyph="{Binding IsError, Converter={StaticResource BoolToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </ui:SettingsExpander.IconSource>
+                    </ui:SettingsExpander>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+    </Grid>
+</UserControl>

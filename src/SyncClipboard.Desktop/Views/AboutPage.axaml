@@ -1,0 +1,65 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.AboutPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:m="using:SyncClipboard.Core.Models"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             x:DataType="vm:AboutViewModel"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:AboutViewModel />
+    </Design.DataContext>
+    <UserControl.Resources>
+        <DataTemplate x:Key="HyperLink" x:DataType="m:OpenSourceSoftware">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="{Binding Name}" />
+                <ui:HyperlinkButton Padding="0,0,0,-1"
+                                    Content="{Binding HomePage}"
+                                    FontSize="12"
+                                    Click="HyperlinkButton_Click"
+                                    FontWeight="SemiBold" />
+            </StackPanel>
+        </DataTemplate>
+        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+    </UserControl.Resources>
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="SyncClipboard" Description="{Binding Version}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:ImageIconSource Source="/Assets/icon.ico" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <Button Content="{x:Static i18n:Strings.CheckUpdate}" Command="{Binding CheckForUpdateCommand}" />
+            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <!--<ui:SettingsCard Header="{x:Static i18n:Strings.CheckUpdateOnStartup}">
+                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
+                </ui:SettingsCard>-->
+                <ui:SettingsExpanderItem Content="{Binding UpdateInfo}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Content="{x:Static i18n:Strings.OpenDownloadPage}" Command="{Binding OpenUpdateUrlCommand}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{Binding SyncClipboard}" ContentTemplate="{StaticResource HyperLink}" />
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{Binding Dependencies}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="m:OpenSourceSoftware">
+                    <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                             IsClickEnabled="True"
+                                             Click="SettingsExpanderItem_Click"
+                                             Content="{Binding}"
+                                             ContentTemplate="{StaticResource HyperLink}" />
+                </DataTemplate>
+            </ui:SettingsExpander.ItemTemplate>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>

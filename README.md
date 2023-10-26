@@ -1,6 +1,5 @@
 # SyncClipboard
-[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=WinUI3)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3AWinUI3)
-[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)  
+[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
 
 中文 | [English](docs/README_EN.md)  
 
@@ -11,12 +10,11 @@
   - [功能](#功能)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
-    - [Windows客户端内置服务器](#windows客户端内置服务器)
-    - [其他WebDAV服务器](#其他webdav服务器)
+    - [客户端内置服务器](#客户端内置服务器)
+    - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
     - [Windows](#windows)
-      - [WinUI版](#winui版)
-      - [Winform版](#winform版)
+    - [Linux, macOS](#linux-macos)
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
       - [使用JSBox](#使用jsbox)
@@ -53,10 +51,10 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
 
-### Windows客户端内置服务器
-[Windows客户端](#Windows)内置了服务器。  
+### 客户端内置服务器
+桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上
 
-### 其他WebDAV服务器
+### WebDAV服务器
 可以使用支持WebDAV协议的网盘作为服务器  
 测试过的服务器：   
 - [x] [Nextcloud](https://nextcloud.com/) 
@@ -67,19 +65,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 坚果云有每月流量限制和短时间内请求次数限制，建议自行设置桌面端的`轮询服务器间隔`和`最大上传文件大小`   
 
 ## 客户端
-### Windows   
-分为WinUI版和Winform版，可以自行选择下载  
-客户端依赖：   
-- [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
-- [ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
-- Windows10 1809及以上
-#### WinUI版
 
-- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.WinUI3.zip`，解压缩后运行`SyncClipboard.exe`  
-- 额外运行依赖：
-  - Windows10 2004及以上  
-  - 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
-
+桌面客户端（Windows/Linux/macOS）运行在后台时将自动同步剪切板
 <details>
 <summary>展开/折叠截图</summary>
 
@@ -87,16 +74,28 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 
 </details>
 
-#### Winform版
-- 下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.exe`，独立文件直接运行
-- 界面上的可设置项较少，可以通过手动修改配置文件设置功能
+### Windows
+下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.WinUI3.zip`，解压缩后运行`SyncClipboard.exe`  
 
-<details>
-<summary>展开/折叠截图</summary>
+依赖：   
+- [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
+- [ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
+- Windows10 2004及以上
+- 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
 
-![](docs/image/Winform.png)
+### Linux, macOS
+下载地址：[SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboard.Desktop/releases)，根据系统选择你需要的安装包  
 
-</details>
+注意：
+- 名称中带有`no-self-contained`：依赖[.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)和[ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+- 名称中带有`self-contained`：通常可以直接运行
+- 暂时只支持文字，不支持图片和文件，内置服务器支持其他客户端同步图片和文件
+- 删除软件时，配置文件目录不会被删除，配置文件储存在`~/.config/SyncClipboard/`，可以手动删除整个目录
+- 每次更新版本需要先删除旧版，再安装新版，不支持直接更新
+- 存在大量BUG
+
+已知问题：
+- macos：运行在后台时，dock栏图标无法唤起主界面，点击状态栏图标附带的菜单可以唤起
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
@@ -124,7 +123,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。windows端可以自定义修改更多配置
 - user
 - password
-- url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，例如`https://domain.com/dav/folder1/working%20folder`，不要使用这个文件夹存储其他文件。不使用windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端会在设置服务器时自动创建`file`文件夹
+- url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，例如`https://domain.com/dav/folder1/working%20folder`，特殊符号需要使用url转义字符代替，不要使用这个文件夹存储其他文件。不使用windows客户端时需在工作目录中再创建`file`文件夹以同步文件，windows客户端会在设置服务器时自动创建`file`文件夹
 
 ## API
 
@@ -175,4 +174,7 @@ DELETE      /file
 [.NET Community Toolkit](https://github.com/CommunityToolkit/dotnet)  
 [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)  
 [WinUIEx](https://github.com/dotMorten/WinUIEx)  
-[moq](https://github.com/moq/moq)
+[moq](https://github.com/moq/moq)  
+[Avalonia](https://avaloniaui.net/)  
+[FluentAvalonia.BreadcrumbBar](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
+[FluentAvalonia](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  

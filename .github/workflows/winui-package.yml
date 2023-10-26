@@ -1,0 +1,53 @@
+name: winui-package
+
+permissions:
+  contents: write
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/winui-build-progress.yml
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - name: Download last-job-built artifact SyncClipboard.Server
+        uses: actions/download-artifact@v3
+        with:
+          name: SyncClipboard.Server
+          path: Server/
+
+      - name: Download last-job-built artifact SyncClipboard.WinUI3
+        uses: actions/download-artifact@v3
+        with:
+          name: SyncClipboard.WinUI3
+          path: WinUI3/
+
+      - name: Zip SyncClipboard.Server
+        run: 7z a SyncClipboard.Server.zip .\Server\*
+
+      - name: Zip SyncClipboard.WinUI3
+        run: 7z a SyncClipboard.WinUI3.zip .\WinUI3\*      
+
+      - name: Download last-job-built change log
+        uses: actions/download-artifact@v3
+        with:
+          name: feature
+
+      - name: Show change log
+        run: |
+          tree /f
+          type feature.txt
+
+      - name: Publish Github Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: feature.txt
+          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          files: |
+            SyncClipboard.Server.zip
+            SyncClipboard.WinUI3.zip

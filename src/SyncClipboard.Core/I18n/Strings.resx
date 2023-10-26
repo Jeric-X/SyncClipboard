@@ -1,0 +1,399 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DefaultLanguage" xml:space="preserve">
+    <value>Auto detect</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Built-In Server</value>
+  </data>
+  <data name="SystemSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="ChangingLangInfo" xml:space="preserve">
+    <value>This change effects after restart</value>
+  </data>
+  <data name="Syncing" xml:space="preserve">
+    <value>Syncing</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>User Name</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="PortTabRepeat" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="UserNameTabRepeat" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="PasswordTabRepeat" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="MixedClientMode" xml:space="preserve">
+    <value>Mixed Client Mode</value>
+  </data>
+  <data name="MixedClientOnInfo" xml:space="preserve">
+    <value>On: When clients update/get clipboard infomation to/from this server, directly operate this machie's clipboard. So this machine's clipboard is shared forcely and with no delay.</value>
+  </data>
+  <data name="MixedClientOffInfo" xml:space="preserve">
+    <value>Off: Use standalone files to save clients' clipboard information.</value>
+  </data>
+  <data name="Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="ClipboardSyncing" xml:space="preserve">
+    <value>Clipboard Syncing</value>
+  </data>
+  <data name="UseSelfHostServer" xml:space="preserve">
+    <value>Use Built-In Server</value>
+  </data>
+  <data name="UseNextcloud" xml:space="preserve">
+    <value>Use Nextcloud</value>
+  </data>
+  <data name="QueryInterval" xml:space="preserve">
+    <value>Query Interval (sec)</value>
+  </data>
+  <data name="TimeoutPeriod" xml:space="preserve">
+    <value>Timeout Period (sec)</value>
+  </data>
+  <data name="MaxFileSizeToUpload" xml:space="preserve">
+    <value>Max File Size to Upload (MB)</value>
+  </data>
+  <data name="DeleteServerTemporaryFileAutoly" xml:space="preserve">
+    <value>Delete server's temporary file automatically</value>
+  </data>
+  <data name="ClientGeneral" xml:space="preserve">
+    <value>Client General</value>
+  </data>
+  <data name="SendNotificationAfterUpdateLocalClipboard" xml:space="preserve">
+    <value>Send notification after updating local clipboard</value>
+  </data>
+  <data name="LoginWithBrowser" xml:space="preserve">
+    <value>Login with Browser</value>
+  </data>
+  <data name="SelectFolder" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ImageAssistant" xml:space="preserve">
+    <value>Image Assistant</value>
+  </data>
+  <data name="ImageAssistantDescription" xml:space="preserve">
+    <value>Paste image to a textbox directly after copying a image file from file system, and vice versa</value>
+  </data>
+  <data name="ImageCompatibility" xml:space="preserve">
+    <value>Image Compatibility</value>
+  </data>
+  <data name="ImageCompatibilityDescription" xml:space="preserve">
+    <value>Copy the transcoded temporary image file (jpg or gif) after copying a modern image file (heic, webp, etc.)</value>
+  </data>
+  <data name="DownloadWebImage" xml:space="preserve">
+    <value>Download Web Image</value>
+  </data>
+  <data name="DownloadWebImageDescription" xml:space="preserve">
+    <value>Download the original file and copy it after copying a image in browser</value>
+  </data>
+  <data name="CheckUpdate" xml:space="preserve">
+    <value>Check Update</value>
+  </data>
+  <data name="CheckUpdateOnStartup" xml:space="preserve">
+    <value>Check Update on Startup</value>
+  </data>
+  <data name="SoftwareHomePage" xml:space="preserve">
+    <value>Software Home Page</value>
+  </data>
+  <data name="OpenSourceDependencies" xml:space="preserve">
+    <value>Open Source Dependencies</value>
+  </data>
+  <data name="UploadService" xml:space="preserve">
+    <value>Upload Service</value>
+  </data>
+  <data name="DownloadService" xml:space="preserve">
+    <value>Download Service</value>
+  </data>
+  <data name="License" xml:space="preserve">
+    <value>License</value>
+  </data>
+  <data name="LogRemainDays" xml:space="preserve">
+    <value>Log Remain Days</value>
+  </data>
+  <data name="RunAtSystemStartup" xml:space="preserve">
+    <value>Run at System Startup</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="FoundNewVersion" xml:space="preserve">
+    <value>Found new version</value>
+  </data>
+  <data name="OpenDownloadPage" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="ItsLatestVersion" xml:space="preserve">
+    <value>It's the latest version</value>
+  </data>
+  <data name="LocalVersion" xml:space="preserve">
+    <value>Local version</value>
+  </data>
+  <data name="LatestReleasedVersion" xml:space="preserve">
+    <value>Latest released version</value>
+  </data>
+  <data name="FailedToCheck" xml:space="preserve">
+    <value>Failed to check update</value>
+  </data>
+  <data name="SoftwareUpdateInfo" xml:space="preserve">
+    <value>Local version v{0}. Lasted released version {1}.</value>
+  </data>
+  <data name="ClipboardFileUpdated" xml:space="preserve">
+    <value>Clipboard file updated</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="ClipboardImageUpdated" xml:space="preserve">
+    <value>Clipboard image updated</value>
+  </data>
+  <data name="ClipboardUpdated" xml:space="preserve">
+    <value>Clipboard updated</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="ClipboardTextUpdated" xml:space="preserve">
+    <value>Clipboard text updated</value>
+  </data>
+  <data name="OpenInBrowser" xml:space="preserve">
+    <value>Open in browser</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>Open Config File</value>
+  </data>
+  <data name="OpenConfigFileFolder" xml:space="preserve">
+    <value>Open App Data Folder</value>
+  </data>
+  <data name="ReloadConfigFile" xml:space="preserve">
+    <value>Reload Config File</value>
+  </data>
+  <data name="DownloadingWebImage" xml:space="preserve">
+    <value>Downloading web image</value>
+  </data>
+  <data name="FailedToStartServer" xml:space="preserve">
+    <value>Failed to start server</value>
+  </data>
+  <data name="FailedToDownloadClipboard" xml:space="preserve">
+    <value>Failed to download clipboard</value>
+  </data>
+  <data name="DownloadingFile" xml:space="preserve">
+    <value>Download file</value>
+  </data>
+  <data name="DownloadStatus" xml:space="preserve">
+    <value>Downloading status</value>
+  </data>
+  <data name="Preparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="Canceled" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="UploadFailedStatusTimeout" xml:space="preserve">
+    <value>Failed, tried {0} times, error message: timeout</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Timeout</value>
+  </data>
+  <data name="UploadFailedStatus" xml:space="preserve">
+    <value>Failed, tried {0} times, error message: {1}</value>
+  </data>
+  <data name="FailedToUpload" xml:space="preserve">
+    <value>Failed to Upload: </value>
+  </data>
+  <data name="LogPathNull" xml:space="preserve">
+    <value>Log path is null</value>
+  </data>
+  <data name="FailToParseVersion" xml:space="preserve">
+    <value>Fail to parse version from Github</value>
+  </data>
+  <data name="FailedToAuth" xml:space="preserve">
+    <value>User Login Failed</value>
+  </data>
+  <data name="PortRangeIs" xml:space="preserve">
+    <value>Port range is 1~65535</value>
+  </data>
+  <data name="UsernameOrPasswordBlank" xml:space="preserve">
+    <value>Username or password can't be blank</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="FailedToSet" xml:space="preserve">
+    <value>Failed to set</value>
+  </data>
+  <data name="TrayIconContextMenuMinWidth" xml:space="preserve">
+    <value>200</value>
+  </data>
+  <data name="CheckingUpdate" xml:space="preserve">
+    <value>Checking for update……</value>
+  </data>
+  <data name="SystemOperations" xml:space="preserve">
+    <value>System Operations</value>
+  </data>
+  <data name="Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="CompletelyExit" xml:space="preserve">
+    <value>Completely Exit</value>
+  </data>
+  <data name="HideOnStartup" xml:space="preserve">
+    <value>Hide Window on Startup</value>
+  </data>
+</root>

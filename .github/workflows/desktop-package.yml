@@ -1,0 +1,200 @@
+name: desktop-package
+
+permissions:
+  contents: write
+
+on:
+  workflow_call:  
+    inputs:
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
+
+jobs:
+  build:
+    uses: ./.github/workflows/desktop-build-progress.yml
+    with:
+      checkout-repo: ${{ inputs.checkout-repo }}
+      checkout-ref: ${{ inputs.checkout-ref }}
+
+  package-linux:
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+        type: [self-contained, no-self-contained]
+        package-type: [AppImage, rpm, deb]
+        include:
+          - package-type: AppImage
+            cpu: x64
+            package-head: SyncClipboard-
+            package-tail: .x86_64
+          - package-type: rpm
+            cpu: x64
+            package-head: syncclipboard_
+            package-tail: .x86_64
+          - package-type: deb
+            cpu: x64
+            package-head: syncclipboard_
+            package-tail: _amd64
+          - package-type: AppImage
+            cpu: arm64
+            package-head: SyncClipboard-
+            package-tail: .aarch64
+          - package-type: deb
+            cpu: arm64
+            package-head: syncclipboard_
+            package-tail: _arm64
+        exclude:  # rpmbuild arm64 failed
+          - package-type: rpm
+            cpu: arm64
+            # package-head: syncclipboard_
+            # package-tail: .arm64
+
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.checkout-repo }}
+          ref: ${{ inputs.checkout-ref }}
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Download last-job-built artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-${{ matrix.cpu }}-${{ matrix.type }}
+          path: linux-bin/
+
+      - name: Download version
+        uses: actions/download-artifact@v3
+        with:
+          name: version-desktop
+
+      - name: Read version
+        id: version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: version.txt
+
+      - name: Install pupnet and denpendencies
+        run: |
+          dotnet tool install -g KuiperZone.PupNet
+          sudo apt install libfuse2
+
+      - name: Package
+        run: | 
+          chmod +x PostPublish.sh
+          pupnet linux.pupnet.conf --app-version ${{ steps.version.outputs.content }} --kind ${{ matrix.package-type }} -r linux-${{ matrix.cpu }} -y
+        working-directory: ./build/linux
+
+      - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
+          path: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}
+
+      - name: Change name
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: mv "${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}" "${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}"
+        working-directory: ./build/linux/output/
+
+      - name: Download feature
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/download-artifact@v3
+        with:
+          name: feature-desktop
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          allowUpdates: true
+          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          artifacts: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
+          bodyFile: feature.txt
+
+  package-macos:
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+        type: [self-contained, no-self-contained]
+
+    runs-on: macos-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.checkout-repo }}
+          ref: ${{ inputs.checkout-ref }}
+
+      - name: Download last-job-built artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: osx-${{ matrix.cpu }}-${{ matrix.type }}
+          path: macos-bin/
+
+      - name: Download version
+        uses: actions/download-artifact@v3
+        with:
+          name: version-desktop
+
+      - name: Read version
+        id: version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: version.txt
+
+      - name: Package app
+        run: | 
+          chmod +x buildAppBundle.sh
+          ./buildAppBundle.sh 
+        working-directory: ./build/macos
+
+      - name: Package dmg
+        continue-on-error: true
+        run: | 
+          npm install --global create-dmg
+          brew install graphicsmagick imagemagick tree
+          create-dmg SyncClipboard.app
+        working-directory: ./build/macos
+
+      - name: show folder
+        run: |
+          ls -l
+          tree 
+        working-directory: ./build/macos
+  
+      - name: Upload build artifacts ${{ matrix.type }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
+          path: "build/macos/SyncClipboard ${{ steps.version.outputs.content }}.dmg"
+
+      - name: Change name
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg"
+        working-directory: ./build/macos
+
+      - name: Download feature
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/download-artifact@v3
+        with:
+          name: feature-desktop
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          allowUpdates: true
+          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          artifacts: build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
+          bodyFile: feature.txt

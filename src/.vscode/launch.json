@@ -1,0 +1,96 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "DebugAva",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugAva",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop/bin/Debug/net6.0/linux-x64/publish/SyncClipboard.Desktop",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
+            "name": "DebugDesktop",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugDesktop",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/SyncClipboard.Desktop/bin/Debug/net6.0/publish/SyncClipboard.Desktop.dll"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
+            "name": "ReleaseAva",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "ReleaseAva",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop/bin/Release/net6.0/linux-x64/publish/SyncClipboard.Desktop",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Production",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
+            "name": "Debug server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Debug",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/SyncClipboard.Server/bin/Debug/net6.0/publish/SyncClipboard.Server.dll",
+                "--contentRoot",
+                "./"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Development"
+            }
+        },
+        {
+            "name": "Release server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Release",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/SyncClipboard.Server/bin/Release/net6.0/publish/SyncClipboard.Server.dll",
+                "--contentRoot",
+                "./"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
+    ]
+}

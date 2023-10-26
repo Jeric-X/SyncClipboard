@@ -1,6 +1,5 @@
 # SyncClipboard
-[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=WinUI3)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3AWinUI3)
-[![Build status](https://ci.appveyor.com/api/projects/status/4hm1au4xaikj96tr/branch/WinUI3?svg=true)](https://ci.appveyor.com/project/Jeric-X/syncclipboard/branch/WinUI3)  
+[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
 
 [中文](https://github.com/Jeric-X/SyncClipboard#syncclipboard) | English
 
@@ -11,10 +10,11 @@
   - [Features](#features)
   - [Server](#server)
     - [Standalone Server](#standalone-server)
-    - [Client Built-in Server](#client-built-in-server)
+    - [Desktop Client Built-in Server](#desktop-client-built-in-server)
     - [WebDAV Server](#webdav-server)
   - [Client](#client)
     - [Windows](#windows)
+    - [Linux, macOS](#linux-macos)
     - [IOS](#ios)
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
@@ -53,8 +53,8 @@ Notes：
 - Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
 - Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network.
 
-### Client Built-in Server
-[Windows client](#Windows) has a built-in server, basically the same as standalone server but can be configured with GUI.
+### Desktop Client Built-in Server
+Desktop client (Windows/Linux/macOS) has a built-in server, basically the same as standalone server but can be configured with GUI.
 
 ### WebDAV Server
   
@@ -64,6 +64,16 @@ Tested server：
 - [x] [AList](https://alist.nn.ci/)
 
 ## Client
+
+Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
+
+<details>
+<summary>Screenshots</summary>
+
+![](image/WinUI_EN.png)
+
+</details>
+
 ### Windows   
 Download the `SyncClipboard.WinUI3.zip` from [Release](https://github.com/Jeric-X/SyncClipboard/releases/) Page.  
 After extracting, run `SyncClipboard.exe`.  
@@ -74,12 +84,19 @@ Dependencies：
 - Windows10 2004 or above
 - Microsoft [Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font). It is included by default on Windows 11. You can download it [here](https://aka.ms/SegoeFluentIcons).
 
-<details>
-<summary>Screenshots</summary>
+### Linux, macOS
+Downloading page: [SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboard.Desktop/releases)  
 
-![](image/WinUI_EN.png)
+Notes:
+- File name with `no-self-contained`: [.NET 6.0 Desktop](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime and [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime are required.
+- File name with `self-contained`: should run with no dependencies.
+- As a client only supports text for now. But the build-in server can be used for other clients to sync images and files.
+- Config files are saved in `~/.config/SyncClipboard/`. Uninstaller won't delete them. Users can delete them manually.
+- Not suport upgrading directly. Delete old version first, then install the new version.
+- Plenty of bugs exist.
 
-</details>
+Known bugs:
+- macos: Main window can't be woke up by clicking the icon in dock when running background. Work around: Use menu bar icon to wake up the main window.
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
@@ -104,7 +121,7 @@ Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`
 There are three necessery config(maybe different words, same uses).
 - username
 - password
-- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. And do not use this folder to do anything else. If not use a desktop client, create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
+- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. File name is the best not to contain any special characters or spaces, or you'll have to URL encode it. And do not use this folder to do anything else. If not using a desktop client, create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
 
 ## API
 
@@ -153,4 +170,7 @@ DELETE      /file
 [.NET Community Toolkit](https://github.com/CommunityToolkit/dotnet)  
 [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)  
 [WinUIEx](https://github.com/dotMorten/WinUIEx)  
-[moq](https://github.com/moq/moq)
+[moq](https://github.com/moq/moq)  
+[Avalonia](https://avaloniaui.net/)  
+[FluentAvalonia.BreadcrumbBar](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
+[FluentAvalonia](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  

@@ -1,0 +1,22 @@
+name: entry
+
+permissions:
+    contents: write
+on:
+  push:
+    branches:
+      - '**'
+    tags: 
+      - 'v*'
+  pull_request:
+
+jobs:
+  winui:
+    uses: ./.github/workflows/winui-package.yml
+
+  deskop:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
+    uses: ./.github/workflows/desktop-package.yml
+    with:
+        checkout-repo: ${{ github.repository }}
+        checkout-ref: ${{ github.ref }}

@@ -1,0 +1,73 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:m="using:SyncClipboard.Core.Models"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             x:DataType="vm:SystemSettingViewModel"
+             mc:Ignorable="d">
+    <StackPanel Spacing="10">
+        <OnPlatform>
+            <OnPlatform.Windows>
+                <ui:SettingsExpander Header="{x:Static i18n:Strings.RunAtSystemStartup}">
+                    <ui:SettingsExpander.IconSource>
+                        <ui:FontIconSource Glyph="&#xE770;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </ui:SettingsExpander.IconSource>
+                    <ui:SettingsExpander.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding StartUpWithSystem, Mode=TwoWay}" />
+                    </ui:SettingsExpander.Footer>
+                </ui:SettingsExpander>
+            </OnPlatform.Windows>
+            <OnPlatform.Default>
+                <UserControl />
+            </OnPlatform.Default>
+        </OnPlatform>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.HideOnStartup}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE1C5;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.LogRemainDays}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE9F9;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding LogRemainDays, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Language}" Description="{Binding ChangingLangInfo, Mode=OneWay}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE128;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ComboBox SelectedItem="{Binding Language, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Languages}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="m:LanguageModel">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.SystemOperations}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CompletelyExit}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Content="{x:Static i18n:Strings.Run}" Click="ExitApp" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>
