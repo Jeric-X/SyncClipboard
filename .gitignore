@@ -456,3 +456,4 @@ linux-*/
 build/output/
 build/macos/SyncClipboard.app/
 macos-*/
+osx-*/
