@@ -41,6 +41,8 @@ public class AppServices
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
 
+        services.AddTransient<IFontManager, FontManager>();
+
         services.AddSingleton<INotification, Notification>();
 
         return services;

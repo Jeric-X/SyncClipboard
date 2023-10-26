@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Media;
 using FluentAvalonia.UI.Media.Animation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
@@ -52,5 +53,17 @@ public partial class MainWindow : Window, IMainWindow
     internal void EnableScrollViewer()
     {
         _MainView.EnableScrollViewer();
+    }
+
+    public void SetFont(string font)
+    {
+        if (string.IsNullOrEmpty(font))
+        {
+            App.Current.Resources["ProgramFont"] = App.Current.Resources["DefaultFont"];
+        }
+        else
+        {
+            App.Current.Resources["ProgramFont"] = new FontFamily(font);
+        }
     }
 }

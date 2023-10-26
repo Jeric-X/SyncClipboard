@@ -164,5 +164,9 @@ namespace SyncClipboard.WinUI3.Views
             }
             this.SetForegroundWindow();
         }
+
+        public void SetFont(string font)
+        {
+        }
     }
 }

@@ -57,11 +57,13 @@ namespace SyncClipboard.Core
         private void ShowMainWindow(ConfigManager configManager)
         {
             var config = configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
-            if (config.HideWindowOnStartup)
+
+            var mainWindow = Services.GetRequiredService<IMainWindow>();
+            mainWindow.SetFont(config.Font);
+            if (config.HideWindowOnStartup is false)
             {
-                return;
+                mainWindow.Show();
             }
-            Services.GetRequiredService<IMainWindow>().Show();
         }
 
         private async void CheckUpdate()

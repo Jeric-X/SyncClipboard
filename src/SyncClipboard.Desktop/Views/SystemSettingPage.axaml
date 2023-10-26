@@ -43,7 +43,7 @@
                 <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding LogRemainDays, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.Language}" Description="{Binding ChangingLangInfo, Mode=OneWay}">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Language}" Description="{Binding ChangingLangInfo, Mode=OneWay}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE128;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
@@ -56,6 +56,19 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.Font}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding Font, Mode=TwoWay}" ItemsSource="{Binding FontList}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.SystemOperations}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>

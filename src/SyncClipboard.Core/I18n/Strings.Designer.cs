@@ -367,6 +367,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Font 的本地化字符串。
+        /// </summary>
+        public static string Font {
+            get {
+                return ResourceManager.GetString("Font", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Found new version 的本地化字符串。
         /// </summary>
         public static string FoundNewVersion {

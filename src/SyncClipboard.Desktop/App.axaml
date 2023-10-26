@@ -8,10 +8,19 @@
              Name="{x:Static core:Env.SoftName}"
              RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
-
+    <Application.Resources>
+        <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+        <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+    </Application.Resources>
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
         <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+        </Style>
     </Application.Styles>
     <NativeMenu.Menu>
         <NativeMenu>

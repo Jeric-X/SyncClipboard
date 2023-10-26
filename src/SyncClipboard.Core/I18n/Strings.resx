@@ -396,4 +396,7 @@
   <data name="HideOnStartup" xml:space="preserve">
     <value>Hide Window on Startup</value>
   </data>
+  <data name="Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
 </root>

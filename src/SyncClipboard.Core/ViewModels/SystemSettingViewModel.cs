@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
@@ -22,12 +24,36 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnLogRemainDaysChanged(uint value) => ProgramConfig = ProgramConfig with { LogRemainDays = value };
 
     [ObservableProperty]
+    private string font;
+    partial void OnFontChanged(string value)
+    {
+        ProgramConfig = ProgramConfig with { Font = value };
+        _services.GetRequiredService<IMainWindow>().SetFont(value);
+    }
+
+    public List<string> FontList
+    {
+        get
+        {
+            var font = _services.GetService<IFontManager>();
+            if (font == null)
+            {
+                return new List<string>() { "" };
+            }
+            var list = font.GetInstalledFontNames();
+            list.Insert(0, "");
+            return list;
+        }
+    }
+
+    [ObservableProperty]
     private ProgramConfig programConfig;
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
         CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
         HideWindowOnStartUp = value.HideWindowOnStartup;
         LogRemainDays = value.LogRemainDays;
+        Font = value.Font;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
         _configManager.SetConfig(ConfigKey.Program, value);
     }
@@ -42,10 +68,12 @@ public partial class SystemSettingViewModel : ObservableObject
     public string? ChangingLangInfo => I18nHelper.GetChangingLanguageInfo(Language);
 
     private readonly ConfigManager _configManager;
+    private readonly IServiceProvider _services;
 
-    public SystemSettingViewModel(ConfigManager configManager)
+    public SystemSettingViewModel(ConfigManager configManager, IServiceProvider serviceProvider)
     {
         _configManager = configManager;
+        _services = serviceProvider;
 
         _configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
         ProgramConfig = _configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
@@ -53,6 +81,7 @@ public partial class SystemSettingViewModel : ObservableObject
         checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;
         hideWindowOnStartUp = ProgramConfig.HideWindowOnStartup;
         logRemainDays = ProgramConfig.LogRemainDays;
+        font = ProgramConfig.Font;
     }
 
     public bool StartUpWithSystem
