@@ -84,7 +84,7 @@ jobs:
     - name: Upload change log
       uses: actions/upload-artifact@v3
       with:
-        name: feature
+        name: feature-desktop
         path: build/feature.txt
 
     - name: Upload version

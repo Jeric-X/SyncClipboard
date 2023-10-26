@@ -77,13 +77,12 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: version-desktop
-          path: version-desktop/
 
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: version-desktop/version.txt
+          path: version.txt
 
       - name: Install pupnet and denpendencies
         run: |
@@ -103,19 +102,19 @@ jobs:
           path: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}
 
       - name: Change name
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: mv "${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}" "${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}"
         working-directory: ./build/linux/output/
 
       - name: Download feature
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: actions/download-artifact@v3
         with:
-          name: feature
+          name: feature-desktop
 
       - name: Release
         uses: ncipollo/release-action@v1
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
           prerelease: ${{ contains(github.ref_name, 'preview') }}
@@ -147,13 +146,12 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: version-desktop
-          path: version-desktop/
 
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: version-desktop/version.txt
+          path: version.txt
 
       - name: Package app
         run: | 
@@ -182,19 +180,19 @@ jobs:
           path: "build/macos/SyncClipboard ${{ steps.version.outputs.content }}.dmg"
 
       - name: Change name
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg"
         working-directory: ./build/macos
 
       - name: Download feature
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: actions/download-artifact@v3
         with:
-          name: feature
+          name: feature-desktop
 
       - name: Release
         uses: ncipollo/release-action@v1
-        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
           prerelease: ${{ contains(github.ref_name, 'preview') }}
