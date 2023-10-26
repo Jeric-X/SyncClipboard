@@ -95,6 +95,9 @@ Notes:
 - Not suport upgrading directly. Delete old version first, then install the new version.
 - Plenty of bugs exist.
 
+Known bugs:
+- macos: Main window can't be woke up by clicking the icon in dock when running background. Work around: Use menu bar icon to wake up the main window.
+
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
