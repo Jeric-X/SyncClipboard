@@ -18,6 +18,5 @@ jobs:
     if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
     uses: ./.github/workflows/desktop-package.yml
     with:
-        release-repo: ${{ github.repository }}
         checkout-repo: ${{ github.repository }}
         checkout-ref: ${{ github.ref }}

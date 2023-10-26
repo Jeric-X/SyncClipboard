@@ -2,6 +2,13 @@ name: desktop-build-progress
 
 on:
   workflow_call:
+    inputs:
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -22,9 +29,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-      # with:
-      #   repository: Jeric-X/SyncClipboard
-      #   ref: avalonia
+      with:
+        repository: ${{ inputs.checkout-repo }}
+        ref: ${{ inputs.checkout-ref }}
 
     # Install the .NET workload
     - name: Install .NET

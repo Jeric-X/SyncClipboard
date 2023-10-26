@@ -6,9 +6,6 @@ permissions:
 on:
   workflow_call:  
     inputs:
-      release-repo:
-        required: true
-        type: string
       checkout-repo:
         required: true
         type: string
@@ -19,6 +16,9 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/desktop-build-progress.yml
+    with:
+      checkout-repo: ${{ inputs.checkout-repo }}
+      checkout-ref: ${{ inputs.checkout-ref }}
 
   package-linux:
     strategy:
@@ -76,14 +76,14 @@ jobs:
       - name: Download version
         uses: actions/download-artifact@v3
         with:
-          name: version
-          path: ./
+          name: version-desktop
+          path: version-desktop/
 
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: version.txt
+          path: version-desktop/version.txt
 
       - name: Install pupnet and denpendencies
         run: |
@@ -118,7 +118,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         with:
           allowUpdates: true
-          repo: ${{ inputs.checkout-repo }}
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           artifacts: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
           bodyFile: feature.txt
@@ -198,7 +197,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         with:
           allowUpdates: true
-          repo: ${{ inputs.checkout-repo }}
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           artifacts: build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
           bodyFile: feature.txt
