@@ -14,11 +14,11 @@
         <vm:MainViewModel />
     </Design.DataContext>
     <UserControl.Styles>
-        <Style Selector="TextBlock.title">
+        <Style Selector="TextBlock">
         <Setter Property="VerticalAlignment" Value="Center" />
             <OnPlatform>
                 <OnPlatform.macOS>
-                    <Setter Property="Padding" Value="2,2,2,2" />
+                    <Setter Property="Padding" Value="0,2,0,0" />
                 </OnPlatform.macOS>
                 <OnPlatform.Default>
                     <Setter Property="Padding" Value="0,0,0,0" />
@@ -68,7 +68,7 @@
                     <ui:BreadcrumbBar.ItemTemplate>
                         <DataTemplate x:DataType="vm:PageDefinition">
                             <ui:BreadcrumbBarItem>           
-                               <TextBlock Classes="title" Text="{Binding Title}" />
+                               <TextBlock Text="{Binding Title}" />
                             </ui:BreadcrumbBarItem>
                         </DataTemplate>
                     </ui:BreadcrumbBar.ItemTemplate>
@@ -90,7 +90,7 @@
                         <DataTemplate x:DataType="vm:PageDefinition">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <ui:FontIcon FontSize="20" Glyph="{Binding FontIcon}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                <TextBlock Classes="title" FontSize="16" Text="{Binding Title}" />
+                                <TextBlock FontSize="16" Text="{Binding Title}" />
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
