@@ -93,21 +93,22 @@ jobs:
           path: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}
 
       - name: Change name
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         run: mv "${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}" "${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}"
         working-directory: ./build/linux/output/
 
       - name: Download feature
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         uses: actions/download-artifact@v3
         with:
           name: feature
 
       - name: Release
         uses: ncipollo/release-action@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         with:
           allowUpdates: true
+          repo: SyncClipboard.Desktop
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           artifacts: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
           bodyFile: feature.txt
@@ -173,21 +174,22 @@ jobs:
           path: "build/macos/SyncClipboard ${{ steps.version.outputs.content }}.dmg"
 
       - name: Change name
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg"
         working-directory: ./build/macos
 
       - name: Download feature
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         uses: actions/download-artifact@v3
         with:
           name: feature
 
       - name: Release
         uses: ncipollo/release-action@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, 'desktop') }}
         with:
           allowUpdates: true
+          repo: SyncClipboard.Desktop
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           artifacts: build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
           bodyFile: feature.txt

@@ -15,5 +15,5 @@ jobs:
     uses: ./.github/workflows/winui-package.yml
 
   deskop:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
+    if: ${{ !startsWith(github.ref, 'refs/tags/') || contains(github.ref_name, 'desktop') }} 
     uses: ./.github/workflows/desktop-package.yml
