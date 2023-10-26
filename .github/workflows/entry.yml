@@ -1,5 +1,7 @@
 name: entry
 
+permissions:
+    contents: write
 on:
   push:
     branches:

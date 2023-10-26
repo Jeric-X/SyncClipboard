@@ -48,9 +48,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          repository: Jeric-X/SyncClipboard
-          ref: avalonia
+        # with:
+        #   repository: Jeric-X/SyncClipboard
+        #   ref: avalonia
 
       - name: Install .NET
         uses: actions/setup-dotnet@v2
@@ -124,9 +124,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          repository: Jeric-X/SyncClipboard
-          ref: avalonia
+        # with:
+        #   repository: Jeric-X/SyncClipboard
+        #   ref: avalonia
 
       - name: Download last-job-built artifact
         uses: actions/download-artifact@v3
