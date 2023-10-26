@@ -1,4 +1,4 @@
-name: entry
+name: build
 
 permissions:
     contents: write
