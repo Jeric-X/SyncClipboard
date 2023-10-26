@@ -12,7 +12,7 @@ on:
 
 jobs:
   winui:
-    if: ${{ !contains(github.ref_name, 'desktop') }} 
+    if: ${{ !contains(github.ref_name, 'desktop') }}
     uses: ./.github/workflows/winui-package.yml
 
   deskop:
