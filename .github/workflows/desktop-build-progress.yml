@@ -1,0 +1,87 @@
+name: desktop-build-progress
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [osx, linux]
+        cpu: [x64, arm64]
+        type: [self-contained, no-self-contained]
+        include:
+           - type: self-contained
+             ifSelf: "true"
+           - type: no-self-contained
+             ifSelf: "false"
+
+    runs-on: windows-latest  # For a list of available runner types, refer to
+                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        repository: Jeric-X/SyncClipboard
+        ref: avalonia
+
+    # Install the .NET workload
+    - name: Install .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        msbuild-architecture: x64
+
+    - name: Install dependencies
+      working-directory: ./src
+      run: dotnet restore
+
+    - name: Check code style
+      working-directory: ./src
+      run: dotnet format --verify-no-changes --no-restore
+
+    - name: Check code style info
+      working-directory: ./src
+      run: |
+        dotnet format --severity info --verify-no-changes --no-restore
+        exit 0
+
+    # - name
+        #  msBuild SyncClipboard.Desktop/SyncClipboard.Desktop.csproj /p:RuntimeIdentifier=osx-arm64 /p:Platform=ARM64 /p:SelfContained=false /p:OutDir=../../osx-arm64-no-self-contained /p:Configuration=Release /t:Publish /v:m  
+    - name: Build ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }} 
+      run: |
+        msBuild SyncClipboard.Desktop/SyncClipboard.Desktop.csproj /p:RuntimeIdentifier=${{ matrix.os }}-${{ matrix.cpu }} /p:Platform=${{ matrix.cpu }} /p:SelfContained=${{ matrix.ifSelf }} /p:OutDir=../../${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }} /p:Configuration=Release /t:Publish /v:m  
+      working-directory: ./src
+
+    - name: copy LICENSES 
+      run: |
+        xcopy LICENSES ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}\LICENSES\ /s /e
+
+    - name: Generate change log
+      run: |
+        .\ReadDesktopChanges.bat
+        type feature.txt
+      working-directory: ./build
+
+    - name: Upload ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}
+        path: ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}/
+
+    - name: Upload change log
+      uses: actions/upload-artifact@v3
+      with:
+        name: feature
+        path: build/feature.txt
+
+    - name: Upload version
+      uses: actions/upload-artifact@v3
+      with:
+        name: version
+        path: build/version.txt
