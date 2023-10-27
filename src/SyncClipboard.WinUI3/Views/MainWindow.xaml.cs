@@ -159,20 +159,20 @@ namespace SyncClipboard.WinUI3.Views
         {
             if (this.DispatcherQueue.HasThreadAccess)
             {
-                Show();
+                ShowWindow();
             }
             else
             {
-                this.DispatcherQueue.TryEnqueue(Show);
+                this.DispatcherQueue.TryEnqueue(ShowWindow);
             }
         }
 
-        void Show()
+        void ShowWindow()
         {
             if (!this.Visible)
             {
                 this.CenterOnScreen();
-                this.Show();
+                this.Activate();
             }
             this.SetForegroundWindow();
         }
