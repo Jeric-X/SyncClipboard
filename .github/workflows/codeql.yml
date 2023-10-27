@@ -72,14 +72,22 @@ jobs:
     #   If the Autobuild fails above, remove it and uncomment the following three lines.
     #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
 
+    # Install the .NET workload
+    - name: Install .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
       with:
         msbuild-architecture: x64
 
     - run: |
-        msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m
-        msBuild SyncClipboard.Desktop/SyncClipboard.Desktop.csproj /p:SelfContained=false  /p:Configuration=Release /t:Publish /v:m
+        dotnet restore
+        msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m
+        msBuild SyncClipboard.Desktop\SyncClipboard.Desktop.csproj /p:SelfContained=false  /p:Configuration=Release /t:Publish /v:m
+      working-directory: ./src
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
