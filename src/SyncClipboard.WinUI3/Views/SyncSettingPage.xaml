@@ -73,7 +73,7 @@
                 </labs:SettingsCard>
             </labs:SettingsExpander.Items>
         </labs:SettingsExpander>
-        <labs:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
+        <labs:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="{Binding IsNormalClientEnable, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
             <labs:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
             </labs:SettingsExpander.HeaderIcon>

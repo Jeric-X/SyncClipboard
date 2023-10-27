@@ -69,8 +69,7 @@ namespace SyncClipboard.Core
             mainWindow.SetFont(config.Font);
             if (config.HideWindowOnStartup is false)
             {
-                // 不知道为什么winui3窗口在主线程直接启动有概率直接crash
-                Task.Delay(1).ContinueWith(t => mainWindow.Show());
+                mainWindow.Show();
             }
         }
 

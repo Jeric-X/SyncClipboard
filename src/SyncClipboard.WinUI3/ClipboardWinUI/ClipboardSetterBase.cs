@@ -10,22 +10,21 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 {
     public abstract object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation);
 
-    public Task SetLocalClipboard(object obj, CancellationToken ctk)
+    public async Task SetLocalClipboard(object obj, CancellationToken ctk)
     {
         Clipboard.SetContent(obj as DataPackage);
         // Clipboard.SetContent() still occupies the system clipboard after calling
         for (int i = 0; i < 5; i++)
         {
-            Thread.Sleep(50);
+            await Task.Delay(50, ctk);
 #pragma warning disable CC0004 // Catch block cannot be empty
             try
             {
                 Clipboard.Flush();
-                return Task.CompletedTask;
+                return;
             }
             catch { }
 #pragma warning restore CC0004 // Catch block cannot be empty
         }
-        return Task.CompletedTask;
     }
 }
