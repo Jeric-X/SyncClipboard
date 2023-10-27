@@ -83,7 +83,8 @@ jobs:
       with:
         msbuild-architecture: x64
 
-    - run: |
+    - name: Compile
+      run: |
         dotnet restore
         msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m
         msBuild SyncClipboard.Desktop\SyncClipboard.Desktop.csproj /p:SelfContained=false  /p:Configuration=Release /t:Publish /v:m

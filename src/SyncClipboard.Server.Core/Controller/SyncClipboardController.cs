@@ -70,11 +70,23 @@ public class SyncClipboardController
         app.MapDelete("/file", () =>
             DeleteFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
 
-        app.MapMethods("/file/{fileName}", new string[] { "HEAD", "GET" }, (string fileName) =>
-            GetFile(Path.Combine(rootPath, "file", fileName))).RequireAuthorization();
+        app.MapMethods("/file/{fileName}", new string[] { "HEAD", "GET" }, async (string fileName) =>
+        {
+            if (InvalidFileName(fileName))
+            {
+                return Results.BadRequest();
+            }
+            return await GetFile(Path.Combine(rootPath, "file", fileName));
+        }).RequireAuthorization();
 
-        app.MapPut("/file/{fileName}", (HttpContext content, string fileName) =>
-            PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName))).RequireAuthorization();
+        app.MapPut("/file/{fileName}", async (HttpContext content, string fileName) =>
+        {
+            if (InvalidFileName(fileName))
+            {
+                return Results.BadRequest();
+            }
+            return await PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName));
+        }).RequireAuthorization();
 
         app.MapGet("/SyncClipboard.json", () =>
             GetSyncProfile(rootPath, "SyncClipboard.json")).RequireAuthorization();
@@ -82,10 +94,27 @@ public class SyncClipboardController
         app.MapPut("/SyncClipboard.json", (HttpContext content) =>
             PutSyncProfile(content, rootPath, "SyncClipboard.json")).RequireAuthorization();
 
-        app.MapGet("/{name}", (string name) =>
-            GetFile(Path.Combine(rootPath, name))).RequireAuthorization();
+        app.MapGet("/{name}", async (string name) =>
+        {
+            if (InvalidFileName(name))
+            {
+                return Results.BadRequest();
+            }
+            return await GetFile(Path.Combine(rootPath, name));
+        }).RequireAuthorization();
 
-        app.MapPut("/{name}", (HttpContext content, string name) =>
-            PutFile(content, rootPath, Path.Combine(rootPath, name))).RequireAuthorization();
+        app.MapPut("/{name}", async (HttpContext content, string name) =>
+        {
+            if (InvalidFileName(name))
+            {
+                return Results.BadRequest();
+            }
+            return await PutFile(content, rootPath, Path.Combine(rootPath, name));
+        }).RequireAuthorization();
+    }
+
+    public static bool InvalidFileName(string name)
+    {
+        return name.Contains('\\') || name.Contains('/');
     }
 }
