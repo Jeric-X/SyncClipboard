@@ -135,8 +135,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="CommunityToolkit.Labs.WinUI.SettingsControls" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
     <PackageReference Include="H.NotifyIcon.WinUI" />
     <PackageReference Include="Magick.NET.SystemDrawing" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />

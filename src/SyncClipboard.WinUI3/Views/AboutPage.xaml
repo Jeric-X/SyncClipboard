@@ -4,7 +4,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      xmlns:ui="using:CommunityToolkit.WinUI.Controls"
       xmlns:m="using:SyncClipboard.Core.Models"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
@@ -12,41 +12,41 @@
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <labs:SettingsExpander Header="SyncClipboard" Description="{x:Bind _aboutViewModel.Version}" IsExpanded="True">
-            <labs:SettingsExpander.HeaderIcon>
+        <ui:SettingsExpander Header="SyncClipboard" Description="{x:Bind _aboutViewModel.Version}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
                 <ImageIcon Source="ms-appx:///Assets/icon.ico" />
-            </labs:SettingsExpander.HeaderIcon>
+            </ui:SettingsExpander.HeaderIcon>
             <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
-            <labs:SettingsExpander.Items>
-                <labs:SettingsCard Header="{x:Bind _aboutViewModel.UpdateInfo, Mode=OneWay}">
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="{x:Bind _aboutViewModel.UpdateInfo, Mode=OneWay}">
                     <Button Content="{x:Bind i18n:Strings.OpenDownloadPage}" Command="{x:Bind _aboutViewModel.OpenUpdateUrlCommand}" />
-                </labs:SettingsCard>
-                <labs:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateOnStartup}">
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateOnStartup}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
-                </labs:SettingsCard>
-                <labs:SettingsCard Header="{x:Bind i18n:Strings.SoftwareHomePage}">
-                    <labs:SettingsCard.Description>
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.SoftwareHomePage}">
+                    <ui:SettingsCard.Description>
                         <HyperlinkButton Content="{x:Bind vm:AboutViewModel.HomePage}" Click="HyperlinkButton_Click" />
-                    </labs:SettingsCard.Description>
-                </labs:SettingsCard>
-            </labs:SettingsExpander.Items>
-        </labs:SettingsExpander>
-        <labs:SettingsExpander Header="{x:Bind i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
-            <labs:SettingsExpander.HeaderIcon>
+                    </ui:SettingsCard.Description>
+                </ui:SettingsCard>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
+            <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE1D3;" FontFamily="Segoe Fluent Icons" />
-            </labs:SettingsExpander.HeaderIcon>
-            <labs:SettingsExpander.ItemTemplate>
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="m:OpenSourceSoftware">
-                    <labs:SettingsCard Header="{x:Bind Name}"
+                    <ui:SettingsCard Header="{x:Bind Name}"
                                        IsClickEnabled="True"
                                        Click="DependencyItem_Click"
                                        Tag="{x:Bind LicensePath}">
-                        <labs:SettingsCard.Description>
+                        <ui:SettingsCard.Description>
                             <HyperlinkButton Content="{x:Bind HomePage}" Click="HyperlinkButton_Click" />
-                        </labs:SettingsCard.Description>
-                    </labs:SettingsCard>
+                        </ui:SettingsCard.Description>
+                    </ui:SettingsCard>
                 </DataTemplate>
-            </labs:SettingsExpander.ItemTemplate>
-        </labs:SettingsExpander>
+            </ui:SettingsExpander.ItemTemplate>
+        </ui:SettingsExpander>
     </StackPanel>
 </Page>

@@ -4,36 +4,36 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:labs="using:CommunityToolkit.Labs.WinUI"
+      xmlns:ui="using:CommunityToolkit.WinUI.Controls"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <labs:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}">
-            <labs:SettingsCard.HeaderIcon>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}">
+            <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE770;" FontFamily="Segoe Fluent Icons" />
-            </labs:SettingsCard.HeaderIcon>
+            </ui:SettingsCard.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
-        </labs:SettingsCard>
-        <labs:SettingsCard Header="{x:Bind i18n:Strings.HideOnStartup}">
-            <labs:SettingsCard.HeaderIcon>
+        </ui:SettingsCard>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.HideOnStartup}">
+            <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE1C5;" FontFamily="Segoe Fluent Icons" />
-            </labs:SettingsCard.HeaderIcon>
+            </ui:SettingsCard.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.HideWindowOnStartUp, Mode=TwoWay}" />
-        </labs:SettingsCard>
-        <labs:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
-            <labs:SettingsCard.HeaderIcon>
+        </ui:SettingsCard>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
+            <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE9F9;" FontFamily="Segoe Fluent Icons" />
-            </labs:SettingsCard.HeaderIcon>
+            </ui:SettingsCard.HeaderIcon>
             <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
-        </labs:SettingsCard>
-        <labs:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
-            <labs:SettingsCard.HeaderIcon>
+        </ui:SettingsCard>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
+            <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE128;" FontFamily="Segoe Fluent Icons" />
-            </labs:SettingsCard.HeaderIcon>
+            </ui:SettingsCard.HeaderIcon>
             <ComboBox SelectedItem="{x:Bind _viewModel.Language, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Languages}" DisplayMemberPath="{x:Bind _viewModel.DisplayMemberPath, Mode=OneTime}" />
-        </labs:SettingsCard>
+        </ui:SettingsCard>
     </StackPanel>
 </Page>
