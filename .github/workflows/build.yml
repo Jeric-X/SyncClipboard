@@ -12,10 +12,11 @@ on:
 
 jobs:
   winui:
+    if: false
     uses: ./.github/workflows/winui-package.yml
 
   deskop:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
+    if: false
     uses: ./.github/workflows/desktop-package.yml
     with:
         checkout-repo: ${{ github.repository }}

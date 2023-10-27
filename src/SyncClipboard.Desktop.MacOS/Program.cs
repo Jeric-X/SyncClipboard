@@ -1,8 +1,8 @@
-﻿using Avalonia;
-using SyncClipboard.Core.Utilities;
-using System;
+﻿using System;
 
-namespace SyncClipboard.Desktop.Desktop;
+using Avalonia;
+
+namespace SyncClipboard.Desktop.MacOS;
 
 class Program
 {
@@ -10,15 +10,8 @@ class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args)
-    {
-        using var mutex = AppInstance.EnsureSingleInstance();
-        if (mutex is null)
-        {
-            return;
-        }      
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-    }
+    public static void Main(string[] args) => BuildAvaloniaApp()
+        .StartWithClassicDesktopLifetime(args);
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()

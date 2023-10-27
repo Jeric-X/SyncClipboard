@@ -4,7 +4,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.Views;
@@ -45,6 +47,8 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             _appLife = desktop;
+            var toplevel = (TopLevel)MainWindow;
+            var a = MainWindow.TryGetPlatformHandle().Handle;
         }
         else
         {
