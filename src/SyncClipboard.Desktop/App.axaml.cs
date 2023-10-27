@@ -54,8 +54,6 @@ public partial class App : Application
 
         _programWorkflow = new ProgramWorkflow(Services);
         _programWorkflow.Run();
-        MenuItem[] menuItems = { new MenuItem(Core.I18n.Strings.Exit, ExitApp) };
-        Services.GetService<IContextMenu>()?.AddMenuItemGroup(menuItems);
     }
 
     internal void ExitApp()

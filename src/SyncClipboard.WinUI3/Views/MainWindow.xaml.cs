@@ -168,5 +168,10 @@ namespace SyncClipboard.WinUI3.Views
         public void SetFont(string font)
         {
         }
+
+        public void ExitApp()
+        {
+            App.Current.ExitApp();
+        }
     }
 }

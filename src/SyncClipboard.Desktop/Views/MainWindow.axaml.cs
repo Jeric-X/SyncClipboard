@@ -66,4 +66,9 @@ public partial class MainWindow : Window, IMainWindow
             App.Current.Resources["ProgramFont"] = new FontFamily(font);
         }
     }
+
+    public void ExitApp()
+    {
+        App.Current.ExitApp();
+    }
 }

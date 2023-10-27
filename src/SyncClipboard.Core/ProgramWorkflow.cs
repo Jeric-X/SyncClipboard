@@ -37,11 +37,9 @@ namespace SyncClipboard.Core
             InitLanguage(configManager);
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
-            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, Services.GetRequiredService<IMainWindow>().Show), "Top Group");
+            var mainWindow = Services.GetRequiredService<IMainWindow>();
 
-            var trayIcon = Services.GetRequiredService<ITrayIcon>();
-            trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
-
+            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
             configManager.AddMenuItems();
 
             PrepareRemoteWorkingFolder();
@@ -49,9 +47,18 @@ namespace SyncClipboard.Core
             CheckUpdate();
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
-            trayIcon.Create();
+
+            InitTrayIcon();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
+            contextMenu.AddMenuItemGroup(new MenuItem[] { new(Strings.Exit, mainWindow.ExitApp) });
             ShowMainWindow(configManager);
+        }
+
+        private void InitTrayIcon()
+        {
+            var trayIcon = Services.GetRequiredService<ITrayIcon>();
+            trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
+            trayIcon.Create();
         }
 
         private void ShowMainWindow(ConfigManager configManager)

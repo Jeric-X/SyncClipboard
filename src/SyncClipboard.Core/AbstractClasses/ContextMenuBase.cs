@@ -29,7 +29,7 @@ namespace SyncClipboard.Core.AbstractClasses
             }
         }
 
-        private void AddSingleMenuItem(MenuItem menuitem, string group = "default")
+        private void AddSingleMenuItem(MenuItem menuitem, string group = IContextMenu.DefaultGroupName)
         {
             if (menuitem is ToggleMenuItem toggleItem)
             {
@@ -78,7 +78,7 @@ namespace SyncClipboard.Core.AbstractClasses
 
         public void AddMenuItem(MenuItem item, string? group)
         {
-            group ??= "Default";
+            group ??= IContextMenu.DefaultGroupName;
             AddSingleMenuItem(item, group);
         }
 
