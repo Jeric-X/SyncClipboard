@@ -157,6 +157,18 @@ namespace SyncClipboard.WinUI3.Views
 
         void IMainWindow.Show()
         {
+            if (this.DispatcherQueue.HasThreadAccess)
+            {
+                Show();
+            }
+            else
+            {
+                this.DispatcherQueue.TryEnqueue(Show);
+            }
+        }
+
+        void Show()
+        {
             if (!this.Visible)
             {
                 this.CenterOnScreen();

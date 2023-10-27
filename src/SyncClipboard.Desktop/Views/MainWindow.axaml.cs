@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Threading;
 using FluentAvalonia.UI.Media.Animation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
@@ -70,5 +71,20 @@ public partial class MainWindow : Window, IMainWindow
     public void ExitApp()
     {
         App.Current.ExitApp();
+    }
+
+    void IMainWindow.Show()
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            this.Show();
+        }
+        else
+        {
+            Dispatcher.UIThread.InvokeAsync(new Action(() =>
+            {
+                this.Show();
+            }));
+        }
     }
 }
