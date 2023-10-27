@@ -75,7 +75,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 </details>
 
 ### Windows
-下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.WinUI3.zip`，解压缩后运行`SyncClipboard.exe`  
+下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.zip`，解压缩后运行`SyncClipboard.exe`  
 
 依赖：   
 - [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  

@@ -75,7 +75,7 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 </details>
 
 ### Windows   
-Download the `SyncClipboard.WinUI3.zip` from [Release](https://github.com/Jeric-X/SyncClipboard/releases/) Page.  
+Download the `SyncClipboard.zip` from [Release](https://github.com/Jeric-X/SyncClipboard/releases/) Page.  
 After extracting, run `SyncClipboard.exe`.  
   
 Dependencies：   

@@ -31,7 +31,7 @@ jobs:
         run: 7z a SyncClipboard.Server.zip .\Server\*
 
       - name: Zip SyncClipboard.WinUI3
-        run: 7z a SyncClipboard.WinUI3.zip .\WinUI3\*      
+        run: 7z a SyncClipboard.zip .\WinUI3\*      
 
       - name: Download last-job-built change log
         uses: actions/download-artifact@v3
@@ -50,4 +50,4 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'preview') }}
           files: |
             SyncClipboard.Server.zip
-            SyncClipboard.WinUI3.zip
+            SyncClipboard.zip
