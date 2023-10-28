@@ -457,3 +457,4 @@ build/output/
 build/macos/SyncClipboard.app/
 macos-*/
 osx-*/
+.DS_Store

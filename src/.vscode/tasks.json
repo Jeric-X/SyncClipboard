@@ -4,36 +4,17 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Debug",
-            "command": "dotnet",
-            "type": "shell",
-            "args": [
-                "publish",
-                "-c",
-                "Debug",
-                // Ask dotnet build to generate full paths for file names.
-                "/property:GenerateFullPaths=true",
-                // Do not generate summary otherwise it leads to duplicate errors in Problems panel
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "DebugAva",
+            "label": "DebugMacos",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
+                "${workspaceFolder}/SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj",
                 "-c",
                 "Debug",
                 "-r",
-                "linux-x64",
-                "--self-contained",
+                "osx-x64",
+                //"--no-self-contained",
                 // Ask dotnet build to generate full paths for file names.
                 "/property:GenerateFullPaths=true",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
@@ -54,6 +35,7 @@
                 "${workspaceFolder}/SyncClipboard.Desktop/SyncClipboard.Desktop.csproj",
                 "-c",
                 "Debug",
+                "--self-contained",
                 // Ask dotnet build to generate full paths for file names.
                 "/property:GenerateFullPaths=true",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
@@ -77,25 +59,6 @@
                 "-r",
                 "linux-x64",
                 "--self-contained",
-                // Ask dotnet build to generate full paths for file names.
-                "/property:GenerateFullPaths=true",
-                // Do not generate summary otherwise it leads to duplicate errors in Problems panel
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Release",
-            "command": "dotnet",
-            "type": "shell",
-            "args": [
-                "publish",
-                "-c",
-                "Release",
                 // Ask dotnet build to generate full paths for file names.
                 "/property:GenerateFullPaths=true",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel

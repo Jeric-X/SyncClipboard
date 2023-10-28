@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "DebugAva",
+            "name": "DebugMacos",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "DebugAva",
-            "program": "${workspaceFolder}/SyncClipboard.Desktop/bin/Debug/net6.0/linux-x64/publish/SyncClipboard.Desktop",
+            "preLaunchTask": "DebugMacos",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop.MacOS/bin/Debug/net6.0-macos/osx-x64/SyncClipboard.Desktop",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -17,7 +17,6 @@
             "internalConsoleOptions": "openOnSessionStart",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "LANG": "en_US.UTF-8"
             }
         },
         {
