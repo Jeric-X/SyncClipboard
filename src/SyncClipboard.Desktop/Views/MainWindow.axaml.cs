@@ -73,17 +73,22 @@ public partial class MainWindow : Window, IMainWindow
         App.Current.ExitApp();
     }
 
+    protected virtual void ShowMainWindow()
+    {
+        this.Show();
+    }
+
     void IMainWindow.Show()
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            this.Show();
+            ShowMainWindow();
         }
         else
         {
             Dispatcher.UIThread.InvokeAsync(new Action(() =>
             {
-                this.Show();
+                ShowMainWindow();
             }));
         }
     }

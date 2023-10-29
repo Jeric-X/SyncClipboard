@@ -111,7 +111,7 @@ namespace SyncClipboard.Core
             disposable?.Dispose();
         }
 
-        public static void ConfigCommonService(ServiceCollection services)
+        public static void ConfigCommonService(IServiceCollection services)
         {
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();

@@ -32,6 +32,13 @@ public partial class App : Application
         Services = AppServices.ConfigureServices().BuildServiceProvider();
     }
 
+#pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
+    public App(ServiceCollection serviceCollection)
+#pragma warning restore CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
+    {
+        Services = serviceCollection.BuildServiceProvider();
+    }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -47,8 +54,6 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             _appLife = desktop;
-            var toplevel = (TopLevel)MainWindow;
-            var a = MainWindow.TryGetPlatformHandle().Handle;
         }
         else
         {
@@ -60,7 +65,7 @@ public partial class App : Application
         _programWorkflow.Run();
     }
 
-    internal void ExitApp()
+    public void ExitApp()
     {
         _programWorkflow?.Stop();
         _appLife.Shutdown();

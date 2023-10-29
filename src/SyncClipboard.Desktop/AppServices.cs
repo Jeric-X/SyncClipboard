@@ -21,10 +21,8 @@ public class AppServices
         services.AddSingleton<IService, DownloadService>();
     }
 
-    public static ServiceCollection ConfigureServices()
+    public static void ConfigDesktopCommonService(IServiceCollection services)
     {
-        var services = new ServiceCollection();
-
         ProgramWorkflow.ConfigCommonService(services);
         ProgramWorkflow.ConfigurateViewModels(services);
         ConfigurateUserService(services);
@@ -32,7 +30,6 @@ public class AppServices
         services.AddTransient<IAppConfig, AppConfig>();
 
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
-        services.AddSingleton<IMainWindow, MainWindow>();
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
 
         services.AddSingleton<IClipboardFactory, ClipboardFactory>();
@@ -44,7 +41,15 @@ public class AppServices
         services.AddTransient<IFontManager, FontManager>();
 
         services.AddSingleton<INotification, Notification>();
+    }
 
+    public static ServiceCollection ConfigureServices()
+    {
+        var services = new ServiceCollection();
+
+        ConfigDesktopCommonService(services);
+
+        services.AddSingleton<IMainWindow, MainWindow>();
         return services;
     }
 }

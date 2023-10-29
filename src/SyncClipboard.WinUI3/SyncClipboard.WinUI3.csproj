@@ -20,6 +20,7 @@
     <!--PublishSingleFile winui3 not supported-->
     <!--<PublishSingleFile>true</PublishSingleFile>-->
     <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <Target Name="DeleteServerAppsettings" AfterTargets="Build">

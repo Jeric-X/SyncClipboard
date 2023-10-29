@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <!--If you are willing to use Windows/MacOS native APIs you will need to create 3 projects.
     One for Windows with net7.0-windows TFM, one for MacOS with net7.0-macos and one with net7.0 TFM for Linux.-->
     <TargetFramework>net6.0-macos</TargetFramework>
@@ -9,7 +9,8 @@
     <ApplicationId>xyz.jericx.desktop.syncclipboard</ApplicationId>
     <SelfContained>true</SelfContained>
     <SupportedOSPlatformVersion>10.14</SupportedOSPlatformVersion>
-    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
+    <Platforms>x64;ARM64</Platforms>
+    <CreatePackage>false</CreatePackage>
   </PropertyGroup>
 
   <ItemGroup>
