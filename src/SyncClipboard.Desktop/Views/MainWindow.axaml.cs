@@ -92,4 +92,12 @@ public partial class MainWindow : Window, IMainWindow
             }));
         }
     }
+
+    public virtual void Init(bool hide)
+    {
+        if (!hide)
+        {
+            Show();
+        }
+    }
 }

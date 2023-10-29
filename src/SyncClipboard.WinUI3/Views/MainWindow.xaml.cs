@@ -155,7 +155,7 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        void IMainWindow.Show()
+        public void Show()
         {
             if (this.DispatcherQueue.HasThreadAccess)
             {
@@ -184,6 +184,14 @@ namespace SyncClipboard.WinUI3.Views
         public void ExitApp()
         {
             App.Current.ExitApp();
+        }
+
+        public void Init(bool hide)
+        {
+            if (!hide)
+            {
+                Show();
+            }
         }
     }
 }

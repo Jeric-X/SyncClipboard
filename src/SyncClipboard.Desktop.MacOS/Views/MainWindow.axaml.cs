@@ -15,7 +15,7 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
         e.Cancel = true;
     }
 
-    public async void Init(bool hide)
+    public override async void Init(bool hide)
     {
         if (hide is false)
         {

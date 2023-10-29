@@ -71,7 +71,7 @@ namespace SyncClipboard.Core.Utilities.Notification
 
         // WIN32_FIND_DATAW Structure
         [StructLayout(LayoutKind.Sequential, Pack = 4, CharSet = CharSet.Unicode)]
-        private struct WIN32_FIND_DATAW
+        private readonly struct WIN32_FIND_DATAW
         {
             public readonly uint dwFileAttributes;
             public readonly FILETIME ftCreationTime;
@@ -105,7 +105,7 @@ namespace SyncClipboard.Core.Utilities.Notification
         // PropertyKey Structure
         // Narrowed down from PropertyKey.cs of Windows API Code Pack 1.1
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private struct PropertyKey
+        private readonly struct PropertyKey
         {
             #region Fields
 
@@ -389,13 +389,7 @@ namespace SyncClipboard.Core.Utilities.Notification
         // Save shortcut file.
         public void Save()
         {
-            string file = ShortcutFile;
-
-            if (file == null)
-            {
-                throw new InvalidOperationException("File name is not given.");
-            }
-
+            string file = ShortcutFile ?? throw new InvalidOperationException("File name is not given.");
             Save(file);
         }
 

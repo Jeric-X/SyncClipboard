@@ -67,10 +67,7 @@ namespace SyncClipboard.Core
 
             var mainWindow = Services.GetRequiredService<IMainWindow>();
             mainWindow.SetFont(config.Font);
-            if (config.HideWindowOnStartup is false)
-            {
-                mainWindow.Show();
-            }
+            mainWindow.Init(config.HideWindowOnStartup);
         }
 
         private async void CheckUpdate()

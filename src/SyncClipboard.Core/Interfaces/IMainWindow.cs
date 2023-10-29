@@ -16,5 +16,6 @@ namespace SyncClipboard.Core.Interfaces
         public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect);
         public void SetFont(string font);
         public void ExitApp();
+        public void Init(bool hide);
     }
 }
