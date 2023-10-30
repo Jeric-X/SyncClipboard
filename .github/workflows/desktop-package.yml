@@ -15,14 +15,12 @@ on:
 
 jobs:
   build:
-    if: false
     uses: ./.github/workflows/desktop-build-progress.yml
     with:
       checkout-repo: ${{ inputs.checkout-repo }}
       checkout-ref: ${{ inputs.checkout-ref }}
 
   package-linux:
-    if: false
     strategy:
       matrix:
         cpu: [x64, arm64]
@@ -221,7 +219,7 @@ jobs:
         run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
         working-directory: ./build/macos
 
-      - name: Upload build artifacts ${{ matrix.type }}
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
