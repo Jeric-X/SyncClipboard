@@ -1,7 +1,7 @@
 # SyncClipboard
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
 
-[中文](https://github.com/Jeric-X/SyncClipboard#syncclipboard) | English
+[中文](../README.md) | English
 
 <details>
 <summary>Contents</summary>
@@ -94,9 +94,6 @@ Notes:
 - Config files are saved in `~/.config/SyncClipboard/`. Uninstaller won't delete them. Users can delete them manually.
 - Not suport upgrading directly. Delete old version first, then install the new version.
 - Plenty of bugs exist.
-
-Known bugs:
-- macos: Main window can't be woke up by clicking the icon in dock when running background. Work around: Use menu bar icon to wake up the main window.
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  

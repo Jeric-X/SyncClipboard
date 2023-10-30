@@ -94,9 +94,6 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 每次更新版本需要先删除旧版，再安装新版，不支持直接更新
 - 存在大量BUG
 
-已知问题：
-- macos：运行在后台时，dock栏图标无法唤起主界面，点击状态栏图标附带的菜单可以唤起
-
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
 
