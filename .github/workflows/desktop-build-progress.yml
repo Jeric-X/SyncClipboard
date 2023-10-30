@@ -14,7 +14,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [osx, linux]
+        os: [linux]
         cpu: [x64, arm64]
         type: [self-contained, no-self-contained]
         include:

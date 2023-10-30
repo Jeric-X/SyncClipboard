@@ -15,12 +15,14 @@ on:
 
 jobs:
   build:
+    if: false
     uses: ./.github/workflows/desktop-build-progress.yml
     with:
       checkout-repo: ${{ inputs.checkout-repo }}
       checkout-ref: ${{ inputs.checkout-ref }}
 
   package-linux:
+    if: false
     strategy:
       matrix:
         cpu: [x64, arm64]
@@ -63,9 +65,11 @@ jobs:
           ref: ${{ inputs.checkout-ref }}
 
       - name: Install .NET
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: | 
+            6.0.x
+            7.0.x
 
       - name: Download last-job-built artifact
         uses: actions/download-artifact@v3
@@ -125,10 +129,8 @@ jobs:
     strategy:
       matrix:
         cpu: [x64, arm64]
-        type: [self-contained, no-self-contained]
 
-    runs-on: macos-latest
-    needs: build
+    runs-on: macos-13
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -136,22 +138,64 @@ jobs:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
-      - name: Download last-job-built artifact
-        uses: actions/download-artifact@v3
+      # Install the .NET workload
+      - name: Install .NET
+        uses: actions/setup-dotnet@v3
         with:
-          name: osx-${{ matrix.cpu }}-${{ matrix.type }}
-          path: macos-bin/
+          dotnet-version: | 
+            6.0.x
+            7.0.x
 
-      - name: Download version
-        uses: actions/download-artifact@v3
-        with:
-          name: version-desktop
+      - name: Install dependencies
+        working-directory: ./src/SyncClipboard.Desktop.MacOS
+        run: |
+          dotnet workload install macos
+          dotnet workload restore
+
+      - name: Install dependencies
+        working-directory: ./src
+        run: |
+          dotnet restore
+
+      # - name
+          #  dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-x64 -c Release
+      - name: Build ${{ matrix.cpu }}
+        id: first-build
+        continue-on-error: true
+        run: |
+          dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
+        working-directory: ./src
+
+      - name: Build ${{ matrix.cpu }}
+        # if:  ${{ failure() && steps.first-build.conclusion == 'failure' }}
+        run: |
+          echo ${{ steps.first-build.conclusion }}
+          mv SyncClipboard.Desktop.MacOS/obj/Release/net6.0-macos/osx-${{ matrix.cpu }}/nativelibraries/Magick.Native-Q16-${{ matrix.cpu }}.dll.dylib SyncClipboard.Desktop.MacOS/obj/Release/net6.0-macos/osx-${{ matrix.cpu }}/nativelibraries/libMagick.Native-Q16-${{ matrix.cpu }}.dll.dylib
+          dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
+        working-directory: ./src
+
+      - name: copy LICENSES 
+        run: |
+          cp -r LICENSES src/SyncClipboard.Desktop.MacOS/bin/Release/net6.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app/Contents/MonoBundle/LICENSES
+
+      - name: Generate change log
+        run: |
+          chmod +x ReadDesktopChanges.sh
+          ./ReadDesktopChanges.sh
+          cat version.txt
+          cat feature.txt
+        working-directory: ./build
 
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: version.txt
+          path: build/version.txt
+
+      - name: mv app
+        run: | 
+          mv src/SyncClipboard.Desktop.MacOS/bin/Release/net6.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app
+          chmod +x build/macos/SyncClipboard.app/Contents/MacOS/SyncClipboard.Desktop.MacOS
 
       - name: Package app
         run: | 
@@ -172,23 +216,16 @@ jobs:
           ls -l
           tree 
         working-directory: ./build/macos
-  
+
+      - name: Change name
+        run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+        working-directory: ./build/macos
+
       - name: Upload build artifacts ${{ matrix.type }}
         uses: actions/upload-artifact@v3
         with:
-          name: SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
-          path: "build/macos/SyncClipboard ${{ steps.version.outputs.content }}.dmg"
-
-      - name: Change name
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg"
-        working-directory: ./build/macos
-
-      - name: Download feature
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/download-artifact@v3
-        with:
-          name: feature-desktop
+          name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+          path: "build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
 
       - name: Release
         uses: ncipollo/release-action@v1
@@ -196,5 +233,5 @@ jobs:
         with:
           allowUpdates: true
           prerelease: ${{ contains(github.ref_name, 'preview') }}
-          artifacts: build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}_${{ matrix.type }}.dmg
-          bodyFile: feature.txt
+          artifacts: build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg
+          bodyFile: build/feature.txt

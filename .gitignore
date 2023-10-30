@@ -458,3 +458,4 @@ build/macos/SyncClipboard.app/
 macos-*/
 osx-*/
 .DS_Store
+build/featuretemp.txt

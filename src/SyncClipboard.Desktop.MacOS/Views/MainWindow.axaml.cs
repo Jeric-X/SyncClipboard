@@ -19,11 +19,10 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
     {
         if (hide is false)
         {
-            base.ShowMainWindow();
+            ShowMainWindow();
             return;
         }
 
-        _created = true;
         var transparencyLevelHint = TransparencyLevelHint;
         var background = Background;
         var extendClientAreaTitleBarHeightHint = ExtendClientAreaTitleBarHeightHint;
@@ -38,7 +37,7 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
         ShowMainWindow();
         NSApplication.SharedApplication.Hide(NSApplication.SharedApplication);
 
-        await Task.Delay(500).ConfigureAwait(true);
+        await Task.Delay(1000).ConfigureAwait(true);
         TransparencyLevelHint = transparencyLevelHint;
         Background = background;
         ExtendClientAreaTitleBarHeightHint = extendClientAreaTitleBarHeightHint;
