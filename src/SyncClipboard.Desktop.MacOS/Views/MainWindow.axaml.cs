@@ -35,9 +35,13 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
         ExtendClientAreaTitleBarHeightHint = 0;
         this.Opacity = 0;
         ShowMainWindow();
-        NSApplication.SharedApplication.Hide(NSApplication.SharedApplication);
 
-        await Task.Delay(1000).ConfigureAwait(true);
+        for (int i = 0; i < 2000; i += 250)
+        {
+            await Task.Delay(i).ConfigureAwait(true);
+            NSApplication.SharedApplication.Hide(NSApplication.SharedApplication);
+        }
+
         TransparencyLevelHint = transparencyLevelHint;
         Background = background;
         ExtendClientAreaTitleBarHeightHint = extendClientAreaTitleBarHeightHint;
