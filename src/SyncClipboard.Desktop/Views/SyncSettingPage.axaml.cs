@@ -46,7 +46,7 @@ public partial class SyncSettingPage : UserControl
     {
         _clientConfigDialog = new ServerSettingDialog
         {
-            TextBoxName = Strings.Port,
+            TextBoxName = Strings.Address,
             Password = _viewModel.ClientConfig.Password,
             UserName = _viewModel.ClientConfig.UserName,
             Url = _viewModel.ClientConfig.RemoteURL.ToString()
