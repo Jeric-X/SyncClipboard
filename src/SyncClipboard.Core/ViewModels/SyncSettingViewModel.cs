@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -81,8 +80,7 @@ public partial class SyncSettingViewModel : ObservableObject
     [RelayCommand]
     private void LoginWithNextcloud()
     {
-        _mainVM.BreadcrumbList.Add(PageDefinition.NextCloudLogIn);
-        _mainVM.NavigateTo(PageDefinition.NextCloudLogIn, NavigationTransitionEffect.FromRight);
+        _mainVM.NavigateToNextLevel(PageDefinition.NextCloudLogIn);
     }
 
     #endregion

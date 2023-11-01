@@ -1,7 +1,6 @@
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Animation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
@@ -34,13 +33,11 @@ namespace SyncClipboard.WinUI3.Views
 
         private void DependencyItem_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs _)
         {
-            var window = App.Current.Services.GetService<IMainWindow>() as MainWindow;
+            var window = App.Current.Services.GetRequiredService<IMainWindow>();
             var settingsCard = (SettingsCard)sender;
             var path = settingsCard.Tag;
 
-            var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
-            mainWindowVM?.BreadcrumbList.Add(PageDefinition.License);
-            window?.NavigateTo(PageDefinition.License, SlideNavigationTransitionEffect.FromRight, path);
+            window.NavigateToNextLevel(PageDefinition.License, path);
         }
     }
 }

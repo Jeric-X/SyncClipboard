@@ -46,17 +46,7 @@ public partial class MainView : UserControl
 
     private void BreadcrumbBar_ItemClicked(BreadcrumbBar _, BreadcrumbBarItemClickedEventArgs args)
     {
-        if (_viewModel.BreadcrumbList.Count - 1 == args.Index)
-        {
-            return;
-        }
-
-        for (int i = _viewModel.BreadcrumbList.Count - 1; i >= args.Index + 1; i--)
-        {
-            _viewModel.BreadcrumbList.RemoveAt(i);
-        }
-
-        NavigateTo(_viewModel.BreadcrumbList[args.Index], SlideNavigationTransitionEffect.FromLeft);
+        _viewModel.BreadcrumbBarClicked(args.Index);
     }
 
     private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs _)

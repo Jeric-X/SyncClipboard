@@ -11,8 +11,10 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class MainWindow : Window, IMainWindow
 {
+    private readonly MainViewModel _viewModel;
     public MainWindow()
     {
+        _viewModel = App.Current.Services.GetRequiredService<MainViewModel>();
         if (OperatingSystem.IsLinux() is false)
         {
             this.ExtendClientAreaToDecorationsHint = true;
@@ -34,7 +36,7 @@ public partial class MainWindow : Window, IMainWindow
         _MainView.NavigateTo(page, effect, parameter);
     }
 
-    public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect)
+    public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? para = null)
     {
         SlideNavigationTransitionEffect platformEffect = effect switch
         {
@@ -44,14 +46,17 @@ public partial class MainWindow : Window, IMainWindow
             NavigationTransitionEffect.FromTop => SlideNavigationTransitionEffect.FromTop,
             _ => throw new NotImplementedException()
         };
-        _MainView.NavigateTo(page, platformEffect);
+        _MainView.NavigateTo(page, platformEffect, para);
+    }
+
+    public void NavigateToLastLevel()
+    {
+        _viewModel.NavigateToLastLevel();
     }
 
     public void NavigateToNextLevel(PageDefinition page, object? para = null)
     {
-        var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
-        mainWindowVM?.BreadcrumbList.Add(page);
-        _MainView.NavigateTo(page, SlideNavigationTransitionEffect.FromRight, para);
+        _viewModel.NavigateToNextLevel(page, para);
     }
 
     internal void DispableScrollViewer()

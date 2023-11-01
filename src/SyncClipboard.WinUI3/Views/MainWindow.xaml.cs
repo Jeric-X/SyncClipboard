@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -8,7 +7,6 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
 using System;
-using Windows.UI.WindowManagement;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
 
@@ -50,7 +48,7 @@ namespace SyncClipboard.WinUI3.Views
             SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
         }
 
-        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect)
+        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? parameter = null)
         {
             SlideNavigationTransitionEffect platformEffect = effect switch
             {
@@ -60,7 +58,17 @@ namespace SyncClipboard.WinUI3.Views
                 NavigationTransitionEffect.FromTop => SlideNavigationTransitionEffect.FromBottom,
                 _ => throw new NotImplementedException()
             };
-            NavigateTo(page, platformEffect);
+            NavigateTo(page, platformEffect, parameter);
+        }
+
+        public void NavigateToLastLevel()
+        {
+            _viewModel.NavigateToLastLevel();
+        }
+
+        public void NavigateToNextLevel(PageDefinition page, object? para)
+        {
+            _viewModel.NavigateToNextLevel(page, para);
         }
 
         internal void DispableScrollViewer()
@@ -117,12 +125,7 @@ namespace SyncClipboard.WinUI3.Views
 
         private void BreadcrumbBar_ItemClicked(BreadcrumbBar _, BreadcrumbBarItemClickedEventArgs args)
         {
-            for (int i = _viewModel.BreadcrumbList.Count - 1; i >= args.Index + 1; i--)
-            {
-                _viewModel.BreadcrumbList.RemoveAt(i);
-            }
-
-            NavigateTo(_viewModel.BreadcrumbList[args.Index], SlideNavigationTransitionEffect.FromLeft);
+            _viewModel.BreadcrumbBarClicked(args.Index);
         }
 
         private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)

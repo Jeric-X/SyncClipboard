@@ -25,9 +25,9 @@ namespace SyncClipboard.Core.ViewModels
 
         public ObservableCollection<PageDefinition> BreadcrumbList { get; } = new();
 
-        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect)
+        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? para = null)
         {
-            _services.GetService<IMainWindow>()?.NavigateTo(page, effect);
+            _services.GetService<IMainWindow>()?.NavigateTo(page, effect, para);
         }
 
         public void NavigateToLastLevel()
@@ -37,6 +37,27 @@ namespace SyncClipboard.Core.ViewModels
                 BreadcrumbList.RemoveAt(BreadcrumbList.Count - 1);
                 NavigateTo(BreadcrumbList[^1], NavigationTransitionEffect.FromLeft);
             }
+        }
+
+        public void NavigateToNextLevel(PageDefinition page, object? para = null)
+        {
+            BreadcrumbList.Add(page);
+            NavigateTo(page, NavigationTransitionEffect.FromRight, para);
+        }
+
+        public void BreadcrumbBarClicked(int index)
+        {
+            if (BreadcrumbList.Count - 1 == index)
+            {
+                return;
+            }
+
+            for (int i = BreadcrumbList.Count - 1; i >= index + 1; i--)
+            {
+                BreadcrumbList.RemoveAt(i);
+            }
+
+            NavigateTo(BreadcrumbList[index], NavigationTransitionEffect.FromLeft);
         }
     }
 }

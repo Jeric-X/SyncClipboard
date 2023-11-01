@@ -13,7 +13,9 @@ namespace SyncClipboard.Core.Interfaces
     public interface IMainWindow
     {
         public void Show();
-        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect);
+        public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? para);
+        public void NavigateToLastLevel();
+        public void NavigateToNextLevel(PageDefinition page, object? para);
         public void SetFont(string font);
         public void ExitApp();
         public void Init(bool hide);
