@@ -14,11 +14,11 @@ public class PageDefinition
     public static readonly PageDefinition License = new("License", I18n.Strings.License);
     public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", I18n.Strings.UseNextcloud);
 
-    private PageDefinition(string name, string title, string? fontIcon = null)
+    public PageDefinition(string name, string title, string? fontIcon = null)
     {
         Name = name;
         Title = title;
-        FontIcon = fontIcon;
+        FontIcon = fontIcon ?? "\uE115";
     }
 
     public override bool Equals(object? obj)

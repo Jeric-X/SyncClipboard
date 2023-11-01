@@ -30,4 +30,10 @@
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Views\DiagnoseDetailPage.axaml.cs">
+      <DependentUpon>DiagnoseDetailPage.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>

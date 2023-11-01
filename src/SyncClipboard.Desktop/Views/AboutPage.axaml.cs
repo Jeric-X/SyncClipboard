@@ -33,10 +33,6 @@ public partial class AboutPage : UserControl
         }
 
         var path = software.LicensePath;
-
-        var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
-        var window = App.Current.Services.GetService<IMainWindow>() as MainWindow;
-        mainWindowVM?.BreadcrumbList.Add(PageDefinition.License);
-        window?.NavigateTo(PageDefinition.License, SlideNavigationTransitionEffect.FromRight, path);
+        App.Current.MainWindow.NavigateToNextLevel(PageDefinition.License, path);
     }
 }

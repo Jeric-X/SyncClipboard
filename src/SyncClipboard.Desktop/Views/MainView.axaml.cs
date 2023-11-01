@@ -20,6 +20,9 @@ public partial class MainView : UserControl
         PageDefinition.ServiceStatus,
         PageDefinition.SystemSetting,
         PageDefinition.About,
+#if DEBUG
+        new PageDefinition("Diagnose", "Diagnose")
+#endif
     };
 
     public MainView()

@@ -1,0 +1,38 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.DiagnosePage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:SyncClipboard.Desktop.ViewModels"
+             xmlns:m="using:SyncClipboard.Core.Models"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             x:DataType="vm:DiagnoseViewModel"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:DiagnoseViewModel />
+    </Design.DataContext>
+    <UserControl.Resources>
+        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+    </UserControl.Resources>
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="Types" IsExpanded="True" ItemsSource="{Binding ClipboardTypes, Mode=OneWay}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                             IsClickEnabled="True"
+                                             Click="SettingsExpanderItem_Click"
+                                             Content="{Binding}" />
+                </DataTemplate>
+            </ui:SettingsExpander.ItemTemplate>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>

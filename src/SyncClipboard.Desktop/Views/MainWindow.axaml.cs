@@ -2,6 +2,7 @@
 using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Media.Animation;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using System;
@@ -44,6 +45,13 @@ public partial class MainWindow : Window, IMainWindow
             _ => throw new NotImplementedException()
         };
         _MainView.NavigateTo(page, platformEffect);
+    }
+
+    public void NavigateToNextLevel(PageDefinition page, object? para = null)
+    {
+        var mainWindowVM = App.Current.Services.GetService<MainViewModel>();
+        mainWindowVM?.BreadcrumbList.Add(page);
+        _MainView.NavigateTo(page, SlideNavigationTransitionEffect.FromRight, para);
     }
 
     internal void DispableScrollViewer()
