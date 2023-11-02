@@ -12,6 +12,19 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Platform)'=='x64'">
+    <PackageReference Include="Magick.NET-Q16-x64" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='x86'">
+    <PackageReference Include="Magick.NET-Q16-x86" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='ARM64'">
+    <PackageReference Include="Magick.NET-Q16-arm64" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='AnyCPU'">
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />

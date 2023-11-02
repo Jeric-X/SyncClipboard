@@ -20,15 +20,6 @@ public partial class DiagnoseDetailPage : UserControl
     private async void OnNavigatedTo(object? sender, NavigationEventArgs e)
     {
         var type = e.Parameter as string;
-        var clipboard = await App.Current.Clipboard.GetDataAsync(type!);
-
-        if (clipboard is byte[] byteclipboard)
-        {
-            _viewModel.Text = System.Text.Encoding.Unicode.GetString(byteclipboard);
-        }
-        else
-        {
-            _viewModel.Text = clipboard?.ToString();
-        }
+        await _viewModel.Init(type!);
     }
 }

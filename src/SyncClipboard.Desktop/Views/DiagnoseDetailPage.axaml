@@ -4,10 +4,52 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:SyncClipboard.Desktop.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:DataType="vm:DiagnoseDetailViewModel"
              mc:Ignorable="d">
     <Design.DataContext>
         <vm:DiagnoseDetailViewModel />
     </Design.DataContext>
-    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+    <UserControl.Styles>
+        <Style Selector="ui|SettingsExpander">
+            <Setter Property="IconSource">
+                <Setter.Value>
+                    <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="IsExpanded" Value="True" />
+        </Style>
+    </UserControl.Styles>
+    <StackPanel Spacing="10">
+        <StackPanel Spacing="10" IsVisible="{Binding IsString}">
+            <ui:SettingsExpander Header="C# String">
+                <TextBlock Text="{Binding CsharpString}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+        </StackPanel>
+        <StackPanel Spacing="10" IsVisible="{Binding IsText}">
+            <ui:SettingsExpander Header="ANSI">
+                <TextBlock Text="{Binding Ansi}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+            <ui:SettingsExpander Header="UTF8">
+                <TextBlock Text="{Binding Utf8}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+            <ui:SettingsExpander Header="UTF16">
+                <TextBlock Text="{Binding Utf16}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+            <ui:SettingsExpander Header="UTF32">
+                <TextBlock Text="{Binding Utf32}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+            <ui:SettingsExpander Header="INT32">
+                <TextBlock Text="{Binding Int_32}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+            <ui:SettingsExpander Header="UINT32">
+                <TextBlock Text="{Binding Uint_32}" TextWrapping="Wrap" />
+            </ui:SettingsExpander>
+        </StackPanel>
+        <StackPanel Spacing="10" IsVisible="{Binding IsImage}">
+            <ui:SettingsExpander Header="Image">
+                <Image Source="{Binding Bitmap}" />
+            </ui:SettingsExpander>
+        </StackPanel>
+    </StackPanel>
 </UserControl>

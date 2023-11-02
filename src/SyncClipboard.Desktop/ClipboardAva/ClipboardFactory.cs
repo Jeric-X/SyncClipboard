@@ -47,7 +47,6 @@ internal class ClipboardFactory : ClipboardFactoryBase
             await Task.Delay(200, ctk);
         }
 
-        Logger.Write($"local: {meta.Text}");
         return meta;
     }
 }
