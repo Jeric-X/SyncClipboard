@@ -97,6 +97,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         var profile = CreateProfile(meta);
         if (profile is FileProfile fileProfile)
         {
+            await fileProfile.CalcFileHash(ctk);
             extraFilePath = fileProfile.FullPath;
         }
         return (profile.ToJsonString(), extraFilePath);

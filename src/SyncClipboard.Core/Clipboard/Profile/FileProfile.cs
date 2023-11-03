@@ -71,7 +71,7 @@ public class FileProfile : Profile
         return _fileMd5Hash;
     }
 
-    private async Task CalcFileHash(CancellationToken cancelToken)
+    public async Task CalcFileHash(CancellationToken cancelToken)
     {
         if (string.IsNullOrEmpty(_fileMd5Hash) && !string.IsNullOrEmpty(FullPath))
         {
