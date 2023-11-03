@@ -1,21 +1,8 @@
-﻿using Avalonia.Input;
-using SyncClipboard.Core.Clipboard;
-using SyncClipboard.Core.Models;
-using System;
+﻿using SyncClipboard.Core.Clipboard;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
-internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core.Clipboard.ImageProfile>
+internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<ImageProfile>
 {
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
-    {
-        if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
-        {
-            throw new ArgumentException("Not Contain File.");
-        }
 
-        var dataObject = new DataObject();
-        // not support, do nothing
-        return dataObject;
-    }
 }

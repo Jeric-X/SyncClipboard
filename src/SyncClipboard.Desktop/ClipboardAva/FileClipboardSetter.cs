@@ -2,6 +2,8 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
+using System.Linq;
+using System.Text;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
@@ -15,7 +17,8 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         }
 
         var dataObject = new DataObject();
-        // not support, do nothing
+        var urlList = string.Join("\n", metaInfomation.Files.Select(x => new Uri(x).ToString()));
+        dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(urlList));
         return dataObject;
     }
 }

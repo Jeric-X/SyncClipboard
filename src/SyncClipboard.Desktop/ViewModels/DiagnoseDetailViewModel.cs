@@ -98,8 +98,12 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
             Utf8 = AdjustString(Encoding.UTF8.GetString(bytes));
             Utf16 = AdjustString(Encoding.Unicode.GetString(bytes));
             Utf32 = AdjustString(Encoding.UTF32.GetString(bytes));
-            Int_32 = BitConverter.ToInt32(bytes);
-            Uint_32 = BitConverter.ToUInt32(bytes);
+            try
+            {
+                Int_32 = BitConverter.ToInt32(bytes);
+                Uint_32 = BitConverter.ToUInt32(bytes);
+            }
+            catch { }
         }
     }
 
