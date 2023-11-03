@@ -2,7 +2,7 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
-using System.Linq;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
@@ -17,8 +17,23 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         }
 
         var dataObject = new DataObject();
-        var urlList = string.Join("\n", metaInfomation.Files.Select(x => new Uri(x).ToString()));
-        dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(urlList));
+        if (OperatingSystem.IsLinux())
+        {
+            SetLinux(dataObject, metaInfomation.Files[0]);
+        }
+
         return dataObject;
+    }
+
+    [SupportedOSPlatform("linux")]
+    private static void SetLinux(DataObject dataObject, string path)
+    {
+        var uriPath = new Uri(path).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
+        dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(uriPath));
+
+        var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uriPath}\n";
+        var nautilusBytes = Encoding.UTF8.GetBytes(nautilus);
+        dataObject.Set("COMPOUND_TEXT", nautilusBytes);
+        dataObject.Set("TEXT", nautilusBytes);
     }
 }
