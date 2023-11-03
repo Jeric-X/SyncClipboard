@@ -136,10 +136,11 @@ jobs:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
-      - name: Setup node
-        uses: actions/setup-node@v3
+      # python3.12 has broken change thas node-gyp depends on
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          node-version: 16
+          python-version: '3.11' 
 
       - name: Setup software form npm,homebrew
         run: | 
