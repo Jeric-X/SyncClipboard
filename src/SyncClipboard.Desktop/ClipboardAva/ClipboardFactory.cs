@@ -1,18 +1,14 @@
-﻿using FluentAvalonia.Core;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System;
-using System.Linq;
-using System.Runtime.Versioning;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
-internal class ClipboardFactory : ClipboardFactoryBase
+internal partial class ClipboardFactory : ClipboardFactoryBase
 {
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
@@ -38,11 +34,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
             {
                 if (OperatingSystem.IsLinux())
                 {
-                    await HandleLinuxClipboard(meta, ctk);
-                    if (meta.Text?.StartsWith('\ufffd') ?? false)
-                    {
-                        throw new Exception($"wrong clipboard with: \\ufffd");
-                    }
+                    return await HandleLinuxClipboard(ctk);
                 }
                 else
                 {
@@ -58,26 +50,5 @@ internal class ClipboardFactory : ClipboardFactoryBase
         }
 
         return meta;
-    }
-
-    [SupportedOSPlatform("linux")]
-    private static async Task HandleLinuxClipboard(ClipboardMetaInfomation meta, CancellationToken token)
-    {
-        var clipboard = App.Current.MainWindow.Clipboard!;
-        var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
-        if (formats.Contains(Format.UriList))
-        {
-            var uriListbytes = await clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
-            ArgumentNullException.ThrowIfNull(uriListbytes);
-            var uriList = Encoding.UTF8.GetString(uriListbytes!);
-            var uriArray = uriList.Split('\n');
-            meta.Files = uriArray
-                            .Select(x => x.Replace("\r", ""))
-                            .Where(x => !string.IsNullOrEmpty(x))
-                            .Select(x => new Uri(x).LocalPath).ToArray();
-            return;
-        }
-
-        meta.Text = await clipboard?.GetTextAsync().WaitAsync(token)!;
     }
 }
