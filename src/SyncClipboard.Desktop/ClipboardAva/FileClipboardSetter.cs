@@ -28,12 +28,14 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
     [SupportedOSPlatform("linux")]
     private static void SetLinux(DataObject dataObject, string path)
     {
-        var uriPath = new Uri(path).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
+        dataObject.Set("TEXT", Encoding.UTF8.GetBytes(path));
+
+        var uri = new Uri(path);
+        var uriPath = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
         dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(uriPath));
 
         var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uriPath}\n";
         var nautilusBytes = Encoding.UTF8.GetBytes(nautilus);
         dataObject.Set("COMPOUND_TEXT", nautilusBytes);
-        dataObject.Set("TEXT", nautilusBytes);
     }
 }

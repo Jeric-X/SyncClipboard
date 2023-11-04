@@ -1,6 +1,8 @@
 ﻿using Avalonia.Input;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
+using System;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +14,17 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 
     public virtual Task SetLocalClipboard(object obj, CancellationToken ctk)
     {
+        if (OperatingSystem.IsLinux())
+        {
+            SetTimeStamp((DataObject)obj);
+        }
+
         return App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).WaitAsync(ctk);
+    }
+
+    [SupportedOSPlatform("linux")]
+    public static void SetTimeStamp(DataObject dataObject)
+    {
+        dataObject.Set("TIMESTAMP", BitConverter.GetBytes(Environment.TickCount));
     }
 }
