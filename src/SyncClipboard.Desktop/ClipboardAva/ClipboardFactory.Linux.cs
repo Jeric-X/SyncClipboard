@@ -56,6 +56,7 @@ internal partial class ClipboardFactory
         };
     }
 
+    [SupportedOSPlatform("linux")]
     private static async Task<ClipboardMetaInfomation> HandleLinuxFile(IClipboard clipboard, CancellationToken token)
     {
         var uriListbytes = await clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
@@ -71,6 +72,7 @@ internal partial class ClipboardFactory
         };
     }
 
+    [SupportedOSPlatform("linux")]
     private static readonly string[] ImageTypeList = new[]
     {
         Format.ImagePng,
@@ -78,6 +80,7 @@ internal partial class ClipboardFactory
         Format.ImageBmp,
     };
 
+    [SupportedOSPlatform("linux")]
     private static async Task<ClipboardMetaInfomation> HandleLinuxImage(IClipboard clipboard, CancellationToken token)
     {
         var meta = new ClipboardMetaInfomation();
@@ -111,6 +114,7 @@ internal partial class ClipboardFactory
         return meta;
     }
 
+    [SupportedOSPlatform("linux")]
     private static async Task<ClipboardMetaInfomation> HandleGnomeFile(IClipboard clipboard, CancellationToken token)
     {
         var bytes = await clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];

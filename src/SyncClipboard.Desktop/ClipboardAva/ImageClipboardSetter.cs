@@ -16,7 +16,11 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core
         var dataObject = (DataObject)base.CreateClipboardObjectContainer(metaInfomation);
         if (OperatingSystem.IsLinux())
         {
-            SetLinux(dataObject, metaInfomation.Files![0]);
+            SetImage(dataObject, metaInfomation.Files![0], LinuxImageFormat);
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            SetImage(dataObject, metaInfomation.Files![0], MacImageFormat);
         }
 
         string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(metaInfomation.Files![0]);
@@ -25,19 +29,26 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core
         return dataObject;
     }
 
-    private static readonly Dictionary<string, MagickFormat> FormatHandlerlist = new Dictionary<string, MagickFormat>
+    [SupportedOSPlatform("linux")]
+    private static readonly Dictionary<string, MagickFormat> LinuxImageFormat = new Dictionary<string, MagickFormat>
     {
         [Format.ImagePng] = MagickFormat.Png,
         [Format.ImageJpeg] = MagickFormat.Jpeg,
         [Format.ImageBmp] = MagickFormat.Bmp,
     };
 
-    [SupportedOSPlatform("linux")]
-    private static void SetLinux(DataObject dataObject, string path)
+    [SupportedOSPlatform("macos")]
+    private static readonly Dictionary<string, MagickFormat> MacImageFormat = new Dictionary<string, MagickFormat>
+    {
+        [Format.PublicPng] = MagickFormat.Png,
+        [Format.PublicTiff] = MagickFormat.Tiff,
+    };
+
+    private static void SetImage(DataObject dataObject, string path, Dictionary<string, MagickFormat> mapper)
     {
         using var magickImage = new MagickImage(path);
 
-        foreach (var imageType in FormatHandlerlist)
+        foreach (var imageType in mapper)
         {
             using var stream = new MemoryStream();
             magickImage.Write(stream, imageType.Value);

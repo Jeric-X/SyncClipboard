@@ -36,6 +36,10 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                 {
                     return await HandleLinuxClipboard(ctk);
                 }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    return await HandleMacosClipboard(ctk);
+                }
                 else
                 {
                     meta.Text = await clipboard?.GetTextAsync().WaitAsync(ctk)!;

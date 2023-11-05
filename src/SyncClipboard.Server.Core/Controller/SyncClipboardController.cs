@@ -39,7 +39,11 @@ public class SyncClipboardController
     {
         if (Directory.Exists(path))
         {
-            Directory.Delete(path, true);
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch { }
             return Results.Ok();
         }
         return Results.NotFound();

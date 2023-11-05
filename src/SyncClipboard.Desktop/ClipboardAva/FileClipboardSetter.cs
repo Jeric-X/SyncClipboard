@@ -21,6 +21,10 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         {
             SetLinux(dataObject, metaInfomation.Files[0]);
         }
+        else if (OperatingSystem.IsMacOS())
+        {
+            SetMacos(dataObject, metaInfomation.Files[0]);
+        }
 
         return dataObject;
     }
@@ -37,5 +41,15 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uriPath}\n";
         var nautilusBytes = Encoding.UTF8.GetBytes(nautilus);
         dataObject.Set("COMPOUND_TEXT", nautilusBytes);
+    }
+
+    [SupportedOSPlatform("macos")]
+    private static void SetMacos(DataObject dataObject, string path)
+    {
+        dataObject.Set("public.utf8-plain-text", Encoding.UTF8.GetBytes(path));
+
+        var uri = new Uri(path);
+        var uriPath = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
+        dataObject.Set(Format.FileList, Encoding.UTF8.GetBytes(uriPath));
     }
 }

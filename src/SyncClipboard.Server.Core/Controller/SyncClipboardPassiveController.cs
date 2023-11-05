@@ -22,7 +22,11 @@ public class SyncClipboardPassiveController : SyncClipboardController
             {
                 if (Directory.Exists(fileFolder))
                 {
-                    Directory.Delete(fileFolder, true);
+                    try
+                    {
+                        Directory.Delete(fileFolder, true);
+                    }
+                    catch { }
                 }
                 Directory.CreateDirectory(fileFolder);
                 await Task.Run(() => File.Copy(filePath, Path.Combine(fileFolder, Path.GetFileName(filePath)), true));
