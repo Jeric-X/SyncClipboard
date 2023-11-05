@@ -1,6 +1,5 @@
 ﻿using Avalonia.Input.Platform;
 using FluentAvalonia.Core;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -81,28 +80,35 @@ internal partial class ClipboardFactory
 
     private static async Task<ClipboardMetaInfomation> HandleLinuxImage(IClipboard clipboard, CancellationToken token)
     {
-        IClipboardImage? image = null;
+        var meta = new ClipboardMetaInfomation();
         foreach (var imagetype in ImageTypeList)
         {
             var bytes = await clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
             if (bytes is not null)
             {
-                image = new ClipboardImage(bytes);
+                meta.Image = new ClipboardImage(bytes);
                 break;
             }
         }
 
-        if (image is null)
+        if (meta.Image is null)
         {
             string text = "Unknow Image";
             var timeStamp = await clipboard.GetDataAsync(Format.TimeStamp).WaitAsync(token) as byte[];
             if (timeStamp is not null)
             {
-                text += Encoding.UTF8.GetString(timeStamp);
+                text += BitConverter.ToInt32(timeStamp);
             }
-            return new ClipboardMetaInfomation { Text = text };
+            meta.Text = text;
         }
-        return new ClipboardMetaInfomation { Image = image };
+
+        var html = await clipboard.GetDataAsync("text/html").WaitAsync(token) as byte[];
+        if (html is not null)
+        {
+            meta.Html = Encoding.UTF8.GetString(html);
+        }
+
+        return meta;
     }
 
     private static async Task<ClipboardMetaInfomation> HandleGnomeFile(IClipboard clipboard, CancellationToken token)
