@@ -25,6 +25,6 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
     [SupportedOSPlatform("linux")]
     public static void SetTimeStamp(DataObject dataObject)
     {
-        dataObject.Set("TIMESTAMP", BitConverter.GetBytes(Environment.TickCount));
+        dataObject.Set(Format.TimeStamp, BitConverter.GetBytes(Environment.TickCount));
     }
 }

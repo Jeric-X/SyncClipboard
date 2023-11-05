@@ -18,7 +18,6 @@ public static class ClipboardImageBuilder
 </EditElement>
 </QQRichEditFormat>";
 
-    [SupportedOSPlatform("windows")]
     public static string GetClipboardQQFormat(string path)
     {
         return clipboardQqFormat.Replace("<<<<<<", path);
