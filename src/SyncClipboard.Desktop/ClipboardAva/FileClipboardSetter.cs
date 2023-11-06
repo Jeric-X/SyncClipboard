@@ -32,7 +32,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
     [SupportedOSPlatform("linux")]
     private static void SetLinux(DataObject dataObject, string path)
     {
-        dataObject.Set("TEXT", Encoding.UTF8.GetBytes(path));
+        dataObject.Set(Format.Text, Encoding.UTF8.GetBytes(path));
 
         var uri = new Uri(path);
         var uriPath = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);

@@ -19,7 +19,7 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
         if (OperatingSystem.IsLinux())
         {
             var utf8Text = Encoding.UTF8.GetBytes(_text);
-            dataObject.Set("TEXT", utf8Text);
+            dataObject.Set(Format.Text, utf8Text);
             dataObject.Set("text/plain", utf8Text);
             dataObject.Set("text/plain;charset=utf-8", utf8Text);
         }

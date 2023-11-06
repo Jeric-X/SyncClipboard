@@ -10,6 +10,7 @@ internal static class Format
     [SupportedOSPlatform("linux")] public const string ImageJpeg = "image/jpeg";
     [SupportedOSPlatform("linux")] public const string ImageBmp = "image/bmp";
     [SupportedOSPlatform("linux")] public const string TimeStamp = "TIMESTAMP";
+    [SupportedOSPlatform("linux")] public const string Text = "TEXT";
 
     [SupportedOSPlatform("macos")] public const string FileList = "public.file-url";
     [SupportedOSPlatform("macos")] public const string PublicPng = "public.png";

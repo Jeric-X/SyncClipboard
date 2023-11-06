@@ -61,15 +61,7 @@ public class ImageProfile : FileProfile
         {
             Directory.CreateDirectory(ImageTemplateFolder);
         }
-        var filePath = Path.Combine(ImageTemplateFolder, $"{Path.GetRandomFileName()}");
-        if (OperatingSystem.IsWindows())
-        {
-            filePath += ".bmp";
-        }
-        else
-        {
-            filePath += ".png";
-        }
+        var filePath = Path.Combine(ImageTemplateFolder, $"{Path.GetRandomFileName()}.png");
         Image.Save(filePath);
         FullPath = filePath;
     }

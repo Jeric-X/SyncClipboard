@@ -28,7 +28,7 @@ public class DownloadService : Service
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
-    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && !_serverConfig.ClientMixedMode;
+    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
 
     public DownloadService(IServiceProvider serviceProvider)
     {

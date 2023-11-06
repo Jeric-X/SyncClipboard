@@ -28,6 +28,7 @@ internal partial class ClipboardFactory
         new HandlerMapping(Format.UriList, HandleLinuxFile),
         new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
         new HandlerMapping(Format.ImagePng, HandleLinuxImage),
+        new HandlerMapping(Format.Text, HandleLinuxText),
     };
 
     [SupportedOSPlatform("linux")]
@@ -61,7 +62,7 @@ internal partial class ClipboardFactory
     {
         var uriListbytes = await clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
         ArgumentNullException.ThrowIfNull(uriListbytes);
-        var uriList = Encoding.UTF8.GetString(uriListbytes!);
+        var uriList = Encoding.UTF8.GetString(uriListbytes);
         return new ClipboardMetaInfomation
         {
             Files = uriList
@@ -69,6 +70,17 @@ internal partial class ClipboardFactory
                 .Select(x => x.Replace("\r", ""))
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x => new Uri(x).LocalPath).ToArray()
+        };
+    }
+
+    [SupportedOSPlatform("linux")]
+    private static async Task<ClipboardMetaInfomation> HandleLinuxText(IClipboard clipboard, CancellationToken token)
+    {
+        var bytes = await clipboard.GetDataAsync(Format.Text).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(bytes);
+        return new ClipboardMetaInfomation
+        {
+            Text = Encoding.UTF8.GetString(bytes)
         };
     }
 

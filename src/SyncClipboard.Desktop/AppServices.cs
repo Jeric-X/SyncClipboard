@@ -32,7 +32,9 @@ public class AppServices
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
 
-        services.AddSingleton<IClipboardFactory, ClipboardFactory>();
+        services.AddSingleton<ClipboardFactory>();
+        services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());
+        services.AddSingleton<IProfileDtoHelper>(sp => sp.GetRequiredService<ClipboardFactory>());
         services.AddSingleton<IClipboardChangingListener, ClipboardListener>();
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();

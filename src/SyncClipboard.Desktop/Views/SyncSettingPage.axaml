@@ -55,6 +55,28 @@
                         </StackPanel>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MixedClientMode}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Margin="0,4,0,0"
+                                    FontSize="20"
+                                    Content="&#xE9CE;"
+                                    FontFamily="{StaticResource SymbolThemeFontFamily}">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <TextBlock Width="400" TextWrapping="Wrap">
+                                            <Run Text="{x:Static i18n:Strings.MixedClientOnInfo}" />
+                                            <LineBreak />
+                                            <LineBreak />
+                                            <Run Text="{x:Static i18n:Strings.MixedClientOffInfo}" />
+                                        </TextBlock>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ClientMixedMode, Mode=TwoWay}" />
+                        </StackPanel>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="{Binding IsNormalClientEnable, Mode=OneWay}" IsEnabled="{Binding IsNormalClientEnable, Mode=OneWay}">
