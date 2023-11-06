@@ -43,7 +43,7 @@
                 </StackPanel>
             </OnPlatform.Default>
             <OnPlatform.macOS>
-                <Border Height="36" />
+                <Border Height="26" />
             </OnPlatform.macOS>
             <OnPlatform.Linux>
                 <Border Height="0" />

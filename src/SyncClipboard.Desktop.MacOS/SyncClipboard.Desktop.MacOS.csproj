@@ -11,6 +11,7 @@
     <SupportedOSPlatformVersion>10.14</SupportedOSPlatformVersion>
     <Platforms>x64;ARM64</Platforms>
     <CreatePackage>false</CreatePackage>
+    <NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>
   </PropertyGroup>
 
   <ItemGroup>
