@@ -1,14 +1,16 @@
-﻿using System.Runtime.Versioning;
-
-namespace SyncClipboard.Core.Clipboard;
+﻿namespace SyncClipboard.Core.Clipboard;
 
 public static class ClipboardImageBuilder
 {
-    [SupportedOSPlatform("windows")]
     public static string GetClipboardHtml(string path)
     {
-        string html = $@"<img src=""file:///{path}"">";
-        return ClipboardHtmlBuilder.GetClipboardHtml(html);
+        var uri = new Uri(path);
+        string html = $@"<img src=""{uri}"">";
+        if (OperatingSystem.IsWindows())
+        {
+            return ClipboardHtmlBuilder.GetClipboardHtml(html);
+        }
+        return html;
     }
 
     private const string clipboardQqFormat = @"<QQRichEditFormat>

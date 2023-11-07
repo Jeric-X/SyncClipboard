@@ -17,6 +17,7 @@ public partial class MainView : UserControl
     public static List<PageDefinition> MainWindowPage { get; } = new()
     {
         PageDefinition.SyncSetting,
+        PageDefinition.CliboardAssistant,
         PageDefinition.ServiceStatus,
         PageDefinition.SystemSetting,
         PageDefinition.About,

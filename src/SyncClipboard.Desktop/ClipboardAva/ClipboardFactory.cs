@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Avalonia.Input.Platform;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -14,7 +15,10 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override IServiceProvider ServiceProvider { get; set; }
     protected override IWebDav WebDav { get; set; }
 
+    private IClipboard Clipboard { get; } = App.Current.Clipboard;
+
     private const string LOG_TAG = nameof(ClipboardFactory);
+    public static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
     public ClipboardFactory(IServiceProvider serviceProvider)
     {
@@ -30,6 +34,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
         for (int i = 0; i < 5; i++)
         {
+            await _semaphoreSlim.WaitAsync(ctk);
             try
             {
                 if (OperatingSystem.IsLinux())
@@ -50,6 +55,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             {
                 Logger.Write(ex.Message);
             }
+            finally { _semaphoreSlim.Release(); }
             await Task.Delay(200, ctk);
         }
 

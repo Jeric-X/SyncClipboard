@@ -12,14 +12,24 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 {
     public abstract object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation);
 
-    public virtual Task SetLocalClipboard(object obj, CancellationToken ctk)
+    public virtual async Task SetLocalClipboard(object obj, CancellationToken ctk)
     {
         if (OperatingSystem.IsLinux())
         {
             SetTimeStamp((DataObject)obj);
         }
 
-        return App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).WaitAsync(ctk);
+        await ClipboardFactory._semaphoreSlim.WaitAsync(ctk);
+        try
+        {
+            await App.Current.Clipboard.SetDataObjectAsync((IDataObject)obj).WaitAsync(ctk);
+            await Task.Delay(200, ctk);
+        }
+        catch { }
+        finally
+        {
+            ClipboardFactory._semaphoreSlim.Release();
+        }
     }
 
     [SupportedOSPlatform("linux")]

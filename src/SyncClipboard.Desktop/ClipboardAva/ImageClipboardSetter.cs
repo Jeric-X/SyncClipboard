@@ -14,13 +14,17 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core
     public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
     {
         var dataObject = (DataObject)base.CreateClipboardObjectContainer(metaInfomation);
+        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(metaInfomation.Files![0]);
+
         if (OperatingSystem.IsLinux())
         {
             SetImage(dataObject, metaInfomation.Files![0], LinuxImageFormat);
+            dataObject.Set(Format.TextHtml, System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
         else if (OperatingSystem.IsMacOS())
         {
             SetImage(dataObject, metaInfomation.Files![0], MacImageFormat);
+            dataObject.Set(Format.PublicHtml, System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
 
         string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(metaInfomation.Files![0]);

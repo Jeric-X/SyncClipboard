@@ -1,0 +1,38 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.CliboardAssistantPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             x:DataType="vm:CliboardAssistantViewModel"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:CliboardAssistantViewModel />
+    </Design.DataContext>
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.ImageAssistant}" Description="{x:Static i18n:Strings.ImageAssistantDescription}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE158;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EasyCopyImageSwitchOn, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DownloadWebImage}" Description="{x:Static i18n:Strings.DownloadWebImageDescription}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DownloadWebImage, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ImageCompatibility}" Description="{x:Static i18n:Strings.ImageCompatibilityDescription}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ConvertSwitchOn, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>

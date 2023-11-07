@@ -122,7 +122,11 @@ public class UploadService : ClipboardHander
     public async void PullStoppedHandler()
     {
         _logger.Write("_isChangingLocal set to FALSE");
-        _metaInfoCache = await _clipboardFactory.GetMetaInfomation(new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token);
+        try
+        {
+            _metaInfoCache = await _clipboardFactory.GetMetaInfomation(new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token);
+        }
+        catch { }
         _downServiceChangingLocal = false;
     }
 

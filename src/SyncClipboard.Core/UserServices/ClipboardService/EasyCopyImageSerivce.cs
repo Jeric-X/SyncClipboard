@@ -38,15 +38,14 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
     {
-        await ProcessClipboard(meta, false, cancelToken);
-        //Task[] tasks = {
-        //    ProcessClipboard(meta, false, cancelToken),
-        //    ProcessClipboard(meta, true, cancelToken)
-        //};
-        //foreach (var task in tasks)
-        //{
-        //    task.ContinueWith((_) => this.CancelProcess(), TaskContinuationOptions.OnlyOnRanToCompletion);
-        //}
+        try
+        {
+            await ProcessClipboard(meta, false, cancelToken);
+        }
+        catch (Exception ex)
+        {
+            Logger.Write(LOG_TAG, ex.Message);
+        }
     }
 
     protected override CancellationToken StopPreviousAndGetNewToken()
@@ -93,7 +92,7 @@ public class EasyCopyImageSerivce : ClipboardHander
     {
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
         var profile = _clipboardFactory.CreateProfile(metaInfo);
-        if (profile.Type != ProfileType.Image || !NeedAdjust(metaInfo))
+        if (NeedAdjust(profile, metaInfo) is not true)
         {
             return;
         }
@@ -121,8 +120,13 @@ public class EasyCopyImageSerivce : ClipboardHander
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
     }
 
-    private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)
+    private static bool NeedAdjust(Profile profile, ClipboardMetaInfomation metaInfo)
     {
+        if (profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType)
+        {
+            return false;
+        }
+
         if (metaInfo.Files?.Length > 1)
         {
             return false;

@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 using HandlerMapping = System.Collections.Generic.KeyValuePair<
     string,
     System.Func<
-        Avalonia.Input.Platform.IClipboard,
+        SyncClipboard.Core.Models.ClipboardMetaInfomation,
         System.Threading.CancellationToken,
-        System.Threading.Tasks.Task<SyncClipboard.Core.Models.ClipboardMetaInfomation>
+        System.Threading.Tasks.Task
     >
 >;
 
@@ -31,66 +31,69 @@ internal partial class ClipboardFactory
 {
 
     [SupportedOSPlatform("linux")]
-    private static readonly List<HandlerMapping> FormatHandlerlist = new List<HandlerMapping>
+    private List<HandlerMapping> FormatHandlerlist => new List<HandlerMapping>
     {
         new HandlerMapping(Format.UriList, HandleLinuxFile),
         new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
         new HandlerMapping(Format.ImagePng, HandleLinuxImage),
         new HandlerMapping(Format.Text, HandleLinuxText),
+        new HandlerMapping(Format.TextHtml, HandleLinuxHtml),
     };
 
     [SupportedOSPlatform("linux")]
-    private static async Task<ClipboardMetaInfomation> HandleLinuxClipboard(CancellationToken token)
+    private async Task<ClipboardMetaInfomation> HandleLinuxClipboard(CancellationToken token)
     {
         var clipboard = App.Current.MainWindow.Clipboard!;
         var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
 
+        ClipboardMetaInfomation meta = new();
         foreach (var handlerMapping in FormatHandlerlist)
         {
             if (formats.Contains(handlerMapping.Key))
             {
-                ClipboardMetaInfomation meta = await handlerMapping.Value.Invoke(clipboard, token);
+                await handlerMapping.Value.Invoke(meta, token);
                 meta.Effects ??= await ParseEffects(clipboard, formats, token);
-                return meta;
             }
         }
 
-        var text = await clipboard?.GetTextAsync().WaitAsync(token)!;
-        if (text?.StartsWith('\ufffd') ?? false)
-        {
-            throw new Exception($"wrong clipboard with: \\ufffd");
-        }
-
-        return new ClipboardMetaInfomation
-        {
-            Text = text
-        };
+        return meta;
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task<ClipboardMetaInfomation> HandleLinuxFile(IClipboard clipboard, CancellationToken token)
+    private async Task HandleLinuxFile(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var uriListbytes = await clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
+        if (meta.Files is not null) return;
+
+        var uriListbytes = await Clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
         ArgumentNullException.ThrowIfNull(uriListbytes);
         var uriList = Encoding.UTF8.GetString(uriListbytes);
-        return new ClipboardMetaInfomation
-        {
-            Files = uriList
+        meta.Files = uriList
                 .Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+                .Select(x =>
+                {
+                    try { return new Uri(x).LocalPath; }
+                    catch { }
+                    return "";
+                })
                 .Where(x => !string.IsNullOrEmpty(x))
-                .Select(x => new Uri(x).LocalPath).ToArray()
-        };
+                .ToArray();
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task<ClipboardMetaInfomation> HandleLinuxText(IClipboard clipboard, CancellationToken token)
+    private async Task HandleLinuxText(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await clipboard.GetDataAsync(Format.Text).WaitAsync(token) as byte[];
-        ArgumentNullException.ThrowIfNull(bytes);
-        return new ClipboardMetaInfomation
-        {
-            Text = Encoding.UTF8.GetString(bytes)
-        };
+        if (meta.Text is not null) return;
+        var textBytes = await Clipboard.GetDataAsync(Format.Text).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(textBytes);
+        meta.Text = Encoding.UTF8.GetString(textBytes);
+    }
+
+    [SupportedOSPlatform("linux")]
+    private async Task HandleLinuxHtml(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        var htmlBytes = await Clipboard.GetDataAsync(Format.TextHtml).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(htmlBytes);
+        meta.Html = Encoding.UTF8.GetString(htmlBytes);
     }
 
     [SupportedOSPlatform("linux")]
@@ -102,16 +105,13 @@ internal partial class ClipboardFactory
     };
 
     [SupportedOSPlatform("linux")]
-    private static async Task<ClipboardMetaInfomation> HandleLinuxImage(IClipboard clipboard, CancellationToken token)
+    private async Task HandleLinuxImage(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var meta = new ClipboardMetaInfomation
-        {
-            OriginalType = ClipboardMetaInfomation.ImageType
-        };
+        meta.OriginalType = ClipboardMetaInfomation.ImageType;
 
         foreach (var imagetype in ImageTypeList)
         {
-            var bytes = await clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
+            var bytes = await Clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
             if (bytes is not null)
             {
                 meta.Image = new ClipboardImage(bytes);
@@ -122,37 +122,29 @@ internal partial class ClipboardFactory
         if (meta.Image is null)
         {
             string text = "Unknow Image";
-            var timeStamp = await clipboard.GetDataAsync(Format.TimeStamp).WaitAsync(token) as byte[];
+            var timeStamp = await Clipboard.GetDataAsync(Format.TimeStamp).WaitAsync(token) as byte[];
             if (timeStamp is not null)
             {
                 text += BitConverter.ToInt32(timeStamp);
             }
             meta.Text = text;
         }
-
-        var html = await clipboard.GetDataAsync("text/html").WaitAsync(token) as byte[];
-        if (html is not null)
-        {
-            meta.Html = Encoding.UTF8.GetString(html);
-        }
-
-        return meta;
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task<ClipboardMetaInfomation> HandleGnomeFile(IClipboard clipboard, CancellationToken token)
+    private async Task HandleGnomeFile(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];
+        if (meta.Files is not null) return;
+
+        var bytes = await Clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];
         var str = Encoding.UTF8.GetString(bytes!);
         var pathList = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
-        var meta = new ClipboardMetaInfomation();
         if (pathList[0] == "cut")
         {
             meta.Effects = DragDropEffects.Move;
         }
         meta.Files = new[] { new Uri(pathList[1]).LocalPath };
-        return meta;
     }
 
     [SupportedOSPlatform("linux")]

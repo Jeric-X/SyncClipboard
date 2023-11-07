@@ -1,5 +1,4 @@
-﻿using Avalonia.Input.Platform;
-using FluentAvalonia.Core;
+﻿using FluentAvalonia.Core;
 using SyncClipboard.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -11,9 +10,9 @@ using System.Threading.Tasks;
 using HandlerMapping = System.Collections.Generic.KeyValuePair<
     string,
     System.Func<
-        Avalonia.Input.Platform.IClipboard,
+        SyncClipboard.Core.Models.ClipboardMetaInfomation,
         System.Threading.CancellationToken,
-        System.Threading.Tasks.Task<SyncClipboard.Core.Models.ClipboardMetaInfomation>
+        System.Threading.Tasks.Task
     >
 >;
 
@@ -23,48 +22,43 @@ internal partial class ClipboardFactory
 {
 
     [SupportedOSPlatform("macos")]
-    private static readonly List<HandlerMapping> MacFormatHandlerlist = new List<HandlerMapping>
+    private List<HandlerMapping> MacFormatHandlerlist => new()
     {
         new HandlerMapping(Format.FileList, HandleMacosFile),
         new HandlerMapping(Format.PublicTiff, HandleMacosImage),
+        new HandlerMapping(Format.PublicHtml, HandleMacHtml),
     };
 
     [SupportedOSPlatform("macos")]
-    private static async Task<ClipboardMetaInfomation> HandleMacosClipboard(CancellationToken token)
+    private async Task<ClipboardMetaInfomation> HandleMacosClipboard(CancellationToken token)
     {
         var clipboard = App.Current.MainWindow.Clipboard!;
         var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
 
+        ClipboardMetaInfomation meta = new();
         foreach (var handlerMapping in MacFormatHandlerlist)
         {
             if (formats.Contains(handlerMapping.Key))
             {
-                return await handlerMapping.Value.Invoke(clipboard, token);
+                await handlerMapping.Value.Invoke(meta, token);
             }
         }
 
-        var text = await clipboard?.GetTextAsync().WaitAsync(token)!;
+        meta.Text = await clipboard?.GetTextAsync().WaitAsync(token)!;
 
-        return new ClipboardMetaInfomation
-        {
-            Text = text
-        };
+        return meta;
     }
 
     [SupportedOSPlatform("macos")]
-    private static async Task<ClipboardMetaInfomation> HandleMacosFile(IClipboard clipboard, CancellationToken token)
+    private async Task HandleMacosFile(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var uriListbytes = await clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as byte[];
+        var uriListbytes = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as byte[];
         ArgumentNullException.ThrowIfNull(uriListbytes);
         var uriList = Encoding.UTF8.GetString(uriListbytes!);
-        return new ClipboardMetaInfomation
-        {
-            Files = uriList
-                .Split('\n')
-                .Select(x => x.Replace("\r", ""))
-                .Where(x => !string.IsNullOrEmpty(x))
-                .Select(x => new Uri(x).LocalPath).ToArray()
-        };
+        meta.Files = uriList
+                        .Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .Select(x => new Uri(x).LocalPath).ToArray();
     }
 
     [SupportedOSPlatform("macos")]
@@ -75,16 +69,13 @@ internal partial class ClipboardFactory
     };
 
     [SupportedOSPlatform("macos")]
-    private static async Task<ClipboardMetaInfomation> HandleMacosImage(IClipboard clipboard, CancellationToken token)
+    private async Task HandleMacosImage(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var meta = new ClipboardMetaInfomation
-        {
-            OriginalType = ClipboardMetaInfomation.ImageType
-        };
+        meta.OriginalType = ClipboardMetaInfomation.ImageType;
 
         foreach (var imagetype in MacImageTypeList)
         {
-            var bytes = await clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
+            var bytes = await Clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
             if (bytes is not null)
             {
                 meta.Image = new ClipboardImage(bytes);
@@ -97,12 +88,18 @@ internal partial class ClipboardFactory
             meta.Text = "Unknow Image";
         }
 
-        var html = await clipboard.GetDataAsync(Format.PublicHtml).WaitAsync(token) as byte[];
+        var html = await Clipboard.GetDataAsync(Format.PublicHtml).WaitAsync(token) as byte[];
         if (html is not null)
         {
             meta.Html = Encoding.UTF8.GetString(html);
         }
+    }
 
-        return meta;
+    [SupportedOSPlatform("macos")]
+    private async Task HandleMacHtml(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        var htmlBytes = await Clipboard.GetDataAsync(Format.PublicHtml).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(htmlBytes);
+        meta.Html = Encoding.UTF8.GetString(htmlBytes);
     }
 }

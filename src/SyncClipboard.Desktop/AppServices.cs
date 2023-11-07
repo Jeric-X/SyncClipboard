@@ -14,8 +14,8 @@ public class AppServices
 {
     private static void ConfigurateUserService(IServiceCollection services)
     {
-        //services.AddSingleton<IService, EasyCopyImageSerivce>();
-        //services.AddSingleton<IService, ConvertService>();
+        services.AddSingleton<IService, EasyCopyImageSerivce>();
+        services.AddSingleton<IService, ConvertService>();
         services.AddSingleton<IService, ServerService>();
         services.AddSingleton<IService, UploadService>();
         services.AddSingleton<IService, DownloadService>();

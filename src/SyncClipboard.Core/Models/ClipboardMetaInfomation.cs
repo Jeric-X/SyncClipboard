@@ -11,7 +11,7 @@ public record class ClipboardMetaInfomation
     public IClipboardImage? Image;
     public string[]? Files;
     public DragDropEffects? Effects;
-    public string? OriginalType; 
+    public string? OriginalType;
 
     public virtual bool Equals(ClipboardMetaInfomation? other)
     {

@@ -55,9 +55,13 @@ internal class ClipboardListener : ClipboardChangingListenerBase
 
             if (_meta is not null)
             {
+                _meta = meta;
                 _action?.Invoke(meta);
             }
-            _meta = meta;
+            else
+            {
+                _meta = meta;
+            }
         }
         catch { }
         finally
