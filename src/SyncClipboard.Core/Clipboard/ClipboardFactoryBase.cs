@@ -31,14 +31,14 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             }
         }
 
-        if (metaInfomation.Text != null)
-        {
-            return new TextProfile(metaInfomation.Text, ServiceProvider);
-        }
-
         if (metaInfomation.Image != null)
         {
             return new ImageProfile(metaInfomation.Image, ServiceProvider);
+        }
+
+        if (metaInfomation.Text != null)
+        {
+            return new TextProfile(metaInfomation.Text, ServiceProvider);
         }
 
         return new UnkonwnProfile();
