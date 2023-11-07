@@ -77,7 +77,11 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("macos")]
     private static async Task<ClipboardMetaInfomation> HandleMacosImage(IClipboard clipboard, CancellationToken token)
     {
-        var meta = new ClipboardMetaInfomation();
+        var meta = new ClipboardMetaInfomation
+        {
+            OriginalType = ClipboardMetaInfomation.ImageType
+        };
+
         foreach (var imagetype in MacImageTypeList)
         {
             var bytes = await clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];

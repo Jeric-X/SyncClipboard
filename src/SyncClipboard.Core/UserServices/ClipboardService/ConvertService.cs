@@ -87,6 +87,11 @@ public class ConvertService : ClipboardHander
             return false;
         }
 
+        if ((metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move)
+        {
+            return false;
+        }
+
         if (!ImageHelper.IsComplexImage(metaInfo.Files[0]))
         {
             return false;

@@ -95,7 +95,11 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private static async Task<ClipboardMetaInfomation> HandleLinuxImage(IClipboard clipboard, CancellationToken token)
     {
-        var meta = new ClipboardMetaInfomation();
+        var meta = new ClipboardMetaInfomation
+        {
+            OriginalType = ClipboardMetaInfomation.ImageType
+        };
+
         foreach (var imagetype in ImageTypeList)
         {
             var bytes = await clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];

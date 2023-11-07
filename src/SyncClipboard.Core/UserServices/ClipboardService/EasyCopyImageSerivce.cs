@@ -101,12 +101,13 @@ public class EasyCopyImageSerivce : ClipboardHander
         if (DownloadWebImageEnabled && !string.IsNullOrEmpty(metaInfo.Html))
         {
             TrayIcon.SetStatusString(SERVICE_NAME, "Downloading web image.");
-            const string Expression = @"<!--StartFragment--><img src=(?<qoute>[""'])(?<imgUrl>https?://.*?)\k<qoute>.*/><!--EndFragment-->";
+            const string Expression = @".*<[\s]*img[\s]*.*?[\s]*src=(?<quote>[""'])(?<imgUrl>https?://.*?)\k<quote>.*?/[\s]*>";
             var match = Regex.Match(metaInfo.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
             if (match.Success) // 是从浏览器复制的图片
             {
                 _logger.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
-                var localPath = await DownloadImage(match.Groups["imgUrl"].Value, useProxy, cancellationToken);
+                var uri = new Uri(match.Groups["imgUrl"].Value);
+                var localPath = await DownloadImage(uri, useProxy, cancellationToken);
                 if (!ImageHelper.FileIsImage(localPath))
                 {
                     TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
@@ -150,9 +151,9 @@ public class EasyCopyImageSerivce : ClipboardHander
         }
     }
 
-    private async Task<string> DownloadImage(string imageUrl, bool useProxy, CancellationToken cancellationToken)
+    private async Task<string> DownloadImage(Uri imageUri, bool useProxy, CancellationToken cancellationToken)
     {
-        var filename = Regex.Match(imageUrl, "[^/]+(?!.*/)");
+        var filename = Regex.Match(imageUri.LocalPath, "[^/]+(?!.*/)");
         lock (_progressLocker)
         {
             _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], I18n.Strings.DownloadingWebImage, _notificationManager);
@@ -160,13 +161,13 @@ public class EasyCopyImageSerivce : ClipboardHander
         if (useProxy)
         {
             var fullPath = Path.Combine(Env.TemplateFileFolder, "proxy " + filename.Value);
-            await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken, true);
+            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, cancellationToken, true);
             return fullPath;
         }
         else
         {
             var fullPath = Path.Combine(Env.TemplateFileFolder, filename.Value);
-            await Http.GetFile(imageUrl, fullPath, _progress, cancellationToken);
+            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, cancellationToken);
             return fullPath;
         }
     }

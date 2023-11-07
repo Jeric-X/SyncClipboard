@@ -33,6 +33,7 @@ public class UploadService : ClipboardHander
     }
 
     private bool _downServiceChangingLocal = false;
+    private ClipboardMetaInfomation? _metaInfoCache;
 
     private readonly INotification _notificationManager;
     private readonly ILogger _logger;
@@ -118,9 +119,10 @@ public class UploadService : ClipboardHander
         _downServiceChangingLocal = true;
     }
 
-    public void PullStoppedHandler()
+    public async void PullStoppedHandler()
     {
         _logger.Write("_isChangingLocal set to FALSE");
+        _metaInfoCache = await _clipboardFactory.GetMetaInfomation(new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token);
         _downServiceChangingLocal = false;
     }
 
@@ -139,7 +141,7 @@ public class UploadService : ClipboardHander
 
     protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancellationToken)
     {
-        if (_downServiceChangingLocal)
+        if (_downServiceChangingLocal || meta == _metaInfoCache)
         {
             return;
         }
