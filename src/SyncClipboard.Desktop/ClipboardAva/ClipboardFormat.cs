@@ -11,6 +11,8 @@ internal static class Format
     [SupportedOSPlatform("linux")] public const string ImageBmp = "image/bmp";
     [SupportedOSPlatform("linux")] public const string TimeStamp = "TIMESTAMP";
     [SupportedOSPlatform("linux")] public const string Text = "TEXT";
+    [SupportedOSPlatform("linux")] public const string CompoundText = "COMPOUND_TEXT";
+    [SupportedOSPlatform("linux")] public const string KdeCutSelection = "application/x-kde-cutselection";
 
     [SupportedOSPlatform("macos")] public const string FileList = "public.file-url";
     [SupportedOSPlatform("macos")] public const string PublicPng = "public.png";

@@ -17,6 +17,14 @@ using HandlerMapping = System.Collections.Generic.KeyValuePair<
     >
 >;
 
+using EffectsHandlerMapping = System.Collections.Generic.KeyValuePair<
+   string,
+   System.Func<
+       Avalonia.Input.Platform.IClipboard,
+       System.Threading.CancellationToken,
+       System.Threading.Tasks.Task<SyncClipboard.Core.Models.DragDropEffects?>
+   >
+>;
 namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal partial class ClipboardFactory
@@ -41,7 +49,9 @@ internal partial class ClipboardFactory
         {
             if (formats.Contains(handlerMapping.Key))
             {
-                return await handlerMapping.Value.Invoke(clipboard, token);
+                ClipboardMetaInfomation meta = await handlerMapping.Value.Invoke(clipboard, token);
+                meta.Effects ??= await ParseEffects(clipboard, formats, token);
+                return meta;
             }
         }
 
@@ -66,8 +76,7 @@ internal partial class ClipboardFactory
         return new ClipboardMetaInfomation
         {
             Files = uriList
-                .Split('\n')
-                .Select(x => x.Replace("\r", ""))
+                .Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x => new Uri(x).LocalPath).ToArray()
         };
@@ -135,8 +144,7 @@ internal partial class ClipboardFactory
     {
         var bytes = await clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];
         var str = Encoding.UTF8.GetString(bytes!);
-        var pathList = str.Split('\n')
-                            .Select(x => x.Replace("\r", ""))
+        var pathList = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
         var meta = new ClipboardMetaInfomation();
         if (pathList[0] == "cut")
@@ -145,5 +153,50 @@ internal partial class ClipboardFactory
         }
         meta.Files = new[] { new Uri(pathList[1]).LocalPath };
         return meta;
+    }
+
+    [SupportedOSPlatform("linux")]
+    private static readonly List<EffectsHandlerMapping> EffectsHandlerlist = new()
+    {
+        new EffectsHandlerMapping(Format.CompoundText, HandleCompoundText),
+        new EffectsHandlerMapping(Format.KdeCutSelection, HandleKdeCutSelection),
+    };
+
+    [SupportedOSPlatform("linux")]
+    private static async Task<DragDropEffects?> ParseEffects(IClipboard clipboard, string[] formats, CancellationToken token)
+    {
+        foreach (var handlerMapping in EffectsHandlerlist)
+        {
+            if (formats.Contains(handlerMapping.Key))
+            {
+                return await handlerMapping.Value.Invoke(clipboard, token);
+            }
+        }
+        return null;
+    }
+
+    [SupportedOSPlatform("linux")]
+    private static async Task<DragDropEffects?> HandleCompoundText(IClipboard clipboard, CancellationToken token)
+    {
+        var bytes = await clipboard.GetDataAsync(Format.CompoundText).WaitAsync(token) as byte[];
+        var str = Encoding.UTF8.GetString(bytes!);
+        string[] lines = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        if (lines[1] == "cut")
+        {
+            return DragDropEffects.Move;
+        }
+        return null;
+    }
+
+    [SupportedOSPlatform("linux")]
+    private static async Task<DragDropEffects?> HandleKdeCutSelection(IClipboard clipboard, CancellationToken token)
+    {
+        var bytes = await clipboard.GetDataAsync(Format.KdeCutSelection).WaitAsync(token) as byte[];
+        var str = Encoding.UTF8.GetString(bytes!);
+        if (str == "1")
+        {
+            return DragDropEffects.Move;
+        }
+        return null;
     }
 }

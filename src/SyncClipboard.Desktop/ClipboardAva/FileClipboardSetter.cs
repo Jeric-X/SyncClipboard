@@ -40,7 +40,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
 
         var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uriPath}\n";
         var nautilusBytes = Encoding.UTF8.GetBytes(nautilus);
-        dataObject.Set("COMPOUND_TEXT", nautilusBytes);
+        dataObject.Set(Format.CompoundText, nautilusBytes);
     }
 
     [SupportedOSPlatform("macos")]
