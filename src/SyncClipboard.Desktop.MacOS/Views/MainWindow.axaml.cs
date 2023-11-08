@@ -55,7 +55,7 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
     {
         if (_created)
         {
-            NSApplication.SharedApplication.Unhide(NSApplication.SharedApplication);
+            Activate();
         }
         else
         {
