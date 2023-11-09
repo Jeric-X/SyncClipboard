@@ -90,7 +90,6 @@ Downloading page: [SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboa
 Notes:
 - File name with `no-self-contained`: [.NET 6.0 Desktop](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime and [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime are required.
 - File name with `self-contained`: should run with no dependencies.
-- As a client only supports text for now. But the build-in server can be used for other clients to sync images and files.
 - Config files are saved in `~/.config/SyncClipboard/`. Uninstaller won't delete them. Users can delete them manually.
 - Not suport upgrading directly. Delete old version first, then install the new version.
 - Plenty of bugs exist.
