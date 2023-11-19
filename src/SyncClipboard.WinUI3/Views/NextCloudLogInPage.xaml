@@ -33,7 +33,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Spacing="5">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <FontIcon Glyph="&#xE12B;" FontSize="15" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="&#xE12B;" FontSize="15" />
                             <TextBlock Margin="0,0,0,0" Text="{x:Bind i18n:Strings.Address}" FontSize="15" />
                         </StackPanel>
                         <TextBox PlaceholderText="https://" Text="{x:Bind _viewModel.UserInputUrl, Mode=TwoWay}" />
@@ -81,7 +81,7 @@
                                 <DataTemplate x:DataType="vm:FileTreeViewModel">
                                     <TreeViewItem ItemsSource="{x:Bind Children, Mode=OneWay}" HasUnrealizedChildren="True">
                                         <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <FontIcon Glyph="&#xE838;" FontSize="16" FontFamily="Segoe Fluent Icons" />
+                                            <FontIcon Glyph="&#xE838;" FontSize="16" />
                                             <TextBlock Text="{x:Bind Name}" />
                                         </StackPanel>
                                     </TreeViewItem>

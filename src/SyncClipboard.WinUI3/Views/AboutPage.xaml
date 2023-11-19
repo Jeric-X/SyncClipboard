@@ -33,14 +33,14 @@
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE1D3;" FontFamily="Segoe Fluent Icons" />
+                <FontIcon Glyph="&#xE1D3;" />
             </ui:SettingsExpander.HeaderIcon>
             <ui:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="m:OpenSourceSoftware">
                     <ui:SettingsCard Header="{x:Bind Name}"
-                                       IsClickEnabled="True"
-                                       Click="DependencyItem_Click"
-                                       Tag="{x:Bind LicensePath}">
+                                     IsClickEnabled="True"
+                                     Click="DependencyItem_Click"
+                                     Tag="{x:Bind LicensePath}">
                         <ui:SettingsCard.Description>
                             <HyperlinkButton Content="{x:Bind HomePage}" Click="HyperlinkButton_Click" />
                         </ui:SettingsCard.Description>

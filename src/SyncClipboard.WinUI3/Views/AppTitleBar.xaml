@@ -35,7 +35,7 @@
                 <animatedvisuals:AnimatedGlobalNavigationButtonVisualSource />
             </AnimatedIcon.Source>
             <AnimatedIcon.FallbackIconSource>
-                <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE700;" />
+                <FontIconSource Glyph="&#xE700;" />
             </AnimatedIcon.FallbackIconSource>
         </AnimatedIcon>
     </Button>

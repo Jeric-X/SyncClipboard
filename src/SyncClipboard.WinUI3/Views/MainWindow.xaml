@@ -64,7 +64,7 @@
                         <DataTemplate x:DataType="vm:PageDefinition">
                             <ListViewItem>
                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <FontIcon FontSize="16" Glyph="{x:Bind FontIcon}" FontFamily="Segoe Fluent Icons" />
+                                    <FontIcon FontSize="16" Glyph="{x:Bind FontIcon}" />
                                     <TextBlock Text="{x:Bind Title}" />
                                 </StackPanel>
                             </ListViewItem>

@@ -37,17 +37,17 @@
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.Server}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE753;" FontFamily="Segoe Fluent Icons" />
+                <FontIcon Glyph="&#xE753;" />
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{Binding ServerEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Description="{x:Bind _viewModel.ServerConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton IsChecked="{x:Bind _viewModel.ShowServerPassword, Mode=TwoWay}">
-                            <FontIcon Glyph="{x:Bind _viewModel.ShowServerPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="{x:Bind _viewModel.ShowServerPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" />
                         </ToggleButton>
                         <Button Command="{x:Bind SetServerCommand}">
-                            <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="&#xE115;" />
                         </Button>
                     </StackPanel>
                 </ui:SettingsCard>
@@ -75,7 +75,7 @@
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="{Binding IsNormalClientEnable, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE117;" FontFamily="Segoe Fluent Icons" />
+                <FontIcon Glyph="&#xE117;" />
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
@@ -85,10 +85,10 @@
                 <ui:SettingsCard Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.UserManulServer, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton IsChecked="{x:Bind _viewModel.ShowClientPassword, Mode=TwoWay}">
-                            <FontIcon Glyph="{x:Bind _viewModel.ShowClientPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="{x:Bind _viewModel.ShowClientPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" />
                         </ToggleButton>
                         <Button Command="{x:Bind SetSyncCommand}">
-                            <FontIcon Glyph="&#xE115;" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="&#xE115;" />
                         </Button>
                     </StackPanel>
                 </ui:SettingsCard>
@@ -123,7 +123,7 @@
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClientGeneral}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE90F;" FontFamily="Segoe Fluent Icons" />
+                <FontIcon Glyph="&#xE90F;" />
             </ui:SettingsExpander.HeaderIcon>
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">

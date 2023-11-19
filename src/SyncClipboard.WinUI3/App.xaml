@@ -2,8 +2,7 @@
 <Application
     x:Class="SyncClipboard.WinUI3.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:SyncClipboard.WinUI3">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -15,6 +14,12 @@
             <SolidColorBrush x:Key="WindowCaptionBackgroundDisabled">Transparent</SolidColorBrush>
             <Style TargetType="TextBox">
                 <Setter Property="IsSpellCheckEnabled" Value="False"/>
+            </Style>
+            <Style TargetType="FontIcon">
+                <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
+            </Style>
+            <Style TargetType="FontIconSource">
+                <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

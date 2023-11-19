@@ -18,7 +18,7 @@
                 <DataTemplate x:DataType="vm:ServiceStatus">
                     <ui:SettingsCard MinHeight="0" Header="{x:Bind Name, Mode=OneWay}" Description="{x:Bind StatusString, Mode=OneWay}">
                         <ui:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="{x:Bind vm:Converter.ServiceStatusToFontIcon(IsError), Mode=OneWay}" FontFamily="Segoe Fluent Icons" />
+                            <FontIcon Glyph="{x:Bind vm:Converter.ServiceStatusToFontIcon(IsError), Mode=OneWay}" />
                         </ui:SettingsCard.HeaderIcon>
                     </ui:SettingsCard>
                 </DataTemplate>
