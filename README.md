@@ -173,4 +173,4 @@ DELETE      /file
 [moq](https://github.com/moq/moq)  
 [Avalonia](https://avaloniaui.net/)  
 [FluentAvalonia.BreadcrumbBar](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
-[FluentAvalonia](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
+[FluentAvalonia](https://github.com/amwx/FluentAvalonia)  
