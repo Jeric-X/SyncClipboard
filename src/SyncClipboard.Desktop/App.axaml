@@ -11,6 +11,9 @@
     <Application.Resources>
         <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
         <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+        <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
+        <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
+        <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
     </Application.Resources>
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />

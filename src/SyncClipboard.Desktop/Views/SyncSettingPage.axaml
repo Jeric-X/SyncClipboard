@@ -58,10 +58,7 @@
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MixedClientMode}">
                     <ui:SettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Button Margin="0,4,0,0"
-                                    FontSize="20"
-                                    Content="&#xE9CE;"
-                                    FontFamily="{StaticResource SymbolThemeFontFamily}">
+                            <Button FontSize="20" Content="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}">
                                 <Button.Flyout>
                                     <Flyout>
                                         <TextBlock Width="400" TextWrapping="Wrap">
