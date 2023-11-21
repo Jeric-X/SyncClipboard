@@ -145,6 +145,8 @@ jobs:
       - name: Setup software form npm,homebrew
         run: | 
           npm install --global create-dmg
+          export HOMEBREW_NO_AUTO_UPDATE=true
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
           brew install graphicsmagick imagemagick tree
 
       # Install the .NET workload
