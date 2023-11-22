@@ -14,7 +14,7 @@ namespace SyncClipboard.Core.ViewModels
             _services = serviceProvider;
         }
 
-        public List<PageDefinition> MainWindowPage { get; } = new()
+        public ObservableCollection<PageDefinition> MainWindowPage { get; } = new()
         {
             PageDefinition.SyncSetting,
             PageDefinition.CliboardAssistant,

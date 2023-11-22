@@ -3,9 +3,10 @@ using Avalonia.Controls.Primitives;
 using FluentAvalonia.UI.Controls;
 using FluentAvalonia.UI.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System;
-using System.Collections.Generic;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -13,26 +14,35 @@ public partial class MainView : UserControl
 {
     readonly MainViewModel _viewModel;
 
-
-    public static List<PageDefinition> MainWindowPage { get; } = new()
-    {
-        PageDefinition.SyncSetting,
-        PageDefinition.CliboardAssistant,
-        PageDefinition.ServiceStatus,
-        PageDefinition.SystemSetting,
-        PageDefinition.About,
-#if DEBUG
-        new PageDefinition("Diagnose", "Diagnose")
-#endif
-    };
-
     public MainView()
     {
         _viewModel = App.Current.Services.GetRequiredService<MainViewModel>();
+
+        var config = App.Current.Services.GetRequiredService<ConfigManager>();
+        config.ListenConfig<ProgramConfig>(ConfigKey.Program, HandleDiagnoseModeChanged);
+        if (config.GetConfig<ProgramConfig>(ConfigKey.Program)?.DiagnoseMode is true)
+        {
+            _viewModel.MainWindowPage.Add(PageDefinition.Diagnose);
+        }
+
         DataContext = _viewModel;
         InitializeComponent();
 
         _MenuList.SelectedIndex = 0;
+    }
+
+    private void HandleDiagnoseModeChanged(object? config)
+    {
+        if (config is ProgramConfig { DiagnoseMode: true })
+        {
+            if (_viewModel.MainWindowPage.Contains(PageDefinition.Diagnose) is false)
+                _viewModel.MainWindowPage.Add(PageDefinition.Diagnose);
+        }
+        else
+        {
+            if (_viewModel.MainWindowPage.Contains(PageDefinition.Diagnose))
+                _viewModel.MainWindowPage.Remove(PageDefinition.Diagnose);
+        }
     }
 
     internal void NavigateTo(

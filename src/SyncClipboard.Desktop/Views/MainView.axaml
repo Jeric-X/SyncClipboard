@@ -84,7 +84,7 @@
                 <ListBox x:Name="_MenuList"
                          Margin="8,0,0,0"
                          SelectionMode="Single"
-                         ItemsSource="{x:Static local:MainView.MainWindowPage}"
+                         ItemsSource="{Binding MainWindowPage}"
                          SelectionChanged="ListView_SelectionChanged">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:PageDefinition">

@@ -241,6 +241,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Diagnose 的本地化字符串。
+        /// </summary>
+        public static string Diagnose {
+            get {
+                return ResourceManager.GetString("Diagnose", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Diagnose Mode 的本地化字符串。
+        /// </summary>
+        public static string DiagnoseMode {
+            get {
+                return ResourceManager.GetString("DiagnoseMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Download file 的本地化字符串。
         /// </summary>
         public static string DownloadingFile {

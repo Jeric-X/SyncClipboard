@@ -9,4 +9,5 @@ public record ProgramConfig
     public string Language { get; set; } = "";
     public string Font { get; set; } = "";
     public bool HideWindowOnStartup { get; set; } = false;
+    public bool DiagnoseMode { get; set; } = false;
 };
