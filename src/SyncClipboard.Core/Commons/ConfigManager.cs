@@ -72,6 +72,11 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
+        public void ListenConfig<T>(Action<object?> action)
+        {
+            ListenConfig<T>(ConfigKey.GetKeyFromType<T>(), action);
+        }
+
         public void SetConfig<T>(string key, T newValue) where T : IEquatable<T>
         {
             ArgumentNullException.ThrowIfNull(newValue);

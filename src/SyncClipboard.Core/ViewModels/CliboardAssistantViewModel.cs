@@ -6,8 +6,6 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class CliboardAssistantViewModel : ObservableObject
 {
-    private const string CONFIG_KEY = ConfigKey.ClipboardAssist;
-
     [ObservableProperty]
     private bool easyCopyImageSwitchOn;
     partial void OnEasyCopyImageSwitchOnChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { EasyCopyImageSwitchOn = value };
@@ -37,7 +35,7 @@ public partial class CliboardAssistantViewModel : ObservableObject
     {
         _configManager = configManager;
 
-        _configManager.ListenConfig<ClipboardAssistConfig>(CONFIG_KEY, (config) => ClipboardAssistConfig = (config as ClipboardAssistConfig) ?? new());
+        _configManager.ListenConfig<ClipboardAssistConfig>((config) => ClipboardAssistConfig = (config as ClipboardAssistConfig) ?? new());
         ClipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
     }
 }

@@ -42,7 +42,7 @@ public class ServerService : Service
 
     protected override void StartService()
     {
-        _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, ConfigChanged);
+        _configManager.ListenConfig<ServerConfig>(ConfigChanged);
         _serverConfig = _configManager.GetConfig<ServerConfig>();
         _contextMenu.AddMenuItem(_toggleMenuItem, SyncService.ContextMenuGroupName);
         RestartServer();

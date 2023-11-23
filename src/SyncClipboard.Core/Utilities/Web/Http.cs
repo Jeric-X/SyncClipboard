@@ -13,7 +13,7 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public Http(ConfigManager configManager)
         {
-            configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, ConfigChanged);
+            configManager.ListenConfig<ProgramConfig>(ConfigChanged);
             var programConfig = configManager.GetConfig<ProgramConfig>();
 
             _proxy = programConfig.Proxy;

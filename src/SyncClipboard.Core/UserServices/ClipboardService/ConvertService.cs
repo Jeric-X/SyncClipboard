@@ -67,7 +67,7 @@ public class ConvertService : ClipboardHander
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
 
         _clipboardConfig = _configManager.GetConfig<ClipboardAssistConfig>();
-        _configManager.ListenConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist, config => _clipboardConfig = config as ClipboardAssistConfig ?? new());
+        _configManager.ListenConfig<ClipboardAssistConfig>(config => _clipboardConfig = config as ClipboardAssistConfig ?? new());
     }
 
     private bool NeedAdjust(ClipboardMetaInfomation metaInfo)
