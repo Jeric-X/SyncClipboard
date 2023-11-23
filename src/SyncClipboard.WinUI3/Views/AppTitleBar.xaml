@@ -6,17 +6,6 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
       mc:Ignorable="d">
-    <Grid.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.ThemeDictionaries>
-                <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFE7EBF0" />
-                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FFADB0B4" />
-                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
-                </ResourceDictionary>
-            </ResourceDictionary.ThemeDictionaries>
-        </ResourceDictionary>
-    </Grid.Resources>
     <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
@@ -28,6 +17,7 @@
             Height="32"
             Margin="10,2,0,0"
             Padding="7,7,7,7"
+            Background="Transparent"
             Click="NavigationButton_Click"
             BorderThickness="0">
         <AnimatedIcon x:Name="AnimatedIcon">

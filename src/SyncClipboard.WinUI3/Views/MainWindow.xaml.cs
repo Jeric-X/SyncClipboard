@@ -154,7 +154,7 @@ namespace SyncClipboard.WinUI3.Views
         {
             if (SplitPane.DisplayMode == SplitViewDisplayMode.Overlay)
             {
-                SplitPane.PaneBackground = (Brush)Application.Current.Resources["AcrylicInAppFillColorDefaultBrush"];
+                SplitPane.PaneBackground = (AcrylicBrush)_Grid.Resources["OverlayPanBackgoundBrush"];
             }
         }
 

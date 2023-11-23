@@ -12,7 +12,23 @@
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
-    <Grid>
+    <Grid x:Name="_Grid">
+        <Grid.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.ThemeDictionaries>
+                    <ResourceDictionary x:Key="Light">
+                        <Color x:Key="OverlayPanBackgoundColor">#FCFCFC</Color>
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="Dark">
+                        <Color x:Key="OverlayPanBackgoundColor">#2C2C2C</Color>
+                    </ResourceDictionary>
+                </ResourceDictionary.ThemeDictionaries>
+                <AcrylicBrush x:Key="OverlayPanBackgoundBrush"
+                              TintColor="{ThemeResource OverlayPanBackgoundColor}"
+                              TintOpacity="0.15"
+                              FallbackColor="{ThemeResource OverlayPanBackgoundColor}" />
+            </ResourceDictionary>
+        </Grid.Resources>
         <local:AppTitleBar x:Name="_AppTitleBar"
                            Height="36"
                            VerticalAlignment="Top"
