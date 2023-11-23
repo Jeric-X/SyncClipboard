@@ -70,6 +70,20 @@
                 </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Theme}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE706;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ComboBox SelectedItem="{Binding Theme, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Themes}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="m:LocaleString">
+                            <TextBlock Text="{Binding ShownString}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.DiagnoseMode}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE9D9;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
