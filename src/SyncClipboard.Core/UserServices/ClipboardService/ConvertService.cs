@@ -66,7 +66,7 @@ public class ConvertService : ClipboardHander
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
 
-        _clipboardConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _clipboardConfig = _configManager.GetConfig<ClipboardAssistConfig>();
         _configManager.ListenConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist, config => _clipboardConfig = config as ClipboardAssistConfig ?? new());
     }
 

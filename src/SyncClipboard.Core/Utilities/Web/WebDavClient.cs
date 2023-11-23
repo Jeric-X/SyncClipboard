@@ -22,16 +22,16 @@ namespace SyncClipboard.Core.Utilities.Web
         {
             _configManager = configManager;
             configManager.ConfigChanged += UserConfigChanged;
-            _syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
-            _serverConfig = configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+            _syncConfig = configManager.GetConfig<SyncConfig>();
+            _serverConfig = configManager.GetConfig<ServerConfig>();
             Logger = logger;
             _appConfig = appConfig;
         }
 
         private async void UserConfigChanged()
         {
-            var syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
-            var serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+            var syncConfig = _configManager.GetConfig<SyncConfig>();
+            var serverConfig = _configManager.GetConfig<ServerConfig>();
 
             if (_serverConfig != serverConfig || syncConfig != _syncConfig)
             {

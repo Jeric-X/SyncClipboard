@@ -51,7 +51,7 @@ public class FileProfile : Profile
         RemoteFileFolder = Env.RemoteFileFolder;
 
         var configManager = serviceProvider.GetRequiredService<ConfigManager>();
-        var syncConfig = configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new SyncConfig();
+        var syncConfig = configManager.GetConfig<SyncConfig>();
         _maxFileByte = syncConfig.MaxFileByte;
     }
 

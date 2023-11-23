@@ -36,7 +36,7 @@ public abstract class Profile
 
     private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
     private INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
-    private bool? EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>(ConfigKey.Sync)?.NotifyOnDownloaded;
+    private bool EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>().NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
     public ClipboardMetaInfomation MetaInfomation
@@ -76,7 +76,7 @@ public abstract class Profile
             MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer, ctk), null);
         }
 
-        if (notify && (EnableNotify ?? true))
+        if (notify && EnableNotify)
         {
             SetNotification(NotificationManager);
         }

@@ -36,9 +36,9 @@ public class DownloadService : Service
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, SyncConfigChanged);
-        _syncConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        _syncConfig = _configManager.GetConfig<SyncConfig>();
         _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, ServerConfigChanged);
-        _serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
+        _serverConfig = _configManager.GetConfig<ServerConfig>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();

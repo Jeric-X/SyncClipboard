@@ -116,7 +116,7 @@ public partial class NextCloudLogInViewModel : ObservableObject
     public void SetFolder(FileTreeViewModel node)
     {
         ArgumentNullException.ThrowIfNull(tempWebDavCredential);
-        var config = ConfigManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        var config = ConfigManager.GetConfig<SyncConfig>();
         ConfigManager.SetConfig(
             ConfigKey.Sync,
             config with

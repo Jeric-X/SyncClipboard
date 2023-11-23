@@ -77,12 +77,12 @@ public class EasyCopyImageSerivce : ClipboardHander
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
-        _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
     }
 
     public override void Load()
     {
-        _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(ConfigKey.ClipboardAssist) ?? new();
+        _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
         var status = SwitchOn ? RUNNING_STATUS : STOPPED_STATUS;
         TrayIcon.SetStatusString(SERVICE_NAME, status);
         base.Load();

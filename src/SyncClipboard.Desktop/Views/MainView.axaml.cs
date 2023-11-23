@@ -20,7 +20,7 @@ public partial class MainView : UserControl
 
         var config = App.Current.Services.GetRequiredService<ConfigManager>();
         config.ListenConfig<ProgramConfig>(ConfigKey.Program, HandleDiagnoseModeChanged);
-        if (config.GetConfig<ProgramConfig>(ConfigKey.Program)?.DiagnoseMode is true)
+        if (config.GetConfig<ProgramConfig>().DiagnoseMode is true)
         {
             _viewModel.MainWindowPage.Add(PageDefinition.Diagnose);
         }

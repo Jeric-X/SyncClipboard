@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Runtime.Versioning;
 using System.Text.Json;
@@ -37,6 +38,11 @@ namespace SyncClipboard.Core.Commons
             }
 
             return node.Deserialize<T>();
+        }
+
+        public T GetConfig<T>() where T : new()
+        {
+            return GetConfig<T>(ConfigKey.GetKeyFromType<T>()) ?? new();
         }
 
         public void RegistConfigType(string key, Type type)

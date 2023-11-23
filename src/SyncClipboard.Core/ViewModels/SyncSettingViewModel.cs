@@ -124,12 +124,12 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager = configManager;
         _mainVM = mainViewModel;
         _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
-        serverConfig = _configManager.GetConfig<ServerConfig>(ConfigKey.Server) ?? new();
-        serverEnable = serverConfig.SwitchOn;
-        clientMixedMode = serverConfig.ClientMixedMode;
+        serverConfig = _configManager.GetConfig<ServerConfig>();
+        //serverEnable = serverConfig.SwitchOn;
+        //clientMixedMode = serverConfig.ClientMixedMode;
 
         _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);
-        ClientConfig = _configManager.GetConfig<SyncConfig>(ConfigKey.Sync) ?? new();
+        ClientConfig = _configManager.GetConfig<SyncConfig>();
     }
 
     private void LoadSeverConfig(object? config)

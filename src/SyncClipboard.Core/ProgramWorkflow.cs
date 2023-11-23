@@ -23,7 +23,7 @@ namespace SyncClipboard.Core
 
         private static void InitLanguage(ConfigManager configManager)
         {
-            var langTag = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.Language;
+            var langTag = configManager.GetConfig<ProgramConfig>().Language;
             if (string.IsNullOrEmpty(langTag))
             {
                 return;
@@ -63,7 +63,7 @@ namespace SyncClipboard.Core
 
         private void ShowMainWindow(ConfigManager configManager)
         {
-            var config = configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+            var config = configManager.GetConfig<ProgramConfig>();
 
             var mainWindow = Services.GetRequiredService<IMainWindow>();
             mainWindow.SetFont(config.Font);
@@ -80,7 +80,7 @@ namespace SyncClipboard.Core
                 return;
             }
 
-            bool checkOnStartup = configManager.GetConfig<ProgramConfig>(ConfigKey.Program)?.CheckUpdateOnStartUp ?? false;
+            bool checkOnStartup = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
             if (checkOnStartup)
             {
                 try
@@ -159,7 +159,7 @@ namespace SyncClipboard.Core
 
         private static void PrepareWorkingFolder(ConfigManager configManager)
         {
-            var config = configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+            var config = configManager.GetConfig<ProgramConfig>();
             if (Directory.Exists(Env.TemplateFileFolder))
             {
                 if (config.DeleteTempFilesOnStartUp)

@@ -81,7 +81,7 @@ public partial class SystemSettingViewModel : ObservableObject
         _services = serviceProvider;
 
         _configManager.ListenConfig<ProgramConfig>(ConfigKey.Program, (config) => ProgramConfig = (config as ProgramConfig) ?? new());
-        ProgramConfig = _configManager.GetConfig<ProgramConfig>(ConfigKey.Program) ?? new();
+        ProgramConfig = _configManager.GetConfig<ProgramConfig>();
         language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
         checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;
         hideWindowOnStartUp = ProgramConfig.HideWindowOnStartup;

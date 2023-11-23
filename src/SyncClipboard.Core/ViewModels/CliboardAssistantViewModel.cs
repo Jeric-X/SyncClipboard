@@ -38,6 +38,6 @@ public partial class CliboardAssistantViewModel : ObservableObject
         _configManager = configManager;
 
         _configManager.ListenConfig<ClipboardAssistConfig>(CONFIG_KEY, (config) => ClipboardAssistConfig = (config as ClipboardAssistConfig) ?? new());
-        ClipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>(CONFIG_KEY) ?? new();
+        ClipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
     }
 }
