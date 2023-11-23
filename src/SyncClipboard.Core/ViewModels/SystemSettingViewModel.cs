@@ -82,12 +82,8 @@ public partial class SystemSettingViewModel : ObservableObject
 
         _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
         ProgramConfig = _configManager.GetConfig<ProgramConfig>();
-        language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
-        checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;
-        hideWindowOnStartUp = ProgramConfig.HideWindowOnStartup;
-        logRemainDays = ProgramConfig.LogRemainDays;
-        font = ProgramConfig.Font;
-        diagnoseMode = ProgramConfig.DiagnoseMode;
+        Language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
+        Font = ProgramConfig.Font;
     }
 
     public bool StartUpWithSystem

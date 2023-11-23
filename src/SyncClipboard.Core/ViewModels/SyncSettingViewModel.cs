@@ -23,6 +23,8 @@ public partial class SyncSettingViewModel : ObservableObject
     private ServerConfig serverConfig;
     partial void OnServerConfigChanged(ServerConfig value)
     {
+        ServerEnable = value.SwitchOn;
+        ClientMixedMode = value.ClientMixedMode;
         _configManager.SetConfig(value);
     }
 
@@ -59,10 +61,6 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnNotifyOnDownloadedChanged(bool value) => ClientConfig = ClientConfig with { NotifyOnDownloaded = value };
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IntervalTime))]
-    [NotifyPropertyChangedFor(nameof(SyncEnable))]
-    [NotifyPropertyChangedFor(nameof(UseLocalServer))]
-    [NotifyPropertyChangedFor(nameof(TimeOut))]
     [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
     private SyncConfig clientConfig;
     partial void OnClientConfigChanged(SyncConfig value)
@@ -123,25 +121,11 @@ public partial class SyncSettingViewModel : ObservableObject
     {
         _configManager = configManager;
         _mainVM = mainViewModel;
-        _configManager.ListenConfig<ServerConfig>(LoadSeverConfig);
-        serverConfig = _configManager.GetConfig<ServerConfig>();
-        serverEnable = serverConfig.SwitchOn;
-        clientMixedMode = serverConfig.ClientMixedMode;
+        _configManager.ListenConfig<ServerConfig>(config => ServerConfig = config);
+        ServerConfig = _configManager.GetConfig<ServerConfig>();
 
-        _configManager.ListenConfig<SyncConfig>(LoadClientConfig);
+        _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
         ClientConfig = _configManager.GetConfig<SyncConfig>();
-    }
-
-    private void LoadSeverConfig(ServerConfig config)
-    {
-        ServerConfig = config;
-        ServerEnable = ServerConfig.SwitchOn;
-        ClientMixedMode = ServerConfig.ClientMixedMode;
-    }
-
-    private void LoadClientConfig(SyncConfig config)
-    {
-        ClientConfig = config;
     }
 
     public string? SetServerConfig(string portString, string username, string password)
