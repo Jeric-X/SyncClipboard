@@ -25,7 +25,7 @@ public class ConvertService : ClipboardHander
         set
         {
             _clipboardConfig.ConvertSwitchOn = value;
-            _configManager.SetConfig(ConfigKey.ClipboardAssist, _clipboardConfig);
+            _configManager.SetConfig(_clipboardConfig);
         }
     }
 

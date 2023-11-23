@@ -28,7 +28,7 @@ public class UploadService : ClipboardHander
         set
         {
             _syncConfig.SyncSwitchOn = value;
-            _configManager.SetConfig(ConfigKey.Sync, _syncConfig);
+            _configManager.SetConfig(_syncConfig);
         }
     }
 

@@ -28,7 +28,7 @@ public partial class CliboardAssistantViewModel : ObservableObject
         EasyCopyImageSwitchOn = value.EasyCopyImageSwitchOn;
         DownloadWebImage = value.DownloadWebImage;
         ConvertSwitchOn = value.ConvertSwitchOn;
-        _configManager.SetConfig(CONFIG_KEY, value);
+        _configManager.SetConfig(value);
     }
 
     private readonly ConfigManager _configManager;

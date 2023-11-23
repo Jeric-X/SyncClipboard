@@ -23,7 +23,7 @@ public partial class SyncSettingViewModel : ObservableObject
     private ServerConfig serverConfig;
     partial void OnServerConfigChanged(ServerConfig value)
     {
-        _configManager.SetConfig(ConfigKey.Server, value);
+        _configManager.SetConfig(value);
     }
 
     #endregion
@@ -74,7 +74,7 @@ public partial class SyncSettingViewModel : ObservableObject
         MaxFileSize = value.MaxFileByte / 1024 / 1024;
         AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
         NotifyOnDownloaded = value.NotifyOnDownloaded;
-        _configManager.SetConfig(ConfigKey.Sync, value);
+        _configManager.SetConfig(value);
     }
 
     [RelayCommand]
@@ -125,8 +125,8 @@ public partial class SyncSettingViewModel : ObservableObject
         _mainVM = mainViewModel;
         _configManager.ListenConfig<ServerConfig>(ConfigKey.Server, LoadSeverConfig);
         serverConfig = _configManager.GetConfig<ServerConfig>();
-        //serverEnable = serverConfig.SwitchOn;
-        //clientMixedMode = serverConfig.ClientMixedMode;
+        serverEnable = serverConfig.SwitchOn;
+        clientMixedMode = serverConfig.ClientMixedMode;
 
         _configManager.ListenConfig<SyncConfig>(ConfigKey.Sync, LoadClientConfig);
         ClientConfig = _configManager.GetConfig<SyncConfig>();

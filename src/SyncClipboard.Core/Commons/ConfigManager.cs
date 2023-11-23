@@ -97,6 +97,11 @@ namespace SyncClipboard.Core.Commons
             Save();
         }
 
+        public void SetConfig<T>(T newValue) where T : IEquatable<T>
+        {
+            SetConfig(ConfigKey.GetKeyFromType<T>(), newValue);
+        }
+
         private void NotifyRegistedHandler(string key, Type type, JsonNode? jsonNode)
         {
             if (!_registedChangedHandlerList.ContainsKey(key))

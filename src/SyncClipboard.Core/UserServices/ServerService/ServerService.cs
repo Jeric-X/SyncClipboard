@@ -35,7 +35,7 @@ public class ServerService : Service
             _serverConfig.SwitchOn,
             (status) =>
             {
-                _configManager.SetConfig(ConfigKey.Server, _serverConfig with { SwitchOn = status });
+                _configManager.SetConfig(_serverConfig with { SwitchOn = status });
             }
         );
     }

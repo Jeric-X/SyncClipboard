@@ -118,7 +118,6 @@ public partial class NextCloudLogInViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(tempWebDavCredential);
         var config = ConfigManager.GetConfig<SyncConfig>();
         ConfigManager.SetConfig(
-            ConfigKey.Sync,
             config with
             {
                 UserName = tempWebDavCredential.Username,

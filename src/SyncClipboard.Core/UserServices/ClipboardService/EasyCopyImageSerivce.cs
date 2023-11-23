@@ -30,7 +30,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         set
         {
             _clipboardAssistConfig.EasyCopyImageSwitchOn = value;
-            _configManager.SetConfig(ConfigKey.ClipboardAssist, _clipboardAssistConfig);
+            _configManager.SetConfig(_clipboardAssistConfig);
         }
     }
 

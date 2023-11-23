@@ -60,7 +60,7 @@ public partial class SystemSettingViewModel : ObservableObject
         DiagnoseMode = value.DiagnoseMode;
         Font = value.Font;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
-        _configManager.SetConfig(ConfigKey.Program, value);
+        _configManager.SetConfig(value);
     }
 
     [ObservableProperty]
