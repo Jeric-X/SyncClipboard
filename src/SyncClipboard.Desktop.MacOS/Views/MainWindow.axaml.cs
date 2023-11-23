@@ -24,13 +24,11 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
         }
 
         var transparencyLevelHint = TransparencyLevelHint;
-        var background = Background;
         var extendClientAreaTitleBarHeightHint = ExtendClientAreaTitleBarHeightHint;
         var opacity = Opacity;
         var extendClientAreaChromeHints = ExtendClientAreaChromeHints;
 
         TransparencyLevelHint = new WindowTransparencyLevel[] { WindowTransparencyLevel.Transparent };
-        Background = null;
         ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome;
         ExtendClientAreaTitleBarHeightHint = 0;
         this.Opacity = 0;
@@ -44,7 +42,6 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
 
         await Task.Delay(500).ConfigureAwait(true);
         TransparencyLevelHint = transparencyLevelHint;
-        Background = background;
         ExtendClientAreaTitleBarHeightHint = extendClientAreaTitleBarHeightHint;
         this.Opacity = opacity;
         ExtendClientAreaChromeHints = extendClientAreaChromeHints;
