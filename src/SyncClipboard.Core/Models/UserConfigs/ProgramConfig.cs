@@ -10,4 +10,5 @@ public record ProgramConfig
     public string Font { get; set; } = "";
     public bool HideWindowOnStartup { get; set; } = false;
     public bool DiagnoseMode { get; set; } = false;
+    public string Theme { get; set; } = "";
 };

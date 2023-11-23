@@ -223,6 +223,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Dark 的本地化字符串。
+        /// </summary>
+        public static string Dark {
+            get {
+                return ResourceManager.GetString("Dark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Auto detect 的本地化字符串。
         /// </summary>
         public static string DefaultLanguage {
@@ -480,6 +489,15 @@ namespace SyncClipboard.Core.I18n {
         public static string License {
             get {
                 return ResourceManager.GetString("License", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Light 的本地化字符串。
+        /// </summary>
+        public static string Light {
+            get {
+                return ResourceManager.GetString("Light", resourceCulture);
             }
         }
         
@@ -822,6 +840,24 @@ namespace SyncClipboard.Core.I18n {
         public static string SystemSettings {
             get {
                 return ResourceManager.GetString("SystemSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 System Style 的本地化字符串。
+        /// </summary>
+        public static string SystemStyle {
+            get {
+                return ResourceManager.GetString("SystemStyle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Theme 的本地化字符串。
+        /// </summary>
+        public static string Theme {
+            get {
+                return ResourceManager.GetString("Theme", resourceCulture);
             }
         }
         

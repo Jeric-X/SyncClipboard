@@ -60,6 +60,7 @@ public partial class SystemSettingViewModel : ObservableObject
         DiagnoseMode = value.DiagnoseMode;
         Font = value.Font;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
+        Theme = Themes.FirstOrDefault(x => x.String == ProgramConfig.Theme) ?? Themes[0];
         _configManager.SetConfig(value);
     }
 
@@ -71,6 +72,21 @@ public partial class SystemSettingViewModel : ObservableObject
     public static readonly LanguageModel[] Languages = I18nHelper.SupportedLanguage;
     public string DisplayMemberPath = nameof(LanguageModel.DisplayName);
     public string? ChangingLangInfo => I18nHelper.GetChangingLanguageInfo(Language);
+
+    [ObservableProperty]
+    private LocaleString theme;
+    partial void OnThemeChanged(LocaleString value)
+    {
+        ProgramConfig = ProgramConfig with { Theme = value.String };
+        _services.GetRequiredService<IMainWindow>().ChangeTheme(value.String);
+    }
+
+    public static readonly LocaleString[] Themes =
+    {
+        new ("", Strings.SystemStyle),
+        new ("Light", Strings.Light),
+        new ("Dark", Strings.Dark)
+    };
 
     private readonly ConfigManager _configManager;
     private readonly IServiceProvider _services;
@@ -84,6 +100,7 @@ public partial class SystemSettingViewModel : ObservableObject
         ProgramConfig = _configManager.GetConfig<ProgramConfig>();
         Language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
         Font = ProgramConfig.Font;
+        Theme = Themes.FirstOrDefault(x => x.String == ProgramConfig.Theme) ?? Themes[0];
     }
 
     public bool StartUpWithSystem

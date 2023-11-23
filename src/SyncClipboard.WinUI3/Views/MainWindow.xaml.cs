@@ -196,5 +196,15 @@ namespace SyncClipboard.WinUI3.Views
                 Show();
             }
         }
+
+        public void ChangeTheme(string theme)
+        {
+            ((FrameworkElement)Content).RequestedTheme = theme switch
+            {
+                "Light" => ElementTheme.Light,
+                "Dark" => ElementTheme.Dark,
+                _ => ElementTheme.Default,
+            };
+        }
     }
 }

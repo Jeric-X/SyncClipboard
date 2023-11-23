@@ -405,4 +405,16 @@
   <data name="Diagnose" xml:space="preserve">
     <value>Diagnose</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="SystemStyle" xml:space="preserve">
+    <value>System Style</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
 </root>

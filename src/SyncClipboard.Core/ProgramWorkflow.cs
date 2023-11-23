@@ -67,6 +67,7 @@ namespace SyncClipboard.Core
 
             var mainWindow = Services.GetRequiredService<IMainWindow>();
             mainWindow.SetFont(config.Font);
+            mainWindow.ChangeTheme(config.Theme);
             mainWindow.Init(config.HideWindowOnStartup);
         }
 

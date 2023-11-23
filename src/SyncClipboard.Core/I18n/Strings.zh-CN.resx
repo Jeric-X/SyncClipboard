@@ -405,4 +405,16 @@
   <data name="Diagnose" xml:space="preserve">
     <value>诊断</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>应用主题</value>
+  </data>
+  <data name="SystemStyle" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>浅色</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>深色</value>
+  </data>
 </root>
