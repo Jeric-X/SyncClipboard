@@ -14,7 +14,7 @@
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="SyncClipboard" Description="{x:Bind _aboutViewModel.Version}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
-                <ImageIcon Source="ms-appx:///Assets/icon.ico" />
+                <ImageIcon Source="{ThemeResource AppLogo}" />
             </ui:SettingsExpander.HeaderIcon>
             <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
             <ui:SettingsExpander.Items>

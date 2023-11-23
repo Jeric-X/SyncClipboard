@@ -9,6 +9,14 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <BitmapImage x:Key="AppLogo" UriSource="ms-appx:///Assets/icon.png" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <BitmapImage x:Key="AppLogo" UriSource="ms-appx:///Assets/icon_white.png" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
             <!-- Other app resources here -->
             <SolidColorBrush x:Key="WindowCaptionBackground">Transparent</SolidColorBrush>
             <SolidColorBrush x:Key="WindowCaptionBackgroundDisabled">Transparent</SolidColorBrush>
