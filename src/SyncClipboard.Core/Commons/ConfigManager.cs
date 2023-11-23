@@ -15,9 +15,8 @@ namespace SyncClipboard.Core.Commons
         private readonly IContextMenu _contextMenu;
         private readonly string _path;
 
-        private delegate void ConfigChangedHandler(object obj);
         private readonly Dictionary<string, Type> _registedTypeList = new();
-        private readonly Dictionary<string, HashSet<Action<object?>>> _registedChangedHandlerList = new();
+        private readonly Dictionary<string, HashSet<MessageDispatcher>> _registedChangedHandlerList = new();
 
         JsonNode _jsonNode = new JsonObject();
 
@@ -59,22 +58,22 @@ namespace SyncClipboard.Core.Commons
             _registedTypeList.Add(key, type);
         }
 
-        public void ListenConfig<T>(string key, Action<object?> action)
+        public void ListenConfig<T>(string key, MessageHandler<T> action)
         {
             RegistConfigType(key, typeof(T));
             if (_registedChangedHandlerList.ContainsKey(key))
             {
-                _registedChangedHandlerList[key].Add(action);
+                _registedChangedHandlerList[key].Add(new MessageDispatcher.For<T>(action));
             }
             else
             {
-                _registedChangedHandlerList.Add(key, new HashSet<Action<object?>>() { action });
+                _registedChangedHandlerList.Add(key, new HashSet<MessageDispatcher>() { new MessageDispatcher.For<T>(action) });
             }
         }
 
-        public void ListenConfig<T>(Action<object?> action)
+        public void ListenConfig<T>(MessageHandler<T> action)
         {
-            ListenConfig<T>(ConfigKey.GetKeyFromType<T>(), action);
+            ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
         }
 
         public void SetConfig<T>(string key, T newValue) where T : IEquatable<T>
@@ -115,7 +114,11 @@ namespace SyncClipboard.Core.Commons
             }
             foreach (var handler in _registedChangedHandlerList[key])
             {
-                handler(jsonNode.Deserialize(type));
+                var obj = jsonNode.Deserialize(type);
+                if (obj is not null)
+                {
+                    handler.Invoke(obj);
+                }
             }
         }
 

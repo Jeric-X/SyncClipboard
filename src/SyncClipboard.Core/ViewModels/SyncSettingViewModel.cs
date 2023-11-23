@@ -132,16 +132,16 @@ public partial class SyncSettingViewModel : ObservableObject
         ClientConfig = _configManager.GetConfig<SyncConfig>();
     }
 
-    private void LoadSeverConfig(object? config)
+    private void LoadSeverConfig(ServerConfig config)
     {
-        ServerConfig = config as ServerConfig ?? new();
+        ServerConfig = config;
         ServerEnable = ServerConfig.SwitchOn;
         ClientMixedMode = ServerConfig.ClientMixedMode;
     }
 
-    private void LoadClientConfig(object? config)
+    private void LoadClientConfig(SyncConfig config)
     {
-        ClientConfig = config as SyncConfig ?? new();
+        ClientConfig = config;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

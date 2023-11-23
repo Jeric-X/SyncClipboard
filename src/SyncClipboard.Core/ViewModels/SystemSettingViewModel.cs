@@ -80,7 +80,7 @@ public partial class SystemSettingViewModel : ObservableObject
         _configManager = configManager;
         _services = serviceProvider;
 
-        _configManager.ListenConfig<ProgramConfig>((config) => ProgramConfig = (config as ProgramConfig) ?? new());
+        _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
         ProgramConfig = _configManager.GetConfig<ProgramConfig>();
         language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
         checkUpdateOnStartUp = ProgramConfig.CheckUpdateOnStartUp;

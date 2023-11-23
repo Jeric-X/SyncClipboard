@@ -48,12 +48,11 @@ public class ServerService : Service
         RestartServer();
     }
 
-    private void ConfigChanged(object? config)
+    private void ConfigChanged(ServerConfig config)
     {
-        var newConfig = config as ServerConfig;
-        if (newConfig != _serverConfig)
+        if (config != _serverConfig)
         {
-            _serverConfig = newConfig ?? new();
+            _serverConfig = config;
             RestartServer();
         }
     }

@@ -19,12 +19,11 @@ namespace SyncClipboard.Core.Utilities.Web
             _proxy = programConfig.Proxy;
         }
 
-        private void ConfigChanged(object? config)
+        private void ConfigChanged(ProgramConfig config)
         {
-            var newConfig = config as ProgramConfig ?? new();
-            if (newConfig.Proxy != _proxy)
+            if (config.Proxy != _proxy)
             {
-                _proxy = newConfig.Proxy;
+                _proxy = config.Proxy;
                 HttpClientProxy.Dispose();
                 _lazyHttpClientProxy = null;
             }

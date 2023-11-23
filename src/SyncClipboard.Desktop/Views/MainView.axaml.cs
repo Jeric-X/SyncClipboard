@@ -31,9 +31,9 @@ public partial class MainView : UserControl
         _MenuList.SelectedIndex = 0;
     }
 
-    private void HandleDiagnoseModeChanged(object? config)
+    private void HandleDiagnoseModeChanged(ProgramConfig config)
     {
-        if (config is ProgramConfig { DiagnoseMode: true })
+        if (config.DiagnoseMode is true)
         {
             if (_viewModel.MainWindowPage.Contains(PageDefinition.Diagnose) is false)
                 _viewModel.MainWindowPage.Add(PageDefinition.Diagnose);

@@ -44,15 +44,15 @@ public class DownloadService : Service
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
     }
 
-    private void SyncConfigChanged(object? newConfig)
+    private void SyncConfigChanged(SyncConfig newConfig)
     {
-        _syncConfig = newConfig as SyncConfig ?? new();
+        _syncConfig = newConfig;
         ReLoad();
     }
 
-    private void ServerConfigChanged(object? newConfig)
+    private void ServerConfigChanged(ServerConfig newConfig)
     {
-        _serverConfig = newConfig as ServerConfig ?? new();
+        _serverConfig = newConfig;
         ReLoad();
     }
 
