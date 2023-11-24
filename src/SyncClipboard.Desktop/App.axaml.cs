@@ -4,14 +4,12 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
-using Avalonia.Platform;
+using Avalonia.Styling;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.Views;
 using System;
-using MenuItem = SyncClipboard.Core.Interfaces.MenuItem;
 
 namespace SyncClipboard.Desktop;
 
@@ -61,8 +59,24 @@ public partial class App : Application
         }
         base.OnFrameworkInitializationCompleted();
 
+        ThemeSetting();
+        ActualThemeVariantChanged += (_, _) => ThemeSetting();
+
         _programWorkflow = new ProgramWorkflow(Services);
         _programWorkflow.Run();
+    }
+
+    private void ThemeSetting()
+    {
+        var theme = ActualThemeVariant;
+        if (theme == ThemeVariant.Light)
+        {
+            Resources["AppLogoSource"] = Resources["AppLogoSourceLight"]!;
+        }
+        else if (theme == ThemeVariant.Dark)
+        {
+            Resources["AppLogoSource"] = Resources["AppLogoSourceDark"]!;
+        }
     }
 
     public void ExitApp()

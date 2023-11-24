@@ -1,8 +1,6 @@
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
-using FluentAvalonia.UI.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
@@ -17,6 +15,12 @@ public partial class AboutPage : UserControl
         _viewModel = App.Current.Services.GetRequiredService<AboutViewModel>();
         DataContext = _viewModel;
         InitializeComponent();
+        _AppInfo.ActualThemeVariantChanged += ThemeChanged;
+    }
+
+    private void ThemeChanged(object? sender, System.EventArgs e)
+    {
+        _AppInfo.IconSource = (ImageIconSource)App.Current.Resources["AppLogoSource"]!;
     }
 
     private void HyperlinkButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

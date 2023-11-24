@@ -5,15 +5,29 @@
              xmlns:local="using:SyncClipboard.Desktop.Views"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:core="using:SyncClipboard.Core.Commons"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              Name="{x:Static core:Env.SoftName}"
              RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
     <Application.Resources>
-        <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-        <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-        <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
-        <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
-        <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+            <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
+            <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
+            <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
+            <ui:ImageIconSource x:Key="AppLogoSource" />
+            <ui:ImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
+            <ui:ImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
+        </ResourceDictionary>
     </Application.Resources>
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />

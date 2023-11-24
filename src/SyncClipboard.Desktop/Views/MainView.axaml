@@ -15,7 +15,7 @@
     </Design.DataContext>
     <UserControl.Styles>
         <Style Selector="TextBlock">
-        <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
             <OnPlatform>
                 <OnPlatform.macOS>
                     <Setter Property="Padding" Value="0,2,0,0" />
@@ -38,7 +38,7 @@
                             IsHitTestVisible="False"
                             Orientation="Horizontal"
                             Spacing="8">
-                    <ui:ImageIcon Width="20" Height="20" Source="/Assets/icon.ico" />
+                    <UserControl Width="18" Height="18" Content="{DynamicResource AppLogo}" />
                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="SyncClipboard" />
                 </StackPanel>
             </OnPlatform.Default>
@@ -67,8 +67,8 @@
                     </ui:BreadcrumbBar.Resources>
                     <ui:BreadcrumbBar.ItemTemplate>
                         <DataTemplate x:DataType="vm:PageDefinition">
-                            <ui:BreadcrumbBarItem>           
-                               <TextBlock Text="{Binding Title}" />
+                            <ui:BreadcrumbBarItem>
+                                <TextBlock Text="{Binding Title}" />
                             </ui:BreadcrumbBarItem>
                         </DataTemplate>
                     </ui:BreadcrumbBar.ItemTemplate>
