@@ -12,20 +12,11 @@ namespace SyncClipboard.Desktop;
 
 public class AppServices
 {
-    private static void ConfigurateUserService(IServiceCollection services)
-    {
-        services.AddSingleton<IService, EasyCopyImageSerivce>();
-        services.AddSingleton<IService, ConvertService>();
-        services.AddSingleton<IService, ServerService>();
-        services.AddSingleton<IService, UploadService>();
-        services.AddSingleton<IService, DownloadService>();
-    }
-
     public static void ConfigDesktopCommonService(IServiceCollection services)
     {
         ProgramWorkflow.ConfigCommonService(services);
         ProgramWorkflow.ConfigurateViewModels(services);
-        ConfigurateUserService(services);
+        ProgramWorkflow.ConfigurateUserService(services);
 
         services.AddTransient<IAppConfig, AppConfig>();
 
