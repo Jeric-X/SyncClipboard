@@ -14,7 +14,7 @@ internal class ClipboardListener : ClipboardChangingListenerBase
     private Action<ClipboardMetaInfomation>? _action;
     private ClipboardMetaInfomation? _meta;
 
-    private readonly object _lock = new object();
+    private readonly SemaphoreSlim _tickSemaphore = new(1, 1);
     private CancellationTokenSource? _cts;
 
     public ClipboardListener(IClipboardFactory clipboardFactory)
@@ -31,22 +31,27 @@ internal class ClipboardListener : ClipboardChangingListenerBase
     protected override void UnRegistSystemEvent(Action<ClipboardMetaInfomation> action)
     {
         _timer?.Dispose();
+        _timer = null;
+
         _action = null;
+
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
     }
 
     private async void InvokeTick(object? _)
     {
-        lock (_lock)
+        if (_tickSemaphore.Wait(0) is false)
         {
-            if (_cts is not null && _cts.IsCancellationRequested is false)
-            {
-                return;
-            }
-            _cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            return;
         }
 
         try
         {
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource(TimeSpan.FromSeconds(1000));
+
             var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
             if (meta == _meta)
             {
@@ -66,11 +71,7 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         catch { }
         finally
         {
-            lock (_lock)
-            {
-                _cts?.Dispose();
-                _cts = null;
-            }
+            _tickSemaphore.Release();
         }
     }
 }
