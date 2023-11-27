@@ -1,5 +1,8 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Interfaces;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
@@ -12,6 +15,8 @@ internal partial class DiagnoseViewModel : ObservableObject
     public DiagnoseViewModel()
     {
         RefreshCommand.ExecuteAsync(this);
+        var listener = App.Current.Services.GetRequiredService<IClipboardChangingListener>();
+        listener.Changed += async (_) => await Dispatcher.UIThread.InvokeAsync(() => RefreshCommand.ExecuteAsync(null));
     }
 
     [RelayCommand]
