@@ -117,7 +117,7 @@ Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`
 There are three necessery config(maybe different words, same uses).
 - username
 - password
-- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. File name is the best not to contain any special characters or spaces, or you'll have to URL encode it. And do not use this folder to do anything else. If not using a desktop client, create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
+- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. File name is the best not to contain any special characters or spaces, or you'll have to URL encode it. And do not use this folder to do anything else. If not using a desktop client(Windows/Linux/macOS), create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
 
 ## API
 
