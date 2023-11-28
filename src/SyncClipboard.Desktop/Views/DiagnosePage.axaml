@@ -23,7 +23,10 @@
                 <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.Footer>
-                <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+                <StackPanel Spacing="10" Orientation="Horizontal">
+                    <ToggleButton Content="Auto Refresh" IsChecked="{Binding AutoRefresh}" />
+                    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+                </StackPanel>
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
