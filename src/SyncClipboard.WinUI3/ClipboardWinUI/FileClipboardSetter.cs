@@ -8,7 +8,7 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
 {
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
+    protected override DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
         {

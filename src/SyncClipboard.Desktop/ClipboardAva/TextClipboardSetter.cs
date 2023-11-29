@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,31 +11,23 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
 {
-    private string _text = "";
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
+    [SupportedOSPlatform("linux")]
+    protected override DataObject CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
-        _text = metaInfomation?.Text ?? "";
-
+        var utf8Text = Encoding.UTF8.GetBytes(metaInfomation?.Text ?? "");
         var dataObject = new DataObject();
-        if (OperatingSystem.IsLinux())
-        {
-            var utf8Text = Encoding.UTF8.GetBytes(_text);
-            dataObject.Set(Format.Text, utf8Text);
-            dataObject.Set("text/plain", utf8Text);
-            dataObject.Set("text/plain;charset=utf-8", utf8Text);
-        }
+        dataObject.Set(Format.Text, utf8Text);
+        dataObject.Set("text/plain", utf8Text);
+        dataObject.Set("text/plain;charset=utf-8", utf8Text);
         return dataObject;
     }
 
-    public override async Task SetLocalClipboard(object obj, CancellationToken ctk)
+    public override Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
         if (OperatingSystem.IsLinux())
         {
-            await base.SetLocalClipboard(obj, ctk);
+            return base.SetLocalClipboard(metaInfomation, ctk);
         }
-        else
-        {
-            await App.Current.Clipboard.SetTextAsync(_text).WaitAsync(ctk);
-        }
+        return App.Current.Clipboard.SetTextAsync(metaInfomation?.Text ?? "").WaitAsync(ctk); ;
     }
 }

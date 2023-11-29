@@ -9,7 +9,7 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
 {
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
+    protected override DataObject CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
         {

@@ -8,11 +8,11 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<ProfileType> where ProfileType : Profile
 {
-    public abstract object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation);
+    protected abstract DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation);
 
-    public async Task SetLocalClipboard(object obj, CancellationToken ctk)
+    private static async Task SetPackageToClipboard(DataPackage package, CancellationToken ctk)
     {
-        Clipboard.SetContent(obj as DataPackage);
+        Clipboard.SetContent(package);
         // Clipboard.SetContent() still occupies the system clipboard after calling
         for (int i = 0; i < 5; i++)
         {
@@ -26,5 +26,10 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
             catch { }
 #pragma warning restore CC0004 // Catch block cannot be empty
         }
+    }
+
+    public Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
+    {
+        return ClipboardSetterBase<ProfileType>.SetPackageToClipboard(CreatePackage(metaInfomation), ctk);
     }
 }

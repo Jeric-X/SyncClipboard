@@ -11,9 +11,9 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Core.Clipboard.ImageProfile>
 {
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
+    protected override DataObject CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
-        var dataObject = (DataObject)base.CreateClipboardObjectContainer(metaInfomation);
+        var dataObject = base.CreatePackage(metaInfomation);
         string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(metaInfomation.Files![0]);
 
         if (OperatingSystem.IsLinux())

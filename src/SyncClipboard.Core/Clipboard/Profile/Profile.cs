@@ -34,7 +34,6 @@ public abstract class Profile
     protected const string RemoteProfilePath = Env.RemoteProfilePath;
     protected readonly static string LocalTemplateFolder = Env.TemplateFileFolder;
 
-    private readonly SynchronizationContext? MainThreadSynContext = SynchronizationContext.Current;
     private INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
     private bool EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>().NotifyOnDownloaded;
 
@@ -61,20 +60,7 @@ public abstract class Profile
 
     public void SetLocalClipboard(bool notify, CancellationToken ctk)
     {
-        var ClipboardObjectContainer = ClipboardSetter.CreateClipboardObjectContainer(MetaInfomation);
-        if (ClipboardObjectContainer is null)
-        {
-            return;
-        }
-
-        if (MainThreadSynContext == SynchronizationContext.Current)
-        {
-            ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer, ctk);
-        }
-        else
-        {
-            MainThreadSynContext?.Post((_) => ClipboardSetter.SetLocalClipboard(ClipboardObjectContainer, ctk), null);
-        }
+        ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
 
         if (notify && EnableNotify)
         {

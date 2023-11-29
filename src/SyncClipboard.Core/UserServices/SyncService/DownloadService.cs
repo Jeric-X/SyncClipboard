@@ -186,12 +186,12 @@ public class DownloadService : Service
             await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
             try
             {
-                var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken).ConfigureAwait(true);
+                var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
                 _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
                 if (await NeedUpdate(remoteProfile, cancelToken))
                 {
-                    await SetRemoteProfileToLocal(remoteProfile, cancelToken).ConfigureAwait(true);
+                    await SetRemoteProfileToLocal(remoteProfile, cancelToken);
                     _remoteProfileCache = remoteProfile;
                 }
                 _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
@@ -213,7 +213,7 @@ public class DownloadService : Service
                 SyncService.remoteProfilemutex.Release();
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken).ConfigureAwait(true);
+            await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
     }
 

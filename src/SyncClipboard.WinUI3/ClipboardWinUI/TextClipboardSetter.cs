@@ -6,7 +6,7 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
 {
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
+    protected override DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
         var dataObject = new DataPackage();
         dataObject.SetText(metaInfomation.Text);

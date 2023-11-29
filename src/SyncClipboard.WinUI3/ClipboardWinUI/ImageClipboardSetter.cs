@@ -10,21 +10,20 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<ImageProfile>
 {
-    public override object CreateClipboardObjectContainer(ClipboardMetaInfomation metaInfomation)
+    protected override DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
         {
             throw new ArgumentException("Not Contain File.");
         }
 
-        var obj = base.CreateClipboardObjectContainer(metaInfomation);
-        DataPackage dataObject = (DataPackage)obj;
+        var package = base.CreatePackage(metaInfomation);
 
-        SetHtml(dataObject, metaInfomation.Files[0]);
-        SetQqFormat(dataObject, metaInfomation.Files[0]);
-        SetBitmap(dataObject, metaInfomation.Files[0]);
+        SetHtml(package, metaInfomation.Files[0]);
+        SetQqFormat(package, metaInfomation.Files[0]);
+        SetBitmap(package, metaInfomation.Files[0]);
 
-        return dataObject;
+        return package;
     }
 
     private static void SetBitmap(DataPackage dataObject, string imagePath)
