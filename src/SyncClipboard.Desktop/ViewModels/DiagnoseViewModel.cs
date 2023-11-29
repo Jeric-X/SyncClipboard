@@ -55,7 +55,7 @@ internal partial class DiagnoseViewModel : ObservableObject
     {
         ClipboardTypes.Clear();
         var types = await App.Current.Clipboard.GetFormatsAsync();
-        foreach (var item in types)
+        foreach (var item in types ?? System.Array.Empty<string>())
         {
             ClipboardTypes.Add(item);
         }
