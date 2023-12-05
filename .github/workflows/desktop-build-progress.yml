@@ -37,7 +37,9 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: |
+          6.0.x
+          8.0.x
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
