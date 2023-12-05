@@ -110,7 +110,7 @@ public class EasyCopyImageSerivce : ClipboardHander
                 if (!ImageHelper.FileIsImage(localPath))
                 {
                     TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
-                    localPath = await ImageHelper.CompatibilityCast(localPath, Env.TemplateFileFolder, cancellationToken);
+                    localPath = await ConvertService.CompatibilityCast(_serviceProvider, localPath, cancellationToken);
                 }
                 profile = new ImageProfile(localPath, _serviceProvider);
             }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -40,7 +41,7 @@ public class ConvertService : ClipboardHander
         try
         {
             var file = metaInfo.Files![0];
-            var newPath = await ImageHelper.CompatibilityCast(file, Env.TemplateFileFolder, cancellationToken);
+            var newPath = await CompatibilityCast(_serviceProvider, file, cancellationToken);
             new ImageProfile(newPath, _serviceProvider).SetLocalClipboard(false, cancellationToken);
         }
         catch (Exception ex)
@@ -98,5 +99,28 @@ public class ConvertService : ClipboardHander
         }
 
         return true;
+    }
+
+    internal static async Task<string> CompatibilityCast(IServiceProvider services, string localPath, CancellationToken ctk)
+    {
+        var filename = Path.GetFileName(localPath);
+        var notification = services.GetRequiredService<INotification>();
+        var progressBar = notification.CreateProgressNotification(filename[..Math.Min(filename.Length, 50)]);
+        try
+        {
+            progressBar.IsIndeterminate = true;
+            progressBar.ProgressValueTip = "Converting";
+            progressBar.Image = new Uri(localPath);
+            progressBar.ShowSilent();
+            return await ImageHelper.CompatibilityCast(localPath, Env.TemplateFileFolder, ctk);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            progressBar.Remove();
+        }
     }
 }

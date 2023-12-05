@@ -17,6 +17,7 @@ namespace SyncClipboard.Core.Utilities.Notification
         public string Title { get; set; }
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
+        public Uri? Image { get; set; }
         public List<Button> Buttons { get; set; } = new();
         public ToastSession(string title, ToastNotifier notifier)
         {
@@ -34,6 +35,10 @@ namespace SyncClipboard.Core.Utilities.Notification
             builder.AddVisualChild(new AdaptiveText() { Text = new BindableString(TOAST_BINDING_TITLE) });
             builder.AddVisualChild(new AdaptiveText() { Text = new BindableString(TOAST_BINDING_TEXT1) });
             builder.AddVisualChild(new AdaptiveText() { Text = new BindableString(TOAST_BINDING_TEXT2) });
+            if (Image is not null)
+            {
+                builder.AddHeroImage(Image);
+            }
             foreach (var button in Buttons)
             {
                 builder.AddButton(button);

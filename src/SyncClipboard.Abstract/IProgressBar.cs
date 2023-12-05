@@ -1,6 +1,6 @@
 ﻿namespace SyncClipboard.Abstract;
 
-public interface IProgressBar
+public interface IProgressBar : INotificationSession
 {
     public string Tag { get; set; }
     public string? ProgressTitle { get; set; }
