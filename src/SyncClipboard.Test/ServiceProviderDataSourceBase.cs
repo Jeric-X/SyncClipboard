@@ -6,7 +6,7 @@ namespace SyncClipboard.Test
     {
         public abstract IEnumerable<object[]> GetData(MethodInfo methodInfo);
 
-        public string? GetDisplayName(MethodInfo methodInfo, object[] data)
+        public string? GetDisplayName(MethodInfo methodInfo, object?[]? data)
         {
             if (data != null)
             {

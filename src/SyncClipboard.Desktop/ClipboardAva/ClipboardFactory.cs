@@ -15,7 +15,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override IServiceProvider ServiceProvider { get; set; }
     protected override IWebDav WebDav { get; set; }
 
-    private IClipboard Clipboard { get; } = App.Current.Clipboard;
+    private static IClipboard Clipboard => App.Current.Clipboard;
 
     private const string LOG_TAG = nameof(ClipboardFactory);
     public static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);

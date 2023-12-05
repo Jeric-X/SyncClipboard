@@ -24,8 +24,6 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="Microsoft.Extensions.Options" />
-    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
   </ItemGroup>
 
   <ItemGroup>
