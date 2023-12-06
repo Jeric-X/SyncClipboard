@@ -15,14 +15,12 @@ on:
 
 jobs:
   build:
-    if: false
     uses: ./.github/workflows/desktop-build-progress.yml
     with:
       checkout-repo: ${{ inputs.checkout-repo }}
       checkout-ref: ${{ inputs.checkout-ref }}
 
   package-linux:
-    if: false
     strategy:
       matrix:
         cpu: [x64, arm64]
@@ -138,13 +136,7 @@ jobs:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
-      # python3.12 has broken change that node-gyp depends on
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11' 
-
-      - name: Setup software form npm,homebrew
+      - name: Setup software form homebrew
         run: | 
           export HOMEBREW_NO_AUTO_UPDATE=true
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
@@ -157,7 +149,7 @@ jobs:
           dotnet-version: | 
             8.0.x
 
-      - name: Install dependencies
+      - name: Install dotnet workload and dependencies
         working-directory: ./src/SyncClipboard.Desktop.MacOS
         run: |
           dotnet workload install macos
