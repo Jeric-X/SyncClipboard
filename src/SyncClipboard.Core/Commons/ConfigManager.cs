@@ -168,6 +168,10 @@ namespace SyncClipboard.Core.Commons
             {
                 menuItems.Add(new MenuItem(I18n.Strings.OpenConfigFileFolder, OpenConfigFileFolder));
             }
+            else if (OperatingSystem.IsMacOS())
+            {
+                menuItems.Add(new MenuItem(I18n.Strings.OpenConfigFileFolder, OpenConfigFileInFinder));
+            }
             _contextMenu.AddMenuItemGroup(menuItems.ToArray());
         }
 
@@ -190,6 +194,15 @@ namespace SyncClipboard.Core.Commons
             var open = new System.Diagnostics.Process();
             open.StartInfo.FileName = "explorer";
             open.StartInfo.Arguments = "/e,/select," + _path;
+            open.Start();
+        }
+
+        [SupportedOSPlatform("macos")]
+        private void OpenConfigFileInFinder()
+        {
+            var open = new System.Diagnostics.Process();
+            open.StartInfo.FileName = "open";
+            open.StartInfo.Arguments = $"-R \"{_path}\"";
             open.Start();
         }
     }

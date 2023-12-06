@@ -1,4 +1,5 @@
 0.3.1
+- 新菜单项：打开配置文件所在文件夹（macOS）
 - 不兼容变更：macOS配置文件改为储存在~/Library/Application Support/SyncClipboard/，建议老用户移动~/.config/SyncClipboard/中的内容到新目录
   - TODO: 修改README
 
