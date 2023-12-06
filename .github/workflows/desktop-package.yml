@@ -15,12 +15,14 @@ on:
 
 jobs:
   build:
+    if: false
     uses: ./.github/workflows/desktop-build-progress.yml
     with:
       checkout-repo: ${{ inputs.checkout-repo }}
       checkout-ref: ${{ inputs.checkout-ref }}
 
   package-linux:
+    if: false
     strategy:
       matrix:
         cpu: [x64, arm64]
@@ -144,10 +146,9 @@ jobs:
 
       - name: Setup software form npm,homebrew
         run: | 
-          npm install --global create-dmg
           export HOMEBREW_NO_AUTO_UPDATE=true
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
-          brew install graphicsmagick imagemagick tree
+          brew install create-dmg
 
       # Install the .NET workload
       - name: Install .NET
@@ -217,7 +218,7 @@ jobs:
       - name: Package dmg
         continue-on-error: true
         run: | 
-          create-dmg SyncClipboard.app
+          create-dmg --volicon VolumeIcon.icns SyncClipboard.dmg SyncClipboard.app
         working-directory: ./build/macos
 
       - name: show folder
@@ -227,7 +228,7 @@ jobs:
         working-directory: ./build/macos
 
       - name: Change name
-        run: mv "SyncClipboard ${{ steps.version.outputs.content }}.dmg" "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+        run: mv SyncClipboard.dmg "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
         working-directory: ./build/macos
 
       - name: Upload build artifacts

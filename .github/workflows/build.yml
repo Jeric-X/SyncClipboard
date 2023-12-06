@@ -12,6 +12,7 @@ on:
 
 jobs:
   winui:
+    if: false
     uses: ./.github/workflows/winui-package.yml
 
   deskop:
