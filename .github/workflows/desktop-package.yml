@@ -208,7 +208,14 @@ jobs:
       - name: Package dmg
         continue-on-error: true
         run: | 
-          create-dmg --volicon VolumeIcon.icns SyncClipboard.dmg SyncClipboard.app
+          create-dmg \
+          --volicon VolumeIcon.icns \
+          --background dmg-background.png \
+          --window-size 660 400 \
+          --icon-size 120 \
+          --icon SyncClipboard.app 165 175 \
+          --app-drop-link 495 175 \
+          SyncClipboard.dmg SyncClipboard.app
         working-directory: ./build/macos
 
       - name: show folder
