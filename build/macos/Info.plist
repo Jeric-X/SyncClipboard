@@ -9,7 +9,7 @@
 	<key>CFBundleName</key>
 	<string>SyncClipboard</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.12</string>
+	<string>10.15</string>
 	<key>CFBundleExecutable</key>
 	<string>SyncClipboard.Desktop.MacOS</string>
 	<key>CFBundleInfoDictionaryVersion</key>
