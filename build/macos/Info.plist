@@ -9,7 +9,7 @@
 	<key>CFBundleName</key>
 	<string>SyncClipboard</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.12</string>
+	<string>10.15</string>
 	<key>CFBundleExecutable</key>
 	<string>SyncClipboard.Desktop.MacOS</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -19,8 +19,8 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>CFBundleVersion</key>
-	<string>0.3.0</string>
+	<string>0.3.1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.3.0</string>
+	<string>0.3.1</string>
 </dict>
 </plist>

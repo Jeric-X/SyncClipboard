@@ -1,3 +1,7 @@
+0.3.1
+- 不兼容变更：macOS配置文件改为储存在~/Library/Application Support/SyncClipboard/，建议老用户移动~/.config/SyncClipboard/中的内容到新目录
+  - TODO: 修改README
+
 0.3.0
 - 功能：深色模式切换开关
 - 功能：添加了一个诊断页面
