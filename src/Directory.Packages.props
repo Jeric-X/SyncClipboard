@@ -15,11 +15,11 @@
     <PackageVersion Include="CodeCracker.CSharp" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="11.0.5" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.0.5" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.0.5" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.0.5" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.0.5" />
+    <PackageVersion Include="Avalonia" Version="11.0.6" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.0.6" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.0.6" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.0.6" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.0.6" />
     <PackageVersion Include="FluentAvaloniaUI" Version="2.0.4" />
     <PackageVersion Include="FluentAvalonia.BreadcrumbBar" Version="2.0.2" />
   </ItemGroup>

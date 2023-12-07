@@ -87,12 +87,6 @@ internal partial class ClipboardFactory
         {
             meta.Text = "Unknow Image";
         }
-
-        var html = await Clipboard.GetDataAsync(Format.PublicHtml).WaitAsync(token) as byte[];
-        if (html is not null)
-        {
-            meta.Html = Encoding.UTF8.GetString(html);
-        }
     }
 
     [SupportedOSPlatform("macos")]
