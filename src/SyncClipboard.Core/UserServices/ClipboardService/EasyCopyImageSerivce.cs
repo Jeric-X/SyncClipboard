@@ -136,6 +136,12 @@ public class EasyCopyImageSerivce : ClipboardHander
         {
             return false;
         }
+
+        if (metaInfo.Html is not null && metaInfo.Files is not null
+            && metaInfo.Image is null && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType)
+        {
+            return false;
+        }
         return metaInfo.Files is null || metaInfo.Html is null || metaInfo.Image is null;
     }
 
