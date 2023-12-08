@@ -140,6 +140,7 @@ internal partial class ClipboardFactory
         var str = Encoding.UTF8.GetString(bytes!);
         var pathList = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
+        if (pathList.Length < 2) return;
         if (pathList[0] == "cut")
         {
             meta.Effects = DragDropEffects.Move;
@@ -173,7 +174,7 @@ internal partial class ClipboardFactory
         var bytes = await clipboard.GetDataAsync(Format.CompoundText).WaitAsync(token) as byte[];
         var str = Encoding.UTF8.GetString(bytes!);
         string[] lines = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        if (lines[1] == "cut")
+        if (lines.Length >= 3 && lines[1] == "cut")
         {
             return DragDropEffects.Move;
         }
