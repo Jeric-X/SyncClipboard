@@ -99,21 +99,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
         if (DownloadWebImageEnabled && !string.IsNullOrEmpty(metaInfo.Html))
         {
-            const string Expression = @".*<[\s]*img[\s]*.*?[\s]*src=(?<quote>[""'])(?<imgUrl>https?://.*?)\k<quote>.*?/[\s]*>";
-            var match = Regex.Match(metaInfo.Html, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
-            if (match.Success) // 是从浏览器复制的图片
-            {
-                TrayIcon.SetStatusString(SERVICE_NAME, "Downloading web image.");
-                _logger.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
-                var uri = new Uri(match.Groups["imgUrl"].Value);
-                var localPath = await DownloadImage(uri, useProxy, cancellationToken);
-                if (!ImageHelper.FileIsImage(localPath))
-                {
-                    TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
-                    localPath = await ConvertService.CompatibilityCast(_serviceProvider, localPath, cancellationToken);
-                }
-                profile = new ImageProfile(localPath, _serviceProvider);
-            }
+            profile = await ProcessImageFromWeb(metaInfo, useProxy, cancellationToken) ?? profile;
         }
 
         await AdjustClipboard(profile, cancellationToken);
@@ -161,23 +147,58 @@ public class EasyCopyImageSerivce : ClipboardHander
         }
     }
 
-    private async Task<string> DownloadImage(Uri imageUri, bool useProxy, CancellationToken cancellationToken)
+    private async Task<Profile?> ProcessImageFromWeb(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken ctk)
     {
+        const string Expression = @".*<[\s]*img[\s]*.*?[\s]*src=(?<quote>[""'])(?<imgUrl>https?://.*?)\k<quote>.*?/[\s]*>";
+        var match = Regex.Match(metaInfo.Html!, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
+        if (match.Success) // 是从浏览器复制的图片
+        {
+            TrayIcon.SetStatusString(SERVICE_NAME, "Downloading web image.");
+            _logger.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
+
+            try
+            {
+                var localPath = await DownloadImage(new Uri(match.Groups["imgUrl"].Value), useProxy, ctk);
+                if (!ImageHelper.FileIsImage(localPath))
+                {
+                    TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
+                    localPath = await ConvertService.CompatibilityCast(_serviceProvider, localPath, ctk);
+                }
+                return new ImageProfile(localPath, _serviceProvider);
+            }
+            catch
+            {
+                ctk.ThrowIfCancellationRequested();
+            }
+        }
+        return null;
+    }
+
+    private async Task<string> DownloadImage(Uri imageUri, bool useProxy, CancellationToken token)
+    {
+        using var downloadingCts = new CancellationTokenSource();
+        var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, downloadingCts.Token).Token;
+
         var filename = Regex.Match(imageUri.LocalPath, "[^/]+(?!.*/)");
         lock (_progressLocker)
         {
-            _progress ??= new(filename.Value[..Math.Min(filename.Value.Length, 50)], I18n.Strings.DownloadingWebImage, _notificationManager);
+            _progress ??= new ProgressToastReporter(
+                filename.Value[..Math.Min(filename.Value.Length, 50)],
+                I18n.Strings.DownloadingWebImage,
+                _notificationManager,
+                new Button(I18n.Strings.Cancel, downloadingCts.Cancel)
+            );
         }
         if (useProxy)
         {
             var fullPath = Path.Combine(Env.TemplateFileFolder, "proxy " + filename.Value);
-            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, cancellationToken, true);
+            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, linkedToken, true);
             return fullPath;
         }
         else
         {
             var fullPath = Path.Combine(Env.TemplateFileFolder, filename.Value);
-            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, cancellationToken);
+            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, linkedToken);
             return fullPath;
         }
     }

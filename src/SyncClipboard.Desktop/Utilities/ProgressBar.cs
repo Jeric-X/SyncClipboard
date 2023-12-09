@@ -1,5 +1,6 @@
 ﻿using SyncClipboard.Abstract;
 using System;
+using System.Collections.Generic;
 
 namespace SyncClipboard.Desktop.Utilities;
 
@@ -12,6 +13,7 @@ internal class ProgressBar : IProgressBar
     public string? ProgressValueTip { get; set; }
     public string ProgressStatus { get; set; } = "";
     public Uri? Image { get; set; }
+    public List<Button> Buttons { get; set; } = new List<Button>();
 
     public void Remove()
     {
