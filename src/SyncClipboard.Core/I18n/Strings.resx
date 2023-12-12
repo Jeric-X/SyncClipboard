@@ -391,7 +391,7 @@
     <value>Run</value>
   </data>
   <data name="CompletelyExit" xml:space="preserve">
-    <value>Completely Exit</value>
+    <value>Completely exit</value>
   </data>
   <data name="HideOnStartup" xml:space="preserve">
     <value>Hide Window on Startup</value>
@@ -416,5 +416,8 @@
   </data>
   <data name="Dark" xml:space="preserve">
     <value>Dark</value>
+  </data>
+  <data name="CopyAppDataDirPath" xml:space="preserve">
+    <value>Copy app data directory path</value>
   </data>
 </root>

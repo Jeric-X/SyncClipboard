@@ -196,7 +196,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Completely Exit 的本地化字符串。
+        ///   查找类似 Completely exit 的本地化字符串。
         /// </summary>
         public static string CompletelyExit {
             get {
@@ -219,6 +219,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Copy {
             get {
                 return ResourceManager.GetString("Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Copy app data directory path 的本地化字符串。
+        /// </summary>
+        public static string CopyAppDataDirPath {
+            get {
+                return ResourceManager.GetString("CopyAppDataDirPath", resourceCulture);
             }
         }
         

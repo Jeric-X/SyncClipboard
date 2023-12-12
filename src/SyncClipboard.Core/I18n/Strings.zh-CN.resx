@@ -417,4 +417,7 @@
   <data name="Dark" xml:space="preserve">
     <value>深色</value>
   </data>
+  <data name="CopyAppDataDirPath" xml:space="preserve">
+    <value>复制应用数据文件夹路径</value>
+  </data>
 </root>

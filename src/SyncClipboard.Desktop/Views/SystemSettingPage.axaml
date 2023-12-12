@@ -102,6 +102,11 @@
                         <Button Content="{x:Static i18n:Strings.Run}" Click="ExitApp" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CopyAppDataDirPath}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Content="{x:Static i18n:Strings.Run}" Click="CopyAppDataDirPath" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
     </StackPanel>
