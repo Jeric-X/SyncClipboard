@@ -165,7 +165,7 @@ public class FileProfile : Profile
             }
             return md5This == md5Other;
         }
-        catch
+        catch when (cancellationToken.IsCancellationRequested is false)
         {
             return false;
         }

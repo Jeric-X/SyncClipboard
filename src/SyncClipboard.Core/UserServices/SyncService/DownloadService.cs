@@ -250,15 +250,10 @@ public class DownloadService : Service
                     _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
                 }
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
-                _toastReporter = null;
                 PullStarted?.Invoke();
                 remoteProfile.SetLocalClipboard(true, cancelToken);
                 _logger.Write("Success download:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
-            }
-            catch
-            {
-                throw;
             }
             finally
             {

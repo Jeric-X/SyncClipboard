@@ -114,10 +114,6 @@ public class ConvertService : ClipboardHander
             progressBar.ShowSilent();
             return await ImageHelper.CompatibilityCast(localPath, Env.TemplateFileFolder, ctk);
         }
-        catch
-        {
-            throw;
-        }
         finally
         {
             progressBar.Remove();
