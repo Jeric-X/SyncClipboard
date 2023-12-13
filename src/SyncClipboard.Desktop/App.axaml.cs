@@ -18,6 +18,7 @@ public partial class App : Application
     public IServiceProvider Services { get; private set; }
     public new static App Current => (App)Application.Current!;
     public MainWindow MainWindow => (MainWindow)Services.GetRequiredService<IMainWindow>();
+    public ILogger Logger => Services.GetRequiredService<ILogger>();
     public IClipboard Clipboard => MainWindow.Clipboard!;
 
     private IClassicDesktopStyleApplicationLifetime _appLife;

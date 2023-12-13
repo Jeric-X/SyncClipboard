@@ -92,22 +92,34 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DiagnoseMode, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.SystemOperations}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CompletelyExit}">
-                    <ui:SettingsExpanderItem.Footer>
-                        <Button Content="{x:Static i18n:Strings.Run}" Click="ExitApp" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CopyAppDataDirPath}">
-                    <ui:SettingsExpanderItem.Footer>
-                        <Button Content="{x:Static i18n:Strings.Run}" Click="CopyAppDataDirPath" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
+        <OnPlatform>
+            <OnPlatform.Default>
+                <ui:SettingsExpander Header="{x:Static i18n:Strings.SystemOperations}" IsExpanded="True">
+                    <ui:SettingsExpander.IconSource>
+                        <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </ui:SettingsExpander.IconSource>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CompletelyExit}">
+                            <ui:SettingsExpanderItem.Footer>
+                                <Button Content="{x:Static i18n:Strings.Run}" Click="ExitApp" />
+                            </ui:SettingsExpanderItem.Footer>
+                        </ui:SettingsExpanderItem>
+                        <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CopyAppDataFolderPath}">
+                            <ui:SettingsExpanderItem.Footer>
+                                <Button Content="{x:Static i18n:Strings.Run}" Click="CopyAppDataFolderPath" />
+                            </ui:SettingsExpanderItem.Footer>
+                        </ui:SettingsExpanderItem>
+                        <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.OpenDataFolderInNautilus}">
+                            <ui:SettingsExpanderItem.Footer>
+                                <Button Content="{x:Static i18n:Strings.Run}" Click="OpenDataFolderInNautilus" />
+                            </ui:SettingsExpanderItem.Footer>
+                        </ui:SettingsExpanderItem>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
+            </OnPlatform.Default>
+            <OnPlatform.macOS>
+                <UserControl />
+            </OnPlatform.macOS>
+        </OnPlatform>
     </StackPanel>
 </UserControl>

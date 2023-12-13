@@ -223,11 +223,11 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Copy app data directory path 的本地化字符串。
+        ///   查找类似 Copy app data folder path to clipboard 的本地化字符串。
         /// </summary>
-        public static string CopyAppDataDirPath {
+        public static string CopyAppDataFolderPath {
             get {
-                return ResourceManager.GetString("CopyAppDataDirPath", resourceCulture);
+                return ResourceManager.GetString("CopyAppDataFolderPath", resourceCulture);
             }
         }
         
@@ -624,6 +624,15 @@ namespace SyncClipboard.Core.I18n {
         public static string OpenConfigFileFolder {
             get {
                 return ResourceManager.GetString("OpenConfigFileFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open app data folder in Nautilus 的本地化字符串。
+        /// </summary>
+        public static string OpenDataFolderInNautilus {
+            get {
+                return ResourceManager.GetString("OpenDataFolderInNautilus", resourceCulture);
             }
         }
         

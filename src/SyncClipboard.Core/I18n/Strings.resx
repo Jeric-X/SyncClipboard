@@ -417,7 +417,10 @@
   <data name="Dark" xml:space="preserve">
     <value>Dark</value>
   </data>
-  <data name="CopyAppDataDirPath" xml:space="preserve">
-    <value>Copy app data directory path</value>
+  <data name="CopyAppDataFolderPath" xml:space="preserve">
+    <value>Copy app data folder path to clipboard</value>
+  </data>
+  <data name="OpenDataFolderInNautilus" xml:space="preserve">
+    <value>Open app data folder in Nautilus</value>
   </data>
 </root>

@@ -90,6 +90,7 @@ public partial class MainWindow : Window, IMainWindow
     protected virtual void ShowMainWindow()
     {
         this.Show();
+        this.Activate();
     }
 
     void IMainWindow.Show()
