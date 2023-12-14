@@ -4,6 +4,7 @@ using SyncClipboard.Core.Utilities;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Diagnostics;
 
 namespace SyncClipboard.Core.Commons
 {
@@ -157,53 +158,40 @@ namespace SyncClipboard.Core.Commons
 
         public void AddMenuItems()
         {
-            List<MenuItem> menuItems = new()
+            if (OperatingSystem.IsMacOS())
             {
-                new MenuItem(
-                    I18n.Strings.OpenConfigFile, OpenConfigFile),
-                new MenuItem(I18n.Strings.ReloadConfigFile, () => this.Load())
-            };
-
-            if (OperatingSystem.IsWindows())
-            {
-                menuItems.Add(new MenuItem(I18n.Strings.OpenConfigFileFolder, OpenConfigFileFolder));
+                _contextMenu.AddMenuItemGroup(MacOSMenu);
             }
-            else if (OperatingSystem.IsMacOS())
+            else if (OperatingSystem.IsWindows())
             {
-                menuItems.Add(new MenuItem(I18n.Strings.OpenConfigFileFolder, OpenConfigFileInFinder));
+                _contextMenu.AddMenuItemGroup(WindowsMenu);
             }
-            _contextMenu.AddMenuItemGroup(menuItems.ToArray());
-        }
-
-        private void OpenConfigFile()
-        {
-            if (OperatingSystem.IsWindows())
+            else
             {
-                var open = new System.Diagnostics.Process();
-                open.StartInfo.FileName = "notepad";
-                open.StartInfo.Arguments = _path;
-                open.Start();
+                _contextMenu.AddMenuItemGroup(DefaultMenu);
             }
-
-            Sys.OpenWithDefaultApp(_path);
-        }
-
-        [SupportedOSPlatform("windows")]
-        private void OpenConfigFileFolder()
-        {
-            var open = new System.Diagnostics.Process();
-            open.StartInfo.FileName = "explorer";
-            open.StartInfo.Arguments = "/e,/select," + _path;
-            open.Start();
         }
 
         [SupportedOSPlatform("macos")]
-        private void OpenConfigFileInFinder()
+        private MenuItem[] MacOSMenu => new[]
         {
-            var open = new System.Diagnostics.Process();
-            open.StartInfo.FileName = "open";
-            open.StartInfo.Arguments = $"-R \"{_path}\"";
-            open.Start();
-        }
+            new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("open", $"-a TextEdit \"{_path}\"")),
+            new MenuItem(I18n.Strings.ReloadConfigFile, Load),
+            new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("open", $"-R \"{_path}\""))
+        };
+
+        [SupportedOSPlatform("windows")]
+        private MenuItem[] WindowsMenu => new[]
+        {
+            new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", _path)),
+            new MenuItem(I18n.Strings.ReloadConfigFile, Load),
+            new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"/e,/select,{_path}"))
+        };
+
+        private MenuItem[] DefaultMenu => new[]
+        {
+            new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(_path)),
+            new MenuItem(I18n.Strings.ReloadConfigFile, Load),
+        };
     }
 }

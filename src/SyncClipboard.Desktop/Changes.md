@@ -2,6 +2,7 @@
 - 系统操作：复制数据文件夹路径（Linux）
 - 系统操作：在Nautilus中打开数据文件夹（Linux）
 - 新菜单项：打开配置文件所在文件夹（macOS）
+- 使用TextEdit打开配置文件（macOS）
 - 不兼容变更：macOS配置文件改为储存在~/Library/Application Support/SyncClipboard/，建议老用户移动~/.config/SyncClipboard/中的内容到新目录
   - TODO: 修改README
 

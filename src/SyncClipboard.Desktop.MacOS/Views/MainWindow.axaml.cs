@@ -46,18 +46,4 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
         this.Opacity = opacity;
         ExtendClientAreaChromeHints = extendClientAreaChromeHints;
     }
-
-    private bool _created = false;
-    protected override void ShowMainWindow()
-    {
-        if (_created)
-        {
-            Activate();
-        }
-        else
-        {
-            base.ShowMainWindow();
-            _created = true;
-        }
-    }
 }
