@@ -20,6 +20,7 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class MainWindow : Window, IMainWindow
     {
+        public TrayIcon TrayIcon => _TrayIcon;
         private readonly MainViewModel _viewModel;
 
         public MainWindow()

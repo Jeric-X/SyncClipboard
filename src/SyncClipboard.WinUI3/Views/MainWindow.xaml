@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:SyncClipboard.Core.ViewModels"
+        xmlns:views="using:SyncClipboard.WinUI3.Views"
         xmlns:local="using:SyncClipboard.WinUI3.Views"
         Title="SyncClipboard"
         SizeChanged="Window_SizeChanged"
@@ -89,5 +90,6 @@
                 </ListView>
             </SplitView.Pane>
         </SplitView>
+        <views:TrayIcon x:Name="_TrayIcon"/>
     </Grid>
 </Window>

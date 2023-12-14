@@ -1,10 +1,9 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Diagnostics;
 
 namespace SyncClipboard.Core.Commons
 {
@@ -13,7 +12,6 @@ namespace SyncClipboard.Core.Commons
         public event Action? ConfigChanged;
 
         private readonly ILogger _logger;
-        private readonly IContextMenu _contextMenu;
         private readonly string _path;
 
         private readonly Dictionary<string, Type> _registedTypeList = new();
@@ -21,10 +19,9 @@ namespace SyncClipboard.Core.Commons
 
         JsonNode _jsonNode = new JsonObject();
 
-        public ConfigManager(ILogger logger, IContextMenu contextMenu)
+        public ConfigManager(ILogger logger)
         {
             _logger = logger;
-            _contextMenu = contextMenu;
             _path = Env.UserConfigFile;
             Load();
         }
@@ -156,42 +153,30 @@ namespace SyncClipboard.Core.Commons
             ConfigChanged?.Invoke();
         }
 
-        public void AddMenuItems()
-        {
-            if (OperatingSystem.IsMacOS())
-            {
-                _contextMenu.AddMenuItemGroup(MacOSMenu);
-            }
-            else if (OperatingSystem.IsWindows())
-            {
-                _contextMenu.AddMenuItemGroup(WindowsMenu);
-            }
-            else
-            {
-                _contextMenu.AddMenuItemGroup(DefaultMenu);
-            }
-        }
-
-        [SupportedOSPlatform("macos")]
-        private MenuItem[] MacOSMenu => new[]
+#if MACOS
+        private MenuItem[] Menu => new[]
         {
             new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("open", $"-a TextEdit \"{_path}\"")),
             new MenuItem(I18n.Strings.ReloadConfigFile, Load),
             new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("open", $"-R \"{_path}\""))
         };
+#endif
 
-        [SupportedOSPlatform("windows")]
-        private MenuItem[] WindowsMenu => new[]
+#if WINDOWS     
+        public MenuItem[] Menu => new[]
         {
             new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", _path)),
             new MenuItem(I18n.Strings.ReloadConfigFile, Load),
             new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"/e,/select,{_path}"))
         };
+#endif
 
-        private MenuItem[] DefaultMenu => new[]
+#if LINUX
+        private MenuItem[] Menu => new[]
         {
             new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(_path)),
             new MenuItem(I18n.Strings.ReloadConfigFile, Load),
         };
+#endif
     }
 }

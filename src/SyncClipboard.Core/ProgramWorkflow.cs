@@ -40,7 +40,7 @@ namespace SyncClipboard.Core
             var mainWindow = Services.GetRequiredService<IMainWindow>();
 
             contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
-            configManager.AddMenuItems();
+            contextMenu.AddMenuItemGroup(configManager.Menu);
 
             PrepareRemoteWorkingFolder();
             PrepareWorkingFolder(configManager);

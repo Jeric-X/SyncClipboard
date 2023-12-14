@@ -26,7 +26,7 @@ public class AppServices
         services.AddSingleton<ClipboardFactory>();
         services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());
         services.AddSingleton<IProfileDtoHelper>(sp => sp.GetRequiredService<ClipboardFactory>());
-        services.AddSingleton<TrayIcon>();
+        services.AddSingleton<TrayIcon>(sp => ((MainWindow)sp.GetRequiredService<IMainWindow>()).TrayIcon);
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<INotification, NotificationManager>();
