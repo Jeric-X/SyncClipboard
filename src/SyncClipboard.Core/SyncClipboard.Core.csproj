@@ -7,18 +7,24 @@
     <DebugType>embedded</DebugType>
     <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
     <GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
-    <IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-    <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-    <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+    <BuildOnWin Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</BuildOnWin>
+    <BuildOnMac Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</BuildOnMac>
+    <BuildOnLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</BuildOnLinux>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsWindows)'=='true'">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)'==''">
+    <DefineConstants Condition="'$(BuildOnWin)'=='true'">WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(BuildOnMac)'=='true'">MACOS</DefineConstants>
+    <DefineConstants Condition="'$(BuildOnLinux)'=='true'">LINUX</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win'))">
     <DefineConstants>WINDOWS</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsOSX)'=='true'">
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
     <DefineConstants>MACOS</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsLinux)'=='true'">
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
     <DefineConstants>LINUX</DefineConstants>
   </PropertyGroup>
 

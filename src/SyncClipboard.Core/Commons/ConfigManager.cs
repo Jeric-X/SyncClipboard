@@ -153,30 +153,22 @@ namespace SyncClipboard.Core.Commons
             ConfigChanged?.Invoke();
         }
 
-#if MACOS
-        private MenuItem[] Menu => new[]
+        public MenuItem[] Menu => new MenuItem[]
         {
+#if MACOS
             new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("open", $"-a TextEdit \"{_path}\"")),
             new MenuItem(I18n.Strings.ReloadConfigFile, Load),
             new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("open", $"-R \"{_path}\""))
-        };
 #endif
-
 #if WINDOWS     
-        public MenuItem[] Menu => new[]
-        {
             new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", _path)),
             new MenuItem(I18n.Strings.ReloadConfigFile, Load),
             new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"/e,/select,{_path}"))
-        };
 #endif
-
 #if LINUX
-        private MenuItem[] Menu => new[]
-        {
             new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(_path)),
             new MenuItem(I18n.Strings.ReloadConfigFile, Load),
-        };
 #endif
+        };
     }
 }
