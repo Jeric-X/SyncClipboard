@@ -13,19 +13,19 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)'==''">
-    <DefineConstants Condition="'$(BuildOnWin)'=='true'">WINDOWS</DefineConstants>
-    <DefineConstants Condition="'$(BuildOnMac)'=='true'">MACOS</DefineConstants>
-    <DefineConstants Condition="'$(BuildOnLinux)'=='true'">LINUX</DefineConstants>
+    <DefineConstants Condition="'$(BuildOnWin)'=='true'">$(DefineConstants);WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(BuildOnMac)'=='true'">$(DefineConstants);MACOS</DefineConstants>
+    <DefineConstants Condition="'$(BuildOnLinux)'=='true'">$(DefineConstants);LINUX</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win'))">
-    <DefineConstants>WINDOWS</DefineConstants>
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
-    <DefineConstants>MACOS</DefineConstants>
+    <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
-    <DefineConstants>LINUX</DefineConstants>
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
