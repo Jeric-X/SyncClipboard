@@ -15,6 +15,8 @@ let running = false
 let remoteCache;
 
 function loop() {
+    if (!device.isScreenOn())
+        return
     if (running)
         return
     running = true
@@ -58,11 +60,8 @@ function download() {
 }
 
 function upload() {
-    if (!device.isScreenOn())
-        return Promise.resolve(false)
-
     let text = getClip()
-    if (text != remoteCache) {
+    if (text != remoteCache && text != null && text.length != 0) {
         return axios({
             method: 'put',
             url: apiUrl,

@@ -126,7 +126,8 @@ const intervalTime = 3 * 1000                         // 3 seconds
 const showToastNotification = true
 // END    User Config  
 ```
-当满足下列条件之一时，Autox.js脚本可以在后台自动同步文字类型的剪切板
+Autox.js脚本运行在后台时可以自动下载远程剪切板文字到本地，但自动上传依赖下列条件之一
+- 将软件切换到前台
 - Android版本小于等于Android 9 Pie
 - 使用基于root权限的工具(Magisk/Xposed)解除`Autox.js`后台操作剪切版的权限，参考
   - https://github.com/Kr328/Riru-ClipboardWhitelist

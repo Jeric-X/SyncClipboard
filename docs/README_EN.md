@@ -124,7 +124,9 @@ const intervalTime = 3 * 1000                         // 3 seconds
 const showToastNotification = true
 // END    User Config  
 ```
-If satisfy any of the following conditions, text type of clipboard will be auto-synced.
+Running in background, the script will download the remote text clipbaord automatically and set it to local clipboard. 
+If satisfy any of the following conditions, upload is automatic.
+- The app is running in forground
 - Android 9 Pie or lower Android version
 - Use root-based tools like Magisk/Xposed to unlock the limition of clipboard operation in background. There are some references:
   - https://github.com/Kr328/Riru-ClipboardWhitelist
