@@ -58,8 +58,11 @@ function download() {
 }
 
 function upload() {
-    let uploadCache = getClip()
-    if (uploadCache != remoteCache) {
+    if (!device.isScreenOn())
+        return Promise.resolve(false)
+
+    let text = getClip()
+    if (text != remoteCache) {
         return axios({
             method: 'put',
             url: apiUrl,
@@ -70,14 +73,14 @@ function upload() {
             },
             data: {
                 'File': '',
-                'Clipboard': uploadCache,
+                'Clipboard': text,
                 'Type': 'Text'
             }
         }).then(res => {
             if (res.status < 200 || res.status >= 300) {
                 throw res.status + ' ' + res.statusText
             }
-            remoteCache = uploadCache
+            remoteCache = text
             return false
         })
     }
