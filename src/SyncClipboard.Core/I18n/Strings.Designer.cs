@@ -880,6 +880,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Changing to System Style from Light or Dark effects after restart 的本地化字符串。
+        /// </summary>
+        public static string ThemeChangeInfo {
+            get {
+                return ResourceManager.GetString("ThemeChangeInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Timeout 的本地化字符串。
         /// </summary>
         public static string Timeout {

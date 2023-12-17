@@ -35,7 +35,10 @@ namespace SyncClipboard.WinUI3
             ProgramWorkflow = new ProgramWorkflow(Services);
 
             var theme = Services.GetRequiredService<ConfigManager>().GetConfig<ProgramConfig>().Theme;
-            RequestedTheme = StringToTheme(theme) ?? RequestedTheme;
+            if (StringToTheme(theme) is ApplicationTheme applicationTheme)
+            {
+                RequestedTheme = applicationTheme;
+            }
 
             this.InitializeComponent();
         }

@@ -423,4 +423,7 @@
   <data name="OpenDataFolderInNautilus" xml:space="preserve">
     <value>Open app data folder in Nautilus</value>
   </data>
+  <data name="ThemeChangeInfo" xml:space="preserve">
+    <value>Changing to System Style from Light or Dark effects after restart</value>
+  </data>
 </root>
