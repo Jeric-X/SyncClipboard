@@ -20,6 +20,7 @@
       - [使用JSBox](#使用jsbox)
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
+      - [使用Autox.js](#使用autoxjs)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
     - [获取/上传剪切板（文字）](#获取上传剪切板文字)
@@ -113,6 +114,23 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ![](docs/image/android3.jpg)
 
 </details>
+
+#### 使用[Autox.js](https://github.com/kkevsekk1/AutoX)
+导入这个[js文件](/script/SyncAutoxJs.js)，修改脚本中的前几行，并在`Autox.js`中设置脚本的触发方式，例如：开机时触发
+```
+// START  User Config  
+const url = 'http://192.168.5.194:5033'               // no slash(/) at the end of url
+const username = 'admin'
+const token = 'admin'
+const intervalTime = 3 * 1000                         // 3 seconds
+const showToastNotification = true
+// END    User Config  
+```
+当满足下列条件之一时，Autox.js脚本可以在后台自动同步文字类型的剪切板
+- Android版本小于等于Android 9 Pie
+- 使用基于root权限的工具(Magisk/Xposed)解除`Autox.js`后台操作剪切版的权限，参考
+  - https://github.com/Kr328/Riru-ClipboardWhitelist
+  - https://github.com/GamerGirlandCo/xposed-clipboard-whitelist
 
 ### 客户端配置说明
 

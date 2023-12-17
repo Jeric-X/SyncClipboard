@@ -19,6 +19,7 @@
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
       - [Use HTTP Request Shortcuts](#use-http-request-shortcuts)
+      - [Use Autox.js](#use-autoxjs)
     - [Notes for Clients](#notes-for-clients)
   - [API](#api)
     - [Download/Upload Text](#downloadupload-text)
@@ -111,6 +112,24 @@ Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`
 ![](image/android3_EN.jpg)
 
 </details>
+
+#### Use [Autox.js](https://github.com/kkevsekk1/AutoX)
+Import this [js file](/script/SyncAutoxJs.js). Change the user config. And set a running trigger, for example, running the script when Android system startup.
+```
+// START  User Config  
+const url = 'http://192.168.5.194:5033'               // no slash(/) at the end of url
+const username = 'admin'
+const token = 'admin'
+const intervalTime = 3 * 1000                         // 3 seconds
+const showToastNotification = true
+// END    User Config  
+```
+If satisfy any of the following conditions, text type of clipboard will be auto-synced.
+- Android 9 Pie or lower Android version
+- Use root-based tools like Magisk/Xposed to unlock the limition of clipboard operation in background. There are some references:
+  - https://github.com/Kr328/Riru-ClipboardWhitelist
+  - https://github.com/GamerGirlandCo/xposed-clipboard-whitelist
+
 
 ### Notes for Clients
 
