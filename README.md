@@ -90,9 +90,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 注意：
 - 名称中带有`no-self-contained`：依赖[.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)和[ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 - 名称中带有`self-contained`：通常可以直接运行
-- 删除软件时，配置文件目录不会被删除，配置文件储存在`~/.config/SyncClipboard/`，可以手动删除整个目录
-- 每次更新版本需要先删除旧版，再安装新版，不支持直接更新
-- 存在大量BUG
+- 删除软件时，配置文件目录不会被删除，配置文件储存在`~/.config/SyncClipboard/`(Linux)，`~/Library/Application Support/SyncClipboard/`(macOS)，需要彻底删除软件时请手动删除整个目录
+- 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  

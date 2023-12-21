@@ -91,9 +91,8 @@ Downloading page: [SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboa
 Notes:
 - File name with `no-self-contained`: [.NET 6.0 Desktop](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime and [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime are required.
 - File name with `self-contained`: should run with no dependencies.
-- Config files are saved in `~/.config/SyncClipboard/`. Uninstaller won't delete them. Users can delete them manually.
-- Not suport upgrading directly. Delete old version first, then install the new version.
-- Plenty of bugs exist.
+- Config files are saved in `~/.config/SyncClipboard/`(Linux), `~/Library/Application Support/SyncClipboard/`(macOS). Uninstaller won't delete them. Users can delete them manually.
+- Not suport upgrading directly with `deb` or `rpm` package. Delete old version first, then install the new version.
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
