@@ -68,7 +68,6 @@ function upload() {
             headers: {
                 'authorization': authHeader,
                 'Content-Type': 'application/json',
-                responseType: 'json',
             },
             data: {
                 'File': '',
