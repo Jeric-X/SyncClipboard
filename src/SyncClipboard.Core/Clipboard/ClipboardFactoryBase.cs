@@ -44,29 +44,36 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnkonwnProfile();
     }
 
+    private async Task<Profile> UploadAndReturnBlankProfile(CancellationToken ctk)
+    {
+        var blankProfile = new TextProfile("", ServiceProvider);
+        await blankProfile.UploadProfile(WebDav, ctk);
+        return blankProfile;
+    }
+
     public async Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken)
     {
-        ClipboardProfileDTO? profileDTO;
         try
         {
-            profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(Env.RemoteProfilePath, cancelToken);
+            var profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(Env.RemoteProfilePath, cancelToken);
             Logger.Write(nameof(ClipboardFactoryBase), profileDTO?.ToString() ?? "null");
+            ArgumentNullException.ThrowIfNull(profileDTO);
+
+            ProfileType type = ProfileTypeHelper.StringToProfileType(profileDTO.Type);
+            return GetProfileBy(type, profileDTO);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (
+            ex is JsonException ||
+            ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound } ||
+            ex is ArgumentException)
         {
-            if (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound })
-            {
-                var blankProfile = new TextProfile("", ServiceProvider);
-                await blankProfile.UploadProfile(WebDav, cancelToken);
-                return blankProfile;
-            }
+            return await UploadAndReturnBlankProfile(cancelToken);
+        }
+        catch
+        {
             Logger.Write("CreateFromRemote failed");
             throw;
         }
-
-        ArgumentNullException.ThrowIfNull(profileDTO);
-        ProfileType type = ProfileTypeHelper.StringToProfileType(profileDTO.Type);
-        return GetProfileBy(type, profileDTO);
     }
 
     private Profile GetProfileBy(ProfileType type, ClipboardProfileDTO profileDTO)
