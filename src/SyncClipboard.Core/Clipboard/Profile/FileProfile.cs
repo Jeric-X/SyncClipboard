@@ -100,7 +100,7 @@ public class FileProfile : Profile
         }
 
         await CalcFileHash(cancelToken);
-        await webdav.PutText(RemoteProfilePath, this.ToJsonString(), cancelToken);
+        await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
     public override async Task BeforeSetLocal(CancellationToken cancelToken,

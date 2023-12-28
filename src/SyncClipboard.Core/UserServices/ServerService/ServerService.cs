@@ -14,6 +14,7 @@ public class ServerService : Service
 
     private readonly ConfigManager _configManager;
     private ServerConfig _serverConfig = new();
+    private ProgramConfig _programConfig = new();
     private readonly ToggleMenuItem _toggleMenuItem;
 
     private readonly IServiceProvider _serviceProvider;
@@ -43,7 +44,9 @@ public class ServerService : Service
     protected override void StartService()
     {
         _configManager.ListenConfig<ServerConfig>(ConfigChanged);
+        _configManager.ListenConfig<ProgramConfig>(DiagnoseModeChanged);
         _serverConfig = _configManager.GetConfig<ServerConfig>();
+        _programConfig = _configManager.GetConfig<ProgramConfig>();
         _contextMenu.AddMenuItem(_toggleMenuItem, SyncService.ContextMenuGroupName);
         RestartServer();
     }
@@ -57,6 +60,15 @@ public class ServerService : Service
         }
     }
 
+    private void DiagnoseModeChanged(ProgramConfig config)
+    {
+        if (config.DiagnoseMode != _programConfig.DiagnoseMode)
+        {
+            _programConfig = config;
+            RestartServer();
+        }
+    }
+
     public async void RestartServer()
     {
         _toggleMenuItem.Checked = _serverConfig.SwitchOn;
@@ -66,12 +78,13 @@ public class ServerService : Service
             try
             {
                 app = await Server.Web.StartAsync(
-                    new Abstract.ServerPara(
+                    new ServerPara(
                         _serverConfig.Port,
                         Env.AppDataDirectory,
                         _serverConfig.UserName,
                         _serverConfig.Password,
                         _serverConfig.ClientMixedMode,
+                        _programConfig.DiagnoseMode,
                         _serviceProvider
                     )
                 );

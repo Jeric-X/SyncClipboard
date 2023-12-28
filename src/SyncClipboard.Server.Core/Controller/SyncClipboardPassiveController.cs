@@ -35,10 +35,9 @@ public class SyncClipboardPassiveController : SyncClipboardController
         return await base.GetSyncProfile(rootPath, path);
     }
 
-    protected override async Task<IResult> PutSyncProfile(HttpContext content, string rootPath, string path)
+    protected override IResult PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
     {
-        using StreamReader reader = new StreamReader(content.Request.Body);
-        _profileDtoHelper.SetLocalClipboardWithDto(await reader.ReadToEndAsync(), Path.Combine(rootPath, "file"));
+        _profileDtoHelper.SetLocalClipboardWithDto(profileDTO, Path.Combine(rootPath, "file"));
         return Results.Ok();
     }
 }

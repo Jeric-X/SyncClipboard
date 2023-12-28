@@ -41,5 +41,11 @@
             </ui:SettingsCard.HeaderIcon>
             <ComboBox SelectedItem="{x:Bind _viewModel.Theme, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Themes}" DisplayMemberPath="ShownString" />
         </ui:SettingsCard>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.DiagnoseMode}">
+            <ui:SettingsCard.HeaderIcon>
+                <FontIcon Glyph="&#xE9D9;" />
+            </ui:SettingsCard.HeaderIcon>
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.DiagnoseMode, Mode=TwoWay}" />
+        </ui:SettingsCard>
     </StackPanel>
 </Page>

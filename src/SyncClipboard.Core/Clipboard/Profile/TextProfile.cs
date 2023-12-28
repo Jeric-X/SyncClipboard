@@ -40,7 +40,7 @@ public class TextProfile : Profile
 
     public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
     {
-        await webdav.PutText(RemoteProfilePath, this.ToJsonString(), cancelToken);
+        await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
     protected override void SetNotification(INotification notification)

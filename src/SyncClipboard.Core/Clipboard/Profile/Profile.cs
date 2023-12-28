@@ -68,11 +68,9 @@ public abstract class Profile
         }
     }
 
-    public string ToJsonString()
-    {
-        ClipboardProfileDTO jsonProfile = new(FileName, Text, TypeString);
-        return JsonSerializer.Serialize(jsonProfile);
-    }
+    public string ToJsonString() => JsonSerializer.Serialize(ToDto());
+
+    public ClipboardProfileDTO ToDto() => new ClipboardProfileDTO(FileName, Text, TypeString);
 
     public static async Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken cancellationToken)
     {

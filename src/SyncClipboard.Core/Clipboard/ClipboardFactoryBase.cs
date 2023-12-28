@@ -103,12 +103,11 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return (profile.ToJsonString(), extraFilePath);
     }
 
-    public void SetLocalClipboardWithDto(string profileDtoString, string fileFolder)
+    public void SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
     {
-        var profileDTO = JsonSerializer.Deserialize<ClipboardProfileDTO>(profileDtoString);
-        ArgumentNullException.ThrowIfNull(profileDTO);
-        ProfileType type = ProfileTypeHelper.StringToProfileType(profileDTO.Type);
-        var profile = GetProfileBy(type, profileDTO);
+        ArgumentNullException.ThrowIfNull(profileDto);
+        ProfileType type = ProfileTypeHelper.StringToProfileType(profileDto.Type);
+        var profile = GetProfileBy(type, profileDto);
         if (profile is FileProfile fileProfile)
         {
             fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);

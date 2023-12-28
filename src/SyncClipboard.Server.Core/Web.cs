@@ -8,7 +8,7 @@ namespace SyncClipboard.Server;
 
 public class Web
 {
-    public static WebApplication Configure(WebApplicationBuilder builder)
+    public static WebApplication Configure(WebApplicationBuilder builder, bool useSwagger = false)
     {
         var services = builder.Services;
 
@@ -25,7 +25,7 @@ public class Web
 
         var app = builder.Build();
 
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() || useSwagger)
         {
             app.UseSwagger();
             app.UseSwaggerUI();
@@ -46,7 +46,7 @@ public class Web
         );
         builder.WebHost.UseUrls($"http://*:{serverConfig.Port}");
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
-        var app = Configure(builder);
+        var app = Configure(builder, serverConfig.DiagnoseMode);
         app.UseSyncCliboardServer(serverConfig);
         await app.StartAsync();
         return app;

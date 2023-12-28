@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.StaticFiles;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
+using SyncClipboard.Abstract;
+using System.Text.Json;
 
 namespace SyncClipboard.Server.Controller;
 
@@ -54,10 +57,9 @@ public class SyncClipboardController
         return GetFile(Path.Combine(rootPath, path));
     }
 
-    protected virtual async Task<IResult> PutSyncProfile(HttpContext content, string rootPath, string path)
+    protected virtual IResult PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
     {
-        using var fs = new FileStream(Path.Combine(rootPath, path), FileMode.Create);
-        await content.Request.Body.CopyToAsync(fs);
+        File.WriteAllText(Path.Combine(rootPath, path), JsonSerializer.Serialize(profileDTO));
         return Results.Ok();
     }
 
@@ -95,8 +97,8 @@ public class SyncClipboardController
         app.MapGet("/SyncClipboard.json", () =>
             GetSyncProfile(rootPath, "SyncClipboard.json")).RequireAuthorization();
 
-        app.MapPut("/SyncClipboard.json", (HttpContext content) =>
-            PutSyncProfile(content, rootPath, "SyncClipboard.json")).RequireAuthorization();
+        app.MapPut("/SyncClipboard.json", ([FromBody] ClipboardProfileDTO profileDto) =>
+            PutSyncProfile(profileDto, rootPath, "SyncClipboard.json")).RequireAuthorization();
 
         app.MapGet("/{name}", async (string name) =>
         {

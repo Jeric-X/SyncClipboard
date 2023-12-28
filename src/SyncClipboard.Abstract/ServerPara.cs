@@ -6,5 +6,6 @@ public record class ServerPara(
     string UserName,
     string Password,
     bool Passive,
+    bool DiagnoseMode,
     IServiceProvider Services
 );
