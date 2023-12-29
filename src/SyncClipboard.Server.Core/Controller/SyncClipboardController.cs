@@ -52,9 +52,18 @@ public class SyncClipboardController
         return Results.NotFound();
     }
 
-    protected virtual Task<IResult> GetSyncProfile(string rootPath, string path)
+    protected virtual async Task<ClipboardProfileDTO> GetSyncProfile(string rootPath, string path)
     {
-        return GetFile(Path.Combine(rootPath, path));
+        try
+        {
+            var dto = JsonSerializer.Deserialize<ClipboardProfileDTO>(await File.ReadAllTextAsync(Path.Combine(rootPath, path)));
+            ArgumentNullException.ThrowIfNull(dto);
+            return dto;
+        }
+        catch (Exception)
+        {
+            return new ClipboardProfileDTO("", "", "Text");
+        }
     }
 
     protected virtual IResult PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)

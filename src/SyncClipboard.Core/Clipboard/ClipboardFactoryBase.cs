@@ -97,7 +97,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnkonwnProfile();
     }
 
-    public async Task<(string, string?)> CreateProfileDto(CancellationToken ctk)
+    public async Task<(ClipboardProfileDTO, string?)> CreateProfileDto(CancellationToken ctk)
     {
         string? extraFilePath = null;
         var meta = await GetMetaInfomation(ctk);
@@ -107,7 +107,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             await fileProfile.CalcFileHash(ctk);
             extraFilePath = fileProfile.FullPath;
         }
-        return (profile.ToJsonString(), extraFilePath);
+        return (profile.ToDto(), extraFilePath);
     }
 
     public void SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)

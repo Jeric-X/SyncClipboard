@@ -10,10 +10,9 @@ public class SyncClipboardPassiveController : SyncClipboardController
         _profileDtoHelper = services.GetRequiredService<IProfileDtoHelper>();
     }
 
-    protected override async Task<IResult> GetSyncProfile(string rootPath, string path)
+    protected override async Task<ClipboardProfileDTO> GetSyncProfile(string rootPath, string path)
     {
-        var (dtoString, filePath) = await _profileDtoHelper.CreateProfileDto(CancellationToken.None);
-        await File.WriteAllTextAsync(Path.Combine(rootPath, path), dtoString);
+        var (profileDto, filePath) = await _profileDtoHelper.CreateProfileDto(CancellationToken.None);
 
         var fileFolder = Path.Combine(rootPath, "file");
         if (filePath != null)
@@ -32,7 +31,7 @@ public class SyncClipboardPassiveController : SyncClipboardController
                 await Task.Run(() => File.Copy(filePath, Path.Combine(fileFolder, Path.GetFileName(filePath)), true));
             }
         }
-        return await base.GetSyncProfile(rootPath, path);
+        return profileDto;
     }
 
     protected override IResult PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
