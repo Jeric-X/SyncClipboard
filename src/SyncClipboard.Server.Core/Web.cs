@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Abstract;
 using SyncClipboard.Server.Controller;
+using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Server;
 
@@ -22,6 +23,13 @@ public class Web
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+
+        // This is minimal api project, but Swagger use Microsoft.AspNetCore.Mvc.JsonOptions to show enum as string.
+        // The real working converter is written in dto definition in form of attribute. 
+        services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
 
         var app = builder.Build();
 

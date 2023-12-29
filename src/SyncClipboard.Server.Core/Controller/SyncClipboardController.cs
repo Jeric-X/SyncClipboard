@@ -62,7 +62,7 @@ public class SyncClipboardController
         }
         catch (Exception)
         {
-            return new ClipboardProfileDTO("", "", "Text");
+            return new ClipboardProfileDTO();
         }
     }
 

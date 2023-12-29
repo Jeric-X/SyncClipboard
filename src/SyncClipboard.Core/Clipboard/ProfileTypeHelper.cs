@@ -1,4 +1,6 @@
-﻿namespace SyncClipboard.Core.Clipboard;
+﻿using SyncClipboard.Abstract;
+
+namespace SyncClipboard.Core.Clipboard;
 
 public class ProfileTypeHelper
 {

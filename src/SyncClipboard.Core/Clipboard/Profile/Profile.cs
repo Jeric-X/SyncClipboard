@@ -70,7 +70,7 @@ public abstract class Profile
 
     public string ToJsonString() => JsonSerializer.Serialize(ToDto());
 
-    public ClipboardProfileDTO ToDto() => new ClipboardProfileDTO(FileName, Text, TypeString);
+    public ClipboardProfileDTO ToDto() => new ClipboardProfileDTO(FileName, Text, Type);
 
     public static async Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken cancellationToken)
     {

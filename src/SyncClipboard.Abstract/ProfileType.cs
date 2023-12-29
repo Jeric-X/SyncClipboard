@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Clipboard;
+﻿namespace SyncClipboard.Abstract;
 
 public enum ProfileType
 {

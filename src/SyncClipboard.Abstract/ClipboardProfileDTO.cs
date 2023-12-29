@@ -9,9 +9,10 @@ public record class ClipboardProfileDTO
     [JsonPropertyName(nameof(Clipboard))]
     public string Clipboard { get; set; }
     [JsonPropertyName(nameof(Type))]
-    public string Type { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ProfileType Type { get; set; }
 
-    public ClipboardProfileDTO(string file, string clipboard, string type)
+    public ClipboardProfileDTO(string file = "", string clipboard = "", ProfileType type = ProfileType.Text)
     {
         File = file;
         Clipboard = clipboard;

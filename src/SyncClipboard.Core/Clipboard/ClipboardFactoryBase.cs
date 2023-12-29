@@ -59,8 +59,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             Logger.Write(nameof(ClipboardFactoryBase), profileDTO?.ToString() ?? "null");
             ArgumentNullException.ThrowIfNull(profileDTO);
 
-            ProfileType type = ProfileTypeHelper.StringToProfileType(profileDTO.Type);
-            return GetProfileBy(type, profileDTO);
+            return GetProfileBy(profileDTO);
         }
         catch (Exception ex) when (
             ex is JsonException ||
@@ -76,9 +75,9 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         }
     }
 
-    private Profile GetProfileBy(ProfileType type, ClipboardProfileDTO profileDTO)
+    private Profile GetProfileBy(ClipboardProfileDTO profileDTO)
     {
-        switch (type)
+        switch (profileDTO.Type)
         {
             case ProfileType.Text:
                 return new TextProfile(profileDTO.Clipboard, ServiceProvider);
@@ -113,8 +112,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     public void SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
     {
         ArgumentNullException.ThrowIfNull(profileDto);
-        ProfileType type = ProfileTypeHelper.StringToProfileType(profileDto.Type);
-        var profile = GetProfileBy(type, profileDto);
+        var profile = GetProfileBy(profileDto);
         if (profile is FileProfile fileProfile)
         {
             fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
