@@ -114,7 +114,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return (profile.ToDto(), extraFilePath);
     }
 
-    public void SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
+    public async void SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
     {
         ArgumentNullException.ThrowIfNull(profileDto);
         var profile = GetProfileBy(profileDto);
@@ -123,6 +123,18 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
         }
 
-        profile.SetLocalClipboard(true, CancellationToken.None);
+        try
+        {
+            var ctk = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
+            if (!await Profile.Same(profile, await CreateProfileFromLocal(ctk), ctk))
+            {
+                profile.SetLocalClipboard(true, ctk);
+                Logger.Write("Set clipboard with: " + profileDto);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            Logger.Write("Set local clipboard timeout.");
+        }
     }
 }
