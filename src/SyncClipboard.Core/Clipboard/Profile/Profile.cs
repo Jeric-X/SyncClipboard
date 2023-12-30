@@ -14,7 +14,6 @@ public abstract class Profile
 
     public virtual string FileName { get; set; } = "";
     public virtual string Text { get; set; } = "";
-    public string TypeString => ProfileTypeHelper.ClipBoardTypeToString(Type);
 
     #endregion
 
