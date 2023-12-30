@@ -32,7 +32,7 @@ namespace SyncClipboard.WinUI3.Views
         private async Task SetServerAsync()
         {
             _ServerSettingDialog.Password = _viewModel.ServerConfig.Password;
-            _ServerSettingDialog.UserName = _viewModel.ServerConfig.Password;
+            _ServerSettingDialog.UserName = _viewModel.ServerConfig.UserName;
             _ServerSettingDialog.Url = _viewModel.ServerConfig.Port.ToString();
             await _ServerSettingDialog.ShowAsync();
         }
