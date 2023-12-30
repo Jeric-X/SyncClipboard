@@ -32,7 +32,7 @@ public class ConvertService : ClipboardHander
 
     protected override async void HandleClipboard(ClipboardMetaInfomation metaInfo, CancellationToken cancellationToken)
     {
-        var clipboardProfile = _clipboardFactory.CreateProfile(metaInfo);
+        var clipboardProfile = _clipboardFactory.CreateProfileFromMeta(metaInfo);
         if (clipboardProfile.Type != ProfileType.File || !NeedAdjust(metaInfo))
         {
             return;

@@ -91,7 +91,7 @@ public class EasyCopyImageSerivce : ClipboardHander
     private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
     {
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
-        var profile = _clipboardFactory.CreateProfile(metaInfo);
+        var profile = _clipboardFactory.CreateProfileFromMeta(metaInfo);
         if (NeedAdjust(profile, metaInfo) is not true)
         {
             return;

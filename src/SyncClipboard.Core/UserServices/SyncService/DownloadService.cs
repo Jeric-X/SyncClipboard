@@ -237,7 +237,7 @@ public class DownloadService : Service
     private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
         var meta = await _clipboardFactory.GetMetaInfomation(cancelToken);
-        Profile localProfile = _clipboardFactory.CreateProfile(meta);
+        Profile localProfile = _clipboardFactory.CreateProfileFromMeta(meta);
 
         if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
         {

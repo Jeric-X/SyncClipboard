@@ -164,7 +164,7 @@ public class UploadService : ClipboardHander
 
     private async Task UploadClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
     {
-        var currentProfile = _clipboardFactory.CreateProfile(meta);
+        var currentProfile = _clipboardFactory.CreateProfileFromMeta(meta);
 
         if (currentProfile.Type == ProfileType.Unknown)
         {

@@ -16,7 +16,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
 
-    public Profile CreateProfile(ClipboardMetaInfomation metaInfomation)
+    public Profile CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files != null)
         {
@@ -49,6 +49,12 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         var blankProfile = new TextProfile("", ServiceProvider);
         await blankProfile.UploadProfile(WebDav, ctk);
         return blankProfile;
+    }
+
+    public async Task<Profile> CreateProfileFromLocal(CancellationToken ctk)
+    {
+        var meta = await GetMetaInfomation(ctk);
+        return CreateProfileFromMeta(meta);
     }
 
     public async Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken)
@@ -99,8 +105,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     public async Task<(ClipboardProfileDTO, string?)> CreateProfileDto(CancellationToken ctk)
     {
         string? extraFilePath = null;
-        var meta = await GetMetaInfomation(ctk);
-        var profile = CreateProfile(meta);
+        var profile = await CreateProfileFromLocal(ctk);
         if (profile is FileProfile fileProfile)
         {
             await fileProfile.CalcFileHash(ctk);
