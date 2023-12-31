@@ -1,0 +1,1 @@
+# [SyncClipboard](https://github.com/Jeric-X/SyncClipboard) 独立服务端 | Dedicated server

@@ -1,0 +1,78 @@
+name: server
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # For a list of available runner types, refer to
+                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the .NET workload
+    - name: Install .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          6.0.x
+          8.0.x
+
+    - name: Install dependencies
+      working-directory: ./src
+      run: dotnet restore SyncClipboard.Server
+
+    - name: Build SyncClipboard.Server
+      run: dotnet publish src/SyncClipboard.Server/SyncClipboard.Server.csproj --configuration Release --no-restore
+
+    - name: copy SyncClipboard.Server
+      run: |
+        mkdir server
+        cp -r src/SyncClipboard.Server/bin/Release/net6.0/publish/ server/
+
+    - name: Upload build artifacts SyncClipboard.Server
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard.Server
+        path: server/
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image with branch tag
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      uses: docker/build-push-action@v5
+      with:
+        context: "{{defaultContext}}:src"
+        file: SyncClipboard.Server/Dockerfile
+        push: true
+        tags: |
+          jericx/syncclipboard-server:${{ github.ref_name }}
+   
+    - name: Build and push Docker image with version and latest tag
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: docker/build-push-action@v5
+      with:
+        context: "{{defaultContext}}:src"
+        file: SyncClipboard.Server/Dockerfile
+        push: true
+        tags: |
+          jericx/syncclipboard-server:${{ github.ref_name }}
+          jericx/syncclipboard-server:latest
+
+    - name: Update Docker Hub Description
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: jericx/syncclipboard-server
+        readme-filepath: src/SyncClipboard.Server/README_DOCKER.md

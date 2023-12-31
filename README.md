@@ -10,6 +10,7 @@
   - [功能](#功能)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
+      - [Docker](#docker)
     - [客户端内置服务器](#客户端内置服务器)
     - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
@@ -51,6 +52,10 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 客户端处填写`http://ip:端口号`，`http`不可省略
 - http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
+
+#### Docker
+
+使用Docker部署服务器，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### 客户端内置服务器
 桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上

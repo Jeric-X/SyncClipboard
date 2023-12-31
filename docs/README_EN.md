@@ -10,6 +10,7 @@
   - [Features](#features)
   - [Server](#server)
     - [Standalone Server](#standalone-server)
+      - [Docker](#docker)
     - [Desktop Client Built-in Server](#desktop-client-built-in-server)
     - [WebDAV Server](#webdav-server)
   - [Client](#client)
@@ -53,6 +54,10 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
 Notes：
 - Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
 - Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network.
+
+#### Docker
+
+Please refer to [jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### Desktop Client Built-in Server
 Desktop client (Windows/Linux/macOS) has a built-in server, basically the same as standalone server but can be configured with GUI.
