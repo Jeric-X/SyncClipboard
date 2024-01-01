@@ -11,7 +11,7 @@ docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
   --restart unless-stopped \
-  gurashark/syncclipboard-server:latest
+  jericx/syncclipboard-server:latest
 ```
 
 ## 服务端配置 | Server Conf
@@ -53,7 +53,7 @@ docker run -d \
   -p 5033:5033 \
   -v /path/to/appsettings.json:/app/appsettings.json \
   --restart unless-stopped \
-  gurashark/syncclipboard-server:latest
+  jericx/syncclipboard-server:latest
 ```
 
 ## 参数 | Parameter
@@ -67,4 +67,4 @@ docker run -d \
 
 ----
 
-- readme written by [Atlantis-Gura](https://github.com/Atlantis-Gura)
+- Readme Written by [Atlantis-Gura](https://github.com/Atlantis-Gura)
