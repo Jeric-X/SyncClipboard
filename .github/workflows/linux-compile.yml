@@ -1,4 +1,4 @@
-name: desktop-build-progress
+name: linux-compile
 
 on:
   workflow_call:
