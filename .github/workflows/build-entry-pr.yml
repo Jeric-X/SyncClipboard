@@ -1,0 +1,24 @@
+name: build-pr
+
+on:
+  pull_request:
+
+jobs:
+  winui:
+    uses: ./.github/workflows/win-build.yml
+
+  server:
+    uses: ./.github/workflows/server.yml
+    secrets: inherit
+
+  build-linux:
+    uses: ./.github/workflows/linux-package.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}
+    
+  build-mac:
+    uses: ./.github/workflows/mac-package.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}

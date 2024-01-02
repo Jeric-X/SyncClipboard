@@ -1,4 +1,4 @@
-name: winui-package
+name: win-release
 
 permissions:
   contents: write
@@ -7,13 +7,13 @@ on:
   workflow_call:
 
 jobs:
-  build:
-    uses: ./.github/workflows/winui-build-progress.yml
+  win-build:
+    uses: ./.github/workflows/win-build.yml
 
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
+  win-release:
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    needs: win-build
     runs-on: windows-latest
-    needs: build
     steps:
       - name: Download last-job-built artifact SyncClipboard.Server
         uses: actions/download-artifact@v3
@@ -31,7 +31,7 @@ jobs:
         run: 7z a SyncClipboard.Server.zip .\Server\*
 
       - name: Zip SyncClipboard.WinUI3
-        run: 7z a SyncClipboard.zip .\WinUI3\*      
+        run: 7z a SyncClipboard.zip .\WinUI3\*
 
       - name: Download last-job-built change log
         uses: actions/download-artifact@v3

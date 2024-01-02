@@ -1,4 +1,4 @@
-name: winui-build-progress
+name: win-build
 
 on:
   workflow_call:
