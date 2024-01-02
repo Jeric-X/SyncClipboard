@@ -10,9 +10,6 @@ namespace SyncClipboard.Core.UserServices;
 
 public class DownloadService : Service
 {
-    public event ProgramEvent.ProgramEventHandler? PullStarted;
-    public event ProgramEvent.ProgramEventHandler? PullStopped;
-
     private readonly static string SERVICE_NAME = I18n.Strings.DownloadService;
     private const string LOG_TAG = "PULL";
     private bool _isPullLoopRunning = false;
