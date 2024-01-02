@@ -11,11 +11,11 @@ on:
 
 jobs:
   build-win:
-    needs: server
+    needs: build-server
     uses: ./.github/workflows/win-release.yml
 
-  server:
-    uses: ./.github/workflows/server.yml
+  build-server:
+    uses: ./.github/workflows/server-release.yml
     secrets: inherit
 
   build-linux:

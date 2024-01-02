@@ -4,12 +4,12 @@ on:
   pull_request:
 
 jobs:
-  winui:
+
+  build-win:
     uses: ./.github/workflows/win-build.yml
 
-  server:
-    uses: ./.github/workflows/server.yml
-    secrets: inherit
+  build-server:
+    uses: ./.github/workflows/server-build.yml
 
   build-linux:
     uses: ./.github/workflows/linux-package.yml
