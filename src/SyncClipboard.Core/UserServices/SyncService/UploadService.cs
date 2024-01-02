@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
@@ -33,7 +34,7 @@ public class UploadService : ClipboardHander
     }
 
     private bool _downServiceChangingLocal = false;
-    private ClipboardMetaInfomation? _metaInfoCache;
+    private Profile? _profileCache;
 
     private readonly INotification _notificationManager;
     private readonly ILogger _logger;
@@ -42,10 +43,11 @@ public class UploadService : ClipboardHander
     private readonly IServiceProvider _serviceProvider;
     private readonly IWebDav _webDav;
     private readonly ITrayIcon _trayIcon;
+    private readonly IMessenger _messenger;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
-    public UploadService(IServiceProvider serviceProvider)
+    public UploadService(IServiceProvider serviceProvider, IMessenger messenger)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -54,6 +56,7 @@ public class UploadService : ClipboardHander
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
+        _messenger = messenger;
         _syncConfig = _configManager.GetConfig<SyncConfig>();
         _serverConfig = _configManager.GetConfig<ServerConfig>();
     }
@@ -101,32 +104,27 @@ public class UploadService : ClipboardHander
 
     public override void RegistEventHandler()
     {
-        Event.RegistEventHandler(SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
-        Event.RegistEventHandler(SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
+        _messenger.Register<EmptyMessage, string>(this, SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
+        _messenger.Register<Profile, string>(this, SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
         base.RegistEventHandler();
     }
 
     public override void UnRegistEventHandler()
     {
-        Event.UnRegistEventHandler(SyncService.PULL_START_ENENT_NAME, PullStartedHandler);
-        Event.UnRegistEventHandler(SyncService.PULL_STOP_ENENT_NAME, PullStoppedHandler);
+        _messenger.UnregisterAll(this);
         base.UnRegistEventHandler();
     }
 
-    public void PullStartedHandler()
+    public void PullStartedHandler(object _, EmptyMessage _1)
     {
         _logger.Write("_isChangingLocal set to TRUE");
         _downServiceChangingLocal = true;
     }
 
-    public async void PullStoppedHandler()
+    public void PullStoppedHandler(object _, Profile profile)
     {
         _logger.Write("_isChangingLocal set to FALSE");
-        try
-        {
-            _metaInfoCache = await _clipboardFactory.GetMetaInfomation(new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token);
-        }
-        catch { }
+        _profileCache = profile;
         _downServiceChangingLocal = false;
     }
 
@@ -143,9 +141,15 @@ public class UploadService : ClipboardHander
         PushStopped?.Invoke();
     }
 
+    private async Task<bool> IsDownloadServiceWorking(Profile profile, CancellationToken token)
+    {
+        return _downServiceChangingLocal || await Profile.Same(profile, _profileCache, token);
+    }
+
     protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancellationToken)
     {
-        if (_downServiceChangingLocal || meta == _metaInfoCache)
+        var profile = _clipboardFactory.CreateProfileFromMeta(meta);
+        if (await IsDownloadServiceWorking(profile, cancellationToken))
         {
             return;
         }
@@ -153,7 +157,7 @@ public class UploadService : ClipboardHander
         SetWorkingStartStatus();
         try
         {
-            await UploadClipboard(meta, cancellationToken);
+            await UploadClipboard(profile, cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -162,10 +166,8 @@ public class UploadService : ClipboardHander
         SetWorkingEndStatus();
     }
 
-    private async Task UploadClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
+    private async Task UploadClipboard(Profile currentProfile, CancellationToken cancelToken)
     {
-        var currentProfile = _clipboardFactory.CreateProfileFromMeta(meta);
-
         if (currentProfile.Type == ProfileType.Unknown)
         {
             _logger.Write("Local profile type is Unkown, stop upload.");

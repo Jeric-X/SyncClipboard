@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
@@ -25,12 +26,13 @@ public class DownloadService : Service
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private readonly ITrayIcon _trayIcon;
+    private readonly IMessenger _messenger;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
     private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
 
-    public DownloadService(IServiceProvider serviceProvider)
+    public DownloadService(IServiceProvider serviceProvider, IMessenger messenger)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -42,6 +44,7 @@ public class DownloadService : Service
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
+        _messenger = messenger;
     }
 
     private void SyncConfigChanged(SyncConfig newConfig)
@@ -151,21 +154,6 @@ public class DownloadService : Service
         ReLoad();
     }
 
-    public override void RegistEvent()
-    {
-        var pullStartedEvent = new ProgramEvent(
-            (handler) => PullStarted += handler,
-            (handler) => PullStarted -= handler
-        );
-        Event.RegistEvent(SyncService.PULL_START_ENENT_NAME, pullStartedEvent);
-
-        var pullStoppedEvent = new ProgramEvent(
-            (handler) => PullStopped += handler,
-            (handler) => PullStopped -= handler
-        );
-        Event.RegistEvent(SyncService.PULL_STOP_ENENT_NAME, pullStoppedEvent);
-    }
-
     private void SetStatusOnError(ref int errorTimes, Exception ex)
     {
         errorTimes++;
@@ -250,7 +238,7 @@ public class DownloadService : Service
                     _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
                 }
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
-                PullStarted?.Invoke();
+                _messenger.Send(new EmptyMessage(), SyncService.PULL_START_ENENT_NAME);
                 remoteProfile.SetLocalClipboard(true, cancelToken);
                 _logger.Write("Success download:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
@@ -258,7 +246,7 @@ public class DownloadService : Service
             finally
             {
                 _trayIcon.StopAnimation();
-                PullStopped?.Invoke();
+                _messenger.Send(remoteProfile, SyncService.PULL_STOP_ENENT_NAME);
             }
         }
     }

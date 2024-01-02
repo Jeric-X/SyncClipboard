@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
@@ -115,6 +116,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<ConfigManager>();
 
             services.AddSingleton<ILogger, Logger>();
+            services.AddSingleton<IMessenger, WeakReferenceMessenger>();
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
