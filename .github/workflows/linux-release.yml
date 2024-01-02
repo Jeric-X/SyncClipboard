@@ -1,0 +1,90 @@
+name: linux-release
+
+permissions:
+  contents: write
+
+on:
+  workflow_call:
+    inputs:
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
+
+jobs:
+  package:
+    uses: ./.github/workflows/linux-package.yml
+    with:
+      checkout-repo: ${{ inputs.checkout-repo }}
+      checkout-ref: ${{ inputs.checkout-ref }}
+
+  release-linux:
+    if : ${{ startsWith(github.ref, 'refs/tags/') }}
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+        type: [self-contained, no-self-contained]
+        package-type: [AppImage, rpm, deb]
+        include:
+          - package-type: AppImage
+            cpu: x64
+            package-head: SyncClipboard-
+            package-tail: .x86_64
+          - package-type: rpm
+            cpu: x64
+            package-head: syncclipboard_
+            package-tail: .x86_64
+          - package-type: deb
+            cpu: x64
+            package-head: syncclipboard_
+            package-tail: _amd64
+          - package-type: AppImage
+            cpu: arm64
+            package-head: SyncClipboard-
+            package-tail: .aarch64
+          - package-type: deb
+            cpu: arm64
+            package-head: syncclipboard_
+            package-tail: _arm64
+        exclude: # rpmbuild arm64 failed
+          - package-type: rpm
+            cpu: arm64
+            # package-head: syncclipboard_
+            # package-tail: .arm64
+
+    runs-on: ubuntu-latest
+    needs: package
+    steps:
+      - name: Download version
+        uses: actions/download-artifact@v3
+        with:
+          name: version-desktop
+
+      - name: Download feature
+        uses: actions/download-artifact@v3
+        with:
+          name: feature-desktop
+
+      - name: Read version
+        id: version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: version.txt
+
+      - name: Download build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
+
+      - name: Change name
+        run: mv "${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}" "${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}"
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          artifacts: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
+          bodyFile: feature.txt

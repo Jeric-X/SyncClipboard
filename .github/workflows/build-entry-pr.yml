@@ -1,0 +1,23 @@
+name: build-pr
+
+on:
+  pull_request:
+
+jobs:
+  build-win:
+    uses: ./.github/workflows/win-build.yml
+
+  build-server:
+    uses: ./.github/workflows/server-build.yml
+
+  build-linux:
+    uses: ./.github/workflows/linux-package.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}
+    
+  build-mac:
+    uses: ./.github/workflows/mac-package.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}

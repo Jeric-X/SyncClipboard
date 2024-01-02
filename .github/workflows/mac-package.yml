@@ -1,0 +1,127 @@
+name: mac-package
+
+on:
+  workflow_call:  
+    inputs:
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
+
+jobs:
+  package-macos:
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.checkout-repo }}
+          ref: ${{ inputs.checkout-ref }}
+
+      - name: Setup software form homebrew
+        run: | 
+          export HOMEBREW_NO_AUTO_UPDATE=true
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
+          brew install create-dmg tree
+
+      # Install the .NET workload
+      - name: Install .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: | 
+            8.0.x
+
+      - name: Install dotnet workload and dependencies
+        working-directory: ./src/SyncClipboard.Desktop.MacOS
+        run: |
+          dotnet workload install macos
+          dotnet workload restore
+          dotnet restore
+
+      - name: Select Xcode Version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 15.*
+
+      # - name
+          #  dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-x64 -c Release
+      - name: Build ${{ matrix.cpu }}
+        run: |
+          dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
+        working-directory: ./src
+
+      - name: copy LICENSES 
+        run: |
+          cp -r LICENSES src/SyncClipboard.Desktop.MacOS/bin/Release/net8.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app/Contents/MonoBundle/LICENSES
+
+      - name: Generate change log
+        run: |
+          chmod +x ReadDesktopChanges.sh
+          ./ReadDesktopChanges.sh
+          cat version.txt
+          cat feature.txt
+        working-directory: ./build
+
+      - name: Read version
+        id: version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: build/version.txt
+
+      - name: mv app
+        run: | 
+          mv src/SyncClipboard.Desktop.MacOS/bin/Release/net8.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app
+          chmod +x build/macos/SyncClipboard.app/Contents/MacOS/SyncClipboard.Desktop.MacOS
+
+      - name: Package app
+        run: | 
+          chmod +x buildAppBundle.sh
+          ./buildAppBundle.sh 
+        working-directory: ./build/macos
+
+      - name: Package dmg
+        continue-on-error: true
+        run: | 
+          create-dmg \
+          --volicon VolumeIcon.icns \
+          --background dmg-background.png \
+          --window-size 660 400 \
+          --icon-size 120 \
+          --icon SyncClipboard.app 165 175 \
+          --app-drop-link 495 175 \
+          SyncClipboard.dmg SyncClipboard.app
+        working-directory: ./build/macos
+
+      - name: show folder
+        run: |
+          ls -l
+          tree 
+        working-directory: ./build/macos
+
+      - name: Change name
+        run: mv SyncClipboard.dmg "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+        working-directory: ./build/macos
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+          path: "build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+
+      - name: Upload change log
+        uses: actions/upload-artifact@v3
+        with:
+          name: feature-desktop
+          path: build/feature.txt
+
+      - name: Upload version
+        uses: actions/upload-artifact@v3
+        with:
+          name: version-desktop
+          path: build/version.txt

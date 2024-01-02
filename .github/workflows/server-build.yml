@@ -1,0 +1,39 @@
+name: server-build
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # For a list of available runner types, refer to
+                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the .NET workload
+    - name: Install .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          6.0.x
+          8.0.x
+
+    - name: Install dependencies
+      working-directory: ./src
+      run: dotnet restore SyncClipboard.Server
+
+    - name: Build SyncClipboard.Server
+      run: dotnet publish src/SyncClipboard.Server/SyncClipboard.Server.csproj --configuration Release --no-restore
+
+    - name: copy SyncClipboard.Server
+      run: |
+        mkdir server
+        cp -r src/SyncClipboard.Server/bin/Release/net6.0/publish/ server/
+
+    - name: Upload build artifacts SyncClipboard.Server
+      uses: actions/upload-artifact@v3
+      with:
+        name: SyncClipboard.Server
+        path: server/
