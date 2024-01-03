@@ -19,7 +19,7 @@ namespace SyncClipboard.Core.Utilities
             StackFrame? sf = stackFrame ?? new StackTrace(true).GetFrame(1);
 
             var dayTime = DateTime.Now;
-            var fileName = Path.GetFileName(sf?.GetFileName());
+            var fileName = Path.GetFileName(sf?.GetFileName()?.Replace('\\', '/'));
             var lineNumber = sf?.GetFileLineNumber();
 
             string logStr;
