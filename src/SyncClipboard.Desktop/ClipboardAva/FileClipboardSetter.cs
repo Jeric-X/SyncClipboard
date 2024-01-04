@@ -46,8 +46,6 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
     [SupportedOSPlatform("macos")]
     private static void SetMacos(DataObject dataObject, string path)
     {
-        dataObject.Set("public.utf8-plain-text", Encoding.UTF8.GetBytes(path));
-
         var uri = new Uri(path);
         var uriPath = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
         dataObject.Set(Format.FileList, Encoding.UTF8.GetBytes(uriPath));

@@ -1,3 +1,6 @@
+0.4.2
+- 修复：mac中微信无法粘贴图片(https://github.com/Jeric-X/SyncClipboard/issues/31)
+
 0.4.1
 - 修复：文件格式问题引发的错误
 
