@@ -129,7 +129,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             if (!await Profile.Same(profile, await CreateProfileFromLocal(ctk), ctk))
             {
                 profile.SetLocalClipboard(true, ctk);
-                Logger.Write("Set clipboard with: " + profileDto);
+                Logger.Write("Set clipboard with: " + profileDto.ToString().Replace(Environment.NewLine, @"\n"));
             }
         }
         catch (TaskCanceledException)
