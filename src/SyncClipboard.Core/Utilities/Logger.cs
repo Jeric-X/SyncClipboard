@@ -1,17 +1,23 @@
 ﻿using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using System.Diagnostics;
 
 namespace SyncClipboard.Core.Utilities
 {
-    public class Logger : ILogger
+    public class Logger : ILogger, IDisposable
     {
         private readonly string LOG_FOLDER;
         private static readonly object LOCKER = new();
+        private StreamWriter? _fileWriter;
+        private string? _logFile;
+        private bool _diagnose;
 
-        public Logger()
+        public Logger(ConfigManager config)
         {
             LOG_FOLDER = Env.LogFolder;
+            _diagnose = config.GetConfig<ProgramConfig>().DiagnoseMode;
+            config.ListenConfig<ProgramConfig>((config) => _diagnose = config.DiagnoseMode);
         }
 
         public void Write(string? tag, string str, StackFrame? stackFrame = null)
@@ -61,8 +67,12 @@ namespace SyncClipboard.Core.Utilities
             {
                 try
                 {
-                    using StreamWriter file = new(Path.Combine(LOG_FOLDER, $"{logFile}.txt"), true, System.Text.Encoding.UTF8);
-                    file.WriteLine(logStr);
+                    var fileWriter = GetFileWriter(logFile);
+                    fileWriter.WriteLine(logStr);
+                    if (_diagnose)
+                    {
+                        fileWriter.Flush();
+                    }
                 }
                 catch
                 {
@@ -71,10 +81,30 @@ namespace SyncClipboard.Core.Utilities
             }
         }
 
+        private StreamWriter GetFileWriter(string logFile)
+        {
+            if (_logFile != logFile)
+            {
+                _fileWriter?.Dispose();
+                _fileWriter = null;
+                _logFile = logFile;
+            }
+            _fileWriter ??= new(Path.Combine(LOG_FOLDER, $"{logFile}.txt"), true, System.Text.Encoding.UTF8);
+            return _fileWriter;
+        }
+
         [Conditional("DEBUG")]
         private static void WriteToConsole(string logStr)
         {
             Task.Run(() => Trace.WriteLine(logStr));
+        }
+
+        ~Logger() => _fileWriter?.Dispose();
+
+        public void Dispose()
+        {
+            _fileWriter?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

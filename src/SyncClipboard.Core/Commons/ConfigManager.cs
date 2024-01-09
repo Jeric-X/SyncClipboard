@@ -11,7 +11,6 @@ namespace SyncClipboard.Core.Commons
     {
         public event Action? ConfigChanged;
 
-        private readonly ILogger _logger;
         private readonly string _path;
 
         private readonly Dictionary<string, Type> _registedTypeList = new();
@@ -19,9 +18,8 @@ namespace SyncClipboard.Core.Commons
 
         JsonNode _jsonNode = new JsonObject();
 
-        public ConfigManager(ILogger logger)
+        public ConfigManager()
         {
-            _logger = logger;
             _path = Env.UserConfigFile;
             Load();
         }
@@ -88,10 +86,6 @@ namespace SyncClipboard.Core.Commons
                     return;
                 }
             }
-
-#if DEBUG
-            _logger.Write("[Writting Config] " + newValue.ToString() ?? "");
-#endif
 
             _jsonNode[key] = JsonSerializer.SerializeToNode(newValue);
             NotifyRegistedHandler(key, typeof(T), _jsonNode[key]);
