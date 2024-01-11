@@ -189,7 +189,6 @@ DELETE      /file
 
 ## 项目依赖
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  
-[Windows Community Toolkit Labs](https://github.com/CommunityToolkit/Labs-Windows)  
 [.NET Community Toolkit](https://github.com/CommunityToolkit/dotnet)  
 [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)  
 [WinUIEx](https://github.com/dotMorten/WinUIEx)  

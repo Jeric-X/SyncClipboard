@@ -22,4 +22,17 @@
     <ProjectReference Include="..\SyncClipboard.Desktop\SyncClipboard.Desktop.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyFiles" AfterTargets="Build">
+    <ItemGroup>
+      <LicenseFiles Include="$(ProjectDir)\..\..\LICENSES\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(LicenseFiles)"
+      DestinationFolder="$(OutDir)\SyncClipboard.Desktop.MacOS.app\Contents\MonoBundle\LICENSES\%(RecursiveDir)"
+      SkipUnchangedFiles="true"
+      OverwriteReadOnlyFiles="true"
+      Retries="3"
+      RetryDelayMilliseconds="300"/>
+  </Target>
+
 </Project>

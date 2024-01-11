@@ -56,10 +56,6 @@ jobs:
           dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
         working-directory: ./src
 
-      - name: copy LICENSES 
-        run: |
-          cp -r LICENSES src/SyncClipboard.Desktop.MacOS/bin/Release/net8.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app/Contents/MonoBundle/LICENSES
-
       - name: Generate change log
         run: |
           chmod +x ReadDesktopChanges.sh

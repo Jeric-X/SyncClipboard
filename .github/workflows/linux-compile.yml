@@ -67,10 +67,6 @@ jobs:
         msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:RuntimeIdentifier=${{ matrix.os }}-${{ matrix.cpu }} /p:Platform=${{ matrix.cpu }} /p:SelfContained=${{ matrix.ifSelf }} /p:OutDir=../../${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }} /p:Configuration=Release /t:Publish /v:m  
       working-directory: ./src
 
-    - name: copy LICENSES 
-      run: |
-        xcopy LICENSES ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}\LICENSES\ /s /e
-
     - name: Generate change log
       run: |
         .\ReadDesktopChanges.bat
