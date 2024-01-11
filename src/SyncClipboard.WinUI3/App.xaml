@@ -12,14 +12,14 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <BitmapImage x:Key="AppLogo" UriSource="ms-appx:///Assets/icon.png" />
+                    <Color x:Key="TitleBarButtonForegroundColor">Black</Color>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <BitmapImage x:Key="AppLogo" UriSource="ms-appx:///Assets/icon_white.png" />
+                    <Color x:Key="TitleBarButtonForegroundColor">White</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <!-- Other app resources here -->
-            <SolidColorBrush x:Key="WindowCaptionBackground">Transparent</SolidColorBrush>
-            <SolidColorBrush x:Key="WindowCaptionBackgroundDisabled">Transparent</SolidColorBrush>
             <Style TargetType="TextBox">
                 <Setter Property="IsSpellCheckEnabled" Value="False"/>
             </Style>

@@ -97,10 +97,10 @@ public partial class SystemSettingViewModel : ObservableObject
         _services = serviceProvider;
 
         _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
-        ProgramConfig = _configManager.GetConfig<ProgramConfig>();
-        Language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
-        Font = ProgramConfig.Font;
-        Theme = Themes.FirstOrDefault(x => x.String == ProgramConfig.Theme) ?? Themes[0];
+        programConfig = _configManager.GetConfig<ProgramConfig>();
+        language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
+        font = ProgramConfig.Font;
+        theme = Themes.FirstOrDefault(x => x.String == ProgramConfig.Theme) ?? Themes[0];
     }
 
     public bool StartUpWithSystem

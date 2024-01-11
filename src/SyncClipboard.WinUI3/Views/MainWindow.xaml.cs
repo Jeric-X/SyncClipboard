@@ -7,6 +7,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
 using System;
+using Windows.UI;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
 
@@ -36,6 +37,9 @@ namespace SyncClipboard.WinUI3.Views
             this.SetWindowIcon("Assets/icon.ico");
             this.SetWindowSize(850, 530);
             Closed += SettingWindow_Closed;
+
+            ChangeTitleBarButtonForegroundColor((FrameworkElement)Content, null);
+            ((FrameworkElement)Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
 
             _MenuList.SelectedIndex = 0;
         }
@@ -206,6 +210,13 @@ namespace SyncClipboard.WinUI3.Views
                 "Dark" => ElementTheme.Dark,
                 _ => ElementTheme.Default,
             };
+        }
+
+        private void ChangeTitleBarButtonForegroundColor(FrameworkElement sender, object? _)
+        {
+            var actualTheme = sender.ActualTheme.ToString();
+            var themeResource = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[actualTheme];
+            AppWindow.TitleBar.ButtonForegroundColor = (Color)themeResource["TitleBarButtonForegroundColor"];
         }
     }
 }

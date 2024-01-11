@@ -122,10 +122,10 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager = configManager;
         _mainVM = mainViewModel;
         _configManager.ListenConfig<ServerConfig>(config => ServerConfig = config);
-        ServerConfig = _configManager.GetConfig<ServerConfig>();
+        serverConfig = _configManager.GetConfig<ServerConfig>();
 
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
-        ClientConfig = _configManager.GetConfig<SyncConfig>();
+        clientConfig = _configManager.GetConfig<SyncConfig>();
     }
 
     public string? SetServerConfig(string portString, string username, string password)
