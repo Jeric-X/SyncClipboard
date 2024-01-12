@@ -10,7 +10,6 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
 
     protected abstract void RegistSystemEvent(Action<ClipboardMetaInfomation> action);
     protected abstract void UnRegistSystemEvent(Action<ClipboardMetaInfomation> action);
-    protected abstract IClipboardFactory ClipboardFactory { get; }
 
     private event Action<ClipboardMetaInfomation>? ChangedImpl;
     public event Action<ClipboardMetaInfomation>? Changed
@@ -48,12 +47,11 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
 
     ~ClipboardChangingListenerBase() => Dispose();
 
-#pragma warning disable CA1816 // Dispose 方法应调用 SuppressFinalize
     public void Dispose()
-#pragma warning restore CA1816 // Dispose 方法应调用 SuppressFinalize
     {
         ChangedImpl = null;
         UnRegistSystemEvent(NotifyAll);
         _count = 0;
+        GC.SuppressFinalize(this);
     }
 }

@@ -8,7 +8,6 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 internal class ClipboardListener : ClipboardChangingListenerBase
 {
     private readonly IClipboardFactory _clipboardFactory;
-    protected override IClipboardFactory ClipboardFactory => _clipboardFactory;
 
     private Timer? _timer;
     private Action<ClipboardMetaInfomation>? _action;

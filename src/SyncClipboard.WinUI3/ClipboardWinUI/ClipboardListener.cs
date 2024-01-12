@@ -10,7 +10,6 @@ internal class ClipboardListener : ClipboardChangingListenerBase
 {
     private Action<ClipboardMetaInfomation>? _action;
     private readonly IClipboardFactory _clipboardFactory;
-    protected override IClipboardFactory ClipboardFactory => _clipboardFactory;
 
     public ClipboardListener(IClipboardFactory clipboardFactory)
     {

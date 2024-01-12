@@ -4,6 +4,7 @@ using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.UserServices;
@@ -235,7 +236,7 @@ public class DownloadService : Service
                     _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
                 }
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
-                _messenger.Send(new EmptyMessage(), SyncService.PULL_START_ENENT_NAME);
+                _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
                 remoteProfile.SetLocalClipboard(true, cancelToken);
                 _logger.Write("Success download:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪切板可能有延迟，延迟发送事件
