@@ -97,6 +97,7 @@ Notes:
 - File name with `self-contained`: should run with no dependencies.
 - Config files are saved in `~/.config/SyncClipboard/`(Linux), `~/Library/Application Support/SyncClipboard/`(macOS). Uninstaller won't delete them. Users can delete them manually.
 - Not suport upgrading directly with `deb` or `rpm` package. Delete old version first, then install the new version.
+- macOS: `"SyncClipboard" is damaged, can't be opened`. Use the following command in terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
