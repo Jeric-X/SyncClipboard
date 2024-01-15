@@ -8,49 +8,47 @@
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              Name="{x:Static core:Env.SoftName}"
              RequestedThemeVariant="Default">
-    <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
-    <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.ThemeDictionaries>
-                <ResourceDictionary x:Key="Light">
-                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
-                </ResourceDictionary>
-                <ResourceDictionary x:Key="Dark">
-                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
-                </ResourceDictionary>
-            </ResourceDictionary.ThemeDictionaries>
-            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-            <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
-            <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
-            <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
-            <ui:ImageIconSource x:Key="AppLogoSource" />
-            <ui:ImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
-            <ui:ImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
+  <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
         </ResourceDictionary>
-    </Application.Resources>
-    <Application.Styles>
-        <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
-        <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
-        <Style Selector="Window">
-            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
-        </Style>
-        <Style Selector="TextBlock">
-            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
-        </Style>
-    </Application.Styles>
-    <NativeMenu.Menu>
-        <NativeMenu>
-            <NativeMenuItem Header="{x:Static i18n:Strings.Exit}" Click="NativeMenuItem_Click" />
-        </NativeMenu>
-    </NativeMenu.Menu>
-    <TrayIcon.Icons>
-        <TrayIcons>
-            <TrayIcon Icon="/Assets/default.ico" ToolTipText="Avalonia Tray Icon ToolTip">
-                <TrayIcon.Menu>
-                    <NativeMenu />
-                </TrayIcon.Menu>
-            </TrayIcon>
-        </TrayIcons>
-    </TrayIcon.Icons>
+        <ResourceDictionary x:Key="Dark">
+          <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+      <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+      <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
+      <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
+      <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
+      <ui:ImageIconSource x:Key="AppLogoSource" />
+      <ui:ImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
+      <ui:ImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
+    <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+    </Style>
+  </Application.Styles>
+  <NativeMenu.Menu>
+    <NativeMenu />
+  </NativeMenu.Menu>
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="/Assets/default.ico" ToolTipText="Avalonia Tray Icon ToolTip">
+        <TrayIcon.Menu>
+          <NativeMenu />
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
 </Application>

@@ -2,6 +2,7 @@
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.UI.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
@@ -125,4 +126,10 @@ public partial class MainWindow : Window, IMainWindow
             _ => ThemeVariant.Default,
         };
     }
+
+    [RelayCommand]
+    private void CloseWindow() => this.Close();
+
+    [RelayCommand]
+    protected virtual void MinimizeWindow() => this.Close();
 }

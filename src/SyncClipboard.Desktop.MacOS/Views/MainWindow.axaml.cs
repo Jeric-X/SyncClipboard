@@ -46,4 +46,9 @@ public class MainWindow : SyncClipboard.Desktop.Views.MainWindow
         this.Opacity = opacity;
         ExtendClientAreaChromeHints = extendClientAreaChromeHints;
     }
+
+    protected override void MinimizeWindow()
+    {
+        NSApplication.SharedApplication.MainWindow.Miniaturize(NSApplication.SharedApplication);
+    }
 }

@@ -1,3 +1,6 @@
+0.4.2.1
+- 功能：添加了关闭窗口、最小化的快捷键（macOS）
+
 0.4.2
 - 修复：mac中微信无法粘贴图片(https://github.com/Jeric-X/SyncClipboard/issues/31)
 
