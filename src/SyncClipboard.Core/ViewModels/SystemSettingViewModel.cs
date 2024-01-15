@@ -98,9 +98,13 @@ public partial class SystemSettingViewModel : ObservableObject
 
         _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
         programConfig = _configManager.GetConfig<ProgramConfig>();
-        language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
-        font = ProgramConfig.Font;
-        theme = Themes.FirstOrDefault(x => x.String == ProgramConfig.Theme) ?? Themes[0];
+        language = Languages.FirstOrDefault(x => x.LocaleTag == programConfig.Language) ?? Languages[0];
+        font = programConfig.Font;
+        theme = Themes.FirstOrDefault(x => x.String == programConfig.Theme) ?? Themes[0];
+        checkUpdateOnStartUp = programConfig.CheckUpdateOnStartUp;
+        hideWindowOnStartUp = programConfig.HideWindowOnStartup;
+        logRemainDays = programConfig.LogRemainDays;
+        diagnoseMode = programConfig.DiagnoseMode;
     }
 
     public bool StartUpWithSystem

@@ -123,9 +123,18 @@ public partial class SyncSettingViewModel : ObservableObject
         _mainVM = mainViewModel;
         _configManager.ListenConfig<ServerConfig>(config => ServerConfig = config);
         serverConfig = _configManager.GetConfig<ServerConfig>();
+        serverEnable = serverConfig.SwitchOn;
+        clientMixedMode = serverConfig.ClientMixedMode;
 
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
         clientConfig = _configManager.GetConfig<SyncConfig>();
+        intervalTime = clientConfig.IntervalTime;
+        syncEnable = clientConfig.SyncSwitchOn;
+        useLocalServer = clientConfig.UseLocalServer;
+        timeOut = clientConfig.TimeOut;
+        maxFileSize = clientConfig.MaxFileByte / 1024 / 1024;
+        autoDeleleServerFile = clientConfig.DeletePreviousFilesOnPush;
+        notifyOnDownloaded = clientConfig.NotifyOnDownloaded;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

@@ -37,5 +37,8 @@ public partial class CliboardAssistantViewModel : ObservableObject
 
         _configManager.ListenConfig<ClipboardAssistConfig>(config => ClipboardAssistConfig = config);
         clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
+        easyCopyImageSwitchOn = clipboardAssistConfig.EasyCopyImageSwitchOn;
+        downloadWebImage = clipboardAssistConfig.DownloadWebImage;
+        convertSwitchOn = clipboardAssistConfig.ConvertSwitchOn;
     }
 }
