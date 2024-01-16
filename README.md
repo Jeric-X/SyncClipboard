@@ -48,14 +48,23 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
 工作目录与dll所在目录一致，会产生临时文件，在`appsettings.json`中可以修改绑定的ip和端口，以及客户端认证需要的用户名和密码  
 如需修改工作目录，拷贝一份appsettings.json到新工作目录并修改`--contentRoot`后的路径  
+
 注意：
+- 默认用户名是`admin`，密码是`admin`，端口号是`5033`
 - 客户端处填写`http://ip:端口号`，`http`不可省略
 - http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
 
 #### Docker
-
-使用Docker部署服务器，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+你也可以使用Docker轻松部署服务器
+```
+docker run -d \
+  --name=syncclipboard-server \
+  -p 5033:5033 \
+  --restart unless-stopped \
+  jericx/syncclipboard-server:latest
+```
+如需修改用户名和密码，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### 客户端内置服务器
 桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上
@@ -102,7 +111,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
 
-导入这个[快捷指令](https://www.icloud.com/shortcuts/9e2f44bd12a84935b715aac9b488f6ee)，跟随引导填写配置信息。从组件栏和分享菜单中使用
+- 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/924173c2529341648537d881a9762a6c)，手动触发上传或下载
+- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/e24d4dfe5d8e4b8f949d380be01427a4)，运行后设备会自动在后台同步剪切板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
 
 #### 使用[JSBox](https://apps.apple.com/cn/app/jsbox-%E5%AD%A6%E4%B9%A0%E5%86%99%E4%BB%A3%E7%A0%81/id1312014438)
 导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件

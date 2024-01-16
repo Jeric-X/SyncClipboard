@@ -51,12 +51,20 @@ Choosing a different content root folder is possible. Copy a new `appsettings.js
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
 ```
 Notes：
+- Default Username is `admin`, default Password is `admin`, default port is `5033`.
 - Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
 - Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network.
 
 #### Docker
-
-Please refer to [jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+Deploying server with docker is easy.
+```
+docker run -d \
+  --name=syncclipboard-server \
+  -p 5033:5033 \
+  --restart unless-stopped \
+  jericx/syncclipboard-server:latest
+```
+If you want to change username or password, please refer to [jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### Desktop Client Built-in Server
 Desktop client (Windows/Linux/macOS) has a built-in server, basically the same as standalone server but can be configured with GUI.
@@ -102,7 +110,8 @@ Notes:
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
-Import this [Shortcuts](https://www.icloud.com/shortcuts/2fc4453de31442118fccea7488caa881). Use it from widget or share sheet.
+- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/924173c2529341648537d881a9762a6c)
+- Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/e24d4dfe5d8e4b8f949d380be01427a4). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
