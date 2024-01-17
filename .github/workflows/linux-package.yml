@@ -54,26 +54,26 @@ jobs:
     needs: build
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
       - name: Install .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
             6.0.x
             7.0.x
 
       - name: Download last-job-built artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-${{ matrix.cpu }}-${{ matrix.type }}
           path: linux-bin/
 
       - name: Download version
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: version-desktop
 
@@ -95,7 +95,7 @@ jobs:
         working-directory: ./build/linux
 
       - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
           path: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}

@@ -16,13 +16,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Download last-job-built artifact SyncClipboard.Server
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: SyncClipboard.Server
           path: Server/
 
       - name: Download last-job-built artifact SyncClipboard.WinUI3
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: SyncClipboard.WinUI3
           path: WinUI3/
@@ -34,7 +34,7 @@ jobs:
         run: 7z a SyncClipboard.zip .\WinUI3\*
 
       - name: Download last-job-built change log
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: feature
 

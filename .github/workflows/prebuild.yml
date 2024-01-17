@@ -1,0 +1,52 @@
+name: prebuild
+
+on:
+  workflow_call:  
+    inputs:
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
+
+jobs:
+  prebuild:
+    runs-on: windows-latest  # For a list of available runner types, refer to
+                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.checkout-repo }}
+        ref: ${{ inputs.checkout-ref }}
+
+    - name: Generate windows change log
+      run: |
+        .\PreRelease.bat
+        type feature.txt
+
+    - name: Upload windows change log
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature
+        path: feature.txt
+
+    - name: Generate desktop change log
+      run: |
+        .\ReadDesktopChanges.bat
+        type feature.txt
+      working-directory: ./build
+  
+    - name: Upload desktop change log
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature-desktop
+        path: build/feature.txt
+
+    - name: Upload desktop version
+      uses: actions/upload-artifact@v4
+      with:
+        name: version-desktop
+        path: build/version.txt

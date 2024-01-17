@@ -58,12 +58,12 @@ jobs:
     needs: package
     steps:
       - name: Download version
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: version-desktop
 
       - name: Download feature
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: feature-desktop
 
@@ -74,7 +74,7 @@ jobs:
           path: version.txt
 
       - name: Download build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
 

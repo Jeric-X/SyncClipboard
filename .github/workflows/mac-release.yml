@@ -30,12 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download version
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: version-desktop
 
       - name: Download feature
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: feature-desktop
 
@@ -46,7 +46,7 @@ jobs:
           path: version.txt
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
 

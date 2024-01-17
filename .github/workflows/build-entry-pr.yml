@@ -4,20 +4,29 @@ on:
   pull_request:
 
 jobs:
+  prebuild:
+    uses: ./.github/workflows/prebuild.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}
+
   build-win:
     uses: ./.github/workflows/win-build.yml
+    needs: prebuild
 
   build-server:
     uses: ./.github/workflows/server-build.yml
 
   build-linux:
     uses: ./.github/workflows/linux-package.yml
+    needs: prebuild
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
     
   build-mac:
     uses: ./.github/workflows/mac-package.yml
+    needs: prebuild
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}

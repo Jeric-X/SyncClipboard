@@ -10,8 +10,14 @@ on:
       - 'v*'
 
 jobs:
+  prebuild:
+    uses: ./.github/workflows/prebuild.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}
+
   build-win:
-    needs: build-server
+    needs: [build-server, prebuild]
     uses: ./.github/workflows/win-release.yml
 
   build-server:
@@ -19,14 +25,16 @@ jobs:
     secrets: inherit
 
   build-linux:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    needs: prebuild
     uses: ./.github/workflows/linux-release.yml
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
     
   build-mac:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }} 
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    needs: prebuild
     uses: ./.github/workflows/mac-release.yml
     with:
       checkout-repo: ${{ github.repository }}

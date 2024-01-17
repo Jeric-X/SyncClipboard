@@ -28,14 +28,14 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: ${{ inputs.checkout-repo }}
         ref: ${{ inputs.checkout-ref }}
 
     # Install the .NET workload
     - name: Install .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
           6.0.x
@@ -67,26 +67,8 @@ jobs:
         msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:RuntimeIdentifier=${{ matrix.os }}-${{ matrix.cpu }} /p:Platform=${{ matrix.cpu }} /p:SelfContained=${{ matrix.ifSelf }} /p:OutDir=../../${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }} /p:Configuration=Release /t:Publish /v:m  
       working-directory: ./src
 
-    - name: Generate change log
-      run: |
-        .\ReadDesktopChanges.bat
-        type feature.txt
-      working-directory: ./build
-
     - name: Upload ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}
         path: ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }}/
-
-    - name: Upload change log
-      uses: actions/upload-artifact@v3
-      with:
-        name: feature-desktop
-        path: build/feature.txt
-
-    - name: Upload version
-      uses: actions/upload-artifact@v3
-      with:
-        name: version-desktop
-        path: build/version.txt

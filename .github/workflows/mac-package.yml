@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-13
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
@@ -32,7 +32,7 @@ jobs:
 
       # Install the .NET workload
       - name: Install .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: | 
             8.0.x
@@ -56,19 +56,16 @@ jobs:
           dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
         working-directory: ./src
 
-      - name: Generate change log
-        run: |
-          chmod +x ReadDesktopChanges.sh
-          ./ReadDesktopChanges.sh
-          cat version.txt
-          cat feature.txt
-        working-directory: ./build
+      - name: Download version
+        uses: actions/download-artifact@v4
+        with:
+          name: version-desktop
 
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
-          path: build/version.txt
+          path: version.txt
 
       - name: mv app
         run: | 
@@ -82,17 +79,22 @@ jobs:
         working-directory: ./build/macos
 
       - name: Package dmg
-        continue-on-error: true
-        run: | 
-          create-dmg \
-          --volicon VolumeIcon.icns \
-          --background dmg-background.png \
-          --window-size 660 400 \
-          --icon-size 120 \
-          --icon SyncClipboard.app 165 175 \
-          --app-drop-link 495 175 \
-          SyncClipboard.dmg SyncClipboard.app
-        working-directory: ./build/macos
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 5
+          warning_on_retry: false
+          retry_on: error
+          command: |
+            cd ./build/macos
+            create-dmg \
+            --volicon VolumeIcon.icns \
+            --background dmg-background.png \
+            --window-size 660 400 \
+            --icon-size 120 \
+            --icon SyncClipboard.app 165 175 \
+            --app-drop-link 495 175 \
+            SyncClipboard.dmg SyncClipboard.app
 
       - name: show folder
         run: |
@@ -105,19 +107,7 @@ jobs:
         working-directory: ./build/macos
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
           path: "build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
-
-      - name: Upload change log
-        uses: actions/upload-artifact@v3
-        with:
-          name: feature-desktop
-          path: build/feature.txt
-
-      - name: Upload version
-        uses: actions/upload-artifact@v3
-        with:
-          name: version-desktop
-          path: build/version.txt
