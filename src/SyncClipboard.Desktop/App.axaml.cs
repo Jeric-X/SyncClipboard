@@ -18,17 +18,19 @@ public partial class App : Application
     public IServiceProvider Services { get; private set; }
     public new static App Current => (App)Application.Current!;
     public MainWindow MainWindow => (MainWindow)Services.GetRequiredService<IMainWindow>();
-    public ILogger Logger => Services.GetRequiredService<ILogger>();
+    public ILogger Logger;
     public IClipboard Clipboard => MainWindow.Clipboard!;
 
     private IClassicDesktopStyleApplicationLifetime _appLife;
-    private ProgramWorkflow? _programWorkflow;
+    public ProgramWorkflow ProgramWorkflow;
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     public App()
 #pragma warning restore CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     {
         Services = AppServices.ConfigureServices().BuildServiceProvider();
+        Logger = Services.GetRequiredService<ILogger>();
+        ProgramWorkflow = new ProgramWorkflow(Services);
     }
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
@@ -36,6 +38,8 @@ public partial class App : Application
 #pragma warning restore CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     {
         Services = serviceCollection.BuildServiceProvider();
+        Logger = Services.GetRequiredService<ILogger>();
+        ProgramWorkflow = new ProgramWorkflow(Services);
     }
 
     public override void Initialize()
@@ -63,8 +67,7 @@ public partial class App : Application
         ThemeSetting();
         ActualThemeVariantChanged += (_, _) => ThemeSetting();
 
-        _programWorkflow = new ProgramWorkflow(Services);
-        _programWorkflow.Run();
+        ProgramWorkflow.Run();
     }
 
     private void ThemeSetting()
@@ -82,7 +85,7 @@ public partial class App : Application
 
     public void ExitApp()
     {
-        _programWorkflow?.Stop();
+        ProgramWorkflow.Stop();
         _appLife.Shutdown();
     }
 

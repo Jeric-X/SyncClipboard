@@ -16,7 +16,16 @@ class Program
         {
             return;
         }
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+        try
+        {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception e)
+        {
+            App.Current?.Logger?.Write("UnhandledException " + e.Message);
+            App.Current?.ProgramWorkflow?.Stop();
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

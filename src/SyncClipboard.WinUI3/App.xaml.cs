@@ -52,7 +52,8 @@ namespace SyncClipboard.WinUI3
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
-            Logger?.Write("UnhandledException" + e.Message);
+            Logger.Write("UnhandledException" + e.Message);
+            ProgramWorkflow.Stop();
         }
 
         private static ApplicationTheme? StringToTheme(string theme) => theme switch

@@ -14,14 +14,23 @@ class Program
     // yet and stuff might break.
     [STAThread]
     public static void Main(string[] args)
-    {    
+    {
         using var mutex = AppInstance.EnsureSingleInstance();
         if (mutex is null)
         {
             return;
         }
         NSApplication.Init();
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+        try
+        {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception e)
+        {
+            App.Current?.Logger?.Write("UnhandledException " + e.Message);
+            App.Current?.ProgramWorkflow?.Stop();
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
