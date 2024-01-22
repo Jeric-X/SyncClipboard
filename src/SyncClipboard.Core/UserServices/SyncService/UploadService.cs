@@ -225,7 +225,7 @@ public class UploadService : ClipboardHander
         {
             try
             {
-                await _webDav.Delete(Env.RemoteFileFolder, cancelToken);
+                await _webDav.DirectoryDelete(Env.RemoteFileFolder, cancelToken);
             }
             catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
             {

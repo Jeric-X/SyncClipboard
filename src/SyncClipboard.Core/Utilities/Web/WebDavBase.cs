@@ -145,11 +145,25 @@ namespace SyncClipboard.Core.Utilities.Web
         {
             var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
             var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
-            if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return EnsureExist(res);
+        }
+
+        public async Task<bool> DirectoryExist(string url, CancellationToken? cancelToken = null)
+        {
+            AdjustDirectoryUrl(ref url);
+            var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
+            requestMessage.Headers.Add("Depth", "1");
+            var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            return EnsureExist(res);
+        }
+
+        private static bool EnsureExist(HttpResponseMessage response)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 return false;
             }
-            res.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
             return true;
         }
 
@@ -166,6 +180,7 @@ namespace SyncClipboard.Core.Utilities.Web
             {
                 Method = new HttpMethod("PROPFIND")
             };
+            requestMessage.Headers.Add("Depth", "1");
 
             try
             {
@@ -186,6 +201,21 @@ namespace SyncClipboard.Core.Utilities.Web
         {
             var res = await HttpClient.DeleteAsync(url, AdjustCancelToken(cancelToken));
             res.EnsureSuccessStatusCode();
+        }
+
+        public async Task DirectoryDelete(string url, CancellationToken? cancelToken = null)
+        {
+            AdjustDirectoryUrl(ref url);
+            var res = await HttpClient.DeleteAsync(url, AdjustCancelToken(cancelToken));
+            res.EnsureSuccessStatusCode();
+        }
+
+        private static void AdjustDirectoryUrl(ref string url)
+        {
+            if (!url.EndsWith('/'))
+            {
+                url += "/";
+            }
         }
 
         public async Task<List<WebDavNode>> GetFolderSubList(string url, CancellationToken? cancelToken = null)

@@ -88,7 +88,7 @@ public class FileProfile : Profile
         if (file.Length <= _maxFileByte)
         {
             Logger.Write("PUSH file " + FileName);
-            if (!await webdav.Exist(RemoteFileFolder))
+            if (!await webdav.DirectoryExist(RemoteFileFolder))
             {
                 await webdav.CreateDirectory(RemoteFileFolder);
             }

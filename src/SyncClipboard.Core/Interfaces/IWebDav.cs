@@ -17,8 +17,10 @@ namespace SyncClipboard.Core.Interfaces
         Task<Type?> GetJson<Type>(string url, CancellationToken? cancelToken = null);
         Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null);
         Task<bool> Exist(string url, CancellationToken? cancelToken = null);
+        Task<bool> DirectoryExist(string url, CancellationToken? cancelToken = null);
         Task CreateDirectory(string url, CancellationToken? cancelToken = null);
         Task Delete(string url, CancellationToken? cancelToken = null);
+        Task DirectoryDelete(string url, CancellationToken? cancelToken = null);
         public Task<List<WebDavNode>> GetFolderSubList(string url, CancellationToken? cancelToken = null);
     }
 }

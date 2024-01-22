@@ -1,5 +1,6 @@
-0.4.2.1
+0.4.2.2
 - 功能：添加了关闭窗口、最小化的快捷键（macOS）
+- 适配更多WebDAV服务器，测试通过[InfiniCLOUD](https://infini-cloud.net/en/)([#33](https://github.com/Jeric-X/SyncClipboard/issues/33))
 
 0.4.2
 - 修复：mac中微信无法粘贴图片(https://github.com/Jeric-X/SyncClipboard/issues/31)
