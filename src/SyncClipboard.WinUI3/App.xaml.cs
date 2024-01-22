@@ -71,7 +71,6 @@ namespace SyncClipboard.WinUI3
         {
             Logger.Write("App started");
             ProgramWorkflow.Run();
-            throw new ArgumentException("3333ss");
         }
     }
 }

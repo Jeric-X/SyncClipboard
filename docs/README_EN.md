@@ -112,7 +112,7 @@ Notes:
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
 - Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/1a57093a04ec4f45a5ca7d4de82020e7)
-- Sync Automatically, import this [Shortcut](https: //www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
+- Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
