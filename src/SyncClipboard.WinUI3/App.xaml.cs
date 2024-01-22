@@ -52,7 +52,7 @@ namespace SyncClipboard.WinUI3
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
-            Logger.Write("UnhandledException" + e.Message);
+            Logger.Write($"UnhandledException {e.Exception.GetType()} {e.Message}");
             ProgramWorkflow.Stop();
         }
 
@@ -71,6 +71,7 @@ namespace SyncClipboard.WinUI3
         {
             Logger.Write("App started");
             ProgramWorkflow.Run();
+            throw new ArgumentException("3333ss");
         }
     }
 }

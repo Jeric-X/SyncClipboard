@@ -75,6 +75,7 @@ Tested server：
 - [x] [Nextcloud](https://nextcloud.com/)
 - [x] [坚果云](https://www.jianguoyun.com/) 
 - [x] [AList](https://alist.nn.ci/)
+- [x] [InfiniCLOUD](https://infini-cloud.net/en/)
 
 ## Client
 
@@ -110,8 +111,8 @@ Notes:
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
-- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/924173c2529341648537d881a9762a6c)
-- Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/e24d4dfe5d8e4b8f949d380be01427a4). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
+- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/1a57093a04ec4f45a5ca7d4de82020e7)
+- Sync Automatically, import this [Shortcut](https: //www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)

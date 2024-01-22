@@ -75,6 +75,7 @@ docker run -d \
 - [x] [Nextcloud](https://nextcloud.com/) 
 - [x] [坚果云](https://www.jianguoyun.com/)
 - [x] [AList](https://alist.nn.ci/)
+- [x] [InfiniCLOUD](https://infini-cloud.net/en/)
 
 注意：
 - 坚果云有每月流量限制和短时间内请求次数限制，建议自行设置桌面端的`轮询服务器间隔`和`最大上传文件大小`   
@@ -111,8 +112,8 @@ docker run -d \
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
 
-- 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/924173c2529341648537d881a9762a6c)，手动触发上传或下载
-- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/e24d4dfe5d8e4b8f949d380be01427a4)，运行后设备会自动在后台同步剪切板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
+- 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/1a57093a04ec4f45a5ca7d4de82020e7)，手动触发上传或下载
+- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168)，运行后设备会自动在后台同步剪切板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
 
 #### 使用[JSBox](https://apps.apple.com/cn/app/jsbox-%E5%AD%A6%E4%B9%A0%E5%86%99%E4%BB%A3%E7%A0%81/id1312014438)
 导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件
