@@ -37,5 +37,7 @@
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.4.231115000" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.2428" />
     <PackageVersion Include="WinUIEx" Version="2.3.3" />
+    <PackageVersion Include="Vanara.PInvoke.DbgHelp" Version="3.4.17" />
+    <PackageVersion Include="Vanara.PInvoke.Kernel32" Version="3.4.17" />
   </ItemGroup>
 </Project>

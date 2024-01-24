@@ -5,6 +5,11 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using Vanara.PInvoke;
+using static Vanara.PInvoke.DbgHelp;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -52,8 +57,19 @@ namespace SyncClipboard.WinUI3
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
-            Logger.Write($"UnhandledException {e.Exception.GetType()} {e.Message}");
-            ProgramWorkflow.Stop();
+            Logger.Write($"UnhandledException {e.Exception.GetType()} {e.Message} \n{e.Exception.StackTrace}");
+
+            var mdei = new MINIDUMP_EXCEPTION_INFORMATION
+            {
+                ThreadId = Kernel32.GetCurrentThreadId(),
+                ExceptionPointers = Marshal.GetExceptionPointers()
+            };
+
+            var path = Core.Commons.Env.FullPath($"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
+            using FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Write);
+            using Process process = Process.GetCurrentProcess();
+            MiniDumpWriteDump(process, (uint)process.Id, fs.SafeFileHandle, MINIDUMP_TYPE.MiniDumpNormal, mdei, default);
+            ExitApp();
         }
 
         private static ApplicationTheme? StringToTheme(string theme) => theme switch
