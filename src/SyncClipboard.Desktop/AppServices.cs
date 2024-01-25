@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.UserServices;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.Utilities;
 using SyncClipboard.Desktop.Views;
@@ -33,7 +33,10 @@ public class AppServices
 
         services.AddTransient<IFontManager, FontManager>();
 
-        services.AddSingleton<INotification, Notification>();
+        if (!OperatingSystem.IsMacOS())
+        {
+            services.AddSingleton<INotification, Notification>();
+        }
     }
 
     public static ServiceCollection ConfigureServices()

@@ -1,9 +1,7 @@
-﻿using System;
+﻿using AppKit;
 using Avalonia;
-using SyncClipboard.Desktop;
-using SyncClipboard.Desktop.MacOS;
 using SyncClipboard.Core.Utilities;
-using AppKit;
+using System;
 
 namespace SyncClipboard.Desktop.MacOS;
 
