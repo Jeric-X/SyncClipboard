@@ -48,7 +48,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./src
-      run: dotnet restore
+      run: dotnet restore SyncClipboard.Desktop.Default
 
     - name: Check code style
       working-directory: ./src

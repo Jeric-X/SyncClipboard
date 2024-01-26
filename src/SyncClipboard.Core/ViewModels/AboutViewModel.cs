@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -15,16 +16,28 @@ public partial class AboutViewModel : ObservableObject
     public string Version => AppConfig.AppVersion;
 
     private readonly IServiceProvider _services;
+    private readonly ConfigManager _configManager;
 
     private UpdateChecker UpdateChecker => _services.GetRequiredService<UpdateChecker>();
 
-    public AboutViewModel(IServiceProvider serviceProvider)
+    [ObservableProperty]
+    private bool checkUpdateOnStartUp;
+    partial void OnCheckUpdateOnStartUpChanged(bool value)
+    {
+        _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateOnStartUp = true });
+    }
+
+    public AboutViewModel(ConfigManager configManager, IServiceProvider serviceProvider)
     {
         _services = serviceProvider;
+        _configManager = configManager;
         if (_alreadyCheckedUpdate is false)
         {
             CheckForUpdateCommand.ExecuteAsync(null);
         }
+
+        checkUpdateOnStartUp = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
+        configManager.ListenConfig<ProgramConfig>(config => { CheckUpdateOnStartUp = config.CheckUpdateOnStartUp; });
     }
 
     public OpenSourceSoftware SyncClipboard { get; } = new(I18n.Strings.SoftwareHomePage, Env.HomePage, "");

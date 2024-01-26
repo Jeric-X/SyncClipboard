@@ -37,12 +37,14 @@
                 <Button Content="{x:Static i18n:Strings.CheckUpdate}" Command="{Binding CheckForUpdateCommand}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <!--<ui:SettingsCard Header="{x:Static i18n:Strings.CheckUpdateOnStartup}">
-                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
-                </ui:SettingsCard>-->
                 <ui:SettingsExpanderItem Content="{Binding UpdateInfo}">
                     <ui:SettingsExpanderItem.Footer>
                         <Button Content="{x:Static i18n:Strings.OpenDownloadPage}" Command="{Binding OpenUpdateUrlCommand}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem IsVisible="{OnPlatform Default=False, macOS=True}" Content="{x:Static i18n:Strings.CheckUpdateOnStartup}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding CheckUpdateOnStartUp, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{Binding SyncClipboard}" ContentTemplate="{StaticResource HyperLink}" />

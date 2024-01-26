@@ -27,7 +27,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./src
-      run: dotnet restore
+      run: dotnet restore SyncClipboard.WinUI3
 
     - name: Check code style
       working-directory: ./src

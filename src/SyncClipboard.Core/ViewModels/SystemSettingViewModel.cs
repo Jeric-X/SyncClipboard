@@ -12,10 +12,6 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class SystemSettingViewModel : ObservableObject
 {
     [ObservableProperty]
-    private bool checkUpdateOnStartUp;
-    partial void OnCheckUpdateOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { CheckUpdateOnStartUp = value };
-
-    [ObservableProperty]
     private bool hideWindowOnStartUp;
     partial void OnHideWindowOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { HideWindowOnStartup = value };
 
@@ -54,7 +50,6 @@ public partial class SystemSettingViewModel : ObservableObject
     private ProgramConfig programConfig;
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
-        CheckUpdateOnStartUp = value.CheckUpdateOnStartUp;
         HideWindowOnStartUp = value.HideWindowOnStartup;
         LogRemainDays = value.LogRemainDays;
         DiagnoseMode = value.DiagnoseMode;
@@ -101,7 +96,6 @@ public partial class SystemSettingViewModel : ObservableObject
         language = Languages.FirstOrDefault(x => x.LocaleTag == programConfig.Language) ?? Languages[0];
         font = programConfig.Font;
         theme = Themes.FirstOrDefault(x => x.String == programConfig.Theme) ?? Themes[0];
-        checkUpdateOnStartUp = programConfig.CheckUpdateOnStartUp;
         hideWindowOnStartUp = programConfig.HideWindowOnStartup;
         logRemainDays = programConfig.LogRemainDays;
         diagnoseMode = programConfig.DiagnoseMode;

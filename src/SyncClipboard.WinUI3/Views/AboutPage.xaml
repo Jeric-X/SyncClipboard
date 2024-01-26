@@ -22,7 +22,7 @@
                     <Button Content="{x:Bind i18n:Strings.OpenDownloadPage}" Command="{x:Bind _aboutViewModel.OpenUpdateUrlCommand}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateOnStartup}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _SettingViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SoftwareHomePage}">
                     <ui:SettingsCard.Description>

@@ -15,13 +15,11 @@ namespace SyncClipboard.WinUI3.Views
     /// </summary>
     public sealed partial class AboutPage : Page
     {
-        private readonly SystemSettingViewModel _SettingViewModel;
         private readonly AboutViewModel _aboutViewModel;
 
         public AboutPage()
         {
             this.InitializeComponent();
-            _SettingViewModel = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
             _aboutViewModel = App.Current.Services.GetRequiredService<AboutViewModel>();
         }
 
