@@ -45,7 +45,6 @@ namespace SyncClipboard.Core
 
             PrepareRemoteWorkingFolder();
             PrepareWorkingFolder(configManager);
-            CheckUpdate();
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 
@@ -53,6 +52,7 @@ namespace SyncClipboard.Core
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
             contextMenu.AddMenuItemGroup(new MenuItem[] { new(Strings.Exit, mainWindow.ExitApp) });
             ShowMainWindow(configManager);
+            CheckUpdate();
         }
 
         private void InitTrayIcon()
@@ -90,6 +90,7 @@ namespace SyncClipboard.Core
                     var (needUpdate, newVersion) = await updateChecker.Check();
                     if (needUpdate)
                     {
+                        await Task.Delay(TimeSpan.FromSeconds(1));
                         notificationManager.SendText(
                             Strings.FoundNewVersion,
                             $"v{updateChecker.Version} -> {newVersion}",

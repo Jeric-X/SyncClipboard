@@ -42,7 +42,7 @@ jobs:
         run: |
           dotnet workload install macos
           dotnet workload restore
-          dotnet restore SyncClipboard.Desktop.MacOS
+          dotnet restore
 
       - name: Check code style
         working-directory: ./src

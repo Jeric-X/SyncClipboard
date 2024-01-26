@@ -149,14 +149,15 @@ public class UploadService : ClipboardHander
     protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancellationToken)
     {
         var profile = _clipboardFactory.CreateProfileFromMeta(meta);
-        if (await IsDownloadServiceWorking(profile, cancellationToken))
-        {
-            return;
-        }
 
-        SetWorkingStartStatus();
         try
         {
+            if (await IsDownloadServiceWorking(profile, cancellationToken))
+            {
+                return;
+            }
+
+            SetWorkingStartStatus();
             await UploadClipboard(profile, cancellationToken);
         }
         catch (OperationCanceledException)
