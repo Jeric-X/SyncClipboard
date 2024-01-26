@@ -208,3 +208,4 @@ DELETE      /file
 [Avalonia](https://avaloniaui.net/)  
 [FluentAvalonia.BreadcrumbBar](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
 [FluentAvalonia](https://github.com/amwx/FluentAvalonia)  
+[Vanara](https://github.com/dahall/Vanara)  
