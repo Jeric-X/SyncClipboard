@@ -58,6 +58,7 @@ namespace SyncClipboard.WinUI3
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             Logger.Write($"UnhandledException {e.Exception.GetType()} {e.Message} \n{e.Exception.StackTrace}");
+            Logger.Flush();
 
             var mdei = new MINIDUMP_EXCEPTION_INFORMATION
             {
@@ -69,7 +70,6 @@ namespace SyncClipboard.WinUI3
             using FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Write);
             using Process process = Process.GetCurrentProcess();
             MiniDumpWriteDump(process, (uint)process.Id, fs.SafeFileHandle, MINIDUMP_TYPE.MiniDumpNormal, mdei, default);
-            ExitApp();
         }
 
         private static ApplicationTheme? StringToTheme(string theme) => theme switch

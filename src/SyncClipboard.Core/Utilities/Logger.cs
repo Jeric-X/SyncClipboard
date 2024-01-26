@@ -55,6 +55,11 @@ namespace SyncClipboard.Core.Utilities
             Write(tag, str, new StackTrace(true).GetFrame(1));
         }
 
+        public void Flush()
+        {
+            _fileWriter?.Flush();
+        }
+
         private void WriteToFile(string logStr, string logFile)
         {
             //判断文件夹是否存在
