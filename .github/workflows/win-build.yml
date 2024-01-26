@@ -31,12 +31,23 @@ jobs:
 
     - name: Check code style
       working-directory: ./src
-      run: dotnet format --verify-no-changes --no-restore
+      run: |
+        dotnet format SyncClipboard.Abstract --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Core --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Server --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Server.Core --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Windows --verify-no-changes --no-restore
+        dotnet format SyncClipboard.WinUI3 --verify-no-changes --no-restore
 
     - name: Check code style info
       working-directory: ./src
       run: |
-        dotnet format --severity info --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Abstract --verify-no-changes --no-restore --severity info
+        dotnet format SyncClipboard.Core --verify-no-changes --no-restore --severity info
+        dotnet format SyncClipboard.Server --verify-no-changes --no-restore --severity info
+        dotnet format SyncClipboard.Server.Core --verify-no-changes --no-restore --severity info
+        dotnet format SyncClipboard.Windows --verify-no-changes --no-restore --severity info
+        dotnet format SyncClipboard.WinUI3 --verify-no-changes --no-restore --severity info
         exit 0
 
     # stucking in github action, no idea why

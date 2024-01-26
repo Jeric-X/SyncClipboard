@@ -52,12 +52,15 @@ jobs:
 
     - name: Check code style
       working-directory: ./src
-      run: dotnet format --verify-no-changes --no-restore
+      run: |
+        dotnet format SyncClipboard.Desktop --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Desktop.Default --verify-no-changes --no-restore
 
     - name: Check code style info
       working-directory: ./src
       run: |
-        dotnet format --severity info --verify-no-changes --no-restore
+        dotnet format SyncClipboard.Desktop --verify-no-changes --no-restore --severity info
+        dotnet format SyncClipboard.Desktop.Default --verify-no-changes --no-restore --severity info
         exit 0
 
     # - name
