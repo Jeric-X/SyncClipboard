@@ -180,13 +180,16 @@ namespace SyncClipboard.Core
             var logFolder = new DirectoryInfo(Env.LogFolder);
             if (logFolder.Exists && config.LogRemainDays != 0)
             {
-                var today = DateTime.Today;
-                foreach (var logFile in logFolder.EnumerateFileSystemInfos("????????.txt"))
+                var logFiles = logFolder.EnumerateFileSystemInfos("????????.txt");
+                var dumpFiles = logFolder.EnumerateFileSystemInfos("????-??-?? ??-??-??.dmp");
+                var allFiles = logFiles.Concat(dumpFiles);
+
+                foreach (var file in allFiles)
                 {
-                    var createTime = logFile.CreationTime.Date;
-                    if ((today - createTime) > TimeSpan.FromDays(config.LogRemainDays))
+                    var createTime = file.CreationTime.Date;
+                    if ((DateTime.Today - createTime) > TimeSpan.FromDays(config.LogRemainDays))
                     {
-                        logFile.Delete();
+                        file.Delete();
                     }
                 }
             }

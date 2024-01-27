@@ -66,7 +66,7 @@ namespace SyncClipboard.WinUI3
                 ExceptionPointers = Marshal.GetExceptionPointers()
             };
 
-            var path = Core.Commons.Env.FullPath($"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
+            var path = Path.Combine(Core.Commons.Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
             using FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Write);
             using Process process = Process.GetCurrentProcess();
             MiniDumpWriteDump(process, (uint)process.Id, fs.SafeFileHandle, MINIDUMP_TYPE.MiniDumpNormal, mdei, default);
