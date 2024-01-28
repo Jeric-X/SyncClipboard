@@ -14,17 +14,13 @@
     <ItemGroup>
       <LicenseFiles Include="$(ProjectDir)\..\..\LICENSES\**\*.*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(LicenseFiles)"
-      DestinationFolder="$(OutDir)\LICENSES\%(RecursiveDir)"
-      SkipUnchangedFiles="true"
-      OverwriteReadOnlyFiles="true"
-      Retries="3"
-      RetryDelayMilliseconds="300"/>
+    <Copy SourceFiles="@(LicenseFiles)" DestinationFolder="$(OutDir)\LICENSES\%(RecursiveDir)" SkipUnchangedFiles="true" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Tmds.DBus" />
   </ItemGroup>
 
   <ItemGroup>

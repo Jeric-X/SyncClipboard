@@ -23,6 +23,7 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="11.0.6" />
     <PackageVersion Include="FluentAvaloniaUI" Version="2.0.4" />
     <PackageVersion Include="FluentAvalonia.BreadcrumbBar" Version="2.0.2" />
+    <PackageVersion Include="Tmds.DBus" Version="0.15.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

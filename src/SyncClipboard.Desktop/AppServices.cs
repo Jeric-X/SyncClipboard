@@ -33,9 +33,14 @@ public class AppServices
 
         services.AddTransient<IFontManager, FontManager>();
 
-        if (!OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
         {
             services.AddSingleton<INotification, Notification>();
+        }
+
+        if (!OperatingSystem.IsMacOS())
+        {
+            services.AddSingleton<IMainWindow, MainWindow>();
         }
     }
 
@@ -45,7 +50,6 @@ public class AppServices
 
         ConfigDesktopCommonService(services);
 
-        services.AddSingleton<IMainWindow, MainWindow>();
         return services;
     }
 }
