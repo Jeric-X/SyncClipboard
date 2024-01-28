@@ -51,7 +51,7 @@
   </ItemGroup>
   
   <Target Name="Print Message" BeforeTargets="Build">
-    <Message Text="ddddddddddddd $(RuntimeIdentifier)" />
+    <Message Text="RuntimeIdentifier $(RuntimeIdentifier)" />
   </Target>
   
   <ItemGroup>

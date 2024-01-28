@@ -205,3 +205,4 @@ DELETE      /file
 [FluentAvalonia.BreadcrumbBar](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
 [FluentAvalonia](https://github.com/amwx/FluentAvalonia)  
 [Vanara](https://github.com/dahall/Vanara)  
+[Tmds.DBus](https://github.com/tmds/Tmds.DBus)  
