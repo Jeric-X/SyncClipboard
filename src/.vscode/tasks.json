@@ -31,7 +31,7 @@
             "command": "dotnet",
             "type": "process",
             "args": [
-                "publish",
+                "build",
                 "${workspaceFolder}/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj",
                 "-c",
                 "Debug",

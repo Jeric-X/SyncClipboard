@@ -221,7 +221,9 @@ public class FileProfile : Profile
             I18n.Strings.ClipboardFileUpdated,
             FileName,
             DefaultButton(),
+#if WINDOWS
             new Button(I18n.Strings.OpenFolder, new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+#endif
             new Button(I18n.Strings.Open, new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
         );
     }

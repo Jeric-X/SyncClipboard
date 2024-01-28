@@ -26,7 +26,7 @@
             "preLaunchTask": "DebugDesktop",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net6.0/publish/SyncClipboard.Desktop.Default.dll"
+                "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net6.0/SyncClipboard.Desktop.Default.dll"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
