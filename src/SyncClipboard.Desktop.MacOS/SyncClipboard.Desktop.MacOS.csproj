@@ -12,6 +12,7 @@
     <Platforms>x64;ARM64</Platforms>
     <CreatePackage>false</CreatePackage>
     <NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>
+    <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <DebugType>embedded</DebugType>
     <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
+    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
     <BuildOnWin Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</BuildOnWin>
     <BuildOnMac Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</BuildOnMac>
@@ -48,7 +49,11 @@
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Server.Core\SyncClipboard.Server.Core.csproj" />
   </ItemGroup>
-
+  
+  <Target Name="Print Message" BeforeTargets="Build">
+    <Message Text="ddddddddddddd $(RuntimeIdentifier)" />
+  </Target>
+  
   <ItemGroup>
     <Compile Update="I18n\Strings.Designer.cs">
       <DesignTime>True</DesignTime>
