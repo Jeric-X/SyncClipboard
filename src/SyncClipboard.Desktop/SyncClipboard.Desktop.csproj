@@ -10,9 +10,6 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Assets\icon.svg" CopyToPublishDirectory="PreserveNewest"/>
-  </ItemGroup>
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
     <PackageReference Include="Magick.NET-Q16-x64" />

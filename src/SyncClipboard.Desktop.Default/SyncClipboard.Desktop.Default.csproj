@@ -15,6 +15,7 @@
       <LicenseFiles Include="$(ProjectDir)\..\..\LICENSES\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(LicenseFiles)" DestinationFolder="$(OutDir)\LICENSES\%(RecursiveDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="300" />
+    <Copy SourceFiles="$(ProjectDir)\..\SyncClipboard.Desktop\Assets\icon.svg" DestinationFolder="$(OutDir)\Assets" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
   <ItemGroup>
