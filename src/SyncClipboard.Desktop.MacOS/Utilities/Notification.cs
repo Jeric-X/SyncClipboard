@@ -1,6 +1,6 @@
 ﻿using AppKit;
 using Foundation;
-using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using System;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;

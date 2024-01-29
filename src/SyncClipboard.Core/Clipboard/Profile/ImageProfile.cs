@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;

@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Abstract;
+﻿namespace SyncClipboard.Abstract.Notification;
 
 public interface INotificationSession
 {

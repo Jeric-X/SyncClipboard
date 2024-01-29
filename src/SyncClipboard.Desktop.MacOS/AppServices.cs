@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.MacOS.Utilities;
 using SyncClipboard.Desktop.MacOS.Views;

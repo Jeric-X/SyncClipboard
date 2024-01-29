@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Desktop.Default.Utilities;
 
 namespace SyncClipboard.Desktop.Default;

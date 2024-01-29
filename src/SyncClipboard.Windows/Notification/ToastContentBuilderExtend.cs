@@ -1,5 +1,5 @@
 using Microsoft.Toolkit.Uwp.Notifications;
-using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 
 namespace SyncClipboard.Core.Utilities.Notification
 {
