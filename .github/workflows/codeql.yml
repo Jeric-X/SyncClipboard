@@ -79,7 +79,7 @@ jobs:
         dotnet-version: 6.0.x
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v1
       with:
         msbuild-architecture: x64
 
