@@ -13,7 +13,7 @@ namespace SyncClipboard.Core.Utilities.Notification
         {
             Notifer = ToastNotificationManager.CreateToastNotifier(Register.RegistFromCurrentProcess());
 
-            // 像系统注册通知按钮回调，如果不注册，系统会打开新的进程；真正的回调在ToastSession中
+            // 向系统注册通知按钮回调，如果不注册，系统会打开新的进程；真正的回调在ToastSession中
             ToastNotificationManagerCompat.OnActivated += (args) => { };
         }
 

@@ -36,8 +36,16 @@ namespace SyncClipboard.Core.Utilities.Image
 
         public static async Task<string> CompatibilityCast(string filePath, string newFileDir, CancellationToken cancelToken)
         {
+            using var dummyTask = Task.Delay(TimeSpan.FromMinutes(5), cancelToken);
+            using var convertTask = Task.Run(() => ConverWithMagick(filePath, newFileDir), cancelToken);
+            await Task.WhenAny(convertTask, dummyTask);
+            return convertTask.IsCompletedSuccessfully ? convertTask.Result : throw new OperationCanceledException();
+        }
+
+        private static string ConverWithMagick(string filePath, string newFileDir)
+        {
             using var image = new MagickImageCollection();
-            await image.ReadAsync(filePath, cancelToken).ConfigureAwait(false);
+            image.Read(filePath);
             var newPath = Path.Combine(newFileDir, Path.GetFileNameWithoutExtension(filePath));
             if (image.Count >= 2)
             {
@@ -48,7 +56,7 @@ namespace SyncClipboard.Core.Utilities.Image
             {
                 newPath += ".jpg";
             }
-            await image.WriteAsync(newPath, cancelToken);
+            image.Write(newPath);
             return newPath;
         }
     }
