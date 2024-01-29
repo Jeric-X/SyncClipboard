@@ -106,6 +106,6 @@ public abstract class Profile
 
     protected Button DefaultButton()
     {
-        return new Button(I18n.Strings.Copy, new Callbacker(Guid.NewGuid().ToString(), (_) => SetLocalClipboard(false, CancellationToken.None)));
+        return new Button(I18n.Strings.Copy, () => SetLocalClipboard(false, CancellationToken.None));
     }
 }

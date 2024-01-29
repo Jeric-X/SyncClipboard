@@ -202,16 +202,13 @@ public class FileProfile : Profile
         }
     }
 
-    public Action<string> OpenInExplorer()
+    public void OpenInExplorer()
     {
         var path = FullPath ?? GetTempLocalFilePath();
-        return (_) =>
-        {
-            var open = new System.Diagnostics.Process();
-            open.StartInfo.FileName = "explorer";
-            open.StartInfo.Arguments = "/e,/select," + path;
-            open.Start();
-        };
+        var open = new System.Diagnostics.Process();
+        open.StartInfo.FileName = "explorer";
+        open.StartInfo.Arguments = "/e,/select," + path;
+        open.Start();
     }
 
     protected override void SetNotification(INotification notification)
@@ -222,9 +219,9 @@ public class FileProfile : Profile
             FileName,
             DefaultButton(),
 #if WINDOWS
-            new Button(I18n.Strings.OpenFolder, new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+            new Button(I18n.Strings.OpenFolder, OpenInExplorer),
 #endif
-            new Button(I18n.Strings.Open, new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
+            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(path))
         );
     }
 

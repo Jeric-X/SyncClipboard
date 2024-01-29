@@ -1,4 +1,3 @@
-using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract;
 using Windows.UI.Notifications;
 
@@ -22,15 +21,12 @@ namespace SyncClipboard.Core.Utilities.Notification
 
         public void SendImage(string title, string text, Uri uri, params Button[] buttons)
         {
-            var content = new ToastContentBuilder()
-                .AddHeroImage(uri, "alternateText")
-                .AddText(title)
-                .AddText(text);
-            foreach (var button in buttons)
+            new ToastSession(title, Notifer)
             {
-                content.AddButton(button);
-            }
-            content.Show();
+                Text1 = text,
+                Buttons = new(buttons),
+                Image = uri
+            }.Show();
         }
 
         public IProgressBar CreateProgressNotification(string title)

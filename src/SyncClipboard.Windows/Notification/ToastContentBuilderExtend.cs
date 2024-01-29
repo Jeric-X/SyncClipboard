@@ -10,18 +10,12 @@ namespace SyncClipboard.Core.Utilities.Notification
         {
             if (button.Callbacker is not null)
             {
-                Handler.AddHandler(button.Callbacker.Argument, button.Callbacker.CallBack);
+                Handler.AddHandler(button.Uid.ToString(), (_) => button.Callbacker());
             }
             return content.AddButton(
-                new ToastButton(button.Text, button.Callbacker?.Argument)
+                new ToastButton(button.Text, button.Uid)
                 {
-                    ActivationType = ToastActivationType.Background,
-                    ActivationOptions = new ToastActivationOptions()
-                    {
-                        AfterActivationBehavior =
-                            button.Callbacker?.Pedding ?? false ?
-                                  ToastAfterActivationBehavior.PendingUpdate : ToastAfterActivationBehavior.Default
-                    }
+                    ActivationType = ToastActivationType.Background
                 }
             );
         }

@@ -47,7 +47,7 @@ public class TextProfile : Profile
     {
         if (Text.Length >= 4 && (Text[..4] == "http" || Text[..4] == "www."))
         {
-            Callbacker callbacker = new(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(Text));
+            void callbacker() => Sys.OpenWithDefaultApp(Text);
             notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton(), new Button(I18n.Strings.OpenInBrowser, callbacker));
         }
         else

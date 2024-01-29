@@ -75,9 +75,9 @@ public class ImageProfile : FileProfile
             new Uri(path),
             DefaultButton(),
 #if WINDOWS
-            new Button(I18n.Strings.OpenFolder, new Callbacker(Guid.NewGuid().ToString(), OpenInExplorer())),
+            new Button(I18n.Strings.OpenFolder, OpenInExplorer),
 #endif
-            new Button(I18n.Strings.Open, new Callbacker(Guid.NewGuid().ToString(), (_) => Sys.OpenWithDefaultApp(path)))
+            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(path))
         );
     }
 }

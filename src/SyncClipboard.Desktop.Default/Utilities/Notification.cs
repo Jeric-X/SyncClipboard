@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using System.Runtime.Versioning;
 using Tmds.DBus;
@@ -10,7 +11,7 @@ internal sealed class Notification : INotification, IDisposable
 {
     private static readonly string AppIcon = new Uri(Path.Combine(Env.Directory, "Assets", "icon.svg")).AbsoluteUri;
     private readonly IDbusNotifications _dBusInstance;
-    private readonly ButtonManager<uint, string> _buttonManager = new();
+    private readonly CallbackHandler<uint> _callbackHandler = new();
     private readonly List<IDisposable> _disposables = new();
 
     public Notification()
@@ -19,8 +20,8 @@ internal sealed class Notification : INotification, IDisposable
         _dBusInstance = connection.CreateProxy<IDbusNotifications>("org.freedesktop.Notifications", "/org/freedesktop/Notifications");
         Task.Run(async () =>
         {
-            _disposables.Add(await _dBusInstance.WatchActionInvokedAsync(input => _buttonManager.OnActive(input.id, input.actionKey)));
-            _disposables.Add(await _dBusInstance.WatchNotificationClosedAsync(input => _buttonManager.OnClosed(input.id)));
+            _disposables.Add(await _dBusInstance.WatchActionInvokedAsync(input => _callbackHandler.OnActivated(input.id, input.actionKey)));
+            _disposables.Add(await _dBusInstance.WatchNotificationClosedAsync(input => _callbackHandler.OnClosed(input.id)));
         }).Wait();
     }
 
@@ -44,7 +45,7 @@ internal sealed class Notification : INotification, IDisposable
         List<string> actionList = new();
         foreach (var button in buttons)
         {
-            actionList.Add(button.Callbacker?.Argument ?? "");
+            actionList.Add(button.Uid.ToString());
             actionList.Add(button.Text);
         }
 
@@ -67,10 +68,7 @@ internal sealed class Notification : INotification, IDisposable
            )
         ).Result;
 
-        foreach (var button in buttons.Where(button => button.Callbacker is not null))
-        {
-            _buttonManager.AddHandler(id, button.Callbacker!.Argument, button.Callbacker.CallBack);
-        }
+        _callbackHandler.AddButtons(id, buttons);
     }
 
     public void Dispose()
