@@ -8,10 +8,6 @@ namespace SyncClipboard.Core.Utilities.Notification
         public static ToastContentBuilder AddButton(
             this ToastContentBuilder content, Button button)
         {
-            if (button.Callbacker is not null)
-            {
-                Handler.AddHandler(button.Uid.ToString(), (_) => button.Callbacker());
-            }
             return content.AddButton(
                 new ToastButton(button.Text, button.Uid)
                 {

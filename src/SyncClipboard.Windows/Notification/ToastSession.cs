@@ -1,5 +1,6 @@
 using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
@@ -8,21 +9,20 @@ namespace SyncClipboard.Core.Utilities.Notification
     {
         private readonly ToastNotifier _notifer;
 
-        public const string DEFAULT_GROUP = "DEFAULT_GROUP";
-        public const string DEFAULT_TAG = "DEFAULT_TAG";
-        private string group = DEFAULT_GROUP;
-        public string Group { get => group; set => group = value.Length <= 64 ? value : value[..63]; }
-        private string tag = DEFAULT_TAG;
-        public string Tag { get => tag; set => tag = value.Length <= 64 ? value : value[..63]; }
+        private readonly CallbackHandler<string> _callbackHandler;
+        public static string Group => "DEFAULT_GROUP";
+        private readonly string _tag = Guid.NewGuid().ToString();
+        public string Tag => _tag.Length <= 64 ? _tag : _tag[..63];
         public string Title { get; set; }
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
         public Uri? Image { get; set; }
         public List<Button> Buttons { get; set; } = new();
-        public ToastSession(string title, ToastNotifier notifier)
+        public ToastSession(string title, ToastNotifier notifier, CallbackHandler<string> callbackHandler)
         {
             Title = title;
             _notifer = notifier;
+            _callbackHandler = callbackHandler;
         }
 
         private const string TOAST_BINDING_TITLE = "TOAST_BINDING_TITLE";
@@ -42,6 +42,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             foreach (var button in Buttons)
             {
                 builder.AddButton(button);
+                _callbackHandler.AddButton(Tag, button);
             }
             return builder;
         }
@@ -51,13 +52,37 @@ namespace SyncClipboard.Core.Utilities.Notification
             var toast = new ToastNotification(builder.GetToastContent().GetXml())
             {
                 Tag = this.Tag,
-                Group = this.Group,
+                Group = Group,
                 Data = new NotificationData()
             };
             toast.Data.Values[TOAST_BINDING_TITLE] = Title;
             toast.Data.Values[TOAST_BINDING_TEXT1] = Text1;
             toast.Data.Values[TOAST_BINDING_TEXT2] = Text2;
+            toast.Activated += Toast_Activated;
+            toast.Dismissed += Toast_Dismissed; ;
             return toast;
+        }
+
+        private void Toast_Activated(ToastNotification sender, object e)
+        {
+            if (e is not ToastActivatedEventArgs args)
+                return;
+            if (args.Arguments.Length != 0)
+            {
+                _callbackHandler.OnActivated(Tag, args.Arguments);
+            }
+            else
+            {
+                _callbackHandler.OnClosed(Tag);
+            }
+        }
+
+        private void Toast_Dismissed(ToastNotification sender, ToastDismissedEventArgs args)
+        {
+            if (args.Reason is ToastDismissalReason.UserCanceled)
+            {
+                _callbackHandler.OnClosed(Tag);
+            }
         }
 
         public virtual void Show()
@@ -75,6 +100,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             try
             {
                 ToastNotificationManagerCompat.History.Remove(Tag, Group);
+                _callbackHandler.OnClosed(Tag);
             }
             catch
             {

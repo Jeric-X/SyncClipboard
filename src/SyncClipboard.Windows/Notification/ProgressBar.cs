@@ -1,5 +1,6 @@
 using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
@@ -74,7 +75,8 @@ namespace SyncClipboard.Core.Utilities.Notification
             }
         }
 
-        public ProgressBar(string title, ToastNotifier notifer) : base(title, notifer)
+        public ProgressBar(string title, ToastNotifier notifer, CallbackHandler<string> callbackHandler)
+            : base(title, notifer, callbackHandler)
         {
             _notifer = notifer;
         }

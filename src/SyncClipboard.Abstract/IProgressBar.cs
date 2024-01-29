@@ -2,7 +2,6 @@
 
 public interface IProgressBar : INotificationSession
 {
-    public string Tag { get; set; }
     public string? ProgressTitle { get; set; }
     public double? ProgressValue { get; set; }
     public bool IsIndeterminate { get; set; }

@@ -16,8 +16,10 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
     private readonly ServiceStatusViewModel _serviceStatusViewModel;
     protected override ServiceStatusViewModel? ServiceStatusViewModel => _serviceStatusViewModel;
 
-    protected override BitmapImage DefaultIcon => new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
-    protected override BitmapImage ErrorIcon => new BitmapImage(new Uri("ms-appx:///Assets/erro.ico"));
+    private readonly BitmapImage defaultIcon = new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
+    private readonly BitmapImage errorIcon = new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
+    protected override BitmapImage DefaultIcon => defaultIcon;
+    protected override BitmapImage ErrorIcon => errorIcon;
     protected override int MaxToolTipLenth => 255;
 
     public TrayIconImpl(TrayIcon trayIcon, ServiceStatusViewModel serviceStatusViewModel)

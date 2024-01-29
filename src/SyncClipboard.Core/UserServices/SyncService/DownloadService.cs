@@ -105,17 +105,18 @@ public class DownloadService : Service
         }
     }
 
-    private void StartPullLoop()
+    private async void StartPullLoop()
     {
         _trayIcon.SetStatusString(SERVICE_NAME, "Running.");
         _cancelSource = new CancellationTokenSource();
         try
         {
-            _ = PullLoop(_cancelSource.Token);
+            await PullLoop(_cancelSource.Token);
         }
         catch (OperationCanceledException)
         {
             _toastReporter?.CancelSicent();
+            _toastReporter = null;
             _logger.Write(LOG_TAG, "Canceled");
         }
     }
@@ -187,12 +188,14 @@ public class DownloadService : Service
             {
                 cancelToken.ThrowIfCancellationRequested();
                 _toastReporter?.Cancel();
+                _toastReporter = null;
                 SetStatusOnError(ref errorTimes, new Exception("Request timeout"));
             }
             catch (Exception ex)
             {
                 SetStatusOnError(ref errorTimes, ex);
                 _toastReporter?.Cancel();
+                _toastReporter = null;
             }
             finally
             {

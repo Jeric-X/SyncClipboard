@@ -41,7 +41,6 @@ namespace SyncClipboard.Core.Utilities.Notification
             var shortcutFile = Path.Combine(startMenuPath, $"{appName}.lnk");
 
             shortcut.Save(shortcutFile);
-            ToastNotificationManagerCompat.OnActivated += Handler.OnActive;
             return aumid;
         }
     }

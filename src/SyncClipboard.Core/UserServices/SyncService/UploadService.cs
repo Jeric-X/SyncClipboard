@@ -143,7 +143,13 @@ public class UploadService : ClipboardHander
 
     private async Task<bool> IsDownloadServiceWorking(Profile profile, CancellationToken token)
     {
-        return _downServiceChangingLocal || await Profile.Same(profile, _profileCache, token);
+        if (await Profile.Same(profile, _profileCache, token))
+        {
+            _profileCache = null;
+            return true;
+        }
+
+        return _downServiceChangingLocal;
     }
 
     protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancellationToken)
