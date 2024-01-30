@@ -1,5 +1,6 @@
-v2.6.0.1
+v2.6.1
 - 增加WebDAV服务器兼容性，新测试通过[InfiniCLOUD](https://infini-cloud.net/en/)(#33)
+- 其他问题修复
 
 v2.6.0
 - 修复：文件格式问题引发的错误(#25)
