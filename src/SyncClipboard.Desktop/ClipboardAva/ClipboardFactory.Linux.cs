@@ -29,7 +29,6 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal partial class ClipboardFactory
 {
-
     [SupportedOSPlatform("linux")]
     private List<HandlerMapping> FormatHandlerlist => new List<HandlerMapping>
     {

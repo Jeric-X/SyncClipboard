@@ -1,5 +1,6 @@
 ﻿using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Desktop.Utilities;
 using System.Runtime.Versioning;
 using Tmds.DBus;
 

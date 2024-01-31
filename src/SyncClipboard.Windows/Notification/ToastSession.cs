@@ -58,7 +58,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             toast.Data.Values[TOAST_BINDING_TEXT1] = Text1;
             toast.Data.Values[TOAST_BINDING_TEXT2] = Text2;
             toast.Activated += Toast_Activated;
-            toast.Dismissed += Toast_Dismissed; ;
+            toast.Dismissed += Toast_Dismissed;
             return toast;
         }
 

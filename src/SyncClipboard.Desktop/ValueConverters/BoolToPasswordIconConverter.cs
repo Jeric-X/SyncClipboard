@@ -5,7 +5,6 @@ using System.Globalization;
 
 namespace SyncClipboard.Desktop.ValueConverters;
 
-
 public class BoolToPasswordIconConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -20,4 +19,3 @@ public class BoolToPasswordIconConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
-

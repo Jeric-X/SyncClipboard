@@ -28,6 +28,6 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
         {
             return base.SetLocalClipboard(metaInfomation, ctk);
         }
-        return App.Current.Clipboard.SetTextAsync(metaInfomation?.Text ?? "").WaitAsync(ctk); ;
+        return App.Current.Clipboard.SetTextAsync(metaInfomation?.Text ?? "").WaitAsync(ctk);
     }
 }

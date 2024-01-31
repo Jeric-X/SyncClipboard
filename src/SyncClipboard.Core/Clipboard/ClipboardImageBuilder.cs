@@ -25,4 +25,3 @@ public static class ClipboardImageBuilder
         return clipboardQqFormat.Replace("<<<<<<", path);
     }
 }
-

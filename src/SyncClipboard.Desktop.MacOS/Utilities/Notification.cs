@@ -1,6 +1,7 @@
 ﻿using AppKit;
 using Foundation;
 using SyncClipboard.Abstract.Notification;
+using SyncClipboard.Desktop.Utilities;
 using System;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
@@ -37,4 +38,3 @@ internal class Notification : INotification
         NSUserNotificationCenter.DefaultUserNotificationCenter.DeliverNotification(notification);
     }
 }
-

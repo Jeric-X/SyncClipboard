@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SyncClipboard.Desktop.Utilities;
 
-internal class ProgressBar : IProgressBar
+public class ProgressBar : IProgressBar
 {
     public string Tag { get; set; } = "";
     public string? ProgressTitle { get; set; }

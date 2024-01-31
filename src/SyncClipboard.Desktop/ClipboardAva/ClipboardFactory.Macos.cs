@@ -20,7 +20,6 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal partial class ClipboardFactory
 {
-
     [SupportedOSPlatform("macos")]
     private List<HandlerMapping> MacFormatHandlerlist => new()
     {

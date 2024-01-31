@@ -3,7 +3,6 @@ using System;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
 
-
 public class BoolToPasswordIconConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
@@ -17,4 +16,3 @@ public class BoolToPasswordIconConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
-

@@ -12,4 +12,4 @@ public record ProgramConfig
     public bool DiagnoseMode { get; set; } = false;
     public bool DiagnosePageAutoRefresh { get; set; } = false;
     public string Theme { get; set; } = "";
-};
+}
