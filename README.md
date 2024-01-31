@@ -24,8 +24,8 @@
       - [使用Autox.js](#使用autoxjs)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
-    - [获取/上传剪切板（文字）](#获取上传剪切板文字)
-    - [获取/上传剪切板（图片/文件）](#获取上传剪切板图片文件)
+    - [获取/上传剪贴板（文字）](#获取上传剪贴板文字)
+    - [获取/上传剪贴板（图片/文件）](#获取上传剪贴板图片文件)
     - [SyncClipboard.json](#syncclipboardjson)
     - [其他查询/创建/删除](#其他查询创建删除)
   - [项目依赖](#项目依赖)
@@ -34,11 +34,11 @@
 
 ## 功能
 
-- 剪切板同步，使用WebDAV服务器（或软件内置服务器）作为中转站，支持文字、图片和文件  
-- 优化图片类型的剪切板，功能有：
+- 剪贴板同步，使用WebDAV服务器（或软件内置服务器）作为中转站，支持文字、图片和文件  
+- 优化图片类型的剪贴板，功能有：
   - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件，反之亦然
   - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器拷贝动态图的问题（大多网站有认证，适用范围有限，支持bilibili动态图片）
-  - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪切板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
+  - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪贴板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
 
 ## 服务器
 ### 独立服务器
@@ -82,7 +82,7 @@ docker run -d \
 
 ## 客户端
 
-桌面客户端（Windows/Linux/macOS）运行在后台时将自动同步剪切板
+桌面客户端（Windows/Linux/macOS）运行在后台时将自动同步剪贴板
 <details>
 <summary>展开/折叠截图</summary>
 
@@ -113,7 +113,7 @@ docker run -d \
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
 
 - 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/1a57093a04ec4f45a5ca7d4de82020e7)，手动触发上传或下载
-- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168)，运行后设备会自动在后台同步剪切板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
+- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168)，运行后设备会自动在后台同步剪贴板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
 
 #### 使用[JSBox](https://apps.apple.com/cn/app/jsbox-%E5%AD%A6%E4%B9%A0%E5%86%99%E4%BB%A3%E7%A0%81/id1312014438)
 导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件
@@ -142,7 +142,7 @@ const intervalTime = 3 * 1000                         // 3 seconds
 const showToastNotification = true
 // END    User Config  
 ```
-Autox.js脚本运行在后台时可以自动下载远程剪切板文字到本地，但自动上传依赖下列条件之一
+Autox.js脚本运行在后台时可以自动下载远程剪贴板文字到本地，但自动上传依赖下列条件之一
 - 将软件切换到前台
 - Android版本小于等于Android 9 Pie
 - 使用基于root权限的工具(Magisk/Xposed)解除`Autox.js`后台操作剪切版的权限，参考
@@ -160,13 +160,13 @@ Autox.js脚本运行在后台时可以自动下载远程剪切板文字到本地
 
 以下是SyncClipboard用到的且SyncClipboard.Server实现了的接口
 
-### 获取/上传剪切板（文字）
+### 获取/上传剪贴板（文字）
 ```
 GET /SyncClipboard.json
 PUT /SyncClipboard.json
 ```
 
-### 获取/上传剪切板（图片/文件）
+### 获取/上传剪贴板（图片/文件）
 ```
 GET  /SyncClipboard.json
 HEAD /file/filename         // optional

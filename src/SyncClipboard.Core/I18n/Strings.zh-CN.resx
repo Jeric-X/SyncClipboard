@@ -130,10 +130,10 @@
     <value>重启后生效</value>
   </data>
   <data name="Syncing" xml:space="preserve">
-    <value>剪切板同步</value>
+    <value>剪贴板同步</value>
   </data>
   <data name="Assistant" xml:space="preserve">
-    <value>剪切板助手</value>
+    <value>剪贴板助手</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>服务状态</value>
@@ -169,10 +169,10 @@
     <value>客户端混合模式</value>
   </data>
   <data name="MixedClientOnInfo" xml:space="preserve">
-    <value>打开：当其他客户端连接时直接操作本机剪切板，本机剪切板强制被同步，本机相比普通客户端，没有轮询服务器产生的延迟。</value>
+    <value>打开：当其他客户端连接时直接操作本机剪贴板，本机剪贴板强制被同步，本机相比普通客户端，没有轮询服务器产生的延迟。</value>
   </data>
   <data name="MixedClientOffInfo" xml:space="preserve">
-    <value>关闭：使用独立文件保存剪切板信息。</value>
+    <value>关闭：使用独立文件保存剪贴板信息。</value>
   </data>
   <data name="Confirm" xml:space="preserve">
     <value>确定</value>
@@ -187,7 +187,7 @@
     <value>地　址</value>
   </data>
   <data name="ClipboardSyncing" xml:space="preserve">
-    <value>剪切板同步</value>
+    <value>剪贴板同步</value>
   </data>
   <data name="UseSelfHostServer" xml:space="preserve">
     <value>使用本机服务器</value>
@@ -211,7 +211,7 @@
     <value>客户端通用</value>
   </data>
   <data name="SendNotificationAfterUpdateLocalClipboard" xml:space="preserve">
-    <value>更新本机剪切板后发送通知</value>
+    <value>更新本机剪贴板后发送通知</value>
   </data>
   <data name="LoginWithBrowser" xml:space="preserve">
     <value>使用浏览器登录</value>
@@ -238,7 +238,7 @@
     <value>下载网页原图</value>
   </data>
   <data name="DownloadWebImageDescription" xml:space="preserve">
-    <value>复制网页图片时下载原图到剪切板</value>
+    <value>复制网页图片时下载原图到剪贴板</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
     <value>检查更新</value>
@@ -304,7 +304,7 @@
     <value>图片同步成功</value>
   </data>
   <data name="ClipboardUpdated" xml:space="preserve">
-    <value>剪切板同步成功</value>
+    <value>剪贴板同步成功</value>
   </data>
   <data name="Copy" xml:space="preserve">
     <value>复制</value>
@@ -331,7 +331,7 @@
     <value>服务器启动失败</value>
   </data>
   <data name="FailedToDownloadClipboard" xml:space="preserve">
-    <value>剪切板下载失败</value>
+    <value>剪贴板下载失败</value>
   </data>
   <data name="DownloadingFile" xml:space="preserve">
     <value>正在下载远程文件</value>
