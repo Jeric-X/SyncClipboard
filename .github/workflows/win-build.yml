@@ -21,7 +21,7 @@ jobs:
           8.0.x
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1
+      uses: microsoft/setup-msbuild@v2
       with:
         msbuild-architecture: x64
 
