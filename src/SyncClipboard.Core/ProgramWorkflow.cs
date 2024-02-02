@@ -122,6 +122,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<ServiceManager>();
+            services.AddSingleton<HotkeyManager>();
             services.AddTransient<UpdateChecker>();
 
             services.AddTransient<AppInstance>();
@@ -136,6 +137,7 @@ namespace SyncClipboard.Core
             services.AddTransient<NextCloudLogInViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<MainViewModel>();
+            services.AddSingleton<HotkeyViewModel>();
         }
 
         public static void ConfigurateUserService(IServiceCollection services)
@@ -145,6 +147,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, ServerService>();
             services.AddSingleton<IService, UploadService>();
             services.AddSingleton<IService, DownloadService>();
+            services.AddSingleton<IService, HotkeyStubService>();
         }
 
         private async void PrepareRemoteWorkingFolder()

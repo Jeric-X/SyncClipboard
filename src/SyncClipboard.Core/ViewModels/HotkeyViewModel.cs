@@ -1,11 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models;
+using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public class HotKeyViewModel
+public class HotkeyViewModel
 {
+    public ReadOnlyCollection<UniqueCommandCollection>? CommandCollections { get; }
+
+    public HotkeyViewModel(HotkeyManager hotkeyManager)
+    {
+        CommandCollections = hotkeyManager.CommandCollections;
+    }
 }

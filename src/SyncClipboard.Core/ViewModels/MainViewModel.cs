@@ -19,6 +19,7 @@ namespace SyncClipboard.Core.ViewModels
             PageDefinition.SyncSetting,
             PageDefinition.CliboardAssistant,
             PageDefinition.ServiceStatus,
+            PageDefinition.Hotkey,
             PageDefinition.SystemSetting,
             PageDefinition.About,
         };

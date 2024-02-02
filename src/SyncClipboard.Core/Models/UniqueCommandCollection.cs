@@ -1,6 +1,6 @@
 ﻿namespace SyncClipboard.Core.Models;
 
-public record class UniqueCommandCollection(string Name)
+public record class UniqueCommandCollection(string Name, string FontIcon)
 {
-    public List<UniqueCommand> Commands { get; } = new List<UniqueCommand>();
+    public List<UniqueCommand> Commands { get; init; } = new List<UniqueCommand>();
 }
