@@ -40,5 +40,6 @@
     <PackageVersion Include="WinUIEx" Version="2.3.3" />
     <PackageVersion Include="Vanara.PInvoke.DbgHelp" Version="3.4.17" />
     <PackageVersion Include="Vanara.PInvoke.Kernel32" Version="3.4.17" />
+    <PackageVersion Include="Vanara.PInvoke.User32" Version="3.4.17" />
   </ItemGroup>
 </Project>

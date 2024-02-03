@@ -145,6 +145,7 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <PackageReference Include="Vanara.PInvoke.DbgHelp" />
     <PackageReference Include="Vanara.PInvoke.Kernel32" />
+    <PackageReference Include="Vanara.PInvoke.User32" />
     <PackageReference Include="WinUIEx" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
