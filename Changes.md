@@ -1,3 +1,7 @@
+v2.6.2
+- “剪切板”改为“剪贴板”
+- 修复：转换格式功能异常
+
 v2.6.1
 - 增加WebDAV服务器兼容性，新测试通过[InfiniCLOUD](https://infini-cloud.net/en/)(#33)
 - 其他问题修复

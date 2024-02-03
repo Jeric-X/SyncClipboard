@@ -36,10 +36,32 @@ namespace SyncClipboard.Core.Utilities.Image
 
         public static async Task<string> CompatibilityCast(string filePath, string newFileDir, CancellationToken cancelToken)
         {
-            using var dummyTask = Task.Delay(TimeSpan.FromMinutes(5), cancelToken);
-            using var convertTask = Task.Run(() => ConverWithMagick(filePath, newFileDir), cancelToken);
+            var innerCts = new CancellationTokenSource();
+            var dummyTask = Task.Delay(
+                TimeSpan.FromMinutes(5),
+                CancellationTokenSource.CreateLinkedTokenSource(cancelToken, innerCts.Token).Token
+            );
+
+            var convertTask = Task.Run(() => ConverWithMagick(filePath, newFileDir), cancelToken);
             await Task.WhenAny(convertTask, dummyTask);
-            return convertTask.IsCompletedSuccessfully ? convertTask.Result : throw new OperationCanceledException();
+
+            try
+            {
+                if (convertTask.IsCompletedSuccessfully)
+                {
+                    return convertTask.Result;
+                }
+                if (convertTask.IsFaulted)
+                {
+                    throw convertTask.Exception!;
+                }
+            }
+            finally
+            {
+                innerCts.Cancel();
+            }
+
+            throw new OperationCanceledException();
         }
 
         private static string ConverWithMagick(string filePath, string newFileDir)
