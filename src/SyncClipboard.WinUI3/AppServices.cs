@@ -7,6 +7,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.WinUI3.ClipboardWinUI;
 using SyncClipboard.WinUI3.Views;
+using SyncClipboard.WinUI3.Win32;
 
 namespace SyncClipboard.WinUI3;
 
@@ -31,6 +32,7 @@ public class AppServices
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<INotification, NotificationManager>();
+        services.AddSingleton<INativeHotkeyRegistry>(sp => new NativeHotkeyRegistry((MainWindow)sp.GetRequiredService<IMainWindow>()));
 
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();

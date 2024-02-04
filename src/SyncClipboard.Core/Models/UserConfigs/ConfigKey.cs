@@ -12,8 +12,10 @@ public static class ConfigKey
         var configTypeName = typeof(T).Name;
         var tailLength = "Config".Length;
         var fieldName = configTypeName[..^tailLength];
-        var key = typeof(ConfigKey).GetField(fieldName)?.GetValue(null) as string;
-        ArgumentNullException.ThrowIfNull(key, nameof(key));
+        if (typeof(ConfigKey).GetField(fieldName)?.GetValue(null) is not string key)
+        {
+            return fieldName;
+        }
         return key;
     }
 }
