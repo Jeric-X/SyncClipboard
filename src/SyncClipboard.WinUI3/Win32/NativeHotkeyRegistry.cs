@@ -1,6 +1,6 @@
 ﻿using Microsoft.UI.Xaml;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using System;
 using System.Collections.Generic;
 using System.Threading;

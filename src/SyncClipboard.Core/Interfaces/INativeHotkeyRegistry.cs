@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Core.Models;
+﻿using SyncClipboard.Core.Models.Keyboard;
 
 namespace SyncClipboard.Core.Interfaces;
 

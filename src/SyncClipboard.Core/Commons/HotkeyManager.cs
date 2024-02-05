@@ -1,21 +1,10 @@
 ﻿using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.Commons;
-
-public record class HotkeyStatus
-{
-    public Hotkey? Hotkey { get; set; } = null;
-    public bool IsReady { get; set; } = false;
-    public UniqueCommand? Command { get; set; } = null;
-    public HotkeyStatus(Hotkey? hotkey, bool isReady = false)
-    {
-        Hotkey = hotkey;
-        IsReady = isReady;
-    }
-}
 
 public class HotkeyManager
 {
@@ -40,10 +29,10 @@ public class HotkeyManager
         _configManager.GetAndListenConfig<HotkeyConfig>(ConfigChanged);
     }
 
-    private List<UniqueCommand> UnRegisterForOldHotkeys(IEnumerable<KeyValuePair<Guid, Hotkey>> oldHotkeys)
+    private List<UniqueCommand> DeleteHotkeyCommandMap(IEnumerable<Guid> guids)
     {
-        List<UniqueCommand> defaultHotkeys = new();
-        foreach (var (guid, _) in oldHotkeys)
+        List<UniqueCommand> registedCommands = new();
+        foreach (var guid in guids)
         {
             var status = _hotkeyCommandMap[guid];
             if (status.IsReady)
@@ -51,51 +40,43 @@ public class HotkeyManager
                 _nativeHotkeyRegistry.UnRegisterForSystemHotkey(status.Hotkey!);
                 status.IsReady = false;
             }
-            if (status.Command is null)
+            if (status.Command is not null)
             {
-                _hotkeyCommandMap.Remove(guid);
+                registedCommands.Add(status.Command);
             }
-            else if (status.Command.Hotkey is not null)
-            {
-                defaultHotkeys.Add(status.Command);
-            }
+            _hotkeyCommandMap.Remove(guid);
         }
-        return defaultHotkeys;
+        return registedCommands;
     }
 
-    private void RegisterForNewHotkeys(IEnumerable<KeyValuePair<Guid, Hotkey>> newHotkeys)
+    private void SetHotkeyCommandMap(Guid guid, Hotkey hotkey)
     {
-        foreach (var (guid, hotkey) in newHotkeys)
+        var found = _hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? hotkeyStatus);
+        if (hotkeyStatus is not null)
         {
-            var found = _hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? hotkeyStatus);
-            if (hotkeyStatus is not null)
+            if (hotkeyStatus.IsReady)
             {
-                if (hotkeyStatus.IsReady)
-                {
-                    _nativeHotkeyRegistry.UnRegisterForSystemHotkey(hotkeyStatus.Hotkey!);
-                    hotkeyStatus.IsReady = false;
-                }
-                if (hotkeyStatus.Command is not null)
-                {
-                    var res = _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, hotkeyStatus.Command.Command);
-                    hotkeyStatus.IsReady = res;
-                    hotkeyStatus.Hotkey = hotkey;
-                }
+                _nativeHotkeyRegistry.UnRegisterForSystemHotkey(hotkeyStatus.Hotkey!);
+                hotkeyStatus.IsReady = false;
             }
-            else
+            if (hotkeyStatus.Command is not null)
             {
-                _hotkeyCommandMap.Add(guid, new(hotkey));
+                var res = _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, hotkeyStatus.Command.Command);
+                hotkeyStatus.IsReady = res;
+                hotkeyStatus.Hotkey = hotkey;
             }
+        }
+        else
+        {
+            _hotkeyCommandMap.Add(guid, new(hotkey));
         }
     }
 
-    private void RegisterForDefaultHotkeys(IEnumerable<UniqueCommand> commandsWithDefault)
+    private void AddHotkeyCommandMap(IEnumerable<KeyValuePair<Guid, Hotkey>> hotkeys)
     {
-        foreach (var command in commandsWithDefault)
+        foreach (var (guid, hotkey) in hotkeys)
         {
-            var ready = _nativeHotkeyRegistry.RegisterForSystemHotkey(command.Hotkey!, command.Command);
-            _hotkeyCommandMap[command.Guid].Hotkey = command.Hotkey;
-            _hotkeyCommandMap[command.Guid].IsReady = ready;
+            SetHotkeyCommandMap(guid, hotkey);
         }
     }
 
@@ -106,15 +87,14 @@ public class HotkeyManager
         var newHotkeys = sameHotkeys.ExceptBy(config.Hotkeys.Keys, (keyValuePair) => keyValuePair.Key);
         _hotkeyConfig = config;
 
-        List<UniqueCommand> commandWithDefault = UnRegisterForOldHotkeys(oldHotkeys);
-        RegisterForNewHotkeys(newHotkeys);
-        RegisterForDefaultHotkeys(commandWithDefault);
+        List<UniqueCommand> registedCommands = DeleteHotkeyCommandMap(oldHotkeys.Select(pair => pair.Key));
+        AddHotkeyCommandMap(newHotkeys);
+        RegisterCommands(registedCommands);
     }
 
-    public void RegisterCommands(UniqueCommandCollection commandCollection)
+    public void RegisterCommands(IEnumerable<UniqueCommand> commands)
     {
-        _commandCollections.Add(commandCollection);
-        foreach (var command in commandCollection.Commands)
+        foreach (var command in commands)
         {
             _hotkeyCommandMap.TryGetValue(command.Guid, out HotkeyStatus? hotkeyStatus);
             if (hotkeyStatus is null)
@@ -134,11 +114,29 @@ public class HotkeyManager
         }
     }
 
-#pragma warning disable CA1822 // 将成员标记为 static
-#pragma warning disable IDE0060 // 删除未使用的参数
-    public void SetHotKey(Guid guid, Hotkey hotkey)
-#pragma warning restore IDE0060 // 删除未使用的参数
-#pragma warning restore CA1822 // 将成员标记为 static
+    public void RegisterCommands(UniqueCommandCollection commandCollection)
     {
+        _commandCollections.Add(commandCollection);
+        RegisterCommands(commandCollection.Commands);
+    }
+
+    public void SetHotKey(Guid guid, Hotkey hotkey)
+    {
+        _hotkeyConfig.Hotkeys.TryGetValue(guid, out var existHotkey);
+        if (existHotkey is not null)
+        {
+            if (hotkey == existHotkey)
+            {
+                return;
+            }
+            _hotkeyConfig.Hotkeys[guid] = hotkey;
+        }
+        else
+        {
+            _hotkeyConfig.Hotkeys.Add(guid, hotkey);
+        }
+
+        SetHotkeyCommandMap(guid, hotkey);
+        _configManager.SetConfig(_hotkeyConfig);
     }
 }

@@ -1,6 +1,6 @@
-﻿using System.Text;
+﻿using SyncClipboard.Core.Utilities;
 
-namespace SyncClipboard.Core.Models;
+namespace SyncClipboard.Core.Models.Keyboard;
 
 public class Hotkey
 {
@@ -16,17 +16,12 @@ public class Hotkey
         if (ReferenceEquals(this, obj)) return true;
         if (obj is not Hotkey other) return false;
 
-        return Enumerable.SequenceEqual(Keys, other.Keys);
+        return Keys.SequenceEqual(other.Keys);
     }
 
     public override int GetHashCode()
     {
-        var stringBuilder = new StringBuilder();
-        foreach (var key in Keys)
-        {
-            stringBuilder.Append(key.ToString());
-        }
-        return stringBuilder.ToString().GetHashCode();
+        return Keys.ListHashCode();
     }
 
     public static bool operator ==(Hotkey? a, Hotkey? b)

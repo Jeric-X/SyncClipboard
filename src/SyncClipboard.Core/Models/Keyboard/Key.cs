@@ -1,7 +1,8 @@
-﻿namespace SyncClipboard.Core.Models;
+﻿namespace SyncClipboard.Core.Models.Keyboard;
 
 public enum Key
 {
+    //[EnumMember(Value = "Ctrl")]
     Ctrl,
     Shift,
     Alt,
