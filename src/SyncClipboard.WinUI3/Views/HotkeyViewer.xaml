@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl x:Class="SyncClipboard.WinUI3.Views.HotkeyViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mk="using:SyncClipboard.Core.Models.Keyboard"
+             mc:Ignorable="d">
+    <ItemsRepeater x:Name="ButtonTemplate" ItemsSource="{x:Bind Hotkey.Keys}" Tag="rofl">
+        <ItemsRepeater.Layout>
+            <StackLayout Orientation="Horizontal" Spacing="4" />
+        </ItemsRepeater.Layout>
+        <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="mk:Key">
+                <ToggleButton IsChecked="True" IsHitTestVisible="False" Content="{Binding}" />
+            </DataTemplate>
+        </ItemsRepeater.ItemTemplate>
+    </ItemsRepeater>
+</UserControl>

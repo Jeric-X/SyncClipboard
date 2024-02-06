@@ -6,7 +6,16 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="using:CommunityToolkit.WinUI.Controls"
       xmlns:m="using:SyncClipboard.Core.Models"
+      xmlns:local="using:SyncClipboard.WinUI3.Views"
       mc:Ignorable="d">
+    <Page.Resources>
+        <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
+        </Style>
+    </Page.Resources>
     <ItemsRepeater ItemsSource="{x:Bind _viewModel.CommandCollections}">
         <ItemsRepeater.Layout>
             <StackLayout Orientation="Vertical" Spacing="10" />
@@ -19,7 +28,19 @@
                     </ui:SettingsExpander.HeaderIcon>
                     <ui:SettingsExpander.ItemTemplate>
                         <DataTemplate x:DataType="m:UniqueCommand">
-                            <ui:SettingsCard Header="{x:Bind Name}" />
+                            <ui:SettingsCard Header="{x:Bind Name}">
+                                <StackPanel Spacing="0" Orientation="Horizontal">
+                                    <local:HotkeyViewer Hotkey="{x:Bind Hotkey}" />
+                                    <Button Margin="20,0,0,0" Content="&#xE783;">
+                                        <Button.Flyout>
+                                            <Flyout>
+                                                <TextBlock Text="Hotkey created failed." TextWrapping="WrapWholeWords" />
+                                            </Flyout>
+                                        </Button.Flyout>
+                                    </Button>
+                                    <Button Content="&#xE70F;" />
+                                </StackPanel>
+                            </ui:SettingsCard>
                         </DataTemplate>
                     </ui:SettingsExpander.ItemTemplate>
                 </ui:SettingsExpander>

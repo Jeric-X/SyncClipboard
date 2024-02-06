@@ -4,6 +4,8 @@ namespace SyncClipboard.Core.Models.Keyboard;
 
 public class Hotkey
 {
+    public static readonly Hotkey Nothing = new Hotkey();
+
     public Key[] Keys { get; }
     public Hotkey(IEnumerable<Key> keys)
     {
