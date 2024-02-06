@@ -17,6 +17,7 @@ public class HotkeyManager
 
     public ReadOnlyCollection<UniqueCommandCollection> CommandCollections { get; }
     public ReadOnlyDictionary<Guid, HotkeyStatus> HotkeyCommandMap { get; }
+    public event Action? HotkeyStatusChanged;
 
     public HotkeyManager(INativeHotkeyRegistry nativeHotkeyRegistry, ConfigManager configManager)
     {
@@ -29,6 +30,23 @@ public class HotkeyManager
         _configManager.GetAndListenConfig<HotkeyConfig>(ConfigChanged);
     }
 
+    private bool RegisterToNative(Hotkey hotkey, Action action)
+    {
+        if (hotkey.Keys.Length is 0)
+        {
+            return true;
+        }
+        return _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, action);
+    }
+
+    private void UnRegisterFromNative(Hotkey hotkey)
+    {
+        if (hotkey.Keys.Length is not 0)
+        {
+            _nativeHotkeyRegistry.UnRegisterForSystemHotkey(hotkey);
+        }
+    }
+
     private List<UniqueCommand> DeleteHotkeyCommandMap(IEnumerable<Guid> guids)
     {
         List<UniqueCommand> registedCommands = new();
@@ -37,7 +55,7 @@ public class HotkeyManager
             var status = _hotkeyCommandMap[guid];
             if (status.IsReady)
             {
-                _nativeHotkeyRegistry.UnRegisterForSystemHotkey(status.Hotkey!);
+                UnRegisterFromNative(status.Hotkey!);
                 status.IsReady = false;
             }
             if (status.Command is not null)
@@ -56,13 +74,12 @@ public class HotkeyManager
         {
             if (hotkeyStatus.IsReady)
             {
-                _nativeHotkeyRegistry.UnRegisterForSystemHotkey(hotkeyStatus.Hotkey!);
+                UnRegisterFromNative(hotkeyStatus.Hotkey!);
                 hotkeyStatus.IsReady = false;
             }
             if (hotkeyStatus.Command is not null)
             {
-                var res = _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, hotkeyStatus.Command.Command);
-                hotkeyStatus.IsReady = res;
+                hotkeyStatus.IsReady = RegisterToNative(hotkey, hotkeyStatus.Command.Command);
                 hotkeyStatus.Hotkey = hotkey;
             }
         }
@@ -90,6 +107,7 @@ public class HotkeyManager
         List<UniqueCommand> registedCommands = DeleteHotkeyCommandMap(oldHotkeys.Select(pair => pair.Key));
         AddHotkeyCommandMap(newHotkeys);
         RegisterCommands(registedCommands);
+        HotkeyStatusChanged?.Invoke();
     }
 
     public void RegisterCommands(IEnumerable<UniqueCommand> commands)
@@ -102,16 +120,17 @@ public class HotkeyManager
                 bool ready = false;
                 if (command.Hotkey is not null)
                 {
-                    ready = _nativeHotkeyRegistry.RegisterForSystemHotkey(command.Hotkey, command.Command);
+                    ready = RegisterToNative(command.Hotkey, command.Command);
                 }
                 _hotkeyCommandMap.Add(command.Guid, new(command.Hotkey, ready));
             }
             else if (hotkeyStatus.Hotkey is not null && hotkeyStatus.IsReady is false)
             {
-                var res = _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkeyStatus.Hotkey, command.Command);
+                var res = RegisterToNative(hotkeyStatus.Hotkey, command.Command);
                 _hotkeyCommandMap[command.Guid].IsReady = res;
             }
         }
+        HotkeyStatusChanged?.Invoke();
     }
 
     public void RegisterCommands(UniqueCommandCollection commandCollection)

@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -15,7 +16,11 @@ internal class HotkeyStubService : Service
     };
 
     private static readonly Guid Guid1 = Guid.Parse("66015F94-715E-40CA-B55B-7479A5D7FC23");
-    UniqueCommand Command1 => new UniqueCommand("快捷键1", Guid1, () => _notifyer.SendText("快捷键1", ""));
+    UniqueCommand Command1 => new UniqueCommand("快捷键1",
+        Guid1,
+        () => _notifyer.SendText("快捷键1", ""),
+        new Hotkey(Key.Ctrl, Key.Alt, Key.D)
+    );
     private static readonly Guid Guid2 = Guid.Parse("66025F94-725E-40CA-B55B-7479A5D7FC23");
     UniqueCommand Command2 => new UniqueCommand("快捷键2", Guid2, () => _notifyer.SendText("快捷键2", ""));
 

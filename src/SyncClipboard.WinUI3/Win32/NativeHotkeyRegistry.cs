@@ -3,6 +3,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using WinUIEx;
 using WinUIEx.Messaging;
@@ -53,11 +54,44 @@ public class NativeHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         }
     }
 
+    private static HotKeyModifiers GetKeyModifiers(Hotkey hotkey)
+    {
+        HotKeyModifiers modifiers = HotKeyModifiers.MOD_NOREPEAT;
+        foreach (var key in hotkey.Keys)
+        {
+            if (KeyboardMap.ModifierMap.TryGetValue(key, out var modifier))
+            {
+                modifiers |= modifier;
+            }
+        }
+        return modifiers;
+    }
+
+    private static uint GetVirtualKey(Hotkey hotkey)
+    {
+        var virtualKeys = hotkey.Keys.Where(key => !KeyboardMap.ModifierMap.ContainsKey(key));
+        var count = virtualKeys.Count();
+        if (count > 1)
+        {
+            throw new ArgumentException("Not support multi-keys");
+        }
+        else if (count == 0)
+        {
+            throw new ArgumentException("No key found");
+        }
+        if (!KeyboardMap.VirtualKeyMap.TryGetValue(virtualKeys.First(), out VK virtualKey))
+        {
+            throw new ArgumentException($"Not support key {virtualKeys.First()}");
+        }
+
+        return (uint)virtualKey;
+    }
+
     public bool RegisterForSystemHotkey(Hotkey hotkey, Action action)
     {
         var id = Interlocked.Increment(ref _hotkeyId);
 
-        bool res = RegisterHotKey(_handle, id, HotKeyModifiers.MOD_NONE, 2);
+        bool res = RegisterHotKey(_handle, id, GetKeyModifiers(hotkey), GetVirtualKey(hotkey));
         if (res is false)
         {
             return false;

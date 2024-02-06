@@ -11,6 +11,12 @@ public class Hotkey
         Array.Sort(Keys);
     }
 
+    public Hotkey(params Key[] keys)
+    {
+        Keys = keys;
+        Array.Sort(Keys);
+    }
+
     public override bool Equals(object? obj)
     {
         if (ReferenceEquals(this, obj)) return true;
