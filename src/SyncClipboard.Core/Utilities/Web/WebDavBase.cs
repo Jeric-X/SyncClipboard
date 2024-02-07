@@ -1,4 +1,3 @@
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System.Net.Http.Headers;
@@ -9,7 +8,7 @@ using System.Xml;
 
 namespace SyncClipboard.Core.Utilities.Web
 {
-    abstract public class WebDavBase : IWebDav
+    abstract public class WebDavBase : IWebDav, IDisposable
     {
         private string USER_AGENT => AppConfig.AppStringId + AppConfig.AppVersion;
 
@@ -20,6 +19,7 @@ namespace SyncClipboard.Core.Utilities.Web
         protected abstract string User { get; }
         protected abstract string Token { get; }
         protected abstract string BaseAddress { get; }
+        protected abstract bool TrustInsecureCertificate { get; }
 
         private string? _prefix;
         private string Prefix
@@ -58,7 +58,13 @@ namespace SyncClipboard.Core.Utilities.Web
 
         private HttpClient CreateHttpClient()
         {
-            var httpClient = new HttpClient()
+            var httpclientHandler = new HttpClientHandler();
+            if (TrustInsecureCertificate)
+            {
+                httpclientHandler.ServerCertificateCustomValidationCallback = delegate { return true; };
+            }
+
+            var httpClient = new HttpClient(httpclientHandler)
             {
                 Timeout = System.Threading.Timeout.InfiniteTimeSpan
             };
@@ -244,6 +250,15 @@ namespace SyncClipboard.Core.Utilities.Web
                 }
             }
             return list;
+        }
+
+        ~WebDavBase() => Dispose();
+
+        public void Dispose()
+        {
+            httpClient?.Dispose();
+            httpClient = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

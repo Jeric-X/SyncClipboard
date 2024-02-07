@@ -916,6 +916,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Trust Insecure HTTPS Certificates 的本地化字符串。
+        /// </summary>
+        public static string TrustInsecureCertificate {
+            get {
+                return ResourceManager.GetString("TrustInsecureCertificate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Failed, tried {0} times, error message: {1} 的本地化字符串。
         /// </summary>
         public static string UploadFailedStatus {

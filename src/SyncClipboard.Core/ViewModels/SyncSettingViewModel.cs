@@ -61,6 +61,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnNotifyOnDownloadedChanged(bool value) => ClientConfig = ClientConfig with { NotifyOnDownloaded = value };
 
     [ObservableProperty]
+    private bool trustInsecureCertificate;
+    partial void OnTrustInsecureCertificateChanged(bool value) => ClientConfig = ClientConfig with { TrustInsecureCertificate = value };
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
     private SyncConfig clientConfig;
     partial void OnClientConfigChanged(SyncConfig value)
@@ -72,6 +76,7 @@ public partial class SyncSettingViewModel : ObservableObject
         MaxFileSize = value.MaxFileByte / 1024 / 1024;
         AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
         NotifyOnDownloaded = value.NotifyOnDownloaded;
+        TrustInsecureCertificate = value.TrustInsecureCertificate;
         _configManager.SetConfig(value);
     }
 
@@ -135,6 +140,7 @@ public partial class SyncSettingViewModel : ObservableObject
         maxFileSize = clientConfig.MaxFileByte / 1024 / 1024;
         autoDeleleServerFile = clientConfig.DeletePreviousFilesOnPush;
         notifyOnDownloaded = clientConfig.NotifyOnDownloaded;
+        trustInsecureCertificate = clientConfig.TrustInsecureCertificate;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

@@ -32,7 +32,6 @@ public partial class NextCloudLogInViewModel : ObservableObject
 {
     private readonly IServiceProvider _serviceProvider;
     private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
-    private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
     private ConfigManager ConfigManager => _serviceProvider.GetRequiredService<ConfigManager>();
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
@@ -92,12 +91,14 @@ public partial class NextCloudLogInViewModel : ObservableObject
         TreeList = null;
         try
         {
-            var loginFlow = new NextcloudLogInFlow(UserInputUrl, Http);
+            var insecure = ConfigManager.GetConfig<SyncConfig>().TrustInsecureCertificate;
+            using var httpClient = new HttpClientFactory { TrustInsecureCertificate = insecure }.CreateClient();
+            var loginFlow = new NextcloudLogInFlow(UserInputUrl, httpClient);
             var userloginUrl = await loginFlow.GetUserLoginUrl(CancelSource.Token);
             Sys.OpenWithDefaultApp(userloginUrl);
             tempWebDavCredential = await loginFlow.WaitUserLogin(CancelSource.Token);
             ShowProgressBar = false;
-            _tempWebDav = new WebDav(tempWebDavCredential, AppConfig);
+            _tempWebDav = CreateTempWebDav(tempWebDavCredential, insecure);
             TreeList = WebDavModelToViewModel(await _tempWebDav.GetFolderSubList(""));
         }
         catch (TaskCanceledException) { }
@@ -163,5 +164,12 @@ public partial class NextCloudLogInViewModel : ObservableObject
             .Where(x => x.IsFolder)
             .Select(x => new FileTreeViewModel(x.FullPath, x.Name, x.IsFolder))
             .ToList();
+    }
+
+    private WebDav CreateTempWebDav(WebDavCredential tempWebDavCredential, bool insecure)
+    {
+        _tempWebDav?.Dispose();
+        _tempWebDav = new WebDav(tempWebDavCredential, AppConfig, insecure);
+        return _tempWebDav;
     }
 }

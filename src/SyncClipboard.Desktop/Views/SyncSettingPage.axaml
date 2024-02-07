@@ -101,6 +101,11 @@
                         </StackPanel>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TrustInsecureCertificate}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsEnabled="{Binding UserManulServer, Mode=OneWay}">
                     <ui:HyperlinkButton Padding="0,0,0,-1"
                                         Content="{x:Static i18n:Strings.UseNextcloud}"

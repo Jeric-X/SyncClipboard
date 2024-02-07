@@ -426,4 +426,7 @@
   <data name="ThemeChangeInfo" xml:space="preserve">
     <value>Changing to System Style from Light or Dark effects after restart</value>
   </data>
+  <data name="TrustInsecureCertificate" xml:space="preserve">
+    <value>Trust Insecure HTTPS Certificates</value>
+  </data>
 </root>

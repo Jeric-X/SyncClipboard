@@ -14,6 +14,7 @@ namespace SyncClipboard.Core.Utilities.Web
         protected override string User => _syncConfig.UseLocalServer ? _serverConfig.UserName : _syncConfig.UserName;
         protected override string Token => _syncConfig.UseLocalServer ? _serverConfig.Password : _syncConfig.Password;
         protected override string BaseAddress => _syncConfig.UseLocalServer ? $"http://127.0.0.1:{_serverConfig.Port}" : _syncConfig.RemoteURL;
+        protected override bool TrustInsecureCertificate => _syncConfig.TrustInsecureCertificate;
 
         private readonly IAppConfig _appConfig;
         protected override IAppConfig AppConfig => _appConfig;

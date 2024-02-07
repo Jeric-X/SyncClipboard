@@ -92,6 +92,9 @@
                         </Button>
                     </StackPanel>
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
+                </ui:SettingsCard>
                 <ui:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind _viewModel.UserManulServer, Mode=OneWay}" ContentAlignment="Vertical">
                     <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
                         <ui:SettingsCard.Resources>

@@ -1,5 +1,5 @@
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities.Web;
 
 namespace SyncClipboard.Core.Utilities
 {
@@ -35,12 +35,12 @@ namespace SyncClipboard.Core.Utilities
 
         private readonly string _server;
         private FirstResponseJson? _firstResponse;
-        private readonly IHttp _httpClient;
+        private readonly HttpClient _httpClient;
 
         public WebDavCredential? Result { get; private set; }
         public int VerificationLimitedTime { get; set; } = VERIFICATION_LIMITED_TIME;
 
-        public NextcloudLogInFlow(string server, IHttp httpClient)
+        public NextcloudLogInFlow(string server, HttpClient httpClient)
         {
             _server = server;
             _httpClient = httpClient;
