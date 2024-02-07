@@ -1,3 +1,6 @@
+0.5.2
+- 新增：支持信任不安全的HTTPS证书(https://github.com/Jeric-X/SyncClipboard/issues/37)
+
 0.5.1
 - “剪切板”改为“剪贴板”
 - 修复：转换格式功能异常
