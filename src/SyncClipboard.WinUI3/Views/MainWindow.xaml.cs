@@ -51,6 +51,9 @@ namespace SyncClipboard.WinUI3.Views
             string pageName = "SyncClipboard.WinUI3.Views." + page.Name + "Page";
             Type? pageType = Type.GetType(pageName);
             SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
+
+            // Memory Leak https://github.com/microsoft/microsoft-ui-xaml/issues/5978
+            GC.Collect();
         }
 
         public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? parameter = null)
