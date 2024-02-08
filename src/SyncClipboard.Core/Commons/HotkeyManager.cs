@@ -16,13 +16,13 @@ public class HotkeyManager
     private HotkeyConfig _hotkeyConfig = new();
 
     public ReadOnlyCollection<UniqueCommandCollection> CommandCollections { get; }
-    public ReadOnlyDictionary<Guid, HotkeyStatus> HotkeyCommandMap { get; }
+    public ReadOnlyDictionary<Guid, HotkeyStatus> HotkeyStatusMap { get; }
     public event Action? HotkeyStatusChanged;
 
     public HotkeyManager(INativeHotkeyRegistry nativeHotkeyRegistry, ConfigManager configManager)
     {
         CommandCollections = _commandCollections.AsReadOnly();
-        HotkeyCommandMap = new ReadOnlyDictionary<Guid, HotkeyStatus>(_hotkeyCommandMap);
+        HotkeyStatusMap = new ReadOnlyDictionary<Guid, HotkeyStatus>(_hotkeyCommandMap);
 
         _nativeHotkeyRegistry = nativeHotkeyRegistry;
         _configManager = configManager;

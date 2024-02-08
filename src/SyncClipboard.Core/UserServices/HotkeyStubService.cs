@@ -22,7 +22,11 @@ internal class HotkeyStubService : Service
         new Hotkey(Key.Ctrl, Key.Alt, Key.D)
     );
     private static readonly Guid Guid2 = Guid.Parse("66025F94-725E-40CA-B55B-7479A5D7FC23");
-    UniqueCommand Command2 => new UniqueCommand("快捷键2", Guid2, () => _notifyer.SendText("快捷键2", ""));
+    UniqueCommand Command2 => new UniqueCommand("快捷键2",
+        Guid2,
+        () => _notifyer.SendText("快捷键2", ""),
+        new Hotkey(Key.Ctrl, Key.Alt, Key.D)
+    );
 
     private UniqueCommandCollection CommandCollection2 => new UniqueCommandCollection("快捷键测试2", "\uF406")
     {

@@ -19,12 +19,10 @@
         <Thickness x:Key="SettingsExpanderItemPadding">58,8,60,8</Thickness>
         <Thickness x:Key="ClickableSettingsExpanderItemPadding">58,0,32,0</Thickness>
         <Thickness x:Key="SettingsExpanderItemBorderThickness">0,0,0,0</Thickness>-->
-        <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />
             <Setter Property="Padding" Value="0,0,0,0" />
-            <Setter Property="BorderThickness" Value="0,0,0,0" />
-            <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
             <Setter Property="Height" Value="32" />
