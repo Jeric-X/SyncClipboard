@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Core.Commons;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.Keyboard;
 using System.Collections.ObjectModel;
 
@@ -6,14 +7,12 @@ namespace SyncClipboard.Core.ViewModels;
 
 public record UniqueCommandViewModel(string Name, Guid Guid, bool IsError, Hotkey? Hotkey = null);
 
-public record CommandCollectionViewModel(string Name, string FontIcon)
-{
-    public List<UniqueCommandViewModel> Commands { get; init; } = new();
-}
+public record CommandCollectionViewModel(string Name, string FontIcon, List<UniqueCommandViewModel>? Commands);
 
-public class HotkeyViewModel
+public partial class HotkeyViewModel : ObservableObject
 {
-    public ReadOnlyCollection<CommandCollectionViewModel>? CommandCollections { get; private set; }
+    [ObservableProperty]
+    private ReadOnlyCollection<CommandCollectionViewModel>? commandCollections;
 
     private readonly HotkeyManager _hotkeyManager;
 
@@ -36,12 +35,7 @@ public class HotkeyViewModel
                 var isError = status.Hotkey is not null && !status.IsReady;
                 commandList.Add(new UniqueCommandViewModel(command.Name, command.Guid, isError, status.Hotkey));
             }
-            collectionList.Add(
-                new CommandCollectionViewModel(collection.Name, collection.FontIcon)
-                {
-                    Commands = commandList
-                }
-            );
+            collectionList.Add(new(collection.Name, collection.FontIcon, commandList));
         }
         CommandCollections = new(collectionList);
     }

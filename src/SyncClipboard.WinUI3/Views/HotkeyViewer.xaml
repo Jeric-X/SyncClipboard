@@ -5,14 +5,19 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mk="using:SyncClipboard.Core.Models.Keyboard"
+             x:Name="_HotkeyViewer"
              mc:Ignorable="d">
-    <ItemsRepeater x:Name="ButtonTemplate" ItemsSource="{x:Bind Hotkey.Keys}" Tag="rofl">
+    <ItemsRepeater ItemsSource="{x:Bind Hotkey.Keys, Mode=OneWay}">
         <ItemsRepeater.Layout>
             <StackLayout Orientation="Horizontal" Spacing="4" />
         </ItemsRepeater.Layout>
         <ItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="mk:Key">
-                <ToggleButton IsChecked="True" IsHitTestVisible="False" Content="{Binding}" />
+                <ToggleButton VerticalAlignment="Stretch"
+                              IsChecked="True"
+                              Loaded="ToggleButton_Loaded"
+                              IsHitTestVisible="False"
+                              Content="{Binding}" />
             </DataTemplate>
         </ItemsRepeater.ItemTemplate>
     </ItemsRepeater>

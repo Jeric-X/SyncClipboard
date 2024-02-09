@@ -8,6 +8,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
     <Page.Resources>
         <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
@@ -17,35 +18,40 @@
             <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
         </Style>
     </Page.Resources>
-    <ItemsRepeater ItemsSource="{x:Bind _viewModel.CommandCollections}">
-        <ItemsRepeater.Layout>
-            <StackLayout Orientation="Vertical" Spacing="10" />
-        </ItemsRepeater.Layout>
-        <ItemsRepeater.ItemTemplate>
-            <DataTemplate x:DataType="vm:CommandCollectionViewModel">
-                <ui:SettingsExpander Header="{x:Bind Name}" IsExpanded="True" ItemsSource="{x:Bind Commands}">
-                    <ui:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="{x:Bind FontIcon}" />
-                    </ui:SettingsExpander.HeaderIcon>
-                    <ui:SettingsExpander.ItemTemplate>
-                        <DataTemplate x:DataType="vm:UniqueCommandViewModel">
-                            <ui:SettingsCard Header="{x:Bind Name}">
-                                <StackPanel Spacing="10" Orientation="Horizontal">
-                                    <Button Content="&#xE7BA;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsError)}">
-                                        <Button.Flyout>
-                                            <Flyout>
-                                                <TextBlock Text="Hotkey created failed." TextWrapping="WrapWholeWords" />
-                                            </Flyout>
-                                        </Button.Flyout>
-                                    </Button>
-                                    <local:HotkeyViewer Margin="0,0,10,0" Hotkey="{x:Bind Hotkey}" />
-                                    <Button Content="&#xE70F;" />
-                                </StackPanel>
-                            </ui:SettingsCard>
-                        </DataTemplate>
-                    </ui:SettingsExpander.ItemTemplate>
-                </ui:SettingsExpander>
-            </DataTemplate>
-        </ItemsRepeater.ItemTemplate>
-    </ItemsRepeater>
+    <Grid>
+        <ItemsRepeater ItemsSource="{x:Bind _viewModel.CommandCollections}">
+            <ItemsRepeater.Layout>
+                <StackLayout Orientation="Vertical" Spacing="10" />
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="vm:CommandCollectionViewModel">
+                    <ui:SettingsExpander Header="{x:Bind Name}" IsExpanded="True" ItemsSource="{x:Bind Commands}">
+                        <ui:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="{x:Bind FontIcon}" />
+                        </ui:SettingsExpander.HeaderIcon>
+                        <ui:SettingsExpander.ItemTemplate>
+                            <DataTemplate x:DataType="vm:UniqueCommandViewModel">
+                                <ui:SettingsCard Header="{x:Bind Name}">
+                                    <StackPanel Spacing="10" Orientation="Horizontal">
+                                        <Button Content="&#xE7BA;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsError)}">
+                                            <Button.Flyout>
+                                                <Flyout>
+                                                    <TextBlock Text="Hotkey created failed." TextWrapping="WrapWholeWords" />
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                        <local:HotkeyViewer Margin="0,0,10,0" Hotkey="{x:Bind Hotkey}" />
+                                        <Button Content="&#xE70F;" Click="EditButton_Click" />
+                                    </StackPanel>
+                                </ui:SettingsCard>
+                            </DataTemplate>
+                        </ui:SettingsExpander.ItemTemplate>
+                    </ui:SettingsExpander>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+        <ContentDialog x:Name="_HotkeyInputDialog" PrimaryButtonText="{x:Bind i18n:Strings.Confirm}">
+            <local:HotkeyInput FontSize="20" Height="60" x:Name="_HotkeyInput" />
+        </ContentDialog>
+    </Grid>
 </Page>

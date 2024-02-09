@@ -14,11 +14,29 @@ internal static class KeyboardMap
         [Key.Win] = HotKeyModifiers.MOD_WIN
     };
 
-    public static readonly Dictionary<Key, VK> VirtualKeyMap = new()
+    public static readonly Dictionary<VK, Key> VirtualKeyMap = new()
     {
-        [Key.A] = VK.VK_A,
-        [Key.B] = VK.VK_B,
-        [Key.C] = VK.VK_C,
-        [Key.D] = VK.VK_D
+        [VK.VK_CONTROL] = Key.Ctrl,
+        [VK.VK_SHIFT] = Key.Shift,
+        [VK.VK_LWIN] = Key.Win,
+        [VK.VK_RWIN] = Key.Win,
+        [VK.VK_MENU] = Key.Alt,
+        [VK.VK_A] = Key.A,
+        [VK.VK_B] = Key.B,
+        [VK.VK_C] = Key.C,
+        [VK.VK_D] = Key.D,
     };
+
+    public static readonly Dictionary<Key, VK> VirtualKeyMapReverse = Reverse(VirtualKeyMap);
+
+    private static Dictionary<TV, TK> Reverse<TK, TV>(Dictionary<TK, TV> oldDict) where TV : notnull where TK : notnull
+    {
+        var newDict = new Dictionary<TV, TK>();
+        foreach (var (key, value) in oldDict)
+        {
+            newDict.TryAdd(value, key);
+        }
+
+        return newDict;
+    }
 }

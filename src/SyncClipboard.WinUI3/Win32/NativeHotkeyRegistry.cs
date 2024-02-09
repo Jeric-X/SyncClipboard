@@ -79,7 +79,7 @@ public class NativeHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         {
             throw new ArgumentException("No key found");
         }
-        if (!KeyboardMap.VirtualKeyMap.TryGetValue(virtualKeys.First(), out VK virtualKey))
+        if (!KeyboardMap.VirtualKeyMapReverse.TryGetValue(virtualKeys.First(), out VK virtualKey))
         {
             throw new ArgumentException($"Not support key {virtualKeys.First()}");
         }
