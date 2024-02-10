@@ -6,4 +6,5 @@ public interface INativeHotkeyRegistry
 {
     bool RegisterForSystemHotkey(Hotkey hotkey, Action action);
     void UnRegisterForSystemHotkey(Hotkey hotkey);
+    bool IsValidHotkeyForm(Hotkey hotkey);
 }

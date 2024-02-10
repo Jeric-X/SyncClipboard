@@ -7,14 +7,30 @@
              xmlns:mk="using:SyncClipboard.Core.Models.Keyboard"
              x:Name="_HotkeyViewer"
              mc:Ignorable="d">
-    <ItemsRepeater ItemsSource="{x:Bind Hotkey.Keys, Mode=OneWay}">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="KeybordButtonBorderColor">#c42b1c</Color>
+                    <Color x:Key="KeybordButtonBackgoundColor">#fde7e9</Color>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="KeybordButtonBorderColor">#ff99a4</Color>
+                    <Color x:Key="KeybordButtonBackgoundColor">#442726</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ItemsRepeater HorizontalAlignment="Center" ItemsSource="{x:Bind Hotkey.Keys, Mode=OneWay}">
         <ItemsRepeater.Layout>
             <StackLayout Orientation="Horizontal" Spacing="4" />
         </ItemsRepeater.Layout>
         <ItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="mk:Key">
                 <ToggleButton VerticalAlignment="Stretch"
-                              IsChecked="True"
+                              BorderThickness="2"
+                              BorderBrush="{ThemeResource KeybordButtonBorderColor}"
+                              Background="{ThemeResource KeybordButtonBackgoundColor}"
                               Loaded="ToggleButton_Loaded"
                               IsHitTestVisible="False"
                               Content="{Binding}" />

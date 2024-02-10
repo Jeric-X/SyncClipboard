@@ -158,4 +158,9 @@ public class HotkeyManager
         SetHotkeyCommandMap(guid, hotkey);
         _configManager.SetConfig(_hotkeyConfig);
     }
+
+    public bool IsValidHotkeyForm(Hotkey hotkey)
+    {
+        return _nativeHotkeyRegistry.IsValidHotkeyForm(hotkey);
+    }
 }

@@ -6,6 +6,11 @@ namespace SyncClipboard.Desktop.Utilities;
 
 internal class NativeHotkeyRegistryStub : INativeHotkeyRegistry
 {
+    public bool IsValidHotkeyForm(Hotkey hotkey)
+    {
+        return true;
+    }
+
     public bool RegisterForSystemHotkey(Hotkey hotkey, Action action)
     {
         return true;

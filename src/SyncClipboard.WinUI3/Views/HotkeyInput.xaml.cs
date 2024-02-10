@@ -24,11 +24,24 @@ public sealed partial class HotkeyInput : UserControl
         _hookProc = HookProc;
     }
 
+    public bool IsError
+    {
+        get { return (bool)_HotkeyViewer.GetValue(HotkeyViewer.IsErrorProperty); }
+        set { _HotkeyViewer.SetValue(HotkeyViewer.IsErrorProperty, value); }
+    }
+
     public Hotkey Hotkey
     {
-        get { return (Hotkey)_HotkeyViewer.GetValue(HotkeyViewer.HotkeyProperty); }
-        set { _HotkeyViewer.SetValue(HotkeyViewer.HotkeyProperty, value); }
+        get { return (Hotkey)GetValue(HotkeyProperty); }
+        set { if (Hotkey != value) SetValue(HotkeyProperty, value); }
     }
+
+    public static readonly DependencyProperty HotkeyProperty = DependencyProperty.Register(
+            nameof(Hotkey),
+            typeof(Hotkey),
+            typeof(HotkeyInput),
+            new PropertyMetadata(Hotkey.Nothing)
+    );
 
     private IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam)
     {

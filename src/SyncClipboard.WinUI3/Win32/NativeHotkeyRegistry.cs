@@ -73,7 +73,7 @@ public class NativeHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         var count = virtualKeys.Count();
         if (count > 1)
         {
-            throw new ArgumentException("Not support multi-keys");
+            throw new ArgumentException("Not support multiple normal keys");
         }
         else if (count == 0)
         {
@@ -103,6 +103,19 @@ public class NativeHotkeyRegistry : INativeHotkeyRegistry, IDisposable
             _hotkeyList.Add(id, action);
         }
         return true;
+    }
+
+    public bool IsValidHotkeyForm(Hotkey hotkey)
+    {
+        try
+        {
+            GetVirtualKey(hotkey);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 
     ~NativeHotkeyRegistry() => Dispose();

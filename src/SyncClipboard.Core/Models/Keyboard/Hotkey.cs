@@ -9,13 +9,13 @@ public class Hotkey
     public Key[] Keys { get; }
     public Hotkey(IEnumerable<Key> keys)
     {
-        Keys = keys.ToArray();
+        Keys = keys.Distinct().ToArray();
         Array.Sort(Keys);
     }
 
     public Hotkey(params Key[] keys)
     {
-        Keys = keys;
+        Keys = keys.Distinct().ToArray();
         Array.Sort(Keys);
     }
 

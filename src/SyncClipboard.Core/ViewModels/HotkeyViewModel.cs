@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using System.Collections.ObjectModel;
 
@@ -14,11 +16,36 @@ public partial class HotkeyViewModel : ObservableObject
     [ObservableProperty]
     private ReadOnlyCollection<CommandCollectionViewModel>? commandCollections;
 
-    private readonly HotkeyManager _hotkeyManager;
+    [ObservableProperty]
+    private Hotkey editingHotkey = Hotkey.Nothing;
+    partial void OnEditingHotkeyChanged(Hotkey value)
+    {
+        IsEditingHasError = !_hotkeyManager.IsValidHotkeyForm(value);
+    }
 
-    public HotkeyViewModel(HotkeyManager hotkeyManager)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SetHotkeyCanExecute))]
+    [NotifyCanExecuteChangedFor(nameof(SetHotkeyCommand))]
+    private bool isEditingHasError = false;
+
+    public bool SetHotkeyCanExecute => !IsEditingHasError;
+
+    [ObservableProperty]
+    private Guid editingGuid;
+
+    [RelayCommand(CanExecute = nameof(SetHotkeyCanExecute))]
+    private void SetHotkey()
+    {
+        _logger.Write("SetHotkeyCommand is " + SetHotkeyCommand.CanExecute(null));
+    }
+
+    private readonly HotkeyManager _hotkeyManager;
+    private readonly ILogger _logger;
+
+    public HotkeyViewModel(HotkeyManager hotkeyManager, ILogger logger)
     {
         _hotkeyManager = hotkeyManager;
+        _logger = logger;
         hotkeyManager.HotkeyStatusChanged += HotkeyStatusChanged;
         HotkeyStatusChanged();
     }

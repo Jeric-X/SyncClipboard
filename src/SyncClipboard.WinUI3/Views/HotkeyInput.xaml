@@ -9,7 +9,7 @@
              IsHitTestVisible="True"
              mc:Ignorable="d">
     <local:HotkeyViewer x:Name="_HotkeyViewer"
-                        HorizontalAlignment="Center"
+                        Hotkey="{x:Bind Hotkey, Mode=OneWay}"
                         IsTabStop="True"
                         IsHitTestVisible="True" />
 </UserControl>

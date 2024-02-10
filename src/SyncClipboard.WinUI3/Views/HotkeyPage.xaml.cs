@@ -24,7 +24,8 @@ namespace SyncClipboard.WinUI3.Views
 
         private async void EditButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            _HotkeyInput.Hotkey = Hotkey.Nothing;
+            _viewModel.EditingHotkey = Hotkey.Nothing;
+            _viewModel.EditingGuid = (Guid)((Button)sender).DataContext;
             await _HotkeyInputDialog.ShowAsync();
         }
     }
