@@ -17,10 +17,16 @@ internal static class KeyboardMap
     public static readonly Dictionary<VK, Key> VirtualKeyMap = new()
     {
         [VK.VK_CONTROL] = Key.Ctrl,
+        [VK.VK_LCONTROL] = Key.Ctrl,
+        [VK.VK_RCONTROL] = Key.Ctrl,
         [VK.VK_SHIFT] = Key.Shift,
+        [VK.VK_LSHIFT] = Key.Shift,
+        [VK.VK_RSHIFT] = Key.Shift,
         [VK.VK_LWIN] = Key.Win,
         [VK.VK_RWIN] = Key.Win,
         [VK.VK_MENU] = Key.Alt,
+        [VK.VK_LMENU] = Key.Alt,
+        [VK.VK_RMENU] = Key.Alt,
         [VK.VK_A] = Key.A,
         [VK.VK_B] = Key.B,
         [VK.VK_C] = Key.C,
