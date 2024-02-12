@@ -429,4 +429,7 @@
   <data name="TrustInsecureCertificate" xml:space="preserve">
     <value>信任不安全的HTTPS证书</value>
   </data>
+  <data name="Clear" xml:space="preserve">
+    <value>清除</value>
+  </data>
 </root>

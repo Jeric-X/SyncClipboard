@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.ViewModels;
@@ -22,11 +23,18 @@ namespace SyncClipboard.WinUI3.Views
             _viewModel = App.Current.Services.GetRequiredService<HotkeyViewModel>();
         }
 
-        private async void EditButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        private async void EditButtonClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
             _viewModel.EditingHotkey = Hotkey.Nothing;
             _viewModel.EditingGuid = (Guid)((Button)sender).DataContext;
             await _HotkeyInputDialog.ShowAsync();
+        }
+
+        private void ClearButtonClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
+        {
+            _viewModel.EditingHotkey = Hotkey.Nothing;
+            _HotkeyInput.Focus(FocusState.Programmatic);
+            args.Cancel = true;
         }
     }
 }

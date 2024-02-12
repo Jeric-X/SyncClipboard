@@ -429,4 +429,7 @@
   <data name="TrustInsecureCertificate" xml:space="preserve">
     <value>Trust Insecure HTTPS Certificates</value>
   </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
 </root>

@@ -142,6 +142,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Clear 的本地化字符串。
+        /// </summary>
+        public static string Clear {
+            get {
+                return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Client General 的本地化字符串。
         /// </summary>
         public static string ClientGeneral {

@@ -39,6 +39,9 @@ public partial class HotkeyViewModel : ObservableObject
         _logger.Write("SetHotkeyCommand is " + SetHotkeyCommand.CanExecute(null));
     }
 
+    [RelayCommand]
+    private void ClearEditingHotkey() => EditingHotkey = Hotkey.Nothing;
+
     private readonly HotkeyManager _hotkeyManager;
     private readonly ILogger _logger;
 

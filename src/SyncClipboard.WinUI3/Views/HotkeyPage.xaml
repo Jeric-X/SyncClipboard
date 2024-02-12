@@ -41,7 +41,7 @@
                                             </Button.Flyout>
                                         </Button>
                                         <local:HotkeyViewer Margin="0,0,10,0" IsError="{x:Bind IsError}" Hotkey="{x:Bind Hotkey}" />
-                                        <Button Content="&#xE70F;" Click="EditButton_Click" DataContext="{x:Bind Guid}" />
+                                        <Button Content="&#xE70F;" Click="EditButtonClick" DataContext="{x:Bind Guid}" />
                                     </StackPanel>
                                 </ui:SettingsCard>
                             </DataTemplate>
@@ -53,6 +53,8 @@
         <ContentDialog x:Name="_HotkeyInputDialog"
                        IsPrimaryButtonEnabled="{x:Bind _viewModel.SetHotkeyCanExecute, Mode=OneWay}"
                        PrimaryButtonCommand="{x:Bind _viewModel.SetHotkeyCommand}"
+                       SecondaryButtonClick="ClearButtonClick"
+                       SecondaryButtonText="{x:Bind i18n:Strings.Clear}"
                        CloseButtonText="{x:Bind i18n:Strings.Cancel}"
                        PrimaryButtonText="{x:Bind i18n:Strings.Confirm}">
             <local:HotkeyInput x:Name="_HotkeyInput"

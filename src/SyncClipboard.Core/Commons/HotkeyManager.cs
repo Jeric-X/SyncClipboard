@@ -161,6 +161,6 @@ public class HotkeyManager
 
     public bool IsValidHotkeyForm(Hotkey hotkey)
     {
-        return _nativeHotkeyRegistry.IsValidHotkeyForm(hotkey);
+        return hotkey == Hotkey.Nothing || _nativeHotkeyRegistry.IsValidHotkeyForm(hotkey);
     }
 }
