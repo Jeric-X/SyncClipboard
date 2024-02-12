@@ -99,9 +99,8 @@ public class HotkeyManager
 
     private void ConfigChanged(HotkeyConfig config)
     {
-        var sameHotkeys = _hotkeyConfig.Hotkeys.Intersect(config.Hotkeys);
-        var oldHotkeys = sameHotkeys.ExceptBy(_hotkeyConfig.Hotkeys.Keys, (keyValuePair) => keyValuePair.Key);
-        var newHotkeys = sameHotkeys.ExceptBy(config.Hotkeys.Keys, (keyValuePair) => keyValuePair.Key);
+        var oldHotkeys = _hotkeyConfig.Hotkeys.Except(config.Hotkeys);
+        var newHotkeys = config.Hotkeys.Except(_hotkeyConfig.Hotkeys);
         _hotkeyConfig = config;
 
         List<UniqueCommand> registedCommands = DeleteHotkeyCommandMap(oldHotkeys.Select(pair => pair.Key));
@@ -122,12 +121,16 @@ public class HotkeyManager
                 {
                     ready = RegisterToNative(command.Hotkey, command.Command);
                 }
-                _hotkeyCommandMap.Add(command.Guid, new(command.Hotkey, ready));
+                _hotkeyCommandMap.Add(command.Guid, new(command.Hotkey, ready, command));
             }
-            else if (hotkeyStatus.Hotkey is not null && hotkeyStatus.IsReady is false)
+            else
             {
-                var res = RegisterToNative(hotkeyStatus.Hotkey, command.Command);
-                _hotkeyCommandMap[command.Guid].IsReady = res;
+                hotkeyStatus.Command = command;
+                if (hotkeyStatus.Hotkey is not null && hotkeyStatus.IsReady is false)
+                {
+                    var res = RegisterToNative(hotkeyStatus.Hotkey, command.Command);
+                    hotkeyStatus.IsReady = res;
+                }
             }
         }
         HotkeyStatusChanged?.Invoke();
@@ -156,6 +159,34 @@ public class HotkeyManager
         }
 
         SetHotkeyCommandMap(guid, hotkey);
+        _configManager.SetConfig(_hotkeyConfig);
+    }
+
+    public void SetHotKeyToDefault(Guid guid)
+    {
+        if (!_hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? status))
+        {
+            return;
+        }
+
+        if (status.Hotkey != status.Command?.Hotkey)
+        {
+            if (status.IsReady)
+            {
+                UnRegisterFromNative(status.Hotkey!);
+            }
+            status.IsReady = false;
+            status.Hotkey = status.Command?.Hotkey;
+        }
+
+        if (status.Command is not null && status.Hotkey is not null && status.IsReady is false)
+        {
+            status.IsReady = RegisterToNative(status.Hotkey, status.Command.Command);
+        }
+
+        _hotkeyConfig.Hotkeys.Remove(guid);
+
+        HotkeyStatusChanged?.Invoke();
         _configManager.SetConfig(_hotkeyConfig);
     }
 

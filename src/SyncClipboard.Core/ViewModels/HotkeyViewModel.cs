@@ -36,11 +36,14 @@ public partial class HotkeyViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(SetHotkeyCanExecute))]
     private void SetHotkey()
     {
-        _logger.Write("SetHotkeyCommand is " + SetHotkeyCommand.CanExecute(null));
+        _hotkeyManager.SetHotKey(EditingGuid, EditingHotkey);
     }
 
     [RelayCommand]
     private void ClearEditingHotkey() => EditingHotkey = Hotkey.Nothing;
+
+    [RelayCommand]
+    private void SetToDefault(Guid guid) => _hotkeyManager.SetHotKeyToDefault(guid);
 
     private readonly HotkeyManager _hotkeyManager;
     private readonly ILogger _logger;

@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Core.Utilities;
+using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Core.Models.Keyboard;
 
@@ -13,6 +14,7 @@ public class Hotkey
         Array.Sort(Keys);
     }
 
+    [JsonConstructor]
     public Hotkey(params Key[] keys)
     {
         Keys = keys.Distinct().ToArray();

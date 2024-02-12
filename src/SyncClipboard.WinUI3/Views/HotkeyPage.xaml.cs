@@ -23,7 +23,7 @@ namespace SyncClipboard.WinUI3.Views
             _viewModel = App.Current.Services.GetRequiredService<HotkeyViewModel>();
         }
 
-        private async void EditButtonClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        private async void EditButtonClick(object sender, RoutedEventArgs e)
         {
             _viewModel.EditingHotkey = Hotkey.Nothing;
             _viewModel.EditingGuid = (Guid)((Button)sender).DataContext;
@@ -35,6 +35,11 @@ namespace SyncClipboard.WinUI3.Views
             _viewModel.EditingHotkey = Hotkey.Nothing;
             _HotkeyInput.Focus(FocusState.Programmatic);
             args.Cancel = true;
+        }
+
+        private void SetToDefaultButtonClick(object sender, RoutedEventArgs _)
+        {
+            _viewModel.SetToDefaultCommand.Execute((Guid)((Button)sender).DataContext);
         }
     }
 }

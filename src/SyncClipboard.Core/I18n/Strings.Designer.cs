@@ -340,6 +340,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Edit 的本地化字符串。
+        /// </summary>
+        public static string Edit {
+            get {
+                return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Exit 的本地化字符串。
         /// </summary>
         public static string Exit {
@@ -759,6 +768,15 @@ namespace SyncClipboard.Core.I18n {
         public static string ReloadConfigFile {
             get {
                 return ResourceManager.GetString("ReloadConfigFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Reset to Default 的本地化字符串。
+        /// </summary>
+        public static string ResetToDefault {
+            get {
+                return ResourceManager.GetString("ResetToDefault", resourceCulture);
             }
         }
         

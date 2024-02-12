@@ -19,7 +19,7 @@
         </Style>
     </Page.Resources>
     <Grid>
-        <ItemsRepeater ItemsSource="{x:Bind _viewModel.CommandCollections}">
+        <ItemsRepeater ItemsSource="{x:Bind _viewModel.CommandCollections, Mode=OneWay}">
             <ItemsRepeater.Layout>
                 <StackLayout Orientation="Vertical" Spacing="10" />
             </ItemsRepeater.Layout>
@@ -32,7 +32,7 @@
                         <ui:SettingsExpander.ItemTemplate>
                             <DataTemplate x:DataType="vm:UniqueCommandViewModel">
                                 <ui:SettingsCard Header="{x:Bind Name}">
-                                    <StackPanel Spacing="10" Orientation="Horizontal">
+                                    <StackPanel Spacing="0" Orientation="Horizontal">
                                         <Button Content="&#xE7BA;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsError)}">
                                             <Button.Flyout>
                                                 <Flyout>
@@ -41,7 +41,14 @@
                                             </Button.Flyout>
                                         </Button>
                                         <local:HotkeyViewer Margin="0,0,10,0" IsError="{x:Bind IsError}" Hotkey="{x:Bind Hotkey}" />
-                                        <Button Content="&#xE70F;" Click="EditButtonClick" DataContext="{x:Bind Guid}" />
+                                        <Button Content="&#xE70F;"
+                                                Click="EditButtonClick"
+                                                DataContext="{x:Bind Guid}"
+                                                ToolTipService.ToolTip="{x:Bind i18n:Strings.Edit}" />
+                                        <Button Content="&#xE7A7;"
+                                                Click="SetToDefaultButtonClick"
+                                                DataContext="{x:Bind Guid}"
+                                                ToolTipService.ToolTip="{x:Bind i18n:Strings.ResetToDefault}" />
                                     </StackPanel>
                                 </ui:SettingsCard>
                             </DataTemplate>
