@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public record UniqueCommandViewModel(string Name, Guid Guid, bool IsError, Hotkey? Hotkey = null);
+public record UniqueCommandViewModel(string Name, Guid Guid, bool IsError, Hotkey Hotkey);
 
 public record CommandCollectionViewModel(string Name, string FontIcon, List<UniqueCommandViewModel>? Commands);
 
@@ -66,7 +66,7 @@ public partial class HotkeyViewModel : ObservableObject
             {
                 var status = _hotkeyManager.HotkeyStatusMap[command.Guid];
                 var isError = status.Hotkey is not null && !status.IsReady;
-                commandList.Add(new UniqueCommandViewModel(command.Name, command.Guid, isError, status.Hotkey));
+                commandList.Add(new UniqueCommandViewModel(command.Name, command.Guid, isError, status.Hotkey ?? Hotkey.Nothing));
             }
             collectionList.Add(new(collection.Name, collection.FontIcon, commandList));
         }

@@ -5,10 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mk="using:SyncClipboard.Core.Models.Keyboard"
+             xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
              x:Name="_HotkeyViewer"
              mc:Ignorable="d">
     <UserControl.Resources>
         <ResourceDictionary>
+            <vc:KeyToJsonStringConverter x:Key="KeyToJsonStringConverter" />
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <Color x:Key="KeybordButtonBorderColor">#c42b1c</Color>
@@ -33,7 +35,7 @@
                               Background="{ThemeResource KeybordButtonBackgoundColor}"
                               Loaded="ToggleButton_Loaded"
                               IsHitTestVisible="False"
-                              Content="{Binding}" />
+                              Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}" />
             </DataTemplate>
         </ItemsRepeater.ItemTemplate>
     </ItemsRepeater>

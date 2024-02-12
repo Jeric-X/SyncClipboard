@@ -32,7 +32,7 @@
                         <ui:SettingsExpander.ItemTemplate>
                             <DataTemplate x:DataType="vm:UniqueCommandViewModel">
                                 <ui:SettingsCard Header="{x:Bind Name}">
-                                    <StackPanel Spacing="0" Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal">
                                         <Button Content="&#xE7BA;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsError)}">
                                             <Button.Flyout>
                                                 <Flyout>
@@ -40,7 +40,7 @@
                                                 </Flyout>
                                             </Button.Flyout>
                                         </Button>
-                                        <local:HotkeyViewer Margin="0,0,10,0" IsError="{x:Bind IsError}" Hotkey="{x:Bind Hotkey}" />
+                                        <local:HotkeyViewer Margin="5,0,10,0" IsError="{x:Bind IsError}" Hotkey="{x:Bind Hotkey}" />
                                         <Button Content="&#xE70F;"
                                                 Click="EditButtonClick"
                                                 DataContext="{x:Bind Guid}"
