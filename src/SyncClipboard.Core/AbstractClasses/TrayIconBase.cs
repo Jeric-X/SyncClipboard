@@ -13,6 +13,8 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     private Timer? _iconTimer;
     private int _iconIndex = 1;
     private bool _isShowingDanamicIcon;
+    private bool _isActive = true;
+    private bool _isError = false;
     private IconType[]? _dynamicIcons;
     private IconType? @staticIcon = null;
     private IconType StaticIcon { get => @staticIcon ?? DefaultIcon; set => @staticIcon = value; }
@@ -20,6 +22,8 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     protected abstract IconType DefaultIcon { get; }
     protected abstract IconType ErrorIcon { get; }
+    protected abstract IconType DefaultInactiveIcon { get; }
+    protected abstract IconType ErrorInactiveIcon { get; }
     protected abstract int MaxToolTipLenth { get; }
 
     protected abstract void SetIcon(IconType icon);
@@ -88,15 +92,28 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         SetStatusString(key, statusStr);
         ServiceStatusViewModel?.SetStatusString(key, statusStr, error);
 
-        if (error)
-        {
-            StaticIcon = ErrorIcon;
-        }
-        else
-        {
-            StaticIcon = DefaultIcon;
-        }
+        _isError = error;
+        ChooseStaticIcon();
         SetStaticIcon();
+    }
+
+    private void ChooseStaticIcon()
+    {
+        switch (_isError, _isActive)
+        {
+            case (true, true):
+                StaticIcon = ErrorIcon;
+                break;
+            case (true, false):
+                StaticIcon = ErrorInactiveIcon;
+                break;
+            case (false, true):
+                StaticIcon = DefaultIcon;
+                break;
+            case (false, false):
+                StaticIcon = DefaultInactiveIcon;
+                break;
+        }
     }
 
     public virtual void SetStatusString(string key, string statusStr)
@@ -134,5 +151,12 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         });
 
         SetToolTip(string.Join(Environment.NewLine, ajustedList));
+    }
+
+    public void SetActiveStatus(bool active)
+    {
+        _isActive = active;
+        ChooseStaticIcon();
+        SetStaticIcon();
     }
 }

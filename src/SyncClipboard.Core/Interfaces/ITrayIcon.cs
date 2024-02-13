@@ -11,4 +11,5 @@ public interface ITrayIcon
 
     public void SetStatusString(string key, string statusStr, bool error);
     public void SetStatusString(string key, string statusStr);
+    public void SetActiveStatus(bool active);
 }

@@ -13,9 +13,13 @@ internal class TrayIconImpl : TrayIconBase<WindowIcon>
 {
     private static readonly WindowIcon _DefaultIcon = new WindowIcon(AssetLoader.Open(new Uri("avares://SyncClipboard.Desktop/Assets/default.ico")));
     private static readonly WindowIcon _ErrorIcon = new WindowIcon(AssetLoader.Open(new Uri("avares://SyncClipboard.Desktop/Assets/erro.ico")));
+    private static readonly WindowIcon _DefaultInactiveIcon = new WindowIcon(AssetLoader.Open(new Uri("avares://SyncClipboard.Desktop/Assets/default-inactive.ico")));
+    private static readonly WindowIcon _ErrorInactiveIcon = new WindowIcon(AssetLoader.Open(new Uri("avares://SyncClipboard.Desktop/Assets/erro-inactive.ico")));
 
     protected override WindowIcon DefaultIcon => _DefaultIcon;
     protected override WindowIcon ErrorIcon => _ErrorIcon;
+    protected override WindowIcon DefaultInactiveIcon => _DefaultInactiveIcon;
+    protected override WindowIcon ErrorInactiveIcon => _ErrorInactiveIcon;
     protected override int MaxToolTipLenth => 255;
 
     private readonly ServiceStatusViewModel _serviceStatusViewModel;

@@ -29,6 +29,7 @@ public class DownloadService : Service
     private ServerConfig _serverConfig;
 
     private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
+    private bool ClientSwitchOn => _syncConfig.SyncSwitchOn || (_serverConfig.ClientMixedMode && _serverConfig.SwitchOn);
 
     public DownloadService(IServiceProvider serviceProvider, IMessenger messenger)
     {
@@ -59,14 +60,15 @@ public class DownloadService : Service
 
     private void ReLoad()
     {
-        if (SwitchOn)
-        {
-            SwitchOnPullLoop();
-        }
+        if (ClientSwitchOn)
+            _trayIcon.SetActiveStatus(true);
         else
-        {
+            _trayIcon.SetActiveStatus(false);
+
+        if (SwitchOn)
+            SwitchOnPullLoop();
+        else
             SwitchOffPullLoop();
-        }
     }
 
     private CancellationTokenSource? _cancelSource;
@@ -156,7 +158,10 @@ public class DownloadService : Service
     private void SetStatusOnError(ref int errorTimes, Exception ex)
     {
         errorTimes++;
-        _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.\n{ex.Message}", true);
+        if (errorTimes == 2)
+        {
+            _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.\n{ex.Message}", true);
+        }
 
         _logger.Write(ex.ToString());
         if (errorTimes == _syncConfig.RetryTimes)
