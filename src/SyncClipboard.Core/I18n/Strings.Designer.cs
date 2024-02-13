@@ -448,6 +448,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Hotkeys 的本地化字符串。
+        /// </summary>
+        public static string Hotkeys {
+            get {
+                return ResourceManager.GetString("Hotkeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Image Assistant 的本地化字符串。
         /// </summary>
         public static string ImageAssistant {
@@ -858,6 +867,114 @@ namespace SyncClipboard.Core.I18n {
         public static string Status {
             get {
                 return ResourceManager.GetString("Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On/Off Built In Server 的本地化字符串。
+        /// </summary>
+        public static string SwitchBuiltInServer {
+            get {
+                return ResourceManager.GetString("SwitchBuiltInServer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On/Off Clipboard Syncing 的本地化字符串。
+        /// </summary>
+        public static string SwitchClipboardSyncing {
+            get {
+                return ResourceManager.GetString("SwitchClipboardSyncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On/Off Image Assistant 的本地化字符串。
+        /// </summary>
+        public static string SwitchImageAssistant {
+            get {
+                return ResourceManager.GetString("SwitchImageAssistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On/Off Mixed Client Mode 的本地化字符串。
+        /// </summary>
+        public static string SwitchMixedClientMode {
+            get {
+                return ResourceManager.GetString("SwitchMixedClientMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch Off Built-In Server 的本地化字符串。
+        /// </summary>
+        public static string SwitchOffBuiltInServer {
+            get {
+                return ResourceManager.GetString("SwitchOffBuiltInServer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch Off Clipboard Syncing 的本地化字符串。
+        /// </summary>
+        public static string SwitchOffClipboardSyncing {
+            get {
+                return ResourceManager.GetString("SwitchOffClipboardSyncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch Off Image Assistant 的本地化字符串。
+        /// </summary>
+        public static string SwitchOffImageAssistant {
+            get {
+                return ResourceManager.GetString("SwitchOffImageAssistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch Off Mixed Client Mode 的本地化字符串。
+        /// </summary>
+        public static string SwitchOffMixedClientMode {
+            get {
+                return ResourceManager.GetString("SwitchOffMixedClientMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On Built-In Server 的本地化字符串。
+        /// </summary>
+        public static string SwitchOnBuiltInServer {
+            get {
+                return ResourceManager.GetString("SwitchOnBuiltInServer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On Clipboard Syncing 的本地化字符串。
+        /// </summary>
+        public static string SwitchOnClipboardSyncing {
+            get {
+                return ResourceManager.GetString("SwitchOnClipboardSyncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On Image Assistant 的本地化字符串。
+        /// </summary>
+        public static string SwitchOnImageAssistant {
+            get {
+                return ResourceManager.GetString("SwitchOnImageAssistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch On Mixed Client Mode 的本地化字符串。
+        /// </summary>
+        public static string SwitchOnMixedClientMode {
+            get {
+                return ResourceManager.GetString("SwitchOnMixedClientMode", resourceCulture);
             }
         }
         

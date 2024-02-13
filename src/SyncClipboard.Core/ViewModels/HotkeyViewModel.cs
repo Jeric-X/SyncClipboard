@@ -46,12 +46,10 @@ public partial class HotkeyViewModel : ObservableObject
     private void SetToDefault(Guid guid) => _hotkeyManager.SetHotKeyToDefault(guid);
 
     private readonly HotkeyManager _hotkeyManager;
-    private readonly ILogger _logger;
 
-    public HotkeyViewModel(HotkeyManager hotkeyManager, ILogger logger)
+    public HotkeyViewModel(HotkeyManager hotkeyManager)
     {
         _hotkeyManager = hotkeyManager;
-        _logger = logger;
         hotkeyManager.HotkeyStatusChanged += HotkeyStatusChanged;
         HotkeyStatusChanged();
     }

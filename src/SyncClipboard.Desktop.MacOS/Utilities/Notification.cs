@@ -37,4 +37,21 @@ internal class Notification : INotification
 
         NSUserNotificationCenter.DefaultUserNotificationCenter.DeliverNotification(notification);
     }
+
+    public void Send(NotificationPara para)
+    {
+        using var notification = new NSUserNotification
+        {
+            Title = para.Title,
+            InformativeText = para.Text,
+            SoundName = NSUserNotification.NSUserNotificationDefaultSoundName
+        };
+
+        if (para.Image is not null)
+        {
+            notification.ContentImage = new NSImage(para.Image!);
+        }
+
+        NSUserNotificationCenter.DefaultUserNotificationCenter.DeliverNotification(notification);
+    }
 }

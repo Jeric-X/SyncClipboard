@@ -147,10 +147,6 @@ public class HotkeyManager
         _hotkeyConfig.Hotkeys.TryGetValue(guid, out var existHotkey);
         if (existHotkey is not null)
         {
-            if (hotkey == existHotkey)
-            {
-                return;
-            }
             _hotkeyConfig.Hotkeys[guid] = hotkey;
         }
         else
@@ -159,6 +155,7 @@ public class HotkeyManager
         }
 
         SetHotkeyCommandMap(guid, hotkey);
+        HotkeyStatusChanged?.Invoke();
         _configManager.SetConfig(_hotkeyConfig);
     }
 

@@ -17,6 +17,7 @@ public partial class MainView : UserControl
     public MainView()
     {
         _viewModel = App.Current.Services.GetRequiredService<MainViewModel>();
+        _viewModel.MainWindowPage.Remove(PageDefinition.Hotkey);
 
         var config = App.Current.Services.GetRequiredService<ConfigManager>();
         config.ListenConfig<ProgramConfig>(HandleDiagnoseModeChanged);

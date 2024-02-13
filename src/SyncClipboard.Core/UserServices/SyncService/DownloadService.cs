@@ -6,6 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -31,6 +32,62 @@ public class DownloadService : Service
     private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
     private bool ClientSwitchOn => _syncConfig.SyncSwitchOn || (_serverConfig.ClientMixedMode && _serverConfig.SwitchOn);
 
+    #region Hotkey
+    private UniqueCommandCollection CommandCollection => new(PageDefinition.SyncSetting.Title, PageDefinition.SyncSetting.FontIcon!)
+    {
+        Commands = {
+            new UniqueCommand(
+                I18n.Strings.SwitchClipboardSyncing,
+                Guid.Parse("26D8A39E-F50D-CC71-FE15-647F67FDB2F9"),
+                () => SwitchClipboardSyncing(!_syncConfig.SyncSwitchOn)
+            ),
+            new UniqueCommand(
+                I18n.Strings.SwitchBuiltInServer,
+                Guid.Parse("145740F4-03F7-6F6C-5B93-B027C7C49C59"),
+                () => SwitchBuiltInServer(!_serverConfig.SwitchOn)
+            ),
+            new UniqueCommand(
+                I18n.Strings.SwitchMixedClientMode,
+                Guid.Parse("1D5C8163-E2E0-D099-A334-62A4B4F2BCE5"),
+                () => SwitchMixedClientMode(!_serverConfig.ClientMixedMode)
+            ),
+        }
+    };
+
+    private void SwitchClipboardSyncing(bool isOn)
+    {
+        _configManager.SetConfig(_syncConfig with { SyncSwitchOn = isOn });
+        var para = new NotificationPara
+        {
+            Duration = TimeSpan.FromSeconds(2),
+            Title = isOn ? I18n.Strings.SwitchOnClipboardSyncing : I18n.Strings.SwitchOffClipboardSyncing,
+        };
+        _notificationManager.Send(para);
+    }
+
+    private void SwitchBuiltInServer(bool isOn)
+    {
+        _configManager.SetConfig(_serverConfig with { SwitchOn = isOn });
+        var para = new NotificationPara
+        {
+            Duration = TimeSpan.FromSeconds(2),
+            Title = isOn ? I18n.Strings.SwitchOnBuiltInServer : I18n.Strings.SwitchOffBuiltInServer
+        };
+        _notificationManager.Send(para);
+    }
+
+    private void SwitchMixedClientMode(bool isOn)
+    {
+        _configManager.SetConfig(_serverConfig with { ClientMixedMode = isOn });
+        var para = new NotificationPara
+        {
+            Duration = TimeSpan.FromSeconds(2),
+            Title = isOn ? I18n.Strings.SwitchOnMixedClientMode : I18n.Strings.SwitchOffMixedClientMode
+        };
+        _notificationManager.Send(para);
+    }
+    #endregion
+
     public DownloadService(IServiceProvider serviceProvider, IMessenger messenger)
     {
         _serviceProvider = serviceProvider;
@@ -44,6 +101,8 @@ public class DownloadService : Service
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
+
+        serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
     }
 
     private void SyncConfigChanged(SyncConfig newConfig)

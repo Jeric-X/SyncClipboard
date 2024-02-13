@@ -147,7 +147,6 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, ServerService>();
             services.AddSingleton<IService, UploadService>();
             services.AddSingleton<IService, DownloadService>();
-            services.AddSingleton<IService, HotkeyStubService>();
         }
 
         private async void PrepareRemoteWorkingFolder()

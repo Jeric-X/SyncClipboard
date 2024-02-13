@@ -7,6 +7,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Image;
+using SyncClipboard.Core.ViewModels;
 using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.UserServices;
@@ -59,6 +60,30 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     #endregion override ClipboardHander
 
+    #region Hotkey
+    private UniqueCommandCollection CommandCollection => new(PageDefinition.CliboardAssistant.Title, PageDefinition.CliboardAssistant.FontIcon!)
+    {
+        Commands = {
+            new UniqueCommand(
+                I18n.Strings.SwitchImageAssistant,
+                Guid.Parse("337275BE-57A2-2E97-6096-FF3D087D8A9C"),
+                () => SwitchImageAssistant(!_clipboardAssistConfig.EasyCopyImageSwitchOn)
+            )
+        }
+    };
+
+    private void SwitchImageAssistant(bool isOn)
+    {
+        _configManager.SetConfig(_clipboardAssistConfig with { EasyCopyImageSwitchOn = isOn });
+        var para = new NotificationPara
+        {
+            Duration = TimeSpan.FromSeconds(2),
+            Title = isOn ? I18n.Strings.SwitchOnImageAssistant : I18n.Strings.SwitchOffImageAssistant
+        };
+        _notificationManager.Send(para);
+    }
+    #endregion Hotkey
+
     private ProgressToastReporter? _progress;
     private readonly object _progressLocker = new();
 
@@ -79,6 +104,8 @@ public class EasyCopyImageSerivce : ClipboardHander
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
+
+        serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
     }
 
     public override void Load()

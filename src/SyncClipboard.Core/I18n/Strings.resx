@@ -438,4 +438,43 @@
   <data name="ResetToDefault" xml:space="preserve">
     <value>Reset to Default</value>
   </data>
+  <data name="Hotkeys" xml:space="preserve">
+    <value>Hotkeys</value>
+  </data>
+  <data name="SwitchClipboardSyncing" xml:space="preserve">
+    <value>Switch On/Off Clipboard Syncing</value>
+  </data>
+  <data name="SwitchOnClipboardSyncing" xml:space="preserve">
+    <value>Switch On Clipboard Syncing</value>
+  </data>
+  <data name="SwitchOffClipboardSyncing" xml:space="preserve">
+    <value>Switch Off Clipboard Syncing</value>
+  </data>
+  <data name="SwitchOnBuiltInServer" xml:space="preserve">
+    <value>Switch On Built-In Server</value>
+  </data>
+  <data name="SwitchOffBuiltInServer" xml:space="preserve">
+    <value>Switch Off Built-In Server</value>
+  </data>
+  <data name="SwitchBuiltInServer" xml:space="preserve">
+    <value>Switch On/Off Built In Server</value>
+  </data>
+  <data name="SwitchMixedClientMode" xml:space="preserve">
+    <value>Switch On/Off Mixed Client Mode</value>
+  </data>
+  <data name="SwitchOnMixedClientMode" xml:space="preserve">
+    <value>Switch On Mixed Client Mode</value>
+  </data>
+  <data name="SwitchOffMixedClientMode" xml:space="preserve">
+    <value>Switch Off Mixed Client Mode</value>
+  </data>
+  <data name="SwitchImageAssistant" xml:space="preserve">
+    <value>Switch On/Off Image Assistant</value>
+  </data>
+  <data name="SwitchOnImageAssistant" xml:space="preserve">
+    <value>Switch On Image Assistant</value>
+  </data>
+  <data name="SwitchOffImageAssistant" xml:space="preserve">
+    <value>Switch Off Image Assistant</value>
+  </data>
 </root>

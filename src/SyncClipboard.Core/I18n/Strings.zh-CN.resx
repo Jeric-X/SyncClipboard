@@ -438,4 +438,43 @@
   <data name="ResetToDefault" xml:space="preserve">
     <value>恢复默认</value>
   </data>
+  <data name="Hotkeys" xml:space="preserve">
+    <value>快捷键</value>
+  </data>
+  <data name="SwitchClipboardSyncing" xml:space="preserve">
+    <value>开启/关闭 剪贴板同步</value>
+  </data>
+  <data name="SwitchOnClipboardSyncing" xml:space="preserve">
+    <value>剪贴板同步已开启</value>
+  </data>
+  <data name="SwitchOffClipboardSyncing" xml:space="preserve">
+    <value>剪贴板同步已关闭</value>
+  </data>
+  <data name="SwitchOnBuiltInServer" xml:space="preserve">
+    <value>内置服务器已开启</value>
+  </data>
+  <data name="SwitchOffBuiltInServer" xml:space="preserve">
+    <value>内置服务器已关闭</value>
+  </data>
+  <data name="SwitchBuiltInServer" xml:space="preserve">
+    <value>开启/关闭 内置服务器</value>
+  </data>
+  <data name="SwitchMixedClientMode" xml:space="preserve">
+    <value>开启/关闭 客户端混合模式</value>
+  </data>
+  <data name="SwitchOnMixedClientMode" xml:space="preserve">
+    <value>客户端混合模式已开启</value>
+  </data>
+  <data name="SwitchOffMixedClientMode" xml:space="preserve">
+    <value>客户端混合模式已关闭</value>
+  </data>
+  <data name="SwitchImageAssistant" xml:space="preserve">
+    <value>开启/关闭 图片轻松拷贝</value>
+  </data>
+  <data name="SwitchOnImageAssistant" xml:space="preserve">
+    <value>图片轻松拷贝已开启</value>
+  </data>
+  <data name="SwitchOffImageAssistant" xml:space="preserve">
+    <value>图片轻松拷贝已关闭</value>
+  </data>
 </root>

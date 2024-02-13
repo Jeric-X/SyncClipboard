@@ -14,7 +14,7 @@ public class PageDefinition
     public static readonly PageDefinition Diagnose = new("Diagnose", I18n.Strings.Diagnose, "\uE9D9");
     public static readonly PageDefinition License = new("License", I18n.Strings.License);
     public static readonly PageDefinition NextCloudLogIn = new("NextCloudLogIn", I18n.Strings.UseNextcloud);
-    public static readonly PageDefinition Hotkey = new("Hotkey", "快捷键", "\uE144");
+    public static readonly PageDefinition Hotkey = new("Hotkey", I18n.Strings.Hotkeys, "\uE144");
 
     public PageDefinition(string name, string title, string? fontIcon = null)
     {
