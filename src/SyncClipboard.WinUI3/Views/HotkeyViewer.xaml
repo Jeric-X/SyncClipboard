@@ -6,7 +6,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mk="using:SyncClipboard.Core.Models.Keyboard"
              xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
-             x:Name="_HotkeyViewer"
              mc:Ignorable="d">
     <UserControl.Resources>
         <ResourceDictionary>

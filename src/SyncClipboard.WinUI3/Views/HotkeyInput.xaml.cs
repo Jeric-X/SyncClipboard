@@ -80,6 +80,7 @@ public sealed partial class HotkeyInput : UserControl
     {
         _keyboardHook?.Dispose();
         _keyboardHook = null;
+        _pressingKeys.Clear();
         base.OnLostFocus(e);
     }
 

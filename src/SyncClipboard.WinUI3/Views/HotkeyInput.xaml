@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="using:SyncClipboard.WinUI3.Views"
-             Name="_UserControl"
              IsHitTestVisible="True"
              mc:Ignorable="d">
     <local:HotkeyViewer x:Name="_HotkeyViewer"
