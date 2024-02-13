@@ -13,30 +13,30 @@
     <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageVersion Include="CodeCracker.CSharp" Version="1.1.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="11.0.6" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.0.6" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.0.6" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.0.6" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.0.6" />
-    <PackageVersion Include="FluentAvaloniaUI" Version="2.0.4" />
+    <PackageVersion Include="Avalonia" Version="11.0.9" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.0.9" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.0.9" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.0.9" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.0.9" />
+    <PackageVersion Include="FluentAvaloniaUI" Version="2.0.5" />
     <PackageVersion Include="FluentAvalonia.BreadcrumbBar" Version="2.0.2" />
-    <PackageVersion Include="Tmds.DBus" Version="0.15.0" />
+    <PackageVersion Include="Tmds.DBus" Version="0.16.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="3.1.1" />
-    <PackageVersion Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="3.2.0" />
+    <PackageVersion Include="MSTest.TestFramework" Version="3.2.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="Moq" Version="4.20.70" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.0.230907" />
     <PackageVersion Include="CommunityToolkit.WinUI.Converters" Version="8.0.240109" />
-    <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.0.123" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.4.231115000" />
+    <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.0.124" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.4.231219000" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.2428" />
     <PackageVersion Include="WinUIEx" Version="2.3.3" />
     <PackageVersion Include="Vanara.PInvoke.DbgHelp" Version="3.4.17" />
