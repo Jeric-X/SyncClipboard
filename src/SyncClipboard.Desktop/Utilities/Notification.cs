@@ -10,6 +10,10 @@ internal class Notification : INotification
         return new ProgressBar();
     }
 
+    public void Send(NotificationPara para)
+    {
+    }
+
     public void SendImage(string title, string text, Uri uri, params Button[] buttons)
     {
     }

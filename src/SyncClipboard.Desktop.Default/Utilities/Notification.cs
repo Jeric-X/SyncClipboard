@@ -32,15 +32,20 @@ internal sealed class Notification : INotification, IDisposable
 
     public void SendImage(string title, string text, Uri uri, params Button[] buttons)
     {
-        SendNotification(title, text, uri, buttons);
+        SendNotification(title, text, uri, buttons, null);
     }
 
     public void SendText(string title, string text, params Button[] buttons)
     {
-        SendNotification(title, text, null, buttons);
+        SendNotification(title, text, null, buttons, null);
     }
 
-    private void SendNotification(string title, string text, Uri? imageUri = null, params Button[] buttons)
+    public void Send(NotificationPara para)
+    {
+        SendNotification(para.Title, para.Text, para.Image, para.Buttons.ToArray(), para.Duration);
+    }
+
+    private void SendNotification(string title, string text, Uri? imageUri, Button[] buttons, TimeSpan? timeout)
     {
         List<string> actionList = new();
         foreach (var button in buttons)
@@ -64,7 +69,7 @@ internal sealed class Notification : INotification, IDisposable
                text,
                actionList.ToArray(),
                hintDictionary,
-               0
+               ((int?)timeout?.TotalMilliseconds) ?? 0
            )
         ).Result;
 

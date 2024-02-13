@@ -7,6 +7,7 @@ namespace SyncClipboard.Core.Utilities.Notification
     public class ToastSession
     {
         private readonly ToastNotifier _notifer;
+        private CancellationTokenSource? _durationCts;
 
         private readonly CallbackHandler<string> _callbackHandler;
         public static string Group => "DEFAULT_GROUP";
@@ -15,6 +16,7 @@ namespace SyncClipboard.Core.Utilities.Notification
         public string Title { get; set; }
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
+        public TimeSpan? Duration { get; set; }
         public Uri? Image { get; set; }
         public List<Button> Buttons { get; set; } = new();
         public ToastSession(string title, ToastNotifier notifier, CallbackHandler<string> callbackHandler)
@@ -74,6 +76,8 @@ namespace SyncClipboard.Core.Utilities.Notification
             {
                 _callbackHandler.OnClosed(Tag);
             }
+
+            CancelDurationTask();
         }
 
         private void Toast_Dismissed(ToastNotification sender, ToastDismissedEventArgs args)
@@ -81,17 +85,48 @@ namespace SyncClipboard.Core.Utilities.Notification
             if (args.Reason is ToastDismissalReason.UserCanceled)
             {
                 _callbackHandler.OnClosed(Tag);
+                CancelDurationTask();
+            }
+        }
+
+        private void CancelDurationTask()
+        {
+            var oldCts = Interlocked.Exchange(ref _durationCts, null);
+            oldCts?.Cancel();
+            oldCts?.Dispose();
+        }
+
+        private async void AfterShow()
+        {
+            CancelDurationTask();
+
+            if (Duration is not null)
+            {
+                var cts = new CancellationTokenSource();
+                try
+                {
+                    Interlocked.Exchange(ref _durationCts, cts);
+                    await Task.Delay(Duration.Value, cts.Token);
+                    Remove();
+                }
+                catch { }
+                finally
+                {
+                    CancelDurationTask();
+                }
             }
         }
 
         public virtual void Show()
         {
             _notifer.Show(GetToast(GetBuilder()));
+            AfterShow();
         }
 
         public virtual void ShowSilent()
         {
             _notifer.Show(GetToast(GetBuilder().AddAudio(null, null, true)));
+            AfterShow();
         }
 
         public virtual void Remove()

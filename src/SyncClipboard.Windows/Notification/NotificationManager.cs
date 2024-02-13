@@ -34,6 +34,17 @@ namespace SyncClipboard.Core.Utilities.Notification
             }.Show();
         }
 
+        public void Send(NotificationPara para)
+        {
+            new ToastSession(para.Title, Notifer, _callbackHandler)
+            {
+                Text1 = para.Text,
+                Buttons = new(para.Buttons),
+                Image = para.Image,
+                Duration = para.Duration,
+            }.Show();
+        }
+
         public IProgressBar CreateProgressNotification(string title)
         {
             return new ProgressBar(title, Notifer, _callbackHandler);
