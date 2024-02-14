@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.AbstractClasses;
 using SyncClipboard.Core.Interfaces;
@@ -54,7 +55,7 @@ internal class TrayIconContextMenu : ContextMenuBase
             ToggleType = NativeMenuItemToggleType.CheckBox
         };
 
-        menuitem.CheckedChanged += (bool status) => item.IsChecked = status;
+        menuitem.CheckedChanged += (bool status) => Dispatcher.UIThread.Post(() => item.IsChecked = status);
 
         if (menuitem.Action is not null)
         {

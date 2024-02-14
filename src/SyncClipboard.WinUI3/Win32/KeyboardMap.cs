@@ -11,7 +11,7 @@ internal static class KeyboardMap
         [Key.Ctrl] = HotKeyModifiers.MOD_CONTROL,
         [Key.Shift] = HotKeyModifiers.MOD_SHIFT,
         [Key.Alt] = HotKeyModifiers.MOD_ALT,
-        [Key.Win] = HotKeyModifiers.MOD_WIN
+        [Key.Meta] = HotKeyModifiers.MOD_WIN
     };
 
     public static readonly Dictionary<VK, Key> VirtualKeyMap = new()
@@ -24,6 +24,7 @@ internal static class KeyboardMap
         [VK.VK_CONTROL] = Key.Ctrl,
         [VK.VK_MENU] = Key.Alt,
         [VK.VK_PAUSE] = Key.Pause,
+        [VK.VK_CANCEL] = Key.Cancel,
         [VK.VK_CAPITAL] = Key.Capital,
         //[VK.VK_KANA] = Key.KANA,
         //[VK.VK_HANGUEL] = Key.HANGUEL,
@@ -91,8 +92,8 @@ internal static class KeyboardMap
         [VK.VK_X] = Key.X,
         [VK.VK_Y] = Key.Y,
         [VK.VK_Z] = Key.Z,
-        [VK.VK_LWIN] = Key.Win,
-        [VK.VK_RWIN] = Key.Win,
+        [VK.VK_LWIN] = Key.Meta,
+        [VK.VK_RWIN] = Key.Meta,
         [VK.VK_APPS] = Key.Apps,
         [VK.VK_SLEEP] = Key.Sleep,
         [VK.VK_NUMPAD0] = Key.NumPad0,
@@ -167,11 +168,11 @@ internal static class KeyboardMap
         [VK.VK_OEM_MINUS] = Key.Minus,
         [VK.VK_OEM_PERIOD] = Key.Period,
         [VK.VK_OEM_2] = Key.Slash,
-        [VK.VK_OEM_3] = Key.Backtick,
+        [VK.VK_OEM_3] = Key.BackQuote,
         [VK.VK_OEM_4] = Key.OpenBracket,
         [VK.VK_OEM_5] = Key.BackSlash,
         [VK.VK_OEM_6] = Key.CloshBracket,
-        [VK.VK_OEM_7] = Key.quote,
+        [VK.VK_OEM_7] = Key.Quote,
         [VK.VK_OEM_FJ_JISHO] = Key.OEM_FJ_JISHO,
         [VK.VK_OEM_FJ_MASSHOU] = Key.OEM_FJ_MASSHOU,
         [VK.VK_OEM_FJ_TOUROKU] = Key.OEM_FJ_TOUROKU,

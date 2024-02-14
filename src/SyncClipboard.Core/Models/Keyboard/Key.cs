@@ -1,21 +1,27 @@
 ﻿using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Attributes;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace SyncClipboard.Core.Models.Keyboard;
 
 [JsonConverter(typeof(JsonStringEnumConverterEx<Key>))]
 public enum Key
 {
+    #region Windows And Common
     Ctrl,
     Shift,
+    [PlatformString(nameof(Alt), Mac = "Option")]
     Alt,
-    Win,
+    [PlatformString(nameof(Meta), Windows = "Win", Mac = "Cmd")]
+    Meta,
     Backspace,
     Tab,
     Clear,
     Enter,
     Pause,
+    Cancel,
     [EnumMember(Value = "Caps Lock")]
     Capital,
     Kana,
@@ -126,6 +132,10 @@ public enum Key
     Decimal,
     [EnumMember(Value = "/ (NumPad)")]
     Divide,
+    [EnumMember(Value = "= (NumPad)")]
+    NumPadEqual,
+    [EnumMember(Value = "NumPad Return")]
+    NumPadReturn,
     F1,
     F2,
     F3,
@@ -202,7 +212,7 @@ public enum Key
     [EnumMember(Value = "/")]
     Slash,
     [EnumMember(Value = "`")]
-    Backtick,
+    BackQuote,
     [EnumMember(Value = "[")]
     OpenBracket,
     [EnumMember(Value = "\\")]
@@ -210,7 +220,7 @@ public enum Key
     [EnumMember(Value = "]")]
     CloshBracket,
     [EnumMember(Value = "'")]
-    quote,
+    Quote,
     OEM_FJ_JISHO,
     OEM_FJ_MASSHOU,
     OEM_FJ_TOUROKU,
@@ -242,6 +252,7 @@ public enum Key
     GAMEPAD_RIGHT_THUMBSTICK_LEFT,
     OEM_8,
     OEM_AX,
+    [PlatformString("<>", Mac = "§")]
     OEM_102,
     PROCESSKEY,
     ICO_CLEAR,
@@ -268,4 +279,27 @@ public enum Key
     NONAME,
     PA1,
     OEM_CLEAR,
+    #endregion Windows And Common
+    #region MacOS and Linux
+    Function,
+    ChangeInputSource,
+    Power,
+    [EnumMember(Value = "Media Eject")]
+    MediaEject,
+    [EnumMember(Value = "Start App 3")]
+    LaunchApp3,
+    [EnumMember(Value = "Start App 4")]
+    LaunchApp4,
+    [EnumMember(Value = "Start Browser")]
+    LaunchBrowser,
+    [EnumMember(Value = "Start Calculator")]
+    LaunchCalculator,
+    KatakanaHiragana,
+    Katakana,
+    Hiragana,
+    Alphanumeric,
+    Underscore,
+    Yen,
+    JpComma
+    #endregion MacOS and Linux
 }

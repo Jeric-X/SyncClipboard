@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
+using SharpHook;
 using SyncClipboard.Abstract;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core;
@@ -31,7 +32,10 @@ public class AppServices
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
-        services.AddTransient<INativeHotkeyRegistry, NativeHotkeyRegistryStub>();
+        // services.AddTransient<INativeHotkeyRegistry, NativeHotkeyRegistryStub>();
+
+        services.AddSingleton<INativeHotkeyRegistry, SharpHookHotkeyRegistry>();
+        services.AddSingleton<IGlobalHook, SimpleGlobalHook>();
 
         services.AddTransient<IFontManager, FontManager>();
 
