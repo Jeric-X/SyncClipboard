@@ -1,4 +1,5 @@
-﻿using SharpHook;
+﻿using Avalonia.Threading;
+using SharpHook;
 using SharpHook.Native;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
@@ -39,7 +40,8 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 
         if (_regestedHotkeys.TryGetValue(CreateHotkey(), out var action))
         {
-            action.Invoke();
+            e.SuppressEvent = true;
+            Dispatcher.UIThread.Invoke(action);
         }
     }
 
@@ -53,6 +55,8 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 
     public bool IsValidHotkeyForm(Hotkey hotkey)
     {
+        if (hotkey.Keys.Length > 5)
+            return false;
         return true;
     }
 
@@ -66,9 +70,12 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         _regestedHotkeys.Remove(hotkey);
     }
 
+    ~SharpHookHotkeyRegistry() => Dispose();
+
     public void Dispose()
     {
         _globalHook.KeyPressed -= KeyPressed;
         _globalHook.KeyReleased -= KeyReleased;
+        GC.SuppressFinalize(this);
     }
 }

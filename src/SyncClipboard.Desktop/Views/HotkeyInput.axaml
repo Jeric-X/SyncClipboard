@@ -1,0 +1,11 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.HotkeyInput"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="using:SyncClipboard.Desktop.Views"
+             x:Name="_HotkeyInput"
+             Focusable="True"
+             mc:Ignorable="d">
+    <local:HotkeyViewer x:Name="_HotkeyViewer" IsError="{Binding #_HotkeyInput.IsError, Mode=OneWay}" Hotkey="{Binding #_HotkeyInput.Hotkey, Mode=OneWay}" />
+</UserControl>

@@ -1,5 +1,6 @@
 0.5.2.1
 - 新增：本机同步关闭时状态栏图标显示为灰色
+- 新增：快捷键系统（不支持Linux Wayland）
 
 0.5.2
 - 新增：支持信任不安全的HTTPS证书(https://github.com/Jeric-X/SyncClipboard/issues/37)

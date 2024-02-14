@@ -477,4 +477,10 @@
   <data name="SwitchOffImageAssistant" xml:space="preserve">
     <value>Switch Off Image Assistant</value>
   </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="OpenMainUI" xml:space="preserve">
+    <value>Open Main UI</value>
+  </data>
 </root>

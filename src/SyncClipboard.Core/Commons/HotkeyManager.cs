@@ -36,6 +36,11 @@ public class HotkeyManager
         {
             return true;
         }
+
+        if (!_nativeHotkeyRegistry.IsValidHotkeyForm(hotkey))
+        {
+            return false;
+        }
         return _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, action);
     }
 

@@ -691,6 +691,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Open Main UI 的本地化字符串。
+        /// </summary>
+        public static string OpenMainUI {
+            get {
+                return ResourceManager.GetString("OpenMainUI", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Open Source Dependencies 的本地化字符串。
         /// </summary>
         public static string OpenSourceDependencies {
@@ -984,6 +993,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Syncing {
             get {
                 return ResourceManager.GetString("Syncing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 System 的本地化字符串。
+        /// </summary>
+        public static string System {
+            get {
+                return ResourceManager.GetString("System", resourceCulture);
             }
         }
         

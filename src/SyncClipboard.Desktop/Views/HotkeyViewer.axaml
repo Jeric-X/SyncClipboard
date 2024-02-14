@@ -39,6 +39,7 @@
             <DataTemplate x:DataType="mk:Key">
                 <ToggleButton MinWidth="{Binding $self.Bounds.Height, Mode=OneWay}"
                               VerticalAlignment="Stretch"
+                              FontSize="{Binding #_HotkeyViewer.FontSize}"
                               IsChecked="{Binding !#_HotkeyViewer.IsError, Mode=OneWay}"
                               IsHitTestVisible="False"
                               Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}" />

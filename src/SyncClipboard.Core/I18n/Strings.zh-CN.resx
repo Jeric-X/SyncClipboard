@@ -477,4 +477,10 @@
   <data name="SwitchOffImageAssistant" xml:space="preserve">
     <value>图片轻松拷贝已关闭</value>
   </data>
+  <data name="System" xml:space="preserve">
+    <value>系统</value>
+  </data>
+  <data name="OpenMainUI" xml:space="preserve">
+    <value>打开主界面</value>
+  </data>
 </root>

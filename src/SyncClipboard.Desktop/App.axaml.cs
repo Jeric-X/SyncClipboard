@@ -60,7 +60,9 @@ public partial class App : Application
         }
         else
         {
+#if !DEBUG
             throw new NotImplementedException("Not support this system.");
+#endif
         }
         base.OnFrameworkInitializationCompleted();
 
