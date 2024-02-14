@@ -1,0 +1,48 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.HotkeyViewer"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+             xmlns:mk="using:SyncClipboard.Core.Models.Keyboard"
+             x:Name="_HotkeyViewer"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <vc:KeyToJsonStringConverter x:Key="KeyToJsonStringConverter" />
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="KeybordButtonBorderColor">#c42b1c</Color>
+                    <Color x:Key="KeybordButtonBackgoundColor">#fde7e9</Color>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="KeybordButtonBorderColor">#ff99a4</Color>
+                    <Color x:Key="KeybordButtonBackgoundColor">#442726</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="ToggleButton:unchecked">
+            <Setter Property="Background" Value="{DynamicResource KeybordButtonBackgoundColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource KeybordButtonBorderColor}" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
+    </UserControl.Styles>
+    <ItemsRepeater HorizontalAlignment="Center" ItemsSource="{Binding #_HotkeyViewer.Hotkey.Keys, Mode=OneWay}">
+        <ItemsRepeater.Layout>
+            <StackLayout Orientation="Horizontal" Spacing="4" />
+        </ItemsRepeater.Layout>
+        <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="mk:Key">
+                <ToggleButton MinWidth="{Binding $self.Bounds.Height, Mode=OneWay}"
+                              VerticalAlignment="Stretch"
+                              IsChecked="{Binding !#_HotkeyViewer.IsError, Mode=OneWay}"
+                              IsHitTestVisible="False"
+                              Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}" />
+            </DataTemplate>
+        </ItemsRepeater.ItemTemplate>
+    </ItemsRepeater>
+</UserControl>

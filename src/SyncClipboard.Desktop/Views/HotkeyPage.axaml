@@ -1,0 +1,85 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.HotkeyPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:local="using:SyncClipboard.Desktop.Views"
+             x:DataType="vm:HotkeyViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:HotkeyViewModel />
+    </Design.DataContext>
+    <UserControl.Styles>
+        <Style Selector="Button">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="FontSize" Value="18" />
+        </Style>
+    </UserControl.Styles>
+    <Grid>
+        <ItemsRepeater ItemsSource="{Binding CommandCollections, Mode=OneWay}">
+            <ItemsRepeater.Layout>
+                <StackLayout Orientation="Vertical" Spacing="10" />
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="vm:CommandCollectionViewModel">
+                    <ui:SettingsExpander Header="{Binding Name}"
+                                         IsExpanded="False"
+                                         ItemsSource="{Binding Commands}"
+                                         Loaded="SettingsExpander_Loaded">
+                        <ui:SettingsExpander.IconSource>
+                            <ui:FontIconSource Glyph="{Binding FontIcon, Mode=OneTime}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </ui:SettingsExpander.IconSource>
+                        <ui:SettingsExpander.ItemTemplate>
+                            <DataTemplate x:DataType="vm:UniqueCommandViewModel">
+                                <ui:SettingsExpanderItem Content="{Binding Name}">
+                                    <ui:SettingsExpanderItem.Footer>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button IsVisible="{Binding IsError}">
+                                                <ui:FontIcon Glyph="&#xE7BA;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                                <Button.Flyout>
+                                                    <Flyout>
+                                                        <TextBlock Text="Hotkey created failed." TextWrapping="Wrap" />
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                            <local:HotkeyViewer Margin="5,0,10,0" IsError="{Binding IsError}" Hotkey="{Binding Hotkey}" />
+                                            <Button ToolTip.Tip="{x:Static i18n:Strings.Edit}" Click="EditButtonClick" DataContext="{Binding Guid}">
+                                                <ui:FontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                            </Button>
+                                            <Button Click="SetToDefaultButtonClick" DataContext="{Binding Guid}" ToolTip.Tip="{x:Static i18n:Strings.ResetToDefault}">
+                                                <ui:FontIcon Glyph="&#xE7A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                            </Button>
+                                        </StackPanel>
+                                    </ui:SettingsExpanderItem.Footer>
+                                </ui:SettingsExpanderItem>
+                            </DataTemplate>
+                        </ui:SettingsExpander.ItemTemplate>
+                    </ui:SettingsExpander>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+        <!--<ContentDialog x:Name="_HotkeyInputDialog"
+                       IsPrimaryButtonEnabled="{x:Bind _viewModel.SetHotkeyCanExecute, Mode=OneWay}"
+                       PrimaryButtonCommand="{x:Bind _viewModel.SetHotkeyCommand}"
+                       SecondaryButtonClick="ClearButtonClick"
+                       SecondaryButtonText="{x:Bind i18n:Strings.Clear}"
+                       CloseButtonText="{x:Bind i18n:Strings.Cancel}"
+                       PrimaryButtonText="{x:Bind i18n:Strings.Confirm}">
+        -->
+        <!--<local:HotkeyInput x:Name="_HotkeyInput"
+                         Width="500"
+                         Height="60"
+                         IsError="{x:Bind _viewModel.IsEditingHasError, Mode=OneWay}"
+                         FontSize="20"
+                         Hotkey="{x:Bind _viewModel.EditingHotkey, Mode=TwoWay}" />-->
+        <!--
+        </ContentDialog>-->
+    </Grid>
+</UserControl>

@@ -1,8 +1,7 @@
 ﻿using Microsoft.UI.Xaml.Data;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Utilities;
 using System;
-using System.Linq;
-using System.Runtime.Serialization;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
 
@@ -10,15 +9,10 @@ public class KeyToJsonStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        var enumType = typeof(Key);
-        var name = Enum.GetName(typeof(Key), value);
-        var attribute = enumType.GetField(name ?? "")?.GetCustomAttributes(false).OfType<EnumMemberAttribute>().SingleOrDefault();
-        if (attribute?.Value != null)
-        {
-            return attribute.Value;
-        }
+        if (value is not Key key)
+            return null!;
 
-        return value.ToString()!;
+        return key.ToEnumMemberValue();
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

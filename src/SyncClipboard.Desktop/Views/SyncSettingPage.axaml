@@ -17,11 +17,10 @@
     </Design.DataContext>
     <UserControl.Styles>
         <Style Selector="Button">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="BorderThickness" Value="0,0,0,0" />
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FontSize" Value="20" />
         </Style>
         <Style Selector="ToggleButton.FontIcon">
             <Setter Property="Height" Value="32" />
@@ -58,7 +57,8 @@
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MixedClientMode}">
                     <ui:SettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Button FontSize="20" Content="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}">
+                            <Button>
+                                <ui:FontIcon Glyph="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 <Button.Flyout>
                                     <Flyout>
                                         <TextBlock Width="400" TextWrapping="Wrap">
