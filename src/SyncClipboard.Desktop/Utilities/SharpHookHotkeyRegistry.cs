@@ -22,7 +22,6 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         _globalHook = globalHook;
         _globalHook.KeyPressed += KeyPressed;
         _globalHook.KeyReleased += KeyReleased;
-        _globalHook.RunAsync();
     }
 
     private void KeyReleased(object? sender, KeyboardHookEventArgs e)
@@ -62,12 +61,26 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 
     public bool RegisterForSystemHotkey(Hotkey hotkey, Action action)
     {
-        return _regestedHotkeys.TryAdd(hotkey, action);
+        CheckGlobalHook();
+        return _globalHook.IsRunning && _regestedHotkeys.TryAdd(hotkey, action);
     }
 
     public void UnRegisterForSystemHotkey(Hotkey hotkey)
     {
         _regestedHotkeys.Remove(hotkey);
+    }
+
+    public void CheckGlobalHook()
+    {
+        if (_globalHook.IsRunning)
+            return;
+        lock (this)
+        {
+            if (_globalHook.IsRunning is false)
+            {
+                _globalHook.RunAsync();
+            }
+        }
     }
 
     ~SharpHookHotkeyRegistry() => Dispose();

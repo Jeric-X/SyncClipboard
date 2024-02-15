@@ -52,6 +52,7 @@ public partial class HotkeyInput : UserControl
         _hotkeyRegistry = App.Current.Services.GetService<INativeHotkeyRegistry>() as SharpHookHotkeyRegistry;
         if (_hotkeyRegistry != null)
         {
+            _hotkeyRegistry.CheckGlobalHook();
             _hotkeyRegistry.SupressHotkey = true;
         }
         _globalHook.KeyReleased -= OnKeyUp;

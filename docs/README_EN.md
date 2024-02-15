@@ -207,3 +207,4 @@ DELETE      /file
 [FluentAvalonia](https://github.com/amwx/FluentAvalonia)  
 [Vanara](https://github.com/dahall/Vanara)  
 [Tmds.DBus](https://github.com/tmds/Tmds.DBus)  
+[SharpHook](https://github.com/TolikPylypchuk/SharpHook)  

@@ -32,10 +32,9 @@ public class AppServices
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
-        // services.AddTransient<INativeHotkeyRegistry, NativeHotkeyRegistryStub>();
 
         services.AddSingleton<INativeHotkeyRegistry, SharpHookHotkeyRegistry>();
-        services.AddSingleton<IGlobalHook, SimpleGlobalHook>();
+        services.AddSingleton<IGlobalHook>((sp) => new SimpleGlobalHook(true));
 
         services.AddTransient<IFontManager, FontManager>();
 

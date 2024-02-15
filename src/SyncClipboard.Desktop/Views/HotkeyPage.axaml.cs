@@ -42,7 +42,7 @@ public partial class HotkeyPage : UserControl
             }
         };
         dialog.SecondaryButtonClick += ClearButtonClick;
-        await dialog.ShowAsync();
+        await dialog.ShowAsync(App.Current.MainWindow);
     }
 
     private Binding ViewModelBinding(string path, BindingMode mode = BindingMode.Default)

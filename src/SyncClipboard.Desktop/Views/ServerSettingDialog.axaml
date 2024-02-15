@@ -7,6 +7,11 @@
              d:DesignWidth="800"
              d:DesignHeight="450"
              mc:Ignorable="d">
+    <UserControl.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
     <ScrollViewer Padding="0,0,10,0" VerticalScrollBarVisibility="Auto">
         <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="12">
             <TextBlock x:Name="_UrlTitle" />

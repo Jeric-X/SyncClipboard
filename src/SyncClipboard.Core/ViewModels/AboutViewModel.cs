@@ -71,6 +71,7 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("FluentAvalonia.BreadcrumbBar", "https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar", "FluentAvalonia.BreadcrumbBar/LICENSE.txt"),
         new OpenSourceSoftware("Vanara", "https://github.com/dahall/Vanara", "Vanara/LICENSE.txt"),
         new OpenSourceSoftware("Tmds.DBus", "https://github.com/tmds/Tmds.DBus", "Tmds.DBus/LICENSE.txt"),
+        new OpenSourceSoftware("SharpHook", "https://github.com/TolikPylypchuk/SharpHook", "SharpHook/LICENSE.txt"),
     };
 
     [RelayCommand]
