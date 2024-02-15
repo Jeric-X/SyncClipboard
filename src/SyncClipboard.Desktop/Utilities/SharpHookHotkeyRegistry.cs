@@ -6,6 +6,7 @@ using SyncClipboard.Core.Models.Keyboard;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace SyncClipboard.Desktop.Utilities;
 
@@ -79,6 +80,7 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
             if (_globalHook.IsRunning is false)
             {
                 _globalHook.RunAsync();
+                Thread.Sleep(500);
             }
         }
     }

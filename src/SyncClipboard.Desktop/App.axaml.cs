@@ -90,9 +90,4 @@ public partial class App : Application
         ProgramWorkflow.Stop();
         _appLife.Shutdown();
     }
-
-    private void NativeMenuItem_Click(object? sender, System.EventArgs e)
-    {
-        ExitApp();
-    }
 }

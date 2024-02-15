@@ -73,6 +73,11 @@ internal sealed class Notification : INotification, IDisposable
            )
         ).Result;
 
+        if (timeout is not null)
+        {
+            Task.Delay(timeout.Value).ContinueWith((_) => _dBusInstance.CloseNotificationAsync(id));
+        }
+
         _callbackHandler.AddButtons(id, buttons);
     }
 
