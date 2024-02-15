@@ -53,7 +53,7 @@ namespace SyncClipboard.Core
             InitTrayIcon();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
             contextMenu.AddMenuItemGroup(new MenuItem[] { new(Strings.Exit, mainWindow.ExitApp) });
-            ShowMainWindow(configManager);
+            ShowMainWindow(configManager, mainWindow);
             CheckUpdate();
         }
 
@@ -88,14 +88,16 @@ namespace SyncClipboard.Core
             trayIcon.Create();
         }
 
-        private void ShowMainWindow(ConfigManager configManager)
+        private static void ShowMainWindow(ConfigManager configManager, IMainWindow mainWindow)
         {
             var config = configManager.GetConfig<ProgramConfig>();
 
-            var mainWindow = Services.GetRequiredService<IMainWindow>();
             mainWindow.SetFont(config.Font);
             mainWindow.ChangeTheme(config.Theme);
-            mainWindow.Init(config.HideWindowOnStartup);
+            if (config.HideWindowOnStartup is false)
+            {
+                mainWindow.Show();
+            }
         }
 
         private async void CheckUpdate()

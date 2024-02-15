@@ -197,14 +197,6 @@ namespace SyncClipboard.WinUI3.Views
             App.Current.ExitApp();
         }
 
-        public void Init(bool hide)
-        {
-            if (!hide)
-            {
-                Show();
-            }
-        }
-
         public void ChangeTheme(string theme)
         {
             ((FrameworkElement)Content).RequestedTheme = theme switch

@@ -109,14 +109,6 @@ public partial class MainWindow : Window, IMainWindow
         }
     }
 
-    public virtual void Init(bool hide)
-    {
-        if (!hide)
-        {
-            Show();
-        }
-    }
-
     public void ChangeTheme(string theme)
     {
         App.Current.RequestedThemeVariant = theme switch
