@@ -1,19 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using SyncClipboard.Core.ViewModels.Sub;
 using System.ComponentModel;
 
 namespace SyncClipboard.Core.ViewModels;
-
-public partial class ServiceStatus : ObservableObject
-{
-    [ObservableProperty]
-    private bool isError = false;
-
-    [ObservableProperty]
-    private string statusString = "";
-
-    [ObservableProperty]
-    private string name = "";
-}
 
 public partial class ServiceStatusViewModel : ObservableObject
 {

@@ -137,7 +137,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     private void ActiveStatusString()
     {
-        var eachMaxLenth = MaxToolTipLenth / _statusList.Count - 1;
+        var eachMaxLenth = (MaxToolTipLenth / _statusList.Count) - 1;
 
         var ajustedList = _statusList.Select(status =>
         {

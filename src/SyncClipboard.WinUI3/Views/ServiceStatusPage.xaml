@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="using:CommunityToolkit.WinUI.Controls"
+      xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       MinWidth="550"
       BorderBrush="Transparent"
@@ -15,7 +16,7 @@
                 <StackLayout Orientation="Vertical" Spacing="10" />
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
-                <DataTemplate x:DataType="vm:ServiceStatus">
+                <DataTemplate x:DataType="vms:ServiceStatus">
                     <ui:SettingsCard MinHeight="0" Header="{x:Bind Name, Mode=OneWay}" Description="{x:Bind StatusString, Mode=OneWay}">
                         <ui:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="{x:Bind vm:Converter.ServiceStatusToFontIcon(IsError), Mode=OneWay}" />

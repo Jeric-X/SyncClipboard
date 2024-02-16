@@ -26,7 +26,7 @@ function loop() {
             if (ifContinue)
                 download()
         })
-        .then(_ => { running = false })
+        .then(() => { running = false })
         .catch(error => {
             running = false
             toast('Failed: \n' + error)

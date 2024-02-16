@@ -1,4 +1,5 @@
 ﻿using SyncClipboard.Abstract;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Models;
 
@@ -34,26 +35,16 @@ public record class ClipboardMetaInfomation
 
     public override int GetHashCode()
     {
-        return ((((EqualityContract.GetHashCode() * -1521134295
-            + Text?.GetHashCode() ?? 0) * -1521134295
-            + Html?.GetHashCode() ?? 0) * -1521134295
-            + GetFileHashCode()) * -1521134295
-            + Effects?.GetHashCode() ?? 0) * -1521134295
-            + OriginalType?.GetHashCode() ?? 0;
-    }
-
-    private int GetFileHashCode()
-    {
-        if (Files is null)
+        List<int> hashList = new()
         {
-            return 0;
-        }
+            EqualityContract.GetHashCode(),
+            Text?.GetHashCode() ?? 0,
+            Html?.GetHashCode() ?? 0,
+            Files?.ListHashCode() ?? 0,
+            Effects?.GetHashCode() ?? 0,
+            OriginalType?.GetHashCode() ?? 0,
+        };
 
-        int hash = 0;
-        foreach (var file in Files)
-        {
-            hash = hash * -1521134295 + file.GetHashCode();
-        }
-        return hash;
+        return hashList.ListHashCode();
     }
 }

@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
              xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
              d:DesignWidth="800"
              d:DesignHeight="450"
@@ -22,7 +23,7 @@
                 <StackLayout Orientation="Vertical" Spacing="10" />
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
-                <DataTemplate x:DataType="vm:ServiceStatus">
+                <DataTemplate x:DataType="vms:ServiceStatus">
                     <ui:SettingsExpander Header="{Binding Name, Mode=OneWay}" Description="{Binding StatusString, Mode=OneWay}">
                         <ui:SettingsExpander.IconSource>
                             <ui:FontIconSource Glyph="{Binding IsError, Converter={StaticResource BoolToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
