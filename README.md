@@ -27,14 +27,13 @@
     - [获取/上传剪贴板（文字）](#获取上传剪贴板文字)
     - [获取/上传剪贴板（图片/文件）](#获取上传剪贴板图片文件)
     - [SyncClipboard.json](#syncclipboardjson)
-    - [其他查询/创建/删除](#其他查询创建删除)
   - [项目依赖](#项目依赖)
 
 </details>
 
 ## 功能
 
-- 剪贴板同步，使用WebDAV服务器（或软件内置服务器）作为中转站，支持文字、图片和文件  
+- 剪贴板同步，支持文字、图片和文件。服务器/客户端架构，可以独立部署服务器，也可以使用支持WebDAV的网盘作为服务器  
 - 优化图片类型的剪贴板，功能有：
   - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件，反之亦然
   - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器拷贝动态图的问题（大多网站有认证，适用范围有限，支持bilibili动态图片）
@@ -107,8 +106,9 @@ docker run -d \
 - 名称中带有`self-contained`：通常可以直接运行
 - 删除软件时，配置文件目录不会被删除，配置文件储存在`~/.config/SyncClipboard/`(Linux)，`~/Library/Application Support/SyncClipboard/`(macOS)，需要彻底删除软件时请手动删除整个目录
 - 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
-- Linux: 快捷键系统在Wayland不可用
+- Linux: 快捷键在Wayland不可用
 - macOS：`“SyncClipboard”已损坏，无法打开`，在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
+- macOS: 快捷键依赖辅助功能权限(Aaccessibility)，软件在需要时会弹窗提示（所有快捷键为空时则不需要），安装新版本时可能需要在设置里先手动移除已存在的权限，再根据弹窗授予新的权限
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
@@ -152,7 +152,7 @@ Autox.js脚本运行在后台时可以自动下载远程剪贴板文字到本地
 
 ### 客户端配置说明
 
-全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。windows端可以自定义修改更多配置
+全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。
 - user
 - password
 - url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，例如`https://domain.com/dav/folder1/working%20folder`，特殊符号需要使用url转义字符代替，不要使用这个文件夹存储其他文件。不使用桌面客户端（Windows/Linux/macOS）时需在工作目录中再创建`file`文件夹以同步文件，桌面客户端会在设置服务器时自动创建`file`文件夹
@@ -190,14 +190,6 @@ PUT /SyncClipboard.json
     "Clipboard": "md5 hash, optional",
     "File": "filename"
 }
-```
-
-### 其他查询/创建/删除
-```
-PROPFIND    /
-PROPFIND    /file
-MKCOL       /file
-DELETE      /file
 ```
 
 ## 项目依赖

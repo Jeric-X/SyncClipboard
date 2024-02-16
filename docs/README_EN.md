@@ -25,14 +25,13 @@
     - [Download/Upload Text](#downloadupload-text)
     - [Download/Upload File/Image](#downloadupload-fileimage)
     - [SyncClipboard.json](#syncclipboardjson)
-    - [Others](#others)
   - [Open Source Dependencies](#open-source-dependencies)
 
 </details>
 
 ## Features
 
-- Clipboard syncing, using a WebDAV server or built-in server, supporting text/image/file.  
+- Clipboard syncing, supporting text/image/file, client-server architecture. You can also use a WebDAV compatible netdisk as server.
 - Optimize image type clipboard:
   - Paste image to a textbox directly after copying a image file from file system, and vice versa.
   - Download the original file and copy it after copying a image in web browser. This is helpful for copying an animated image in browser. Web sites always prevent downloads from non-browser, so this feature isn't always usable.
@@ -106,8 +105,9 @@ Notes:
 - File name with `self-contained`: should run with no dependencies.
 - Config files are saved in `~/.config/SyncClipboard/`(Linux), `~/Library/Application Support/SyncClipboard/`(macOS). Uninstaller won't delete them. Users can delete them manually.
 - Not suport upgrading directly with `deb` or `rpm` package. Delete old version first, then install the new version.
-- Linux: Hotkey system is not supported on Wayland.
+- Linux: Hotkey is not supported on Wayland.
 - macOS: `"SyncClipboard" is damaged, can't be opened`. Use the following command in terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
+- macOS: Hotkey requires Accessibility permission. After installing a new version, maybe you have to remove the old permission in System Settings first, then permit a new one.
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
@@ -186,14 +186,6 @@ PUT /SyncClipboard.json
     "Clipboard": "md5 hash, optional",
     "File": "filename"
 }
-```
-
-### Others
-```
-PROPFIND    /
-PROPFIND    /file
-MKCOL       /file
-DELETE      /file
 ```
 
 ## Open Source Dependencies
