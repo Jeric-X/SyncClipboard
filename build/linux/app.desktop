@@ -9,5 +9,6 @@ NoDisplay=${DESKTOP_NODISPLAY}
 X-AppImage-Integrate=${DESKTOP_INTEGRATE}
 Terminal=${DESKTOP_TERMINAL}
 Categories=${PRIME_CATEGORY}
+StartupWMClass=${APP_BASE_NAME}
 MimeType=
 Keywords=
