@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +20,10 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
     private readonly Dictionary<Hotkey, Action> _registedHotkeys = new();
 
     private readonly AutoResetEvent _globalHookRunEvent = new(false);
-    private bool _needMasOSPermission = false;
+
+    [DllImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
+    private extern static bool AXIsProcessTrusted();
+    private bool _newPermissionApplied = false;
 
     public bool SupressHotkey { get; set; } = false;
 
@@ -82,13 +86,17 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         _registedHotkeys.Remove(hotkey);
     }
 
-    private void CheckMacOSPermission()
+    private void CheckForMacPermission()
     {
-        if (OperatingSystem.IsMacOS() && _needMasOSPermission)
+        if (OperatingSystem.IsMacOS() && AXIsProcessTrusted() is false)
         {
+            if (_newPermissionApplied)
+                return;
+
+            _newPermissionApplied = true;
             try
             {
-                Process.Start("tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard");
+                Process.Start("tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard").WaitForExit(1000);
             }
             catch (Exception ex)
             {
@@ -107,20 +115,13 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
             if (_globalHook.IsRunning)
                 return;
 
-            CheckMacOSPermission();
+            CheckForMacPermission();
             Task.Run(_globalHook.Run).ContinueWith(task =>
             {
-                if (task.Exception?.InnerException is HookException hookException)
-                {
-                    if (hookException.Result is UioHookResult.ErrorAxApiDisabled)
-                    {
-                        _needMasOSPermission = true;
-                    }
-                }
                 _globalHookRunEvent.Set();
             }, TaskContinuationOptions.NotOnRanToCompletion);
 
-            _globalHookRunEvent.WaitOne(TimeSpan.FromSeconds(0.5));
+            _globalHookRunEvent.WaitOne(TimeSpan.FromSeconds(1));
         }
     }
 
