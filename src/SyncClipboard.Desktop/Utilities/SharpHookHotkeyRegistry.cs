@@ -5,8 +5,10 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Utilities;
 
@@ -14,7 +16,10 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 {
     private readonly IGlobalHook _globalHook;
     private readonly HashSet<KeyCode> _pressingKeys = new();
-    private readonly Dictionary<Hotkey, Action> _regestedHotkeys = new();
+    private readonly Dictionary<Hotkey, Action> _registedHotkeys = new();
+
+    private readonly AutoResetEvent _globalHookRunEvent = new(false);
+    private bool _needMasOSPermission = false;
 
     public bool SupressHotkey { get; set; } = false;
 
@@ -23,6 +28,12 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         _globalHook = globalHook;
         _globalHook.KeyPressed += KeyPressed;
         _globalHook.KeyReleased += KeyReleased;
+        _globalHook.HookEnabled += HookEnabled;
+    }
+
+    private void HookEnabled(object? sender, HookEventArgs e)
+    {
+        _globalHookRunEvent.Set();
     }
 
     private void KeyReleased(object? sender, KeyboardHookEventArgs e)
@@ -38,7 +49,7 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         }
         _pressingKeys.Add(e.Data.KeyCode);
 
-        if (_regestedHotkeys.TryGetValue(CreateHotkey(), out var action))
+        if (_registedHotkeys.TryGetValue(CreateHotkey(), out var action))
         {
             e.SuppressEvent = true;
             Dispatcher.UIThread.Invoke(action);
@@ -63,25 +74,53 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
     public bool RegisterForSystemHotkey(Hotkey hotkey, Action action)
     {
         CheckGlobalHook();
-        return _globalHook.IsRunning && _regestedHotkeys.TryAdd(hotkey, action);
+        return _globalHook.IsRunning && _registedHotkeys.TryAdd(hotkey, action);
     }
 
     public void UnRegisterForSystemHotkey(Hotkey hotkey)
     {
-        _regestedHotkeys.Remove(hotkey);
+        _registedHotkeys.Remove(hotkey);
+    }
+
+    private void CheckMacOSPermission()
+    {
+        if (OperatingSystem.IsMacOS() && _needMasOSPermission)
+        {
+            try
+            {
+                Process.Start("tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard");
+            }
+            catch (Exception ex)
+            {
+                App.Current.Logger.Write(ex.Message);
+            }
+        }
     }
 
     public void CheckGlobalHook()
     {
         if (_globalHook.IsRunning)
             return;
+
         lock (this)
         {
-            if (_globalHook.IsRunning is false)
+            if (_globalHook.IsRunning)
+                return;
+
+            CheckMacOSPermission();
+            Task.Run(_globalHook.Run).ContinueWith(task =>
             {
-                _globalHook.RunAsync();
-                Thread.Sleep(500);
-            }
+                if (task.Exception?.InnerException is HookException hookException)
+                {
+                    if (hookException.Result is UioHookResult.ErrorAxApiDisabled)
+                    {
+                        _needMasOSPermission = true;
+                    }
+                }
+                _globalHookRunEvent.Set();
+            }, TaskContinuationOptions.NotOnRanToCompletion);
+
+            _globalHookRunEvent.WaitOne(TimeSpan.FromSeconds(0.5));
         }
     }
 
