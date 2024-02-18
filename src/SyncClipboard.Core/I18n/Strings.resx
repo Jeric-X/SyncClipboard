@@ -121,7 +121,7 @@
     <value>Auto detect</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>Built-In Server</value>
+    <value>Server</value>
   </data>
   <data name="SystemSettings" xml:space="preserve">
     <value>Settings</value>
@@ -488,5 +488,11 @@
   </data>
   <data name="DownloadOnce" xml:space="preserve">
     <value>Download Once Immediately</value>
+  </data>
+  <data name="ServerDescription" xml:space="preserve">
+    <value>Only one server is needed in entire sync network</value>
+  </data>
+  <data name="UseBuiltInServerDescription" xml:space="preserve">
+    <value>Connect to built-in server directly without configuration</value>
   </data>
 </root>

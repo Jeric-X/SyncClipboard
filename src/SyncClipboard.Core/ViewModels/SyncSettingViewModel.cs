@@ -36,7 +36,7 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnSyncEnableChanged(bool value) => ClientConfig = ClientConfig with { SyncSwitchOn = value };
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UserManulServer))]
+    [NotifyPropertyChangedFor(nameof(UseManulServer))]
     private bool useLocalServer;
     partial void OnUseLocalServerChanged(bool value) => ClientConfig = ClientConfig with { UseLocalServer = value };
 
@@ -92,7 +92,7 @@ public partial class SyncSettingViewModel : ObservableObject
 
     public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
 
-    public bool UserManulServer => !UseLocalServer;
+    public bool UseManulServer => !UseLocalServer;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]

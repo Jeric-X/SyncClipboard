@@ -844,11 +844,20 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Built-In Server 的本地化字符串。
+        ///   查找类似 Server 的本地化字符串。
         /// </summary>
         public static string Server {
             get {
                 return ResourceManager.GetString("Server", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Only one server is needed in entire sync network 的本地化字符串。
+        /// </summary>
+        public static string ServerDescription {
+            get {
+                return ResourceManager.GetString("ServerDescription", resourceCulture);
             }
         }
         
@@ -1128,6 +1137,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UploadService {
             get {
                 return ResourceManager.GetString("UploadService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Connect to built-in server directly without configuration 的本地化字符串。
+        /// </summary>
+        public static string UseBuiltInServerDescription {
+            get {
+                return ResourceManager.GetString("UseBuiltInServerDescription", resourceCulture);
             }
         }
         

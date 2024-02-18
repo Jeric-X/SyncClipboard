@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Server" xml:space="preserve">
-    <value>内置服务器</value>
+    <value>服务器</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>设置</value>
@@ -488,5 +488,11 @@
   </data>
   <data name="DownloadOnce" xml:space="preserve">
     <value>立刻下载远程到本地</value>
+  </data>
+  <data name="ServerDescription" xml:space="preserve">
+    <value>整个同步网络只需开启一个服务器</value>
+  </data>
+  <data name="UseBuiltInServerDescription" xml:space="preserve">
+    <value>本机服务器开启时，可免配置直接连接</value>
   </data>
 </root>

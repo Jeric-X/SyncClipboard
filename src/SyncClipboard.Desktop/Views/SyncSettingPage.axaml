@@ -34,7 +34,7 @@
         <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordFontIcon" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE753;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
@@ -84,12 +84,12 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SyncEnable, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.UseSelfHostServer}">
+                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.UseBuiltInServerDescription}" Content="{x:Static i18n:Strings.UseSelfHostServer}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UseLocalServer, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Description="{Binding ClientConfigDescription}" IsEnabled="{Binding UserManulServer}">
+                <ui:SettingsExpanderItem IsVisible="{Binding UseManulServer}" Description="{Binding ClientConfigDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowClientPassword, Mode=TwoWay}">
@@ -101,12 +101,12 @@
                         </StackPanel>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TrustInsecureCertificate}">
+                <ui:SettingsExpanderItem IsVisible="{Binding UseManulServer}" Content="{x:Static i18n:Strings.TrustInsecureCertificate}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsEnabled="{Binding UserManulServer, Mode=OneWay}">
+                <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsVisible="{Binding UseManulServer}">
                     <ui:HyperlinkButton Padding="0,0,0,-1"
                                         Content="{x:Static i18n:Strings.UseNextcloud}"
                                         Command="{Binding LoginWithNextcloudCommand}"

@@ -5,10 +5,10 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="using:CommunityToolkit.WinUI.Controls"
-      xmlns:vm="using:SyncClipboard.Core.ViewModels"
-      xmlns:local="using:SyncClipboard.WinUI3.Views"
-      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      xmlns:local="using:SyncClipboard.WinUI3.Views"
       MinWidth="550"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
       BorderBrush="Transparent"
@@ -33,7 +33,7 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.Server}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.Server}" Description="{x:Bind i18n:Strings.ServerDescription}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" />
             </ui:SettingsExpander.HeaderIcon>
@@ -77,10 +77,10 @@
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.UseSelfHostServer}">
+                <ui:SettingsCard Description="{x:Bind i18n:Strings.UseBuiltInServerDescription}" Header="{x:Bind i18n:Strings.UseSelfHostServer}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}" IsEnabled="{x:Bind _viewModel.UserManulServer, Mode=OneWay}">
+                <ui:SettingsCard Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton IsChecked="{x:Bind _viewModel.ShowClientPassword, Mode=TwoWay}">
                             <FontIcon Glyph="{x:Bind _viewModel.ShowClientPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" />
@@ -90,10 +90,10 @@
                         </Button>
                     </StackPanel>
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
+                <ui:SettingsCard Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard VerticalContentAlignment="Stretch" IsEnabled="{x:Bind _viewModel.UserManulServer, Mode=OneWay}" ContentAlignment="Vertical">
+                <ui:SettingsCard VerticalContentAlignment="Stretch" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" ContentAlignment="Vertical">
                     <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
                         <ui:SettingsCard.Resources>
                         <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">
