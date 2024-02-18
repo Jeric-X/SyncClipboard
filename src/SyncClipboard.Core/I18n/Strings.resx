@@ -483,4 +483,10 @@
   <data name="OpenMainUI" xml:space="preserve">
     <value>Open Main UI</value>
   </data>
+  <data name="UploadOnce" xml:space="preserve">
+    <value>Upload Once Immediately</value>
+  </data>
+  <data name="DownloadOnce" xml:space="preserve">
+    <value>Download Once Immediately</value>
+  </data>
 </root>

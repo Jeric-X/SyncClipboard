@@ -15,6 +15,7 @@ public class DownloadService : Service
     private readonly static string SERVICE_NAME = I18n.Strings.DownloadService;
     private const string LOG_TAG = "PULL";
     private bool _isPullLoopRunning = false;
+    private bool _isQuickDownload = false;
     private readonly object _isPullLoopRunningLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
@@ -26,6 +27,7 @@ public class DownloadService : Service
     private readonly IServiceProvider _serviceProvider;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
+    private readonly UploadService _uploadService;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
@@ -50,6 +52,12 @@ public class DownloadService : Service
                 I18n.Strings.SwitchMixedClientMode,
                 Guid.Parse("1D5C8163-E2E0-D099-A334-62A4B4F2BCE5"),
                 () => SwitchMixedClientMode(!_serverConfig.ClientMixedMode)
+            ),
+            _uploadService.QuickUploadCommand,
+            new UniqueCommand(
+                I18n.Strings.DownloadOnce,
+                Guid.Parse("95396FFF-E5FE-45D3-9D70-4A43FA34FF31"),
+                QuickDownload
             ),
         }
     };
@@ -88,7 +96,7 @@ public class DownloadService : Service
     }
     #endregion
 
-    public DownloadService(IServiceProvider serviceProvider, IMessenger messenger)
+    public DownloadService(IServiceProvider serviceProvider, IMessenger messenger, UploadService uploadService)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -101,6 +109,7 @@ public class DownloadService : Service
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
+        _uploadService = uploadService;
 
         serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
     }
@@ -148,6 +157,7 @@ public class DownloadService : Service
         {
             if (!_isPullLoopRunning)
             {
+                _remoteProfileCache = null;
                 _isPullLoopRunning = true;
                 StartPullLoop();
             }
@@ -247,6 +257,11 @@ public class DownloadService : Service
                 }
                 _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
                 errorTimes = 0;
+                if (_isQuickDownload && !SwitchOn)
+                {
+                    _isQuickDownload = false;
+                    return;
+                }
             }
             catch (TaskCanceledException)
             {
@@ -314,5 +329,12 @@ public class DownloadService : Service
                 _messenger.Send(remoteProfile, SyncService.PULL_STOP_ENENT_NAME);
             }
         }
+    }
+
+    private void QuickDownload()
+    {
+        _isQuickDownload = true;
+        SwitchOffPullLoop();
+        SwitchOnPullLoop();
     }
 }

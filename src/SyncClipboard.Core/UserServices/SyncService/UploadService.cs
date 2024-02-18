@@ -14,6 +14,11 @@ public class UploadService : ClipboardHander
 {
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
+    public UniqueCommand QuickUploadCommand => new UniqueCommand(
+        I18n.Strings.UploadOnce,
+        Guid.Parse("D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850"),
+        QuickUpload
+    );
 
     private readonly static string SERVICE_NAME_SIMPLE = I18n.Strings.UploadService;
     public override string SERVICE_NAME => I18n.Strings.ClipboardSyncing;
@@ -240,5 +245,11 @@ public class UploadService : ClipboardHander
             }
             await _webDav.CreateDirectory(Env.RemoteFileFolder, cancelToken);
         }
+    }
+
+    private async void QuickUpload()
+    {
+        var token = StopPreviousAndGetNewToken();
+        HandleClipboard(await _clipboardFactory.GetMetaInfomation(token), token);
     }
 }

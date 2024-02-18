@@ -483,4 +483,10 @@
   <data name="OpenMainUI" xml:space="preserve">
     <value>打开主界面</value>
   </data>
+  <data name="UploadOnce" xml:space="preserve">
+    <value>立刻上传本地到远程</value>
+  </data>
+  <data name="DownloadOnce" xml:space="preserve">
+    <value>立刻下载远程到本地</value>
+  </data>
 </root>

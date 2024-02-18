@@ -173,7 +173,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, EasyCopyImageSerivce>();
             services.AddSingleton<IService, ConvertService>();
             services.AddSingleton<IService, ServerService>();
-            services.AddSingleton<IService, UploadService>();
+            services.AddSingleton<UploadService>();
+            services.AddSingleton<IService, UploadService>(sp => sp.GetRequiredService<UploadService>());
             services.AddSingleton<IService, DownloadService>();
         }
 

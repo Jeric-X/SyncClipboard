@@ -304,6 +304,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Download Once Immediately 的本地化字符串。
+        /// </summary>
+        public static string DownloadOnce {
+            get {
+                return ResourceManager.GetString("DownloadOnce", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Download Service 的本地化字符串。
         /// </summary>
         public static string DownloadService {
@@ -1101,6 +1110,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UploadFailedStatusTimeout {
             get {
                 return ResourceManager.GetString("UploadFailedStatusTimeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Upload Once Immediately 的本地化字符串。
+        /// </summary>
+        public static string UploadOnce {
+            get {
+                return ResourceManager.GetString("UploadOnce", resourceCulture);
             }
         }
         

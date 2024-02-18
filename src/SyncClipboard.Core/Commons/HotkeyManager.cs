@@ -2,6 +2,8 @@
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.ViewModels;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.Commons;
@@ -114,37 +116,69 @@ public class HotkeyManager
         HotkeyStatusChanged?.Invoke();
     }
 
-    public void RegisterCommands(IEnumerable<UniqueCommand> commands)
+    private void RegisterCommands(IEnumerable<UniqueCommand> commands)
     {
-        foreach (var command in commands)
+        commands.ForEach(command => RegisterCommand(command, false));
+        HotkeyStatusChanged?.Invoke();
+    }
+
+    private void RegisterCommand(UniqueCommand command, bool notify = true)
+    {
+        _hotkeyCommandMap.TryGetValue(command.Guid, out HotkeyStatus? hotkeyStatus);
+        if (hotkeyStatus is null)
         {
-            _hotkeyCommandMap.TryGetValue(command.Guid, out HotkeyStatus? hotkeyStatus);
-            if (hotkeyStatus is null)
+            bool ready = false;
+            if (command.Hotkey is not null)
             {
-                bool ready = false;
-                if (command.Hotkey is not null)
-                {
-                    ready = RegisterToNative(command.Hotkey, command.Command);
-                }
-                _hotkeyCommandMap.Add(command.Guid, new(command.Hotkey, ready, command));
+                ready = RegisterToNative(command.Hotkey, command.Command);
             }
-            else
+            _hotkeyCommandMap.Add(command.Guid, new(command.Hotkey, ready, command));
+        }
+        else
+        {
+            hotkeyStatus.Command = command;
+            if (hotkeyStatus.Hotkey is not null && hotkeyStatus.IsReady is false)
             {
-                hotkeyStatus.Command = command;
-                if (hotkeyStatus.Hotkey is not null && hotkeyStatus.IsReady is false)
-                {
-                    var res = RegisterToNative(hotkeyStatus.Hotkey, command.Command);
-                    hotkeyStatus.IsReady = res;
-                }
+                var res = RegisterToNative(hotkeyStatus.Hotkey, command.Command);
+                hotkeyStatus.IsReady = res;
             }
         }
-        HotkeyStatusChanged?.Invoke();
+
+        if (notify)
+            HotkeyStatusChanged?.Invoke();
     }
 
     public void RegisterCommands(UniqueCommandCollection commandCollection)
     {
-        _commandCollections.Add(commandCollection);
+        var collection = _commandCollections.Find(collection => collection.Name == commandCollection.Name);
+        if (collection is null)
+            _commandCollections.Add(commandCollection);
+        else
+            commandCollection.Commands.ForEach(command => collection.Commands.Add(command));
+
         RegisterCommands(commandCollection.Commands);
+    }
+
+    public void RegisterCommands(string name, IEnumerable<UniqueCommand> commands, string? fontIcon = null)
+    {
+        var collection = _commandCollections.Find(collection => collection.Name == name);
+        if (collection is null)
+            _commandCollections.Add(new(name, fontIcon ?? PageDefinition.Hotkey.FontIcon!, commands));
+        else
+            commands.ForEach(command => collection.Commands.Add(command));
+
+        RegisterCommands(commands);
+    }
+
+    public void RegisterCommand(string name, UniqueCommand command, string? fontIcon = null)
+    {
+        var collection = _commandCollections.Find(collection => collection.Name == name);
+        if (collection is null)
+            _commandCollections.Add(new(name, fontIcon ?? PageDefinition.Hotkey.FontIcon!, command));
+        else
+            collection.Commands.Add(command);
+
+        RegisterCommand(command);
     }
 
     public void SetHotKey(Guid guid, Hotkey hotkey)
