@@ -110,5 +110,33 @@
                 "ASPNETCORE_ENVIRONMENT" : "Production"
             }
         },
+        {
+            "name": "Debug WinUI",
+            "type": "coreclr",
+            "preLaunchTask": "Build Debug WinUI",
+            "request": "launch",
+            "program": "SyncClipboard.WinUI3/bin/x64/Debug/net6.0-windows10.0.19041.0/win10-x64/SyncClipboard.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
+        {
+            "name": "Release WinUI",
+            "type": "coreclr",
+            "preLaunchTask": "Build Release WinUI",
+            "request": "launch",
+            "program": "SyncClipboard.WinUI3/bin/x64/Release/net6.0-windows10.0.19041.0/win10-x64/SyncClipboard.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
     ]
 }

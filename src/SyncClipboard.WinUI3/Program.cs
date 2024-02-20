@@ -24,14 +24,21 @@ public static class Program
             return;
         }
 
-        XamlCheckProcessRequirements();
-        ComWrappersSupport.InitializeComWrappers();
-        Application.Start(delegate
+        try
         {
-            DispatcherQueueSynchronizationContext synchronizationContext = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
-            SynchronizationContext.SetSynchronizationContext(synchronizationContext);
-            var _ = new App();
-        });
+            XamlCheckProcessRequirements();
+            ComWrappersSupport.InitializeComWrappers();
+            Application.Start(delegate
+            {
+                DispatcherQueueSynchronizationContext synchronizationContext = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
+                SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+                var _ = new App();
+            });
+        }
+        catch (Exception e)
+        {
+            App.Current?.LogUnhandledException(e);
+        }
     }
 }
 

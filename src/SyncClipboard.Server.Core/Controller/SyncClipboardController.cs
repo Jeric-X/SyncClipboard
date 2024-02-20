@@ -66,9 +66,9 @@ public class SyncClipboardController
         }
     }
 
-    protected virtual IResult PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
+    protected virtual async Task<IResult> PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
     {
-        File.WriteAllText(Path.Combine(rootPath, path), JsonSerializer.Serialize(profileDTO));
+        await File.WriteAllTextAsync(Path.Combine(rootPath, path), JsonSerializer.Serialize(profileDTO));
         return Results.Ok();
     }
 

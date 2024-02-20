@@ -21,9 +21,6 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
         },
         {
@@ -41,9 +38,6 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
         },
         {
@@ -64,10 +58,21 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "group": "build",
-            "presentation": {
-                "reveal": "silent"
-            },
             "problemMatcher": "$msCompile"
-        }
+        },
+        {
+            "label": "Build Debug WinUI",
+            "command": "msbuild SyncClipboard.WinUI3/SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Debug /p:WindowsAppSDKSelfContained=true /v:m",
+            "type": "shell",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Release WinUI",
+            "command": "msbuild SyncClipboard.WinUI3/SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m",
+            "type": "shell",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
     ]
 }

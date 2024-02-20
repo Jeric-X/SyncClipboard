@@ -114,7 +114,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return (profile.ToDto(), extraFilePath);
     }
 
-    public async void SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
+    public async Task SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
     {
         ArgumentNullException.ThrowIfNull(profileDto);
         var profile = GetProfileBy(profileDto);

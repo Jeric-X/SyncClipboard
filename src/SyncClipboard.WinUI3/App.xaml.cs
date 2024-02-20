@@ -57,7 +57,12 @@ namespace SyncClipboard.WinUI3
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
-            Logger.Write($"UnhandledException {e.Exception.GetType()} {e.Message} \n{e.Exception.StackTrace}");
+            LogUnhandledException(e.Exception);
+        }
+
+        public void LogUnhandledException(Exception e)
+        {
+            Logger.Write($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
             Logger.Flush();
 
             var mdei = new MINIDUMP_EXCEPTION_INFORMATION

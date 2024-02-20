@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 
     private readonly AutoResetEvent _globalHookRunEvent = new(false);
 
+    [SupportedOSPlatform("macos")]
     [DllImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
     private extern static bool AXIsProcessTrusted();
     private bool _newPermissionApplied = false;
