@@ -45,14 +45,23 @@ namespace SyncClipboard.Core.Utilities
             WriteToFile(logStr, logFile);
         }
 
-        void ILogger.Write(string str)
+        public void Write(string str)
         {
             Write(null, str, new StackTrace(true).GetFrame(1));
         }
-
-        void ILogger.Write(string? tag, string str)
+        public void Write(string? tag, string str)
         {
             Write(tag, str, new StackTrace(true).GetFrame(1));
+        }
+
+        public Task WriteAsync(string str)
+        {
+            return WriteAsync(null, str);
+        }
+
+        public Task WriteAsync(string? tag, string str)
+        {
+            return Task.Run(() => Write(tag, str, new StackTrace(true).GetFrame(1)));
         }
 
         public void Flush()

@@ -1,13 +1,16 @@
 ﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class ClipboardListener : ClipboardChangingListenerBase
 {
     private readonly IClipboardFactory _clipboardFactory;
+    private readonly ILogger _logger;
 
     private Timer? _timer;
     private Action<ClipboardMetaInfomation>? _action;
@@ -16,9 +19,10 @@ internal class ClipboardListener : ClipboardChangingListenerBase
     private readonly SemaphoreSlim _tickSemaphore = new(1, 1);
     private CancellationTokenSource? _cts;
 
-    public ClipboardListener(IClipboardFactory clipboardFactory)
+    public ClipboardListener(IClipboardFactory clipboardFactory, ILogger logger)
     {
         _clipboardFactory = clipboardFactory;
+        _logger = logger;
     }
 
     protected override void RegistSystemEvent(Action<ClipboardMetaInfomation> action)
@@ -60,7 +64,8 @@ internal class ClipboardListener : ClipboardChangingListenerBase
             if (_meta is not null)
             {
                 _meta = meta;
-                _action?.Invoke(meta);
+                _ = Task.Run(() => _action?.Invoke(meta));
+                _ = _logger.WriteAsync($"Clipboard changed to {meta}");
             }
             else
             {

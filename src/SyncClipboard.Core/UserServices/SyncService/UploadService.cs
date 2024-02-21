@@ -7,6 +7,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using System.Threading;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -151,6 +152,7 @@ public class UploadService : ClipboardHander
     {
         if (await Profile.Same(profile, _profileCache, token))
         {
+            _logger.Write(LOG_TAG, "Same as lasted downloaded profile, won't push.");
             _profileCache = null;
             return true;
         }
@@ -158,23 +160,35 @@ public class UploadService : ClipboardHander
         return _downServiceChangingLocal;
     }
 
-    protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancellationToken)
+    private async Task<bool> IsObsoleteMeta(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        var latest = await _clipboardFactory.GetMetaInfomation(token);
+        return latest != meta;
+    }
+
+    protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken token)
     {
         var profile = _clipboardFactory.CreateProfileFromMeta(meta);
 
+        await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
-            if (await IsDownloadServiceWorking(profile, cancellationToken))
+            if (await IsDownloadServiceWorking(profile, token) || await IsObsoleteMeta(meta, token))
             {
+                _logger.Write(LOG_TAG, "Stop Push.");
                 return;
             }
 
             SetWorkingStartStatus();
-            await UploadClipboard(profile, cancellationToken);
+            await UploadClipboard(profile, token);
         }
         catch (OperationCanceledException)
         {
             _logger.Write("Upload", "Upload Canceled");
+        }
+        finally
+        {
+            SyncService.remoteProfilemutex.Release();
         }
         SetWorkingEndStatus();
     }
@@ -195,7 +209,6 @@ public class UploadService : ClipboardHander
         string errMessage = "";
         for (int i = 0; i < _syncConfig.RetryTimes; i++)
         {
-            await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
             try
             {
                 var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
@@ -205,7 +218,10 @@ public class UploadService : ClipboardHander
                     await CleanServerTempFile(cancelToken);
                     await profile.UploadProfile(_webDav, cancelToken);
                 }
-                _logger.Write(LOG_TAG, "remote is same as local, won't push");
+                else
+                {
+                    _logger.Write(LOG_TAG, "Remote is same as local, won't push.");
+                }
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
@@ -219,10 +235,6 @@ public class UploadService : ClipboardHander
             {
                 errMessage = ex.Message;
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, string.Format(I18n.Strings.UploadFailedStatus, i + 1, errMessage), true);
-            }
-            finally
-            {
-                SyncService.remoteProfilemutex.Release();
             }
 
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
