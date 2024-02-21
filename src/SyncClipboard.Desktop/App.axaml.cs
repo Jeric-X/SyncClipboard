@@ -22,7 +22,7 @@ public partial class App : Application
     public IClipboard Clipboard => MainWindow.Clipboard!;
 
     private IClassicDesktopStyleApplicationLifetime _appLife;
-    public ProgramWorkflow ProgramWorkflow;
+    public AppCore AppCore { get; private set; }
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     public App()
@@ -30,7 +30,7 @@ public partial class App : Application
     {
         Services = AppServices.ConfigureServices().BuildServiceProvider();
         Logger = Services.GetRequiredService<ILogger>();
-        ProgramWorkflow = new ProgramWorkflow(Services);
+        AppCore = new AppCore(Services);
     }
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
@@ -39,7 +39,7 @@ public partial class App : Application
     {
         Services = serviceCollection.BuildServiceProvider();
         Logger = Services.GetRequiredService<ILogger>();
-        ProgramWorkflow = new ProgramWorkflow(Services);
+        AppCore = new AppCore(Services);
     }
 
     public override void Initialize()
@@ -69,7 +69,7 @@ public partial class App : Application
         ThemeSetting();
         ActualThemeVariantChanged += (_, _) => ThemeSetting();
 
-        ProgramWorkflow.Run();
+        AppCore.Run();
     }
 
     private void ThemeSetting()
@@ -87,7 +87,7 @@ public partial class App : Application
 
     public void ExitApp()
     {
-        ProgramWorkflow.Stop();
+        AppCore.Stop();
         _appLife.Shutdown();
     }
 }

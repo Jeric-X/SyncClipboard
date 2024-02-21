@@ -42,7 +42,14 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
 
     private Action<ClipboardMetaInfomation> NotifyAll => (meta) =>
     {
-        ChangedImpl?.Invoke(meta);
+        try
+        {
+            ChangedImpl?.Invoke(meta);
+        }
+        catch (Exception ex)
+        {
+            AppCore.Current?.Logger.Write($"Clipboard handler unhandled exception {ex.Message}\n{ex.StackTrace}");
+        }
     };
 
     ~ClipboardChangingListenerBase() => Dispose();

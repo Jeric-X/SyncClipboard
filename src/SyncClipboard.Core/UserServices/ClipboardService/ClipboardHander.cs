@@ -73,7 +73,12 @@ abstract public class ClipboardHander : Service
         if (SwitchOn)
         {
             CancellationToken cancelToken = StopPreviousAndGetNewToken();
-            HandleClipboard(clipboardMetaInfomation, cancelToken);
+            try
+            {
+                HandleClipboard(clipboardMetaInfomation, cancelToken);
+            }
+            catch (OperationCanceledException)
+            { }
         }
     }
 

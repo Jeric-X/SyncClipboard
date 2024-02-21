@@ -13,14 +13,19 @@ using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core
 {
-    public class ProgramWorkflow
+    public class AppCore
     {
+        public static AppCore? Current { get; private set; }
         public IServiceProvider Services { get; }
+        public ILogger Logger { get; }
+
         private ServiceManager? ServiceManager { get; set; }
 
-        public ProgramWorkflow(IServiceProvider serviceProvider)
+        public AppCore(IServiceProvider serviceProvider)
         {
             Services = serviceProvider;
+            Current = this;
+            Logger = serviceProvider.GetRequiredService<ILogger>();
         }
 
         private static void InitLanguage(ConfigManager configManager)

@@ -24,8 +24,7 @@ namespace SyncClipboard.WinUI3
         public new static App Current => (App)Application.Current;
         public IServiceProvider Services { get; private set; }
         public ILogger Logger { get; private set; }
-
-        private readonly ProgramWorkflow ProgramWorkflow;
+        public AppCore AppCore { get; private set; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -37,7 +36,7 @@ namespace SyncClipboard.WinUI3
 
             Services = AppServices.ConfigureServices().BuildServiceProvider();
             Logger = Services.GetRequiredService<ILogger>();
-            ProgramWorkflow = new ProgramWorkflow(Services);
+            AppCore = new AppCore(Services);
 
             var theme = Services.GetRequiredService<ConfigManager>().GetConfig<ProgramConfig>().Theme;
             if (StringToTheme(theme) is ApplicationTheme applicationTheme)
@@ -50,7 +49,7 @@ namespace SyncClipboard.WinUI3
 
         internal void ExitApp()
         {
-            ProgramWorkflow.Stop();
+            AppCore.Stop();
             UnhandledException -= App_UnhandledException;
             Environment.Exit(0);
         }
@@ -91,7 +90,7 @@ namespace SyncClipboard.WinUI3
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
             Logger.Write("App started");
-            ProgramWorkflow.Run();
+            AppCore.Run();
         }
     }
 }

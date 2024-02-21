@@ -17,9 +17,9 @@ public class AppServices
     {
         var services = new ServiceCollection();
 
-        ProgramWorkflow.ConfigCommonService(services);
-        ProgramWorkflow.ConfigurateViewModels(services);
-        ProgramWorkflow.ConfigurateUserService(services);
+        AppCore.ConfigCommonService(services);
+        AppCore.ConfigurateViewModels(services);
+        AppCore.ConfigurateUserService(services);
 
         services.AddTransient<IAppConfig, AppConfig>();
 
