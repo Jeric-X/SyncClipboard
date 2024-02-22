@@ -1,5 +1,5 @@
 // START  User Config  
-const url = 'http://192.168.5.194:5033'                 // no slash(/) at the end of url
+const url = 'http://192.168.5.194:5033'
 const username = 'admin'
 const token = 'admin'
 const intervalTime = 3 * 1000                           // 3 seconds
@@ -9,7 +9,11 @@ const showToastNotification = true
 const axios = require('axios');
 
 const authHeader = 'basic ' + $base64.encode(`${username}:${token}`)
-const apiUrl = url + '/SyncClipboard.json'
+
+let urlWithoutSlash = url   
+while (urlWithoutSlash.endsWith('/'))
+    urlWithoutSlash = url.substring(0, url.length - 1)
+const apiUrl = urlWithoutSlash + '/SyncClipboard.json'
 
 let running = false
 let remoteCache;

@@ -18,7 +18,6 @@
     - [Linux, macOS](#linux-macos)
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
-      - [使用JSBox](#使用jsbox)
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
       - [使用Autox.js](#使用autoxjs)
@@ -116,12 +115,9 @@ docker run -d \
 - 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/1a57093a04ec4f45a5ca7d4de82020e7)，手动触发上传或下载
 - 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/3a5a15e2678f431d91fcf4defd2e6168)，运行后设备会自动在后台同步剪贴板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
 
-#### 使用[JSBox](https://apps.apple.com/cn/app/jsbox-%E5%AD%A6%E4%B9%A0%E5%86%99%E4%BB%A3%E7%A0%81/id1312014438)
-导入这个[js文件](/script/Clipboard.js)，修改`user`，`token`，`path`字段。作为键盘扩展处理文字时使用，不支持文件
-
 ### Android
 #### 使用[HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
-导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
+导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`， `url`不要以斜线分隔符`/`结尾。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
 <details>
 <summary>导入配置文件后修改配置图示</summary>
@@ -136,7 +132,7 @@ docker run -d \
 导入这个[js文件](/script/SyncAutoxJs.js)，修改脚本中的前几行，并在`Autox.js`中设置脚本的触发方式，例如：开机时触发
 ```
 // START  User Config  
-const url = 'http://192.168.5.194:5033'               // no slash(/) at the end of url
+const url = 'http://192.168.5.194:5033'  
 const username = 'admin'
 const token = 'admin'
 const intervalTime = 3 * 1000                         // 3 seconds
@@ -155,7 +151,7 @@ Autox.js脚本运行在后台时可以自动下载远程剪贴板文字到本地
 全平台依赖三条必要配置（配置的拼写可能会有所不同，含义相同）。
 - user
 - password
-- url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，例如`https://domain.com/dav/folder1/working%20folder`，特殊符号需要使用url转义字符代替，不要使用这个文件夹存储其他文件。不使用桌面客户端（Windows/Linux/macOS）时需在工作目录中再创建`file`文件夹以同步文件，桌面客户端会在设置服务器时自动创建`file`文件夹
+- url，格式为http(s)://ip(或者域名):port。使用WebDav服务器时，url需要具体到一个已存在的文件夹作为工作目录，例如`https://domain.com/dav/folder1/working%20folder`，特殊符号需要使用url转义字符代替，不要使用这个文件夹存储其他文件。不使用桌面客户端（Windows/Linux/macOS）时需在工作目录中再创建`file`文件夹以同步文件，桌面客户端会在设置服务器时自动创建`file`文件夹。url尽量不要以斜线分隔符`/`结尾，在部分客户端中会出现问题。
 
 ## API
 

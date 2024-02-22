@@ -117,7 +117,7 @@ Notes:
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
-Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
+Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. Make sure no slash(/) at the end of url. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
 
 <details>
 <summary>Screenshots</summary>
@@ -132,7 +132,7 @@ Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`
 Import this [js file](/script/SyncAutoxJs.js). Change the user config. And set a running trigger, for example, running the script when Android system startup.
 ```
 // START  User Config  
-const url = 'http://192.168.5.194:5033'               // no slash(/) at the end of url
+const url = 'http://192.168.5.194:5033'
 const username = 'admin'
 const token = 'admin'
 const intervalTime = 3 * 1000                         // 3 seconds
@@ -153,7 +153,7 @@ If satisfy any of the following conditions, upload is automatic.
 There are three necessery config(maybe different words, same uses).
 - username
 - password
-- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. File name is the best not to contain any special characters or spaces, or you'll have to URL encode it. And do not use this folder to do anything else. If not using a desktop client(Windows/Linux/macOS), create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically.
+- url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. File name is the best not to contain any special characters or spaces, or you'll have to URL encode it. And do not use this folder to do anything else. If not using a desktop client(Windows/Linux/macOS), create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically. Make sure no slash(/) at the end of url.
 
 ## API
 
