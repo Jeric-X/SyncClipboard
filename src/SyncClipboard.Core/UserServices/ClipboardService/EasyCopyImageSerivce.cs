@@ -38,7 +38,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private bool DownloadWebImageEnabled => _clipboardAssistConfig.DownloadWebImage;
 
-    protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
+    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
     {
         try
         {

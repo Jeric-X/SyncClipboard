@@ -68,19 +68,19 @@ abstract public class ClipboardHander : Service
         }
     }
 
-    private void ClipBoardChangedHandler(ClipboardMetaInfomation clipboardMetaInfomation)
+    private async void ClipBoardChangedHandler(ClipboardMetaInfomation clipboardMetaInfomation)
     {
         if (SwitchOn)
         {
             CancellationToken cancelToken = StopPreviousAndGetNewToken();
             try
             {
-                HandleClipboard(clipboardMetaInfomation, cancelToken);
+                await HandleClipboard(clipboardMetaInfomation, cancelToken);
             }
             catch (OperationCanceledException)
             { }
         }
     }
 
-    protected abstract void HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, CancellationToken cancelToken);
+    protected abstract Task HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, CancellationToken token);
 }

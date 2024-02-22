@@ -43,7 +43,7 @@ public class HotkeyManager
         {
             return false;
         }
-        return _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, action);
+        return _nativeHotkeyRegistry.RegisterForSystemHotkey(hotkey, action.NoExcept());
     }
 
     private void UnRegisterFromNative(Hotkey hotkey)

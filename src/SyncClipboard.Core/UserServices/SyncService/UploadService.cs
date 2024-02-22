@@ -7,7 +7,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using System.Threading;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -166,7 +165,7 @@ public class UploadService : ClipboardHander
         return latest != meta;
     }
 
-    protected override async void HandleClipboard(ClipboardMetaInfomation meta, CancellationToken token)
+    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, CancellationToken token)
     {
         var profile = _clipboardFactory.CreateProfileFromMeta(meta);
 
@@ -262,6 +261,10 @@ public class UploadService : ClipboardHander
     private async void QuickUpload()
     {
         var token = StopPreviousAndGetNewToken();
-        HandleClipboard(await _clipboardFactory.GetMetaInfomation(token), token);
+        try
+        {
+            await HandleClipboard(await _clipboardFactory.GetMetaInfomation(token), token);
+        }
+        catch { }
     }
 }
