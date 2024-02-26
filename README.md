@@ -97,6 +97,9 @@ docker run -d \
 - Windows10 2004及以上
 - 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
 
+注意：
+- 删除软件时，配置文件目录不会被删除，配置文件储存在`%AppData%\SyncClipboard\`，需要彻底删除软件时请手动删除整个目录
+
 ### Linux, macOS
 下载地址：[SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboard.Desktop/releases)，根据系统选择你需要的安装包  
 
@@ -107,7 +110,7 @@ docker run -d \
 - 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
 - Linux: 快捷键在Wayland不可用
 - macOS：`“SyncClipboard”已损坏，无法打开`，在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- macOS: 快捷键依赖辅助功能权限(Aaccessibility)，软件在需要时会弹窗提示（所有快捷键为空时则不需要），安装新版本时可能需要在设置里先手动移除已存在的权限，再根据弹窗授予新的权限
+- macOS: 快捷键依赖辅助功能权限(Aaccessibility)，软件在需要时会弹窗提示（所有快捷键为空时则不需要），每个新版本需要重新授予权限
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  

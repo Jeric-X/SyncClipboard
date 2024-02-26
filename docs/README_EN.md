@@ -96,6 +96,9 @@ Dependencies：
 - [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer) runtime    
 - Windows10 2004 or above
 - Microsoft [Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font). It is included by default on Windows 11. You can download it [here](https://aka.ms/SegoeFluentIcons).
+  
+Notes: 
+- Config files are saved in `%AppData%\SyncClipboard\`. Users can delete them manually.
 
 ### Linux, macOS
 Downloading page: [SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboard.Desktop/releases)  
@@ -107,7 +110,7 @@ Notes:
 - Not suport upgrading directly with `deb` or `rpm` package. Delete old version first, then install the new version.
 - Linux: Hotkey is not supported on Wayland.
 - macOS: `"SyncClipboard" is damaged, can't be opened`. Use the following command in terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- macOS: Hotkey requires Accessibility permission. After installing a new version, maybe you have to remove the old permission in System Settings first, then permit a new one.
+- macOS: Hotkey requires Accessibility permission. After installing a new version, the permission should be re-granted.
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
