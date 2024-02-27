@@ -19,4 +19,5 @@ internal static class Format
     [SupportedOSPlatform("macos")] public const string PublicPng = "public.png";
     [SupportedOSPlatform("macos")] public const string PublicTiff = "public.tiff";
     [SupportedOSPlatform("macos")] public const string PublicHtml = "public.html";
+    [SupportedOSPlatform("macos")] public const string MacText = "Text";
 }

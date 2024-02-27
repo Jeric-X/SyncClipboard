@@ -26,6 +26,7 @@ internal partial class ClipboardFactory
         new HandlerMapping(Format.FileList, HandleMacosFile),
         new HandlerMapping(Format.PublicTiff, HandleMacosImage),
         new HandlerMapping(Format.PublicHtml, HandleMacHtml),
+        new HandlerMapping(Format.MacText, HandleMacText),
     };
 
     [SupportedOSPlatform("macos")]
@@ -42,8 +43,6 @@ internal partial class ClipboardFactory
                 await handlerMapping.Value.Invoke(meta, token);
             }
         }
-
-        meta.Text = await clipboard?.GetTextAsync().WaitAsync(token)!;
 
         return meta;
     }
@@ -94,5 +93,11 @@ internal partial class ClipboardFactory
         var htmlBytes = await Clipboard.GetDataAsync(Format.PublicHtml).WaitAsync(token) as byte[];
         ArgumentNullException.ThrowIfNull(htmlBytes);
         meta.Html = Encoding.UTF8.GetString(htmlBytes);
+    }
+
+    [SupportedOSPlatform("macos")]
+    private async Task HandleMacText(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        meta.Text = await Clipboard?.GetTextAsync().WaitAsync(token)!;
     }
 }
