@@ -157,7 +157,6 @@ public class DownloadService : Service
         {
             if (!_isPullLoopRunning)
             {
-                _remoteProfileCache = null;
                 _isPullLoopRunning = true;
                 StartPullLoop();
             }
