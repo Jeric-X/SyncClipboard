@@ -35,7 +35,15 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     public override void Create()
     {
-        _trayIcon.ForceCreate();
+        try
+        {
+            _trayIcon.ForceCreate();
+        }
+        catch (Exception ex)
+        {
+            App.Current.Logger.Write("Set Efficiency Mode failed with exception: " + ex.Message);
+            _trayIcon.ForceCreate(false);
+        }
     }
 
     protected override void SetIcon(BitmapImage icon)
