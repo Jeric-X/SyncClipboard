@@ -17,3 +17,6 @@ dotnet_diagnostic.IDE0090.severity = none
 
 # Asynchronous method can be terminated with the 'Async' keyword.
 dotnet_diagnostic.CC0061.severity = none
+
+# Make readonly
+dotnet_diagnostic.CC0074.severity = none

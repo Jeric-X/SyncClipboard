@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
@@ -17,7 +19,7 @@ using WinRT;
 
 namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
-internal class ClipboardFactory : ClipboardFactoryBase
+internal partial class ClipboardFactory : ClipboardFactoryBase
 {
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
@@ -34,6 +36,7 @@ internal class ClipboardFactory : ClipboardFactoryBase
         [StandardDataFormats.Html] = HanleHtml,
         [StandardDataFormats.StorageItems] = HanleFiles,
         ["Preferred DropEffect"] = HanleDropEffect,
+        ["Object Descriptor"] = HanleObjectDescriptor,
     }.ToList();
 
     private static async Task HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
@@ -58,6 +61,28 @@ internal class ClipboardFactory : ClipboardFactoryBase
         var res = await ClipboardData.GetDataAsync("Preferred DropEffect");
         using IRandomAccessStream randomAccessStream = res.As<IRandomAccessStream>();
         meta.Effects = (DragDropEffects?)randomAccessStream.AsStreamForRead().ReadByte();
+    }
+
+    private async static Task HanleObjectDescriptor(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+    {
+        var res = await ClipboardData.GetDataAsync("Object Descriptor");
+        using IRandomAccessStream randomAccessStream = res.As<IRandomAccessStream>();
+        using var stream = randomAccessStream.AsStreamForRead();
+        using BinaryReader reader = new(stream);
+        byte[] bytes = reader.ReadBytes(Marshal.SizeOf(typeof(OBJECTDESCRIPTOR)));
+
+        GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+        OBJECTDESCRIPTOR? descriptor = (OBJECTDESCRIPTOR?)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(OBJECTDESCRIPTOR));
+        handle.Free();
+
+        if (descriptor.HasValue is false)
+            return;
+
+        stream.Seek(0, SeekOrigin.Begin);
+        bytes = reader.ReadBytes((int)descriptor.Value.cbSize);
+
+        var typeName = Encoding.Unicode.GetString(bytes[Index.FromStart((int)descriptor.Value.dwFullUserTypeName)..]);
+        meta.OriginalType = typeName.Split('\0')[0];
     }
 
     private static async Task HanleFiles(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)

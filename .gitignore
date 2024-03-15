@@ -460,3 +460,4 @@ osx-*/
 .DS_Store
 build/featuretemp.txt
 /src/SyncClipboard.Server/server/
+.VSCodeCounter/
