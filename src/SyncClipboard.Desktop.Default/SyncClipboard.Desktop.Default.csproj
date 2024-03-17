@@ -28,4 +28,8 @@
     <ProjectReference Include="..\SyncClipboard.Desktop\SyncClipboard.Desktop.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
 </Project>

@@ -159,4 +159,10 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         ChooseStaticIcon();
         SetStaticIcon();
     }
+
+    public void RefreshIcon()
+    {
+        ChooseStaticIcon();
+        SetStaticIcon();
+    }
 }

@@ -36,4 +36,8 @@
       RetryDelayMilliseconds="300"/>
   </Target>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
 </Project>

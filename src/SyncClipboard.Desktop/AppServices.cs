@@ -23,7 +23,6 @@ public class AppServices
         services.AddTransient<IAppConfig, AppConfig>();
 
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
-        services.AddSingleton<ITrayIcon, TrayIconImpl>();
 
         services.AddSingleton<ClipboardFactory>();
         services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());

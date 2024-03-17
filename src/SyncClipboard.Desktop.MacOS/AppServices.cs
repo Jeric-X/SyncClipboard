@@ -16,6 +16,7 @@ public class AppServices
 
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddSingleton<INotification, Notification>();
+        services.AddSingleton<ITrayIcon, TrayIconImpl>();
         return services;
     }
 }
