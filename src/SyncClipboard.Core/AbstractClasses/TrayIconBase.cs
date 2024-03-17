@@ -11,11 +11,11 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     #region Icon Animatinon
     private const int ANIMATED_ICON_DELAY_TIME = 150;
     private Timer? _iconTimer;
-    private int _iconIndex = 1;
     private bool _isShowingDanamicIcon;
     private bool _isActive = true;
     private bool _isError = false;
-    private IconType[]? _dynamicIcons;
+    private IEnumerable<IconType>? _dynamicIcons;
+    private IEnumerator<IconType>? _dynamicIconEnumerator;
     private IconType? @staticIcon = null;
     private IconType StaticIcon { get => @staticIcon ?? DefaultIcon; set => @staticIcon = value; }
     private readonly Dictionary<string, string> _statusList = new();
@@ -28,8 +28,8 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     protected abstract void SetIcon(IconType icon);
     protected abstract void SetToolTip(string text);
-    protected abstract IconType[] UploadIcons();
-    protected abstract IconType[] DownloadIcons();
+    protected abstract IEnumerable<IconType> UploadIcons();
+    protected abstract IEnumerable<IconType> DownloadIcons();
     protected virtual ServiceStatusViewModel? ServiceStatusViewModel { get; }
     #endregion
 
@@ -43,45 +43,56 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         SetDynamicNotifyIcon(UploadIcons(), ANIMATED_ICON_DELAY_TIME);
     }
 
-    private void SetDynamicNotifyIcon(IconType[] icons, int delayTime)
+    private void SetDynamicNotifyIcon(IEnumerable<IconType> icons, int delayTime)
     {
-        if (icons.Length == 0)
+        if (!icons.Any())
         {
             return;
         }
 
         StopAnimation();
 
-        _dynamicIcons = icons;
-        SetIcon(_dynamicIcons[0]);
-        _isShowingDanamicIcon = true;
-        _iconTimer = new Timer(SetNextDynamicNotifyIcon, null, 0, delayTime);
+        lock (this)
+        {
+            _dynamicIcons = icons;
+            _dynamicIconEnumerator = icons.GetEnumerator();
+            _isShowingDanamicIcon = true;
+            _iconTimer = new Timer(SetNextDynamicNotifyIcon, null, 0, delayTime);
+        }
     }
 
     public void StopAnimation()
     {
-        _iconTimer?.Dispose();
-        _iconTimer = null;
+        lock (this)
+        {
+            _iconTimer?.Dispose();
+            _iconTimer = null;
 
-        _dynamicIcons = null;
-        _iconIndex = 1;
-        _isShowingDanamicIcon = false;
+            _dynamicIcons = null;
+            _dynamicIconEnumerator = null;
+            _isShowingDanamicIcon = false;
+        }
         SetStaticIcon();
     }
 
     private void SetNextDynamicNotifyIcon(object? _)
     {
-        if (_dynamicIcons is null || _dynamicIcons.Length == 0)
+        IconType icon;
+        lock (this)
         {
-            return;
-        }
+            if (_dynamicIcons is null || _dynamicIconEnumerator is null)
+            {
+                return;
+            }
 
-        if (_iconIndex >= _dynamicIcons.Length)
-        {
-            _iconIndex = 0;
+            if (!_dynamicIconEnumerator.MoveNext())
+            {
+                _dynamicIconEnumerator = _dynamicIcons.GetEnumerator();
+                _dynamicIconEnumerator.MoveNext();
+            }
+            icon = _dynamicIconEnumerator.Current;
         }
-        SetIcon(_dynamicIcons[_iconIndex]);
-        _iconIndex++;
+        SetIcon(icon);
 
         // 在设置Icon的过程中其他线程可能会停止动态图标
         SetStaticIcon();

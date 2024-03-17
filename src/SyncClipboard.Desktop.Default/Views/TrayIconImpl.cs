@@ -17,19 +17,17 @@ public class TrayIconImpl : Desktop.Views.TrayIconImpl
     {
     }
 
-    protected override WindowIcon[] UploadIcons()
+    protected override IEnumerable<WindowIcon> UploadIcons()
     {
         return Enumerable.Range(1, 17)
             .Select(x => $"{ResPath}/upload{x:d3}.png")
-            .Select(x => new WindowIcon(AssetLoader.Open(new Uri(x))))
-            .ToArray();
+            .Select(x => new WindowIcon(AssetLoader.Open(new Uri(x))));
     }
 
-    protected override WindowIcon[] DownloadIcons()
+    protected override IEnumerable<WindowIcon> DownloadIcons()
     {
         return Enumerable.Range(1, 17)
             .Select(x => $"{ResPath}/download{x:d3}.png")
-            .Select(x => new WindowIcon(AssetLoader.Open(new Uri(x))))
-            .ToArray();
+            .Select(x => new WindowIcon(AssetLoader.Open(new Uri(x))));
     }
 }

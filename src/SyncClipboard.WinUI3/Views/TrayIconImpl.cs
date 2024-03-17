@@ -18,7 +18,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     private readonly BitmapImage defaultIcon = new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
     private readonly BitmapImage defaultInactiveIcon = new BitmapImage(new Uri("ms-appx:///Assets/default-inactive.ico"));
-    private readonly BitmapImage errorIcon = new BitmapImage(new Uri("ms-appx:///Assets/default.ico"));
+    private readonly BitmapImage errorIcon = new BitmapImage(new Uri("ms-appx:///Assets/erro.ico"));
     private readonly BitmapImage errorInactiveIcon = new BitmapImage(new Uri("ms-appx:///Assets/erro-inactive.ico"));
     protected override BitmapImage DefaultIcon => defaultIcon;
     protected override BitmapImage DefaultInactiveIcon => defaultInactiveIcon;

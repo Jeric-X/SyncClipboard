@@ -4,63 +4,84 @@ using Avalonia.Platform;
 using Foundation;
 using SyncClipboard.Core.ViewModels;
 using System;
-using System.Linq;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace SyncClipboard.Desktop.MacOS.Views;
 
-internal class TrayIconImpl : Desktop.Views.TrayIconImpl
+internal class TrayIconImpl : Desktop.Views.TrayIconImpl, IDisposable
 {
     private const string ResPath = "avares://SyncClipboard.Desktop.MacOS/Assets";
+    private string ThemePath => $"{ResPath}/{(_isLightMode ? "Light" : "Dark")}";
     private static readonly WindowIcon _lightDefaultIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/Light/default.png")));
     private static readonly WindowIcon _lightErrorIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/Light/erro.png")));
     private static readonly WindowIcon _darkDefaultIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/Dark/default.png")));
     private static readonly WindowIcon _darkErrorIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/Dark/erro.png")));
 
-    protected override WindowIcon DefaultIcon => IsLightMode ? _lightDefaultIcon : _darkDefaultIcon;
-    protected override WindowIcon ErrorIcon => IsLightMode ? _lightErrorIcon : _darkErrorIcon;
+    protected override WindowIcon DefaultIcon => _isLightMode ? _lightDefaultIcon : _darkDefaultIcon;
+    protected override WindowIcon ErrorIcon => _isLightMode ? _lightErrorIcon : _darkErrorIcon;
 
-    private bool IsLightMode = true;
+    private bool _isLightMode = true;
+    private readonly IDisposable _observer;
 
     public TrayIconImpl(ServiceStatusViewModel serviceStatusViewModel) : base(serviceStatusViewModel)
     {
-        NSApplication.SharedApplication.AddObserver(
+        _observer = NSApplication.SharedApplication.AddObserver(
             "effectiveAppearance",
             NSKeyValueObservingOptions.New,
-            _ => SystemThemeChanged()
+            SystemThemeChanged
         );
+        _isLightMode = GetIsLightMode();
         RefreshIcon();
     }
 
-    private void SystemThemeChanged()
+    private void SystemThemeChanged(NSObservedChange observedChange)
     {
-        bool isLightMode;
-        if (NSApplication.SharedApplication.EffectiveAppearance.Name.Contains("dark", StringComparison.OrdinalIgnoreCase))
-            isLightMode = false;
-        else
-            isLightMode = true;
+        bool isLightMode = GetIsLightMode();
 
-        if (isLightMode != IsLightMode)
+        if (isLightMode != _isLightMode)
         {
-            IsLightMode = isLightMode;
+            _isLightMode = isLightMode;
             RefreshIcon();
         }
     }
 
-    protected override WindowIcon[] UploadIcons()
+    private static bool GetIsLightMode()
     {
-        string path = $"{ResPath}/{(IsLightMode ? "Light" : "Dark")}";
-        return Enumerable.Range(1, 17)
-            .Select(x => $"{path}/upload{x:d3}.png")
-            .Select(x => new WindowIcon(AssetLoader.Open(new Uri(x))))
-            .ToArray();
+        if (NSApplication.SharedApplication.EffectiveAppearance.Name.Contains("dark", StringComparison.OrdinalIgnoreCase))
+            return false;
+        else
+            return true;
     }
 
-    protected override WindowIcon[] DownloadIcons()
+    protected override IEnumerable<WindowIcon> UploadIcons()
     {
-        string path = $"{ResPath}/{(IsLightMode ? "Light" : "Dark")}";
-        return Enumerable.Range(1, 17)
-            .Select(x => $"{path}/download{x:d3}.png")
-            .Select(x => new WindowIcon(AssetLoader.Open(new Uri(x))))
-            .ToArray();
+        for (int i = 1; i <= 17; i++)
+        {
+            var path = $"{ThemePath}/upload{i:d3}.png";
+            yield return new WindowIcon(AssetLoader.Open(new Uri(path)));
+        }
+    }
+
+    protected override IEnumerable<WindowIcon> DownloadIcons()
+    {
+        for (int i = 1; i <= 17; i++)
+        {
+            var path = $"{ThemePath}/download{i:d3}.png";
+            yield return new WindowIcon(AssetLoader.Open(new Uri(path)));
+        }
+    }
+
+    ~TrayIconImpl() => Dispose();
+
+    public void Dispose()
+    {
+        try
+        {
+            NSApplication.SharedApplication.RemoveObserver((NSObject)_observer, "effectiveAppearance");
+            _observer.Dispose();
+        }
+        catch { }
+        GC.SuppressFinalize(this);
     }
 }
