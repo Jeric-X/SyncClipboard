@@ -1,5 +1,6 @@
-0.6.2.1
-- 适配macOS风格的菜单栏图标
+0.6.2.2
+- 适配macOS风格的系统菜单栏图标(https://github.com/Jeric-X/SyncClipboard/issues/48)
+- 关闭前台窗口后，dock栏图标不再显示为活跃状态（macOS）(https://github.com/Jeric-X/SyncClipboard/issues/49)
 
 0.6.2
 - 修复：复制不支持类型剪贴板会被远程剪贴板覆盖，导致无法复制

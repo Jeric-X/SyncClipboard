@@ -5,7 +5,6 @@ using Foundation;
 using SyncClipboard.Core.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace SyncClipboard.Desktop.MacOS.Views;
 

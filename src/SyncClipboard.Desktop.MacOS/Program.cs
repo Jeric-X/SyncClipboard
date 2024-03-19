@@ -1,5 +1,7 @@
 ﻿using AppKit;
 using Avalonia;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System;
 
@@ -34,9 +36,11 @@ class Program
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
-        return AppBuilder.Configure<App>(() => new App(AppServices.ConfigureServices()))
+        var hide = new ConfigManager().GetConfig<ProgramConfig>().HideWindowOnStartup;
+        return AppBuilder.Configure(() => new App(AppServices.ConfigureServices()))
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
+            .LogToTrace()
+            .With(new MacOSPlatformOptions { ShowInDock = !hide });
     }
 }

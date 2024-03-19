@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using System;
+using System.Linq;
 
 namespace SyncClipboard.Desktop.MacOS.Views;
 
@@ -23,8 +24,19 @@ public class MainWindow : Desktop.Views.MainWindow
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        Hide();
-        e.Cancel = true;
+        NSApplication.SharedApplication.ActivationPolicy = NSApplicationActivationPolicy.Accessory;
+        base.OnClosing(e);
+    }
+
+    protected override void ShowMainWindow()
+    {
+        NSApplication.SharedApplication.ActivationPolicy = NSApplicationActivationPolicy.Regular;
+
+        // 这是一个workaround，切换NSApplicationActivationPolicy后系统菜单无法被点击，需要先Focus到其他App
+        NSRunningApplication.GetRunningApplications("com.apple.dock")
+            .FirstOrDefault()?.Activate(NSApplicationActivationOptions.ActivateIgnoringOtherWindows);
+
+        base.ShowMainWindow();
     }
 
     protected override void MinimizeWindow()
