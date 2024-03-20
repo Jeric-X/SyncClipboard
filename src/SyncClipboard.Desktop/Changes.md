@@ -1,4 +1,4 @@
-0.6.2.2
+0.6.3
 - 适配macOS风格的系统菜单栏图标(https://github.com/Jeric-X/SyncClipboard/issues/48)
 - 关闭前台窗口后，dock栏图标不再显示为活跃状态（macOS）(https://github.com/Jeric-X/SyncClipboard/issues/49)
 
