@@ -1,0 +1,20 @@
+{
+    "Logging": {
+      "LogLevel": {
+        "Default": "Information",
+        "Microsoft.AspNetCore": "Warning"
+      }
+    },
+    "AllowedHosts": "*",
+    "Kestrel": {
+      "Endpoints": {
+        "Http": {
+          "Url": "http://0.0.0.0:5033"
+        }
+      }
+    },
+    "AppSettings": {
+      "UserName": "admin",
+      "Password": "admin"
+    }
+  }
