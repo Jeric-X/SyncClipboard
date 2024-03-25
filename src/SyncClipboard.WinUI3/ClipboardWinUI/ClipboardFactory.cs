@@ -113,14 +113,16 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             return meta;
         }
 
-        for (int i = 0; ClipboardData.AvailableFormats.Count == 0 && i < 10; i++)
+        var formats = ClipboardData.AvailableFormats;
+        for (int i = 0; formats.Count == 0 && i < 10; i++)
         {
             await Task.Delay(200, ctk);
             ClipboardData = Clipboard.GetContent();
+            formats = ClipboardData.AvailableFormats;
             Logger.Write(LOG_TAG, "retry times: " + (i + 1));
         }
 
-        if (ClipboardData.AvailableFormats.Count == 0)
+        if (formats.Count == 0)
         {
             Logger.Write(LOG_TAG, "ClipboardData.AvailableFormats.Count is 0");
             meta.Text = "";
@@ -134,7 +136,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             {
                 try
                 {
-                    if (ClipboardData.AvailableFormats.Contains(handler.Key))
+                    if (formats.Contains(handler.Key))
                     {
                         await handler.Value(ClipboardData, meta, ctk);
                     }
