@@ -1,0 +1,10 @@
+version: '3'
+services:
+  syncclipboard-server:
+    image: jericx/syncclipboard-server:latest
+    container_name: syncclipboard-server
+    restart: unless-stopped
+    ports:
+      - "5033:5033" # Update this if you have changed the port in appsettings.json
+    volumes:
+      - /path/to/appsettings.json:/app/appsettings.json
