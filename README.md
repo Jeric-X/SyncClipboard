@@ -10,7 +10,9 @@
   - [功能](#功能)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
-      - [Docker](#docker)
+      - [使用Docker容器部署服务器](#使用docker容器部署服务器)
+        - [Docker](#docker)
+        - [Docker Compose](#docker-compose)
     - [客户端内置服务器](#客户端内置服务器)
     - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
@@ -53,23 +55,56 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
 
-#### Docker
-你也可以使用Docker轻松部署服务器
+#### 使用Docker容器部署服务器
+
+在宿主机中拷贝一份服务器配置文件[appsettings.json](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json)
+
+```
+mkdir syncclipboard-server && cd syncclipboard-server
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json > appsettings.json
+```
+
+根据你的需求在配置文件中修改用户名、密码
+
+##### Docker
+
+执行下边的命令，注意将命令行中的`/path/to/appsettings.json`修改为宿主机中`appsettings.json`的实际路径
+
 ```
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
+  -v /path/to/appsettings.json:/app/appsettings.json \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
-如需修改用户名和密码，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+
+##### Docker Compose
+
+在宿主机中拷贝一份[docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml)
+
+```
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
+```
+
+将`docker-compose.yml`文件中的`/path/to/appsettings.json`修改为宿主机中`appsettings.json`的实际路径，然后执行
+
+```
+docker compose up -d
+```
+
+注意：
+- 服务器和容器相关文件储存在`src/SyncClipboard.Server`目录中，命令行无法下载时可以手动下载
+- Docker镜像的托管地址是[Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### 客户端内置服务器
+
 桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上
 
 ### WebDAV服务器
 可以使用支持WebDAV协议的网盘作为服务器  
 测试过的服务器：   
+
 - [x] [Nextcloud](https://nextcloud.com/) 
 - [x] [坚果云](https://www.jianguoyun.com/)
 - [x] [AList](https://alist.nn.ci/)
