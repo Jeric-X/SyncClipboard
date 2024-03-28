@@ -10,7 +10,9 @@
   - [功能](#功能)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
-      - [Docker](#docker)
+      - [使用Docker容器部署服务器](#使用docker容器部署服务器)
+        - [Docker](#docker)
+        - [Docker Compose](#docker-compose)
     - [客户端内置服务器](#客户端内置服务器)
     - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
@@ -53,53 +55,47 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
 
-#### Docker
+#### 使用Docker容器部署服务器
 
-首先安装docker
+在宿主机中拷贝一份服务器配置文件[appsettings.json](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json)
 
 ```
-curl -fsSL https://get.docker.com | bash -s docker 
+mkdir syncclipboard-server && cd syncclipboard-server
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json > appsettings.json
 ```
 
-现在使用官方脚本安装docker，docker和docker-compose会一并安装，使用**docker-compose**时请使用**docker compose**命令
+根据你的需求在配置文件中修改用户名、密码
 
-##### 1.使用Docker部署服务器
+##### Docker
+
+执行下边的命令，注意将命令行中的`/path/to/appsettings.json`修改为宿主机中`appsettings.json`的实际路径
 
 ```
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
+  -v /path/to/appsettings.json:/app/appsettings.json \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
-##### 2.使用docker-compose部署服务器
 
-docker-compose文件示例如下
+##### Docker Compose
 
-```
-version: '3'
-services:
-  syncclipboard-server:
-    image: jericx/syncclipboard-server:latest
-    container_name: syncclipboard-server
-    restart: unless-stopped
-    ports:
-      - "5033:5033" # 修改端口时需要修改appsetting.json里的端口
-    volumes:
-      - /path/to/appsettings.json:/app/appsettings.json 
-```
-
-你可以在src/SyncClipboard.Server目录下找到示例的appsettings.json和docker-compose.yml文件!
+在宿主机中拷贝一份[docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml)
 
 ```
-docker compose up -d 
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
 ```
 
-**Tips**
+将`docker-compose.yml`文件中的`/path/to/appsettings.json`修改为宿主机中`appsettings.json`的实际路径，然后执行
 
-1.**/path/to/appsettings.json**需要修改为你**appsettings.json**相对或绝对路径才可正常工作！！！！
+```
+docker compose up -d
+```
 
-2.如需修改用户名和密码，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+注意：
+- 服务器和容器相关文件储存在`src/SyncClipboard.Server`目录中，命令行无法下载时可以手动下载
+- Docker镜像的托管地址是[Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### 客户端内置服务器
 

@@ -9,7 +9,9 @@
   - [Features](#features)
   - [Server](#server)
     - [Standalone Server](#standalone-server)
-      - [Docker](#docker)
+      - [Docker Container](#docker-container)
+        - [Docker](#docker)
+        - [Docker Compose](#docker-compose)
     - [Desktop Client Built-in Server](#desktop-client-built-in-server)
     - [WebDAV Server](#webdav-server)
   - [Client](#client)
@@ -54,16 +56,46 @@ Notes：
 - Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
 - Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network.
 
-#### Docker
-Deploying server with docker is easy.
+#### Docker Container
+
+Copy a server config file [appsettings.json](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json) first.
+
+```
+mkdir syncclipboard-server && cd syncclipboard-server
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json > appsettings.json
+```
+Change your own username and password in `appsettings.json`.
+
+##### Docker
+
+Run the following command. Remember to change the `/path/to/appsettings.json` to your newly copied `appsettings.json`'s path.
+
 ```
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
+  -v /path/to/appsettings.json:/app/appsettings.json \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
-If you want to change username or password, please refer to [jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+
+##### Docker Compose
+
+Copy a [docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml) file.
+
+```
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
+```
+
+Change the `/path/to/appsettings.json` in `docker-compose.yml` to your newly copied `appsettings.json`'s path, then run
+
+```
+docker compose up -d
+```
+
+Notes:
+- Server related files are under `src/SyncClipboard.Server` directory. You can download them manually.
+- Docker image is hosted on [Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server).
 
 ### Desktop Client Built-in Server
 Desktop client (Windows/Linux/macOS) has a built-in server, basically the same as standalone server but can be configured with GUI.
