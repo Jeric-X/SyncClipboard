@@ -63,7 +63,7 @@ curl -fsSL https://get.docker.com | bash -s docker
 
 现在使用官方脚本安装docker，docker和docker-compose会一并安装，使用**docker-compose**时请使用**docker compose**命令
 
-##### 1.你可以使用Docker轻松部署服务器
+##### 1.使用Docker部署服务器
 
 ```
 docker run -d \
@@ -72,7 +72,7 @@ docker run -d \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
-##### 2.使用docker-compose
+##### 2.使用docker-compose部署服务器
 
 docker-compose文件示例如下
 
