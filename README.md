@@ -54,7 +54,17 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 - 内置服务器并不是WebDAV实现
 
 #### Docker
-你也可以使用Docker轻松部署服务器
+
+首先安装docker
+
+```
+curl -fsSL https://get.docker.com | bash -s docker 
+```
+
+现在使用官方脚本安装docker，docker和docker-compose会一并安装，使用**docker-compose**时请使用**docker compose**命令
+
+#####1.你可以使用Docker轻松部署服务器
+
 ```
 docker run -d \
   --name=syncclipboard-server \
@@ -62,14 +72,43 @@ docker run -d \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
-如需修改用户名和密码，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+##### 2.使用docker-compose
+
+docker-compose文件示例如下
+
+```
+version: '3'
+services:
+  syncclipboard-server:
+    image: jericx/syncclipboard-server:latest
+    container_name: syncclipboard-server
+    restart: unless-stopped
+    ports:
+      - "5033:5033" # 修改端口时需要修改appsetting.json里的端口
+    volumes:
+      - /path/to/appsettings.json:/app/appsettings.json 
+```
+
+你可以在src/SyncClipboard.Server目录下找到示例的appsettings.json和docker-compose.yml文件!
+
+```
+docker compose up -d 
+```
+
+**Tips**
+
+1.**/path/to/appsettings.json**需要修改为你**appsettings.json**相对或绝对路径才可正常工作！！！！
+
+2.如需修改用户名和密码，请参考[jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
 ### 客户端内置服务器
+
 桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上
 
 ### WebDAV服务器
 可以使用支持WebDAV协议的网盘作为服务器  
 测试过的服务器：   
+
 - [x] [Nextcloud](https://nextcloud.com/) 
 - [x] [坚果云](https://www.jianguoyun.com/)
 - [x] [AList](https://alist.nn.ci/)
