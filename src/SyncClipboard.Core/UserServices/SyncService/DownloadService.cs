@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using SharpHook;
+using SharpHook.Native;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.UserServices;
@@ -16,6 +19,7 @@ public class DownloadService : Service
     private const string LOG_TAG = "PULL";
     private bool _isPullLoopRunning = false;
     private bool _isQuickDownload = false;
+    private bool _isQuickDownloadAndPaste = false;
     private readonly object _isPullLoopRunningLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
@@ -27,6 +31,8 @@ public class DownloadService : Service
     private readonly IServiceProvider _serviceProvider;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
+    private readonly IEventSimulator _keyEventSimulator;
+    private readonly HotkeyManager _hotkeyManager;
     private readonly UploadService _uploadService;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
@@ -35,6 +41,8 @@ public class DownloadService : Service
     private bool ClientSwitchOn => _syncConfig.SyncSwitchOn || (_serverConfig.ClientMixedMode && _serverConfig.SwitchOn);
 
     #region Hotkey
+    private static readonly Guid QuickDownloadAndPasteGuid = Guid.Parse("8a4a033e-31da-1b87-76ea-548885866b66");
+
     private UniqueCommandCollection CommandCollection => new(PageDefinition.SyncSetting.Title, PageDefinition.SyncSetting.FontIcon!)
     {
         Commands = {
@@ -58,6 +66,12 @@ public class DownloadService : Service
                 I18n.Strings.DownloadOnce,
                 Guid.Parse("95396FFF-E5FE-45D3-9D70-4A43FA34FF31"),
                 QuickDownload
+            ),
+            _uploadService.CopyAndQuickUploadCommand,
+            new UniqueCommand(
+                "Download and paste",
+                QuickDownloadAndPasteGuid,
+                QuickDownloadAndPaste
             ),
         }
     };
@@ -96,7 +110,12 @@ public class DownloadService : Service
     }
     #endregion
 
-    public DownloadService(IServiceProvider serviceProvider, IMessenger messenger, UploadService uploadService)
+    public DownloadService(
+        IServiceProvider serviceProvider,
+        IMessenger messenger,
+        UploadService uploadService,
+        IEventSimulator keyEventSimulator,
+        HotkeyManager hotkeyManager)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -110,8 +129,10 @@ public class DownloadService : Service
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
         _uploadService = uploadService;
+        _keyEventSimulator = keyEventSimulator;
+        _hotkeyManager = hotkeyManager;
 
-        serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
+        _hotkeyManager.RegisterCommands(CommandCollection);
     }
 
     private void SyncConfigChanged(SyncConfig newConfig)
@@ -241,36 +262,23 @@ public class DownloadService : Service
     private async Task PullLoop(CancellationToken cancelToken)
     {
         int errorTimes = 0;
-        while (!cancelToken.IsCancellationRequested)
+        while (!cancelToken.IsCancellationRequested && (_isQuickDownload || SwitchOn))
         {
             await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
             try
             {
-                var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
-                _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
-
-                if (await NeedUpdate(remoteProfile, cancelToken))
-                {
-                    await SetRemoteProfileToLocal(remoteProfile, cancelToken);
-                    _remoteProfileCache = remoteProfile;
-                }
-                _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
+                await DownloadProcess(cancelToken);
                 errorTimes = 0;
-                if (_isQuickDownload && !SwitchOn)
-                {
-                    _isQuickDownload = false;
-                    return;
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                cancelToken.ThrowIfCancellationRequested();
-                _toastReporter?.Cancel();
-                _toastReporter = null;
-                SetStatusOnError(ref errorTimes, new Exception("Request timeout"));
+                OnDownloadCompleted();
             }
             catch (Exception ex)
             {
+                if (ex is TaskCanceledException)
+                {
+                    cancelToken.ThrowIfCancellationRequested();
+                    ex = new Exception("Request timeout");
+                }
+
                 SetStatusOnError(ref errorTimes, ex);
                 _toastReporter?.Cancel();
                 _toastReporter = null;
@@ -284,9 +292,23 @@ public class DownloadService : Service
         }
     }
 
+    private async Task DownloadProcess(CancellationToken token)
+    {
+        var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(token);
+        _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
+
+        if (await NeedUpdate(remoteProfile, token))
+        {
+            await SetRemoteProfileToLocal(remoteProfile, token);
+            _remoteProfileCache = remoteProfile;
+        }
+
+        _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
+    }
+
     private async Task<bool> NeedUpdate(Profile remoteProfile, CancellationToken cancelToken)
     {
-        if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+        if (!_isQuickDownload && await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
         {
             return false;
         }
@@ -312,11 +334,15 @@ public class DownloadService : Service
             _trayIcon.ShowDownloadAnimation();
             try
             {
-                if (remoteProfile is FileProfile)
+                if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+                {
+                    remoteProfile = _remoteProfileCache!;
+                }
+                else if (remoteProfile is FileProfile)
                 {
                     _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
+                    await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 }
-                await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
                 remoteProfile.SetLocalClipboard(true, cancelToken);
                 _logger.Write("Success download:" + remoteProfile.Text);
@@ -330,10 +356,39 @@ public class DownloadService : Service
         }
     }
 
-    private void QuickDownload()
+    private void QuickDownload() => QuickDownload(false);
+    private void QuickDownloadAndPaste() => QuickDownload(true);
+    private void QuickDownload(bool paste)
     {
-        _isQuickDownload = true;
         SwitchOffPullLoop();
+        _remoteProfileCache = null;
+        _isQuickDownload = true;
+        _isQuickDownloadAndPaste = paste;
         SwitchOnPullLoop();
+    }
+
+    private void OnDownloadCompleted()
+    {
+        if (_isQuickDownloadAndPaste)
+        {
+            _hotkeyManager.HotkeyStatusMap[QuickDownloadAndPasteGuid].Hotkey?.Keys.ForEach(key =>
+            {
+                _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]);
+            });
+
+            KeyCode modifier = KeyCode.VcLeftControl;
+            if (OperatingSystem.IsMacOS())
+            {
+                modifier = KeyCode.VcLeftMeta;
+            }
+
+            _keyEventSimulator.SimulateKeyPress(modifier);
+            _keyEventSimulator.SimulateKeyPress(KeyCode.VcV);
+
+            _keyEventSimulator.SimulateKeyRelease(KeyCode.VcV);
+            _keyEventSimulator.SimulateKeyRelease(modifier);
+        }
+        _isQuickDownload = false;
+        _isQuickDownloadAndPaste = false;
     }
 }

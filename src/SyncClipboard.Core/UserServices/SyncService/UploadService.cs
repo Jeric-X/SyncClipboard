@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using SharpHook;
+using SharpHook.Native;
 using SyncClipboard.Abstract;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
@@ -7,6 +9,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -14,10 +17,17 @@ public class UploadService : ClipboardHander
 {
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
+
+    private static readonly Guid CopyAndQuickUploadGuid = Guid.Parse("D13672E9-D14C-4D48-847E-10B030F4B608");
     public UniqueCommand QuickUploadCommand => new UniqueCommand(
         I18n.Strings.UploadOnce,
         Guid.Parse("D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850"),
         QuickUpload
+    );
+    public UniqueCommand CopyAndQuickUploadCommand => new UniqueCommand(
+        "Copy and upload",
+        CopyAndQuickUploadGuid,
+        CopyAndQuickUpload
     );
 
     private readonly static string SERVICE_NAME_SIMPLE = I18n.Strings.UploadService;
@@ -50,10 +60,16 @@ public class UploadService : ClipboardHander
     private readonly IWebDav _webDav;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
+    private readonly IEventSimulator _keyEventSimulator;
+    private readonly HotkeyManager _hotkeyManager;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
-    public UploadService(IServiceProvider serviceProvider, IMessenger messenger)
+    public UploadService(
+        IServiceProvider serviceProvider,
+        IMessenger messenger,
+        IEventSimulator keyEventSimulator,
+        HotkeyManager hotkeyManager)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -65,6 +81,8 @@ public class UploadService : ClipboardHander
         _messenger = messenger;
         _syncConfig = _configManager.GetConfig<SyncConfig>();
         _serverConfig = _configManager.GetConfig<ServerConfig>();
+        _keyEventSimulator = keyEventSimulator;
+        _hotkeyManager = hotkeyManager;
     }
 
     public override void Load()
@@ -266,5 +284,30 @@ public class UploadService : ClipboardHander
             await HandleClipboard(await _clipboardFactory.GetMetaInfomation(token), token);
         }
         catch { }
+    }
+
+    private async void CopyAndQuickUpload()
+    {
+        await Task.Run(() =>
+        {
+            _hotkeyManager.HotkeyStatusMap[CopyAndQuickUploadGuid].Hotkey?.Keys.ForEach(key =>
+            {
+                _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]);
+            });
+
+            KeyCode modifier = KeyCode.VcLeftControl;
+            if (OperatingSystem.IsMacOS())
+            {
+                modifier = KeyCode.VcLeftMeta;
+            }
+
+            _keyEventSimulator.SimulateKeyPress(modifier);
+            _keyEventSimulator.SimulateKeyPress(KeyCode.VcC);
+
+            _keyEventSimulator.SimulateKeyRelease(KeyCode.VcC);
+            _keyEventSimulator.SimulateKeyRelease(modifier);
+        });
+        await Task.Delay(200);
+        QuickUpload();
     }
 }

@@ -1,8 +1,9 @@
 ﻿using SharpHook.Native;
 using SyncClipboard.Core.Models.Keyboard;
-using System.Collections.Generic;
 
-internal static class KeyCodeMap
+namespace SyncClipboard.Core.Utilities;
+
+public static class KeyCodeMap
 {
     public static readonly Dictionary<KeyCode, Key> Map = new()
     {

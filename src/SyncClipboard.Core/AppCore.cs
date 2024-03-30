@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using SharpHook;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
@@ -151,6 +152,7 @@ namespace SyncClipboard.Core
 
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
+            services.AddSingleton<IEventSimulator, EventSimulator>();
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();

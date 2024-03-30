@@ -3,6 +3,7 @@ using SharpHook;
 using SharpHook.Native;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

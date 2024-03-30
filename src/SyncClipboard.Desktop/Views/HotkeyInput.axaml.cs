@@ -8,6 +8,7 @@ using SharpHook;
 using SharpHook.Native;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Desktop.Utilities;
 using System.Collections.Generic;
 using Key = SyncClipboard.Core.Models.Keyboard.Key;
