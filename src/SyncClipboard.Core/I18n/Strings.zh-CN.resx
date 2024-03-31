@@ -484,15 +484,21 @@
     <value>打开主界面</value>
   </data>
   <data name="UploadOnce" xml:space="preserve">
-    <value>立刻上传本地到远程</value>
+    <value>上传本地到远程</value>
   </data>
   <data name="DownloadOnce" xml:space="preserve">
-    <value>立刻下载远程到本地</value>
+    <value>下载远程到本地</value>
   </data>
   <data name="ServerDescription" xml:space="preserve">
     <value>整个同步网络只需开启一个服务器</value>
   </data>
   <data name="UseBuiltInServerDescription" xml:space="preserve">
     <value>本机服务器开启时，可免配置直接连接</value>
+  </data>
+  <data name="CopyAndUpload" xml:space="preserve">
+    <value>复制并上传本地到远程</value>
+  </data>
+  <data name="DownloadAndPaste" xml:space="preserve">
+    <value>下载远程到本地并粘贴</value>
   </data>
 </root>

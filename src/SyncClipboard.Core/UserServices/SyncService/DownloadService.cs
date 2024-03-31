@@ -69,7 +69,7 @@ public class DownloadService : Service
             ),
             _uploadService.CopyAndQuickUploadCommand,
             new UniqueCommand(
-                "Download and paste",
+                I18n.Strings.DownloadAndPaste,
                 QuickDownloadAndPasteGuid,
                 QuickDownloadAndPaste
             ),
@@ -357,7 +357,17 @@ public class DownloadService : Service
     }
 
     private void QuickDownload() => QuickDownload(false);
-    private void QuickDownloadAndPaste() => QuickDownload(true);
+
+    private void QuickDownloadAndPaste()
+    {
+        if (_hotkeyManager.HotkeyStatusMap.TryGetValue(QuickDownloadAndPasteGuid, out var status))
+        {
+            status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
+        }
+
+        QuickDownload(true);
+    }
+
     private void QuickDownload(bool paste)
     {
         SwitchOffPullLoop();
@@ -371,16 +381,7 @@ public class DownloadService : Service
     {
         if (_isQuickDownloadAndPaste)
         {
-            _hotkeyManager.HotkeyStatusMap[QuickDownloadAndPasteGuid].Hotkey?.Keys.ForEach(key =>
-            {
-                _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]);
-            });
-
-            KeyCode modifier = KeyCode.VcLeftControl;
-            if (OperatingSystem.IsMacOS())
-            {
-                modifier = KeyCode.VcLeftMeta;
-            }
+            KeyCode modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
 
             _keyEventSimulator.SimulateKeyPress(modifier);
             _keyEventSimulator.SimulateKeyPress(KeyCode.VcV);

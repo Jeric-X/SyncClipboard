@@ -232,6 +232,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Copy And Upload 的本地化字符串。
+        /// </summary>
+        public static string CopyAndUpload {
+            get {
+                return ResourceManager.GetString("CopyAndUpload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Copy app data folder path to clipboard 的本地化字符串。
         /// </summary>
         public static string CopyAppDataFolderPath {
@@ -282,6 +291,15 @@ namespace SyncClipboard.Core.I18n {
         public static string DiagnoseMode {
             get {
                 return ResourceManager.GetString("DiagnoseMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download And Paste 的本地化字符串。
+        /// </summary>
+        public static string DownloadAndPaste {
+            get {
+                return ResourceManager.GetString("DownloadAndPaste", resourceCulture);
             }
         }
         

@@ -1,3 +1,6 @@
+0.6.3.1
+- 功能：增加复制并上传/下载并粘贴快捷键
+
 0.6.3
 - 适配macOS风格的系统菜单栏图标(https://github.com/Jeric-X/SyncClipboard/issues/48)
 - 关闭前台窗口后，dock栏图标不再显示为活跃状态（macOS）(https://github.com/Jeric-X/SyncClipboard/issues/49)

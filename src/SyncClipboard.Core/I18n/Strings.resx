@@ -495,4 +495,10 @@
   <data name="UseBuiltInServerDescription" xml:space="preserve">
     <value>Connect to built-in server directly without configuration</value>
   </data>
+  <data name="CopyAndUpload" xml:space="preserve">
+    <value>Copy And Upload</value>
+  </data>
+  <data name="DownloadAndPaste" xml:space="preserve">
+    <value>Download And Paste</value>
+  </data>
 </root>

@@ -25,7 +25,7 @@ public class UploadService : ClipboardHander
         QuickUpload
     );
     public UniqueCommand CopyAndQuickUploadCommand => new UniqueCommand(
-        "Copy and upload",
+        I18n.Strings.CopyAndUpload,
         CopyAndQuickUploadGuid,
         CopyAndQuickUpload
     );
@@ -290,16 +290,12 @@ public class UploadService : ClipboardHander
     {
         await Task.Run(() =>
         {
-            _hotkeyManager.HotkeyStatusMap[CopyAndQuickUploadGuid].Hotkey?.Keys.ForEach(key =>
+            if (_hotkeyManager.HotkeyStatusMap.TryGetValue(CopyAndQuickUploadGuid, out var status))
             {
-                _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]);
-            });
-
-            KeyCode modifier = KeyCode.VcLeftControl;
-            if (OperatingSystem.IsMacOS())
-            {
-                modifier = KeyCode.VcLeftMeta;
+                status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
             }
+
+            KeyCode modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
 
             _keyEventSimulator.SimulateKeyPress(modifier);
             _keyEventSimulator.SimulateKeyPress(KeyCode.VcC);
