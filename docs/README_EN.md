@@ -151,7 +151,7 @@ Notes:
 - Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/542ad23b33314b36807c05a5d8aa5c22). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
-#### Use [HTTP Request Shortcuts](https://play.google.com/store/apps/details?id=ch.rmy.android.http_shortcuts)
+#### Use [HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
 Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. Make sure no slash(/) at the end of url. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
 
 <details>
