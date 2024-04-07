@@ -126,6 +126,11 @@ public class SyncClipboardController
             }
             return await PutFile(content, rootPath, Path.Combine(rootPath, name));
         }).RequireAuthorization();
+
+        app.MapGet("/", () =>
+        {
+            return "Server is running.";
+        }).ExcludeFromDescription().RequireAuthorization();
     }
 
     public static bool InvalidFileName(string name)
