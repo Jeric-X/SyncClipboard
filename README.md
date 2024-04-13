@@ -168,22 +168,11 @@ docker compose up -d
 </details>
 
 #### 使用[Autox.js](https://github.com/kkevsekk1/AutoX)
-导入这个[js文件](/script/SyncAutoxJs.js)，修改脚本中的前几行，并在`Autox.js`中设置脚本的触发方式，例如：开机时触发
-```
-// START  User Config  
-const url = 'http://192.168.5.194:5033'  
-const username = 'admin'
-const token = 'admin'
-const intervalTime = 3 * 1000                         // 3 seconds
-const showToastNotification = true
-// END    User Config  
-```
-Autox.js脚本运行在后台时可以自动下载远程剪贴板文字到本地，但自动上传依赖下列条件之一
-- 将软件切换到前台
-- Android版本小于等于Android 9 Pie
-- 使用基于root权限的工具(Magisk/Xposed)解除`Autox.js`后台操作剪切版的权限，参考
-  - https://github.com/Kr328/Riru-ClipboardWhitelist
-  - https://github.com/GamerGirlandCo/xposed-clipboard-whitelist
+
+- 自动同步，使用这个[js文件](/script/SyncAutoxJs.js)。由于安卓系统限制，在安卓10及以上的系统APP无法在后台读取剪贴板，但可以使用基于root权限的工具(Magisk/Xposed)解除APP后台读取剪贴版的权限，如[Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)、[xposed-clipboard-whitelist](https://github.com/GamerGirlandCo/xposed-clipboard-whitelist)
+- 自动上传验证码，使用这个[js文件](/script/UploadVerificationCode.js)，这个脚本运行在后台时将读取所有通知消息，在识别到验证码类信息时将证码上传到服务器
+
+导入js文件、修改每个文件头部的用户配置后，手动点击运行，或者为每个js文件设置触发方式，例如：开机时触发
 
 ### 客户端配置说明
 
