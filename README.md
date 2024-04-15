@@ -23,6 +23,7 @@
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
       - [使用Autox.js](#使用autoxjs)
+      - [使用Tasker](#使用tasker)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
     - [获取/上传剪贴板（文字）](#获取上传剪贴板文字)
@@ -169,10 +170,17 @@ docker compose up -d
 
 #### 使用[Autox.js](https://github.com/kkevsekk1/AutoX)
 
-- 自动同步，使用这个[js文件](/script/SyncAutoxJs.js)。由于安卓系统限制，在安卓10及以上的系统APP无法在后台读取剪贴板，但可以使用基于root权限的工具(Magisk/Xposed)解除APP后台读取剪贴版的权限，如[Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)、[xposed-clipboard-whitelist](https://github.com/GamerGirlandCo/xposed-clipboard-whitelist)
+- 自动同步，使用这个[js文件](/script/SyncAutoxJs.js)。由于安卓系统限制，在安卓10及以上的系统应用无法在后台读取剪贴板，但可以使用基于root权限的工具(Magisk/Xposed)解除应用后台读取剪贴版的权限，如[Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)、[xposed-clipboard-whitelist](https://github.com/GamerGirlandCo/xposed-clipboard-whitelist)
 - 自动上传验证码，使用这个[js文件](/script/UploadVerificationCode.js)，这个脚本运行在后台时将读取所有通知消息，在识别到验证码类信息时将证码上传到服务器
 
 导入js文件、修改每个文件头部的用户配置后，手动点击运行，或者为每个js文件设置触发方式，例如：开机时触发
+
+#### 使用[Tasker](https://tasker.joaoapps.com/)
+
+- https://github.com/forrestgao/taskerforSyncClipboard ，作者：[forrestgao](https://github.com/forrestgao)
+
+Tasker是一款安卓系统上非常强大的自动化工具软件，你可以根据SyncClipboard的API创建适合自己的配置文件，如果你认为你的配置文件非常通用并希望分享出来，欢迎联系我置于此处
+
 
 ### 客户端配置说明
 
@@ -183,7 +191,8 @@ docker compose up -d
 
 ## API
 
-以下是SyncClipboard用到的且SyncClipboard.Server实现了的接口
+API基于WebDAV，在独立服务器运行环境下设定环境变量ASPNETCORE_ENVIRONMENT为Development后运行服务器，或桌面客户端打开服务器并打开设置里的诊断模式后，
+访问`http://ip:端口/swagger/index.html`可以打开API页面，以下是部分关键API
 
 ### 获取/上传剪贴板（文字）
 ```
