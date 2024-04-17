@@ -136,31 +136,23 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private static bool NeedAdjust(Profile profile, ClipboardMetaInfomation metaInfo)
     {
-        if (profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType)
+        bool[] badCaseList = {
+            profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
+            metaInfo.OriginalType is not null && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
+            metaInfo.Files?.Length > 1,
+            (metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move,
+            metaInfo.Html is not null && metaInfo.Files is not null && metaInfo.Image is null
+                && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType,
+        };
+
+        foreach (var badCase in badCaseList)
         {
-            return false;
+            if (badCase)
+            {
+                return false;
+            }
         }
 
-        if (metaInfo.OriginalType is not null && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType)
-        {
-            return false;
-        }
-
-        if (metaInfo.Files?.Length > 1)
-        {
-            return false;
-        }
-
-        if ((metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move)
-        {
-            return false;
-        }
-
-        if (metaInfo.Html is not null && metaInfo.Files is not null
-            && metaInfo.Image is null && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType)
-        {
-            return false;
-        }
         return metaInfo.Files is null || metaInfo.Html is null || metaInfo.Image is null;
     }
 
