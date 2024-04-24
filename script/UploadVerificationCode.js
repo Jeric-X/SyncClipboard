@@ -15,7 +15,7 @@ while (urlWithoutSlash.endsWith('/'))
 const apiUrl = urlWithoutSlash + '/SyncClipboard.json'
 
 function upload(text) {
-    if (text != null && text.length != 0) {
+    if (text !== null && text.length !== 0) {
         return axios({
             method: 'put',
             url: apiUrl,
@@ -46,9 +46,10 @@ function upload(text) {
 
 events.observeNotification();
 events.onNotification(notification => {
-    if (notification.getText().includes('验证')) {
+    const text = notification.getText();
+    if (text !== null && text.includes('验证')) {
         var res = /\d{4,}/.exec(notification.getText())
-        if (res != null) {
+        if (res !== null) {
             upload(res[0])
         }
     }
