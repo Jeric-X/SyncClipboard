@@ -53,6 +53,8 @@ public abstract class Profile
         return Task.CompletedTask;
     }
 
+    public virtual ValueTask<bool> IsAvailableFromRemote(CancellationToken _) => ValueTask.FromResult(true);
+
     protected virtual void SetNotification(INotification notificationManager)
     {
         notificationManager.SendText(I18n.Strings.ClipboardUpdated, Text);

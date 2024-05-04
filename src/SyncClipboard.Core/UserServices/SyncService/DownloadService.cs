@@ -313,14 +313,7 @@ public class DownloadService : Service
             return false;
         }
 
-        if (remoteProfile is FileProfile)
-        {
-            if (await (remoteProfile as FileProfile)!.Oversized(cancelToken))
-            {
-                return false;
-            }
-        }
-        return true;
+        return await remoteProfile.IsAvailableFromRemote(cancelToken);
     }
 
     private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)

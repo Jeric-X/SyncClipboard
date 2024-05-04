@@ -23,19 +23,13 @@ public class UnkonwnProfile : Profile
 
     protected override Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
     {
-        try
-        {
-            var _ = (TextProfile)rhs;
-            return Task.FromResult(true);
-        }
-        catch
-        {
-            return Task.FromResult(false);
-        }
+        return Task.FromResult(rhs is UnkonwnProfile);
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         throw new System.NotImplementedException();
     }
+
+    public override ValueTask<bool> IsAvailableFromRemote(CancellationToken _) => ValueTask.FromResult(false);
 }

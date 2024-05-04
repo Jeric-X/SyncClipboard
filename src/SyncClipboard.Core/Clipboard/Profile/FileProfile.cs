@@ -226,10 +226,12 @@ public class FileProfile : Profile
         );
     }
 
-    public async Task<bool> Oversized(CancellationToken cancelToken)
+    private async Task<bool> Oversized(CancellationToken cancelToken)
     {
         return await GetFileHash(cancelToken) == MD5_FOR_OVERSIZED_FILE;
     }
+
+    public override async ValueTask<bool> IsAvailableFromRemote(CancellationToken token) => !await Oversized(token);
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
