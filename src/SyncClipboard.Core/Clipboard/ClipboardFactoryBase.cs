@@ -41,7 +41,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             return new ImageProfile(metaInfomation.Image, ServiceProvider);
         }
 
-        return new UnkonwnProfile();
+        return new UnknownProfile();
     }
 
     private async Task<Profile> UploadAndReturnBlankProfile(CancellationToken ctk)
@@ -99,7 +99,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
                 return new ImageProfile(profileDTO, ServiceProvider);
         }
 
-        return new UnkonwnProfile();
+        return new UnknownProfile();
     }
 
     public async Task<(ClipboardProfileDTO, string?)> CreateProfileDto(CancellationToken ctk)

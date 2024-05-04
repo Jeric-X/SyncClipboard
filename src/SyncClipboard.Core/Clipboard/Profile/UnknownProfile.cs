@@ -4,7 +4,7 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
-public class UnkonwnProfile : Profile
+public class UnknownProfile : Profile
 {
     public override ProfileType Type => ProfileType.Unknown;
 
@@ -23,7 +23,7 @@ public class UnkonwnProfile : Profile
 
     protected override Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
     {
-        return Task.FromResult(rhs is UnkonwnProfile);
+        return Task.FromResult(rhs is UnknownProfile);
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
