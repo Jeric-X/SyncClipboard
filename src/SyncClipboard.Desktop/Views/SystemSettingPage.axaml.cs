@@ -23,10 +23,7 @@ public partial class SystemSettingPage : UserControl
 
     private void CopyAppDataFolderPath(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var profile = new TextProfile(
-            Core.Commons.Env.AppDataDirectory,
-            App.Current.Services.GetRequiredService<IServiceProvider>()
-        );
+        var profile = new TextProfile(Core.Commons.Env.AppDataDirectory);
         profile.SetLocalClipboard(true, CancellationToken.None);
     }
 
