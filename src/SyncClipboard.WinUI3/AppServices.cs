@@ -37,6 +37,7 @@ public class AppServices
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
+        services.AddTransient<IClipboardSetter<GroupProfile>, GroupClipboardSetter>();
 
         return services;
     }

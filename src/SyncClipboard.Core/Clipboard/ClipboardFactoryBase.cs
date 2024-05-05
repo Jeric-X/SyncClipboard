@@ -101,6 +101,8 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
                 }
             case ProfileType.Image:
                 return new ImageProfile(profileDTO);
+            case ProfileType.Group:
+                return new GroupProfile(profileDTO);
         }
 
         return new UnknownProfile();
