@@ -52,7 +52,7 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
             PrepareRemoteWorkingFolder();
-            PrepareWorkingFolder(configManager);
+            DelegateExtention.InvokeNoExcept(() => PrepareWorkingFolder(configManager));
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 

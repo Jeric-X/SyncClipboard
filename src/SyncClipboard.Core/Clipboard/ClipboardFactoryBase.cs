@@ -18,16 +18,20 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 
     public Profile CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation)
     {
-        if (metaInfomation.Files != null)
+        if (metaInfomation.Files != null && metaInfomation.Files.Length >= 1)
         {
             var filename = metaInfomation.Files[0];
-            if (File.Exists(filename))
+            if (metaInfomation.Files.Length == 1 && File.Exists(filename))
             {
                 if (ImageHelper.FileIsImage(filename))
                 {
                     return new ImageProfile(filename);
                 }
                 return new FileProfile(filename);
+            }
+            else
+            {
+                return new GroupProfile(metaInfomation.Files);
             }
         }
 

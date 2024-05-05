@@ -31,4 +31,16 @@ public static class DelegateExtention
             }
         };
     }
+
+    public static void InvokeNoExcept(this Action action, string? logTag = null)
+    {
+        try
+        {
+            action.Invoke();
+        }
+        catch (Exception ex)
+        {
+            AppCore.Current?.Logger.Write(logTag, $"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
+        }
+    }
 }
