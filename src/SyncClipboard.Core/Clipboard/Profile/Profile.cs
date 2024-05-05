@@ -24,8 +24,7 @@ public abstract class Profile
     public abstract string ToolTip();
     public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
 
-    protected abstract IClipboardSetter<Profile> ClipboardSetter { get; set; }
-    protected abstract IServiceProvider ServiceProvider { get; set; }
+    protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }
     protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
     protected abstract ClipboardMetaInfomation CreateMetaInformation();
 
@@ -33,9 +32,12 @@ public abstract class Profile
 
     protected const string RemoteProfilePath = Env.RemoteProfilePath;
     protected readonly static string LocalTemplateFolder = Env.TemplateFileFolder;
+    protected readonly static IServiceProvider ServiceProvider = AppCore.Current.Services;
+    protected IWebDav WebDav { get; private init; }
+    protected ILogger Logger { get; private init; }
 
-    private INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
-    private bool EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>().NotifyOnDownloaded;
+    private static INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
+    private static bool EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>().NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
     public ClipboardMetaInfomation MetaInfomation
@@ -45,6 +47,12 @@ public abstract class Profile
             @metaInfomation ??= CreateMetaInformation();
             return @metaInfomation;
         }
+    }
+
+    protected Profile()
+    {
+        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
+        Logger = ServiceProvider.GetRequiredService<ILogger>();
     }
 
     public virtual Task BeforeSetLocal(CancellationToken cancelToken,

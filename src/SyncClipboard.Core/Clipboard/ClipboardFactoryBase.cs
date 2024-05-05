@@ -25,20 +25,20 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             {
                 if (ImageHelper.FileIsImage(filename))
                 {
-                    return new ImageProfile(filename, ServiceProvider);
+                    return new ImageProfile(filename);
                 }
-                return new FileProfile(filename, ServiceProvider);
+                return new FileProfile(filename);
             }
         }
 
         if (metaInfomation.Text != null)
         {
-            return new TextProfile(metaInfomation.Text, ServiceProvider);
+            return new TextProfile(metaInfomation.Text);
         }
 
         if (metaInfomation.Image != null)
         {
-            return new ImageProfile(metaInfomation.Image, ServiceProvider);
+            return new ImageProfile(metaInfomation.Image);
         }
 
         return new UnknownProfile();
@@ -46,7 +46,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 
     private async Task<Profile> UploadAndReturnBlankProfile(CancellationToken ctk)
     {
-        var blankProfile = new TextProfile("", ServiceProvider);
+        var blankProfile = new TextProfile("");
         await blankProfile.UploadProfile(WebDav, ctk);
         return blankProfile;
     }
@@ -81,22 +81,22 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         }
     }
 
-    private Profile GetProfileBy(ClipboardProfileDTO profileDTO)
+    private static Profile GetProfileBy(ClipboardProfileDTO profileDTO)
     {
         switch (profileDTO.Type)
         {
             case ProfileType.Text:
-                return new TextProfile(profileDTO.Clipboard, ServiceProvider);
+                return new TextProfile(profileDTO.Clipboard);
             case ProfileType.File:
                 {
                     if (ImageHelper.FileIsImage(profileDTO.File))
                     {
-                        return new ImageProfile(profileDTO, ServiceProvider);
+                        return new ImageProfile(profileDTO);
                     }
-                    return new FileProfile(profileDTO, ServiceProvider);
+                    return new FileProfile(profileDTO);
                 }
             case ProfileType.Image:
-                return new ImageProfile(profileDTO, ServiceProvider);
+                return new ImageProfile(profileDTO);
         }
 
         return new UnknownProfile();

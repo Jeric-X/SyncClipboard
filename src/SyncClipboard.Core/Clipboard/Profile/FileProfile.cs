@@ -16,8 +16,8 @@ public class FileProfile : Profile
     public override string Text { get => _fileMd5Hash; set => base.Text = value; }
     public override ProfileType Type => ProfileType.File;
 
-    protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
-    protected override IServiceProvider ServiceProvider { get; set; }
+    protected override IClipboardSetter<Profile> ClipboardSetter
+        => ServiceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
 
     public virtual string? FullPath { get; set; }
 
@@ -27,31 +27,25 @@ public class FileProfile : Profile
     private string? _statusTip;
     private string StatusTip => string.IsNullOrEmpty(_statusTip) ? FileName : _statusTip;
 
-    private readonly IWebDav? WebDav;
-    private readonly ILogger Logger;
     private readonly string RemoteFileFolder;
 
-    public FileProfile(string file, IServiceProvider serviceProvider) : this(serviceProvider)
+    public FileProfile(string file) : this()
     {
         FileName = Path.GetFileName(file);
         FullPath = file;
     }
 
-    public FileProfile(ClipboardProfileDTO profileDTO, IServiceProvider serviceProvider) : this(serviceProvider)
+    public FileProfile(ClipboardProfileDTO profileDTO) : this()
     {
         FileName = profileDTO.File;
         SetFileHash(profileDTO.Clipboard);
     }
 
-    private FileProfile(IServiceProvider serviceProvider)
+    protected FileProfile()
     {
-        ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
-        WebDav = serviceProvider.GetRequiredService<IWebDav>();
-        Logger = serviceProvider.GetRequiredService<ILogger>();
-        ServiceProvider = serviceProvider;
         RemoteFileFolder = Env.RemoteFileFolder;
 
-        var configManager = serviceProvider.GetRequiredService<ConfigManager>();
+        var configManager = ServiceProvider.GetRequiredService<ConfigManager>();
         var syncConfig = configManager.GetConfig<SyncConfig>();
         _maxFileByte = syncConfig.MaxFileByte;
     }

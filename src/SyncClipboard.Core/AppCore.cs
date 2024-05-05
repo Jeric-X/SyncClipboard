@@ -16,7 +16,8 @@ namespace SyncClipboard.Core
 {
     public class AppCore
     {
-        public static AppCore? Current { get; private set; }
+        private static AppCore? _current;
+        public static AppCore Current => _current ?? throw new Exception("Appcore is not initialized");
         public IServiceProvider Services { get; }
         public ILogger Logger { get; }
 
@@ -25,7 +26,7 @@ namespace SyncClipboard.Core
         public AppCore(IServiceProvider serviceProvider)
         {
             Services = serviceProvider;
-            Current = this;
+            _current = this;
             Logger = serviceProvider.GetRequiredService<ILogger>();
         }
 

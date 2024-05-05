@@ -8,8 +8,7 @@ public class UnknownProfile : Profile
 {
     public override ProfileType Type => ProfileType.Unknown;
 
-    protected override IClipboardSetter<Profile> ClipboardSetter { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
-    protected override IServiceProvider ServiceProvider { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    protected override IClipboardSetter<Profile> ClipboardSetter => throw new NotImplementedException();
 
     public override string ToolTip()
     {

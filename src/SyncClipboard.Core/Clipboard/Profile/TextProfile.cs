@@ -11,14 +11,12 @@ public class TextProfile : Profile
 {
     public override ProfileType Type => ProfileType.Text;
 
-    protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
-    protected override IServiceProvider ServiceProvider { get; set; }
+    protected override IClipboardSetter<Profile> ClipboardSetter
+        => ServiceProvider.GetRequiredService<IClipboardSetter<TextProfile>>();
 
-    public TextProfile(string text, IServiceProvider serviceProvider)
+    public TextProfile(string text)
     {
         Text = text;
-        ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<TextProfile>>();
-        ServiceProvider = serviceProvider;
     }
 
     public override string ToolTip()

@@ -8,7 +8,8 @@ namespace SyncClipboard.Core.Clipboard;
 public class ImageProfile : FileProfile
 {
     public override ProfileType Type => ProfileType.Image;
-    protected override IClipboardSetter<Profile> ClipboardSetter { get; set; }
+    protected override IClipboardSetter<Profile> ClipboardSetter
+        => ServiceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
     public override string FileName
     {
         get
@@ -38,19 +39,16 @@ public class ImageProfile : FileProfile
     private IClipboardImage? Image { get; set; }
     private readonly static string ImageTemplateFolder = Path.Combine(LocalTemplateFolder, "temp images");
 
-    public ImageProfile(string filepath, IServiceProvider serviceProvider) : base(filepath, serviceProvider)
+    public ImageProfile(string filepath) : base(filepath)
     {
-        ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
     }
 
-    public ImageProfile(ClipboardProfileDTO profileDTO, IServiceProvider serviceProvider) : base(profileDTO, serviceProvider)
+    public ImageProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
-        ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
     }
 
-    public ImageProfile(IClipboardImage image, IServiceProvider serviceProvider) : base("", serviceProvider)
+    public ImageProfile(IClipboardImage image) : base()
     {
-        ClipboardSetter = serviceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
         Image = image;
     }
 
