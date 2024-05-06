@@ -23,8 +23,21 @@ public class ImageProfile : FileProfile
 
     public static async Task<ImageProfile> Create(IClipboardImage image, CancellationToken token)
     {
-        var fullPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
-        return await Create(fullPath, token);
+        for (int i = 0; ; i++)
+        {
+            try
+            {
+                var fullPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
+                return await Create(fullPath, token);
+            }
+            catch when (!token.IsCancellationRequested)
+            {
+                Logger.Write($"SaveImageToFile wrong time {i + 1}");
+                if (i > 5)
+                    throw;
+            }
+            await Task.Delay(100, token);
+        }
     }
 
     public static new async Task<ImageProfile> Create(string fullPath, CancellationToken token)

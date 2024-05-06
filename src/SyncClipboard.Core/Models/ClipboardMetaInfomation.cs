@@ -10,7 +10,19 @@ public record class ClipboardMetaInfomation
     public string? Text;
     public string? Html;
     public IClipboardImage? Image;
-    public string[]? Files;
+    public string[]? _files;
+    public string[]? Files
+    {
+        get => _files;
+        set
+        {
+            _files = (string[]?)value?.Clone();
+            if (_files != null)
+            {
+                Array.Sort(_files);
+            }
+        }
+    }
     public DragDropEffects? Effects;
     public string? OriginalType;
 

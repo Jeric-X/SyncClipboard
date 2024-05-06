@@ -46,6 +46,7 @@ public class GroupProfile : FileProfile
             if (Directory.Exists(file))
             {
                 var directoryInfo = new DirectoryInfo(file);
+                hash += (hash * -1521134295) + directoryInfo.Name.GetHashCode();
                 foreach (var subFile in directoryInfo.GetFiles("*", SearchOption.AllDirectories))
                 {
                     sumSize += subFile.Length;
@@ -115,7 +116,11 @@ public class GroupProfile : FileProfile
         using ZipFile zip = ZipFile.Read(FullPath);
 
         await Task.Run(() => zip.ExtractAll(extractPath, ExtractExistingFileAction.DoNotOverwrite), token).WaitAsync(token);
-        _files = zip.EntryFileNames.Select(fileName => Path.Combine(extractPath, fileName.TrimEnd('\\', '/'))).ToArray();
+        _files = zip.EntryFileNames
+            .Select(file => file.TrimEnd('/'))
+            .Where(file => !file.Contains('/'))
+            .Select(file => Path.Combine(extractPath, file))
+            .ToArray();
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
