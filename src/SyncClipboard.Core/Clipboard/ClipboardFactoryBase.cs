@@ -31,7 +31,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             }
             else
             {
-                return new GroupProfile(metaInfomation.Files);
+                return await GroupProfile.Create(metaInfomation.Files, ctk);
             }
         }
 

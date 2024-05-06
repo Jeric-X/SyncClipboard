@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Text;
 
@@ -13,29 +14,61 @@ public class GroupProfile : FileProfile
     private string[]? _files;
 
     public override ProfileType Type => ProfileType.Group;
-    public override string FileName
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(base.FileName))
-            {
-                FileName = $"{Path.GetRandomFileName()}.zip";
-            }
-            return base.FileName;
-        }
-        set => base.FileName = value;
-    }
 
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
 
-    public GroupProfile(string[] files) : base(null, "")
+    private GroupProfile(string[] files, string hash)
+        : base(Path.Combine(LocalTemplateFolder, $"{Path.GetRandomFileName()}.zip"), hash)
     {
         _files = files;
     }
 
     public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
+    }
+
+    public static async Task<GroupProfile> Create(string[] files, CancellationToken token)
+    {
+        var hash = await Task.Run(() => CaclHash(files)).WaitAsync(token);
+        return new GroupProfile(files, hash);
+    }
+
+    private static string CaclHash(string[] files)
+    {
+        var maxSize = Config.GetConfig<SyncConfig>().MaxFileByte;
+        Array.Sort(files);
+        long sumSize = 0;
+        int hash = 0;
+        string? hashString = null;
+        foreach (var file in files)
+        {
+            if (Directory.Exists(file))
+            {
+                var directoryInfo = new DirectoryInfo(file);
+                foreach (var subFile in directoryInfo.GetFiles("*", SearchOption.AllDirectories))
+                {
+                    sumSize += subFile.Length;
+                    if (sumSize > maxSize)
+                        break;
+                    hash += (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).GetHashCode();
+                }
+            }
+            else if (File.Exists(file))
+            {
+                var fileInfo = new FileInfo(file);
+                sumSize += fileInfo.Length;
+                hash += (hash * -1521134295) + (fileInfo.Name + fileInfo.Length.ToString()).GetHashCode();
+            }
+
+            if (sumSize > maxSize)
+            {
+                hashString = MD5_FOR_OVERSIZED_FILE;
+                break;
+            }
+        }
+
+        return hashString ?? hash.ToString();
     }
 
     public override async Task UploadProfile(IWebDav webdav, CancellationToken token)
@@ -90,4 +123,6 @@ public class GroupProfile : FileProfile
         ArgumentNullException.ThrowIfNull(_files);
         return new ClipboardMetaInfomation() { Files = _files };
     }
+
+    protected override Task CheckHash(string _, CancellationToken _1) => Task.CompletedTask;
 }

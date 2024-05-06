@@ -21,7 +21,7 @@ public class FileProfile : Profile
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
 
-    private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
+    protected const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
     private string? _statusTip;
     private string StatusTip => string.IsNullOrEmpty(_statusTip) ? FileName : _statusTip;
 
@@ -99,7 +99,7 @@ public class FileProfile : Profile
         _statusTip = FileName;
     }
 
-    private async Task CheckHash(string localPath, CancellationToken cancelToken)
+    protected virtual async Task CheckHash(string localPath, CancellationToken cancelToken)
     {
         var downloadedMd5 = await GetMD5HashFromFile(localPath, cancelToken);
         var existedMd5 = Hash;
