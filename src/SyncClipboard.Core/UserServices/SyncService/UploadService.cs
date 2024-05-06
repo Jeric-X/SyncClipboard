@@ -165,9 +165,9 @@ public class UploadService : ClipboardHander
         PushStopped?.Invoke();
     }
 
-    private async Task<bool> IsDownloadServiceWorking(Profile profile, CancellationToken token)
+    private bool IsDownloadServiceWorking(Profile profile)
     {
-        if (await Profile.Same(profile, _profileCache, token))
+        if (Profile.Same(profile, _profileCache))
         {
             _logger.Write(LOG_TAG, "Same as lasted downloaded profile, won't push.");
             _profileCache = null;
@@ -185,12 +185,12 @@ public class UploadService : ClipboardHander
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var profile = _clipboardFactory.CreateProfileFromMeta(meta);
+        var profile = await _clipboardFactory.CreateProfileFromMeta(meta, token);
 
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
-            if (await IsDownloadServiceWorking(profile, token) || await IsObsoleteMeta(meta, token))
+            if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token))
             {
                 _logger.Write(LOG_TAG, "Stop Push.");
                 return;
@@ -229,7 +229,7 @@ public class UploadService : ClipboardHander
             try
             {
                 var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
-                if (!await Profile.Same(remoteProfile, profile, cancelToken))
+                if (!Profile.Same(remoteProfile, profile))
                 {
                     _logger.Write(LOG_TAG, "Start: " + profile.ToJsonString());
                     await CleanServerTempFile(cancelToken);

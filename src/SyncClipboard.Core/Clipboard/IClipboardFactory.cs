@@ -5,6 +5,6 @@ namespace SyncClipboard.Core.Clipboard;
 public interface IClipboardFactory
 {
     Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
-    Profile CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation);
+    Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk);
     Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken);
 }

@@ -20,15 +20,15 @@ public class UnknownProfile : Profile
         return Task.CompletedTask;
     }
 
-    protected override Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
+    protected override bool Same(Profile rhs)
     {
-        return Task.FromResult(rhs is UnknownProfile);
+        return rhs is UnknownProfile;
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 
-    public override ValueTask<bool> IsAvailableFromRemote(CancellationToken _) => ValueTask.FromResult(false);
+    public override bool IsAvailableFromRemote() => false;
 }

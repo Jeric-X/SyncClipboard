@@ -297,7 +297,7 @@ public class DownloadService : Service
         var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(token);
         _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
-        if (await NeedUpdate(remoteProfile, token))
+        if (NeedUpdate(remoteProfile))
         {
             await SetRemoteProfileToLocal(remoteProfile, token);
             _remoteProfileCache = remoteProfile;
@@ -306,28 +306,28 @@ public class DownloadService : Service
         _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
     }
 
-    private async Task<bool> NeedUpdate(Profile remoteProfile, CancellationToken cancelToken)
+    private bool NeedUpdate(Profile remoteProfile)
     {
-        if (!_isQuickDownload && await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+        if (!_isQuickDownload && Profile.Same(remoteProfile, _remoteProfileCache))
         {
             return false;
         }
 
-        return await remoteProfile.IsAvailableFromRemote(cancelToken);
+        return remoteProfile.IsAvailableFromRemote();
     }
 
     private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
         var meta = await _clipboardFactory.GetMetaInfomation(cancelToken);
-        Profile localProfile = _clipboardFactory.CreateProfileFromMeta(meta);
+        Profile localProfile = await _clipboardFactory.CreateProfileFromMeta(meta, cancelToken);
 
-        if (!await Profile.Same(remoteProfile, localProfile, cancelToken))
+        if (!Profile.Same(remoteProfile, localProfile))
         {
             _trayIcon.SetStatusString(SERVICE_NAME, "Downloading");
             _trayIcon.ShowDownloadAnimation();
             try
             {
-                if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
+                if (Profile.Same(remoteProfile, _remoteProfileCache))
                 {
                     remoteProfile = _remoteProfileCache!;
                 }

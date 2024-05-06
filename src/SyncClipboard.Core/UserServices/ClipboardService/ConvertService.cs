@@ -33,7 +33,7 @@ public class ConvertService : ClipboardHander
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation metaInfo, CancellationToken cancellationToken)
     {
-        var clipboardProfile = _clipboardFactory.CreateProfileFromMeta(metaInfo);
+        var clipboardProfile = await _clipboardFactory.CreateProfileFromMeta(metaInfo, cancellationToken);
         if (clipboardProfile.Type != ProfileType.File || !NeedAdjust(metaInfo))
         {
             return;
@@ -43,7 +43,8 @@ public class ConvertService : ClipboardHander
         {
             var file = metaInfo.Files![0];
             var newPath = await CompatibilityCast(_serviceProvider, file, cancellationToken);
-            new ImageProfile(newPath).SetLocalClipboard(false, cancellationToken);
+            var profile = await ImageProfile.Create(newPath, cancellationToken);
+            profile.SetLocalClipboard(false, cancellationToken);
         }
         catch (Exception ex)
         {

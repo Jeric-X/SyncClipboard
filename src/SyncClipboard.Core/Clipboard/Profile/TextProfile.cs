@@ -24,16 +24,16 @@ public class TextProfile : Profile
         return Text;
     }
 
-    protected override Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
+    protected override bool Same(Profile rhs)
     {
         try
         {
             var textprofile = (TextProfile)rhs;
-            return Task.FromResult(Text == textprofile.Text);
+            return Text == textprofile.Text;
         }
         catch
         {
-            return Task.FromResult(false);
+            return false;
         }
     }
 

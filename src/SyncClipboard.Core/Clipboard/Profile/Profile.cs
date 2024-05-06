@@ -25,19 +25,20 @@ public abstract class Profile
     public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
 
     protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }
-    protected abstract Task<bool> Same(Profile rhs, CancellationToken cancellationToken);
+    protected abstract bool Same(Profile rhs);
     protected abstract ClipboardMetaInfomation CreateMetaInformation();
 
     #endregion
 
     protected const string RemoteProfilePath = Env.RemoteProfilePath;
     protected readonly static string LocalTemplateFolder = Env.TemplateFileFolder;
-    protected readonly static IServiceProvider ServiceProvider = AppCore.Current.Services;
-    protected IWebDav WebDav { get; private init; }
-    protected ILogger Logger { get; private init; }
+    protected static IServiceProvider ServiceProvider { get; } = AppCore.Current.Services;
+    protected static IWebDav WebDav => ServiceProvider.GetRequiredService<IWebDav>();
+    protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
+    protected static ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
     private static INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
-    private static bool EnableNotify => ServiceProvider.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>().NotifyOnDownloaded;
+    private static bool EnableNotify => Config.GetConfig<SyncConfig>().NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
     public ClipboardMetaInfomation MetaInfomation
@@ -49,19 +50,13 @@ public abstract class Profile
         }
     }
 
-    protected Profile()
-    {
-        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
-        Logger = ServiceProvider.GetRequiredService<ILogger>();
-    }
-
     public virtual Task BeforeSetLocal(CancellationToken cancelToken,
         IProgress<HttpDownloadProgress>? progress = null)
     {
         return Task.CompletedTask;
     }
 
-    public virtual ValueTask<bool> IsAvailableFromRemote(CancellationToken _) => ValueTask.FromResult(true);
+    public virtual bool IsAvailableFromRemote() => true;
 
     protected virtual void SetNotification(INotification notificationManager)
     {
@@ -82,7 +77,7 @@ public abstract class Profile
 
     public ClipboardProfileDTO ToDto() => new ClipboardProfileDTO(FileName, Text, Type);
 
-    public static async Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken cancellationToken)
+    public static bool Same(Profile? lhs, Profile? rhs)
     {
         if (ReferenceEquals(lhs, rhs))
         {
@@ -104,7 +99,7 @@ public abstract class Profile
             return false;
         }
 
-        return await lhs.Same(rhs, cancellationToken);
+        return lhs.Same(rhs);
     }
 
     public override string ToString()

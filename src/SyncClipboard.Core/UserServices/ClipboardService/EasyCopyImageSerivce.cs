@@ -119,7 +119,7 @@ public class EasyCopyImageSerivce : ClipboardHander
     private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
     {
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
-        var profile = _clipboardFactory.CreateProfileFromMeta(metaInfo);
+        var profile = await _clipboardFactory.CreateProfileFromMeta(metaInfo, cancellationToken);
         if (NeedAdjust(profile, metaInfo) is not true)
         {
             return;
@@ -189,7 +189,7 @@ public class EasyCopyImageSerivce : ClipboardHander
                     TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
                     localPath = await ConvertService.CompatibilityCast(_serviceProvider, localPath, ctk);
                 }
-                return new ImageProfile(localPath);
+                return await ImageProfile.Create(localPath, ctk);
             }
             catch
             {

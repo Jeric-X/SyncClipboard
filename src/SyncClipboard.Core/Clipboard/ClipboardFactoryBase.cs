@@ -16,7 +16,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
 
-    public Profile CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation)
+    public async Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
         if (metaInfomation.Files != null && metaInfomation.Files.Length >= 1)
         {
@@ -25,9 +25,9 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             {
                 if (ImageHelper.FileIsImage(filename))
                 {
-                    return new ImageProfile(filename);
+                    return await ImageProfile.Create(filename, ctk);
                 }
-                return new FileProfile(filename);
+                return await FileProfile.Create(filename, ctk);
             }
             else
             {
@@ -42,7 +42,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 
         if (metaInfomation.Image != null)
         {
-            return new ImageProfile(metaInfomation.Image);
+            return await ImageProfile.Create(metaInfomation.Image, ctk);
         }
 
         return new UnknownProfile();
@@ -58,7 +58,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     public async Task<Profile> CreateProfileFromLocal(CancellationToken ctk)
     {
         var meta = await GetMetaInfomation(ctk);
-        return CreateProfileFromMeta(meta);
+        return await CreateProfileFromMeta(meta, ctk);
     }
 
     public async Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken)
@@ -114,7 +114,6 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         var profile = await CreateProfileFromLocal(ctk);
         if (profile is FileProfile fileProfile)
         {
-            await fileProfile.CalcFileHash(ctk);
             extraFilePath = fileProfile.FullPath;
         }
         return (profile.ToDto(), extraFilePath);
@@ -132,7 +131,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         try
         {
             var ctk = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-            if (!await Profile.Same(profile, await CreateProfileFromLocal(ctk), ctk))
+            if (Profile.Same(profile, await CreateProfileFromLocal(ctk)))
             {
                 profile.SetLocalClipboard(true, ctk);
                 Logger.Write("Set clipboard with: " + profileDto.ToString().Replace(Environment.NewLine, @"\n"));

@@ -10,36 +10,10 @@ public class ImageProfile : FileProfile
     public override ProfileType Type => ProfileType.Image;
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
-    public override string FileName
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(base.FileName))
-            {
-                FileName = Path.GetFileName(FullPath)!;
-            }
-            return base.FileName;
-        }
-        set => base.FileName = value;
-    }
 
-    public override string? FullPath
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(base.FullPath) && Image is not null)
-            {
-                SaveImageToFile();
-            }
-            return base.FullPath;
-        }
-        set => base.FullPath = value;
-    }
-
-    private IClipboardImage? Image { get; set; }
     private readonly static string ImageTemplateFolder = Path.Combine(LocalTemplateFolder, "temp images");
 
-    public ImageProfile(string filepath) : base(filepath)
+    private ImageProfile(string fullPath, string hash) : base(fullPath, hash)
     {
     }
 
@@ -47,21 +21,28 @@ public class ImageProfile : FileProfile
     {
     }
 
-    public ImageProfile(IClipboardImage image) : base()
+    public static async Task<ImageProfile> Create(IClipboardImage image, CancellationToken token)
     {
-        Image = image;
+        var fullPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
+        return await Create(fullPath, token);
     }
 
-    private void SaveImageToFile()
+    public static new async Task<ImageProfile> Create(string fullPath, CancellationToken token)
     {
-        ArgumentNullException.ThrowIfNull(Image);
+        var hash = await GetMD5HashFromFile(fullPath, token);
+        return new ImageProfile(fullPath, hash);
+    }
+
+    private static string SaveImageToFile(IClipboardImage image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
         if (!Directory.Exists(ImageTemplateFolder))
         {
             Directory.CreateDirectory(ImageTemplateFolder);
         }
         var filePath = Path.Combine(ImageTemplateFolder, $"{Path.GetRandomFileName()}.png");
-        Image.Save(filePath);
-        FullPath = filePath;
+        image.Save(filePath);
+        return filePath;
     }
 
     protected override void SetNotification(INotification notification)

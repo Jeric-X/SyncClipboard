@@ -29,7 +29,7 @@ public class GroupProfile : FileProfile
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
 
-    public GroupProfile(string[] files) : base()
+    public GroupProfile(string[] files) : base(null, "")
     {
         _files = files;
     }

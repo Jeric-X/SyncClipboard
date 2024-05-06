@@ -13,41 +13,39 @@ namespace SyncClipboard.Core.Clipboard;
 
 public class FileProfile : Profile
 {
-    public override string Text { get => _fileMd5Hash; set => base.Text = value; }
+    public override string Text { get => Hash; set => Hash = value; }
     public override ProfileType Type => ProfileType.File;
+    public virtual string? FullPath { get; set; }
+    public virtual string Hash { get; set; }
 
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
 
-    public virtual string? FullPath { get; set; }
-
     private const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
-    private readonly uint _maxFileByte;
-    private string _fileMd5Hash = "";
     private string? _statusTip;
     private string StatusTip => string.IsNullOrEmpty(_statusTip) ? FileName : _statusTip;
 
-    private readonly string RemoteFileFolder;
+    private static readonly string RemoteFileFolder = Env.RemoteFileFolder;
 
-    public FileProfile(string file) : this()
+    protected FileProfile(string fullPath, string hash) : this(fullPath, Path.GetFileName(fullPath), hash)
     {
-        FileName = Path.GetFileName(file);
-        FullPath = file;
     }
 
-    public FileProfile(ClipboardProfileDTO profileDTO) : this()
+    public FileProfile(ClipboardProfileDTO profileDTO) : this(null, profileDTO.File, profileDTO.Clipboard)
     {
-        FileName = profileDTO.File;
-        SetFileHash(profileDTO.Clipboard);
     }
 
-    protected FileProfile()
+    private FileProfile(string? fullPath, string fileName, string hash)
     {
-        RemoteFileFolder = Env.RemoteFileFolder;
+        Hash = hash;
+        FullPath = fullPath;
+        FileName = fileName;
+    }
 
-        var configManager = ServiceProvider.GetRequiredService<ConfigManager>();
-        var syncConfig = configManager.GetConfig<SyncConfig>();
-        _maxFileByte = syncConfig.MaxFileByte;
+    public static async Task<FileProfile> Create(string fullPath, CancellationToken token)
+    {
+        var hash = await GetMD5HashFromFile(fullPath, token);
+        return new FileProfile(fullPath, hash);
     }
 
     protected string GetTempLocalFilePath()
@@ -55,32 +53,12 @@ public class FileProfile : Profile
         return Path.Combine(LocalTemplateFolder, FileName);
     }
 
-    private void SetFileHash(string md5)
-    {
-        _fileMd5Hash = md5;
-    }
-
-    private async Task<string> GetFileHash(CancellationToken cancelToken)
-    {
-        await CalcFileHash(cancelToken);
-        return _fileMd5Hash;
-    }
-
-    public async Task CalcFileHash(CancellationToken cancelToken)
-    {
-        if (string.IsNullOrEmpty(_fileMd5Hash) && !string.IsNullOrEmpty(FullPath))
-        {
-            SetFileHash(await GetMD5HashFromFile(FullPath, cancelToken));
-        }
-    }
-
     public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
     {
         string remotePath = $"{RemoteFileFolder}/{FileName}";
 
         ArgumentNullException.ThrowIfNull(FullPath);
-        var file = new FileInfo(FullPath);
-        if (file.Length <= _maxFileByte)
+        if (!Oversized())
         {
             Logger.Write("PUSH file " + FileName);
             if (!await webdav.DirectoryExist(RemoteFileFolder))
@@ -94,7 +72,6 @@ public class FileProfile : Profile
             Logger.Write("file is too large, skipped " + FileName);
         }
 
-        await CalcFileHash(cancelToken);
         await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
@@ -124,18 +101,18 @@ public class FileProfile : Profile
 
     private async Task CheckHash(string localPath, CancellationToken cancelToken)
     {
-        var downloadFIleMd5 = await GetMD5HashFromFile(localPath, cancelToken);
-        var existedMd5 = await GetFileHash(cancelToken);
+        var downloadedMd5 = await GetMD5HashFromFile(localPath, cancelToken);
+        var existedMd5 = Hash;
         if (string.IsNullOrEmpty(existedMd5))
         {
-            SetFileHash(downloadFIleMd5);
+            Hash = downloadedMd5;
             await (WebDav?.PutText(RemoteProfilePath, ToJsonString(), cancelToken) ?? Task.CompletedTask);
             return;
         }
 
-        if (downloadFIleMd5 != MD5_FOR_OVERSIZED_FILE
+        if (downloadedMd5 != MD5_FOR_OVERSIZED_FILE
             && existedMd5 != MD5_FOR_OVERSIZED_FILE
-            && downloadFIleMd5 != existedMd5)
+            && downloadedMd5 != existedMd5)
         {
             Logger.Write("[PULL] download erro, md5 wrong");
             _statusTip = "Downloading erro, md5 wrong";
@@ -148,28 +125,28 @@ public class FileProfile : Profile
         return StatusTip;
     }
 
-    protected override async Task<bool> Same(Profile rhs, CancellationToken cancellationToken)
+    protected override bool Same(Profile rhs)
     {
         try
         {
-            var md5This = await GetFileHash(cancellationToken);
-            var md5Other = await ((FileProfile)rhs).GetFileHash(cancellationToken);
+            var md5This = Hash;
+            var md5Other = ((FileProfile)rhs).Hash;
             if (string.IsNullOrEmpty(md5This) || string.IsNullOrEmpty(md5Other))
             {
                 return false;
             }
             return md5This == md5Other;
         }
-        catch when (cancellationToken.IsCancellationRequested is false)
+        catch
         {
             return false;
         }
     }
 
-    private async Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
+    protected async static Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
-        if (fileInfo.Length > _maxFileByte)
+        if (fileInfo.Length > Config.GetConfig<SyncConfig>().MaxFileByte)
         {
             return MD5_FOR_OVERSIZED_FILE;
         }
@@ -220,12 +197,12 @@ public class FileProfile : Profile
         );
     }
 
-    private async Task<bool> Oversized(CancellationToken cancelToken)
+    private bool Oversized()
     {
-        return await GetFileHash(cancelToken) == MD5_FOR_OVERSIZED_FILE;
+        return Hash == MD5_FOR_OVERSIZED_FILE;
     }
 
-    public override async ValueTask<bool> IsAvailableFromRemote(CancellationToken token) => !await Oversized(token);
+    public override bool IsAvailableFromRemote() => !Oversized();
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
