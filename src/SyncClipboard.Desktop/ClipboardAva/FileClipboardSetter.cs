@@ -1,13 +1,16 @@
 ﻿using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
+using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Text;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
-internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
+internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboardSetter<GroupProfile>
 {
     protected override DataObject CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
@@ -23,7 +26,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
         }
         else if (OperatingSystem.IsMacOS())
         {
-            SetMacos(dataObject, metaInfomation.Files[0]);
+            SetMacos(dataObject, metaInfomation.Files);
         }
 
         return dataObject;
@@ -44,10 +47,18 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>
     }
 
     [SupportedOSPlatform("macos")]
-    private static void SetMacos(DataObject dataObject, string path)
+    private static void SetMacos(DataObject dataObject, string[] files)
     {
-        var uri = new Uri(path);
-        var uriPath = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
-        dataObject.Set(Format.FileList, Encoding.UTF8.GetBytes(uriPath));
+        var provider = App.Current.MainWindow.StorageProvider;
+        var storageItems = files.Select<string, IStorageItem?>(file =>
+        {
+            if (Directory.Exists(file))
+            {
+                return provider.TryGetFolderFromPathAsync(file).Result;
+            }
+            return provider.TryGetFileFromPathAsync(file).Result;
+        }).Where(item => item is not null);
+
+        dataObject.Set(Format.FileList, storageItems);
     }
 }

@@ -143,9 +143,9 @@ public class GroupProfile : FileProfile
         notification.SendText(
             I18n.Strings.ClipboardFileUpdated,
             string.Join("\n", _files.Select(file => Path.GetFileName(file))),
-            DefaultButton(),
+            DefaultButton()
 #if WINDOWS
-            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInExplorer(FullPath[..^4] + "\\"))
+            , new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInExplorer(FullPath[..^4] + "\\"))
 #endif
         );
     }

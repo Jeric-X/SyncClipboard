@@ -1,4 +1,5 @@
-﻿using System.Runtime.Versioning;
+﻿using Avalonia.Input;
+using System.Runtime.Versioning;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
@@ -15,7 +16,7 @@ internal static class Format
     [SupportedOSPlatform("linux")] public const string KdeCutSelection = "application/x-kde-cutselection";
     [SupportedOSPlatform("linux")] public const string TextHtml = "text/html";
 
-    [SupportedOSPlatform("macos")] public const string FileList = "public.file-url";
+    [SupportedOSPlatform("macos")] public readonly static string FileList = DataFormats.Files;
     [SupportedOSPlatform("macos")] public const string PublicPng = "public.png";
     [SupportedOSPlatform("macos")] public const string PublicTiff = "public.tiff";
     [SupportedOSPlatform("macos")] public const string PublicHtml = "public.html";

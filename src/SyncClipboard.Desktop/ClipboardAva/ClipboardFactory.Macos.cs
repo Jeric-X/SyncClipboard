@@ -1,4 +1,5 @@
-﻿using FluentAvalonia.Core;
+﻿using Avalonia.Platform.Storage;
+using FluentAvalonia.Core;
 using SyncClipboard.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ internal partial class ClipboardFactory
     {
         var clipboard = App.Current.MainWindow.Clipboard!;
         var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
-
+        
         ClipboardMetaInfomation meta = new();
         foreach (var handlerMapping in MacFormatHandlerlist)
         {
@@ -50,13 +51,8 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("macos")]
     private async Task HandleMacosFile(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var uriListbytes = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as byte[];
-        ArgumentNullException.ThrowIfNull(uriListbytes);
-        var uriList = Encoding.UTF8.GetString(uriListbytes!);
-        meta.Files = uriList
-                        .Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
-                        .Where(x => !string.IsNullOrEmpty(x))
-                        .Select(x => new Uri(x).LocalPath).ToArray();
+        var items = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as IEnumerable<IStorageItem>;
+        meta.Files = items?.Select(item=> item.Path.LocalPath).ToArray();
     }
 
     [SupportedOSPlatform("macos")]
