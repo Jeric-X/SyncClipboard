@@ -68,6 +68,7 @@ internal partial class ClipboardFactory
         var uriList = Encoding.UTF8.GetString(uriListbytes);
         meta.Files = uriList
                 .Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+                .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x =>
                 {
                     try { return new Uri(x).LocalPath; }
@@ -144,7 +145,15 @@ internal partial class ClipboardFactory
         {
             meta.Effects = DragDropEffects.Move;
         }
-        meta.Files = new[] { new Uri(pathList[1]).LocalPath };
+
+        meta.Files = pathList[1..].Select(x =>
+        {
+            try { return new Uri(x).LocalPath; }
+            catch { }
+            return "";
+        })
+        .Where(x => !string.IsNullOrEmpty(x))
+        .ToArray();
     }
 
     [SupportedOSPlatform("linux")]

@@ -22,7 +22,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
         var dataObject = new DataObject();
         if (OperatingSystem.IsLinux())
         {
-            SetLinux(dataObject, metaInfomation.Files[0]);
+            SetLinux(dataObject, metaInfomation.Files);
         }
         else if (OperatingSystem.IsMacOS())
         {
@@ -33,17 +33,17 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
     }
 
     [SupportedOSPlatform("linux")]
-    private static void SetLinux(DataObject dataObject, string path)
+    private static void SetLinux(DataObject dataObject, string[] files)
     {
-        dataObject.Set(Format.Text, Encoding.UTF8.GetBytes(path));
+        dataObject.Set(Format.Text, Encoding.UTF8.GetBytes(string.Join('\n', files)));
 
-        var uri = new Uri(path);
-        var uriPath = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
-        dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(uriPath));
+        var uriEnum = files.Select(file => new Uri(file).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+        var uris = string.Join("\n", uriEnum);
 
-        var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uriPath}\n";
-        var nautilusBytes = Encoding.UTF8.GetBytes(nautilus);
-        dataObject.Set(Format.CompoundText, nautilusBytes);
+        dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(uris));
+
+        var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uris}\n";
+        dataObject.Set(Format.CompoundText, Encoding.UTF8.GetBytes(nautilus));
     }
 
     [SupportedOSPlatform("macos")]
