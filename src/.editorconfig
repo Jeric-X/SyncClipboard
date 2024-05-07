@@ -20,3 +20,6 @@ dotnet_diagnostic.CC0061.severity = none
 
 # Make readonly
 dotnet_diagnostic.CC0074.severity = none
+
+# CC0072: Remove Async termination when method is not asynchronous.
+dotnet_diagnostic.CC0072.severity = none
