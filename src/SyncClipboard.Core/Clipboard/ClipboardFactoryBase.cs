@@ -108,30 +108,55 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnknownProfile();
     }
 
-    public async Task<(ClipboardProfileDTO, string?)> CreateProfileDto(CancellationToken ctk)
+    public async Task<ClipboardProfileDTO> CreateProfileDto(ClipboardProfileDTO? existed, string destFolder)
     {
-        string? extraFilePath = null;
-        var profile = await CreateProfileFromLocal(ctk);
+        var token = CancellationToken.None;
+        var profile = await CreateProfileFromLocal(token);
+        if (existed is not null)
+        {
+            var existedProfile = GetProfileBy(existed);
+            if (Profile.Same(existedProfile, profile))
+            {
+                return existed;
+            }
+        }
+
         if (profile is FileProfile fileProfile)
         {
-            extraFilePath = fileProfile.FullPath;
+            if (fileProfile is GroupProfile groupProfile)
+            {
+                await groupProfile.PrepareTransferFile(token);
+            }
+            var fullPath = fileProfile.FullPath!;
+            if (Path.GetDirectoryName(fullPath) != destFolder)
+            {
+                if (!Directory.Exists(destFolder))
+                {
+                    Directory.CreateDirectory(destFolder);
+                }
+                await Task.Run(() => File.Copy(fullPath, Path.Combine(destFolder, Path.GetFileName(fullPath)), true));
+            }
         }
-        return (profile.ToDto(), extraFilePath);
+        return profile.ToDto();
     }
 
     public async Task SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
     {
         ArgumentNullException.ThrowIfNull(profileDto);
-        var profile = GetProfileBy(profileDto);
-        if (profile is FileProfile fileProfile)
-        {
-            fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
-        }
-
         try
         {
             var ctk = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-            if (Profile.Same(profile, await CreateProfileFromLocal(ctk)))
+            var profile = GetProfileBy(profileDto);
+            if (profile is FileProfile fileProfile)
+            {
+                fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
+                if (profile is GroupProfile groupProfile)
+                {
+                    await groupProfile.ExtractFiles(ctk);
+                }
+            }
+
+            if (!Profile.Same(profile, await CreateProfileFromLocal(ctk)))
             {
                 profile.SetLocalClipboard(true, ctk);
                 Logger.Write("Set clipboard with: " + profileDto.ToString().Replace(Environment.NewLine, @"\n"));

@@ -60,16 +60,16 @@ public class ImageProfile : FileProfile
 
     protected override void SetNotification(INotification notification)
     {
-        var path = FullPath ?? GetTempLocalFilePath();
+        ArgumentNullException.ThrowIfNull(FullPath);
         notification.SendImage(
             I18n.Strings.ClipboardImageUpdated,
             FileName,
-            new Uri(path),
+            new Uri(FullPath),
             DefaultButton(),
 #if WINDOWS
-            new Button(I18n.Strings.OpenFolder, OpenInExplorer),
+            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFileInExplorer(FullPath)),
 #endif
-            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(path))
+            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
         );
     }
 }

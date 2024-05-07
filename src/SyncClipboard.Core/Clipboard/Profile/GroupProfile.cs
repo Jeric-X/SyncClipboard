@@ -1,6 +1,7 @@
 ﻿using Ionic.Zip;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -46,20 +47,20 @@ public class GroupProfile : FileProfile
             if (Directory.Exists(file))
             {
                 var directoryInfo = new DirectoryInfo(file);
-                hash += (hash * -1521134295) + directoryInfo.Name.GetHashCode();
+                hash = (hash * -1521134295) + directoryInfo.Name.ListHashCode();
                 foreach (var subFile in directoryInfo.GetFiles("*", SearchOption.AllDirectories))
                 {
                     sumSize += subFile.Length;
                     if (sumSize > maxSize)
                         break;
-                    hash += (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).GetHashCode();
+                    hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
                 }
             }
             else if (File.Exists(file))
             {
                 var fileInfo = new FileInfo(file);
                 sumSize += fileInfo.Length;
-                hash += (hash * -1521134295) + (fileInfo.Name + fileInfo.Length.ToString()).GetHashCode();
+                hash = (hash * -1521134295) + (fileInfo.Name + fileInfo.Length.ToString()).ListHashCode();
             }
 
             if (sumSize > maxSize)
@@ -78,7 +79,7 @@ public class GroupProfile : FileProfile
         await base.UploadProfile(webdav, token);
     }
 
-    protected async Task PrepareTransferFile(CancellationToken token)
+    public async Task PrepareTransferFile(CancellationToken token)
     {
         var filePath = Path.Combine(LocalTemplateFolder, FileName);
 
@@ -106,7 +107,11 @@ public class GroupProfile : FileProfile
     public override async Task BeforeSetLocal(CancellationToken token, IProgress<HttpDownloadProgress>? progress)
     {
         await base.BeforeSetLocal(token, progress);
+        await ExtractFiles(token);
+    }
 
+    public async Task ExtractFiles(CancellationToken token)
+    {
         ArgumentNullException.ThrowIfNull(FullPath);
         var extractPath = FullPath[..^4];
         if (!Directory.Exists(extractPath))
@@ -130,4 +135,18 @@ public class GroupProfile : FileProfile
     }
 
     protected override Task CheckHash(string _, CancellationToken _1) => Task.CompletedTask;
+
+    protected override void SetNotification(INotification notification)
+    {
+        ArgumentNullException.ThrowIfNull(_files);
+        ArgumentNullException.ThrowIfNull(FullPath);
+        notification.SendText(
+            I18n.Strings.ClipboardFileUpdated,
+            string.Join("\n", _files.Select(file => Path.GetFileName(file))),
+            DefaultButton(),
+#if WINDOWS
+            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInExplorer(FullPath[..^4] + "\\"))
+#endif
+        );
+    }
 }

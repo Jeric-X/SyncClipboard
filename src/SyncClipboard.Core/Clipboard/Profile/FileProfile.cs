@@ -174,26 +174,17 @@ public class FileProfile : Profile
         }
     }
 
-    public void OpenInExplorer()
-    {
-        var path = FullPath ?? GetTempLocalFilePath();
-        var open = new System.Diagnostics.Process();
-        open.StartInfo.FileName = "explorer";
-        open.StartInfo.Arguments = "/e,/select," + path;
-        open.Start();
-    }
-
     protected override void SetNotification(INotification notification)
     {
-        var path = FullPath ?? GetTempLocalFilePath();
+        ArgumentNullException.ThrowIfNull(FullPath);
         notification.SendText(
             I18n.Strings.ClipboardFileUpdated,
             FileName,
             DefaultButton(),
 #if WINDOWS
-            new Button(I18n.Strings.OpenFolder, OpenInExplorer),
+            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFileInExplorer(FullPath)),
 #endif
-            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(path))
+            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
         );
     }
 

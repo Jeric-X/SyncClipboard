@@ -8,12 +8,17 @@ public static class IEnumerableExtention
         return list.Select(item => comparer.GetHashCode(item)).ListHashCode();
     }
 
+    public static int ListHashCode(this string list)
+    {
+        return list.Select(item => (int)item).ListHashCode();
+    }
+
     public static int ListHashCode(this IEnumerable<int> list)
     {
         int hash = 0;
         foreach (int item in list)
         {
-            hash += (hash * -1521134295) + item;
+            hash = (hash * -1521134295) + item;
         }
         return hash;
     }
