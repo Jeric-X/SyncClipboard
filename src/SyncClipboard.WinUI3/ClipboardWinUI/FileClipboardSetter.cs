@@ -5,12 +5,14 @@ using System.Collections.Generic;
 using System.IO;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Windows.Storage.Streams;
 
 namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboardSetter<GroupProfile>
 {
     public static string[] UnusualType = { ".lnk", ".url", ".wsh" };
+    private static readonly string Thumbnail = Path.Combine($"{Core.Commons.Env.ProgramFolder}", "Assets", "icon.ico");
 
     protected override DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
@@ -28,7 +30,8 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
             }
             else if (IsUnusualType(file))
             {
-                list.Add(new UnusualStorageItem(file));
+                var image = RandomAccessStreamReference.CreateFromFile(StorageFile.GetFileFromPathAsync(Thumbnail).AsTask().Result);
+                list.Add(StorageFile.CreateStreamedFileAsync(Path.GetFileName(file), StreamHandler(file), image).AsTask().Result);
             }
             else
             {
@@ -50,5 +53,23 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
                 return true;
         }
         return false;
+    }
+
+    private static StreamedFileDataRequestedHandler StreamHandler(string file)
+    {
+        return (StreamedFileDataRequest request) =>
+        {
+            try
+            {
+                using FileStream fileStream = new(file, FileMode.Open, FileAccess.Read);
+                using var stream = request.AsStreamForWrite();
+                fileStream.CopyTo(stream);
+                request.Dispose();
+            }
+            catch (Exception)
+            {
+                request.FailAndClose(StreamedFileFailureMode.Incomplete);
+            }
+        };
     }
 }

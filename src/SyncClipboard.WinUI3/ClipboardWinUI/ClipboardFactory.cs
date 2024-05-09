@@ -35,6 +35,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         [StandardDataFormats.Bitmap] = HanleBitmap,
         [StandardDataFormats.Html] = HanleHtml,
         [StandardDataFormats.StorageItems] = HanleFiles,
+        //["FileDrop"] = HanleFiles2,
         ["Preferred DropEffect"] = HanleDropEffect,
         ["Object Descriptor"] = HanleObjectDescriptor,
     }.ToList();
@@ -91,6 +92,26 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         meta.Files = list.Select(storageItem => storageItem.Path).ToArray();
     }
 
+    // https://learn.microsoft.com/en-us/windows/win32/shell/clipboard#cf_hdrop
+#pragma warning disable CC0068 // Unused Method
+#pragma warning disable IDE0060 // 删除未使用的参数
+    private static async Task HanleFiles2(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+#pragma warning restore IDE0060 // 删除未使用的参数
+    {
+        if (meta.Files is not null && meta.Files.Any())
+            return;
+        var res = await ClipboardData.GetDataAsync("FileDrop");
+        using IRandomAccessStream randomAccessStream = res.As<IRandomAccessStream>();
+        using var stream = randomAccessStream.AsStreamForRead();
+        using MemoryStream ms = new();
+        stream.CopyTo(ms);
+        var bytes = ms.ToArray();
+        var str = Encoding.Unicode.GetString(bytes);
+        var files = str.Split('\0').Where(file => Directory.Exists(file) || File.Exists(file));
+        meta.Files = files.ToArray();
+    }
+#pragma warning restore CC0068 // Unused Method
+
     private static async Task HanleHtml(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
         => meta.Html = await ClipboardData.GetHtmlFormatAsync();
 
@@ -145,7 +166,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                 {
                     errortimes += 1;
                     Logger.Write(LOG_TAG, ex.ToString());
-                    Thread.Sleep(200);
+                    await Task.Delay(100, ctk);
                 }
             }
         }

@@ -9,6 +9,7 @@
         public static readonly string Directory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetAppDataDirectory();
         public static readonly string ProgramPath = Environment.ProcessPath ?? "";
+        public static readonly string ProgramFolder = Path.GetDirectoryName(ProgramPath) ?? "";
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
         public static readonly string TemplateFileFolder = FullPath("file");
         public static readonly string RemoteFileFolder = "file";
