@@ -35,7 +35,7 @@ internal partial class ClipboardFactory
     {
         var clipboard = App.Current.MainWindow.Clipboard!;
         var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
-        
+
         ClipboardMetaInfomation meta = new();
         foreach (var handlerMapping in MacFormatHandlerlist)
         {
@@ -52,7 +52,7 @@ internal partial class ClipboardFactory
     private async Task HandleMacosFile(ClipboardMetaInfomation meta, CancellationToken token)
     {
         var items = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as IEnumerable<IStorageItem>;
-        meta.Files = items?.Select(item=> item.Path.LocalPath).ToArray();
+        meta.Files = items?.Select(item => item.Path.LocalPath).ToArray();
     }
 
     [SupportedOSPlatform("macos")]

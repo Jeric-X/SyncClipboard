@@ -19,10 +19,10 @@ public class GroupProfile : FileProfile
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
 
-    private GroupProfile(string[] files, string hash)
+    private GroupProfile(IEnumerable<string> files, string hash)
         : base(Path.Combine(LocalTemplateFolder, $"{Path.GetRandomFileName()}.zip"), hash)
     {
-        _files = files;
+        _files = files.ToArray();
     }
 
     public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
@@ -35,24 +35,42 @@ public class GroupProfile : FileProfile
         return new GroupProfile(files, hash);
     }
 
+    private static int FileCompare(FileInfo file1, FileInfo file2)
+    {
+        if (file1.Length == file2.Length)
+        {
+            return Comparer<int>.Default.Compare(file1.Name.ListHashCode(), file2.Name.ListHashCode());
+        }
+        return Comparer<long>.Default.Compare(file1.Length, file2.Length);
+    }
+
+    private static int FileNameCompare(string file1, string file2)
+    {
+        return Comparer<int>.Default.Compare(
+            Path.GetFileName(file1).ListHashCode(),
+            Path.GetFileName(file2).ListHashCode()
+        );
+    }
+
     private static string CaclHash(string[] files)
     {
         var maxSize = Config.GetConfig<SyncConfig>().MaxFileByte;
-        Array.Sort(files);
+        Array.Sort(files, FileNameCompare);
         long sumSize = 0;
         int hash = 0;
-        string? hashString = null;
         foreach (var file in files)
         {
             if (Directory.Exists(file))
             {
                 var directoryInfo = new DirectoryInfo(file);
                 hash = (hash * -1521134295) + directoryInfo.Name.ListHashCode();
-                foreach (var subFile in directoryInfo.GetFiles("*", SearchOption.AllDirectories))
+                var subFiles = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
+                Array.Sort(subFiles, FileCompare);
+                foreach (var subFile in subFiles)
                 {
                     sumSize += subFile.Length;
                     if (sumSize > maxSize)
-                        break;
+                        return MD5_FOR_OVERSIZED_FILE;
                     hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
                 }
             }
@@ -65,12 +83,11 @@ public class GroupProfile : FileProfile
 
             if (sumSize > maxSize)
             {
-                hashString = MD5_FOR_OVERSIZED_FILE;
-                break;
+                return MD5_FOR_OVERSIZED_FILE;
             }
         }
 
-        return hashString ?? hash.ToString();
+        return hash.ToString();
     }
 
     public override async Task UploadProfile(IWebDav webdav, CancellationToken token)

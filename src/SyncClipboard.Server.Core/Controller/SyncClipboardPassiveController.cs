@@ -20,6 +20,7 @@ public class SyncClipboardPassiveController : SyncClipboardController
 
     protected override async Task<IResult> PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
     {
+        _profileDtoCache = null;
         await _profileDtoHelper.SetLocalClipboardWithDto(profileDTO, Path.Combine(rootPath, "file"));
         return Results.Ok();
     }

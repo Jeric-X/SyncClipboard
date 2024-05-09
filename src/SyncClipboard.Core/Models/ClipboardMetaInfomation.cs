@@ -13,7 +13,7 @@ public record class ClipboardMetaInfomation
     public string[]? _files;
     public string[]? Files
     {
-        get => _files;
+        get => (string[]?)_files?.Clone();
         set
         {
             _files = (string[]?)value?.Clone();
