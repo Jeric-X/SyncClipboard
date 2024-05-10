@@ -337,7 +337,7 @@ public class DownloadService : Service
                     await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 }
                 _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
-                remoteProfile.SetLocalClipboard(true, cancelToken);
+                await remoteProfile.SetLocalClipboard(true, cancelToken);
                 _logger.Write("Success download:" + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
             }

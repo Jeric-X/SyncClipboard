@@ -63,9 +63,9 @@ public abstract class Profile
         notificationManager.SendText(I18n.Strings.ClipboardUpdated, Text);
     }
 
-    public void SetLocalClipboard(bool notify, CancellationToken ctk)
+    public async Task SetLocalClipboard(bool notify, CancellationToken ctk)
     {
-        ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
+        await ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
 
         if (notify && EnableNotify)
         {
@@ -112,6 +112,6 @@ public abstract class Profile
 
     protected Button DefaultButton()
     {
-        return new Button(I18n.Strings.Copy, () => SetLocalClipboard(false, CancellationToken.None));
+        return new Button(I18n.Strings.Copy, () => { _ = SetLocalClipboard(false, CancellationToken.None); });
     }
 }

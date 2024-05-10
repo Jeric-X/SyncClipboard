@@ -8,7 +8,7 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<ProfileType> where ProfileType : Profile
 {
-    protected abstract DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation);
+    protected abstract Task<DataPackage> CreatePackage(ClipboardMetaInfomation metaInfomation);
 
     private static async Task SetPackageToClipboard(DataPackage package, CancellationToken ctk)
     {
@@ -28,8 +28,8 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
         }
     }
 
-    public Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
+    public async Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
-        return ClipboardSetterBase<ProfileType>.SetPackageToClipboard(CreatePackage(metaInfomation), ctk);
+        await ClipboardSetterBase<ProfileType>.SetPackageToClipboard(await CreatePackage(metaInfomation), ctk);
     }
 }

@@ -59,4 +59,9 @@ public record class ClipboardMetaInfomation
 
         return hashList.ListHashCode();
     }
+
+    public override string ToString()
+    {
+        return $"Text={Text} Html={Html} Files='{string.Join(',', Files ?? Array.Empty<string>())}' DragDropEffects={Effects} OriginalType={OriginalType}";
+    }
 }

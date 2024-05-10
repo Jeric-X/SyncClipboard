@@ -3,18 +3,17 @@ using SyncClipboard.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
-using Windows.Storage.Streams;
 
 namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboardSetter<GroupProfile>
 {
     public static string[] UnusualType = { ".lnk", ".url", ".wsh" };
-    private static readonly string Thumbnail = Path.Combine($"{Core.Commons.Env.ProgramFolder}", "Assets", "icon.ico");
 
-    protected override DataPackage CreatePackage(ClipboardMetaInfomation metaInfomation)
+    protected override async Task<DataPackage> CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
         {
@@ -26,16 +25,15 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
         {
             if (Directory.Exists(file))
             {
-                list.Add(StorageFolder.GetFolderFromPathAsync(file).AsTask().Result);
+                list.Add(await StorageFolder.GetFolderFromPathAsync(file));
             }
             else if (IsUnusualType(file))
             {
-                var image = RandomAccessStreamReference.CreateFromFile(StorageFile.GetFileFromPathAsync(Thumbnail).AsTask().Result);
-                list.Add(StorageFile.CreateStreamedFileAsync(Path.GetFileName(file), StreamHandler(file), image).AsTask().Result);
+                list.Add(new UnusualStorageItem(file));
             }
             else
             {
-                list.Add(StorageFile.GetFileFromPathAsync(file).AsTask().Result);
+                list.Add(await StorageFile.GetFileFromPathAsync(file));
             }
         }
 
