@@ -9,7 +9,7 @@ namespace SyncClipboard.Desktop.Default.Utilities;
 [SupportedOSPlatform("linux")]
 internal sealed class Notification : INotification, IDisposable
 {
-    private static readonly string AppIcon = new Uri(Path.Combine(Env.Directory, "Assets", "icon.svg")).AbsoluteUri;
+    private static readonly string AppIcon = new Uri(Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")).AbsoluteUri;
     private readonly IDbusNotifications _dBusInstance;
     private readonly CallbackHandler<uint> _callbackHandler = new();
     private readonly List<IDisposable> _disposables = new();

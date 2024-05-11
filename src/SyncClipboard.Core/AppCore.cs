@@ -11,6 +11,7 @@ using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
+using System.Globalization;
 
 namespace SyncClipboard.Core
 {
@@ -160,6 +161,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();
             services.AddTransient<UpdateChecker>();
+            services.AddTransient<System.Timers.Timer>();
 
             services.AddTransient<AppInstance>();
         }
@@ -200,36 +202,54 @@ namespace SyncClipboard.Core
             catch { }
         }
 
-        private static void PrepareWorkingFolder(ConfigManager configManager)
+        private void PrepareWorkingFolder(ConfigManager configManager)
         {
-            var config = configManager.GetConfig<ProgramConfig>();
-            if (Directory.Exists(Env.TemplateFileFolder))
+            PlannedTask(configManager);
+
+            var timer = Services.GetRequiredService<System.Timers.Timer>();
+            timer.Interval = TimeSpan.FromDays(1).TotalMilliseconds;
+            timer.Elapsed += (_, _) => PlannedTask(configManager);
+            timer.Start();
+        }
+
+        private static void PlannedTask(ConfigManager configManager)
+        {
+            try
             {
-                if (config.DeleteTempFilesOnStartUp)
+                var config = configManager.GetConfig<ProgramConfig>();
+                var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
+                foreach (var dirs in tempFolders)
                 {
-                    Directory.Delete(Env.TemplateFileFolder, true);
-                    Directory.CreateDirectory(Env.TemplateFileFolder);
+                    var createTime = DateTime.ParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture);
+                    if ((DateTime.Today - createTime) > TimeSpan.FromDays(1))
+                    {
+                        dirs.Delete();
+                    }
+                }
+
+                var logFolder = new DirectoryInfo(Env.LogFolder);
+                if (logFolder.Exists && config.LogRemainDays != 0)
+                {
+                    var logFiles = logFolder.EnumerateFileSystemInfos("????????.txt");
+                    var dumpFiles = logFolder.EnumerateFileSystemInfos("????-??-?? ??-??-??.dmp");
+                    DeleteOutDateFile(logFiles, "yyyyMMdd", TimeSpan.FromDays(config.LogRemainDays));
+                    DeleteOutDateFile(dumpFiles, "yyyy-MM-dd HH-mm-ss", TimeSpan.FromDays(config.LogRemainDays));
                 }
             }
-            else
-            {
-                Directory.CreateDirectory(Env.TemplateFileFolder);
-            }
+            catch { }
+        }
 
-            var logFolder = new DirectoryInfo(Env.LogFolder);
-            if (logFolder.Exists && config.LogRemainDays != 0)
+        private static void DeleteOutDateFile(IEnumerable<FileSystemInfo> files, string format, TimeSpan time)
+        {
+            foreach (var file in files)
             {
-                var logFiles = logFolder.EnumerateFileSystemInfos("????????.txt");
-                var dumpFiles = logFolder.EnumerateFileSystemInfos("????-??-?? ??-??-??.dmp");
-                var allFiles = logFiles.Concat(dumpFiles);
-
-                foreach (var file in allFiles)
+                var createTime = DateTime.ParseExact(
+                    Path.GetFileNameWithoutExtension(file.Name),
+                    format,
+                    CultureInfo.InvariantCulture);
+                if ((DateTime.Today - createTime) > time)
                 {
-                    var createTime = file.CreationTime.Date;
-                    if ((DateTime.Today - createTime) > TimeSpan.FromDays(config.LogRemainDays))
-                    {
-                        file.Delete();
-                    }
+                    file.Delete();
                 }
             }
         }

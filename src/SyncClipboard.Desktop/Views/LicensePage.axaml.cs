@@ -22,10 +22,10 @@ public partial class LicensePage : UserControl
     private void OnNavigatedTo(object? sender, NavigationEventArgs e)
     {
         var path = e.Parameter as string;
-        var fullPath = Path.Combine(Core.Commons.Env.Directory, $"LICENSES/{path}");
+        var fullPath = Path.Combine(Core.Commons.Env.ProgramDirectory, $"LICENSES/{path}");
         if (File.Exists(fullPath))
         {
-            _viewModel.License = File.ReadAllText(Path.Combine(Core.Commons.Env.Directory, $"LICENSES/{path}"));
+            _viewModel.License = File.ReadAllText(Path.Combine(Core.Commons.Env.ProgramDirectory, $"LICENSES/{path}"));
         }
     }
 }
