@@ -11,7 +11,7 @@ public class ImageProfile : FileProfile
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
 
-    private readonly static string ImageTemplateFolder = Path.Combine(LocalTemplateFolder, "temp images");
+    private static string ImageTemplateFolder => Path.Combine(LocalTemplateFolder, "temp images");
 
     private ImageProfile(string fullPath, string hash) : base(fullPath, hash)
     {

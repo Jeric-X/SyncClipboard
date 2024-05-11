@@ -31,7 +31,7 @@ public abstract class Profile
     #endregion
 
     protected const string RemoteProfilePath = Env.RemoteProfilePath;
-    protected readonly static string LocalTemplateFolder = Env.TemplateFileFolder;
+    protected static string LocalTemplateFolder => Env.TemplateFileFolder;
     protected static IServiceProvider ServiceProvider { get; } = AppCore.Current.Services;
     protected static IWebDav WebDav => ServiceProvider.GetRequiredService<IWebDav>();
     protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
