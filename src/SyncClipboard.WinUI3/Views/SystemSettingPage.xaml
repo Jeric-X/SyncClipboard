@@ -35,7 +35,7 @@
             </ui:SettingsCard.HeaderIcon>
             <ComboBox SelectedItem="{x:Bind _viewModel.Language, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Languages}" DisplayMemberPath="{x:Bind _viewModel.DisplayMemberPath, Mode=OneTime}" />
         </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.Theme}" Description="{x:Bind i18n:Strings.ThemeChangeInfo}">
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.Theme}">
             <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE793;" />
             </ui:SettingsCard.HeaderIcon>

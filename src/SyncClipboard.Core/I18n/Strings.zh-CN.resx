@@ -423,9 +423,6 @@
   <data name="OpenDataFolderInNautilus" xml:space="preserve">
     <value>在Nautilus打开应用数据文件夹</value>
   </data>
-  <data name="ThemeChangeInfo" xml:space="preserve">
-    <value>从深色或浅色切换到跟随系统会在重启后生效</value>
-  </data>
   <data name="TrustInsecureCertificate" xml:space="preserve">
     <value>信任不安全的HTTPS证书</value>
   </data>

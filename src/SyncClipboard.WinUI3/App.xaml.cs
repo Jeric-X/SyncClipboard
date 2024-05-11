@@ -38,12 +38,6 @@ namespace SyncClipboard.WinUI3
             Logger = Services.GetRequiredService<ILogger>();
             AppCore = new AppCore(Services);
 
-            var theme = Services.GetRequiredService<ConfigManager>().GetConfig<ProgramConfig>().Theme;
-            if (StringToTheme(theme) is ApplicationTheme applicationTheme)
-            {
-                RequestedTheme = applicationTheme;
-            }
-
             this.InitializeComponent();
         }
 
@@ -75,13 +69,6 @@ namespace SyncClipboard.WinUI3
             using Process process = Process.GetCurrentProcess();
             MiniDumpWriteDump(process, (uint)process.Id, fs.SafeFileHandle, MINIDUMP_TYPE.MiniDumpNormal, mdei, default);
         }
-
-        private static ApplicationTheme? StringToTheme(string theme) => theme switch
-        {
-            "Light" => ApplicationTheme.Light,
-            "Dark" => ApplicationTheme.Dark,
-            _ => null,
-        };
 
         /// <summary>
         /// Invoked when the application is launched.
