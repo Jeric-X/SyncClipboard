@@ -52,22 +52,4 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
         }
         return false;
     }
-
-    private static StreamedFileDataRequestedHandler StreamHandler(string file)
-    {
-        return (StreamedFileDataRequest request) =>
-        {
-            try
-            {
-                using FileStream fileStream = new(file, FileMode.Open, FileAccess.Read);
-                using var stream = request.AsStreamForWrite();
-                fileStream.CopyTo(stream);
-                request.Dispose();
-            }
-            catch (Exception)
-            {
-                request.FailAndClose(StreamedFileFailureMode.Incomplete);
-            }
-        };
-    }
 }

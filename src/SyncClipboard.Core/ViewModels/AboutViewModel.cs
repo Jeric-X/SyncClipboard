@@ -72,6 +72,7 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("Vanara", "https://github.com/dahall/Vanara", "Vanara/LICENSE.txt"),
         new OpenSourceSoftware("Tmds.DBus", "https://github.com/tmds/Tmds.DBus", "Tmds.DBus/LICENSE.txt"),
         new OpenSourceSoftware("SharpHook", "https://github.com/TolikPylypchuk/SharpHook", "SharpHook/LICENSE.txt"),
+        new OpenSourceSoftware("DotNetZip.Semverd", "https://github.com/haf/DotNetZip.Semverd", "DotNetZip.Semverd/LICENSE.txt"),
     };
 
     [RelayCommand]

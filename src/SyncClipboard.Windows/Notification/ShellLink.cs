@@ -395,10 +395,7 @@ namespace SyncClipboard.Core.Utilities.Notification
 
         public void Save(string file)
         {
-            if (file == null)
-            {
-                throw new ArgumentNullException(nameof(file));
-            }
+            ArgumentNullException.ThrowIfNull(file);
 
             PersistFile.Save(file, true);
         }

@@ -18,7 +18,6 @@ public partial class CliboardAssistantViewModel : ObservableObject
     private bool convertSwitchOn;
     partial void OnConvertSwitchOnChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { ConvertSwitchOn = value };
 
-
     [ObservableProperty]
     private ClipboardAssistConfig clipboardAssistConfig;
     partial void OnClipboardAssistConfigChanged(ClipboardAssistConfig value)

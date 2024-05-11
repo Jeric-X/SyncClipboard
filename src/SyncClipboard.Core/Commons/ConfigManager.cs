@@ -153,7 +153,7 @@ namespace SyncClipboard.Core.Commons
             ConfigChanged?.Invoke();
         }
 
-        public MenuItem[] Menu => new MenuItem[]
+        public MenuItem[] Menu => new[]
         {
 #if MACOS
             new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("open", $"-a TextEdit \"{_path}\"")),
