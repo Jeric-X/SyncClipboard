@@ -204,6 +204,7 @@ namespace SyncClipboard.Core
 
         private void PrepareWorkingFolder(ConfigManager configManager)
         {
+            DeletePreviousTempFile();
             PlannedTask(configManager);
 
             var timer = Services.GetRequiredService<System.Timers.Timer>();
@@ -230,8 +231,8 @@ namespace SyncClipboard.Core
                 var logFolder = new DirectoryInfo(Env.LogFolder);
                 if (logFolder.Exists && config.LogRemainDays != 0)
                 {
-                    var logFiles = logFolder.EnumerateFileSystemInfos("????????.txt");
-                    var dumpFiles = logFolder.EnumerateFileSystemInfos("????-??-?? ??-??-??.dmp");
+                    var logFiles = logFolder.EnumerateFiles("????????.txt");
+                    var dumpFiles = logFolder.EnumerateFiles("????-??-?? ??-??-??.dmp");
                     DeleteOutDateFile(logFiles, "yyyyMMdd", TimeSpan.FromDays(config.LogRemainDays));
                     DeleteOutDateFile(dumpFiles, "yyyy-MM-dd HH-mm-ss", TimeSpan.FromDays(config.LogRemainDays));
                 }
@@ -252,6 +253,26 @@ namespace SyncClipboard.Core
                     file.Delete();
                 }
             }
+        }
+
+        // 删除历史版本的临时文件，在未来版本中删除
+        private static void DeletePreviousTempFile()
+        {
+            try
+            {
+                var files = new DirectoryInfo(Env.AppDataFileFolder).EnumerateFiles();
+                foreach (var file in files)
+                {
+                    file.Delete();
+                }
+
+                var oldImageFolder = Path.Combine(Env.AppDataFileFolder, "temp images");
+                if (Directory.Exists(oldImageFolder))
+                {
+                    Directory.Delete(oldImageFolder, true);
+                }
+            }
+            catch { }
         }
     }
 }

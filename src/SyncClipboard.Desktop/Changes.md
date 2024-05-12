@@ -1,4 +1,4 @@
-0.6.4.1
+0.7.0
 - 功能：支持同步多个文件、文件夹，移动端体现为zip压缩文件，安卓端`HTTP Shortcuts`配置也需要更新以支持此功能
 - 修复：最大上传文件大小设置项在混合模式无法设置(https://github.com/Jeric-X/SyncClipboard/issues/68)
 

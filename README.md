@@ -219,8 +219,8 @@ PUT /SyncClipboard.json
 }
 
 {
-    "Type": "Image", // or "File"
-    "Clipboard": "md5 hash, optional",
+    "Type": "Image", // or "File", "Group"
+    "Clipboard": "hash, optional",
     "File": "filename"
 }
 ```
@@ -237,3 +237,4 @@ PUT /SyncClipboard.json
 [Vanara](https://github.com/dahall/Vanara)  
 [Tmds.DBus](https://github.com/tmds/Tmds.DBus)  
 [SharpHook](https://github.com/TolikPylypchuk/SharpHook)  
+[DotNetZip.Semverd](https://github.com/haf/DotNetZip.Semverd)  
