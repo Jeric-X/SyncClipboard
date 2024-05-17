@@ -4,6 +4,7 @@ using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
+using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -44,10 +45,10 @@ public class TextProfile : Profile
 
     protected override void SetNotification(INotification notification)
     {
-        if (Text.Length >= 4 && (Text[..4] == "http" || Text[..4] == "www."))
+        if (Text.Length >= 4 && HasUrl(Text, out var url))
         {
-            void callbacker() => Sys.OpenWithDefaultApp(Text);
-            notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton(), new Button(I18n.Strings.OpenInBrowser, callbacker));
+            var button = new Button(I18n.Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url));
+            notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton(), button);
         }
         else
         {
@@ -58,5 +59,22 @@ public class TextProfile : Profile
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         return new ClipboardMetaInfomation { Text = Text };
+    }
+
+    private static bool HasUrl(string str, out string? url)
+    {
+        url = null;
+        var expression = @"[^a-zA-Z0-9](?'url'https?://(?'domain'[a-zA-Z0-9.\-_]*)?(?>:(?'port'\d{1,5}))?(/(?'path'[a-zA-Z0-9_\-%]+))*(?:(?>\?(?'query'[a-zA-Z0-9_\-=&%]+))()|(?>#(?'anchor'[a-zA-Z0-9_\-%]+))()){0,2})";
+        var match = Regex.Match(str, expression);
+        if (match.Success)
+        {
+            var matchedUrl = match.Groups["url"].Value;
+            if (Uri.IsWellFormedUriString(matchedUrl, UriKind.Absolute))
+            {
+                url = matchedUrl;
+                return true;
+            }
+        }
+        return false;
     }
 }
