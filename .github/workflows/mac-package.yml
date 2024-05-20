@@ -27,7 +27,6 @@ jobs:
       - name: Setup software form homebrew
         run: | 
           export HOMEBREW_NO_AUTO_UPDATE=true
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
           brew install create-dmg tree
 
       # Install the .NET workload
