@@ -39,11 +39,15 @@
         }
 
         private static string? _templateFileFolder;
+        private static DateTime? _dateTime;
+
         private static string GetTemplateFileFolder()
         {
-            if (_templateFileFolder is null)
+            var dateTime = DateTime.Today;
+            if (dateTime != _dateTime || _templateFileFolder is null)
             {
-                _templateFileFolder = Path.Combine(AppDataFileFolder, DateTime.Now.ToString("yyyyMMdd"));
+                _dateTime = dateTime;
+                _templateFileFolder = Path.Combine(AppDataFileFolder, dateTime.ToString("yyyyMMdd"));
                 Directory.CreateDirectory(_templateFileFolder);
             }
             return _templateFileFolder;

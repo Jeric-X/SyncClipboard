@@ -224,7 +224,7 @@ namespace SyncClipboard.Core
                     var createTime = DateTime.ParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture);
                     if ((DateTime.Today - createTime) > TimeSpan.FromDays(1))
                     {
-                        dirs.Delete();
+                        dirs.Delete(true);
                     }
                 }
 
