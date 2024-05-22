@@ -47,7 +47,7 @@
   </NativeMenu.Menu>
   <TrayIcon.Icons>
     <TrayIcons>
-      <TrayIcon Icon="/Assets/default.ico" ToolTipText="Avalonia Tray Icon ToolTip">
+      <TrayIcon Icon="/Assets/default.ico" MacOSProperties.IsTemplateIcon="True" ToolTipText="Avalonia Tray Icon ToolTip">
         <TrayIcon.Menu>
           <NativeMenu />
         </TrayIcon.Menu>

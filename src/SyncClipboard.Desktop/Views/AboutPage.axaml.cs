@@ -25,7 +25,7 @@ public partial class AboutPage : UserControl
 
     private void HyperlinkButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var url = ((HyperlinkButton?)sender)?.Content;
+        var url = ((FluentAvalonia.UI.Controls.HyperlinkButton?)sender)?.Content;
         Sys.OpenWithDefaultApp(url as string);
     }
 
