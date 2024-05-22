@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 询问问题 | Ask question
+    url: https://github.com/Jeric-X/SyncClipboard/discussions/new/choose
+    about: Ask a question about this project.

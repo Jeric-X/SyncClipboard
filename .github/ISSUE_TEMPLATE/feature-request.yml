@@ -1,0 +1,12 @@
+name: 功能请求 | Feature request
+description: Suggest an idea for this project
+labels: ["feature request"]
+body:
+- type: textarea
+  attributes:
+    label: 描述你想添加的功能 | Describe the feature you'd like
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: 描述你正在使用的替代方案 | Describe alternatives you are using

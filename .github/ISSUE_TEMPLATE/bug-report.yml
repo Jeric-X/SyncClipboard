@@ -15,28 +15,22 @@ body:
 - type: textarea
   attributes:
     label: 截图 | Screenshots
-  validations:
+  validations: 
     required: false
-- type: textarea
+- type: input
   attributes:
     label: 桌面端信息 | Desktop
-    placeholder: |
-      - OS: [e.g. Windows 10 22H2, MacOS 11, Linux Ubuntu 22.0]
-      - Synclipboard Version: [e.g. v2.7.0]
+    description: 'OS: [e.g. Windows 10 22H2, MacOS 11, Ubuntu Linux 22.0], Synclipboard Version: [e.g. v2.7.0]'
   validations:
     required: false
-- type: textarea
+- type: input
   attributes:
     label: 移动端信息 | Smartphone
-    placeholder: |
-      - Device: [e.g. Xiaomi 12]
-      - OS: [e.g. MIUI 10 Andoird 11]
-      - Tool: [e.g. Http Request Shortcuts]
+    description: 'Device: [e.g. Xiaomi 12, MIUI 11, Andoird 11], Tool: [e.g. Http Request Shortcuts]'
   validations:
     required: false
 - type: textarea
   attributes:
     label: 其他附加信息 | Additional context
-    description: e.g. 旧版本是否正常
   validations:
     required: false
