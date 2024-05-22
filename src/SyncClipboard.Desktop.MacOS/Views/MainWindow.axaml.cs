@@ -1,6 +1,7 @@
 ﻿using AppKit;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform;
 using System;
 using System.Linq;
 
@@ -10,10 +11,8 @@ public class MainWindow : Desktop.Views.MainWindow
 {
     public MainWindow()
     {
-        if (App.Current.ApplicationLifetime is not IActivatableApplicationLifetime lifetime)
-        {
-            throw new NotSupportedException("Mac AppLifetime wrong.");
-        }
+        var lifetime = App.Current.TryGetFeature<IActivatableLifetime>()
+            ?? throw new NotSupportedException("Mac AppLifetime wrong.");
         lifetime.Activated += Lifitime_Activated;
     }
 
