@@ -1,6 +1,6 @@
 0.7.0.1
 - 修复：macOS menu bar图标无法自动自适应(https://github.com/Jeric-X/SyncClipboard/issues/73)
-- 修复：无发自动删除本地临时文件
+- 修复：无法自动删除本地临时文件
 
 0.7.0
 - 功能：支持同步多个文件、文件夹，移动端体现为zip压缩文件，安卓端`HTTP Shortcuts`配置也需要更新以支持此功能
