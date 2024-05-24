@@ -498,4 +498,16 @@
   <data name="DownloadAndPaste" xml:space="preserve">
     <value>Download And Paste</value>
   </data>
+  <data name="IconMissingDetected" xml:space="preserve">
+    <value>Icon Missing Detected</value>
+  </data>
+  <data name="DownloadAndInstallIconFont" xml:space="preserve">
+    <value>Please download and install the icon font manually</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
 </root>

@@ -498,4 +498,16 @@
   <data name="DownloadAndPaste" xml:space="preserve">
     <value>下载远程到本地并粘贴</value>
   </data>
+  <data name="IconMissingDetected" xml:space="preserve">
+    <value>检测到图标缺失</value>
+  </data>
+  <data name="DownloadAndInstallIconFont" xml:space="preserve">
+    <value>请手动下载并安装图标字体</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>查看详情</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>下载</value>
+  </data>
 </root>

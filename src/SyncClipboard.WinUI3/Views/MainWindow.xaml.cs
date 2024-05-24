@@ -3,13 +3,19 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using SyncClipboard.Abstract.Notification;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
 using System;
+using System.Drawing.Text;
+using System.Linq;
 using Windows.UI;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
+using Button = SyncClipboard.Abstract.Notification.Button;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -23,6 +29,7 @@ namespace SyncClipboard.WinUI3.Views
     {
         public TrayIcon TrayIcon => _TrayIcon;
         private readonly MainViewModel _viewModel;
+        private bool _mainWindowLoaded = false;
 
         public MainWindow()
         {
@@ -42,6 +49,26 @@ namespace SyncClipboard.WinUI3.Views
             ((FrameworkElement)Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
 
             _MenuList.SelectedIndex = 0;
+        }
+
+        private void OnWindowLoaded()
+        {
+            if (!IsIconFontInstalled())
+            {
+                var notifyer = App.Current.Services.GetRequiredService<INotification>();
+                notifyer.SendText(
+                    Strings.IconMissingDetected,
+                    Strings.DownloadAndInstallIconFont,
+                    new Button(Strings.Details, () => Sys.OpenWithDefaultApp("https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font")),
+                    new Button(Strings.Download, () => Sys.OpenWithDefaultApp("https://aka.ms/SegoeFluentIcons"))
+                );
+            }
+        }
+
+        private static bool IsIconFontInstalled()
+        {
+            using InstalledFontCollection ifc = new();
+            return ifc.Families.Any(f => f.Name == "Segoe Fluent Icons");
         }
 
         internal void NavigateTo(PageDefinition page,
@@ -186,6 +213,12 @@ namespace SyncClipboard.WinUI3.Views
                 this.Activate();
             }
             this.SetForegroundWindow();
+
+            if (!_mainWindowLoaded)
+            {
+                _mainWindowLoaded = true;
+                OnWindowLoaded();
+            }
         }
 
         public void SetFont(string font)
