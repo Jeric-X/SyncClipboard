@@ -183,10 +183,8 @@ public class UploadService : ClipboardHander
         return latest != meta;
     }
 
-    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, CancellationToken token)
+    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
-        var profile = await _clipboardFactory.CreateProfileFromMeta(meta, token);
-
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
@@ -281,7 +279,9 @@ public class UploadService : ClipboardHander
         var token = StopPreviousAndGetNewToken();
         try
         {
-            await HandleClipboard(await _clipboardFactory.GetMetaInfomation(token), token);
+            var meta = await _clipboardFactory.GetMetaInfomation(token);
+            var profile = await _clipboardFactory.CreateProfileFromMeta(meta, token);
+            await HandleClipboard(meta, profile, token);
         }
         catch { }
     }

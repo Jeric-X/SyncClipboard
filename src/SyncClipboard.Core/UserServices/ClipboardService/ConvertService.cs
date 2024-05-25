@@ -31,9 +31,8 @@ public class ConvertService : ClipboardHander
         }
     }
 
-    protected override async Task HandleClipboard(ClipboardMetaInfomation metaInfo, CancellationToken cancellationToken)
+    protected override async Task HandleClipboard(ClipboardMetaInfomation metaInfo, Profile clipboardProfile, CancellationToken cancellationToken)
     {
-        var clipboardProfile = await _clipboardFactory.CreateProfileFromMeta(metaInfo, cancellationToken);
         if (clipboardProfile.Type != ProfileType.File || !NeedAdjust(metaInfo))
         {
             return;
@@ -57,7 +56,6 @@ public class ConvertService : ClipboardHander
 
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
-    private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
 
     private ClipboardAssistConfig _clipboardConfig;
@@ -67,7 +65,6 @@ public class ConvertService : ClipboardHander
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
-        _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
 
         _clipboardConfig = _configManager.GetConfig<ClipboardAssistConfig>();
         _configManager.ListenConfig<ClipboardAssistConfig>(config => _clipboardConfig = config);

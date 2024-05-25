@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -45,7 +46,7 @@ internal partial class DiagnoseViewModel : ObservableObject
         }
     }
 
-    private async void ClipboardChangedHandler(ClipboardMetaInfomation _)
+    private async void ClipboardChangedHandler(ClipboardMetaInfomation _1, Profile _2)
     {
         await Dispatcher.UIThread.InvokeAsync(() => RefreshCommand.ExecuteAsync(null));
     }

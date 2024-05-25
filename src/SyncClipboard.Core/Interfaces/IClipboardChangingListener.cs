@@ -1,8 +1,11 @@
-﻿using SyncClipboard.Core.Models;
+﻿using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Interfaces;
 
+public delegate void ClipboardChangedDelegate(ClipboardMetaInfomation meta, Profile profile);
+
 public interface IClipboardChangingListener
 {
-    event Action<ClipboardMetaInfomation> Changed;
+    event ClipboardChangedDelegate Changed;
 }

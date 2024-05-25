@@ -9,7 +9,7 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class ClipboardListener : ClipboardChangingListenerBase
 {
-    private Action<ClipboardMetaInfomation>? _action;
+    private ClipboardChangedDelegate? _action;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly ILogger _logger;
 
@@ -19,24 +19,26 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         _logger = logger;
     }
 
-    protected override void RegistSystemEvent(Action<ClipboardMetaInfomation> action)
+    protected override void RegistSystemEvent(ClipboardChangedDelegate action)
     {
         _action = action;
         Clipboard.ContentChanged += HandleClipboardChanged;
     }
 
-    protected override void UnRegistSystemEvent(Action<ClipboardMetaInfomation> action)
+    protected override void UnRegistSystemEvent(ClipboardChangedDelegate action)
     {
         Clipboard.ContentChanged -= HandleClipboardChanged;
     }
 
     private async void HandleClipboardChanged(object? _, object _1)
     {
-        var timeout = TimeSpan.FromSeconds(3);
+        var timeout = TimeSpan.FromSeconds(10);
         using CancellationTokenSource cts = new(timeout);
         try
         {
-            _action?.Invoke(await _clipboardFactory.GetMetaInfomation(cts.Token));
+            var meta = await _clipboardFactory.GetMetaInfomation(cts.Token);
+            var profile = await _clipboardFactory.CreateProfileFromMeta(meta, cts.Token);
+            _action?.Invoke(meta, profile);
         }
         catch (Exception ex)
         {

@@ -1,5 +1,4 @@
 ﻿using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -8,11 +7,11 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
     private readonly object _countLocker = new object();
     private int _count = 0;
 
-    protected abstract void RegistSystemEvent(Action<ClipboardMetaInfomation> action);
-    protected abstract void UnRegistSystemEvent(Action<ClipboardMetaInfomation> action);
+    protected abstract void RegistSystemEvent(ClipboardChangedDelegate action);
+    protected abstract void UnRegistSystemEvent(ClipboardChangedDelegate action);
 
-    private event Action<ClipboardMetaInfomation>? ChangedImpl;
-    public event Action<ClipboardMetaInfomation>? Changed
+    private event ClipboardChangedDelegate? ChangedImpl;
+    public event ClipboardChangedDelegate? Changed
     {
         add
         {
@@ -40,11 +39,11 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
         }
     }
 
-    private Action<ClipboardMetaInfomation> NotifyAll => (meta) =>
+    private ClipboardChangedDelegate NotifyAll => (meta, profile) =>
     {
         try
         {
-            ChangedImpl?.Invoke(meta);
+            ChangedImpl?.Invoke(meta, profile);
         }
         catch (Exception ex)
         {

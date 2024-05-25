@@ -13,7 +13,7 @@ internal class ClipboardListener : ClipboardChangingListenerBase
     private readonly ILogger _logger;
 
     private Timer? _timer;
-    private Action<ClipboardMetaInfomation>? _action;
+    private ClipboardChangedDelegate? _action;
     private ClipboardMetaInfomation? _meta;
 
     private readonly SemaphoreSlim _tickSemaphore = new(1, 1);
@@ -25,13 +25,13 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         _logger = logger;
     }
 
-    protected override void RegistSystemEvent(Action<ClipboardMetaInfomation> action)
+    protected override void RegistSystemEvent(ClipboardChangedDelegate action)
     {
         _action = action;
         _timer = new Timer(InvokeTick, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
-    protected override void UnRegistSystemEvent(Action<ClipboardMetaInfomation> action)
+    protected override void UnRegistSystemEvent(ClipboardChangedDelegate action)
     {
         _timer?.Dispose();
         _timer = null;
@@ -53,7 +53,7 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         try
         {
             _cts?.Dispose();
-            _cts = new CancellationTokenSource(TimeSpan.FromSeconds(1000));
+            _cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
             var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
             if (meta == _meta)
@@ -64,7 +64,8 @@ internal class ClipboardListener : ClipboardChangingListenerBase
             if (_meta is not null)
             {
                 _meta = meta;
-                _ = Task.Run(() => _action?.Invoke(meta));
+                var profile = await _clipboardFactory.CreateProfileFromMeta(meta, _cts.Token);
+                _ = Task.Run(() => _action?.Invoke(meta, profile));
                 _ = _logger.WriteAsync($"Clipboard changed to {meta}");
             }
             else

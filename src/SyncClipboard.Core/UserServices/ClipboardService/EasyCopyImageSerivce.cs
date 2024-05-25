@@ -38,11 +38,11 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private bool DownloadWebImageEnabled => _clipboardAssistConfig.DownloadWebImage;
 
-    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, CancellationToken cancelToken)
+    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken cancelToken)
     {
         try
         {
-            await ProcessClipboard(meta, false, cancelToken);
+            await ProcessClipboard(meta, profile, false, cancelToken);
         }
         catch (Exception ex)
         {
@@ -90,7 +90,6 @@ public class EasyCopyImageSerivce : ClipboardHander
     private readonly INotification _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
-    private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
     private ClipboardAssistConfig _clipboardAssistConfig;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
@@ -101,7 +100,6 @@ public class EasyCopyImageSerivce : ClipboardHander
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
-        _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotification>();
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
 
@@ -116,10 +114,9 @@ public class EasyCopyImageSerivce : ClipboardHander
         base.Load();
     }
 
-    private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken cancellationToken)
+    private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, Profile profile, bool useProxy, CancellationToken cancellationToken)
     {
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
-        var profile = await _clipboardFactory.CreateProfileFromMeta(metaInfo, cancellationToken);
         if (NeedAdjust(profile, metaInfo) is not true)
         {
             return;

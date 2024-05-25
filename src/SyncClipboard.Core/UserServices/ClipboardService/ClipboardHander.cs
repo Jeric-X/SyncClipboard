@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 
@@ -68,19 +69,19 @@ abstract public class ClipboardHander : Service
         }
     }
 
-    private async void ClipBoardChangedHandler(ClipboardMetaInfomation clipboardMetaInfomation)
+    private async void ClipBoardChangedHandler(ClipboardMetaInfomation clipboardMetaInfomation, Profile profile)
     {
         if (SwitchOn)
         {
             CancellationToken cancelToken = StopPreviousAndGetNewToken();
             try
             {
-                await HandleClipboard(clipboardMetaInfomation, cancelToken);
+                await HandleClipboard(clipboardMetaInfomation, profile, cancelToken);
             }
             catch (OperationCanceledException)
             { }
         }
     }
 
-    protected abstract Task HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, CancellationToken token);
+    protected abstract Task HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, Profile profile, CancellationToken token);
 }
