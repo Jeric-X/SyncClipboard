@@ -1,8 +1,7 @@
 ﻿using ImageMagick;
 using SyncClipboard.Abstract;
-using System;
 
-namespace SyncClipboard.Desktop.ClipboardAva;
+namespace SyncClipboard.Core.Utilities;
 
 public class ClipboardImage : IClipboardImage
 {

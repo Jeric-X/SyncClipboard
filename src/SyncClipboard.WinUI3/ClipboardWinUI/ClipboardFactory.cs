@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Windows;
+using SyncClipboard.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,21 +40,28 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         ["Object Descriptor"] = HanleObjectDescriptor,
     }.ToList();
 
+    private static async Task<byte[]> RandomStreamToBytes(IRandomAccessStream stream, CancellationToken ctk)
+    {
+        using DataReader reader = new(stream.GetInputStreamAt(0));
+        var bytes = new byte[stream.Size];
+        await reader.LoadAsync((uint)stream.Size).AsTask().WaitAsync(ctk);
+        reader.ReadBytes(bytes);
+        return bytes;
+    }
+
     private static async Task HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
         if (meta.Image is not null) return;
         var bitmapStrem = await ClipboardData.GetBitmapAsync().AsTask().WaitAsync(ctk);
         using var randomStream = await bitmapStrem.OpenReadAsync();
-        using MagickImage image = new(randomStream.AsStream());
-        meta.Image = WinBitmap.FromImage(image.ToBitmap());
+        meta.Image = new ClipboardImage(await RandomStreamToBytes(randomStream, ctk));
     }
 
     private static async Task HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
         var res = await ClipboardData.GetDataAsync("DeviceIndependentBitmap").AsTask().WaitAsync(ctk);
-        using var stream = res.As<IRandomAccessStream>().AsStream();
-        using MagickImage image = new(stream);
-        meta.Image = WinBitmap.FromImage(image.ToBitmap());
+        using var stream = res.As<IRandomAccessStream>();
+        meta.Image = new ClipboardImage(await RandomStreamToBytes(stream, ctk));
     }
 
     private static async Task HanleDropEffect(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)

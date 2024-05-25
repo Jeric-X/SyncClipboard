@@ -1,6 +1,7 @@
 ﻿using Avalonia.Platform.Storage;
 using FluentAvalonia.Core;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
