@@ -108,18 +108,10 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnknownProfile();
     }
 
-    public async Task<ClipboardProfileDTO> CreateProfileDto(ClipboardProfileDTO? existed, string destFolder)
+    public async Task<ClipboardProfileDTO> CreateProfileDto(string destFolder)
     {
         var token = CancellationToken.None;
         var profile = await CreateProfileFromLocal(token);
-        if (existed is not null)
-        {
-            var existedProfile = GetProfileBy(existed);
-            if (Profile.Same(existedProfile, profile))
-            {
-                return existed;
-            }
-        }
 
         if (profile is FileProfile fileProfile)
         {

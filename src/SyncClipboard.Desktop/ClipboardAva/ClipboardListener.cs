@@ -9,11 +9,11 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class ClipboardListener : ClipboardChangingListenerBase
 {
-    private readonly IClipboardFactory _clipboardFactory;
+    protected override IClipboardFactory ClipboardFactory { get; }
     private readonly ILogger _logger;
 
     private Timer? _timer;
-    private ClipboardChangedDelegate? _action;
+    private MetaChanged? _action;
     private ClipboardMetaInfomation? _meta;
 
     private readonly SemaphoreSlim _tickSemaphore = new(1, 1);
@@ -21,17 +21,17 @@ internal class ClipboardListener : ClipboardChangingListenerBase
 
     public ClipboardListener(IClipboardFactory clipboardFactory, ILogger logger)
     {
-        _clipboardFactory = clipboardFactory;
+        ClipboardFactory = clipboardFactory;
         _logger = logger;
     }
 
-    protected override void RegistSystemEvent(ClipboardChangedDelegate action)
+    protected override void RegistSystemEvent(MetaChanged action)
     {
         _action = action;
         _timer = new Timer(InvokeTick, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
-    protected override void UnRegistSystemEvent(ClipboardChangedDelegate action)
+    protected override void UnRegistSystemEvent(MetaChanged action)
     {
         _timer?.Dispose();
         _timer = null;
@@ -55,7 +55,7 @@ internal class ClipboardListener : ClipboardChangingListenerBase
             _cts?.Dispose();
             _cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-            var meta = await _clipboardFactory.GetMetaInfomation(_cts.Token);
+            var meta = await ClipboardFactory.GetMetaInfomation(_cts.Token);
             if (meta == _meta)
             {
                 return;
@@ -64,8 +64,7 @@ internal class ClipboardListener : ClipboardChangingListenerBase
             if (_meta is not null)
             {
                 _meta = meta;
-                var profile = await _clipboardFactory.CreateProfileFromMeta(meta, _cts.Token);
-                _ = Task.Run(() => _action?.Invoke(meta, profile));
+                _ = Task.Run(() => _action?.Invoke(meta));
                 _ = _logger.WriteAsync($"Clipboard changed to {meta}");
             }
             else

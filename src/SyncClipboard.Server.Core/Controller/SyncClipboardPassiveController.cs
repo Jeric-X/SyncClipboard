@@ -6,16 +6,24 @@ public class SyncClipboardPassiveController : SyncClipboardController
 {
     private readonly IProfileDtoHelper _profileDtoHelper;
     private ClipboardProfileDTO? _profileDtoCache;
+    private readonly IClipboardMoniter _clipboardMoniter;
+
     public SyncClipboardPassiveController(IServiceProvider services)
     {
         _profileDtoHelper = services.GetRequiredService<IProfileDtoHelper>();
+        _clipboardMoniter = services.GetRequiredService<IClipboardMoniter>();
+        _clipboardMoniter.ClipboardChanged += ClipboardChangd;
+    }
+
+    private void ClipboardChangd()
+    {
+        _profileDtoCache = null;
     }
 
     protected override async Task<ClipboardProfileDTO> GetSyncProfile(string rootPath, string path)
     {
-        var profileDto = await _profileDtoHelper.CreateProfileDto(_profileDtoCache, Path.Combine(rootPath, "file"));
-        _profileDtoCache = profileDto;
-        return profileDto;
+        _profileDtoCache ??= await _profileDtoHelper.CreateProfileDto(Path.Combine(rootPath, "file"));
+        return _profileDtoCache;
     }
 
     protected override async Task<IResult> PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
