@@ -1,5 +1,5 @@
-0.7.0.1
-- 修复：macOS menu bar图标无法自动自适应(https://github.com/Jeric-X/SyncClipboard/issues/73)
+0.7.1
+- 修复：macOS menu bar图标无法自动自适应系统主题(https://github.com/Jeric-X/SyncClipboard/issues/73)
 - 修复：无法自动删除本地临时文件
 
 0.7.0
