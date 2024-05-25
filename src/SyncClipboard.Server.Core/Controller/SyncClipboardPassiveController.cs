@@ -2,7 +2,7 @@
 
 namespace SyncClipboard.Server.Controller;
 
-public class SyncClipboardPassiveController : SyncClipboardController
+public class SyncClipboardPassiveController : SyncClipboardController, IDisposable
 {
     private readonly IProfileDtoHelper _profileDtoHelper;
     private ClipboardProfileDTO? _profileDtoCache;
@@ -32,4 +32,12 @@ public class SyncClipboardPassiveController : SyncClipboardController
         await _profileDtoHelper.SetLocalClipboardWithDto(profileDTO, Path.Combine(rootPath, "file"));
         return Results.Ok();
     }
+
+    public void Dispose()
+    {
+        _clipboardMoniter.ClipboardChanged -= ClipboardChangd;
+        GC.SuppressFinalize(this);
+    }
+
+    ~SyncClipboardPassiveController() => Dispose();
 }
