@@ -288,8 +288,15 @@ public class DownloadService : Service
                 SyncService.remoteProfilemutex.Release();
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
+            await Task.Delay(GetIntervalTime(), cancelToken);
         }
+    }
+
+    private TimeSpan GetIntervalTime()
+    {
+        var configTime = TimeSpan.FromSeconds(_syncConfig.IntervalTime);
+        var minTime = TimeSpan.FromSeconds(0.5);
+        return minTime > configTime ? minTime : configTime;
     }
 
     private async Task DownloadProcess(CancellationToken token)
