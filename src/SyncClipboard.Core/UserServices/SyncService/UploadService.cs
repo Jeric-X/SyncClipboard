@@ -179,6 +179,10 @@ public class UploadService : ClipboardHander
 
     private async Task<bool> IsObsoleteMeta(ClipboardMetaInfomation meta, CancellationToken token)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            return false;
+        }
         var latest = await _clipboardFactory.GetMetaInfomation(token);
         return latest != meta;
     }

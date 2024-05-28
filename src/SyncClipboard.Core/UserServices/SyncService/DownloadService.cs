@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using SharpHook;
 using SharpHook.Native;
+using SyncClipboard.Abstract;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
@@ -115,6 +116,7 @@ public class DownloadService : Service
         IMessenger messenger,
         UploadService uploadService,
         IEventSimulator keyEventSimulator,
+        IClipboardMoniter clipboardMoniter,
         HotkeyManager hotkeyManager)
     {
         _serviceProvider = serviceProvider;
@@ -133,6 +135,8 @@ public class DownloadService : Service
         _hotkeyManager = hotkeyManager;
 
         _hotkeyManager.RegisterCommands(CommandCollection);
+
+        clipboardMoniter.ClipboardChanged += PushStoppedHandler;
     }
 
     private void SyncConfigChanged(SyncConfig newConfig)
@@ -325,34 +329,46 @@ public class DownloadService : Service
 
     private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
-        var meta = await _clipboardFactory.GetMetaInfomation(cancelToken);
-        Profile localProfile = await _clipboardFactory.CreateProfileFromMeta(meta, cancelToken);
-
-        if (!Profile.Same(remoteProfile, localProfile))
+        await LocalClipboard.Semaphore.WaitAsync(cancelToken);
+        try
         {
-            _trayIcon.SetStatusString(SERVICE_NAME, "Downloading");
-            _trayIcon.ShowDownloadAnimation();
-            try
+            var meta = await _clipboardFactory.GetMetaInfomation(cancelToken);
+            Profile localProfile = await _clipboardFactory.CreateProfileFromMeta(meta, cancelToken);
+            if (!Profile.Same(remoteProfile, localProfile))
             {
-                if (Profile.Same(remoteProfile, _remoteProfileCache))
-                {
-                    remoteProfile = _remoteProfileCache!;
-                }
-                else if (remoteProfile is FileProfile)
-                {
-                    _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
-                    await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
-                }
-                _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
-                await remoteProfile.SetLocalClipboard(true, cancelToken);
-                _logger.Write("Success download:" + remoteProfile.Text);
-                await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
+                await DownloadAndSetRemoteProfileToLocal(remoteProfile, cancelToken);
             }
-            finally
+        }
+        finally
+        {
+            LocalClipboard.Semaphore.Release();
+        }
+    }
+
+    private async Task DownloadAndSetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
+    {
+        _trayIcon.SetStatusString(SERVICE_NAME, "Downloading");
+        _trayIcon.ShowDownloadAnimation();
+        try
+        {
+            if (Profile.Same(remoteProfile, _remoteProfileCache))
             {
-                _trayIcon.StopAnimation();
-                _messenger.Send(remoteProfile, SyncService.PULL_STOP_ENENT_NAME);
+                remoteProfile = _remoteProfileCache!;
             }
+            else if (remoteProfile is FileProfile)
+            {
+                _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
+                await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
+            }
+            _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
+            await remoteProfile.SetLocalClipboard(true, cancelToken, false);
+            _logger.Write("Success download:" + remoteProfile.Text);
+            await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
+        }
+        finally
+        {
+            _trayIcon.StopAnimation();
+            _messenger.Send(remoteProfile, SyncService.PULL_STOP_ENENT_NAME);
         }
     }
 
