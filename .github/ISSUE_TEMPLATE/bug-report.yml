@@ -1,6 +1,6 @@
 name: 报告程序错误 | Bug report
 description: Create a report to help us improve
-labels: ["bug"]
+labels: ["bug report"]
 body:
 - type: textarea
   attributes:
