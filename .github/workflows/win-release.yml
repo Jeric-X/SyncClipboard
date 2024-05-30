@@ -47,7 +47,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: feature.txt
-          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
           files: |
             SyncClipboard.Server.zip
             SyncClipboard.zip

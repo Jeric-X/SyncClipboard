@@ -85,6 +85,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
           artifacts: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
           bodyFile: feature.txt

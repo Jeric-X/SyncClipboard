@@ -55,6 +55,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
-          prerelease: ${{ contains(github.ref_name, 'preview') }}
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
           artifacts: SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg
           bodyFile: feature.txt
