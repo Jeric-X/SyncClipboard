@@ -46,6 +46,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="SharpHook" />
     <PackageReference Include="DotNetZip" />
+    <PackageReference Include="System.Net.Http.Json" />
   </ItemGroup>
 
   <ItemGroup>

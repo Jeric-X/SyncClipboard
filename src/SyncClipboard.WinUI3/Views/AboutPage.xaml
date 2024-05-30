@@ -21,6 +21,9 @@
                 <ui:SettingsCard Header="{x:Bind _aboutViewModel.UpdateInfo, Mode=OneWay}">
                     <Button Content="{x:Bind i18n:Strings.OpenDownloadPage}" Command="{x:Bind _aboutViewModel.OpenUpdateUrlCommand}" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateForBetaChannel}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.CheckUpdateForBeta, Mode=TwoWay}" />
+                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateOnStartup}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </ui:SettingsCard>

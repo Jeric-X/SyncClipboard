@@ -133,6 +133,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Check Update for Beta Channel 的本地化字符串。
+        /// </summary>
+        public static string CheckUpdateForBetaChannel {
+            get {
+                return ResourceManager.GetString("CheckUpdateForBetaChannel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Check Update on Startup 的本地化字符串。
         /// </summary>
         public static string CheckUpdateOnStartup {

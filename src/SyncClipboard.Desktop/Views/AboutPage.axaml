@@ -42,6 +42,11 @@
                         <Button Content="{x:Static i18n:Strings.OpenDownloadPage}" Command="{Binding OpenUpdateUrlCommand}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CheckUpdateForBetaChannel}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding CheckUpdateForBeta, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CheckUpdateOnStartup}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding CheckUpdateOnStartUp, Mode=TwoWay}" />

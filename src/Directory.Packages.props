@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="System.Net.Http.Json" Version="8.0.0" />
     <PackageVersion Include="DotNetZip" Version="1.16.0" />
     <PackageVersion Include="Magick.NET-Q16-x64" Version="13.5.0" />
     <PackageVersion Include="Magick.NET-Q16-x86" Version="13.5.0" />

@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Updater;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -18,13 +19,21 @@ public partial class AboutViewModel : ObservableObject
     private readonly IServiceProvider _services;
     private readonly ConfigManager _configManager;
 
-    private UpdateChecker UpdateChecker => _services.GetRequiredService<UpdateChecker>();
+    private GithubUpdater UpdateChecker => _services.GetRequiredService<GithubUpdater>();
+    private string _updateUrl;
 
     [ObservableProperty]
     private bool checkUpdateOnStartUp;
     partial void OnCheckUpdateOnStartUpChanged(bool value)
     {
-        _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateOnStartUp = true });
+        _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateOnStartUp = value });
+    }
+
+    [ObservableProperty]
+    private bool checkUpdateForBeta;
+    partial void OnCheckUpdateForBetaChanged(bool value)
+    {
+        _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateForBeta = value });
     }
 
     public AboutViewModel(ConfigManager configManager, IServiceProvider serviceProvider)
@@ -35,9 +44,11 @@ public partial class AboutViewModel : ObservableObject
         {
             CheckForUpdateCommand.ExecuteAsync(null);
         }
-
         checkUpdateOnStartUp = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
+        checkUpdateForBeta = configManager.GetConfig<ProgramConfig>().CheckUpdateForBeta;
         configManager.ListenConfig<ProgramConfig>(config => { CheckUpdateOnStartUp = config.CheckUpdateOnStartUp; });
+
+        _updateUrl = AppConfig.UpdateUrl;
     }
 
     public OpenSourceSoftware SyncClipboard { get; } = new(I18n.Strings.SoftwareHomePage, Env.HomePage, "");
@@ -78,7 +89,7 @@ public partial class AboutViewModel : ObservableObject
     [RelayCommand]
     public void OpenUpdateUrl()
     {
-        Sys.OpenWithDefaultApp(AppConfig.UpdateUrl);
+        Sys.OpenWithDefaultApp(_updateUrl);
     }
 
     [RelayCommand]
@@ -88,14 +99,15 @@ public partial class AboutViewModel : ObservableObject
         UpdateInfo = I18n.Strings.CheckingUpdate;
         try
         {
-            var (needUpdate, newVersion) = await UpdateChecker.Check();
+            var (needUpdate, githubRelease) = await UpdateChecker.Check();
+            _updateUrl = githubRelease.HtmlUrl!;
             if (needUpdate)
             {
-                UpdateInfo = $"{I18n.Strings.FoundNewVersion}\nv{UpdateChecker.Version} -> {newVersion}";
+                UpdateInfo = $"{I18n.Strings.FoundNewVersion}\nv{UpdateChecker.Version} -> {githubRelease.TagName}";
             }
             else
             {
-                UpdateInfo = $"{I18n.Strings.ItsLatestVersion}\n{string.Format(I18n.Strings.SoftwareUpdateInfo, UpdateChecker.Version, newVersion)}";
+                UpdateInfo = $"{I18n.Strings.ItsLatestVersion}\n{string.Format(I18n.Strings.SoftwareUpdateInfo, UpdateChecker.Version, githubRelease.TagName)}";
             }
         }
         catch

@@ -510,4 +510,7 @@
   <data name="Download" xml:space="preserve">
     <value>下载</value>
   </data>
+  <data name="CheckUpdateForBetaChannel" xml:space="preserve">
+    <value>更新到预览版</value>
+  </data>
 </root>

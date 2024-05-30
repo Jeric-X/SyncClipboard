@@ -9,6 +9,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
 using System.Globalization;
@@ -111,7 +112,7 @@ namespace SyncClipboard.Core
         private async void CheckUpdate()
         {
             var configManager = Services.GetRequiredService<ConfigManager>();
-            var updateChecker = Services.GetRequiredService<UpdateChecker>();
+            var updateChecker = Services.GetRequiredService<GithubUpdater>();
             var notificationManager = Services.GetService<INotification>();
             if (notificationManager is null)
             {
@@ -129,8 +130,8 @@ namespace SyncClipboard.Core
                         await Task.Delay(TimeSpan.FromSeconds(1));
                         notificationManager.SendText(
                             Strings.FoundNewVersion,
-                            $"v{updateChecker.Version} -> {newVersion}",
-                            new Button(Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(updateChecker.ReleaseUrl))
+                            $"v{updateChecker.Version} -> {newVersion.TagName}",
+                            new Button(Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(newVersion.HtmlUrl))
                         );
                     }
                 }
@@ -160,7 +161,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();
-            services.AddTransient<UpdateChecker>();
+            services.AddTransient<GithubUpdater>();
             services.AddTransient<System.Timers.Timer>();
 
             services.AddTransient<AppInstance>();

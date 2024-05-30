@@ -510,4 +510,7 @@
   <data name="Download" xml:space="preserve">
     <value>Download</value>
   </data>
+  <data name="CheckUpdateForBetaChannel" xml:space="preserve">
+    <value>Check Update for Beta Channel</value>
+  </data>
 </root>
