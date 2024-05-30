@@ -43,6 +43,14 @@ internal class ClipboardListener : ClipboardChangingListenerBase
         _cts = null;
     }
 
+    internal void TriggerClipboardChangedEvent()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        InvokeTick(null);
+    }
+
     private async void InvokeTick(object? _)
     {
         if (_tickSemaphore.Wait(0) is false)

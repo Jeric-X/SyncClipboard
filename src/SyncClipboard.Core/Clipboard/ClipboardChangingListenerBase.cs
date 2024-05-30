@@ -73,8 +73,9 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
         try
         {
             ClipboardChangedImpl?.Invoke();
-            meta ??= await ClipboardFactory.GetMetaInfomation(new CancellationTokenSource(1000).Token);
-            var profile = await ClipboardFactory.CreateProfileFromMeta(meta, new CancellationTokenSource(1000).Token);
+            var token = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token;
+            meta ??= await ClipboardFactory.GetMetaInfomation(token);
+            var profile = await ClipboardFactory.CreateProfileFromMeta(meta, token);
             ChangedImpl?.Invoke(meta, profile);
         }
         catch (Exception ex)

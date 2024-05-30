@@ -1,4 +1,5 @@
 ﻿using Avalonia.Input;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
@@ -23,13 +24,14 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
         try
         {
             await App.Current.Clipboard.SetDataObjectAsync(obj).WaitAsync(ctk);
-            await Task.Delay(200, ctk);
         }
         catch { }
         finally
         {
             ClipboardFactory._semaphoreSlim.Release();
         }
+
+        App.Current.Services.GetRequiredService<ClipboardListener>().TriggerClipboardChangedEvent();
     }
 
     [SupportedOSPlatform("linux")]

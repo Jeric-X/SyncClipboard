@@ -60,10 +60,6 @@ public class ImageProfile : FileProfile
 
     private static string GetImageExtention()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            return "bmp";
-        }
         return "png";
     }
 
