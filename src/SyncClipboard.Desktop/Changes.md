@@ -1,5 +1,6 @@
 0.7.2
 - 修复：服务端产生大量图片文件
+- 修复：macOS Menu Bar图标被裁切(#78https://github.com/Jeric-X/SyncClipboard/issues/78)
 - 变更：轮询间隔设置为0时在内部限制为0.5秒
 - 功能：支持更新到预览版本
 
