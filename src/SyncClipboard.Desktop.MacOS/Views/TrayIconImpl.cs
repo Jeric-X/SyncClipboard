@@ -12,6 +12,11 @@ internal class TrayIconImpl(ServiceStatusViewModel serviceStatusViewModel) : Des
     private static string ThemePath => $"{ResPath}/Light";
     private static readonly WindowIcon _lightDefaultIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/Light/default.png")));
     private static readonly WindowIcon _lightErrorIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/Light/erro.png")));
+    private static readonly WindowIcon _defaultInactiveIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/default-inactive.png")));
+    private static readonly WindowIcon _errorInactiveIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/erro-inactive.png")));
+
+    protected override WindowIcon DefaultInactiveIcon => _defaultInactiveIcon;
+    protected override WindowIcon ErrorInactiveIcon => _errorInactiveIcon;
 
     protected override WindowIcon DefaultIcon => _lightDefaultIcon;
     protected override WindowIcon ErrorIcon => _lightErrorIcon;

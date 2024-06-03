@@ -41,7 +41,21 @@ public abstract class TrayIconImpl : TrayIconBase<WindowIcon>
 
     protected override void SetIcon(WindowIcon icon)
     {
-        ActionInUIThread(() => _trayIcon.Icon = icon);
+        ActionInUIThread(() =>
+        {
+            if (OperatingSystem.IsMacOS())
+            {
+                if (icon == DefaultInactiveIcon || icon == ErrorInactiveIcon)
+                {
+                    _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, false);
+                }
+                else
+                {
+                    _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, true);
+                }
+            }
+            _trayIcon.Icon = icon;
+        });
     }
 
     protected override void SetToolTip(string text)
