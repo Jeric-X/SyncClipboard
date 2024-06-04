@@ -9,8 +9,10 @@ public class SyncClipboardController
 {
     protected ClipboardProfileDTO? ProfileDtoCache = null;
 
-    private static async Task<IResult> PutFile(HttpContext content, string rootPath, string path)
+    private async Task<IResult> PutFile(HttpContext content, string rootPath, string path)
     {
+        ProfileDtoCache = null;
+
         var pathFolder = Path.Combine(rootPath, "file");
         if (!Directory.Exists(pathFolder))
         {

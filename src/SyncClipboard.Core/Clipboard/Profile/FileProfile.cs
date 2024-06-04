@@ -106,7 +106,7 @@ public class FileProfile : Profile
         if (string.IsNullOrEmpty(existedMd5))
         {
             Hash = downloadedMd5;
-            await (WebDav?.PutText(RemoteProfilePath, ToJsonString(), cancelToken) ?? Task.CompletedTask);
+            await WebDav!.PutJson(RemoteProfilePath, ToDto(), cancelToken);
             return;
         }
 
