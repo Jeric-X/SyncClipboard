@@ -28,7 +28,7 @@ class Program
         }
         catch (Exception e)
         {
-            App.Current?.Logger?.Write($"UnhandledException {e.GetType()} {e.Message}");
+            App.Current?.Logger?.Write($"UnhandledException {e.GetType()} {e.Message} \n {e.StackTrace}");
             App.Current?.AppCore?.Stop();
         }
     }
