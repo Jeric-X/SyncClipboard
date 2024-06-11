@@ -1,6 +1,7 @@
 0.7.3.2
 - 修复：不设置hash上传图片/文件到服务器后，桌面客户端会无限重复设置剪贴板
 - 修复：使用某些截图工具截图复制后，无法触发上传(https://github.com/Jeric-X/SyncClipboard/issues/88)
+- 为修复https://github.com/Jeric-X/SyncClipboard/issues/86，Linux无法自动识别语言，默认语言为英语
 
 0.7.3
 - 修复：macOS Menu Bar图标在同步关闭状态下被裁切、颜色错误
