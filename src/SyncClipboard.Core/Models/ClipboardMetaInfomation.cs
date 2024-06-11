@@ -33,7 +33,7 @@ public record class ClipboardMetaInfomation
             && EqualityContract == other.EqualityContract
             && EqualityComparer<string>.Default.Equals(Text, other.Text)
             && EqualityComparer<string>.Default.Equals(Html, other.Html)
-            //&& EqualityComparer<IClipboardImage>.Default.Equals(Image, other.Image)
+            && EqualityComparer<IClipboardImage>.Default.Equals(Image, other.Image)
             && SameFIles(other.Files)
             && EqualityComparer<DragDropEffects?>.Default.Equals(Effects, other.Effects)
             && EqualityComparer<string>.Default.Equals(OriginalType, other.OriginalType));
@@ -55,6 +55,7 @@ public record class ClipboardMetaInfomation
             Files?.ListHashCode() ?? 0,
             Effects?.GetHashCode() ?? 0,
             OriginalType?.GetHashCode() ?? 0,
+            Image?.GetHashCode() ?? 0,
         };
 
         return hashList.ListHashCode();

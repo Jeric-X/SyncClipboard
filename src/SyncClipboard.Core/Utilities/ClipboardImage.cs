@@ -52,4 +52,19 @@ public class ClipboardImage : IClipboardImage
         Cache.Seek(0, SeekOrigin.Begin);
         Cache.CopyTo(fileStream);
     }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+
+        return _imageBytes.SequenceEqual(((ClipboardImage)obj)._imageBytes);
+    }
+
+    public override int GetHashCode()
+    {
+        return _imageBytes.ListHashCode();
+    }
 }
