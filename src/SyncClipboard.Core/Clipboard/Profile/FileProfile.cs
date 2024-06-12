@@ -195,6 +195,14 @@ public class FileProfile : Profile
 
     public override bool IsAvailableFromRemote() => !Oversized();
 
+    public override async Task EnsureAvailable(CancellationToken token)
+    {
+        if (!await WebDav.Exist($"{RemoteFileFolder}/{FileName}", token))
+        {
+            throw new Exception("Remote file is lost.");
+        }
+    }
+
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         ArgumentNullException.ThrowIfNull(FullPath);

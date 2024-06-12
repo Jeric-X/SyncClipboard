@@ -310,6 +310,7 @@ public class DownloadService : Service
 
         if (NeedUpdate(remoteProfile))
         {
+            await remoteProfile.EnsureAvailable(token);
             await SetRemoteProfileToLocal(remoteProfile, token);
             _remoteProfileCache = remoteProfile;
         }
@@ -355,7 +356,7 @@ public class DownloadService : Service
             {
                 remoteProfile = _remoteProfileCache!;
             }
-            else if (remoteProfile is FileProfile)
+            else if (remoteProfile is FileProfile fileProfile)
             {
                 _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);

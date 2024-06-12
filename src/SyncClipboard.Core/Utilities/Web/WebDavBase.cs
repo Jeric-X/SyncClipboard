@@ -149,7 +149,7 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public async Task<bool> Exist(string url, CancellationToken? cancelToken = null)
         {
-            var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
+            var requestMessage = new HttpRequestMessage(new HttpMethod("HEAD"), url);
             var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
             return EnsureExist(res);
         }

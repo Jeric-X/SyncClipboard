@@ -58,6 +58,8 @@ public abstract class Profile
 
     public virtual bool IsAvailableFromRemote() => true;
 
+    public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
+
     protected virtual void SetNotification(INotification notificationManager)
     {
         notificationManager.SendText(I18n.Strings.ClipboardUpdated, Text);
