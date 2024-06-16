@@ -4,22 +4,21 @@ using Windows.UI.Notifications;
 
 namespace SyncClipboard.Core.Utilities.Notification
 {
-    public class ToastSession
+    public class ToastSession : NotificationSessionBase<string>
     {
         private readonly ToastNotifier _notifer;
-        private CancellationTokenSource? _durationCts;
 
         private readonly CallbackHandler<string> _callbackHandler;
         public static string Group => "DEFAULT_GROUP";
         private readonly string _tag = Guid.NewGuid().ToString();
+
+        protected override string? NativeNotificationId => _tag;
+
         public string Tag => _tag.Length <= 64 ? _tag : _tag[..63];
-        public string Title { get; set; }
+        public override string Title { get; set; }
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
-        public TimeSpan? Duration { get; set; }
-        public Uri? Image { get; set; }
-        public List<Button> Buttons { get; set; } = new();
-        public ToastSession(string title, ToastNotifier notifier, CallbackHandler<string> callbackHandler)
+        public ToastSession(string title, ToastNotifier notifier, CallbackHandler<string> callbackHandler) : base(callbackHandler)
         {
             Title = title;
             _notifer = notifier;
@@ -43,7 +42,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             foreach (var button in Buttons)
             {
                 builder.AddButton(button);
-                _callbackHandler.AddButton(Tag, button);
+                _callbackHandler.AddButton(Tag, button, this);
             }
             return builder;
         }
@@ -76,8 +75,6 @@ namespace SyncClipboard.Core.Utilities.Notification
             {
                 _callbackHandler.OnClosed(Tag);
             }
-
-            CancelDurationTask();
         }
 
         private void Toast_Dismissed(ToastNotification sender, ToastDismissedEventArgs args)
@@ -85,60 +82,22 @@ namespace SyncClipboard.Core.Utilities.Notification
             if (args.Reason is ToastDismissalReason.UserCanceled)
             {
                 _callbackHandler.OnClosed(Tag);
-                CancelDurationTask();
             }
         }
 
-        private void CancelDurationTask()
-        {
-            var oldCts = Interlocked.Exchange(ref _durationCts, null);
-            oldCts?.Cancel();
-            oldCts?.Dispose();
-        }
-
-        private async void AfterShow()
-        {
-            CancelDurationTask();
-
-            if (Duration is not null)
-            {
-                var cts = new CancellationTokenSource();
-                try
-                {
-                    Interlocked.Exchange(ref _durationCts, cts);
-                    await Task.Delay(Duration.Value, cts.Token);
-                    Remove();
-                }
-                catch { }
-                finally
-                {
-                    CancelDurationTask();
-                }
-            }
-        }
-
-        public virtual void Show()
+        protected override void NativeShow()
         {
             _notifer.Show(GetToast(GetBuilder()));
-            AfterShow();
         }
 
-        public virtual void ShowSilent()
+        protected override void NativeShowSilent()
         {
             _notifer.Show(GetToast(GetBuilder().AddAudio(null, null, true)));
-            AfterShow();
         }
 
-        public virtual void Remove()
+        protected override void NativeRemove()
         {
-            try
-            {
-                ToastNotificationManagerCompat.History.Remove(Tag, Group);
-                _callbackHandler.OnClosed(Tag);
-            }
-            catch
-            {
-            }
+            ToastNotificationManagerCompat.History.Remove(Tag, Group);
         }
     }
 }

@@ -513,4 +513,10 @@
   <data name="CheckUpdateForBetaChannel" xml:space="preserve">
     <value>更新到预览版</value>
   </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>已上传剪贴板</value>
+  </data>
+  <data name="SendNotificationAfterManuallyUpload" xml:space="preserve">
+    <value>手动上传剪贴板后发送通知</value>
+  </data>
 </root>

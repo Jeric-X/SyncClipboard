@@ -3,6 +3,7 @@
 - 修复：使用某些截图工具截图复制后，无法触发上传(https://github.com/Jeric-X/SyncClipboard/issues/88)
 - 修复：远程文件不存在时，只报错一次，不再图标错乱(https://github.com/Jeric-X/SyncClipboard/issues/87)
 - 为修复https://github.com/Jeric-X/SyncClipboard/issues/86，Linux无法自动识别语言，默认语言为英语
+- 功能：手动上传后可以发送通知(https://github.com/Jeric-X/SyncClipboard/issues/82)
 
 0.7.3
 - 修复：macOS Menu Bar图标在同步关闭状态下被裁切、颜色错误

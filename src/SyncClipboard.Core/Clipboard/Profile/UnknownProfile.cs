@@ -31,4 +31,9 @@ public class UnknownProfile : Profile
     }
 
     public override bool IsAvailableFromRemote() => false;
+
+    public override string ShowcaseText()
+    {
+        return "Do not support this type of clipboard";
+    }
 }

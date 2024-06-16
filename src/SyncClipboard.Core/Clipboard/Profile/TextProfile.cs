@@ -25,6 +25,15 @@ public class TextProfile : Profile
         return Text;
     }
 
+    public override string ShowcaseText()
+    {
+        if (Text.Length > 500)
+        {
+            return Text[..500] + "\n...";
+        }
+        return Text;
+    }
+
     protected override bool Same(Profile rhs)
     {
         try

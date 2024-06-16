@@ -49,6 +49,8 @@ public class UploadService : ClipboardHander
         }
     }
 
+    private bool NotifyOnManualUpload => _syncConfig.NotifyOnManualUpload;
+
     private bool _downServiceChangingLocal = false;
     private Profile? _profileCache;
 
@@ -286,6 +288,8 @@ public class UploadService : ClipboardHander
             var meta = await _clipboardFactory.GetMetaInfomation(token);
             var profile = await _clipboardFactory.CreateProfileFromMeta(meta, token);
             await HandleClipboard(meta, profile, token);
+            if (NotifyOnManualUpload)
+                _notificationManager.SendTemporary(new(I18n.Strings.Uploaded, profile.ShowcaseText()));
         }
         catch { }
     }

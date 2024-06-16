@@ -22,6 +22,7 @@ public abstract class Profile
 
     public abstract ProfileType Type { get; }
     public abstract string ToolTip();
+    public abstract string ShowcaseText();
     public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
 
     protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }

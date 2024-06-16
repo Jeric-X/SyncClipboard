@@ -6,6 +6,7 @@ namespace SyncClipboard.Desktop.Utilities;
 
 public class ProgressBar : IProgressBar
 {
+    public string Title { get; set; } = "";
     public string Tag { get; set; } = "";
     public string? ProgressTitle { get; set; }
     public double? ProgressValue { get; set; }

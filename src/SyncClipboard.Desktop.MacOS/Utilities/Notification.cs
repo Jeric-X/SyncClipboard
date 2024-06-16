@@ -38,7 +38,7 @@ internal class Notification : INotification
         NSUserNotificationCenter.DefaultUserNotificationCenter.DeliverNotification(notification);
     }
 
-    public void Send(NotificationPara para)
+    public void SendTemporary(NotificationPara para)
     {
         using var notification = new NSUserNotification
         {

@@ -159,11 +159,23 @@ public class GroupProfile : FileProfile
         ArgumentNullException.ThrowIfNull(FullPath);
         notification.SendText(
             I18n.Strings.ClipboardFileUpdated,
-            string.Join("\n", _files.Select(file => Path.GetFileName(file))),
+            ShowcaseText(),
             DefaultButton()
 #if WINDOWS
             , new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInExplorer(FullPath[..^4] + "\\"))
 #endif
         );
+    }
+
+    public override string ShowcaseText()
+    {
+        if (_files is null)
+            return string.Empty;
+
+        if (_files.Length > 5)
+        {
+            return string.Join("\n", _files.Take(5).Select(file => Path.GetFileName(file))) + "\n...";
+        }
+        return string.Join("\n", _files.Select(file => Path.GetFileName(file)));
     }
 }

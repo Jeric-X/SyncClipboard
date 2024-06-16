@@ -898,6 +898,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Send notification after manually upload 的本地化字符串。
+        /// </summary>
+        public static string SendNotificationAfterManuallyUpload {
+            get {
+                return ResourceManager.GetString("SendNotificationAfterManuallyUpload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Send notification after updating local clipboard 的本地化字符串。
         /// </summary>
         public static string SendNotificationAfterUpdateLocalClipboard {
@@ -1155,6 +1164,15 @@ namespace SyncClipboard.Core.I18n {
         public static string TrustInsecureCertificate {
             get {
                 return ResourceManager.GetString("TrustInsecureCertificate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard Uploaded 的本地化字符串。
+        /// </summary>
+        public static string Uploaded {
+            get {
+                return ResourceManager.GetString("Uploaded", resourceCulture);
             }
         }
         

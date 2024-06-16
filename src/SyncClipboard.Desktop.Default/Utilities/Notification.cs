@@ -1,5 +1,4 @@
 ﻿using SyncClipboard.Abstract.Notification;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Desktop.Utilities;
 using System.Runtime.Versioning;
 using Tmds.DBus;
@@ -9,7 +8,6 @@ namespace SyncClipboard.Desktop.Default.Utilities;
 [SupportedOSPlatform("linux")]
 internal sealed class Notification : INotification, IDisposable
 {
-    private static readonly string AppIcon = new Uri(Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")).AbsoluteUri;
     private readonly IDbusNotifications _dBusInstance;
     private readonly CallbackHandler<uint> _callbackHandler = new();
     private readonly List<IDisposable> _disposables = new();
@@ -32,53 +30,33 @@ internal sealed class Notification : INotification, IDisposable
 
     public void SendImage(string title, string text, Uri uri, params Button[] buttons)
     {
-        SendNotification(title, text, uri, buttons, null);
+        new NotificationSession(new NotificationPara(title, text)
+        {
+            Image = uri,
+            Buttons = buttons
+        }, _dBusInstance, _callbackHandler).Show();
     }
 
     public void SendText(string title, string text, params Button[] buttons)
     {
-        SendNotification(title, text, null, buttons, null);
+        new NotificationSession(new NotificationPara(title, text)
+        {
+            Buttons = buttons
+        }, _dBusInstance, _callbackHandler).Show();
     }
 
-    public void Send(NotificationPara para)
+    private NotificationSession? _tempSession;
+    public void SendTemporary(NotificationPara para)
     {
-        SendNotification(para.Title, para.Text, para.Image, para.Buttons.ToArray(), para.Duration);
-    }
-
-    private void SendNotification(string title, string text, Uri? imageUri, Button[] buttons, TimeSpan? timeout)
-    {
-        List<string> actionList = new();
-        foreach (var button in buttons)
+        lock (this)
         {
-            actionList.Add(button.Uid.ToString());
-            actionList.Add(button.Text);
+            _tempSession?.Remove();
+            _tempSession = new NotificationSession(para, _dBusInstance, _callbackHandler)
+            {
+                Duration = para.Duration ?? TimeSpan.FromSeconds(2.0),
+            };
+            _tempSession.Show();
         }
-
-        var hintDictionary = new Dictionary<string, object>();
-        if (imageUri is not null)
-        {
-            hintDictionary.Add("image-path", imageUri.AbsoluteUri);
-        }
-
-        var id = Task.Run(async () =>
-           await _dBusInstance.NotifyAsync(
-               Env.SoftName,
-               0,
-               AppIcon,
-               title,
-               text,
-               actionList.ToArray(),
-               hintDictionary,
-               ((int?)timeout?.TotalMilliseconds) ?? 0
-           )
-        ).Result;
-
-        if (timeout is not null)
-        {
-            Task.Delay(timeout.Value).ContinueWith((_) => _dBusInstance.CloseNotificationAsync(id));
-        }
-
-        _callbackHandler.AddButtons(id, buttons);
     }
 
     public void Dispose()

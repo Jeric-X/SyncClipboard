@@ -3,6 +3,7 @@ namespace SyncClipboard.Abstract.Notification;
 public class CallbackHandler<NotificationIdType> where NotificationIdType : notnull
 {
     private readonly Dictionary<NotificationIdType, Dictionary<string, Button>> _handlerList = new();
+    private readonly Dictionary<NotificationIdType, NotificationSessionBase<NotificationIdType>> _sessionList = new();
 
     public void OnActivated(NotificationIdType id, string buttonId)
     {
@@ -13,15 +14,23 @@ public class CallbackHandler<NotificationIdType> where NotificationIdType : notn
             button?.Invoke();
             _handlerList.Remove(id);
         }
+
+        _sessionList.Remove(id);
     }
 
     public void OnClosed(NotificationIdType id)
     {
         _handlerList.Remove(id);
+        _sessionList.Remove(id);
     }
 
-    public void AddButton(NotificationIdType id, Button button)
+    public void AddButton(NotificationIdType id, Button button, NotificationSessionBase<NotificationIdType> session)
     {
+        if (!_sessionList.ContainsKey(id))
+        {
+            _sessionList.Add(id, session);
+        }
+
         if (!_handlerList.ContainsKey(id))
         {
             _handlerList.Add(id, new());
@@ -30,11 +39,11 @@ public class CallbackHandler<NotificationIdType> where NotificationIdType : notn
         buttonList.Add(button.Uid.ToString(), button);
     }
 
-    public void AddButtons(NotificationIdType id, Button[] buttons)
+    public void AddButtons(NotificationIdType id, IEnumerable<Button> buttons, NotificationSessionBase<NotificationIdType> session)
     {
         foreach (var item in buttons)
         {
-            AddButton(id, item);
+            AddButton(id, item, session);
         }
     }
 }

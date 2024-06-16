@@ -513,4 +513,10 @@
   <data name="CheckUpdateForBetaChannel" xml:space="preserve">
     <value>Check Update for Beta Channel</value>
   </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>Clipboard Uploaded</value>
+  </data>
+  <data name="SendNotificationAfterManuallyUpload" xml:space="preserve">
+    <value>Send notification after manually upload</value>
+  </data>
 </root>

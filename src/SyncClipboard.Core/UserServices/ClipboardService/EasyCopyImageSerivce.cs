@@ -80,7 +80,7 @@ public class EasyCopyImageSerivce : ClipboardHander
             Duration = TimeSpan.FromSeconds(2),
             Title = isOn ? I18n.Strings.SwitchOnImageAssistant : I18n.Strings.SwitchOffImageAssistant
         };
-        _notificationManager.Send(para);
+        _notificationManager.SendTemporary(para);
     }
     #endregion Hotkey
 

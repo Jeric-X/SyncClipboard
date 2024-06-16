@@ -125,6 +125,11 @@ public class FileProfile : Profile
         return StatusTip;
     }
 
+    public override string ShowcaseText()
+    {
+        return FileName;
+    }
+
     protected override bool Same(Profile rhs)
     {
         try

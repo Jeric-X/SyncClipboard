@@ -85,7 +85,7 @@ public class DownloadService : Service
             Duration = TimeSpan.FromSeconds(2),
             Title = isOn ? I18n.Strings.SwitchOnClipboardSyncing : I18n.Strings.SwitchOffClipboardSyncing,
         };
-        _notificationManager.Send(para);
+        _notificationManager.SendTemporary(para);
     }
 
     private void SwitchBuiltInServer(bool isOn)
@@ -96,7 +96,7 @@ public class DownloadService : Service
             Duration = TimeSpan.FromSeconds(2),
             Title = isOn ? I18n.Strings.SwitchOnBuiltInServer : I18n.Strings.SwitchOffBuiltInServer
         };
-        _notificationManager.Send(para);
+        _notificationManager.SendTemporary(para);
     }
 
     private void SwitchMixedClientMode(bool isOn)
@@ -107,7 +107,7 @@ public class DownloadService : Service
             Duration = TimeSpan.FromSeconds(2),
             Title = isOn ? I18n.Strings.SwitchOnMixedClientMode : I18n.Strings.SwitchOffMixedClientMode
         };
-        _notificationManager.Send(para);
+        _notificationManager.SendTemporary(para);
     }
     #endregion
 
