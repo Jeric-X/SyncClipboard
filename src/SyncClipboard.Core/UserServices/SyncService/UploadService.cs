@@ -158,13 +158,11 @@ public class UploadService : ClipboardHander
     {
         _trayIcon.ShowUploadAnimation();
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Uploading.");
-        PushStarted?.Invoke();
     }
 
     private void SetWorkingEndStatus()
     {
         _trayIcon.StopAnimation();
-        PushStopped?.Invoke();
     }
 
     private bool IsDownloadServiceWorking(Profile profile)
@@ -191,6 +189,9 @@ public class UploadService : ClipboardHander
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
+        PushStarted?.Invoke();
+        using var guard = new ScopeGuard(() => PushStopped?.Invoke());
+
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
@@ -201,6 +202,7 @@ public class UploadService : ClipboardHander
             }
 
             SetWorkingStartStatus();
+            using var workingStatusGuard = new ScopeGuard(SetWorkingEndStatus);
             await UploadClipboard(profile, token);
         }
         catch (OperationCanceledException)
@@ -211,7 +213,6 @@ public class UploadService : ClipboardHander
         {
             SyncService.remoteProfilemutex.Release();
         }
-        SetWorkingEndStatus();
     }
 
     private async Task UploadClipboard(Profile currentProfile, CancellationToken cancelToken)

@@ -1,6 +1,7 @@
 ﻿using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -72,11 +73,11 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
     {
         try
         {
-            ClipboardChangedImpl?.Invoke();
+            ClipboardChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept());
             var token = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token;
             meta ??= await ClipboardFactory.GetMetaInfomation(token);
             var profile = await ClipboardFactory.CreateProfileFromMeta(meta, token);
-            ChangedImpl?.Invoke(meta, profile);
+            ChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept(meta, profile));
         }
         catch (Exception ex)
         {

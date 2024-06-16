@@ -43,4 +43,16 @@ public static class DelegateExtention
             AppCore.Current?.Logger.Write(logTag, $"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
         }
     }
+
+    public static void InvokeNoExcept(this Delegate dele, params object?[]? args)
+    {
+        try
+        {
+            dele.DynamicInvoke(args);
+        }
+        catch (Exception ex)
+        {
+            AppCore.Current?.Logger.Write($"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
+        }
+    }
 }
