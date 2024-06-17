@@ -24,12 +24,15 @@ public class DownloadService : Service
     private readonly object _isPullLoopRunningLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
+    private Profile? _localProfileCache;
 
     private readonly INotification _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IClipboardChangingListener _clipboardListener;
+    private readonly IClipboardMoniter _clipboardMoniter;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
     private readonly IEventSimulator _keyEventSimulator;
@@ -117,6 +120,7 @@ public class DownloadService : Service
         UploadService uploadService,
         IEventSimulator keyEventSimulator,
         IClipboardMoniter clipboardMoniter,
+        IClipboardChangingListener clipboardChangingListener,
         HotkeyManager hotkeyManager)
     {
         _serviceProvider = serviceProvider;
@@ -133,21 +137,27 @@ public class DownloadService : Service
         _uploadService = uploadService;
         _keyEventSimulator = keyEventSimulator;
         _hotkeyManager = hotkeyManager;
+        _clipboardMoniter = clipboardMoniter;
+        _clipboardListener = clipboardChangingListener;
 
         _hotkeyManager.RegisterCommands(CommandCollection);
-
-        clipboardMoniter.ClipboardChanged += PushStoppedHandler;
     }
 
     private void SyncConfigChanged(SyncConfig newConfig)
     {
         _syncConfig = newConfig;
-        ReLoad();
+        StopAndReload();
     }
 
     private void ServerConfigChanged(ServerConfig newConfig)
     {
         _serverConfig = newConfig;
+        StopAndReload();
+    }
+
+    private void StopAndReload()
+    {
+        SwitchOffPullLoop();
         ReLoad();
     }
 
@@ -183,6 +193,10 @@ public class DownloadService : Service
             if (!_isPullLoopRunning)
             {
                 _isPullLoopRunning = true;
+                _clipboardMoniter.ClipboardChanged -= StopAndReload;
+                _clipboardMoniter.ClipboardChanged += StopAndReload;
+                _clipboardListener.Changed -= ClipboardProfileChanged;
+                _clipboardListener.Changed += ClipboardProfileChanged;
                 StartPullLoop();
             }
         }
@@ -195,6 +209,9 @@ public class DownloadService : Service
             if (_isPullLoopRunning)
             {
                 _isPullLoopRunning = false;
+                _clipboardMoniter.ClipboardChanged -= StopAndReload;
+                _clipboardListener.Changed -= ClipboardProfileChanged;
+                _localProfileCache = null;
                 StopPullLoop();
             }
         }
@@ -223,6 +240,11 @@ public class DownloadService : Service
         _cancelSource = null;
     }
 
+    private void ClipboardProfileChanged(ClipboardMetaInfomation _, Profile profile)
+    {
+        _localProfileCache = profile;
+    }
+
     public override void RegistEventHandler()
     {
         Event.RegistEventHandler(SyncService.PUSH_START_ENENT_NAME, PushStartedHandler);
@@ -244,8 +266,7 @@ public class DownloadService : Service
     public void PushStoppedHandler()
     {
         _logger.Write(LOG_TAG, "due to upload service stop, restart");
-        SwitchOffPullLoop();
-        ReLoad();
+        StopAndReload();
     }
 
     private void SetStatusOnError(ref int errorTimes, Exception ex)
@@ -362,15 +383,29 @@ public class DownloadService : Service
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
             }
             _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
-            await remoteProfile.SetLocalClipboard(true, cancelToken, false);
-            _logger.Write("Success download:" + remoteProfile.Text);
-            await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
+
+            if (!await IsLocalProfileObsolete(cancelToken))
+            {
+                await remoteProfile.SetLocalClipboard(true, cancelToken, false);
+                _logger.Write("Success download:" + remoteProfile.Text);
+                await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
+            }
         }
         finally
         {
             _trayIcon.StopAnimation();
             _messenger.Send(remoteProfile, SyncService.PULL_STOP_ENENT_NAME);
         }
+    }
+
+    private async Task<bool> IsLocalProfileObsolete(CancellationToken token)
+    {
+        if (_localProfileCache is null)
+        {
+            return false;
+        }
+        var profile = await _clipboardFactory.CreateProfileFromLocal(token);
+        return !Profile.Same(profile, _localProfileCache);
     }
 
     private void QuickDownload() => QuickDownload(false);

@@ -290,7 +290,12 @@ public class UploadService : ClipboardHander
             var profile = await _clipboardFactory.CreateProfileFromMeta(meta, token);
             await HandleClipboard(meta, profile, token);
             if (NotifyOnManualUpload)
-                _notificationManager.SendTemporary(new(I18n.Strings.Uploaded, profile.ShowcaseText()));
+                _notificationManager.SendTemporary(
+                    new NotificationPara(I18n.Strings.Uploaded, profile.ShowcaseText())
+                    {
+                        Duration = TimeSpan.FromSeconds(4)
+                    }
+                );
         }
         catch { }
     }

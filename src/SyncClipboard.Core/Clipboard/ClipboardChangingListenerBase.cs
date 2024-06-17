@@ -7,8 +7,7 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class ClipboardChangingListenerBase : IClipboardChangingListener, IClipboardMoniter, IDisposable
 {
-    private readonly object _countLocker = new object();
-    private int _count = 0;
+    private bool _registed = false;
 
     protected delegate void MetaChanged(ClipboardMetaInfomation? meta);
     protected abstract void RegistSystemEvent(MetaChanged action);
@@ -47,26 +46,35 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
 
     private void AddRef()
     {
-        lock (_countLocker)
+        lock (this)
         {
-            if (_count == 0)
+            if (_registed)
+                return;
+            if (HasClipboardHandler())
             {
-                _count++;
                 RegistSystemEvent(NotifyAll);
+                _registed = true;
             }
         }
     }
 
     private void ReleaseRef()
     {
-        lock (_countLocker)
+        lock (this)
         {
-            _count--;
-            if (_count == 0)
+            if (!_registed)
+                return;
+            if (HasClipboardHandler() is false)
             {
                 UnRegistSystemEvent(NotifyAll);
+                _registed = false;
             }
         }
+    }
+
+    private bool HasClipboardHandler()
+    {
+        return ClipboardChangedImpl?.GetInvocationList().Length > 0 || ChangedImpl?.GetInvocationList().Length > 0;
     }
 
     private MetaChanged NotifyAll => async (meta) =>
@@ -91,7 +99,6 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
     {
         ChangedImpl = null;
         UnRegistSystemEvent(NotifyAll);
-        _count = 0;
         GC.SuppressFinalize(this);
     }
 }
