@@ -171,7 +171,7 @@ docker compose up -d
 
 #### 使用[Autox.js](https://github.com/kkevsekk1/AutoX)
 
-- 自动同步，使用这个[js文件](/script/SyncAutoxJs.js)。由于安卓系统限制，在安卓10及以上的系统应用无法在后台读取剪贴板，但可以使用基于root权限的工具(Magisk/Xposed)解除应用后台读取剪贴版的权限，如[Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)、[xposed-clipboard-whitelist](https://github.com/GamerGirlandCo/xposed-clipboard-whitelist)
+- 自动同步，使用这个[js文件](/script/SyncAutoxJs.js)。由于安卓系统限制，在安卓10及以上的系统应用无法在后台读取剪贴板，但可以使用基于Root权限的工具(Magisk/Xposed)解除应用后台读取剪贴版的权限，如[Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)、[Clipboard Whitelist](https://modules.lsposed.org/module/io.github.tehcneko.clipboardwhitelist/)。由于在安卓13及以上的系统应用必须由用户手动授权才被允许访问系统日志（剪贴板），但可以使用基于Root权限的工具(Xposed)自动为应用授权访问系统日志的权限，如[DisableLogRequest/禁用日志访问请求](https://github.com/QueallyTech/DisableLogRequest)
 - 自动上传验证码，使用这个[js文件](/script/UploadVerificationCode.js)，这个脚本运行在后台时将读取所有通知消息，在识别到验证码类信息时将证码上传到服务器
 
 导入js文件、修改每个文件头部的用户配置后，手动点击运行，或者为每个js文件设置触发方式，例如：开机时触发
