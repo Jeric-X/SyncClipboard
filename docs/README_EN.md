@@ -181,7 +181,8 @@ If satisfy any of the following conditions, upload is automatic.
 - Use root-based tools like Magisk/Xposed to unlock the limition of clipboard operation in background. There are some references:
   - https://github.com/Kr328/Riru-ClipboardWhitelist
   - https://github.com/GamerGirlandCo/xposed-clipboard-whitelist
-
+  - https://modules.lsposed.org/module/io.github.tehcneko.clipboardwhitelist
+  - https://github.com/QueallyTech/DisableLogRequest
 
 ### Notes for Clients
 
