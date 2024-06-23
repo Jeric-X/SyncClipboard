@@ -19,6 +19,12 @@ body:
     required: false
 - type: input
   attributes:
+    label: 服务端信息 | Server
+    description: '[e.g. Docker, Nextcloud(WebDAV), built-in/standalone on Windwos/Linux/MacOS]'
+  validations:
+    required: true
+- type: input
+  attributes:
     label: 桌面端信息 | Desktop
     description: 'OS: [e.g. Windows 10 22H2, MacOS 11, Ubuntu Linux 22.0], Synclipboard Version: [e.g. v2.7.0]'
   validations:
