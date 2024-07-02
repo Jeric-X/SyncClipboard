@@ -20,7 +20,7 @@ body:
 - type: input
   attributes:
     label: 服务端信息 | Server
-    description: '[e.g. Docker, Nextcloud(WebDAV), built-in/standalone on Windwos/Linux/MacOS]'
+    description: 'Docker/WebDAV(坚果云, Nextcloud, or …)/独立服务器/客户端内置'
   validations:
     required: true
 - type: input
