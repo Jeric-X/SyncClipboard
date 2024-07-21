@@ -31,7 +31,7 @@ public class GroupProfile : FileProfile
 
     public static async Task<GroupProfile> Create(string[] files, CancellationToken token)
     {
-        var hash = await Task.Run(() => CaclHash(files)).WaitAsync(token);
+        var hash = await Task.Run(() => CaclHash(files, token)).WaitAsync(token);
         return new GroupProfile(files, hash);
     }
 
@@ -52,7 +52,7 @@ public class GroupProfile : FileProfile
         );
     }
 
-    private static string CaclHash(string[] files)
+    private static string CaclHash(string[] files, CancellationToken token)
     {
         var maxSize = Config.GetConfig<SyncConfig>().MaxFileByte;
         Array.Sort(files, FileNameCompare);
@@ -60,6 +60,7 @@ public class GroupProfile : FileProfile
         int hash = 0;
         foreach (var file in files)
         {
+            token.ThrowIfCancellationRequested();
             if (Directory.Exists(file))
             {
                 var directoryInfo = new DirectoryInfo(file);
@@ -96,29 +97,33 @@ public class GroupProfile : FileProfile
         await base.UploadProfile(webdav, token);
     }
 
-    public async Task PrepareTransferFile(CancellationToken token)
+    public Task PrepareTransferFile(CancellationToken token)
     {
-        var filePath = Path.Combine(LocalTemplateFolder, FileName);
-
-        using ZipFile zip = new ZipFile();
-        zip.AlternateEncoding = Encoding.UTF8;
-        zip.AlternateEncodingUsage = ZipOption.AsNecessary;
-
-        ArgumentNullException.ThrowIfNull(_files);
-        _files.ForEach(path =>
+        return Task.Run(() =>
         {
-            if (Directory.Exists(path))
-            {
-                zip.AddDirectory(path, Path.GetFileName(path));
-            }
-            else if (File.Exists(path))
-            {
-                zip.AddItem(path, "");
-            }
-        });
+            var filePath = Path.Combine(LocalTemplateFolder, FileName);
 
-        await Task.Run(() => zip.Save(filePath), token).WaitAsync(token);
-        FullPath = filePath;
+            using ZipFile zip = new ZipFile();
+            zip.AlternateEncoding = Encoding.UTF8;
+            zip.AlternateEncodingUsage = ZipOption.AsNecessary;
+
+            ArgumentNullException.ThrowIfNull(_files);
+            _files.ForEach(path =>
+            {
+                token.ThrowIfCancellationRequested();
+                if (Directory.Exists(path))
+                {
+                    zip.AddDirectory(path, Path.GetFileName(path));
+                }
+                else if (File.Exists(path))
+                {
+                    zip.AddItem(path, "");
+                }
+            });
+
+            zip.Save(filePath);
+            FullPath = filePath;
+        }, token).WaitAsync(token);
     }
 
     public override async Task BeforeSetLocal(CancellationToken token, IProgress<HttpDownloadProgress>? progress)
