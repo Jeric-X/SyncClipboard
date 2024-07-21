@@ -111,6 +111,9 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.RetryTimes}">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.RetryTimes, Mode=TwoWay}" />
+                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
                 </ui:SettingsCard>

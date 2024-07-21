@@ -1,3 +1,7 @@
+0.7.4.1
+- 功能：可以设置重试次数，失败超过重试次数下载/上传会暂停(https://github.com/Jeric-X/SyncClipboard/issues/100)
+- 功能：可以设置剪切文件时不上传(https://github.com/Jeric-X/SyncClipboard/issues/107)
+
 0.7.4
 - 修复：不设置hash上传图片/文件到服务器后，桌面客户端会无限重复设置剪贴板
 - 修复：在一些场景复制图片时，无法触发上传(https://github.com/Jeric-X/SyncClipboard/issues/88)

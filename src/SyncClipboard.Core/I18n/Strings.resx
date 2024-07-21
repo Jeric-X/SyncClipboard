@@ -522,4 +522,7 @@
   <data name="DoNotUploadWhenCut" xml:space="preserve">
     <value>Don't Upload When Cutting Files</value>
   </data>
+  <data name="RetryTimes" xml:space="preserve">
+    <value>Retry Times</value>
+  </data>
 </root>

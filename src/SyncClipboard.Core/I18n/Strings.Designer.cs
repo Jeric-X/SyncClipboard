@@ -880,6 +880,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Retry Times 的本地化字符串。
+        /// </summary>
+        public static string RetryTimes {
+            get {
+                return ResourceManager.GetString("RetryTimes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Run 的本地化字符串。
         /// </summary>
         public static string Run {

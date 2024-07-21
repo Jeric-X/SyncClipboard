@@ -231,6 +231,10 @@ public class DownloadService : Service
             _toastReporter = null;
             _logger.Write(LOG_TAG, "Canceled");
         }
+        catch (Exception ex)
+        {
+            _logger.Write(LOG_TAG, ex.Message);
+        }
     }
 
     private void StopPullLoop()
@@ -272,18 +276,15 @@ public class DownloadService : Service
     private void SetStatusOnError(ref int errorTimes, Exception ex)
     {
         errorTimes++;
-        if (errorTimes == 2)
-        {
-            _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.\n{ex.Message}", true);
-        }
+        _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {errorTimes}.\n{ex.Message}", true);
 
         _logger.Write(ex.ToString());
-        if (errorTimes == _syncConfig.RetryTimes)
+        if (errorTimes > _syncConfig.RetryTimes)
         {
             _notificationManager.SendText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
+            throw new Exception("Download retry times reach limit");
         }
     }
-
     private async Task PullLoop(CancellationToken cancelToken)
     {
         int errorTimes = 0;
@@ -304,9 +305,9 @@ public class DownloadService : Service
                     ex = new Exception("Request timeout");
                 }
 
-                SetStatusOnError(ref errorTimes, ex);
                 _toastReporter?.Cancel();
                 _toastReporter = null;
+                SetStatusOnError(ref errorTimes, ex);
             }
             finally
             {

@@ -16,6 +16,6 @@ public record class SyncConfig
     public bool TrustInsecureCertificate { get; set; } = false;
     public uint MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 20MB 
     public uint IntervalTime { get; set; } = 3;
-    public int RetryTimes { get; set; } = 3;
+    public uint RetryTimes { get; set; } = 3;
     public uint TimeOut { get; set; } = 100;
 }

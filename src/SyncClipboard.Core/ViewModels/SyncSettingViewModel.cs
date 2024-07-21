@@ -45,6 +45,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnIntervalTimeChanged(uint value) => ClientConfig = ClientConfig with { IntervalTime = value };
 
     [ObservableProperty]
+    private uint retryTimes;
+    partial void OnRetryTimesChanged(uint value) => ClientConfig = ClientConfig with { RetryTimes = value };
+
+    [ObservableProperty]
     private uint timeOut;
     partial void OnTimeOutChanged(uint value) => ClientConfig = ClientConfig with { TimeOut = value };
 
@@ -78,6 +82,7 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnClientConfigChanged(SyncConfig value)
     {
         IntervalTime = value.IntervalTime;
+        RetryTimes = value.RetryTimes;
         SyncEnable = value.SyncSwitchOn;
         UseLocalServer = value.UseLocalServer;
         TimeOut = value.TimeOut;
@@ -144,6 +149,7 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
         clientConfig = _configManager.GetConfig<SyncConfig>();
         intervalTime = clientConfig.IntervalTime;
+        retryTimes = clientConfig.RetryTimes;
         syncEnable = clientConfig.SyncSwitchOn;
         useLocalServer = clientConfig.UseLocalServer;
         timeOut = clientConfig.TimeOut;

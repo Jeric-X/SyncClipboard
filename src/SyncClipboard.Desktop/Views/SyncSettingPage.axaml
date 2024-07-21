@@ -118,6 +118,11 @@
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding IntervalTime, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding RetryTimes, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}">
                     <ui:SettingsExpanderItem.Footer>
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding TimeOut, Mode=TwoWay}" />

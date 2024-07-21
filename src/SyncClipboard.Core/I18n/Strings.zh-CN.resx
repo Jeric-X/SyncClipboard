@@ -522,4 +522,7 @@
   <data name="DoNotUploadWhenCut" xml:space="preserve">
     <value>剪切文件时不上传</value>
   </data>
+  <data name="RetryTimes" xml:space="preserve">
+    <value>重试次数</value>
+  </data>
 </root>
