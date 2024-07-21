@@ -519,4 +519,7 @@
   <data name="SendNotificationAfterManuallyUpload" xml:space="preserve">
     <value>手动上传剪贴板后发送通知</value>
   </data>
+  <data name="DoNotUploadWhenCut" xml:space="preserve">
+    <value>剪切文件时不上传</value>
+  </data>
 </root>

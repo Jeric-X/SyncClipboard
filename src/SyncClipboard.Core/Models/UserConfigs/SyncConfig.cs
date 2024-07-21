@@ -11,6 +11,7 @@ public record class SyncConfig
     public bool UseLocalServer { get; set; } = false;
     public bool DeletePreviousFilesOnPush { get; set; } = true;
     public bool NotifyOnDownloaded { get; set; } = false;
+    public bool DoNotUploadWhenCut { get; set; } = false;
     public bool NotifyOnManualUpload { get; set; } = false;
     public bool TrustInsecureCertificate { get; set; } = false;
     public uint MaxFileByte { get; set; } = 1024 * 1024 * 20;  // 20MB 

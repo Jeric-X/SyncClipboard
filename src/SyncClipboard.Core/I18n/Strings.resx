@@ -519,4 +519,7 @@
   <data name="SendNotificationAfterManuallyUpload" xml:space="preserve">
     <value>Send notification after manually upload</value>
   </data>
+  <data name="DoNotUploadWhenCut" xml:space="preserve">
+    <value>Don't Upload When Cutting Files</value>
+  </data>
 </root>

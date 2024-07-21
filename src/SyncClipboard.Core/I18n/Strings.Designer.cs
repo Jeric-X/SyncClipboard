@@ -313,6 +313,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Don&apos;t Upload When Cutting Files 的本地化字符串。
+        /// </summary>
+        public static string DoNotUploadWhenCut {
+            get {
+                return ResourceManager.GetString("DoNotUploadWhenCut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Download 的本地化字符串。
         /// </summary>
         public static string Download {

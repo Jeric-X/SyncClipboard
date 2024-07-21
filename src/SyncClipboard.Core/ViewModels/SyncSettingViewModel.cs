@@ -65,6 +65,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnNotifyOnManualUploadChanged(bool value) => ClientConfig = ClientConfig with { NotifyOnManualUpload = value };
 
     [ObservableProperty]
+    private bool doNotUploadWhenCut;
+    partial void OnDoNotUploadWhenCutChanged(bool value) => ClientConfig = ClientConfig with { DoNotUploadWhenCut = value };
+
+    [ObservableProperty]
     private bool trustInsecureCertificate;
     partial void OnTrustInsecureCertificateChanged(bool value) => ClientConfig = ClientConfig with { TrustInsecureCertificate = value };
 
@@ -81,6 +85,7 @@ public partial class SyncSettingViewModel : ObservableObject
         AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
         NotifyOnDownloaded = value.NotifyOnDownloaded;
         NotifyOnManualUpload = value.NotifyOnManualUpload;
+        DoNotUploadWhenCut = value.DoNotUploadWhenCut;
         TrustInsecureCertificate = value.TrustInsecureCertificate;
         _configManager.SetConfig(value);
     }
@@ -146,6 +151,7 @@ public partial class SyncSettingViewModel : ObservableObject
         autoDeleleServerFile = clientConfig.DeletePreviousFilesOnPush;
         notifyOnDownloaded = clientConfig.NotifyOnDownloaded;
         notifyOnManualUpload = clientConfig.NotifyOnManualUpload;
+        doNotUploadWhenCut = clientConfig.DoNotUploadWhenCut;
         trustInsecureCertificate = clientConfig.TrustInsecureCertificate;
     }
 

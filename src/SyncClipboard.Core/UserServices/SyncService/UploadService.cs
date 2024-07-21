@@ -50,6 +50,7 @@ public class UploadService : ClipboardHander
     }
 
     private bool NotifyOnManualUpload => _syncConfig.NotifyOnManualUpload;
+    private bool DoNotUploadWhenCut => _syncConfig.DoNotUploadWhenCut;
 
     private bool _downServiceChangingLocal = false;
     private Profile? _profileCache;
@@ -195,6 +196,12 @@ public class UploadService : ClipboardHander
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
+            if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
+            {
+                _logger.Write(LOG_TAG, "Cut won't Push.");
+                return;
+            }
+
             if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token))
             {
                 _logger.Write(LOG_TAG, "Stop Push.");
