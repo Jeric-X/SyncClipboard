@@ -20,6 +20,13 @@ public partial class HotkeyViewModel : ObservableObject
     private Hotkey editingHotkey = Hotkey.Nothing;
     partial void OnEditingHotkeyChanged(Hotkey value)
     {
+        var copyHotkey = new Hotkey(OperatingSystem.IsMacOS() ? Key.Meta : Key.Ctrl, Key.C);
+        if (value == copyHotkey)
+        {
+            IsEditingHasError = true;
+            return;
+        }
+
         IsEditingHasError = !_hotkeyManager.IsValidHotkeyForm(value);
     }
 

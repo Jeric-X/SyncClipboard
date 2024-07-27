@@ -1,6 +1,7 @@
-0.7.4.1
-- 功能：可以设置重试次数，失败超过重试次数下载/上传会暂停(https://github.com/Jeric-X/SyncClipboard/issues/100)
-- 功能：可以设置剪切文件时不上传(https://github.com/Jeric-X/SyncClipboard/issues/107)
+0.7.5
+- 功能：可以设置重试次数，下载失败超过重试次数自动下载会暂停，触发一次上传后会恢复自动下载(https://github.com/Jeric-X/SyncClipboard/issues/100)
+- 功能：可以设置剪切文件时不上传(Linux)(https://github.com/Jeric-X/SyncClipboard/issues/107)
+- 修复：快捷键不允许设置为ctrl + c或command + c (https://github.com/Jeric-X/SyncClipboard/issues/103)
 
 0.7.4
 - 修复：不设置hash上传图片/文件到服务器后，桌面客户端会无限重复设置剪贴板

@@ -520,7 +520,7 @@
     <value>Send notification after manually upload</value>
   </data>
   <data name="DoNotUploadWhenCut" xml:space="preserve">
-    <value>Don't Upload When Cutting Files</value>
+    <value>Don't upload files when cutting</value>
   </data>
   <data name="RetryTimes" xml:space="preserve">
     <value>Retry Times</value>
