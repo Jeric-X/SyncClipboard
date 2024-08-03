@@ -129,12 +129,13 @@ namespace SyncClipboard.Core.Utilities.Web
             );
         }
 
-        public Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null)
+        public async Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null)
         {
-            return HttpClient.PutAsJsonAsync(
+            var content = JsonContent.Create(jsonContent, null, new JsonSerializerOptions(JsonSerializerDefaults.General));
+            await content.LoadIntoBufferAsync(); // avoid chunked encoding
+            await HttpClient.PutAsync(
                 url,
-                jsonContent,
-                new JsonSerializerOptions(JsonSerializerDefaults.General),
+                content,
                 AdjustCancelToken(cancelToken)
             );
         }

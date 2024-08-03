@@ -110,6 +110,7 @@ docker compose up -d
 - [x] [坚果云](https://www.jianguoyun.com/)
 - [x] [AList](https://alist.nn.ci/)
 - [x] [InfiniCLOUD](https://infini-cloud.net/en/)
+- [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
 
 注意：
 - 坚果云有每月流量限制和短时间内请求次数限制，建议自行设置桌面端的`轮询服务器间隔`和`最大上传文件大小`   

@@ -1,3 +1,6 @@
+0.7.5.1
+- 修复：使用aliyundrive-webdav时无法上传(https://github.com/Jeric-X/SyncClipboard/issues/98)
+
 0.7.5
 - 功能：可以设置重试次数，下载失败超过重试次数自动下载会暂停，触发一次上传后会恢复自动下载(https://github.com/Jeric-X/SyncClipboard/issues/100)
 - 功能：可以设置剪切文件时不上传(Linux)(https://github.com/Jeric-X/SyncClipboard/issues/107)

@@ -107,6 +107,7 @@ Tested server：
 - [x] [坚果云](https://www.jianguoyun.com/) 
 - [x] [AList](https://alist.nn.ci/)
 - [x] [InfiniCLOUD](https://infini-cloud.net/en/)
+- [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
 
 ## Client
 
