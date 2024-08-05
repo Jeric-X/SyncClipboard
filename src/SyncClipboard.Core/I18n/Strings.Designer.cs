@@ -79,11 +79,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Apply 的本地化字符串。
+        /// </summary>
+        public static string Apply {
+            get {
+                return ResourceManager.GetString("Apply", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Assistant 的本地化字符串。
         /// </summary>
         public static string Assistant {
             get {
                 return ResourceManager.GetString("Assistant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Black List 的本地化字符串。
+        /// </summary>
+        public static string BlackList {
+            get {
+                return ResourceManager.GetString("BlackList", resourceCulture);
             }
         }
         
@@ -313,7 +331,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Don&apos;t Upload When Cutting Files 的本地化字符串。
+        ///   查找类似 Don&apos;t upload files when cutting 的本地化字符串。
         /// </summary>
         public static string DoNotUploadWhenCut {
             get {
@@ -489,6 +507,33 @@ namespace SyncClipboard.Core.I18n {
         public static string FailToParseVersion {
             get {
                 return ResourceManager.GetString("FailToParseVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Each file extension per line 的本地化字符串。
+        /// </summary>
+        public static string FileFilterDescription {
+            get {
+                return ResourceManager.GetString("FileFilterDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 File Sync Filter 的本地化字符串。
+        /// </summary>
+        public static string FileSyncFilter {
+            get {
+                return ResourceManager.GetString("FileSyncFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Filter Mode 的本地化字符串。
+        /// </summary>
+        public static string FilterMode {
+            get {
+                return ResourceManager.GetString("FilterMode", resourceCulture);
             }
         }
         
@@ -687,6 +732,15 @@ namespace SyncClipboard.Core.I18n {
         public static string MixedClientOnInfo {
             get {
                 return ResourceManager.GetString("MixedClientOnInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 None 的本地化字符串。
+        /// </summary>
+        public static string None {
+            get {
+                return ResourceManager.GetString("None", resourceCulture);
             }
         }
         
@@ -1281,6 +1335,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UseSelfHostServer {
             get {
                 return ResourceManager.GetString("UseSelfHostServer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 White List 的本地化字符串。
+        /// </summary>
+        public static string WhiteList {
+            get {
+                return ResourceManager.GetString("WhiteList", resourceCulture);
             }
         }
     }

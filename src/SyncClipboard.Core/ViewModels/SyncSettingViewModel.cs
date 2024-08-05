@@ -101,6 +101,12 @@ public partial class SyncSettingViewModel : ObservableObject
         _mainVM.NavigateToNextLevel(PageDefinition.NextCloudLogIn);
     }
 
+    [RelayCommand]
+    private void SetFileSyncFilter()
+    {
+        _mainVM.NavigateToNextLevel(PageDefinition.FileSyncFilterSetting);
+    }
+
     #endregion
 
     #region for view only

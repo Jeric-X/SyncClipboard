@@ -525,4 +525,25 @@
   <data name="RetryTimes" xml:space="preserve">
     <value>重试次数</value>
   </data>
+  <data name="FileSyncFilter" xml:space="preserve">
+    <value>同步文件过滤</value>
+  </data>
+  <data name="FilterMode" xml:space="preserve">
+    <value>过滤模式</value>
+  </data>
+  <data name="BlackList" xml:space="preserve">
+    <value>黑名单</value>
+  </data>
+  <data name="WhiteList" xml:space="preserve">
+    <value>白名单</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>无</value>
+  </data>
+  <data name="FileFilterDescription" xml:space="preserve">
+    <value>每行一个文件扩展名</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>应用</value>
+  </data>
 </root>

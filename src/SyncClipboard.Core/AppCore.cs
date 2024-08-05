@@ -174,6 +174,7 @@ namespace SyncClipboard.Core
             services.AddTransient<AboutViewModel>();
             services.AddTransient<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();
+            services.AddTransient<FileSyncFilterSettingViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<HotkeyViewModel>();

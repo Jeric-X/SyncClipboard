@@ -525,4 +525,25 @@
   <data name="RetryTimes" xml:space="preserve">
     <value>Retry Times</value>
   </data>
+  <data name="FileSyncFilter" xml:space="preserve">
+    <value>File Sync Filter</value>
+  </data>
+  <data name="FilterMode" xml:space="preserve">
+    <value>Filter Mode</value>
+  </data>
+  <data name="BlackList" xml:space="preserve">
+    <value>Black List</value>
+  </data>
+  <data name="WhiteList" xml:space="preserve">
+    <value>White List</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="FileFilterDescription" xml:space="preserve">
+    <value>Each file extension per line</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
 </root>
