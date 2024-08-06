@@ -193,12 +193,36 @@ public class FileProfile : Profile
         );
     }
 
-    private bool Oversized()
+    protected bool Oversized()
     {
         return Hash == MD5_FOR_OVERSIZED_FILE;
     }
 
     public override bool IsAvailableFromRemote() => !Oversized();
+
+    public override bool IsAvailableFromLocal() => IsFileAvailableAfterFilter(FullPath!) && !Oversized();
+
+    protected static bool IsFileAvailableAfterFilter(string fileName)
+    {
+        var filterConfig = Config.GetConfig<FileFilterConfig>();
+        if (filterConfig.FileFilterMode == "BlackList")
+        {
+            var str = filterConfig.BlackList.Find(str => fileName.EndsWith(str, StringComparison.OrdinalIgnoreCase));
+            if (str is not null)
+            {
+                return false;
+            }
+        }
+        else if (filterConfig.FileFilterMode == "WhiteList")
+        {
+            var str = filterConfig.WhiteList.Find(str => fileName.EndsWith(str, StringComparison.OrdinalIgnoreCase));
+            if (str is null)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public override async Task EnsureAvailable(CancellationToken token)
     {

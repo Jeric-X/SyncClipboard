@@ -58,6 +58,7 @@ public abstract class Profile
     }
 
     public virtual bool IsAvailableFromRemote() => true;
+    public virtual bool IsAvailableFromLocal() => true;
 
     public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
 

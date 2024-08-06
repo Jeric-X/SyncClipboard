@@ -22,6 +22,7 @@ namespace SyncClipboard.Core
         public static AppCore Current => _current ?? throw new Exception("Appcore is not initialized");
         public IServiceProvider Services { get; }
         public ILogger Logger { get; }
+        public ConfigManager ConfigManager { get; }
 
         private ServiceManager? ServiceManager { get; set; }
 
@@ -30,6 +31,7 @@ namespace SyncClipboard.Core
             Services = serviceProvider;
             _current = this;
             Logger = serviceProvider.GetRequiredService<ILogger>();
+            ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
         }
 
         private static void InitLanguage(ConfigManager configManager)

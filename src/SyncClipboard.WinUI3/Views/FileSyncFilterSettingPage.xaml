@@ -8,6 +8,7 @@
       xmlns:ui="using:CommunityToolkit.WinUI.Controls"
       xmlns:m="using:SyncClipboard.Core.Models"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
 
@@ -22,22 +23,29 @@
             </ui:SettingsCard.HeaderIcon>
             <ComboBox SelectedItem="{x:Bind _viewModel.FilterMode, Mode=TwoWay}" ItemsSource="{x:Bind vm:FileSyncFilterSettingViewModel.Modes}" DisplayMemberPath="ShownString" />
         </ui:SettingsCard>
-        <Grid Grid.Row="1" Margin="0,10,0,0">
+        <Grid Grid.Row="1" Margin="0,10,0,0" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.EnableText), Mode=OneWay}" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0"
+            <ScrollViewer x:Name="_ScrollViewer"
+                Grid.Column="0"
+                VerticalScrollMode="Enabled"
+                VerticalScrollBarVisibility="Auto">
+                <TextBox Grid.Column="0"
+                     Text="{x:Bind _viewModel.ShownText, Mode=TwoWay}"
                      TextWrapping="Wrap"
+                     FontSize="16"
                      AcceptsReturn="True"
                      CornerRadius="{ThemeResource ControlCornerRadius}" />
+            </ScrollViewer>
             <StackPanel Grid.Column="1"
                         MinWidth="80"
                         Margin="16,0,0,0"
                         Orientation="Vertical"
                         Spacing="10">
-                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Apply}" />
-                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Confirm}" />
+                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Apply}" Command="{x:Bind _viewModel.ApplyCommand}" />
+                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Confirm}" Command="{x:Bind _viewModel.ConfirmCommand}" />
             </StackPanel>
         </Grid>
     </Grid>

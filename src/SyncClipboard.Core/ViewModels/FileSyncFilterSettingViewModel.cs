@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
@@ -20,27 +22,56 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     partial void OnFilterModeChanged(LocaleString value) => FilterConfig = FilterConfig with { FileFilterMode = value.String };
 
     [ObservableProperty]
-    private string blackList = "";
-    partial void OnBlackListChanged(string value)
-    {
-        FilterConfig = FilterConfig with { BlackList = value.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.RemoveEmptyEntries).ToList() };
-    }
-
-    [ObservableProperty]
-    private string whiteList = "";
-    partial void OnWhiteListChanged(string value)
-    {
-        FilterConfig = FilterConfig with { WhiteList = value.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.RemoveEmptyEntries).ToList() };
-    }
-
-    [ObservableProperty]
     private FileFilterConfig filterConfig = new();
     partial void OnFilterConfigChanged(FileFilterConfig value)
     {
         FilterMode = Modes.FirstOrDefault(x => x.String == FilterConfig.FileFilterMode) ?? Modes[0];
-        BlackList = string.Join(Environment.NewLine, value.BlackList);
-        WhiteList = string.Join(Environment.NewLine, value.WhiteList);
+        if (FilterConfig.FileFilterMode == "BlackList")
+        {
+            ShownText = string.Join(Environment.NewLine, value.BlackList);
+            EnableText = true;
+        }
+        else if (FilterConfig.FileFilterMode == "WhiteList")
+        {
+            ShownText = string.Join(Environment.NewLine, value.WhiteList);
+            EnableText = true;
+        }
+        else
+        {
+            ShownText = "";
+            EnableText = false;
+        }
         _configManager.SetConfig(value);
+    }
+
+    [ObservableProperty]
+    private bool enableText = false;
+
+    [ObservableProperty]
+    private string shownText = "";
+
+    [RelayCommand]
+    public void Apply()
+    {
+        var list = ShownText.Split(new string[] { "\r\n", "\r", "\n" },
+            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct().ToList();
+        list.Sort();
+        if (FilterConfig.FileFilterMode == "BlackList")
+        {
+            FilterConfig = FilterConfig with { BlackList = list };
+        }
+        else if (FilterConfig.FileFilterMode == "WhiteList")
+        {
+            FilterConfig = FilterConfig with { WhiteList = list };
+        }
+        ShownText = string.Join(Environment.NewLine, list);
+    }
+
+    [RelayCommand]
+    public void Confirm()
+    {
+        Apply();
+        AppCore.Current.Services.GetRequiredService<MainViewModel>().NavigateToLastLevel();
     }
 
     private readonly ConfigManager _configManager;

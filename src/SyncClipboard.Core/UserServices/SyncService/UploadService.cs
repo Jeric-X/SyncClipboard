@@ -202,7 +202,7 @@ public class UploadService : ClipboardHander
                 return;
             }
 
-            if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token))
+            if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token) || !profile.IsAvailableFromLocal())
             {
                 _logger.Write(LOG_TAG, "Stop Push.");
                 return;

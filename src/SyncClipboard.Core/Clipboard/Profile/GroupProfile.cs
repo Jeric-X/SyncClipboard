@@ -75,7 +75,7 @@ public class GroupProfile : FileProfile
                     hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
                 }
             }
-            else if (File.Exists(file))
+            else if (File.Exists(file) && IsFileAvailableAfterFilter(file))
             {
                 var fileInfo = new FileInfo(file);
                 sumSize += fileInfo.Length;
@@ -120,7 +120,16 @@ public class GroupProfile : FileProfile
                     zip.AddItem(path, "");
                 }
             });
-
+            foreach (var item in zip.Entries)
+            {
+                if (!item.IsDirectory)
+                {
+                    if (!IsFileAvailableAfterFilter(item.FileName))
+                    {
+                        zip.RemoveEntry(item.FileName);
+                    }
+                }
+            }
             zip.Save(filePath);
             FullPath = filePath;
         }, token).WaitAsync(token);
@@ -182,5 +191,11 @@ public class GroupProfile : FileProfile
             return string.Join("\n", _files.Take(5).Select(file => Path.GetFileName(file))) + "\n...";
         }
         return string.Join("\n", _files.Select(file => Path.GetFileName(file)));
+    }
+
+    public override bool IsAvailableFromLocal()
+    {
+        bool hasItem = null != _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name));
+        return hasItem && !Oversized();
     }
 }

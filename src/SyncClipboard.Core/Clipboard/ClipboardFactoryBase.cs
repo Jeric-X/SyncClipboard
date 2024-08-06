@@ -2,6 +2,8 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities.Image;
 using System.Net;
 using System.Text.Json;
@@ -111,7 +113,15 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     public async Task<ClipboardProfileDTO> CreateProfileDto(string destFolder)
     {
         var token = CancellationToken.None;
-        var profile = await CreateProfileFromLocal(token);
+        var meta = await GetMetaInfomation(token);
+        var profile = await CreateProfileFromMeta(meta, token);
+
+        bool doNotUploadWhenCut = AppCore.Current.ConfigManager.GetConfig<SyncConfig>().DoNotUploadWhenCut;
+        bool isCut = (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move;
+        if ((doNotUploadWhenCut && isCut) || !profile.IsAvailableFromLocal())
+        {
+            return new TextProfile("").ToDto();
+        }
 
         if (profile is FileProfile fileProfile)
         {
