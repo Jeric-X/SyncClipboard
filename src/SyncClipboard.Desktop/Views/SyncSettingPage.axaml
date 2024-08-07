@@ -32,6 +32,7 @@
     </UserControl.Styles>
     <UserControl.Resources>
         <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordFontIcon" />
+        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
@@ -160,6 +161,10 @@
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding MaxFileSize, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding SetFileSyncFilterCommand}"
+                                         Content="{x:Static i18n:Strings.FileSyncFilter}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
     </StackPanel>

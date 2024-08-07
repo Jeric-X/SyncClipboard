@@ -44,8 +44,7 @@
                         Margin="16,0,0,0"
                         Orientation="Vertical"
                         Spacing="10">
-                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Apply}" Command="{x:Bind _viewModel.ApplyCommand}" />
-                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Confirm}" Command="{x:Bind _viewModel.ConfirmCommand}" />
+                <Button HorizontalAlignment="Stretch" Content="{x:Bind i18n:Strings.Save}" Command="{x:Bind _viewModel.ApplyCommand}" />
             </StackPanel>
         </Grid>
     </Grid>

@@ -79,15 +79,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Apply 的本地化字符串。
-        /// </summary>
-        public static string Apply {
-            get {
-                return ResourceManager.GetString("Apply", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Assistant 的本地化字符串。
         /// </summary>
         public static string Assistant {
@@ -520,7 +511,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 File Sync Filter 的本地化字符串。
+        ///   查找类似 Uploading File Filter 的本地化字符串。
         /// </summary>
         public static string FileSyncFilter {
             get {
@@ -957,6 +948,15 @@ namespace SyncClipboard.Core.I18n {
         public static string RunAtSystemStartup {
             get {
                 return ResourceManager.GetString("RunAtSystemStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Save 的本地化字符串。
+        /// </summary>
+        public static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
             }
         }
         

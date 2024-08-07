@@ -120,7 +120,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         bool isCut = (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move;
         if ((doNotUploadWhenCut && isCut) || !profile.IsAvailableFromLocal())
         {
-            return new TextProfile("").ToDto();
+            return new UnknownProfile().ToDto();
         }
 
         if (profile is FileProfile fileProfile)

@@ -1,0 +1,59 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.FileSyncFilterSettingPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:m="using:SyncClipboard.Core.Models"
+             x:DataType="vm:FileSyncFilterSettingViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:FileSyncFilterSettingViewModel />
+    </Design.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}" Description="{x:Static i18n:Strings.FileFilterDescription}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="m:LocaleString">
+                            <TextBlock Text="{Binding ShownString}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
+        <Grid Grid.Row="1" Margin="0,10,0,0" IsVisible="{Binding EnableText, Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ScrollViewer x:Name="_ScrollViewer" Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <TextBox Grid.Column="0"
+                         Text="{Binding ShownText, Mode=TwoWay}"
+                         TextWrapping="Wrap"
+                         FontSize="16"
+                         AcceptsReturn="True"
+                         VerticalContentAlignment="Top"
+                         CornerRadius="{DynamicResource ControlCornerRadius}" />
+            </ScrollViewer>
+            <StackPanel Grid.Column="1"
+                        MinWidth="80"
+                        Margin="16,0,0,0"
+                        Orientation="Vertical"
+                        Spacing="10">
+                <Button HorizontalAlignment="Stretch" Content="{x:Static i18n:Strings.Save}" Command="{Binding ApplyCommand}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

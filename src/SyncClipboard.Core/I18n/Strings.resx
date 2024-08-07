@@ -526,7 +526,7 @@
     <value>Retry Times</value>
   </data>
   <data name="FileSyncFilter" xml:space="preserve">
-    <value>File Sync Filter</value>
+    <value>Uploading File Filter</value>
   </data>
   <data name="FilterMode" xml:space="preserve">
     <value>Filter Mode</value>
@@ -543,7 +543,7 @@
   <data name="FileFilterDescription" xml:space="preserve">
     <value>Each file extension per line</value>
   </data>
-  <data name="Apply" xml:space="preserve">
-    <value>Apply</value>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
   </data>
 </root>

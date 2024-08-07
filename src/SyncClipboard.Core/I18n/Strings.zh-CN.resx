@@ -526,7 +526,7 @@
     <value>重试次数</value>
   </data>
   <data name="FileSyncFilter" xml:space="preserve">
-    <value>同步文件过滤</value>
+    <value>上传文件过滤</value>
   </data>
   <data name="FilterMode" xml:space="preserve">
     <value>过滤模式</value>
@@ -543,7 +543,7 @@
   <data name="FileFilterDescription" xml:space="preserve">
     <value>每行一个文件扩展名</value>
   </data>
-  <data name="Apply" xml:space="preserve">
-    <value>应用</value>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
   </data>
 </root>
