@@ -430,6 +430,51 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Enable Downloading 的本地化字符串。
+        /// </summary>
+        public static string EnableDownload {
+            get {
+                return ResourceManager.GetString("EnableDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enable Uploading 的本地化字符串。
+        /// </summary>
+        public static string EnableUpload {
+            get {
+                return ResourceManager.GetString("EnableUpload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enable Uploading Single File 的本地化字符串。
+        /// </summary>
+        public static string EnableUploadFile {
+            get {
+                return ResourceManager.GetString("EnableUploadFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enable Uploading Multi Files or Folder 的本地化字符串。
+        /// </summary>
+        public static string EnableUploadMultiFile {
+            get {
+                return ResourceManager.GetString("EnableUploadMultiFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enable Uploading Text 的本地化字符串。
+        /// </summary>
+        public static string EnableUploadText {
+            get {
+                return ResourceManager.GetString("EnableUploadText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Exit 的本地化字符串。
         /// </summary>
         public static string Exit {

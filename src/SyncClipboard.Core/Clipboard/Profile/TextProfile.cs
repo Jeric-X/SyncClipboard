@@ -3,6 +3,7 @@ using SyncClipboard.Abstract;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Text.RegularExpressions;
 
@@ -86,4 +87,6 @@ public class TextProfile : Profile
         }
         return false;
     }
+
+    public override bool IsAvailableFromLocal() => Config.GetConfig<SyncConfig>().EnableUploadText;
 }

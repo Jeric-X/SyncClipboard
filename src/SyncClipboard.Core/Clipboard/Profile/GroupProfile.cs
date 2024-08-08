@@ -196,6 +196,6 @@ public class GroupProfile : FileProfile
     public override bool IsAvailableFromLocal()
     {
         bool hasItem = null != _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name));
-        return hasItem && !Oversized();
+        return hasItem && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadMultiFile;
     }
 }

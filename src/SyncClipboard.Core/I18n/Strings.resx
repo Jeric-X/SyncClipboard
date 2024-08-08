@@ -546,4 +546,19 @@
   <data name="SaveList" xml:space="preserve">
     <value>Save List</value>
   </data>
+  <data name="EnableUploadText" xml:space="preserve">
+    <value>Enable Uploading Text</value>
+  </data>
+  <data name="EnableUploadFile" xml:space="preserve">
+    <value>Enable Uploading Single File</value>
+  </data>
+  <data name="EnableUploadMultiFile" xml:space="preserve">
+    <value>Enable Uploading Multi Files or Folder</value>
+  </data>
+  <data name="EnableUpload" xml:space="preserve">
+    <value>Enable Uploading</value>
+  </data>
+  <data name="EnableDownload" xml:space="preserve">
+    <value>Enable Downloading</value>
+  </data>
 </root>

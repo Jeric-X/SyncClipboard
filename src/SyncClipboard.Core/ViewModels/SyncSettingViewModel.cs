@@ -82,6 +82,26 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnTrustInsecureCertificateChanged(bool value) => ClientConfig = ClientConfig with { TrustInsecureCertificate = value };
 
     [ObservableProperty]
+    private bool uploadEnable;
+    partial void OnUploadEnableChanged(bool value) => ClientConfig = ClientConfig with { PushSwitchOn = value };
+
+    [ObservableProperty]
+    private bool downloadEnable;
+    partial void OnDownloadEnableChanged(bool value) => ClientConfig = ClientConfig with { PullSwitchOn = value };
+
+    [ObservableProperty]
+    private bool textEnable;
+    partial void OnTextEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadText = value };
+
+    [ObservableProperty]
+    private bool singleFileEnable;
+    partial void OnSingleFileEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadSingleFile = value };
+
+    [ObservableProperty]
+    private bool multiFileEnable;
+    partial void OnMultiFileEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadMultiFile = value };
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
     private SyncConfig clientConfig;
     partial void OnClientConfigChanged(SyncConfig value)
@@ -97,6 +117,11 @@ public partial class SyncSettingViewModel : ObservableObject
         NotifyOnManualUpload = value.NotifyOnManualUpload;
         DoNotUploadWhenCut = value.DoNotUploadWhenCut;
         TrustInsecureCertificate = value.TrustInsecureCertificate;
+        UploadEnable = value.PushSwitchOn;
+        DownloadEnable = value.PullSwitchOn;
+        TextEnable = value.EnableUploadText;
+        SingleFileEnable = value.EnableUploadSingleFile;
+        MultiFileEnable = value.EnableUploadMultiFile;
         _configManager.SetConfig(value);
     }
 
@@ -123,8 +148,8 @@ public partial class SyncSettingViewModel : ObservableObject
     public bool ClientEnabled
     {
         get => !IsNormalClientEnable || SyncEnable;
-        set 
-        {   
+        set
+        {
             if (IsNormalClientEnable)
             {
                 SyncEnable = value;

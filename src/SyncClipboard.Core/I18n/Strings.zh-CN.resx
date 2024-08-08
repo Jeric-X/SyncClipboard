@@ -546,4 +546,19 @@
   <data name="SaveList" xml:space="preserve">
     <value>保存名单</value>
   </data>
+  <data name="EnableUploadText" xml:space="preserve">
+    <value>上传文字</value>
+  </data>
+  <data name="EnableUploadFile" xml:space="preserve">
+    <value>上传单个文件</value>
+  </data>
+  <data name="EnableUploadMultiFile" xml:space="preserve">
+    <value>上传多个文件或文件夹</value>
+  </data>
+  <data name="EnableUpload" xml:space="preserve">
+    <value>开启上传</value>
+  </data>
+  <data name="EnableDownload" xml:space="preserve">
+    <value>开启下载</value>
+  </data>
 </root>

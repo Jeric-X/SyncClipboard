@@ -200,7 +200,8 @@ public class FileProfile : Profile
 
     public override bool IsAvailableFromRemote() => !Oversized();
 
-    public override bool IsAvailableFromLocal() => IsFileAvailableAfterFilter(FullPath!) && !Oversized();
+    public override bool IsAvailableFromLocal() => IsFileAvailableAfterFilter(FullPath!)
+        && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadSingleFile;
 
     protected static bool IsFileAvailableAfterFilter(string fileName)
     {
