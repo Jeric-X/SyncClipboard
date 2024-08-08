@@ -543,7 +543,7 @@
   <data name="FileFilterDescription" xml:space="preserve">
     <value>Each file extension per line</value>
   </data>
-  <data name="Save" xml:space="preserve">
-    <value>Save</value>
+  <data name="SaveList" xml:space="preserve">
+    <value>Save List</value>
   </data>
 </root>

@@ -77,15 +77,18 @@
                 </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="{Binding IsNormalClientEnable, Mode=OneWay}" IsEnabled="{Binding IsNormalClientEnable, Mode=OneWay}">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE117;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.Footer>
-                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SyncEnable, Mode=TwoWay}" />
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                              OffContent="{x:Static i18n:Strings.Off}"
+                              IsChecked="{Binding ClientEnabled, Mode=TwoWay}"
+                              IsEnabled="{Binding IsNormalClientEnable, Mode=OneWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.UseBuiltInServerDescription}" Content="{x:Static i18n:Strings.UseSelfHostServer}">
+                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.UseBuiltInServerDescription}" Content="{x:Static i18n:Strings.UseSelfHostServer}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UseLocalServer, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
@@ -114,38 +117,31 @@
                                         FontSize="12"
                                         FontWeight="SemiBold" />
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding IntervalTime, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding RetryTimes, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
                         <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding TimeOut, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DeleteServerTemporaryFileAutoly}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DeleteServerTemporaryFileAutoly}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDeleleServerFile, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterManuallyUpload}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterManuallyUpload}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnManualUpload, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClientGeneral}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Items>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />

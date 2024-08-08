@@ -952,11 +952,11 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Save 的本地化字符串。
+        ///   查找类似 Save List 的本地化字符串。
         /// </summary>
-        public static string Save {
+        public static string SaveList {
             get {
-                return ResourceManager.GetString("Save", resourceCulture);
+                return ResourceManager.GetString("SaveList", resourceCulture);
             }
         }
         

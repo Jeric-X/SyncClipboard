@@ -10,11 +10,15 @@ public partial class SyncSettingViewModel : ObservableObject
     #region server
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNormalClientEnable))]
+    [NotifyPropertyChangedFor(nameof(UseManulServer))]
+    [NotifyPropertyChangedFor(nameof(ClientEnabled))]
     private bool serverEnable;
     partial void OnServerEnableChanged(bool value) => ServerConfig = ServerConfig with { SwitchOn = value };
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNormalClientEnable))]
+    [NotifyPropertyChangedFor(nameof(UseManulServer))]
+    [NotifyPropertyChangedFor(nameof(ClientEnabled))]
     private bool clientMixedMode;
     partial void OnClientMixedModeChanged(bool value) => ServerConfig = ServerConfig with { ClientMixedMode = value };
 
@@ -32,6 +36,7 @@ public partial class SyncSettingViewModel : ObservableObject
 
     #region client
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ClientEnabled))]
     private bool syncEnable;
     partial void OnSyncEnableChanged(bool value) => ClientConfig = ClientConfig with { SyncSwitchOn = value };
 
@@ -113,7 +118,19 @@ public partial class SyncSettingViewModel : ObservableObject
 
     public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
 
-    public bool UseManulServer => !UseLocalServer;
+    public bool UseManulServer => !UseLocalServer && IsNormalClientEnable;
+
+    public bool ClientEnabled
+    {
+        get => !IsNormalClientEnable || SyncEnable;
+        set 
+        {   
+            if (IsNormalClientEnable)
+            {
+                SyncEnable = value;
+            }
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]

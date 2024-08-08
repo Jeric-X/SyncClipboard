@@ -52,7 +52,7 @@
                         Margin="16,0,0,0"
                         Orientation="Vertical"
                         Spacing="10">
-                <Button HorizontalAlignment="Stretch" Content="{x:Static i18n:Strings.Save}" Command="{Binding ApplyCommand}" />
+                <Button HorizontalAlignment="Stretch" Content="{x:Static i18n:Strings.SaveList}" Command="{Binding ApplyCommand}" />
             </StackPanel>
         </Grid>
     </Grid>
