@@ -207,6 +207,11 @@ public partial class SyncSettingViewModel : ObservableObject
         notifyOnManualUpload = clientConfig.NotifyOnManualUpload;
         doNotUploadWhenCut = clientConfig.DoNotUploadWhenCut;
         trustInsecureCertificate = clientConfig.TrustInsecureCertificate;
+        uploadEnable = clientConfig.PushSwitchOn;
+        downloadEnable = clientConfig.PullSwitchOn;
+        textEnable = clientConfig.EnableUploadText;
+        singleFileEnable = clientConfig.EnableUploadSingleFile;
+        multiFileEnable = clientConfig.EnableUploadMultiFile;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

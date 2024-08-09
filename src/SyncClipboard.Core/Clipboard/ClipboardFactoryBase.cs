@@ -80,9 +80,9 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         {
             return await UploadAndReturnBlankProfile(cancelToken);
         }
-        catch
+        catch (Exception ex)
         {
-            Logger.Write("CreateFromRemote failed");
+            Logger.Write($"CreateFromRemote failed {ex}");
             throw;
         }
     }

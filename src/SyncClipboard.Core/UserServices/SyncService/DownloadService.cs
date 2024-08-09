@@ -288,6 +288,7 @@ public class DownloadService : Service
     private async Task PullLoop(CancellationToken cancelToken)
     {
         int errorTimes = 0;
+        await Task.Delay(TimeSpan.FromSeconds(0.5), cancelToken);
         while (!cancelToken.IsCancellationRequested && (_isQuickDownload || SwitchOn))
         {
             await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
