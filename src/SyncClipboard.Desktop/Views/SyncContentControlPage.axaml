@@ -1,0 +1,69 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.SyncContentControlPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:local="using:SyncClipboard.Desktop.Views"
+             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+             x:DataType="vm:SyncSettingViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:SyncSettingViewModel />
+    </Design.DataContext>
+    <UserControl.Resources>
+        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+    </UserControl.Resources>
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.SyncContentControl}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE8A4;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableDownload}" IsVisible="{Binding IsNormalClientEnable}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DownloadEnable, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUpload}" IsVisible="{Binding IsNormalClientEnable}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UploadEnable, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadText}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TextEnable, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadFile}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SingleFileEnable, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadMultiFile}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding MultiFileEnable, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem IsVisible="{OnPlatform Default=True, macOS=False}" Content="{x:Static i18n:Strings.DoNotUploadWhenCut}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DoNotUploadWhenCut, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding MaxFileSize, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding SetFileSyncFilterCommand}"
+                                         Content="{x:Static i18n:Strings.FileSyncFilter}" />
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>

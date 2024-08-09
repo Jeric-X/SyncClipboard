@@ -137,6 +137,12 @@ public partial class SyncSettingViewModel : ObservableObject
         _mainVM.NavigateToNextLevel(PageDefinition.FileSyncFilterSetting);
     }
 
+    [RelayCommand]
+    private void OpenSyncContentControlPage()
+    {
+        _mainVM.NavigateToNextLevel(PageDefinition.SyncContentControl);
+    }
+
     #endregion
 
     #region for view only

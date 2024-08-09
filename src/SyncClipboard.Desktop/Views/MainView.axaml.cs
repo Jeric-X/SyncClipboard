@@ -53,6 +53,7 @@ public partial class MainView : UserControl
         string pageName = "SyncClipboard.Desktop.Views." + page.Name + "Page";
         Type? pageType = Type.GetType(pageName);
         SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
+        _ScrollViewer.ScrollToHome();
     }
 
     private void BreadcrumbBar_ItemClicked(BreadcrumbBar _, BreadcrumbBarItemClickedEventArgs args)

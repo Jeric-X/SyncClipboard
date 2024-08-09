@@ -561,4 +561,7 @@
   <data name="EnableDownload" xml:space="preserve">
     <value>Enable Downloading</value>
   </data>
+  <data name="SyncContentControl" xml:space="preserve">
+    <value>Sync Content Control</value>
+  </data>
 </root>

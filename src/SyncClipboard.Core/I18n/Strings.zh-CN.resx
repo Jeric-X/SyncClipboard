@@ -561,4 +561,7 @@
   <data name="EnableDownload" xml:space="preserve">
     <value>开启下载</value>
   </data>
+  <data name="SyncContentControl" xml:space="preserve">
+    <value>同步內容控制</value>
+  </data>
 </root>
