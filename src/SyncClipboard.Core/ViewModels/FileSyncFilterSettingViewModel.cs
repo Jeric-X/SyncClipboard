@@ -45,10 +45,13 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
     private bool enableText = false;
 
     [ObservableProperty]
     private string shownText = "";
+
+    public string? Description => EnableText ? I18n.Strings.FileFilterDescription : null;
 
     [RelayCommand]
     public void Apply()

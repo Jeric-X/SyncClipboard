@@ -17,27 +17,27 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:SettingsCard Grid.Row="0" Header="{x:Bind i18n:Strings.FilterMode}" Description="{x:Bind i18n:Strings.FileFilterDescription}">
+        <ui:SettingsCard Grid.Row="0" Header="{x:Bind i18n:Strings.FilterMode}" Description="{x:Bind _viewModel.Description, Mode=OneWay}">
             <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE71C;" />
             </ui:SettingsCard.HeaderIcon>
             <ComboBox SelectedItem="{x:Bind _viewModel.FilterMode, Mode=TwoWay}" ItemsSource="{x:Bind vm:FileSyncFilterSettingViewModel.Modes}" DisplayMemberPath="ShownString" />
         </ui:SettingsCard>
-        <Grid Grid.Row="1" Margin="0,10,0,0" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.EnableText), Mode=OneWay}" >
+        <Grid Grid.Row="1" Margin="0,10,0,0" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.EnableText), Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <ScrollViewer x:Name="_ScrollViewer"
-                Grid.Column="0"
-                VerticalScrollMode="Enabled"
-                VerticalScrollBarVisibility="Auto">
+                          Grid.Column="0"
+                          VerticalScrollMode="Enabled"
+                          VerticalScrollBarVisibility="Auto">
                 <TextBox Grid.Column="0"
-                     Text="{x:Bind _viewModel.ShownText, Mode=TwoWay}"
-                     TextWrapping="Wrap"
-                     FontSize="16"
-                     AcceptsReturn="True"
-                     CornerRadius="{ThemeResource ControlCornerRadius}" />
+                         Text="{x:Bind _viewModel.ShownText, Mode=TwoWay}"
+                         TextWrapping="Wrap"
+                         FontSize="16"
+                         AcceptsReturn="True"
+                         CornerRadius="{ThemeResource ControlCornerRadius}" />
             </ScrollViewer>
             <StackPanel Grid.Column="1"
                         MinWidth="80"

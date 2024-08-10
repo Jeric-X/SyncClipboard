@@ -19,7 +19,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}" Description="{x:Static i18n:Strings.FileFilterDescription}">
+        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}" Description="{Binding Description}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
@@ -40,11 +40,11 @@
             </Grid.ColumnDefinitions>
             <ScrollViewer x:Name="_ScrollViewer" Grid.Column="0" VerticalScrollBarVisibility="Auto">
                 <TextBox Grid.Column="0"
+                         VerticalContentAlignment="Top"
                          Text="{Binding ShownText, Mode=TwoWay}"
                          TextWrapping="Wrap"
                          FontSize="16"
                          AcceptsReturn="True"
-                         VerticalContentAlignment="Top"
                          CornerRadius="{DynamicResource ControlCornerRadius}" />
             </ScrollViewer>
             <StackPanel Grid.Column="1"
