@@ -29,9 +29,13 @@ public class GroupProfile : FileProfile
     {
     }
 
-    public static async Task<GroupProfile> Create(string[] files, CancellationToken token)
+    public static async Task<Profile> Create(string[] files, CancellationToken token)
     {
-        var hash = await Task.Run(() => CaclHash(files, token)).WaitAsync(token);
+        var filterdFiles = files.Where(file => IsFileAvailableAfterFilter(file));
+        if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
+            return await Create(filterdFiles.First(), token);
+
+        var hash = await Task.Run(() => CaclHash(filterdFiles, token)).WaitAsync(token);
         return new GroupProfile(files, hash);
     }
 
@@ -52,8 +56,9 @@ public class GroupProfile : FileProfile
         );
     }
 
-    private static string CaclHash(string[] files, CancellationToken token)
+    private static string CaclHash(IEnumerable<string> filesEnum, CancellationToken token)
     {
+        var files = filesEnum.ToArray();
         var maxSize = Config.GetConfig<SyncConfig>().MaxFileByte;
         Array.Sort(files, FileNameCompare);
         long sumSize = 0;

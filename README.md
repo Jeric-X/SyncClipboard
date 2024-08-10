@@ -23,6 +23,7 @@
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
       - [使用Autox.js](#使用autoxjs)
+      - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
@@ -176,6 +177,10 @@ docker compose up -d
 - 自动上传验证码，使用这个[js文件](/script/UploadVerificationCode.js)，这个脚本运行在后台时将读取所有通知消息，在识别到验证码类信息时将证码上传到服务器
 
 导入js文件、修改每个文件头部的用户配置后，手动点击运行，或者为每个js文件设置触发方式，例如：开机时触发
+
+#### 使用[SmsForwarder](https://github.com/pppscn/SmsForwarder)
+
+- 自动上传验证码， https://github.com/Jeric-X/SyncClipboard/discussions/109
 
 #### 使用[Tasker](https://tasker.joaoapps.com/)
 
