@@ -236,7 +236,7 @@ public class UploadService : ClipboardHander
     private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
     {
         string errMessage = "";
-        for (int i = 0; i < _syncConfig.RetryTimes; i++)
+        for (int i = 0; i <= _syncConfig.RetryTimes; i++)
         {
             try
             {

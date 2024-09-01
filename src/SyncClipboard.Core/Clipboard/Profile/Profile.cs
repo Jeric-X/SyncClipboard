@@ -79,6 +79,7 @@ public abstract class Profile
             await ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
             if (notify && EnableNotify)
             {
+                await Logger.WriteAsync("System notification has sent.");
                 SetNotification(NotificationManager);
             }
         }
