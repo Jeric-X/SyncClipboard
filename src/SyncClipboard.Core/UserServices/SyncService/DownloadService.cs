@@ -223,7 +223,9 @@ public class DownloadService : Service
         _cancelSource = new CancellationTokenSource();
         try
         {
+            _logger.Write(LOG_TAG, "Loop start");
             await PullLoop(_cancelSource.Token);
+            _logger.Write(LOG_TAG, "Loop exit normally");
         }
         catch (OperationCanceledException)
         {
@@ -233,7 +235,7 @@ public class DownloadService : Service
         }
         catch (Exception ex)
         {
-            _logger.Write(LOG_TAG, ex.Message);
+            _logger.Write(LOG_TAG, "Exit with exception" + ex.Message);
         }
     }
 

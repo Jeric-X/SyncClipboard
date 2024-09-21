@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Core.Clipboard;
+﻿using SyncClipboard.Core;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,7 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 
     public async Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
+        AppCore.Current.Logger.Write("Clip Setter", "Clipboard setted, meta: " + metaInfomation);
         await ClipboardSetterBase<ProfileType>.SetPackageToClipboard(await CreatePackage(metaInfomation), ctk);
     }
 }

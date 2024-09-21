@@ -190,6 +190,7 @@ public class UploadService : ClipboardHander
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
+        _logger.Write(LOG_TAG, "New Push started, meta: " + meta);
         PushStarted?.Invoke();
         using var guard = new ScopeGuard(() => PushStopped?.Invoke());
 
