@@ -192,7 +192,11 @@ public class UploadService : ClipboardHander
     {
         _logger.Write(LOG_TAG, "New Push started, meta: " + meta);
         PushStarted?.Invoke();
-        using var guard = new ScopeGuard(() => PushStopped?.Invoke());
+        using var guard = new ScopeGuard(() =>
+        {
+            _logger.Write(LOG_TAG, "Push End");
+            PushStopped?.Invoke();
+        });
 
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try

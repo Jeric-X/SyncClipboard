@@ -17,12 +17,14 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar.ProgressValueTip = I18n.Strings.Preparing;
         _progressBar.Buttons = buttons.ToList();
 
+        AppCore.Current.Logger.Write("ProgressToastReporter created");
         _progressBar.ShowSilent();
         _counter = new Counter((_) => _progressBar.Upadate(), 500, ulong.MaxValue);
     }
 
     public void Cancel()
     {
+        AppCore.Current.Logger.Write("ProgressToastReporter status set to cancel");
         _counter.Cancle();
         _progressBar.ProgressValueTip = I18n.Strings.Canceled;
         _progressBar.Upadate();
@@ -30,6 +32,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 
     public void CancelSicent()
     {
+        AppCore.Current.Logger.Write("ProgressToastReporter canceled sicently");
         _counter.Cancle();
         _progressBar.Remove();
     }
@@ -45,6 +48,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar.ProgressValueTip = percent?.ToString("P");
         if (progress.End)
         {
+            AppCore.Current.Logger.Write("ProgressToastReporter removed due to complete");
             _counter.Cancle();
             _progressBar.Remove();
         }
