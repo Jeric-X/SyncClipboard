@@ -383,15 +383,17 @@ public class DownloadService : Service
             }
             else if (remoteProfile is FileProfile fileProfile)
             {
+                _logger.Write("start download: " + remoteProfile.Text);
                 _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
+                _logger.Write("end download: " + remoteProfile.Text);
             }
             _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
 
             if (!await IsLocalProfileObsolete(cancelToken))
             {
                 await remoteProfile.SetLocalClipboard(true, cancelToken, false);
-                _logger.Write("Success download:" + remoteProfile.Text);
+                _logger.Write("Success set Local clipboard with remote profile: " + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
             }
         }
