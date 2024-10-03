@@ -16,9 +16,10 @@ public class TextProfile : Profile
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<TextProfile>>();
 
-    public TextProfile(string text)
+    public TextProfile(string text, bool contentControl = true)
     {
         Text = text;
+        ContentControl = contentControl;
     }
 
     public override string ToolTip()
@@ -88,5 +89,5 @@ public class TextProfile : Profile
         return false;
     }
 
-    public override bool IsAvailableFromLocal() => Config.GetConfig<SyncConfig>().EnableUploadText;
+    public override bool IsAvailableAfterFilter() => Config.GetConfig<SyncConfig>().EnableUploadText;
 }

@@ -57,8 +57,10 @@ public abstract class Profile
         return Task.CompletedTask;
     }
 
+    public bool ContentControl { get; set; } = true;
     public virtual bool IsAvailableFromRemote() => true;
-    public virtual bool IsAvailableFromLocal() => true;
+    public bool IsAvailableFromLocal() => !ContentControl || IsAvailableAfterFilter();
+    public virtual bool IsAvailableAfterFilter() => true;
 
     public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
 

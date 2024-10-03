@@ -18,16 +18,29 @@ public class UploadService : ClipboardHander
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
 
+    private static readonly Guid QuickUploadGuid = Guid.Parse("D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850");
     private static readonly Guid CopyAndQuickUploadGuid = Guid.Parse("D13672E9-D14C-4D48-847E-10B030F4B608");
+    private static readonly Guid QuickUploadWithoutFilterGuid = Guid.Parse("6C5314DF-B504-25EA-074D-396E5C69BAF1");
+    private static readonly Guid CopyAndQuickUploadWithoutFilterGuid = Guid.Parse("40E0B462-FCED-C4CD-7126-1F5204443DC1");
     public UniqueCommand QuickUploadCommand => new UniqueCommand(
         I18n.Strings.UploadOnce,
-        Guid.Parse("D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850"),
-        QuickUpload
+        QuickUploadGuid,
+        QuickUploadWithContentControl
     );
     public UniqueCommand CopyAndQuickUploadCommand => new UniqueCommand(
         I18n.Strings.CopyAndUpload,
         CopyAndQuickUploadGuid,
-        CopyAndQuickUpload
+        CopyAndQuickUploadWithContentControl
+    );
+    public UniqueCommand QuickUploadWithoutFilterCommand => new UniqueCommand(
+        I18n.Strings.UploadWithoutFilter,
+        QuickUploadWithoutFilterGuid,
+        QuickUploadIgnoreContentControl
+    );
+    public UniqueCommand CopyAndQuickUploadWithoutFilterCommand => new UniqueCommand(
+        I18n.Strings.CopyAndUploadWithoutFilter,
+        CopyAndQuickUploadWithoutFilterGuid,
+        CopyAndQuickUploadIgnoreContentControl
     );
 
     private readonly static string SERVICE_NAME_SIMPLE = I18n.Strings.UploadService;
@@ -54,6 +67,7 @@ public class UploadService : ClipboardHander
 
     private bool _downServiceChangingLocal = false;
     private Profile? _profileCache;
+    private DownloadService DownloadService { get; set; } = null!;
 
     private readonly INotification _notificationManager;
     private readonly ILogger _logger;
@@ -105,6 +119,7 @@ public class UploadService : ClipboardHander
 
     protected override void StartService()
     {
+        DownloadService = _serviceProvider.GetRequiredService<DownloadService>();
         base.StartService();
     }
 
@@ -191,12 +206,8 @@ public class UploadService : ClipboardHander
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
         _logger.Write(LOG_TAG, "New Push started, meta: " + meta);
-        PushStarted?.Invoke();
-        using var guard = new ScopeGuard(() =>
-        {
-            _logger.Write(LOG_TAG, "Push End");
-            PushStopped?.Invoke();
-        });
+
+        using var endLogGuard = new ScopeGuard(() => _logger.Write(LOG_TAG, "Push End"));
 
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
@@ -216,6 +227,8 @@ public class UploadService : ClipboardHander
             SetWorkingStartStatus();
             using var workingStatusGuard = new ScopeGuard(SetWorkingEndStatus);
             await UploadClipboard(profile, token);
+            DownloadService.SetRemoteCache(profile);
+            _profileCache = profile;
         }
         catch (OperationCanceledException)
         {
@@ -234,6 +247,9 @@ public class UploadService : ClipboardHander
             _logger.Write("Local profile type is Unkown, stop upload.");
             return;
         }
+
+        PushStarted?.Invoke();
+        using var eventGuard = new ScopeGuard(() => PushStopped?.Invoke());
 
         await UploadLoop(currentProfile, cancelToken);
     }
@@ -293,13 +309,13 @@ public class UploadService : ClipboardHander
         }
     }
 
-    private async void QuickUpload()
+    private async void QuickUpload(bool contentControl)
     {
         var token = StopPreviousAndGetNewToken();
         try
         {
             var meta = await _clipboardFactory.GetMetaInfomation(token);
-            var profile = await _clipboardFactory.CreateProfileFromMeta(meta, token);
+            var profile = await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
             await HandleClipboard(meta, profile, token);
             if (NotifyOnManualUpload)
                 _notificationManager.SendTemporary(
@@ -309,10 +325,17 @@ public class UploadService : ClipboardHander
                     }
                 );
         }
-        catch { }
+        catch (Exception ex)
+        {
+            if (NotifyOnManualUpload)
+                _notificationManager.SendTemporary(new NotificationPara("Failed to upload manually", ex.Message));
+        }
     }
 
-    private async void CopyAndQuickUpload()
+    private void QuickUploadWithContentControl() => QuickUpload(true);
+    private void QuickUploadIgnoreContentControl() => QuickUpload(false);
+
+    private async void CopyAndQuickUpload(bool contentControl)
     {
         await Task.Run(() =>
         {
@@ -330,6 +353,9 @@ public class UploadService : ClipboardHander
             _keyEventSimulator.SimulateKeyRelease(modifier);
         });
         await Task.Delay(200);
-        QuickUpload();
+        QuickUpload(contentControl);
     }
+
+    private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true);
+    private void CopyAndQuickUploadIgnoreContentControl() => CopyAndQuickUpload(false);
 }

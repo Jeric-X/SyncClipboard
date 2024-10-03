@@ -19,24 +19,34 @@ public class GroupProfile : FileProfile
     protected override IClipboardSetter<Profile> ClipboardSetter
         => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
 
-    private GroupProfile(IEnumerable<string> files, string hash)
+    private GroupProfile(IEnumerable<string> files, string hash, bool contentControl)
         : base(Path.Combine(LocalTemplateFolder, $"{Path.GetRandomFileName()}.zip"), hash)
     {
         _files = files.ToArray();
+        ContentControl = contentControl;
     }
 
     public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
     }
 
-    public static async Task<Profile> Create(string[] files, CancellationToken token)
+    public static async Task<Profile> Create(string[] files, bool contentControl, CancellationToken token)
     {
-        var filterdFiles = files.Where(file => IsFileAvailableAfterFilter(file));
-        if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
-            return await Create(filterdFiles.First(), token);
+        if (contentControl)
+        {
+            var filterdFiles = files.Where(file => IsFileAvailableAfterFilter(file));
+            if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
+                return await Create(filterdFiles.First(), contentControl, token);
 
-        var hash = await Task.Run(() => CaclHash(filterdFiles, token)).WaitAsync(token);
-        return new GroupProfile(files, hash);
+            var hash = await Task.Run(() => CaclHash(filterdFiles, contentControl, token)).WaitAsync(token);
+            return new GroupProfile(filterdFiles, hash, contentControl);
+        }
+        else
+        {
+            var hash = await Task.Run(() => CaclHash(files, contentControl, token)).WaitAsync(token);
+            return new GroupProfile(files, hash, contentControl);
+        }
+
     }
 
     private static int FileCompare(FileInfo file1, FileInfo file2)
@@ -56,7 +66,7 @@ public class GroupProfile : FileProfile
         );
     }
 
-    private static string CaclHash(IEnumerable<string> filesEnum, CancellationToken token)
+    private static string CaclHash(IEnumerable<string> filesEnum, bool contentControl, CancellationToken token)
     {
         var files = filesEnum.ToArray();
         var maxSize = Config.GetConfig<SyncConfig>().MaxFileByte;
@@ -75,19 +85,19 @@ public class GroupProfile : FileProfile
                 foreach (var subFile in subFiles)
                 {
                     sumSize += subFile.Length;
-                    if (sumSize > maxSize)
+                    if (contentControl && sumSize > maxSize)
                         return MD5_FOR_OVERSIZED_FILE;
                     hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
                 }
             }
-            else if (File.Exists(file) && IsFileAvailableAfterFilter(file))
+            else if (File.Exists(file) && (!contentControl || IsFileAvailableAfterFilter(file)))
             {
                 var fileInfo = new FileInfo(file);
                 sumSize += fileInfo.Length;
                 hash = (hash * -1521134295) + (fileInfo.Name + fileInfo.Length.ToString()).ListHashCode();
             }
 
-            if (sumSize > maxSize)
+            if (contentControl && sumSize > maxSize)
             {
                 return MD5_FOR_OVERSIZED_FILE;
             }
@@ -125,11 +135,12 @@ public class GroupProfile : FileProfile
                     zip.AddItem(path, "");
                 }
             });
-            foreach (var item in zip.Entries)
+
+            if (ContentControl)
             {
-                if (!item.IsDirectory)
+                foreach (var item in zip.Entries)
                 {
-                    if (!IsFileAvailableAfterFilter(item.FileName))
+                    if (!item.IsDirectory && !IsFileAvailableAfterFilter(item.FileName))
                     {
                         zip.RemoveEntry(item.FileName);
                     }
@@ -170,7 +181,7 @@ public class GroupProfile : FileProfile
         return new ClipboardMetaInfomation() { Files = _files };
     }
 
-    protected override Task CheckHash(string _, CancellationToken _1) => Task.CompletedTask;
+    protected override Task CheckHash(string _, bool _1, CancellationToken _2) => Task.CompletedTask;
 
     protected override void SetNotification(INotification notification)
     {
@@ -198,7 +209,7 @@ public class GroupProfile : FileProfile
         return string.Join("\n", _files.Select(file => Path.GetFileName(file)));
     }
 
-    public override bool IsAvailableFromLocal()
+    public override bool IsAvailableAfterFilter()
     {
         bool hasItem = null != _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name));
         return hasItem && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadMultiFile;

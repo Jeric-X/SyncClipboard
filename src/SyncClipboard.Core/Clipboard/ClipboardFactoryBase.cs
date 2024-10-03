@@ -17,8 +17,12 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
     protected abstract IWebDav WebDav { get; set; }
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
+    public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
+    {
+        return CreateProfileFromMeta(metaInfomation, true, ctk);
+    }
 
-    public async Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
+    public async Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, bool contentControl, CancellationToken ctk)
     {
         if (metaInfomation.Files != null && metaInfomation.Files.Length >= 1)
         {
@@ -27,24 +31,24 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
             {
                 if (ImageHelper.FileIsImage(filename))
                 {
-                    return await ImageProfile.Create(filename, ctk);
+                    return await ImageProfile.Create(filename, contentControl, ctk);
                 }
-                return await FileProfile.Create(filename, ctk);
+                return await FileProfile.Create(filename, contentControl, ctk);
             }
             else
             {
-                return await GroupProfile.Create(metaInfomation.Files, ctk);
+                return await GroupProfile.Create(metaInfomation.Files, contentControl, ctk);
             }
         }
 
         if (metaInfomation.Text != null)
         {
-            return new TextProfile(metaInfomation.Text);
+            return new TextProfile(metaInfomation.Text, contentControl);
         }
 
         if (metaInfomation.Image != null)
         {
-            return await ImageProfile.Create(metaInfomation.Image, ctk);
+            return await ImageProfile.Create(metaInfomation.Image, contentControl, ctk);
         }
 
         return new UnknownProfile();

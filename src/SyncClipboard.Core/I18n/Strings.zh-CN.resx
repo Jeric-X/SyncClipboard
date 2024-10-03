@@ -564,4 +564,10 @@
   <data name="SyncContentControl" xml:space="preserve">
     <value>同步內容控制</value>
   </data>
+  <data name="UploadWithoutFilter" xml:space="preserve">
+    <value>上传本地到远程（忽略内容控制）</value>
+  </data>
+  <data name="CopyAndUploadWithoutFilter" xml:space="preserve">
+    <value>复制并上传本地到远程（忽略内容控制）</value>
+  </data>
 </root>

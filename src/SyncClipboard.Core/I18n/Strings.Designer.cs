@@ -259,6 +259,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Copy And Upload without Content Control 的本地化字符串。
+        /// </summary>
+        public static string CopyAndUploadWithoutFilter {
+            get {
+                return ResourceManager.GetString("CopyAndUploadWithoutFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Copy app data folder path to clipboard 的本地化字符串。
         /// </summary>
         public static string CopyAppDataFolderPath {
@@ -1335,6 +1344,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UploadService {
             get {
                 return ResourceManager.GetString("UploadService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Upload without Content Control 的本地化字符串。
+        /// </summary>
+        public static string UploadWithoutFilter {
+            get {
+                return ResourceManager.GetString("UploadWithoutFilter", resourceCulture);
             }
         }
         

@@ -190,7 +190,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, ServerService>();
             services.AddSingleton<UploadService>();
             services.AddSingleton<IService, UploadService>(sp => sp.GetRequiredService<UploadService>());
-            services.AddSingleton<IService, DownloadService>();
+            services.AddSingleton<DownloadService>();
+            services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
         }
 
         private async void PrepareRemoteWorkingFolder()

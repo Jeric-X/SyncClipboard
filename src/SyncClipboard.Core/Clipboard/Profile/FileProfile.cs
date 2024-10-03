@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Image;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -27,7 +28,8 @@ public class FileProfile : Profile
 
     private static readonly string RemoteFileFolder = Env.RemoteFileFolder;
 
-    protected FileProfile(string fullPath, string hash) : this(fullPath, Path.GetFileName(fullPath), hash)
+    protected FileProfile(string fullPath, string hash, bool contentControl = true)
+        : this(fullPath, Path.GetFileName(fullPath), hash, contentControl)
     {
     }
 
@@ -35,17 +37,28 @@ public class FileProfile : Profile
     {
     }
 
-    private FileProfile(string? fullPath, string fileName, string hash)
+    private FileProfile(string? fullPath, string fileName, string hash, bool contentControl = true)
     {
         Hash = hash;
         FullPath = fullPath;
         FileName = fileName;
+        ContentControl = contentControl;
     }
 
-    public static async Task<FileProfile> Create(string fullPath, CancellationToken token)
+    public static async Task<FileProfile> Create(string fullPath, bool contentControl, CancellationToken token)
     {
-        var hash = await GetMD5HashFromFile(fullPath, token);
-        return new FileProfile(fullPath, hash);
+        var hash = await GetMD5HashFromFile(fullPath, contentControl, token);
+        if (ImageHelper.FileIsImage(fullPath))
+        {
+            return await ImageProfile.Create(fullPath, contentControl, token);
+        }
+
+        return new FileProfile(fullPath, hash, contentControl);
+    }
+
+    public static Task<FileProfile> Create(string fullPath, CancellationToken token)
+    {
+        return Create(fullPath, true, token);
     }
 
     protected string GetTempLocalFilePath()
@@ -92,16 +105,16 @@ public class FileProfile : Profile
         string localPath = GetTempLocalFilePath();
 
         await WebDav.GetFile(remotePath, localPath, progress, cancelToken);
-        await CheckHash(localPath, cancelToken);
+        await CheckHash(localPath, false, cancelToken);
 
         Logger.Write("[PULL] download OK " + localPath);
         FullPath = localPath;
         _statusTip = FileName;
     }
 
-    protected virtual async Task CheckHash(string localPath, CancellationToken cancelToken)
+    protected virtual async Task CheckHash(string localPath, bool checkSize, CancellationToken cancelToken)
     {
-        var downloadedMd5 = await GetMD5HashFromFile(localPath, cancelToken);
+        var downloadedMd5 = await GetMD5HashFromFile(localPath, checkSize, cancelToken);
         var existedMd5 = Hash;
         if (string.IsNullOrEmpty(existedMd5))
         {
@@ -148,10 +161,10 @@ public class FileProfile : Profile
         }
     }
 
-    protected async static Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
+    protected async static Task<string> GetMD5HashFromFile(string fileName, bool checkSize, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
-        if (fileInfo.Length > Config.GetConfig<SyncConfig>().MaxFileByte)
+        if (checkSize && fileInfo.Length > Config.GetConfig<SyncConfig>().MaxFileByte)
         {
             return MD5_FOR_OVERSIZED_FILE;
         }
@@ -200,7 +213,7 @@ public class FileProfile : Profile
 
     public override bool IsAvailableFromRemote() => !Oversized();
 
-    public override bool IsAvailableFromLocal() => IsFileAvailableAfterFilter(FullPath!)
+    public override bool IsAvailableAfterFilter() => IsFileAvailableAfterFilter(FullPath!)
         && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadSingleFile;
 
     protected static bool IsFileAvailableAfterFilter(string fileName)

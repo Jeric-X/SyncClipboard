@@ -26,6 +26,8 @@ public class DownloadService : Service
     private Profile? _remoteProfileCache;
     private Profile? _localProfileCache;
 
+    private bool _downServiceChangingLocal = false;
+
     private readonly INotification _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
@@ -66,12 +68,14 @@ public class DownloadService : Service
                 () => SwitchMixedClientMode(!_serverConfig.ClientMixedMode)
             ),
             _uploadService.QuickUploadCommand,
+            _uploadService.QuickUploadWithoutFilterCommand,
             new UniqueCommand(
                 I18n.Strings.DownloadOnce,
                 Guid.Parse("95396FFF-E5FE-45D3-9D70-4A43FA34FF31"),
                 QuickDownload
             ),
             _uploadService.CopyAndQuickUploadCommand,
+            _uploadService.CopyAndQuickUploadWithoutFilterCommand,
             new UniqueCommand(
                 I18n.Strings.DownloadAndPaste,
                 QuickDownloadAndPasteGuid,
@@ -161,6 +165,13 @@ public class DownloadService : Service
         ReLoad();
     }
 
+    private void StopAndReloadByNewClipboard()
+    {
+        if (_downServiceChangingLocal)
+            return;
+        StopAndReload();
+    }
+
     private void ReLoad()
     {
         if (ClientSwitchOn)
@@ -193,8 +204,8 @@ public class DownloadService : Service
             if (!_isPullLoopRunning)
             {
                 _isPullLoopRunning = true;
-                _clipboardMoniter.ClipboardChanged -= StopAndReload;
-                _clipboardMoniter.ClipboardChanged += StopAndReload;
+                _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
+                _clipboardMoniter.ClipboardChanged += StopAndReloadByNewClipboard;
                 _clipboardListener.Changed -= ClipboardProfileChanged;
                 _clipboardListener.Changed += ClipboardProfileChanged;
                 StartPullLoop();
@@ -209,12 +220,17 @@ public class DownloadService : Service
             if (_isPullLoopRunning)
             {
                 _isPullLoopRunning = false;
-                _clipboardMoniter.ClipboardChanged -= StopAndReload;
+                _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
                 _clipboardListener.Changed -= ClipboardProfileChanged;
                 _localProfileCache = null;
                 StopPullLoop();
             }
         }
+    }
+
+    public void SetRemoteCache(Profile profile)
+    {
+        _remoteProfileCache = profile;
     }
 
     private async void StartPullLoop()
@@ -388,11 +404,13 @@ public class DownloadService : Service
                 await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
                 _logger.Write("end download: " + remoteProfile.Text);
             }
+            _downServiceChangingLocal = true;
             _messenger.Send(EmptyMessage.Instance, SyncService.PULL_START_ENENT_NAME);
 
             if (!await IsLocalProfileObsolete(cancelToken))
             {
                 await remoteProfile.SetLocalClipboard(true, cancelToken, false);
+                _localProfileCache = remoteProfile;
                 _logger.Write("Success set Local clipboard with remote profile: " + remoteProfile.Text);
                 await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
             }
@@ -400,6 +418,7 @@ public class DownloadService : Service
         finally
         {
             _trayIcon.StopAnimation();
+            _downServiceChangingLocal = false;
             _messenger.Send(remoteProfile, SyncService.PULL_STOP_ENENT_NAME);
         }
     }

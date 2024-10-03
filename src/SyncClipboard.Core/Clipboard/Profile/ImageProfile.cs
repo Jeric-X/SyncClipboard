@@ -13,7 +13,8 @@ public class ImageProfile : FileProfile
 
     private static string ImageTemplateFolder => Path.Combine(LocalTemplateFolder, "temp images");
 
-    private ImageProfile(string fullPath, string hash) : base(fullPath, hash)
+    private ImageProfile(string fullPath, string hash, bool contentControl = true)
+        : base(fullPath, hash, contentControl)
     {
     }
 
@@ -21,14 +22,14 @@ public class ImageProfile : FileProfile
     {
     }
 
-    public static async Task<ImageProfile> Create(IClipboardImage image, CancellationToken token)
+    public static async Task<ImageProfile> Create(IClipboardImage image, bool contentControl, CancellationToken token)
     {
         for (int i = 0; ; i++)
         {
             try
             {
                 var fullPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
-                return await Create(fullPath, token);
+                return await Create(fullPath, contentControl, token);
             }
             catch when (!token.IsCancellationRequested)
             {
@@ -40,10 +41,15 @@ public class ImageProfile : FileProfile
         }
     }
 
-    public static new async Task<ImageProfile> Create(string fullPath, CancellationToken token)
+    public static new async Task<ImageProfile> Create(string fullPath, bool contentControl, CancellationToken token)
     {
-        var hash = await GetMD5HashFromFile(fullPath, token);
-        return new ImageProfile(fullPath, hash);
+        var hash = await GetMD5HashFromFile(fullPath, contentControl, token);
+        return new ImageProfile(fullPath, hash, contentControl);
+    }
+
+    public static new Task<ImageProfile> Create(string fullPath, CancellationToken token)
+    {
+        return Create(fullPath, true, token);
     }
 
     private static string SaveImageToFile(IClipboardImage image)
