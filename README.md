@@ -10,9 +10,8 @@
   - [功能](#功能)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
-      - [使用Docker容器部署服务器](#使用docker容器部署服务器)
-        - [Docker](#docker)
-        - [Docker Compose](#docker-compose)
+      - [Docker](#docker)
+      - [Docker Compose](#docker-compose)
     - [客户端内置服务器](#客户端内置服务器)
     - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
@@ -51,37 +50,27 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 工作目录与dll所在目录一致，会产生临时文件，在`appsettings.json`中可以修改绑定的ip和端口，以及客户端认证需要的用户名和密码  
 如需修改工作目录，拷贝一份appsettings.json到新工作目录并修改`--contentRoot`后的路径  
 
+用户名和密码支持使用环境变量配置，当环境变量`SYNCCLIPBOARD_USERNAME`、`SYNCCLIPBOARD_PASSWORD`均不为空时，将优先使用这两个环境变量作为用户名和密码
+
 注意：
 - 默认用户名是`admin`，密码是`admin`，端口号是`5033`
 - 客户端处填写`http://ip:端口号`，`http`不可省略
 - http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
 - 内置服务器并不是WebDAV实现
 
-#### 使用Docker容器部署服务器
-
-在宿主机中拷贝一份服务器配置文件[appsettings.json](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json)
-
-```
-mkdir syncclipboard-server && cd syncclipboard-server
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json > appsettings.json
-```
-
-根据你的需求在配置文件中修改用户名、密码
-
-##### Docker
-
-执行下边的命令，注意将命令行中的`/path/to/appsettings.json`修改为宿主机中`appsettings.json`的实际路径
+#### Docker
 
 ```
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
-  -v /path/to/appsettings.json:/app/appsettings.json \
+  -e SYNCCLIPBOARD_USERNAME=your_username \
+  -e SYNCCLIPBOARD_PASSWORD=your_password \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
 
-##### Docker Compose
+#### Docker Compose
 
 在宿主机中拷贝一份[docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml)
 
@@ -89,7 +78,8 @@ docker run -d \
 curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
 ```
 
-将`docker-compose.yml`文件中的`/path/to/appsettings.json`修改为宿主机中`appsettings.json`的实际路径，然后执行
+将`docker-compose.yml`文件中的`SYNCCLIPBOARD_USERNAME`、`SYNCCLIPBOARD_PASSWORD`等号后边修改为你的用户名和密码，或使用其他方式覆盖这两个环境变量  
+执行
 
 ```
 docker compose up -d

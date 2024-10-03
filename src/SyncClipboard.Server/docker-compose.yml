@@ -6,5 +6,6 @@ services:
     restart: unless-stopped
     ports:
       - "5033:5033" # Update this if you have changed the port in appsettings.json
-    volumes:
-      - /path/to/appsettings.json:/app/appsettings.json
+    environment:
+      - SYNCCLIPBOARD_USERNAME=you_username
+      - SYNCCLIPBOARD_PASSWORD=you_password

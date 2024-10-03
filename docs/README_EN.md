@@ -9,9 +9,8 @@
   - [Features](#features)
   - [Server](#server)
     - [Standalone Server](#standalone-server)
-      - [Docker Container](#docker-container)
-        - [Docker](#docker)
-        - [Docker Compose](#docker-compose)
+      - [Docker](#docker)
+      - [Docker Compose](#docker-compose)
     - [Desktop Client Built-in Server](#desktop-client-built-in-server)
     - [WebDAV Server](#webdav-server)
   - [Client](#client)
@@ -51,35 +50,28 @@ Choosing a different content root folder is possible. Copy a new `appsettings.js
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
 ```
+
+Username and password can be set by env variables. When env variables `SYNCCLIPBOARD_USERNAME` and `SYNCCLIPBOARD_PASSWORD` are both not empty, the two variables will be used as username and password.
+
 Notes：
 - Default Username is `admin`, default Password is `admin`, default port is `5033`.
 - Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
-- Http is not encrypted, including username and password. Maybe a https reverse proxy is needed on public network.
+- Http is not encrypted, including username and password. A https reverse proxy is needed on public network.
 
-#### Docker Container
 
-Copy a server config file [appsettings.json](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json) first.
-
-```
-mkdir syncclipboard-server && cd syncclipboard-server
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/appsettings.json > appsettings.json
-```
-Change your own username and password in `appsettings.json`.
-
-##### Docker
-
-Run the following command. Remember to change the `/path/to/appsettings.json` to your newly copied `appsettings.json`'s path.
+#### Docker
 
 ```
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
-  -v /path/to/appsettings.json:/app/appsettings.json \
+  -e SYNCCLIPBOARD_USERNAME=your_username \
+  -e SYNCCLIPBOARD_PASSWORD=your_password \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 ```
 
-##### Docker Compose
+#### Docker Compose
 
 Copy a [docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml) file.
 
@@ -87,7 +79,7 @@ Copy a [docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/
 curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
 ```
 
-Change the `/path/to/appsettings.json` in `docker-compose.yml` to your newly copied `appsettings.json`'s path, then run
+Change env variables `SYNCCLIPBOARD_USERNAME` and `SYNCCLIPBOARD_PASSWORD` in `docker-compose.yml` to your username and password, then run
 
 ```
 docker compose up -d
