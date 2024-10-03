@@ -1,10 +1,8 @@
 ﻿using SyncClipboard.Abstract.Notification;
-using System;
-using System.Collections.Generic;
 
-namespace SyncClipboard.Desktop.Utilities;
+namespace SyncClipboard.Core.Utilities.Fake;
 
-public class ProgressBar : IProgressBar
+public class FakeProgressBar : IProgressBar
 {
     public string Title { get; set; } = "";
     public string Tag { get; set; } = "";

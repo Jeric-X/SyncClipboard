@@ -1,7 +1,7 @@
 ﻿using AppKit;
 using Foundation;
 using SyncClipboard.Abstract.Notification;
-using SyncClipboard.Desktop.Utilities;
+using SyncClipboard.Core.Utilities.Fake;
 using System;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
@@ -10,7 +10,7 @@ internal class Notification : INotification
 {
     public IProgressBar CreateProgressNotification(string title)
     {
-        return new ProgressBar();
+        return new FakeProgressBar();
     }
 
     public void SendImage(string title, string text, Uri uri, params Button[] buttons)

@@ -1,20 +1,19 @@
 ﻿using SyncClipboard.Abstract.Notification;
-using SyncClipboard.Core.Utilities.Fake;
-using System;
 
-namespace SyncClipboard.Desktop.Utilities;
+namespace SyncClipboard.Core.Utilities.Fake;
 
-internal class Notification : INotification
+public class FakeNotification : INotification
 {
     public IProgressBar CreateProgressNotification(string title)
     {
         return new FakeProgressBar();
     }
 
-    public void SendTemporary(NotificationPara para)
+    public void SendImage(string title, string text, Uri uri, params Button[] buttons)
     {
     }
-    public void SendImage(string title, string text, Uri uri, params Button[] buttons)
+
+    public void SendTemporary(NotificationPara para)
     {
     }
 

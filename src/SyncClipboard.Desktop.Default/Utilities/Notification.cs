@@ -1,5 +1,5 @@
 ﻿using SyncClipboard.Abstract.Notification;
-using SyncClipboard.Desktop.Utilities;
+using SyncClipboard.Core.Utilities.Fake;
 using System.Runtime.Versioning;
 using Tmds.DBus;
 
@@ -25,7 +25,7 @@ internal sealed class Notification : INotification, IDisposable
 
     public IProgressBar CreateProgressNotification(string title)
     {
-        return new ProgressBar();
+        return new FakeProgressBar();
     }
 
     public void SendImage(string title, string text, Uri uri, params Button[] buttons)
