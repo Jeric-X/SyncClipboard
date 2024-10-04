@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: | 
-            8.0.x
+            8.0.100
 
       - name: Install dotnet workload and dependencies
         working-directory: ./src/SyncClipboard.Desktop.MacOS
@@ -63,8 +63,8 @@ jobs:
           #  dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-x64 -c Release
       - name: Build ${{ matrix.cpu }}
         run: |
-          dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
-        working-directory: ./src
+          dotnet publish SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
+        working-directory: ./src/SyncClipboard.Desktop.MacOS
 
       - name: Download version
         uses: actions/download-artifact@v4
