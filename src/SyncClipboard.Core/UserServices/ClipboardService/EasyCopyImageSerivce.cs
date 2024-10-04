@@ -134,6 +134,7 @@ public class EasyCopyImageSerivce : ClipboardHander
     private static bool NeedAdjust(Profile profile, ClipboardMetaInfomation metaInfo)
     {
         bool[] badCaseList = {
+            profile.Type == ProfileType.Text,
             profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
             metaInfo.OriginalType is not null && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
             metaInfo.Files?.Length > 1,
