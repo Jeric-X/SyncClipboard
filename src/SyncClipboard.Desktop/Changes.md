@@ -1,3 +1,8 @@
+0.7.7
+- 功能：增加快捷键：手动上传（忽略内容控制）(https://github.com/Jeric-X/SyncClipboard/issues/122, https://github.com/Jeric-X/SyncClipboard/issues/115)
+- 修复：在office或wps表格中复制内容后剪贴板失去格式信息(https://github.com/Jeric-X/SyncClipboard/issues/130)
+- 修复：重试次数设为0时上传失败(https://github.com/Jeric-X/SyncClipboard/issues/117)
+
 0.7.6
 - 修复：使用aliyundrive-webdav及其衍生工具作为服务器时无法上传(https://github.com/Jeric-X/SyncClipboard/issues/98)
 - 功能：添加多种同步内容控制开关（上传/下载/文本/文件/文件夹/文件类型）(https://github.com/Jeric-X/SyncClipboard/issues/90 , https://github.com/Jeric-X/SyncClipboard/issues/111)
