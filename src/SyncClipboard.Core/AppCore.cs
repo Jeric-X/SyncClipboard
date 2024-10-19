@@ -47,6 +47,8 @@ namespace SyncClipboard.Core
 
         public void Run()
         {
+            var appConfig = Services.GetRequiredService<IAppConfig>();
+            Logger.Write($"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
 

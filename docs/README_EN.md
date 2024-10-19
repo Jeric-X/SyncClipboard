@@ -96,7 +96,6 @@ Desktop client (Windows/Linux/macOS) has a built-in server, basically the same a
   
 Tested server：   
 - [x] [Nextcloud](https://nextcloud.com/)
-- [x] [坚果云](https://www.jianguoyun.com/) 
 - [x] [AList](https://alist.nn.ci/)
 - [x] [InfiniCLOUD](https://infini-cloud.net/en/)
 - [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
