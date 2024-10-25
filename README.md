@@ -89,6 +89,20 @@ docker compose up -d
 - 服务器和容器相关文件储存在`src/SyncClipboard.Server`目录中，命令行无法下载时可以手动下载
 - Docker镜像的托管地址是[Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
 
+#### Arch Linux
+
+可以直接从 [AUR](https://aur.archlinux.org/packages/syncclipboard-server) 安装（由 [@devome](https://github.com/devome) 维护）：
+
+```shell
+paru -Sy syncclipboard-server
+```
+
+然后按需编辑其配置文件 `/etc/syncclipboard/appsettings.json`，用户名和密码一定要修改。修改后启动即可（强烈建议配置反代并启用https）：
+
+```shell
+sudo systemctl enable --now syncclipboard.service
+```
+
 ### 客户端内置服务器
 
 桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上
@@ -136,6 +150,16 @@ docker compose up -d
 - Linux: 无法自动识别语言，默认为英语
 - macOS: `“SyncClipboard”已损坏，无法打开`，在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
 - macOS: 快捷键依赖辅助功能权限(Accessibility)，软件在需要时会弹窗提示（所有快捷键为空时则不需要），每个新版本需要重新授予权限
+
+### Arch Linux
+
+Arch Linux 用户可以直接从 [AUR](https://aur.archlinux.org/packages/syncclipboard-desktop) 安装：
+
+```shell
+paru -Sy syncclipboard-desktop
+```
+
+安装后从菜单中启动即可，如果要从命令行中启动，请注意需要英文环境，即以 `LANG=en_US.UTF-8 syncclipboard-desktop` 来启动，启动后可以在软件内设置语言为中文。配置保存路径为：`~/.config/SyncClipboard`。
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  

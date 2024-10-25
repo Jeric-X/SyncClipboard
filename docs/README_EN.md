@@ -89,6 +89,20 @@ Notes:
 - Server related files are under `src/SyncClipboard.Server` directory. You can download them manually.
 - Docker image is hosted on [Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server).
 
+#### Arch Linux
+
+You can install it directly from [AUR](https://aur.archlinux.org/packages/syncclipboard-server) (maintained by [@devome](https://github.com/devome)):
+
+```shell
+paru -Sy syncclipboard-server
+```
+
+Then edit its configuration file `/etc/syncclipboard/appsettings.json` as needed; be sure to change the username and password. Once modified, start the service (it is highly recommended to configure a reverse proxy and enable HTTPS):
+
+```shell
+sudo systemctl enable --now syncclipboard.service
+```
+
 ### Desktop Client Built-in Server
 Desktop client (Windows/Linux/macOS) has a built-in server, basically the same as standalone server but can be configured with GUI.
 
@@ -135,6 +149,14 @@ Notes:
 - Linux: Hotkey is not supported on Wayland.
 - macOS: `"SyncClipboard" is damaged, can't be opened`. Use the following command in terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
 - macOS: Hotkey requires Accessibility permission. After installing a new version, the permission should be re-granted.
+
+### Arch Linux
+
+Arch Linux users can directly install from [AUR](https://aur.archlinux.org/packages/syncclipboard-desktop):
+
+```shell
+paru -Sy syncclipboard-desktop
+```
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
