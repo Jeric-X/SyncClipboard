@@ -78,7 +78,16 @@ public abstract class Profile
 
         try
         {
-            await ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
+            var dispather = AppCore.Current.Services.GetService<IThreadDispatcher>();
+            if (dispather is null)
+            {
+                await ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
+            }
+            else
+            {
+                await dispather.RunOnMainThreadAsync(() => ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk));
+            }
+
             if (notify && EnableNotify)
             {
                 Logger.Write("System notification has sent.");

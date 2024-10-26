@@ -1,5 +1,4 @@
-﻿using ImageMagick;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -24,6 +23,8 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
     protected override IWebDav WebDav { get; set; }
+
+    private readonly IThreadDispatcher _dispatcher;
 
     private const string LOG_TAG = nameof(ClipboardFactory);
 
@@ -127,9 +128,15 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
         WebDav = ServiceProvider.GetRequiredService<IWebDav>();
+        _dispatcher = ServiceProvider.GetRequiredService<IThreadDispatcher>();
     }
 
-    public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
+    public override Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
+    {
+        return _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(ctk));
+    }
+
+    private async Task<ClipboardMetaInfomation> GetMetaInfomationCurrentThread(CancellationToken ctk)
     {
         ClipboardMetaInfomation meta = new();
         DataPackageView ClipboardData = Clipboard.GetContent();
