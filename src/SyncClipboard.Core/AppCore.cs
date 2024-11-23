@@ -231,8 +231,8 @@ namespace SyncClipboard.Core
                     var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
                     foreach (var dirs in tempFolders)
                     {
-                        var createTime = DateTime.ParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture);
-                        if ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays))
+                        var isTime = DateTime.TryParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var createTime);
+                        if (!isTime || ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays)))
                         {
                             dirs.Delete(true);
                         }
