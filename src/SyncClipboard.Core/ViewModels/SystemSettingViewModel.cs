@@ -24,6 +24,10 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnLogRemainDaysChanged(uint value) => ProgramConfig = ProgramConfig with { LogRemainDays = value };
 
     [ObservableProperty]
+    private uint tempFileRemainDays;
+    partial void OnTempFileRemainDaysChanged(uint value) => ProgramConfig = ProgramConfig with { TempFileRemainDays = value };
+
+    [ObservableProperty]
     private string font;
     partial void OnFontChanged(string value)
     {
@@ -52,6 +56,7 @@ public partial class SystemSettingViewModel : ObservableObject
     {
         HideWindowOnStartUp = value.HideWindowOnStartup;
         LogRemainDays = value.LogRemainDays;
+        TempFileRemainDays = value.TempFileRemainDays;
         DiagnoseMode = value.DiagnoseMode;
         Font = value.Font;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
@@ -98,6 +103,7 @@ public partial class SystemSettingViewModel : ObservableObject
         theme = Themes.FirstOrDefault(x => x.String == programConfig.Theme) ?? Themes[0];
         hideWindowOnStartUp = programConfig.HideWindowOnStartup;
         logRemainDays = programConfig.LogRemainDays;
+        tempFileRemainDays = programConfig.TempFileRemainDays;
         diagnoseMode = programConfig.DiagnoseMode;
     }
 

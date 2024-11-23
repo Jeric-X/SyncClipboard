@@ -570,4 +570,7 @@
   <data name="CopyAndUploadWithoutFilter" xml:space="preserve">
     <value>Copy And Upload without Content Control</value>
   </data>
+  <data name="TempFileRemainDays" xml:space="preserve">
+    <value>Temp Files Remain Days</value>
+  </data>
 </root>

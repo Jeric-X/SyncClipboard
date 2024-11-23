@@ -1258,6 +1258,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Temp Files Remain Days 的本地化字符串。
+        /// </summary>
+        public static string TempFileRemainDays {
+            get {
+                return ResourceManager.GetString("TempFileRemainDays", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Theme 的本地化字符串。
         /// </summary>
         public static string Theme {

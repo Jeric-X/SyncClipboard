@@ -226,13 +226,16 @@ namespace SyncClipboard.Core
             try
             {
                 var config = configManager.GetConfig<ProgramConfig>();
-                var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
-                foreach (var dirs in tempFolders)
+                if (config.TempFileRemainDays != 0)
                 {
-                    var createTime = DateTime.ParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture);
-                    if ((DateTime.Today - createTime) > TimeSpan.FromDays(1))
+                    var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
+                    foreach (var dirs in tempFolders)
                     {
-                        dirs.Delete(true);
+                        var createTime = DateTime.ParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture);
+                        if ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays))
+                        {
+                            dirs.Delete(true);
+                        }
                     }
                 }
 

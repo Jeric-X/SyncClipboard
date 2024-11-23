@@ -4,6 +4,7 @@ public record ProgramConfig
 {
     public string Proxy { get; set; } = "";
     public bool DeleteTempFilesOnStartUp { get; set; } = true;
+    public uint TempFileRemainDays { get; set; } = 1;
     public uint LogRemainDays { get; set; } = 8;
     public bool CheckUpdateOnStartUp { get; set; } = true;
     public bool CheckUpdateForBeta { get; set; } = false;

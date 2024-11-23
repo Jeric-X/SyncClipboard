@@ -35,6 +35,14 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
         </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.TempFileRemainDays}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE130;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding TempFileRemainDays, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
+        </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.LogRemainDays}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE9F9;" FontFamily="{StaticResource SymbolThemeFontFamily}" />

@@ -23,6 +23,12 @@
             </ui:SettingsCard.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.HideWindowOnStartUp, Mode=TwoWay}" />
         </ui:SettingsCard>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.TempFileRemainDays}">
+            <ui:SettingsCard.HeaderIcon>
+                <FontIcon Glyph="&#xE130;" />
+            </ui:SettingsCard.HeaderIcon>
+            <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.TempFileRemainDays, Mode=TwoWay}" />
+        </ui:SettingsCard>
         <ui:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
             <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE9F9;" />

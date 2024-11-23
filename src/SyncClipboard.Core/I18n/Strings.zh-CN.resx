@@ -570,4 +570,7 @@
   <data name="CopyAndUploadWithoutFilter" xml:space="preserve">
     <value>复制并上传本地到远程（忽略内容控制）</value>
   </data>
+  <data name="TempFileRemainDays" xml:space="preserve">
+    <value>临时文件保留时长（日）</value>
+  </data>
 </root>
