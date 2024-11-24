@@ -1,3 +1,7 @@
+0.7.8
+- 功能：支持自定义临时文件的保存时长
+- 功能：server端增加监听ipv6地址
+
 0.7.7
 - 功能：增加快捷键：手动上传（忽略内容控制）(https://github.com/Jeric-X/SyncClipboard/issues/122, https://github.com/Jeric-X/SyncClipboard/issues/115)
 - 修复：在office或wps表格中复制内容后剪贴板失去格式信息(https://github.com/Jeric-X/SyncClipboard/issues/130)
