@@ -42,17 +42,6 @@ jobs:
           dotnet workload install macos
           dotnet workload restore
           dotnet restore
-
-      - name: Check code style
-        working-directory: ./src
-        run: |
-          dotnet format SyncClipboard.Desktop.MacOS --verify-no-changes --no-restore
-    
-      - name: Check code style info
-        working-directory: ./src
-        run: |
-          dotnet format SyncClipboard.Desktop.MacOS --verify-no-changes --no-restore --severity info
-          exit 0
     
       - name: Select Xcode Version
         uses: maxim-lobanov/setup-xcode@v1
