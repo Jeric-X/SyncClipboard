@@ -230,7 +230,10 @@ public class DownloadService : Service
 
     public void SetRemoteCache(Profile profile)
     {
-        _remoteProfileCache = profile;
+        if (profile.Type != ProfileType.Unknown)
+        {
+            _remoteProfileCache = profile; 
+        }
     }
 
     private async void StartPullLoop()
@@ -346,6 +349,9 @@ public class DownloadService : Service
 
     private async Task DownloadProcess(CancellationToken token)
     {
+        await LocalClipboard.Semaphore.WaitAsync(token);
+        using var scopeGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
+
         var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(token);
         _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
@@ -371,19 +377,11 @@ public class DownloadService : Service
 
     private async Task SetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
-        await LocalClipboard.Semaphore.WaitAsync(cancelToken);
-        try
+        var meta = await _clipboardFactory.GetMetaInfomation(cancelToken);
+        Profile localProfile = await _clipboardFactory.CreateProfileFromMeta(meta, cancelToken);
+        if (!Profile.Same(remoteProfile, localProfile))
         {
-            var meta = await _clipboardFactory.GetMetaInfomation(cancelToken);
-            Profile localProfile = await _clipboardFactory.CreateProfileFromMeta(meta, cancelToken);
-            if (!Profile.Same(remoteProfile, localProfile))
-            {
-                await DownloadAndSetRemoteProfileToLocal(remoteProfile, cancelToken);
-            }
-        }
-        finally
-        {
-            LocalClipboard.Semaphore.Release();
+            await DownloadAndSetRemoteProfileToLocal(remoteProfile, cancelToken);
         }
     }
 
