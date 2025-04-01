@@ -50,19 +50,6 @@ jobs:
       working-directory: ./src
       run: dotnet restore SyncClipboard.Desktop.Default
 
-    - name: Check code style
-      working-directory: ./src
-      run: |
-        dotnet format SyncClipboard.Desktop --verify-no-changes --no-restore
-        dotnet format SyncClipboard.Desktop.Default --verify-no-changes --no-restore
-
-    - name: Check code style info
-      working-directory: ./src
-      run: |
-        dotnet format SyncClipboard.Desktop --verify-no-changes --no-restore --severity info
-        dotnet format SyncClipboard.Desktop.Default --verify-no-changes --no-restore --severity info
-        exit 0
-
     # - name
         #  msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:RuntimeIdentifier=osx-arm64 /p:Platform=ARM64 /p:SelfContained=false /p:OutDir=../../osx-arm64-no-self-contained /p:Configuration=Release /t:Publish /v:m  
     - name: Build ${{ matrix.os }}-${{ matrix.cpu }}-${{ matrix.type }} 

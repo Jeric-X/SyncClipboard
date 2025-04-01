@@ -10,6 +10,9 @@ on:
       - 'v*'
 
 jobs:
+  codeStyle:
+    uses: ./.github/workflows/code-style.yml
+
   prebuild:
     uses: ./.github/workflows/prebuild.yml
     with:

@@ -232,7 +232,7 @@ public class DownloadService : Service
     {
         if (profile.Type != ProfileType.Unknown)
         {
-            _remoteProfileCache = profile; 
+            _remoteProfileCache = profile;
         }
     }
 
