@@ -215,12 +215,14 @@ public class UploadService : ClipboardHander
             if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
             {
                 _logger.Write(LOG_TAG, "Cut won't Push.");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Cutting things, won't push.", false);
                 return;
             }
 
             if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token) || !profile.IsAvailableFromLocal())
             {
                 _logger.Write(LOG_TAG, "Stop Push.");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
 
@@ -245,6 +247,7 @@ public class UploadService : ClipboardHander
         if (currentProfile.Type == ProfileType.Unknown)
         {
             _logger.Write("Local profile type is Unkown, stop upload.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Local profile type is unkown, stopped.", false);
             return;
         }
 
