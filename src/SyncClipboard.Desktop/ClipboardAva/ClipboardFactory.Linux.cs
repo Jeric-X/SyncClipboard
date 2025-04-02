@@ -36,7 +36,8 @@ internal partial class ClipboardFactory
         new HandlerMapping(Format.UriList, HandleLinuxFile),
         new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
         new HandlerMapping(Format.ImagePng, HandleLinuxImage),
-        new HandlerMapping(Format.Text, HandleLinuxText),
+        new HandlerMapping(Format.TextUtf8, HandleLinuxTextUtf8),
+        new HandlerMapping(Format.Text, HandleLinuxTextNormal),
         new HandlerMapping(Format.TextHtml, HandleLinuxHtml),
     };
 
@@ -81,12 +82,24 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("linux")]
-    private async Task HandleLinuxText(ClipboardMetaInfomation meta, CancellationToken token)
+    private static async Task HandleLinuxText(string format, ClipboardMetaInfomation meta, CancellationToken token)
     {
         if (meta.Text is not null) return;
-        var textBytes = await Clipboard.GetDataAsync(Format.Text).WaitAsync(token) as byte[];
+        var textBytes = await Clipboard.GetDataAsync(format).WaitAsync(token) as byte[];
         ArgumentNullException.ThrowIfNull(textBytes);
         meta.Text = Encoding.UTF8.GetString(textBytes);
+    }
+
+    [SupportedOSPlatform("linux")]
+    private Task HandleLinuxTextUtf8(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        return HandleLinuxText(Format.TextUtf8, meta, token);
+    }
+
+    [SupportedOSPlatform("linux")]
+    private Task HandleLinuxTextNormal(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        return HandleLinuxText(Format.Text, meta, token);
     }
 
     [SupportedOSPlatform("linux")]

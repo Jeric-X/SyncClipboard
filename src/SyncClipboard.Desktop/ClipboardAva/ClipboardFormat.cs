@@ -12,6 +12,7 @@ internal static class Format
     [SupportedOSPlatform("linux")] public const string ImageBmp = "image/bmp";
     [SupportedOSPlatform("linux")] public const string TimeStamp = "TIMESTAMP";
     [SupportedOSPlatform("linux")] public const string Text = "TEXT";
+    [SupportedOSPlatform("linux")] public const string TextUtf8 = "text/plain;charset=utf-8";
     [SupportedOSPlatform("linux")] public const string CompoundText = "COMPOUND_TEXT";
     [SupportedOSPlatform("linux")] public const string KdeCutSelection = "application/x-kde-cutselection";
     [SupportedOSPlatform("linux")] public const string TextHtml = "text/html";
