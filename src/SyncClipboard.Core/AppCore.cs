@@ -20,9 +20,11 @@ namespace SyncClipboard.Core
     {
         private static AppCore? _current;
         public static AppCore Current => _current ?? throw new Exception("Appcore is not initialized");
+        public static AppCore? TryGetCurrent() => _current;
         public IServiceProvider Services { get; }
         public ILogger Logger { get; }
         public ITrayIcon TrayIcon => Services.GetRequiredService<ITrayIcon>();
+        public INotification Notification => Services.GetRequiredService<INotification>();
         public ConfigManager ConfigManager { get; }
 
         private ServiceManager? ServiceManager { get; set; }
@@ -157,7 +159,7 @@ namespace SyncClipboard.Core
         {
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
-
+            services.AddSingleton<StaticConfig>();
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();

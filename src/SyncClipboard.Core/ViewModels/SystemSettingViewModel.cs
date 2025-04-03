@@ -73,6 +73,13 @@ public partial class SystemSettingViewModel : ObservableObject
     public string DisplayMemberPath = nameof(LanguageModel.DisplayName);
     public string? ChangingLangInfo => I18nHelper.GetChangingLanguageInfo(Language);
 
+    public static readonly LocaleString[] Themes =
+    {
+        new ("", Strings.SystemStyle),
+        new ("Light", Strings.Light),
+        new ("Dark", Strings.Dark)
+    };
+
     [ObservableProperty]
     private LocaleString theme;
     partial void OnThemeChanged(LocaleString value)
@@ -81,19 +88,32 @@ public partial class SystemSettingViewModel : ObservableObject
         _services.GetRequiredService<IMainWindow>().ChangeTheme(value.String);
     }
 
-    public static readonly LocaleString[] Themes =
+    public static readonly LocaleString<bool>[] UserConfigPositions =
     {
-        new ("", Strings.SystemStyle),
-        new ("Light", Strings.Light),
-        new ("Dark", Strings.Dark)
+        new (false, Strings.SystemRecommend),
+        new (true, Strings.PrograminstallLocation)
     };
 
+    [ObservableProperty]
+    private LocaleString<bool> userConfigPosition;
+    partial void OnUserConfigPositionChanged(LocaleString<bool> value)
+    {
+        _staticConfig.SetConfig(_staticConfig.GetConfig<EnvConfig>() with { PortableUserConfig = value.Key });
+    }
+
+    private void OnEnvConfigChanged(EnvConfig envConfig)
+    {
+        UserConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);
+    }
+
     private readonly ConfigManager _configManager;
+    private readonly StaticConfig _staticConfig;
     private readonly IServiceProvider _services;
 
-    public SystemSettingViewModel(ConfigManager configManager, IServiceProvider serviceProvider)
+    public SystemSettingViewModel(ConfigManager configManager, StaticConfig staticConfig, IServiceProvider serviceProvider)
     {
         _configManager = configManager;
+        _staticConfig = staticConfig;
         _services = serviceProvider;
 
         _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
@@ -105,6 +125,10 @@ public partial class SystemSettingViewModel : ObservableObject
         logRemainDays = programConfig.LogRemainDays;
         tempFileRemainDays = programConfig.TempFileRemainDays;
         diagnoseMode = programConfig.DiagnoseMode;
+
+        _staticConfig.ListenConfig<EnvConfig>(OnEnvConfigChanged);
+        var envConfig = _configManager.GetConfig<EnvConfig>();
+        userConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);
     }
 
     public bool StartUpWithSystem

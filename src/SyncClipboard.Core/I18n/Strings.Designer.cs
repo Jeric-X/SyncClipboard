@@ -943,6 +943,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Program Install Location 的本地化字符串。
+        /// </summary>
+        public static string PrograminstallLocation {
+            get {
+                return ResourceManager.GetString("PrograminstallLocation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Query Interval (sec) 的本地化字符串。
         /// </summary>
         public static string QueryInterval {
@@ -1240,6 +1249,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 System Recommend 的本地化字符串。
+        /// </summary>
+        public static string SystemRecommend {
+            get {
+                return ResourceManager.GetString("SystemRecommend", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Settings 的本地化字符串。
         /// </summary>
         public static string SystemSettings {
@@ -1380,6 +1398,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UseNextcloud {
             get {
                 return ResourceManager.GetString("UseNextcloud", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 User Config Location 的本地化字符串。
+        /// </summary>
+        public static string UserConfigLocation {
+            get {
+                return ResourceManager.GetString("UserConfigLocation", resourceCulture);
             }
         }
         

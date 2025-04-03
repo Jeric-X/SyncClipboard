@@ -573,4 +573,13 @@
   <data name="TempFileRemainDays" xml:space="preserve">
     <value>Temp Files Remain Days</value>
   </data>
+  <data name="UserConfigLocation" xml:space="preserve">
+    <value>User Config Location</value>
+  </data>
+  <data name="SystemRecommend" xml:space="preserve">
+    <value>System Recommend</value>
+  </data>
+  <data name="PrograminstallLocation" xml:space="preserve">
+    <value>Program Install Location</value>
+  </data>
 </root>

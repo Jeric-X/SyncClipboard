@@ -573,4 +573,13 @@
   <data name="TempFileRemainDays" xml:space="preserve">
     <value>临时文件保留时长（日）</value>
   </data>
+  <data name="UserConfigLocation" xml:space="preserve">
+    <value>配置文件位置</value>
+  </data>
+  <data name="SystemRecommend" xml:space="preserve">
+    <value>系统推荐</value>
+  </data>
+  <data name="PrograminstallLocation" xml:space="preserve">
+    <value>程序所在目录</value>
+  </data>
 </root>

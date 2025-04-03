@@ -37,7 +37,7 @@
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" />
             </ui:SettingsExpander.HeaderIcon>
-            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{Binding ServerEnable, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ServerEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Description="{x:Bind _viewModel.ServerConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">

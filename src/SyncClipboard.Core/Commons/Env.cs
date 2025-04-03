@@ -10,7 +10,9 @@
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
         public static readonly string ProgramPath = Environment.ProcessPath ?? "";
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
-        public static string AppDataFileFolder => GetOrCreateFolder(FullPath("file"));
+        public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
+        public static readonly string StaticConfigPath = Path.Combine(ProgramDirectory, "StaticConfig.json");
+        public static readonly string AppDataFileFolder = GetOrCreateFolder(FullPath("file"));
         public static string TemplateFileFolder => GetTemplateFileFolder();
         public static readonly string RemoteFileFolder = "file";
         public static readonly string LogFolder = FullPath("log");

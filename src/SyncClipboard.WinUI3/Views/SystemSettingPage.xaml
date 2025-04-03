@@ -35,6 +35,12 @@
             </ui:SettingsCard.HeaderIcon>
             <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
         </ui:SettingsCard>
+        <ui:SettingsCard Header="{x:Bind i18n:Strings.UserConfigLocation}">
+            <ui:SettingsCard.HeaderIcon>
+                <FontIcon Glyph="&#xEC25;" />
+            </ui:SettingsCard.HeaderIcon>
+            <ComboBox SelectedItem="{x:Bind _viewModel.UserConfigPosition, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.UserConfigPositions}" DisplayMemberPath="ShownString" />
+        </ui:SettingsCard>
         <ui:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
             <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE128;" />
