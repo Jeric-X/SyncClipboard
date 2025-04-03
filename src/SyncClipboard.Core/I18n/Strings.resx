@@ -582,4 +582,7 @@
   <data name="PrograminstallLocation" xml:space="preserve">
     <value>Program Install Location</value>
   </data>
+  <data name="OpenInstallFolder" xml:space="preserve">
+    <value>Open Install Folder</value>
+  </data>
 </root>

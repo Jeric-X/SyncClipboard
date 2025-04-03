@@ -871,6 +871,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Open Install Folder 的本地化字符串。
+        /// </summary>
+        public static string OpenInstallFolder {
+            get {
+                return ResourceManager.GetString("OpenInstallFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Open Main UI 的本地化字符串。
         /// </summary>
         public static string OpenMainUI {

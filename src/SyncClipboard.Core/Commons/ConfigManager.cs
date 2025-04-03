@@ -40,6 +40,7 @@ public class ConfigManager : ConfigBase
 #if WINDOWS
         new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", $"\"{Path}\"")),
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),
+        new MenuItem(I18n.Strings.OpenInstallFolder, () => Process.Start("explorer", $"\"{Env.ProgramDirectory}\"")),
         new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"\"{Env.AppDataDirectory}\"")),
 #endif
 #if LINUX

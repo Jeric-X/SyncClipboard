@@ -127,7 +127,7 @@ public partial class SystemSettingViewModel : ObservableObject
         diagnoseMode = programConfig.DiagnoseMode;
 
         _staticConfig.ListenConfig<EnvConfig>(OnEnvConfigChanged);
-        var envConfig = _configManager.GetConfig<EnvConfig>();
+        var envConfig = _staticConfig.GetConfig<EnvConfig>();
         userConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);
     }
 
