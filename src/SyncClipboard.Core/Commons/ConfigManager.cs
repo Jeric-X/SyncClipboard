@@ -13,13 +13,21 @@ public class ConfigManager : ConfigBase
     public ConfigManager(StaticConfig staticConfig, INotification notification)
     {
         Notification = notification;
-        staticConfig.GetAndListenConfig<EnvConfig>(EnvConfigChanged);
+        bool portableUserConfig = staticConfig.GetConfig<EnvConfig>().PortableUserConfig;
+        SetPath(portableUserConfig);
+        Load();
+        staticConfig.ListenConfig<EnvConfig>(EnvConfigChanged);
     }
 
     private void EnvConfigChanged(EnvConfig envConfig)
     {
-        Path = envConfig.PortableUserConfig ? Env.PortableUserConfigFile : Env.UserConfigFile;
+        SetPath(envConfig.PortableUserConfig);
         Save();
+    }
+
+    private void SetPath(bool portableUserConfig)
+    {
+        Path = portableUserConfig ? Env.PortableUserConfigFile : Env.UserConfigFile;
     }
 
     public MenuItem[] Menu => new[]
@@ -30,7 +38,7 @@ public class ConfigManager : ConfigBase
         new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("open", $"\"{Env.AppDataDirectory}\""))
 #endif
 #if WINDOWS
-        new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", $"\"{Env.AppDataDirectory}\"")),
+        new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", $"\"{Path}\"")),
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),
         new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"\"{Env.AppDataDirectory}\"")),
 #endif
