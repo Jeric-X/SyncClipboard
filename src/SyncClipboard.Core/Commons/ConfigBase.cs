@@ -6,18 +6,28 @@ using System.Text.Json.Nodes;
 
 namespace SyncClipboard.Core.Commons
 {
-    public abstract class ConfigBase
+    public class ConfigBase
     {
         public event Action? ConfigChanged;
 
         protected string Path { get; set; } = null!;
-        protected abstract INotification Notification { get; }
+        protected INotification? Notification { get; set; } = null;
 
         private readonly Dictionary<string, Type> _registedTypeList = new();
         private readonly Dictionary<string, HashSet<MessageDispatcher>> _registedChangedHandlerList = new();
 
         private JsonNode _jsonNode = new JsonObject();
         private JsonNode _jsonNodeBackUp = new JsonObject();
+
+        public ConfigBase()
+        {
+        }
+
+        public ConfigBase(string path)
+        {
+            Path = path;
+            Load();
+        }
 
         public T? GetConfig<T>(string key)
         {
@@ -137,7 +147,7 @@ namespace SyncClipboard.Core.Commons
             }
             catch (Exception e)
             {
-                Notification.SendText("Failed to write config file", e.Message);
+                Notification?.SendText("Failed to write config file", e.Message);
                 AppCore.TryGetCurrent()?.Logger.Write($"Failed to write config file to {Path}, err message: {e.Message}");
                 _jsonNode = _jsonNodeBackUp.DeepClone();
             }

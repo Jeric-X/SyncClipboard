@@ -36,7 +36,7 @@ class Program
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
-        var hide = new ConfigManager().GetConfig<ProgramConfig>().HideWindowOnStartup;
+        var hide = new ConfigBase(Env.UserConfigFile).GetConfig<ProgramConfig>().HideWindowOnStartup;
         return AppBuilder.Configure(() => new App(AppServices.ConfigureServices()))
             .UsePlatformDetect()
             .WithInterFont()
