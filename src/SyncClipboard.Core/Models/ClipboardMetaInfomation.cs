@@ -7,6 +7,8 @@ public record class ClipboardMetaInfomation
 {
     public const string ImageType = "Image";
 
+    public bool? ExcludeForSync;
+    public bool? ExcludeForHistory;
     public string? Text;
     public string? Html;
     public IClipboardImage? Image;
@@ -31,6 +33,8 @@ public record class ClipboardMetaInfomation
         return (object)this == other ||
             (other is not null
             && EqualityContract == other.EqualityContract
+            && EqualityComparer<bool?>.Default.Equals(ExcludeForSync, other.ExcludeForSync)
+            && EqualityComparer<bool?>.Default.Equals(ExcludeForHistory, other.ExcludeForHistory)
             && EqualityComparer<string>.Default.Equals(Text, other.Text)
             && EqualityComparer<string>.Default.Equals(Html, other.Html)
             && EqualityComparer<IClipboardImage>.Default.Equals(Image, other.Image)

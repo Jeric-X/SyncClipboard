@@ -219,6 +219,13 @@ public class UploadService : ClipboardHander
                 return;
             }
 
+            if (meta.ExcludeForSync ?? false)
+            {
+                _logger.Write(LOG_TAG, "Stop Push for meta exclude for sync.");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
+                return;
+            }
+
             if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token) || !profile.IsAvailableFromLocal())
             {
                 _logger.Write(LOG_TAG, "Stop Push.");

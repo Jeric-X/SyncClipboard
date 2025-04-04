@@ -39,15 +39,43 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         ["FileDrop"] = HanleFiles2,
         ["Preferred DropEffect"] = HanleDropEffect,
         ["Object Descriptor"] = HanleObjectDescriptor,
+        ["ExcludeClipboardContentFromMonitorProcessing"] = HandleExclueMonitorProcessing,
+        ["CanIncludeInClipboardHistory"] = HandleExclueHistory,
+        ["CanUploadToCloudClipboard"] = HandleExclueUpload,
     }.ToList();
 
-    private static async Task<byte[]> RandomStreamToBytes(IRandomAccessStream stream, CancellationToken ctk)
+    private static Task HandleExclueMonitorProcessing(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
-        using DataReader reader = new(stream.GetInputStreamAt(0));
-        var bytes = new byte[stream.Size];
-        await reader.LoadAsync((uint)stream.Size).AsTask().WaitAsync(ctk);
-        reader.ReadBytes(bytes);
-        return bytes;
+        meta.ExcludeForSync = true;
+        meta.ExcludeForHistory = true;
+        return Task.CompletedTask;
+    }
+
+    private static async Task<bool> HandleU32ToBool(DataPackageView ClipboardData, string format, CancellationToken ctk)
+    {
+        var res = await ClipboardData.GetDataAsync(format).AsTask().WaitAsync(ctk);
+        using var stream = res.As<IRandomAccessStream>();
+        var bytes = await RandomStreamToBytes(stream, ctk);
+        UInt32 value = BitConverter.ToUInt32(bytes, 0);
+        return value != 0;
+    }
+
+    private static async Task HandleExclueHistory(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+    {
+        meta.ExcludeForHistory |= !await HandleU32ToBool(ClipboardData, "CanIncludeInClipboardHistory", ctk);
+    }
+
+    private static async Task HandleExclueUpload(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+    {
+        meta.ExcludeForSync |= !await HandleU32ToBool(ClipboardData, "CanUploadToCloudClipboard", ctk);
+    }
+
+    private static async Task<byte[]> RandomStreamToBytes(IRandomAccessStream randomStream, CancellationToken ctk)
+    {
+        using var stream = randomStream.AsStreamForRead();
+        using MemoryStream ms = new();
+        await stream.CopyToAsync(ms, ctk);
+        return ms.ToArray();
     }
 
     private static async Task HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
