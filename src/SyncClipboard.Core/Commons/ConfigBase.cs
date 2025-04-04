@@ -137,7 +137,7 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
-        protected void Save()
+        protected virtual void Save()
         {
             try
             {
