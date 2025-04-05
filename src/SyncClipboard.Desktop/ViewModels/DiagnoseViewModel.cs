@@ -7,6 +7,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
@@ -56,9 +57,22 @@ internal partial class DiagnoseViewModel : ObservableObject
     {
         ClipboardTypes.Clear();
         var types = await App.Current.Clipboard.GetFormatsAsync();
-        foreach (var item in types ?? System.Array.Empty<string>())
+        foreach (var item in types ?? Array.Empty<string>())
         {
-            ClipboardTypes.Add(item);
+            var str = item;
+            try
+            {
+                var contentObj = await App.Current.Clipboard.GetDataAsync(item);
+                if (contentObj is not null)
+                {
+                    str += Environment.NewLine + contentObj?.GetType().FullName ?? string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                str += Environment.NewLine + ex.Message;
+            }
+            ClipboardTypes.Add(str);
         }
     }
 }

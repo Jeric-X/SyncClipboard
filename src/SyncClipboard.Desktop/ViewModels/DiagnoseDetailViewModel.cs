@@ -52,20 +52,27 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
         Bitmap = null;
     }
 
-    public async Task Init(string type)
+    public async Task Init(string formatAndCSType)
     {
-        Clear();
-        var clipboard = await App.Current.Clipboard.GetDataAsync(type!);
-        if (clipboard is string str)
+        try
         {
-            IsString = true;
-            CsharpString = str;
-        }
+            Clear();
+            var type = formatAndCSType.Split(Environment.NewLine)[0];
+            var clipboard = await App.Current.Clipboard.GetDataAsync(type!);
+            if (clipboard is string str)
+            {
+                IsString = true;
+                CsharpString = str;
+            }
 
-        await ProcessImageBytes(clipboard);
-        if (IsImage is not true)
+            await ProcessImageBytes(clipboard);
+            if (IsImage is not true)
+            {
+                ProcessStringBytes(clipboard);
+            }
+        }
+        catch
         {
-            ProcessStringBytes(clipboard);
         }
     }
 
