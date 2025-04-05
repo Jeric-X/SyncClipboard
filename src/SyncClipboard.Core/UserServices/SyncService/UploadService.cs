@@ -212,18 +212,21 @@ public class UploadService : ClipboardHander
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
-            if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
+            if (profile.ContentControl)
             {
-                _logger.Write(LOG_TAG, "Cut won't Push.");
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Cutting things, won't push.", false);
-                return;
-            }
+                if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
+                {
+                    _logger.Write(LOG_TAG, "Cut won't Push.");
+                    _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Cutting things, won't push.", false);
+                    return;
+                }
 
-            if (meta.ExcludeForSync ?? false)
-            {
-                _logger.Write(LOG_TAG, "Stop Push for meta exclude for sync.");
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
-                return;
+                if (meta.ExcludeForSync ?? false)
+                {
+                    _logger.Write(LOG_TAG, "Stop Push for meta exclude for sync.");
+                    _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
+                    return;
+                }
             }
 
             if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token) || !profile.IsAvailableFromLocal())
