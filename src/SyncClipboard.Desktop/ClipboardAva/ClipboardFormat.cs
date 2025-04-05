@@ -22,4 +22,6 @@ internal static class Format
     [SupportedOSPlatform("macos")] public const string PublicTiff = "public.tiff";
     [SupportedOSPlatform("macos")] public const string PublicHtml = "public.html";
     [SupportedOSPlatform("macos")] public const string MacText = "Text";
+    [SupportedOSPlatform("macos")] public const string NSPasteboardTransient = "org.nspasteboard.TransientType";
+    [SupportedOSPlatform("macos")] public const string NSpasteboardConcealed = "org.nspasteboard.ConcealedType";
 }

@@ -29,6 +29,8 @@ internal partial class ClipboardFactory
         new HandlerMapping(Format.PublicTiff, HandleMacosImage),
         new HandlerMapping(Format.PublicHtml, HandleMacHtml),
         new HandlerMapping(Format.MacText, HandleMacText),
+        new HandlerMapping(Format.NSpasteboardConcealed, HandleTransient),
+        new HandlerMapping(Format.NSPasteboardTransient, HandleTransient),
     };
 
     [SupportedOSPlatform("macos")]
@@ -96,5 +98,13 @@ internal partial class ClipboardFactory
     private async Task HandleMacText(ClipboardMetaInfomation meta, CancellationToken token)
     {
         meta.Text = await Clipboard?.GetTextAsync().WaitAsync(token)!;
+    }
+
+    [SupportedOSPlatform("macos")]
+    private Task HandleTransient(ClipboardMetaInfomation meta, CancellationToken _)
+    {
+        meta.ExcludeForHistory = true;
+        meta.ExcludeForSync = true;
+        return Task.CompletedTask;
     }
 }
