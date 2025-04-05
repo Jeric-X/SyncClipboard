@@ -44,6 +44,9 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
 
         var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uris}\n";
         dataObject.Set(Format.CompoundText, Encoding.UTF8.GetBytes(nautilus));
+
+        var gnome = $"copy\n{uris}";
+        dataObject.Set(Format.GnomeFiles, Encoding.UTF8.GetBytes(gnome));
     }
 
     [SupportedOSPlatform("macos")]
