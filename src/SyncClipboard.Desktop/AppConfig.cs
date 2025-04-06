@@ -6,7 +6,7 @@ internal class AppConfig : IAppConfig
 {
     public string AppId => Env.AppId;
     public string AppStringId => "SyncClipboard.Desktop";
-    public string AppVersion => "0.7.8";
-    public string UpdateApiUrl => "https://api.github.com/repos/Jeric-X/SyncClipboard.Desktop/releases";
-    public string UpdateUrl => "https://github.com/Jeric-X/SyncClipboard.Desktop/releases/latest";
+    public string AppVersion => "0.8.0";
+    public string UpdateApiUrl => "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
+    public string UpdateUrl => "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 }

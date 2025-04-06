@@ -1,3 +1,13 @@
+0.8.0
+- 修复：SyncClipboard无法识别的剪贴板被强制覆盖（https://github.com/Jeric-X/SyncClipboard/issues/181）
+- 修复：在部分Linux环境中复制非英文同步到其他设备后变为乱码（https://github.com/Jeric-X/SyncClipboard/issues/172）
+- 修复：在部分gnome环境下的文件管理器中无法粘贴文件
+- 功能：从密码管理软件复制的内容不会被同步（仅macOS）（https://github.com/Jeric-X/SyncClipboard/issues/157）  
+:::info  
+下版本Linux/macOS将使用[主仓库](https://github.com/Jeric-X/SyncClipboard/)发布，与Windows版本合并版本号  
+如果不是紧急问题修复，下版本将更新.net运行时到8.0  
+:::
+
 0.7.8
 - 功能：支持自定义临时文件的保存时长
 - 功能：server端增加监听ipv6地址
