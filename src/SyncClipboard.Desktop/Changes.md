@@ -1,3 +1,6 @@
+2.9.0
+- 更新版本号与Windows版相同
+
 0.8.0
 - 修复：SyncClipboard无法识别的剪贴板被强制覆盖（https://github.com/Jeric-X/SyncClipboard/issues/181）
 - 修复：在部分Linux环境中复制非英文同步到其他设备后变为乱码（https://github.com/Jeric-X/SyncClipboard/issues/172）
