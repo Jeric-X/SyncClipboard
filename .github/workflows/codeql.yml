@@ -87,7 +87,7 @@ jobs:
       run: |
         dotnet restore SyncClipboard.Desktop.Default
         dotnet restore SyncClipboard.WinUI3
-        msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m
+        msbuild SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m
         msBuild SyncClipboard.Desktop\SyncClipboard.Desktop.csproj /p:SelfContained=false  /p:Configuration=Release /t:Publish /v:m
       working-directory: ./src
 

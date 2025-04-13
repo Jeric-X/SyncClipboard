@@ -30,7 +30,7 @@ jobs:
     - name: copy SyncClipboard.Server
       run: |
         mkdir server
-        cp -r src/SyncClipboard.Server/bin/Release/net6.0/publish/ server/
+        cp -r src/SyncClipboard.Server/bin/Release/net8.0/publish/ server/
 
     - name: Upload build artifacts SyncClipboard.Server
       uses: actions/upload-artifact@v4

@@ -35,16 +35,16 @@ jobs:
     #  run: msbuild SyncClipboard.Test\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /p:Platform=x64 /p:Configuration=Release /v:m
 
     #- name: Run test WinUI3
-    #  run: dotnet test SyncClipboard.Test\SyncClipboard.Test.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0\SyncClipboard.Test.WinUI3.dll
+    #  run: dotnet test SyncClipboard.Test\SyncClipboard.Test.WinUI3\bin\x64\Release\net8.0-windows10.0.19041.0\SyncClipboard.Test.WinUI3.dll
 
     - name: Build SyncClipboard.WinUI3
-      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m -restore
+      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m -restore
 
     - name: copy SyncClipboard.WinUI3
-      run: xcopy src\SyncClipboard.WinUI3\bin\x64\Release\net6.0-windows10.0.19041.0\win10-x64 WinUI3\ /s /e
+      run: xcopy src\SyncClipboard.WinUI3\bin\x64\Release\net8.0-windows10.0.19041.0\win-x64 WinUI3\ /s /e
 
     - name: Build SyncClipboard.SelfContained
-      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win10-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m -restore /p:OutDir=../../WinUI3.SelfContained /p:SelfContained=true
+      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m -restore /p:OutDir=../../WinUI3.SelfContained /p:SelfContained=true
 
     - name: Upload build artifacts SyncClipboard.WinUI3
       uses: actions/upload-artifact@v4
