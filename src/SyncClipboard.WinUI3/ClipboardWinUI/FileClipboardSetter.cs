@@ -11,7 +11,7 @@ namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboardSetter<GroupProfile>
 {
-    public static string[] UnusualType = { ".lnk", ".url", ".wsh" };
+    public static string[] UnusualType = [".lnk", ".url", ".wsh"];
 
     protected override async Task<DataPackage> CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
@@ -20,7 +20,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
             throw new ArgumentException("Not Contain File.");
         }
 
-        List<IStorageItem> list = new();
+        List<IStorageItem> list = [];
         foreach (var file in metaInfomation.Files)
         {
             if (Directory.Exists(file))

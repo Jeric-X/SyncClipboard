@@ -6,6 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities.Image;
 
 namespace SyncClipboard.Core.UserServices;

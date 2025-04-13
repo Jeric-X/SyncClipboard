@@ -21,6 +21,9 @@
     <!--<PublishSingleFile>true</PublishSingleFile>-->
     <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--<PublishAot>false</PublishAot>
+    <IsAotCompatible>false</IsAotCompatible>-->
   </PropertyGroup>
 
   <Target Name="DeleteServerAppsettings" AfterTargets="Build">

@@ -6,17 +6,11 @@ using Windows.ApplicationModel.DataTransfer;
 
 namespace SyncClipboard.WinUI3.ClipboardWinUI;
 
-internal class ClipboardListener : ClipboardChangingListenerBase
+internal class ClipboardListener(IClipboardFactory clipboardFactory, ILogger logger) : ClipboardChangingListenerBase
 {
     private MetaChanged? _action;
-    protected override IClipboardFactory ClipboardFactory { get; }
-    private readonly ILogger _logger;
-
-    public ClipboardListener(IClipboardFactory clipboardFactory, ILogger logger)
-    {
-        ClipboardFactory = clipboardFactory;
-        _logger = logger;
-    }
+    protected override IClipboardFactory ClipboardFactory { get; } = clipboardFactory;
+    private readonly ILogger _logger = logger;
 
     protected override void RegistSystemEvent(MetaChanged action)
     {

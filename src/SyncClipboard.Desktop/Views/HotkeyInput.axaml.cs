@@ -19,8 +19,8 @@ public partial class HotkeyInput : UserControl
 {
     private SharpHookHotkeyRegistry? _hotkeyRegistry;
     private readonly IGlobalHook _globalHook;
-    private readonly HashSet<KeyCode> _pressedKeys = new();
-    private readonly HashSet<KeyCode> _pressingKeys = new();
+    private readonly HashSet<KeyCode> _pressedKeys = [];
+    private readonly HashSet<KeyCode> _pressingKeys = [];
 
     public HotkeyInput()
     {

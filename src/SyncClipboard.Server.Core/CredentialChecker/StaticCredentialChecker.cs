@@ -1,15 +1,9 @@
-namespace SyncClipboard.Server
+namespace SyncClipboard.Server.Core.CredentialChecker
 {
-    public class StaticCredentialChecker : ICredentialChecker
+    public class StaticCredentialChecker(string name, string password) : ICredentialChecker
     {
-        private readonly string _userName;
-        private readonly string _password;
-
-        public StaticCredentialChecker(string name, string password)
-        {
-            _userName = name;
-            _password = password;
-        }
+        private readonly string _userName = name;
+        private readonly string _password = password;
 
         public bool Check(string name, string password)
         {

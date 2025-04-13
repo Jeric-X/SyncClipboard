@@ -5,30 +5,23 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels
 {
-    public partial class MainViewModel : ObservableObject
+    public partial class MainViewModel(IServiceProvider services) : ObservableObject
     {
-        private readonly IServiceProvider _services;
-
-        public MainViewModel(IServiceProvider serviceProvider)
-        {
-            _services = serviceProvider;
-        }
-
-        public ObservableCollection<PageDefinition> MainWindowPage { get; } = new()
-        {
+        public ObservableCollection<PageDefinition> MainWindowPage { get; } =
+        [
             PageDefinition.SyncSetting,
             PageDefinition.CliboardAssistant,
             PageDefinition.ServiceStatus,
             PageDefinition.Hotkey,
             PageDefinition.SystemSetting,
             PageDefinition.About,
-        };
+        ];
 
-        public ObservableCollection<PageDefinition> BreadcrumbList { get; } = new();
+        public ObservableCollection<PageDefinition> BreadcrumbList { get; } = [];
 
         public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? para = null)
         {
-            _services.GetService<IMainWindow>()?.NavigateTo(page, effect, para);
+            services.GetService<IMainWindow>()?.NavigateTo(page, effect, para);
         }
 
         public void NavigateToLastLevel()

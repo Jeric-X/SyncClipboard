@@ -42,7 +42,7 @@ public partial class SystemSettingViewModel : ObservableObject
             var font = _services.GetService<IFontManager>();
             if (font == null)
             {
-                return new List<string>() { "" };
+                return [""];
             }
             var list = font.GetInstalledFontNames();
             list.Insert(0, "");
@@ -74,11 +74,11 @@ public partial class SystemSettingViewModel : ObservableObject
     public string? ChangingLangInfo => I18nHelper.GetChangingLanguageInfo(Language);
 
     public static readonly LocaleString[] Themes =
-    {
+    [
         new ("", Strings.SystemStyle),
         new ("Light", Strings.Light),
         new ("Dark", Strings.Dark)
-    };
+    ];
 
     [ObservableProperty]
     private LocaleString theme;
@@ -89,10 +89,10 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     public static readonly LocaleString<bool>[] UserConfigPositions =
-    {
+    [
         new (false, Strings.SystemRecommend),
         new (true, Strings.PrograminstallLocation)
-    };
+    ];
 
     [ObservableProperty]
     private LocaleString<bool> userConfigPosition;

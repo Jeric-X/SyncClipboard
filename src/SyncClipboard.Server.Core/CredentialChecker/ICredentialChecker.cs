@@ -1,4 +1,4 @@
-namespace SyncClipboard.Server
+namespace SyncClipboard.Server.Core.CredentialChecker
 {
     public interface ICredentialChecker
     {

@@ -4,12 +4,12 @@ using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities.Notification;
 using SyncClipboard.WinUI3.ClipboardWinUI;
 using SyncClipboard.WinUI3.Views;
 using SyncClipboard.WinUI3.Win32;
 using SyncClipboard.Core.Utilities.Fake;
 using SyncClipboard.WinUI3.Utilities;
+using SyncClipboard.Windows.Notification;
 
 namespace SyncClipboard.WinUI3;
 

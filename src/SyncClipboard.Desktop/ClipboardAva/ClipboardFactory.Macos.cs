@@ -23,15 +23,15 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 internal partial class ClipboardFactory
 {
     [SupportedOSPlatform("macos")]
-    private List<HandlerMapping> MacFormatHandlerlist => new()
-    {
+    private List<HandlerMapping> MacFormatHandlerlist =>
+    [
         new HandlerMapping(Format.FileList, HandleMacosFile),
         new HandlerMapping(Format.PublicTiff, HandleMacosImage),
         new HandlerMapping(Format.PublicHtml, HandleMacHtml),
         new HandlerMapping(Format.MacText, HandleMacText),
         new HandlerMapping(Format.NSpasteboardConcealed, HandleTransient),
         new HandlerMapping(Format.NSPasteboardTransient, HandleTransient),
-    };
+    ];
 
     [SupportedOSPlatform("macos")]
     private async Task<ClipboardMetaInfomation> HandleMacosClipboard(CancellationToken token)
@@ -59,11 +59,11 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("macos")]
-    private static readonly string[] MacImageTypeList = new[]
-    {
+    private static readonly string[] MacImageTypeList =
+    [
         Format.PublicTiff,
         Format.PublicPng,
-    };
+    ];
 
     [SupportedOSPlatform("macos")]
     private async Task HandleMacosImage(ClipboardMetaInfomation meta, CancellationToken token)

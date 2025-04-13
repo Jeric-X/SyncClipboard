@@ -11,35 +11,22 @@ using SyncClipboard.Core.Utilities.Web;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public partial class FileTreeViewModel : ObservableObject
+public partial class FileTreeViewModel(string fullPath, string name, bool isFolder) : ObservableObject
 {
-    public string FullPath { get; }
-    public string Name { get; }
-    public bool IsFolder { get; }
+    public string FullPath { get; } = fullPath;
+    public string Name { get; } = name;
+    public bool IsFolder { get; } = isFolder;
 
     [ObservableProperty]
     public List<FileTreeViewModel>? children;
-
-    public FileTreeViewModel(string fullPath, string name, bool isFolder)
-    {
-        FullPath = fullPath;
-        Name = name;
-        IsFolder = isFolder;
-    }
 }
 
-public partial class NextCloudLogInViewModel : ObservableObject
+public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) : ObservableObject
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
     private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
     private ConfigManager ConfigManager => _serviceProvider.GetRequiredService<ConfigManager>();
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
-
-    public NextCloudLogInViewModel(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-        userInputUrl = "https://";
-    }
 
     private CancellationTokenSource? _cancelSource;
     private CancellationTokenSource? CancelSource
@@ -60,7 +47,7 @@ public partial class NextCloudLogInViewModel : ObservableObject
     public bool ShowTreeList => TreeList is not null;
 
     [ObservableProperty]
-    private string userInputUrl;
+    private string userInputUrl = "https://";
 
     public bool CanCancel => CancelSource is not null && !CancelSource.IsCancellationRequested;
 

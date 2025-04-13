@@ -5,8 +5,8 @@ namespace SyncClipboard.Core.Models.UserConfigs;
 public record FileFilterConfig
 {
     public string FileFilterMode { get; set; } = "";
-    public List<string> WhiteList { get; set; } = new();
-    public List<string> BlackList { get; set; } = new();
+    public List<string> WhiteList { get; set; } = [];
+    public List<string> BlackList { get; set; } = [];
 
     public virtual bool Equals(FileFilterConfig? other)
     {

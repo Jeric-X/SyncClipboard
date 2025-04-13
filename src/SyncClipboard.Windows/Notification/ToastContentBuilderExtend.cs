@@ -1,7 +1,7 @@
 using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract.Notification;
 
-namespace SyncClipboard.Core.Utilities.Notification
+namespace SyncClipboard.Windows.Notification
 {
     static class ToastContentBuilderExtend
     {

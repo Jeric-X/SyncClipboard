@@ -232,7 +232,7 @@ namespace SyncClipboard.Core.Utilities.Web
             var res = await HttpClient.SendAsync(requestMessage, token);
             res.EnsureSuccessStatusCode();
 
-            List<WebDavNode> list = new List<WebDavNode>();
+            List<WebDavNode> list = [];
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(await res.Content.ReadAsStringAsync(token));

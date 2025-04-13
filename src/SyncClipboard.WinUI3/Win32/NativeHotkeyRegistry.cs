@@ -17,8 +17,8 @@ public class NativeHotkeyRegistry : INativeHotkeyRegistry, IDisposable
     private readonly WindowMessageMonitor _messageMonitor;
 
     private int _hotkeyId = 0;
-    private readonly Dictionary<int, Action> _hotkeyList = new();
-    private readonly Dictionary<Hotkey, int> _hotkeyIdMap = new();
+    private readonly Dictionary<int, Action> _hotkeyList = [];
+    private readonly Dictionary<Hotkey, int> _hotkeyIdMap = [];
 
     public NativeHotkeyRegistry(Window window)
     {

@@ -3,7 +3,7 @@ using SyncClipboard.Core.Utilities.Web;
 
 namespace SyncClipboard.Core.Utilities
 {
-    public class NextcloudLogInFlow
+    public class NextcloudLogInFlow(string server, HttpClient httpClient)
     {
         #region nextcloud official response defination
 
@@ -33,18 +33,12 @@ namespace SyncClipboard.Core.Utilities
         public const int VERIFICATION_LIMITED_TIME = 60000;
         private const int INTERVAL_TIME = 1000;
 
-        private readonly string _server;
+        private readonly string _server = server;
         private FirstResponseJson? _firstResponse;
-        private readonly HttpClient _httpClient;
+        private readonly HttpClient _httpClient = httpClient;
 
         public WebDavCredential? Result { get; private set; }
         public int VerificationLimitedTime { get; set; } = VERIFICATION_LIMITED_TIME;
-
-        public NextcloudLogInFlow(string server, HttpClient httpClient)
-        {
-            _server = server;
-            _httpClient = httpClient;
-        }
 
         public async Task<string> GetUserLoginUrl(CancellationToken? cancellationToken = null)
         {
@@ -91,7 +85,7 @@ namespace SyncClipboard.Core.Utilities
                 token.ThrowIfCancellationRequested();
                 try
                 {
-                    KeyValuePair<string, string>[] list = { KeyValuePair.Create("token", _firstResponse.Poll.Token) };
+                    KeyValuePair<string, string>[] list = [KeyValuePair.Create("token", _firstResponse.Poll.Token)];
                     return await _httpClient.PostTextRecieveJson<SecondResponse>(url, list, token);
                 }
                 catch

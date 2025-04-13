@@ -11,11 +11,11 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class FileSyncFilterSettingViewModel : ObservableObject
 {
     public static readonly LocaleString[] Modes =
-    {
+    [
         new ("", Strings.None),
         new ("BlackList", Strings.BlackList),
         new ("WhiteList", Strings.WhiteList)
-    };
+    ];
 
     [ObservableProperty]
     private LocaleString filterMode = Modes[0];
@@ -56,7 +56,7 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     [RelayCommand]
     public void Apply()
     {
-        var list = ShownText.Split(new string[] { "\r\n", "\r", "\n" },
+        var list = ShownText.Split(["\r\n", "\r", "\n"],
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct().ToList();
         list.Sort();
         if (FilterConfig.FileFilterMode == "BlackList")

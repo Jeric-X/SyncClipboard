@@ -10,7 +10,7 @@ public class SystemServiceProviderDataSource : ServiceProviderDataSourceBase
 {
     public override IEnumerable<object[]> GetData(MethodInfo methodInfo)
     {
-        Type[] requiredService = {
+        Type[] requiredService = [
             typeof(IServiceProvider),
             typeof(ConfigManager),
             typeof(IAppConfig),
@@ -18,13 +18,13 @@ public class SystemServiceProviderDataSource : ServiceProviderDataSourceBase
             typeof(IWebDav),
             typeof(IHttp),
             typeof(INotification)
-        };
+        ];
 
-        List<object[]> res = new();
+        List<object[]> res = [];
 
         foreach (Type serviceType in requiredService)
         {
-            res.Add(new object[] { serviceType });
+            res.Add([serviceType]);
         }
 
         return res;

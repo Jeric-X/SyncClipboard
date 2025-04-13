@@ -2,28 +2,23 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract.Notification;
 using Windows.UI.Notifications;
 
-namespace SyncClipboard.Core.Utilities.Notification
+namespace SyncClipboard.Windows.Notification
 {
-    public class ToastSession : NotificationSessionBase<string>
+    public class ToastSession(string title, ToastNotifier notifier, CallbackHandler<string> callbackHandler)
+        : NotificationSessionBase<string>(callbackHandler)
     {
-        private readonly ToastNotifier _notifer;
+        private readonly ToastNotifier _notifer = notifier;
 
-        private readonly CallbackHandler<string> _callbackHandler;
+        private readonly CallbackHandler<string> _callbackHandler = callbackHandler;
         public static string Group => "DEFAULT_GROUP";
         private readonly string _tag = Guid.NewGuid().ToString();
 
         protected override string? NativeNotificationId => _tag;
 
         public string Tag => _tag.Length <= 64 ? _tag : _tag[..63];
-        public override string Title { get; set; }
+        public override string Title { get; set; } = title;
         public string? Text1 { get; set; }
         public string? Text2 { get; set; }
-        public ToastSession(string title, ToastNotifier notifier, CallbackHandler<string> callbackHandler) : base(callbackHandler)
-        {
-            Title = title;
-            _notifer = notifier;
-            _callbackHandler = callbackHandler;
-        }
 
         private const string TOAST_BINDING_TITLE = "TOAST_BINDING_TITLE";
         private const string TOAST_BINDING_TEXT1 = "TOAST_BINDING_TEXT1";
@@ -51,7 +46,7 @@ namespace SyncClipboard.Core.Utilities.Notification
         {
             var toast = new ToastNotification(builder.GetToastContent().GetXml())
             {
-                Tag = this.Tag,
+                Tag = Tag,
                 Group = Group,
                 Data = new NotificationData()
             };

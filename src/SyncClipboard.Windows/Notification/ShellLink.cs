@@ -2,14 +2,14 @@
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 
-namespace SyncClipboard.Core.Utilities.Notification
+namespace SyncClipboard.Windows.Notification
 {
     // Modified from https://github.com/pr8x/DesktopNotifications
     // Originally Modified from http://smdn.jp/programming/tips/createlnk/
     // Originally from http://www.vbaccelerator.com/home/NET/Code/Libraries/Shell_Projects
     // /
     // Partly based on Sending toast notifications from desktop apps sample
-    public class ShellLink : IDisposable
+    public partial class ShellLink : IDisposable
     {
         #region Win32 and COM
 

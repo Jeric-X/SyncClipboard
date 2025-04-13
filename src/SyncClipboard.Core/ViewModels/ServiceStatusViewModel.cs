@@ -6,7 +6,7 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class ServiceStatusViewModel : ObservableObject
 {
-    public BindingList<ServiceStatus> StatusList { get; } = new();
+    public BindingList<ServiceStatus> StatusList { get; } = [];
 
     public void SetStatusString(string name, string statusStr, bool? error = null)
     {

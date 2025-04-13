@@ -24,13 +24,13 @@ public record class UniqueCommandCollection
     {
         Name = name;
         FontIcon = fontIcon;
-        Commands = new List<UniqueCommand> { command };
+        Commands = [command];
     }
 
     public UniqueCommandCollection(string name, string fontIcon)
     {
         Name = name;
         FontIcon = fontIcon;
-        Commands = new List<UniqueCommand>();
+        Commands = [];
     }
 }

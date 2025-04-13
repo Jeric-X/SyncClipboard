@@ -23,3 +23,14 @@ dotnet_diagnostic.CC0074.severity = none
 
 # CC0072: Remove Async termination when method is not asynchronous.
 dotnet_diagnostic.CC0072.severity = none
+
+# CsWinRT1029: TODO - Rmove this when use native AOT
+dotnet_diagnostic.CsWinRT1029.severity = none
+dotnet_diagnostic.CsWinRT1028.severity = none
+
+# IDE0305: Add()¡¢AddRange()¡¢AsSpan()¡¢ToList() ºÍ ToArray() https://learn.microsoft.com/zh-cn/dotnet/fundamentals/code-analysis/style-rules/ide0305
+dotnet_diagnostic.IDE0305.severity = none
+
+[{SyncClipboard.Core/Clipboard/Profile/*.cs,SyncClipboard.Core/UserServices/**}]
+# IDE0130: namespace
+dotnet_diagnostic.IDE0130.severity = none

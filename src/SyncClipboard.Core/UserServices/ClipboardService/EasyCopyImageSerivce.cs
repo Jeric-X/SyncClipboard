@@ -6,13 +6,14 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities.Image;
 using SyncClipboard.Core.ViewModels;
 using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.UserServices;
 
-public class EasyCopyImageSerivce : ClipboardHander
+public partial class EasyCopyImageSerivce : ClipboardHander
 {
     #region override ClipboardHander
 
@@ -133,7 +134,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private static bool NeedAdjust(Profile profile, ClipboardMetaInfomation metaInfo)
     {
-        bool[] badCaseList = {
+        bool[] badCaseList = [
             profile.Type == ProfileType.Text,
             profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
             metaInfo.OriginalType is not null && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
@@ -141,7 +142,7 @@ public class EasyCopyImageSerivce : ClipboardHander
             (metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move,
             metaInfo.Html is not null && metaInfo.Files is not null && metaInfo.Image is null
                 && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType,
-        };
+        ];
 
         foreach (var badCase in badCaseList)
         {
@@ -172,8 +173,7 @@ public class EasyCopyImageSerivce : ClipboardHander
 
     private async Task<Profile?> ProcessImageFromWeb(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken ctk)
     {
-        const string Expression = @".*<[\s]*img[\s]*.*?[\s]*src=(?<quote>[""'])(?<imgUrl>https?://.*?)\k<quote>.*?/[\s]*>";
-        var match = Regex.Match(metaInfo.Html!, Expression, RegexOptions.Compiled);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
+        var match = RegexUrl().Match(metaInfo.Html!);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
         if (match.Success) // 是从浏览器复制的图片
         {
             TrayIcon.SetStatusString(SERVICE_NAME, "Downloading web image.");
@@ -202,7 +202,7 @@ public class EasyCopyImageSerivce : ClipboardHander
         using var downloadingCts = new CancellationTokenSource();
         var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, downloadingCts.Token).Token;
 
-        var filename = Regex.Match(imageUri.LocalPath, "[^/]+(?!.*/)");
+        var filename = RegexFilename().Match(imageUri.LocalPath);
         lock (_progressLocker)
         {
             _progress ??= new ProgressToastReporter(
@@ -225,4 +225,9 @@ public class EasyCopyImageSerivce : ClipboardHander
             return fullPath;
         }
     }
+
+    [GeneratedRegex("[^/]+(?!.*/)")]
+    private static partial Regex RegexFilename();
+    [GeneratedRegex(@".*<[\s]*img[\s]*.*?[\s]*src=(?<quote>[""'])(?<imgUrl>https?://.*?)\k<quote>.*?/[\s]*>", RegexOptions.Compiled)]
+    private static partial Regex RegexUrl();
 }

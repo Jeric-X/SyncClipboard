@@ -1,17 +1,12 @@
 ﻿namespace SyncClipboard.Core.Utilities.Attributes;
 
 [AttributeUsage(AttributeTargets.All)]
-public class PlatformStringAttribute : Attribute
+public class PlatformStringAttribute(string defaultString) : Attribute
 {
-    public string Default { get; set; } = "";
+    public string Default { get; set; } = defaultString;
     public string? Mac { get; set; }
     public string? Linux { get; set; }
     public string? Windows { get; set; }
-
-    public PlatformStringAttribute(string defaultString)
-    {
-        Default = defaultString;
-    }
 
     public string GetString()
     {

@@ -12,7 +12,7 @@ public class FakeProgressBar : IProgressBar
     public string? ProgressValueTip { get; set; }
     public string ProgressStatus { get; set; } = "";
     public Uri? Image { get; set; }
-    public List<Button> Buttons { get; set; } = new List<Button>();
+    public List<Button> Buttons { get; set; } = [];
 
     public void Remove()
     {

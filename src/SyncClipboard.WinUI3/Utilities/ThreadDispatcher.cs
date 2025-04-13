@@ -6,21 +6,15 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.WinUI3.Utilities;
 
-internal class ThreadDispatcher : IThreadDispatcher
+internal class ThreadDispatcher(DispatcherQueue dispatcherQueue) : IThreadDispatcher
 {
-    private readonly DispatcherQueue _dispatcherQueue;
-    public ThreadDispatcher(DispatcherQueue dispatcherQueue)
-    {
-        _dispatcherQueue = dispatcherQueue;
-    }
-
     public Task<T> RunOnMainThreadAsync<T>(Func<Task<T>> func)
     {
-        return _dispatcherQueue.EnqueueAsync(func);
+        return dispatcherQueue.EnqueueAsync(func);
     }
 
     public Task RunOnMainThreadAsync(Func<Task> func)
     {
-        return _dispatcherQueue.EnqueueAsync(func);
+        return dispatcherQueue.EnqueueAsync(func);
     }
 }

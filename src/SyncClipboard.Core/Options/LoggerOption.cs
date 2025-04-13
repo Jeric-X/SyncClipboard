@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Commons
+﻿namespace SyncClipboard.Core.Options
 {
     public class LoggerOption
     {

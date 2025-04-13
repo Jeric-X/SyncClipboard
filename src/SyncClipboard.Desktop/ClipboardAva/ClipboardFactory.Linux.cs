@@ -31,15 +31,15 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 internal partial class ClipboardFactory
 {
     [SupportedOSPlatform("linux")]
-    private List<HandlerMapping> FormatHandlerlist => new List<HandlerMapping>
-    {
+    private List<HandlerMapping> FormatHandlerlist =>
+    [
         new HandlerMapping(Format.UriList, HandleLinuxFile),
         new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
         new HandlerMapping(Format.ImagePng, HandleLinuxImage),
         new HandlerMapping(Format.TextUtf8, HandleLinuxTextUtf8),
         new HandlerMapping(Format.Text, HandleLinuxTextNormal),
         new HandlerMapping(Format.TextHtml, HandleLinuxHtml),
-    };
+    ];
 
     [SupportedOSPlatform("linux")]
     private async Task<ClipboardMetaInfomation> HandleLinuxClipboard(CancellationToken token)
@@ -69,7 +69,7 @@ internal partial class ClipboardFactory
         ArgumentNullException.ThrowIfNull(uriListbytes);
         var uriList = Encoding.UTF8.GetString(uriListbytes);
         meta.Files = uriList
-                .Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+                .Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Select(x =>
                 {
@@ -111,12 +111,12 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("linux")]
-    private static readonly string[] ImageTypeList = new[]
-    {
+    private static readonly string[] ImageTypeList =
+    [
         Format.ImagePng,
         Format.ImageJpeg,
         Format.ImageBmp,
-    };
+    ];
 
     [SupportedOSPlatform("linux")]
     private async Task HandleLinuxImage(ClipboardMetaInfomation meta, CancellationToken token)
@@ -152,7 +152,7 @@ internal partial class ClipboardFactory
 
         var bytes = await Clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];
         var str = Encoding.UTF8.GetString(bytes!);
-        var pathList = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+        var pathList = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
         if (pathList.Length < 2) return;
         if (pathList[0] == "cut")
@@ -171,11 +171,11 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("linux")]
-    private static readonly List<EffectsHandlerMapping> EffectsHandlerlist = new()
-    {
+    private static readonly List<EffectsHandlerMapping> EffectsHandlerlist =
+    [
         new EffectsHandlerMapping(Format.CompoundText, HandleCompoundText),
         new EffectsHandlerMapping(Format.KdeCutSelection, HandleKdeCutSelection),
-    };
+    ];
 
     [SupportedOSPlatform("linux")]
     private static async Task<DragDropEffects?> ParseEffects(IClipboard clipboard, string[] formats, CancellationToken token)
@@ -195,7 +195,7 @@ internal partial class ClipboardFactory
     {
         var bytes = await clipboard.GetDataAsync(Format.CompoundText).WaitAsync(token) as byte[];
         var str = Encoding.UTF8.GetString(bytes!);
-        string[] lines = str.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        string[] lines = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
         if (lines.Length >= 3 && lines[1] == "cut")
         {
             return DragDropEffects.Move;

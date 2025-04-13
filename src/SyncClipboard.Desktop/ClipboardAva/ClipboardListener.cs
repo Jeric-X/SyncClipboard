@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
-internal class ClipboardListener : ClipboardChangingListenerBase
+internal class ClipboardListener(IClipboardFactory clipboardFactory, ILogger logger) : ClipboardChangingListenerBase
 {
-    protected override IClipboardFactory ClipboardFactory { get; }
-    private readonly ILogger _logger;
+    protected override IClipboardFactory ClipboardFactory { get; } = clipboardFactory;
+    private readonly ILogger _logger = logger;
 
     private Timer? _timer;
     private MetaChanged? _action;
@@ -18,12 +18,6 @@ internal class ClipboardListener : ClipboardChangingListenerBase
 
     private readonly SemaphoreSlim _tickSemaphore = new(1, 1);
     private CancellationTokenSource? _cts;
-
-    public ClipboardListener(IClipboardFactory clipboardFactory, ILogger logger)
-    {
-        ClipboardFactory = clipboardFactory;
-        _logger = logger;
-    }
 
     protected override void RegistSystemEvent(MetaChanged action)
     {

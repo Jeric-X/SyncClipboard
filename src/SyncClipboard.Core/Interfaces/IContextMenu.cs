@@ -1,14 +1,9 @@
 ﻿namespace SyncClipboard.Core.Interfaces
 {
-    public class MenuItem
+    public class MenuItem(string? text, Action? action = null)
     {
-        public string? Text { get; set; }
-        public Action? Action { get; set; }
-        public MenuItem(string? text, Action? action = null)
-        {
-            Text = text;
-            Action = action;
-        }
+        public string? Text { get; set; } = text;
+        public Action? Action { get; set; } = action;
     }
 
     public class ToggleMenuItem : MenuItem

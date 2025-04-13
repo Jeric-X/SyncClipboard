@@ -1,11 +1,12 @@
 ﻿namespace SyncClipboard.Abstract.Notification;
 
-public abstract class NotificationSessionBase<NotificationIdType> : INotificationSession where NotificationIdType : notnull
+public abstract class NotificationSessionBase<NotificationIdType>(CallbackHandler<NotificationIdType> callbackHandler)
+    : INotificationSession where NotificationIdType : notnull
 {
     public abstract string Title { get; set; }
     public TimeSpan? Duration { get; set; }
     public Uri? Image { get; set; }
-    public List<Button> Buttons { get; set; } = new();
+    public List<Button> Buttons { get; set; } = [];
 
     protected abstract NotificationIdType? NativeNotificationId { get; }
     protected abstract void NativeRemove();
@@ -13,12 +14,7 @@ public abstract class NotificationSessionBase<NotificationIdType> : INotificatio
     protected abstract void NativeShowSilent();
 
     private CancellationTokenSource? _durationCts;
-    private readonly CallbackHandler<NotificationIdType> _callbackHandler;
-
-    protected NotificationSessionBase(CallbackHandler<NotificationIdType> callbackHandler)
-    {
-        _callbackHandler = callbackHandler;
-    }
+    private readonly CallbackHandler<NotificationIdType> _callbackHandler = callbackHandler;
 
     public void CancelDurationTask()
     {

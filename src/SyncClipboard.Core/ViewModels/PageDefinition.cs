@@ -1,10 +1,10 @@
 ﻿namespace SyncClipboard.Core.ViewModels;
 
-public class PageDefinition
+public class PageDefinition(string name, string title, string? fontIcon = null)
 {
-    public string Name { get; set; }
-    public string Title { get; set; }
-    public string? FontIcon { get; set; }
+    public string Name { get; set; } = name;
+    public string Title { get; set; } = title;
+    public string? FontIcon { get; set; } = fontIcon ?? "\uE115";
 
     public static readonly PageDefinition SyncSetting = new("SyncSetting", I18n.Strings.Syncing, "\uEBD3");
     public static readonly PageDefinition CliboardAssistant = new("CliboardAssistant", I18n.Strings.Assistant, "\uF406");
@@ -17,13 +17,6 @@ public class PageDefinition
     public static readonly PageDefinition FileSyncFilterSetting = new("FileSyncFilterSetting", I18n.Strings.FileSyncFilter);
     public static readonly PageDefinition SyncContentControl = new("SyncContentControl", I18n.Strings.SyncContentControl);
     public static readonly PageDefinition Hotkey = new("Hotkey", I18n.Strings.Hotkeys, "\uE144");
-
-    public PageDefinition(string name, string title, string? fontIcon = null)
-    {
-        Name = name;
-        Title = title;
-        FontIcon = fontIcon ?? "\uE115";
-    }
 
     public override bool Equals(object? obj)
     {

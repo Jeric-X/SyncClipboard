@@ -5,23 +5,14 @@ using System.IO.Pipes;
 
 namespace SyncClipboard.Core.Utilities;
 
-public sealed class AppInstance : IDisposable
+public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposable
 {
     private const string ActiveCommand = "Active";
     private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
     private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
-
-    private readonly IMainWindow _mainWindow;
-    private readonly ILogger _logger;
     private bool _disposed = false;
 
     private CancellationTokenSource? _cancellationSource = null;
-
-    public AppInstance(IMainWindow window, ILogger logger)
-    {
-        _mainWindow = window;
-        _logger = logger;
-    }
 
     ~AppInstance() => Dispose();
 
@@ -38,10 +29,7 @@ public sealed class AppInstance : IDisposable
 
     public async void WaitForOtherInstanceToActiveAsync()
     {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(AppInstance));
-        }
+        ObjectDisposedException.ThrowIf(_disposed, nameof(AppInstance));
 
         CancelWaitForOtherInstanceToActiveAsync();
         Interlocked.CompareExchange(ref _cancellationSource, new CancellationTokenSource(), null);
@@ -58,12 +46,12 @@ public sealed class AppInstance : IDisposable
 
                 if (command is ActiveCommand)
                 {
-                    _mainWindow?.Show();
+                    window?.Show();
                 }
             }
             catch (Exception ex)
             {
-                _logger.Write(ex.ToString());
+                logger.Write(ex.ToString());
             }
         }
     }

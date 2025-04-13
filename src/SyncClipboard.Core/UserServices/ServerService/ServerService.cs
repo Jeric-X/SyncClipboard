@@ -4,8 +4,9 @@ using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Server.Core;
 
-namespace SyncClipboard.Core.UserServices;
+namespace SyncClipboard.Core.UserServices.ServerService;
 
 public class ServerService : Service
 {
@@ -78,7 +79,7 @@ public class ServerService : Service
         {
             try
             {
-                app = await Server.Web.StartAsync(
+                using var _ = app = await Web.StartAsync(
                     new ServerPara(
                         _serverConfig.Port,
                         Env.AppDataDirectory,

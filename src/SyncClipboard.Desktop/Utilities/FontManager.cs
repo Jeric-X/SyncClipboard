@@ -7,7 +7,7 @@ internal class FontManager : IFontManager
 {
     public List<string> GetInstalledFontNames()
     {
-        List<string> fontNames = new List<string>();
+        List<string> fontNames = [];
         foreach (var item in Avalonia.Media.FontManager.Current.SystemFonts)
         {
             // item.Key

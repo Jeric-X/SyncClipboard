@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.Utilities.Web
         public static async Task<Type?> PostTextRecieveJson<Type>(this HttpClient httpClient, string url,
             IEnumerable<KeyValuePair<string, string>>? list = null, CancellationToken? cancellationToken = null)
         {
-            list ??= Array.Empty<KeyValuePair<string, string>>();
+            list ??= [];
             var res = await httpClient.PostAsync(url, new FormUrlEncodedContent(list), cancellationToken ?? CancellationToken.None);
             res.EnsureSuccessStatusCode();
             return await res.Content.ReadFromJsonAsync<Type>();

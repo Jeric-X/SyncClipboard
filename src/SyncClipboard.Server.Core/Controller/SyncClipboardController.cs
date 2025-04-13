@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using SyncClipboard.Abstract;
 using System.Text.Json;
 
-namespace SyncClipboard.Server.Controller;
+namespace SyncClipboard.Server.Core.Controller;
 
 public class SyncClipboardController
 {
@@ -80,16 +80,16 @@ public class SyncClipboardController
     {
         var rootPath = app.Environment.WebRootPath;
 
-        app.MapMethods("/", new string[] { "PROPFIND" }, () =>
+        app.MapMethods("/", ["PROPFIND"], () =>
             Results.Ok()).ExcludeFromDescription().RequireAuthorization();
 
-        app.MapMethods("/file", new string[] { "PROPFIND", "MKCOL" }, () =>
+        app.MapMethods("/file", ["PROPFIND", "MKCOL"], () =>
             ExistOrCreateFolder(Path.Combine(rootPath, "file"))).ExcludeFromDescription().RequireAuthorization();
 
         app.MapDelete("/file", () =>
             DeleteFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
 
-        app.MapMethods("/file/{fileName}", new string[] { "HEAD", "GET" }, async (string fileName) =>
+        app.MapMethods("/file/{fileName}", ["HEAD", "GET"], async (string fileName) =>
         {
             if (InvalidFileName(fileName))
             {

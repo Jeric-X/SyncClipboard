@@ -12,8 +12,8 @@ public class HotkeyManager
 {
     private readonly INativeHotkeyRegistry _nativeHotkeyRegistry;
     private readonly ConfigManager _configManager;
-    private readonly List<UniqueCommandCollection> _commandCollections = new List<UniqueCommandCollection>();
-    private readonly Dictionary<Guid, HotkeyStatus> _hotkeyCommandMap = new();
+    private readonly List<UniqueCommandCollection> _commandCollections = [];
+    private readonly Dictionary<Guid, HotkeyStatus> _hotkeyCommandMap = [];
 
     private HotkeyConfig _hotkeyConfig = new();
 
@@ -56,7 +56,7 @@ public class HotkeyManager
 
     private List<UniqueCommand> DeleteHotkeyCommandMap(IEnumerable<Guid> guids)
     {
-        List<UniqueCommand> registedCommands = new();
+        List<UniqueCommand> registedCommands = [];
         foreach (var guid in guids)
         {
             var status = _hotkeyCommandMap[guid];

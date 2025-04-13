@@ -2,11 +2,12 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract.Notification;
 using Windows.UI.Notifications;
 
-namespace SyncClipboard.Core.Utilities.Notification
+namespace SyncClipboard.Windows.Notification
 {
-    public class ProgressBar : ToastSession, IProgressBar
+    public class ProgressBar(string title, ToastNotifier notifer, CallbackHandler<string> callbackHandler)
+        : ToastSession(title, notifer, callbackHandler), IProgressBar
     {
-        private readonly ToastNotifier _notifer;
+        private readonly ToastNotifier _notifer = notifer;
 
         public string? ProgressTitle { get; set; }
         public double? ProgressValue { get; set; }
@@ -72,12 +73,6 @@ namespace SyncClipboard.Core.Utilities.Notification
             {
                 Show();
             }
-        }
-
-        public ProgressBar(string title, ToastNotifier notifer, CallbackHandler<string> callbackHandler)
-            : base(title, notifer, callbackHandler)
-        {
-            _notifer = notifer;
         }
     }
 }

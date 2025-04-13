@@ -10,7 +10,7 @@ internal sealed class Notification : INotification, IDisposable
 {
     private readonly IDbusNotifications _dBusInstance;
     private readonly CallbackHandler<uint> _callbackHandler = new();
-    private readonly List<IDisposable> _disposables = new();
+    private readonly List<IDisposable> _disposables = [];
 
     public Notification()
     {

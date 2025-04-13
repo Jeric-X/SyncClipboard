@@ -13,8 +13,8 @@ namespace SyncClipboard.Core.Commons
         protected string Path { get; set; } = null!;
         protected INotification? Notification { get; set; } = null;
 
-        private readonly Dictionary<string, Type> _registedTypeList = new();
-        private readonly Dictionary<string, HashSet<MessageDispatcher>> _registedChangedHandlerList = new();
+        private readonly Dictionary<string, Type> _registedTypeList = [];
+        private readonly Dictionary<string, HashSet<MessageDispatcher>> _registedChangedHandlerList = [];
 
         private JsonNode _jsonNode = new JsonObject();
         private JsonNode _jsonNodeBackUp = new JsonObject();
@@ -62,13 +62,14 @@ namespace SyncClipboard.Core.Commons
         public void ListenConfig<T>(string key, MessageHandler<T> action)
         {
             RegistConfigType(key, typeof(T));
-            if (_registedChangedHandlerList.ContainsKey(key))
+
+            if (_registedChangedHandlerList.TryGetValue(key, out HashSet<MessageDispatcher>? dispatchers))
             {
-                _registedChangedHandlerList[key].Add(new MessageDispatcher.For<T>(action));
+                dispatchers.Add(new MessageDispatcher.For<T>(action));
             }
             else
             {
-                _registedChangedHandlerList.Add(key, new HashSet<MessageDispatcher>() { new MessageDispatcher.For<T>(action) });
+                _registedChangedHandlerList.Add(key, [new MessageDispatcher.For<T>(action)]);
             }
         }
 
@@ -111,13 +112,13 @@ namespace SyncClipboard.Core.Commons
 
         private void NotifyRegistedHandler(string key, Type type, JsonNode? jsonNode)
         {
-            if (!_registedChangedHandlerList.ContainsKey(key))
+            if (!_registedChangedHandlerList.TryGetValue(key, out HashSet<MessageDispatcher>? dispathers))
             {
                 return;
             }
 
             var obj = jsonNode.Deserialize(type) ?? Activator.CreateInstance(type);
-            foreach (var handler in _registedChangedHandlerList[key])
+            foreach (var handler in dispathers)
             {
                 if (obj is not null)
                 {
@@ -130,9 +131,9 @@ namespace SyncClipboard.Core.Commons
         {
             foreach (var configNode in _jsonNode.AsObject())
             {
-                if (_registedTypeList.ContainsKey(configNode.Key))
+                if (_registedTypeList.TryGetValue(configNode.Key, out Type? type))
                 {
-                    NotifyRegistedHandler(configNode.Key, _registedTypeList[configNode.Key], configNode.Value);
+                    NotifyRegistedHandler(configNode.Key, type, configNode.Value);
                 }
             }
         }
