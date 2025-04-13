@@ -4,8 +4,8 @@ namespace SyncClipboard.Core.Utilities.Image
 {
     public static class ImageHelper
     {
-        public static readonly string[] ImageExtensions = { ".jpg", ".jpeg", ".gif", ".bmp", ".png" };
-        public static readonly string[] ExImageExtensions = { ".heic", ".heif", ".webp", ".avif" };
+        public static readonly string[] ImageExtensions = [".jpg", ".jpeg", ".gif", ".bmp", ".png"];
+        public static readonly string[] ExImageExtensions = [".heic", ".heif", ".webp", ".avif"];
 
         public static bool FileIsImage(string filename)
         {

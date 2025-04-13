@@ -28,8 +28,8 @@ public class ConfigManager : ConfigBase
         Path = portableUserConfig ? Env.PortableUserConfigFile : Env.UserConfigFile;
     }
 
-    public MenuItem[] Menu => new[]
-    {
+    public MenuItem[] Menu =>
+    [
         new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(Path)),
 #if MACOS
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),
@@ -44,5 +44,5 @@ public class ConfigManager : ConfigBase
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),
         new MenuItem(I18n.Strings.OpenDataFolderInNautilus, new Action(() => Process.Start("nautilus", $"\"{Env.AppDataDirectory}\"")).NoExcept())
 #endif
-    };
+    ];
 }

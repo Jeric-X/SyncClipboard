@@ -5,7 +5,7 @@ namespace SyncClipboard.Core.Utilities.Updater;
 
 public class AppVersion : IComparable<AppVersion>
 {
-    private readonly List<int> _versions = new();
+    private readonly List<int> _versions = [];
     private readonly int? _betaNum = null;
 
     public static AppVersion Parse(string versionStr)

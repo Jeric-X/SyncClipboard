@@ -36,7 +36,7 @@ internal class NotificationSession : NotificationSessionBase<uint>
 
     protected override void NativeShow()
     {
-        List<string> actionList = new();
+        List<string> actionList = [];
         foreach (var button in Buttons)
         {
             actionList.Add(button.Uid.ToString());

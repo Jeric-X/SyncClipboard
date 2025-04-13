@@ -2,10 +2,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Abstract;
-using SyncClipboard.Server.Controller;
+using SyncClipboard.Server.Core.Controller;
+using SyncClipboard.Server.Core.CredentialChecker;
 using System.Text.Json.Serialization;
 
-namespace SyncClipboard.Server;
+namespace SyncClipboard.Server.Core;
 
 public class Web
 {

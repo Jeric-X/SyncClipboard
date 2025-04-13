@@ -2,7 +2,7 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using SyncClipboard.Abstract.Notification;
 using Windows.UI.Notifications;
 
-namespace SyncClipboard.Core.Utilities.Notification
+namespace SyncClipboard.Windows.Notification
 {
     public class NotificationManager : IDisposable, INotification
     {
@@ -21,7 +21,7 @@ namespace SyncClipboard.Core.Utilities.Notification
 
         public void SendText(string title, string text, params Button[] buttons)
         {
-            new ToastSession(title, Notifer, _callbackHandler) { Text1 = text, Buttons = new(buttons) }.Show();
+            new ToastSession(title, Notifer, _callbackHandler) { Text1 = text, Buttons = [.. buttons] }.Show();
         }
 
         public void SendImage(string title, string text, Uri uri, params Button[] buttons)
@@ -29,7 +29,7 @@ namespace SyncClipboard.Core.Utilities.Notification
             new ToastSession(title, Notifer, _callbackHandler)
             {
                 Text1 = text,
-                Buttons = new(buttons),
+                Buttons = [.. buttons],
                 Image = uri
             }.Show();
         }
@@ -43,7 +43,7 @@ namespace SyncClipboard.Core.Utilities.Notification
                 _tempSession = new ToastSession(para.Title, Notifer, _callbackHandler)
                 {
                     Text1 = para.Text,
-                    Buttons = new(para.Buttons),
+                    Buttons = [.. para.Buttons],
                     Image = para.Image,
                     Duration = para.Duration ?? TimeSpan.FromSeconds(2.0),
                 };

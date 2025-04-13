@@ -17,7 +17,7 @@ namespace SyncClipboard.Core.AbstractClasses
             public bool Created { get; set; } = false;
         }
 
-        private readonly OrderedDictionary _groupInfos = new();
+        private readonly OrderedDictionary _groupInfos = [];
 
         public void AddMenuItemGroup(MenuItem[] menuItems, string? group = null)
         {

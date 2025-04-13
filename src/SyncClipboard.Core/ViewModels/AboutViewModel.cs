@@ -70,8 +70,8 @@ public partial class AboutViewModel : ObservableObject
         }
     }
 
-    public List<OpenSourceSoftware> Dependencies { get; } = new()
-    {
+    public List<OpenSourceSoftware> Dependencies { get; } =
+    [
         new OpenSourceSoftware("Magick.NET", "https://github.com/dlemstra/Magick.NET", "Magick.NET/License.txt"),
         new OpenSourceSoftware(".NET Community Toolkit", "https://github.com/CommunityToolkit/dotnet", ".NETCommunityToolkit/License.md"),
         new OpenSourceSoftware("H.NotifyIcon", "https://github.com/HavenDV/H.NotifyIcon", "H.NotifyIcon/LICENSE.md"),
@@ -84,7 +84,7 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("Tmds.DBus", "https://github.com/tmds/Tmds.DBus", "Tmds.DBus/LICENSE.txt"),
         new OpenSourceSoftware("SharpHook", "https://github.com/TolikPylypchuk/SharpHook", "SharpHook/LICENSE.txt"),
         new OpenSourceSoftware("DotNetZip.Semverd", "https://github.com/haf/DotNetZip.Semverd", "DotNetZip.Semverd/LICENSE.txt"),
-    };
+    ];
 
     [RelayCommand]
     public void OpenUpdateUrl()

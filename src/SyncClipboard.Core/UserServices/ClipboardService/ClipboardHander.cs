@@ -2,7 +2,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 
-namespace SyncClipboard.Core.UserServices;
+namespace SyncClipboard.Core.UserServices.ClipboardService;
 
 abstract public class ClipboardHander : Service
 {

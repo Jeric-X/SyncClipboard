@@ -8,6 +8,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
+using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
@@ -68,7 +69,7 @@ namespace SyncClipboard.Core
             RegisterForSystemHotkey(mainWindow);
             InitTrayIcon();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
-            contextMenu.AddMenuItemGroup(new MenuItem[] { new(Strings.Exit, mainWindow.ExitApp) });
+            contextMenu.AddMenuItemGroup([new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
             CheckUpdate();
         }

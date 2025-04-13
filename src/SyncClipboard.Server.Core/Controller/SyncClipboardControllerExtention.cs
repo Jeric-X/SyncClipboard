@@ -1,6 +1,7 @@
 ﻿using SyncClipboard.Abstract;
+using SyncClipboard.Server.Controller;
 
-namespace SyncClipboard.Server.Controller;
+namespace SyncClipboard.Server.Core.Controller;
 
 public static class SyncClipboardControllerExtention
 {

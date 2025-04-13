@@ -18,8 +18,8 @@ namespace SyncClipboard.Desktop.Utilities;
 internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 {
     private readonly IGlobalHook _globalHook;
-    private readonly HashSet<KeyCode> _pressingKeys = new();
-    private readonly Dictionary<Hotkey, Action> _registedHotkeys = new();
+    private readonly HashSet<KeyCode> _pressingKeys = [];
+    private readonly Dictionary<Hotkey, Action> _registedHotkeys = [];
 
     private readonly AutoResetEvent _globalHookRunEvent = new(false);
 

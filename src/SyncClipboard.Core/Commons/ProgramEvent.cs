@@ -1,26 +1,17 @@
 namespace SyncClipboard.Core.Commons
 {
-    public class ProgramEvent
+    public class ProgramEvent(Action<ProgramEvent.ProgramEventHandler> addAction, Action<ProgramEvent.ProgramEventHandler> removeAction)
     {
         public delegate void ProgramEventHandler();
 
-        private readonly Action<ProgramEventHandler> _addAction;
-        private readonly Action<ProgramEventHandler> _removeAction;
-
-        public ProgramEvent(Action<ProgramEventHandler> addAction, Action<ProgramEventHandler> removeAction)
-        {
-            _addAction = addAction;
-            _removeAction = removeAction;
-        }
-
         public void Add(ProgramEventHandler handler)
         {
-            _addAction(handler);
+            addAction(handler);
         }
 
         public void Remove(ProgramEventHandler handler)
         {
-            _removeAction(handler);
+            removeAction(handler);
         }
     }
 }

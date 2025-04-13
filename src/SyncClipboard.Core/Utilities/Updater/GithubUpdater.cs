@@ -5,21 +5,10 @@ using System.Net.Http.Json;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-public class GithubUpdater
+public class GithubUpdater(IHttp http, IAppConfig appConfig, ConfigManager configManager)
 {
-    public string Version => _appConfig.AppVersion;
-    private string UpdateApiUrl => _appConfig.UpdateApiUrl;
-
-    private readonly IHttp _http;
-    private readonly IAppConfig _appConfig;
-    private readonly ConfigManager _config;
-
-    public GithubUpdater(IHttp http, IAppConfig appConfig, ConfigManager configManager)
-    {
-        _http = http;
-        _appConfig = appConfig;
-        _config = configManager;
-    }
+    public string Version => appConfig.AppVersion;
+    private string UpdateApiUrl => appConfig.UpdateApiUrl;
 
     public async Task<(bool, GitHubRelease)> Check()
     {
@@ -37,10 +26,10 @@ public class GithubUpdater
 
     private async Task<GitHubRelease> GetlatestRelease()
     {
-        var allowPrerelease = _config.GetConfig<ProgramConfig>().CheckUpdateForBeta;
+        var allowPrerelease = configManager.GetConfig<ProgramConfig>().CheckUpdateForBeta;
         for (int i = 1; ; i++)
         {
-            var releaseList = await _http.GetHttpClient().GetFromJsonAsync<List<GitHubRelease>>($"{UpdateApiUrl}?page={i}");
+            var releaseList = await http.GetHttpClient().GetFromJsonAsync<List<GitHubRelease>>($"{UpdateApiUrl}?page={i}");
             ArgumentNullException.ThrowIfNull(releaseList);
             foreach (var release in releaseList)
             {

@@ -51,8 +51,8 @@ public record class ClipboardMetaInfomation
 
     public override int GetHashCode()
     {
-        List<int> hashList = new()
-        {
+        List<int> hashList =
+        [
             EqualityContract.GetHashCode(),
             Text?.GetHashCode() ?? 0,
             Html?.GetHashCode() ?? 0,
@@ -60,13 +60,13 @@ public record class ClipboardMetaInfomation
             Effects?.GetHashCode() ?? 0,
             OriginalType?.GetHashCode() ?? 0,
             Image?.GetHashCode() ?? 0,
-        };
+        ];
 
         return hashList.ListHashCode();
     }
 
     public override string ToString()
     {
-        return $"Text={Text} Html={Html} Files='{string.Join(',', Files ?? Array.Empty<string>())}' DragDropEffects={Effects} OriginalType={OriginalType}";
+        return $"Text={Text} Html={Html} Files='{string.Join(',', Files ?? [])}' DragDropEffects={Effects} OriginalType={OriginalType}";
     }
 }

@@ -22,7 +22,7 @@ public class GroupProfile : FileProfile
     private GroupProfile(IEnumerable<string> files, string hash, bool contentControl)
         : base(Path.Combine(LocalTemplateFolder, $"{Path.GetRandomFileName()}.zip"), hash)
     {
-        _files = files.ToArray();
+        _files = [.. files];
         ContentControl = contentControl;
     }
 

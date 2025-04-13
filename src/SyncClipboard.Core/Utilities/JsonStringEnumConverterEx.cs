@@ -7,8 +7,8 @@ namespace SyncClipboard.Core.Utilities;
 // From https://github.com/dotnet/runtime/issues/31081#issuecomment-848697673
 public class JsonStringEnumConverterEx<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
 {
-    private readonly Dictionary<TEnum, string> _enumToString = new Dictionary<TEnum, string>();
-    private readonly Dictionary<string, TEnum> _stringToEnum = new Dictionary<string, TEnum>();
+    private readonly Dictionary<TEnum, string> _enumToString = [];
+    private readonly Dictionary<string, TEnum> _stringToEnum = [];
 
     public JsonStringEnumConverterEx()
     {

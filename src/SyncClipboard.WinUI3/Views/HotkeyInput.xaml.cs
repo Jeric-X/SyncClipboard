@@ -12,8 +12,8 @@ namespace SyncClipboard.WinUI3.Views;
 
 public sealed partial class HotkeyInput : UserControl
 {
-    private readonly HashSet<VK> _pressedKeys = new();
-    private readonly HashSet<VK> _pressingKeys = new();
+    private readonly HashSet<VK> _pressedKeys = [];
+    private readonly HashSet<VK> _pressingKeys = [];
     private SafeHHOOK? _keyboardHook;
     // 不能直接把方法名作为delegate传入native调用，会被GC回收
     private readonly HookProc _hookProc;

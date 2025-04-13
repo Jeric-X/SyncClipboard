@@ -4,7 +4,7 @@ using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Desktop.Default.Views;
 
-public class TrayIconImpl : Desktop.Views.TrayIconImpl
+public class TrayIconImpl(ServiceStatusViewModel serviceStatusViewModel) : Desktop.Views.TrayIconImpl(serviceStatusViewModel)
 {
     private const string ResPath = "avares://SyncClipboard.Desktop.Default/Assets";
     private static readonly WindowIcon _DefaultIcon = new WindowIcon(AssetLoader.Open(new Uri($"{ResPath}/default.png")));
@@ -12,10 +12,6 @@ public class TrayIconImpl : Desktop.Views.TrayIconImpl
 
     protected override WindowIcon DefaultIcon => _DefaultIcon;
     protected override WindowIcon ErrorIcon => _ErrorIcon;
-
-    public TrayIconImpl(ServiceStatusViewModel serviceStatusViewModel) : base(serviceStatusViewModel)
-    {
-    }
 
     protected override IEnumerable<WindowIcon> UploadIcons()
     {

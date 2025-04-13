@@ -2,7 +2,7 @@ namespace SyncClipboard.Core.Commons
 {
     public static class Event
     {
-        private static readonly Dictionary<string, ProgramEvent> _savedEvent = new();
+        private static readonly Dictionary<string, ProgramEvent> _savedEvent = [];
 
         public static bool RegistEvent(string eventName, ProgramEvent programEvent)
         {
@@ -26,9 +26,9 @@ namespace SyncClipboard.Core.Commons
 
         public static bool RegistEventHandler(string eventName, ProgramEvent.ProgramEventHandler eventhandler)
         {
-            if (_savedEvent.ContainsKey(eventName))
+            if (_savedEvent.TryGetValue(eventName, out ProgramEvent? programEvent))
             {
-                _savedEvent[eventName].Add(eventhandler);
+                programEvent.Add(eventhandler);
                 return true;
             }
 
@@ -37,9 +37,9 @@ namespace SyncClipboard.Core.Commons
 
         public static bool UnRegistEventHandler(string eventName, ProgramEvent.ProgramEventHandler eventhandler)
         {
-            if (_savedEvent.ContainsKey(eventName))
+            if (_savedEvent.TryGetValue(eventName, out ProgramEvent? value))
             {
-                _savedEvent[eventName].Remove(eventhandler);
+                value.Remove(eventhandler);
                 return true;
             }
 

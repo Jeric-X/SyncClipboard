@@ -1,15 +1,9 @@
 ﻿namespace SyncClipboard.Core.Utilities;
 
-public sealed class ScopeGuard : IDisposable
+public sealed class ScopeGuard(Action action) : IDisposable
 {
-    private readonly Action _action;
-    public ScopeGuard(Action action)
-    {
-        _action = action;
-    }
-
     public void Dispose()
     {
-        _action?.Invoke();
+        action?.Invoke();
     }
 }

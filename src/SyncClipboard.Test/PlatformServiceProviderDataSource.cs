@@ -10,20 +10,20 @@ public class PlatformServiceProviderDataSource : ServiceProviderDataSourceBase
 {
     public override IEnumerable<object[]> GetData(MethodInfo methodInfo)
     {
-        Type[] requiredService = {
+        Type[] requiredService = [
             typeof(IClipboardFactory),
             typeof(IProfileDtoHelper),
             typeof(IClipboardChangingListener),
             typeof(IClipboardSetter<TextProfile>),
             typeof(IClipboardSetter<FileProfile>),
             typeof(IClipboardSetter<ImageProfile>)
-        };
+        ];
 
-        List<object[]> res = new();
+        List<object[]> res = [];
 
         foreach (Type serviceType in requiredService)
         {
-            res.Add(new object[] { serviceType });
+            res.Add([serviceType]);
         }
 
         return res;

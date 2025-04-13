@@ -1,4 +1,6 @@
-using SyncClipboard.Server.Controller;
+using SyncClipboard.Server.Core;
+using SyncClipboard.Server.Core.Controller;
+using SyncClipboard.Server.Core.CredentialChecker;
 
 namespace SyncClipboard.Server;
 

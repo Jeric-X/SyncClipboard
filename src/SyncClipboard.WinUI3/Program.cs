@@ -10,10 +10,10 @@ using WinRT;
 
 namespace SyncClipboard.WinUI3;
 
-public static class Program
+public static partial class Program
 {
-    [DllImport("Microsoft.ui.xaml.dll")]
-    private static extern void XamlCheckProcessRequirements();
+    [LibraryImport("Microsoft.ui.xaml.dll")]
+    private static partial void XamlCheckProcessRequirements();
 
     [STAThread]
     private static void Main(string[] _)

@@ -15,7 +15,7 @@ namespace SyncClipboard.Desktop.ViewModels;
 
 internal partial class DiagnoseViewModel : ObservableObject
 {
-    public ObservableCollection<string> ClipboardTypes { get; } = new();
+    public ObservableCollection<string> ClipboardTypes { get; } = [];
 
     private ProgramConfig _config;
     [ObservableProperty]
@@ -57,7 +57,7 @@ internal partial class DiagnoseViewModel : ObservableObject
     {
         ClipboardTypes.Clear();
         var types = await App.Current.Clipboard.GetFormatsAsync();
-        foreach (var item in types ?? Array.Empty<string>())
+        foreach (var item in types ?? [])
         {
             var str = item;
             try

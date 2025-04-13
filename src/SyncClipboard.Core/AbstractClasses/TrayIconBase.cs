@@ -18,7 +18,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     private IEnumerator<IconType>? _dynamicIconEnumerator;
     private IconType? @staticIcon = null;
     private IconType StaticIcon { get => @staticIcon ?? DefaultIcon; set => @staticIcon = value; }
-    private readonly Dictionary<string, string> _statusList = new();
+    private readonly Dictionary<string, string> _statusList = [];
 
     protected abstract IconType DefaultIcon { get; }
     protected abstract IconType ErrorIcon { get; }

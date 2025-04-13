@@ -2,13 +2,13 @@
 using System.Runtime.InteropServices;
 using Microsoft.Toolkit.Uwp.Notifications;
 
-namespace SyncClipboard.Core.Utilities.Notification
+namespace SyncClipboard.Windows.Notification
 {
     // Modified from https://github.com/pr8x/DesktopNotifications
-    public sealed class Register
+    public sealed partial class Register
     {
-        [DllImport("shell32.dll", SetLastError = true)]
-        private static extern void SetCurrentProcessExplicitAppUserModelID(
+        [LibraryImport("shell32.dll", SetLastError = true)]
+        private static partial void SetCurrentProcessExplicitAppUserModelID(
             [MarshalAs(UnmanagedType.LPWStr)] string appId);
 
         public static void UnRegistFromCurrentProcess()

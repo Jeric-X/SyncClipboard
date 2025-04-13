@@ -40,8 +40,7 @@ public partial class MainView : UserControl
         }
         else
         {
-            if (_viewModel.MainWindowPage.Contains(PageDefinition.Diagnose))
-                _viewModel.MainWindowPage.Remove(PageDefinition.Diagnose);
+            _viewModel.MainWindowPage.Remove(PageDefinition.Diagnose);
         }
     }
 
