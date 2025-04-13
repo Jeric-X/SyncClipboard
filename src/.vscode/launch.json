@@ -26,7 +26,7 @@
             "preLaunchTask": "DebugDesktop",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net6.0/SyncClipboard.Desktop.Default.dll"
+                "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -43,7 +43,7 @@
             "preLaunchTask": "DebugDesktop",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net6.0/SyncClipboard.Desktop.Default.dll"
+                "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -59,7 +59,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "ReleaseAva",
-            "program": "${workspaceFolder}/SyncClipboard.Desktop/bin/Release/net6.0/linux-x64/publish/SyncClipboard.Desktop",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop/bin/Release/net8.0/linux-x64/publish/SyncClipboard.Desktop",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -77,7 +77,7 @@
             "preLaunchTask": "Debug",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/SyncClipboard.Server/bin/Debug/net6.0/publish/SyncClipboard.Server.dll",
+                "${workspaceFolder}/SyncClipboard.Server/bin/Debug/net8.0/publish/SyncClipboard.Server.dll",
                 "--contentRoot",
                 "./"
             ],
@@ -96,7 +96,7 @@
             "preLaunchTask": "Release",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/SyncClipboard.Server/bin/Release/net6.0/publish/SyncClipboard.Server.dll",
+                "${workspaceFolder}/SyncClipboard.Server/bin/Release/net8.0/publish/SyncClipboard.Server.dll",
                 "--contentRoot",
                 "./"
             ],
@@ -113,7 +113,7 @@
             "type": "coreclr",
             "preLaunchTask": "Build Debug WinUI",
             "request": "launch",
-            "program": "SyncClipboard.WinUI3/bin/x64/Debug/net6.0-windows10.0.19041.0/win10-x64/SyncClipboard.exe",
+            "program": "SyncClipboard.WinUI3/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/SyncClipboard.exe",
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,
@@ -127,7 +127,7 @@
             "type": "coreclr",
             "preLaunchTask": "Build Release WinUI",
             "request": "launch",
-            "program": "SyncClipboard.WinUI3/bin/x64/Release/net6.0-windows10.0.19041.0/win10-x64/SyncClipboard.exe",
+            "program": "SyncClipboard.WinUI3/bin/x64/Release/net8.0-windows10.0.19041.0/win-x64/SyncClipboard.exe",
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,
