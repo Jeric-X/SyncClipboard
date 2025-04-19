@@ -1,0 +1,18 @@
+name: release-draft
+
+permissions:
+  contents: write
+
+on:
+  workflow_call:
+
+jobs:
+  release-draft:
+    runs-on: windows-latest
+    steps:
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          draft: true
+          allowUpdates: false
+          prerelease: ${{ contains(github.ref_name, 'beta') }}

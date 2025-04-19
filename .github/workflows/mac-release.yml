@@ -29,32 +29,21 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - name: Download version
+      - name: Download last-job-built change log
         uses: actions/download-artifact@v4
         with:
-          name: version-desktop
-
-      - name: Download feature
-        uses: actions/download-artifact@v4
-        with:
-          name: feature-desktop
-
-      - name: Read version
-        id: version
-        uses: juliangruber/read-file-action@v1
-        with:
-          path: version.txt
+          name: feature
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+          name: "SyncClipboard_macos_${{ matrix.cpu }}.dmg"
 
       - name: Release
         uses: ncipollo/release-action@v1
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
           allowUpdates: true
+          draft: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-          artifacts: SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg
+          artifacts: SyncClipboard_macos_${{ matrix.cpu }}.dmg
           bodyFile: feature.txt

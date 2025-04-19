@@ -4,6 +4,9 @@
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
+        public const string AppVersion = "2.9.0";
+        public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
+        public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
         public const string RemoteProfilePath = "SyncClipboard.json";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;

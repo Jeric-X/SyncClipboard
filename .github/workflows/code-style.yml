@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  build:
+  check:
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
@@ -17,9 +17,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          6.0.x
           8.0.x
-          9.0.x
 
     - name: Install dependencies
       working-directory: ./src

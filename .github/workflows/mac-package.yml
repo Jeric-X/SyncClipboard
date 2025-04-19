@@ -55,17 +55,6 @@ jobs:
           dotnet publish SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
         working-directory: ./src/SyncClipboard.Desktop.MacOS
 
-      - name: Download version
-        uses: actions/download-artifact@v4
-        with:
-          name: version-desktop
-
-      - name: Read version
-        id: version
-        uses: juliangruber/read-file-action@v1
-        with:
-          path: version.txt
-
       - name: mv app
         run: | 
           mv src/SyncClipboard.Desktop.MacOS/bin/Release/net8.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app
@@ -102,11 +91,11 @@ jobs:
         working-directory: ./build/macos
 
       - name: Change name
-        run: mv SyncClipboard.dmg "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+        run: mv SyncClipboard.dmg "SyncClipboard_macos_${{ matrix.cpu }}.dmg"
         working-directory: ./build/macos
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: "SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
-          path: "build/macos/SyncClipboard_${{ steps.version.outputs.content }}_macos_${{ matrix.cpu }}.dmg"
+          name: "SyncClipboard_macos_${{ matrix.cpu }}.dmg"
+          path: "build/macos/SyncClipboard_macos_${{ matrix.cpu }}.dmg"
