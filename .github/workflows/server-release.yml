@@ -1,5 +1,8 @@
 name: server-release
 
+permissions:
+  contents: write
+
 on:
   workflow_call:
 
@@ -56,3 +59,24 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: jericx/syncclipboard-server
         readme-filepath: src/SyncClipboard.Server/README_DOCKER.md
+
+    - name: Download last-job-built artifact SyncClipboard.Server
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/download-artifact@v4
+      with:
+        name: SyncClipboard.Server
+        path: Server/
+
+    - name: Zip SyncClipboard.Server
+      if: startsWith(github.ref, 'refs/tags/')
+      run: 7z a SyncClipboard.Server.zip .\Server\*
+
+    - name: Release to gh
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: ncipollo/release-action@v1
+      with:
+        allowUpdates: true
+        draft: true
+        prerelease: ${{ contains(github.ref_name, 'beta') }}
+        artifacts: SyncClipboard_macos_${{ matrix.cpu }}.dmg
+        bodyFile: SyncClipboard.Server.zip

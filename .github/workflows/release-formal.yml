@@ -1,0 +1,17 @@
+name: release-formal
+
+permissions:
+  contents: write
+
+on:
+  workflow_call:
+
+jobs:
+  release-formal:
+    runs-on: windows-latest
+    steps:
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          draft: false
+          allowUpdates: true

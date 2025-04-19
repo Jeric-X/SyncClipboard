@@ -44,11 +44,17 @@ jobs:
             cpu: arm64
             package-head: syncclipboard_
             package-tail: _arm64
-        exclude: # rpmbuild arm64 failed
+          # - package-type: rpm
+          #   cpu: arm64
+          #   package-head: syncclipboard_
+          #   package-tail: .arm64
+          - type: self-contained
+            package-dotnet-runtime: _with-dotnet-runtime
+          - type: no-self-contained
+            package-dotnet-runtime: ''
+        exclude: # rpmbuild arm64 failed https://github.com/kuiperzone/PupNet-Deploy/issues/3
           - package-type: rpm
             cpu: arm64
-            # package-head: syncclipboard_
-            # package-tail: .arm64
 
     runs-on: ubuntu-latest
     needs: build
@@ -63,8 +69,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
-            6.0.x
-            7.0.x
             8.0.x
 
       - name: Download last-job-built artifact
@@ -73,16 +77,10 @@ jobs:
           name: linux-${{ matrix.cpu }}-${{ matrix.type }}
           path: linux-bin/
 
-      - name: Download version
+      - name: Download last-job-built change log
         uses: actions/download-artifact@v4
         with:
-          name: version-desktop
-
-      - name: Read version
-        id: version
-        uses: juliangruber/read-file-action@v1
-        with:
-          path: version.txt
+          name: feature
 
       - name: Install pupnet and denpendencies
         run: |
@@ -90,13 +88,22 @@ jobs:
           sudo apt install libfuse2
 
       - name: Package
-        run: |
-          chmod +x PostPublish.sh
-          pupnet linux.pupnet.conf --app-version ${{ steps.version.outputs.content }} --kind ${{ matrix.package-type }} -r linux-${{ matrix.cpu }} -y
+        run: >
+          chmod +x package.sh &&
+          ./package.sh
+          -k ${{ matrix.package-type }}
+          -r linux-${{ matrix.cpu }}
+          -s ../../linux-bin/
         working-directory: ./build/linux
+
+      - name: rename package
+        run: >
+          mv ${{ matrix.package-head }}*-1${{ matrix.package-tail }}.${{ matrix.package-type }}
+          SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+        working-directory: ./build/linux/output
 
       - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.package-head }}${{ steps.version.outputs.content }}_linux_${{ matrix.type }}${{ matrix.package-tail }}.${{ matrix.package-type }}
-          path: build/linux/output/${{ matrix.package-head }}${{ steps.version.outputs.content }}-1${{ matrix.package-tail }}.${{ matrix.package-type }}
+          name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}

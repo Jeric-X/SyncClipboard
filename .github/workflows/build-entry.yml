@@ -20,7 +20,7 @@ jobs:
       checkout-ref: ${{ github.ref }}
 
   build-win:
-    needs: [build-server, prebuild]
+    needs: prebuild
     uses: ./.github/workflows/win-release.yml
 
   build-server:
@@ -28,7 +28,6 @@ jobs:
     secrets: inherit
 
   build-linux:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     needs: prebuild
     uses: ./.github/workflows/linux-release.yml
     with:
@@ -36,9 +35,17 @@ jobs:
       checkout-ref: ${{ github.ref }}
     
   build-mac:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     needs: prebuild
     uses: ./.github/workflows/mac-release.yml
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
+  
+  create-gh-release-draft:
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    uses: ./.github/workflows/release-draft.yml
+
+  create-gh-release-formal:
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    needs: [create-gh-release-draft, build-win, build-server, build-linux, build-mac]
+    uses: ./.github/workflows/release-formal.yml

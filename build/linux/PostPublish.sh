@@ -19,7 +19,10 @@ echo Do work...
 set -x #echo on
 echo Copying files
 # build on Windows first, put outputs in [../linux/] foleder
-cp -r ../../linux-bin/* ${BUILD_APP_BIN}/
+build_bin_dir=$(readlink -f './build_bin')
+echo build_bin_dir full path : $bin_source_dir
+
+cp -r ./build_bin/* ${BUILD_APP_BIN}/
 set +x #echo off
 
 echo

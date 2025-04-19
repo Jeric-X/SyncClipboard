@@ -33,20 +33,8 @@ jobs:
         name: feature
         path: feature.txt
 
-    - name: Generate desktop change log
-      run: |
-        .\ReadDesktopChanges.bat
-        type feature.txt
-      working-directory: ./build
-  
     - name: Upload desktop change log
       uses: actions/upload-artifact@v4
       with:
         name: feature-desktop
         path: build/feature.txt
-
-    - name: Upload desktop version
-      uses: actions/upload-artifact@v4
-      with:
-        name: version-desktop
-        path: build/version.txt

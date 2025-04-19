@@ -11,36 +11,33 @@ jobs:
     uses: ./.github/workflows/win-build.yml
 
   win-release:
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+        dotnet_runtime: ['true', 'false']
+        win_app_sdk: ['true', 'false']
+        include:
+          - dotnet_runtime: 'true'
+            dotnet_runtime_filename: '_with-dotnet-runtime'
+          - dotnet_runtime: 'false'
+            dotnet_runtime_filename: ''
+          - win_app_sdk: 'true'
+            win_app_sdk_filename: '_with-win-app-sdk'
+          - win_app_sdk: 'false'
+            win_app_sdk_filename: ''
+
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     needs: win-build
     runs-on: windows-latest
     steps:
-      - name: Download last-job-built artifact SyncClipboard.Server
-        uses: actions/download-artifact@v4
-        with:
-          name: SyncClipboard.Server
-          path: Server/
-
       - name: Download last-job-built artifact SyncClipboard.WinUI3
         uses: actions/download-artifact@v4
         with:
           name: SyncClipboard.WinUI3
           path: WinUI3/
 
-      - name: Download last-job-built artifact SyncClipboard.WinUI3.SelfContained
-        uses: actions/download-artifact@v4
-        with:
-          name: SyncClipboard.WinUI3.SelfContained
-          path: WinUI3.SelfContained/
-
-      - name: Zip SyncClipboard.Server
-        run: 7z a SyncClipboard.Server.zip .\Server\*
-
       - name: Zip SyncClipboard.WinUI3
-        run: 7z a SyncClipboard.zip .\WinUI3\*
-
-      - name: Zip SyncClipboard.WinUI3.SelfContained
-        run: 7z a SyncClipboard.SelfContained.zip .\WinUI3.SelfContained\*
+        run: 7z a SyncClipboard_win_${{ matrix.cpu }}_portable${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip .\WinUI3\*
 
       - name: Download last-job-built change log
         uses: actions/download-artifact@v4
@@ -52,12 +49,11 @@ jobs:
           tree /f
           type feature.txt
 
-      - name: Publish Github Release
-        uses: softprops/action-gh-release@v1
+      - name: Release
+        uses: ncipollo/release-action@v1
         with:
-          body_path: feature.txt
+          draft: true
+          allowUpdates: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-          files: |
-            SyncClipboard.Server.zip
-            SyncClipboard.zip
-            SyncClipboard.SelfContained.zip
+          artifacts: SyncClipboard_win_${{ matrix.cpu }}_portable${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip
+          bodyFile: feature.txt

@@ -462,3 +462,4 @@ build/featuretemp.txt
 /src/SyncClipboard.Server/server/
 .VSCodeCounter/
 /src/NewReport1.upgrade.json
+build/linux/build_bin/
