@@ -5,7 +5,7 @@ on:
 
 jobs:
   check:
-    runs-on: windows-latest  # For a list of available runner types, refer to
+    runs-on: macos-14  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     steps:
@@ -32,7 +32,7 @@ jobs:
         dotnet format --verify-no-changes --no-restore
 
     - name: Check code style info
+      continue-on-error: true
       working-directory: ./src
       run: |
         dotnet format --verify-no-changes --severity info --no-restore
-        exit 0

@@ -32,9 +32,3 @@ jobs:
       with:
         name: feature
         path: feature.txt
-
-    - name: Upload desktop change log
-      uses: actions/upload-artifact@v4
-      with:
-        name: feature-desktop
-        path: build/feature.txt
