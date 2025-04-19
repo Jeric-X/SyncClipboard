@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Utilities;
 
-internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
+internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 {
     private readonly IGlobalHook _globalHook;
     private readonly HashSet<KeyCode> _pressingKeys = [];
@@ -24,8 +24,9 @@ internal class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
     private readonly AutoResetEvent _globalHookRunEvent = new(false);
 
     [SupportedOSPlatform("macos")]
-    [DllImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
-    private extern static bool AXIsProcessTrusted();
+    [LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool AXIsProcessTrusted();
     private bool _newPermissionApplied = false;
 
     public bool SupressHotkey { get; set; } = false;
