@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 namespace SyncClipboard.Windows.Notification
@@ -90,22 +91,22 @@ namespace SyncClipboard.Windows.Notification
         }
 
         // IPropertyStore Interface
-        [ComImport]
+        [GeneratedComInterface]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         [Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")]
-        private interface IPropertyStore
+        internal partial interface IPropertyStore
         {
-            uint GetCount([Out] out uint cProps);
-            uint GetAt([In] uint iProp, out PropertyKey pkey);
-            uint GetValue([In] ref PropertyKey key, [Out] PropVariant pv);
-            uint SetValue([In] ref PropertyKey key, [In] PropVariant pv);
-            uint Commit();
+            internal uint GetCount(out uint cProps);
+            internal uint GetAt(uint iProp, out PropertyKey pkey);
+            internal uint GetValue(in PropertyKey key, ref PropVariant pv);
+            internal uint SetValue(in PropertyKey key, ref PropVariant pv);
+            internal uint Commit();
         }
 
         // PropertyKey Structure
         // Narrowed down from PropertyKey.cs of Windows API Code Pack 1.1
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private readonly struct PropertyKey
+        internal readonly struct PropertyKey
         {
             #region Fields
 
@@ -141,11 +142,11 @@ namespace SyncClipboard.Windows.Notification
         // Originally from http://blogs.msdn.com/b/adamroot/archive/2008/04/11
         // /interop-with-propvariants-in-net.aspx
         [StructLayout(LayoutKind.Explicit)]
-        private sealed class PropVariant : IDisposable
+        public struct PropVariant
         {
             #region Fields
 
-            [FieldOffset(0)] private ushort valueType; // Value type
+            [FieldOffset(0)] public ushort valueType; // Value type
 
             // [FieldOffset(2)]
             // ushort wReserved1; // Reserved field
@@ -154,7 +155,7 @@ namespace SyncClipboard.Windows.Notification
             // [FieldOffset(6)]
             // ushort wReserved3; // Reserved field
 
-            [FieldOffset(8)] private readonly IntPtr ptr; // Value
+            [FieldOffset(8)] public IntPtr ptr; // Value
 
             #endregion
 
@@ -163,58 +164,23 @@ namespace SyncClipboard.Windows.Notification
             // Value type (System.Runtime.InteropServices.VarEnum)
             public VarEnum VarType
             {
-                get => (VarEnum)valueType;
+                readonly get => (VarEnum)valueType;
                 set => valueType = (ushort)value;
             }
 
             // Whether value is empty or null
-            public bool IsNullOrEmpty =>
+            public readonly bool IsNullOrEmpty =>
                 valueType == (ushort)VarEnum.VT_EMPTY ||
                 valueType == (ushort)VarEnum.VT_NULL;
 
             // Value (only for string value)
-            public string? Value => Marshal.PtrToStringUni(ptr);
-
-            #endregion
-
-            #region Constructor
-
-            public PropVariant()
-            {
-            }
-
-            // Construct with string value
-            public PropVariant(string value)
-            {
-                if (value == null)
-                {
-                    throw new ArgumentException("Failed to set value.");
-                }
-
-                valueType = (ushort)VarEnum.VT_LPWSTR;
-                ptr = Marshal.StringToCoTaskMemUni(value);
-            }
-
-            #endregion
-
-            #region Destructor
-
-            ~PropVariant()
-            {
-                Dispose();
-            }
-
-            public void Dispose()
-            {
-                PropVariantClear(this);
-                GC.SuppressFinalize(this);
-            }
+            public readonly string? Value => Marshal.PtrToStringUni(ptr);
 
             #endregion
         }
 
-        [DllImport("Ole32.dll", PreserveSig = false)]
-        private static extern void PropVariantClear([In][Out] PropVariant pvar);
+        [LibraryImport("Ole32.dll")]
+        private static partial int PropVariantClear(ref PropVariant pvar);
 
         #endregion
 
@@ -317,16 +283,22 @@ namespace SyncClipboard.Windows.Notification
         {
             get
             {
-                using PropVariant pv = new();
-                VerifySucceeded(PropertyStore.GetValue(AppUserModelIDKey, pv));
-
-                return pv.Value ?? "Null";
+                PropVariant pv = new();
+                VerifySucceeded(PropertyStore.GetValue(in AppUserModelIDKey, ref pv));
+                var valueStr = pv.Value ?? "Null";
+                Marshal.ThrowExceptionForHR(PropVariantClear(ref pv));
+                return valueStr;
             }
             set
             {
-                using PropVariant pv = new(value);
-                VerifySucceeded(PropertyStore.SetValue(AppUserModelIDKey, pv));
+                PropVariant pv = new()
+                {
+                    valueType = (ushort)VarEnum.VT_LPWSTR,
+                    ptr = Marshal.StringToCoTaskMemUni(value)
+                };
+                VerifySucceeded(PropertyStore.SetValue(in AppUserModelIDKey, ref pv));
                 VerifySucceeded(PropertyStore.Commit());
+                Marshal.ThrowExceptionForHR(PropVariantClear(ref pv));
             }
         }
 

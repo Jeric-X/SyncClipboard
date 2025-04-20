@@ -8,13 +8,13 @@ namespace SyncClipboard.Test.Desktop;
 [TestClass]
 public class ServiceProvider
 {
-    IServiceProvider? Services { get; set; }
+    Microsoft.Extensions.DependencyInjection.ServiceProvider? Services { get; set; }
 
     [TestInitialize]
     public void InitializeServices()
     {
         var servicesCollection = AppServices.ConfigureServices();
-        //servicesCollection.AddSingleton<IMainWindow>(new Mock<IMainWindow>().Object);
+        //servicesCollection.AddSingleton<IMainWindow>(new Mock<IMainWindow>().Object);  
         servicesCollection.AddSingleton<IContextMenu>(new Mock<IContextMenu>().Object);
         Services = servicesCollection.BuildServiceProvider();
     }

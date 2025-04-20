@@ -119,7 +119,7 @@ namespace SyncClipboard.WinUI3.Views
             _ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         }
 
-        private void SettingWindow_Closed(object sender, WindowEventArgs args)
+        private void SettingWindow_Closed(object _, WindowEventArgs args)
         {
             this.AppWindow.Hide();
             args.Handled = true;
@@ -164,7 +164,7 @@ namespace SyncClipboard.WinUI3.Views
             _viewModel.BreadcrumbBarClicked(args.Index);
         }
 
-        private void Window_SizeChanged(object sender, WindowSizeChangedEventArgs args)
+        private void Window_SizeChanged(object _, WindowSizeChangedEventArgs args)
         {
             if (args.Size.Width < 800)
             {

@@ -23,7 +23,7 @@ namespace SyncClipboard.WinUI3.Views
             _viewModel = App.Current.Services.GetRequiredService<HotkeyViewModel>();
         }
 
-        private async void EditButtonClick(object sender, RoutedEventArgs e)
+        private async void EditButtonClick(object sender, RoutedEventArgs _)
         {
             _viewModel.EditingHotkey = Hotkey.Nothing;
             _viewModel.EditingGuid = (Guid)((Button)sender).DataContext;

@@ -8,7 +8,7 @@ namespace SyncClipboard.Test.WinUI3;
 [TestClass]
 public class ServiceProvider
 {
-    IServiceProvider? Services { get; set; }
+    Microsoft.Extensions.DependencyInjection.ServiceProvider? Services { get; set; }
 
     [TestInitialize]
     public void InitializeServices()

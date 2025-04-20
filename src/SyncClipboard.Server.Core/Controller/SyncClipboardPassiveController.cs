@@ -1,7 +1,6 @@
 ﻿using SyncClipboard.Abstract;
-using SyncClipboard.Server.Core.Controller;
 
-namespace SyncClipboard.Server.Controller;
+namespace SyncClipboard.Server.Core.Controller;
 
 public class SyncClipboardPassiveController : SyncClipboardController, IDisposable
 {

@@ -79,7 +79,7 @@ public class ServerService : Service
         {
             try
             {
-                using var _ = app = await Web.StartAsync(
+                app = await Web.StartAsync(
                     new ServerPara(
                         _serverConfig.Port,
                         Env.AppDataDirectory,
