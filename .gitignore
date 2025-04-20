@@ -463,3 +463,5 @@ build/featuretemp.txt
 .VSCodeCounter/
 /src/NewReport1.upgrade.json
 build/linux/build_bin/
+TODO.md
+docs/image/todo/FluentAvaloniaContentDialog.png

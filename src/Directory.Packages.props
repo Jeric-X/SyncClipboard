@@ -10,30 +10,30 @@
     <PackageVersion Include="Magick.NET-Q16-arm64" Version="13.5.0" />
     <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="13.5.0" />
     <PackageVersion Include="Magick.NET.SystemDrawing" Version="7.2.1" />
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.2" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
     <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.1" />
     <PackageVersion Include="CodeCracker.CSharp" Version="1.1.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="11.1.0-beta1" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.1.0-beta1" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.1.0-beta1" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.1.0-beta1" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.1.0-beta1" />
-    <PackageVersion Include="FluentAvaloniaUI" Version="2.0.5" />
+    <PackageVersion Include="Avalonia" Version="11.2.8" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.2.8" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.2.8" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.2.8" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.2.8" />
+    <PackageVersion Include="FluentAvaloniaUI" Version="2.3.0" />
     <PackageVersion Include="FluentAvalonia.BreadcrumbBar" Version="2.0.2" />
     <PackageVersion Include="Tmds.DBus" Version="0.18.0" />
     <PackageVersion Include="SharpHook" Version="5.2.3" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="3.3.1" />
-    <PackageVersion Include="MSTest.TestFramework" Version="3.3.1" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="Moq" Version="4.20.70" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="3.8.3" />
+    <PackageVersion Include="MSTest.TestFramework" Version="3.8.3" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.0.240109" />

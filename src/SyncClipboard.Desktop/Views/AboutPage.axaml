@@ -18,11 +18,11 @@
         <DataTemplate x:Key="HyperLink" x:DataType="m:OpenSourceSoftware">
             <StackPanel Orientation="Vertical">
                 <TextBlock Text="{Binding Name}" />
-                <ui:HyperlinkButton Padding="0,0,0,-1"
-                                    Content="{Binding HomePage}"
-                                    FontSize="12"
-                                    Click="HyperlinkButton_Click"
-                                    FontWeight="SemiBold" />
+                <HyperlinkButton Padding="0,0,0,-1"
+                                 Content="{Binding HomePage}"
+                                 FontSize="12"
+                                 Click="HyperlinkButton_Click"
+                                 FontWeight="SemiBold" />
             </StackPanel>
         </DataTemplate>
         <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />

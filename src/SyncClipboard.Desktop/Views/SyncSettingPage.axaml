@@ -111,11 +111,11 @@
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsVisible="{Binding UseManulServer}">
-                    <ui:HyperlinkButton Padding="0,0,0,-1"
-                                        Content="{x:Static i18n:Strings.UseNextcloud}"
-                                        Command="{Binding LoginWithNextcloudCommand}"
-                                        FontSize="12"
-                                        FontWeight="SemiBold" />
+                    <HyperlinkButton Padding="0,0,0,-1"
+                                     Content="{x:Static i18n:Strings.UseNextcloud}"
+                                     Command="{Binding LoginWithNextcloudCommand}"
+                                     FontSize="12"
+                                     FontWeight="SemiBold" />
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
@@ -147,7 +147,7 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                 <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
                                          Command="{Binding OpenSyncContentControlPageCommand}"
                                          Content="{x:Static i18n:Strings.SyncContentControl}" />
