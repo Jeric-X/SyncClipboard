@@ -2,7 +2,7 @@ using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Diagnostics;
-#if LINUX
+#if WINDOWS || LINUX
 using SyncClipboard.Core.Utilities;
 #endif
 
@@ -38,7 +38,7 @@ public class ConfigManager : ConfigBase
         new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("open", $"\"{Env.AppDataDirectory}\""))
 #endif
 #if WINDOWS
-        new MenuItem(I18n.Strings.OpenConfigFile, () => Process.Start("notepad", $"\"{Path}\"")),
+        new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(Path)),
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),
         new MenuItem(I18n.Strings.OpenInstallFolder, () => Process.Start("explorer", $"\"{Env.ProgramDirectory}\"")),
         new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"\"{Env.AppDataDirectory}\"")),
