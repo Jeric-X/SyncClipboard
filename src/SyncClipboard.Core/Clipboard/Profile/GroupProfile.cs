@@ -1,4 +1,4 @@
-﻿using Ionic.Zip;
+using Ionic.Zip;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
 using SyncClipboard.Abstract.Notification;
@@ -46,7 +46,6 @@ public class GroupProfile : FileProfile
             var hash = await Task.Run(() => CaclHash(files, contentControl, token)).WaitAsync(token);
             return new GroupProfile(files, hash, contentControl);
         }
-
     }
 
     private static int FileCompare(FileInfo file1, FileInfo file2)
@@ -211,7 +210,7 @@ public class GroupProfile : FileProfile
 
     public override bool IsAvailableAfterFilter()
     {
-        bool hasItem = null != _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name));
+        bool hasItem = _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name)) != null;
         return hasItem && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadMultiFile;
     }
 }
