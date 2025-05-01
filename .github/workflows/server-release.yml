@@ -78,5 +78,4 @@ jobs:
         allowUpdates: true
         draft: true
         prerelease: ${{ contains(github.ref_name, 'beta') }}
-        artifacts: SyncClipboard_macos_${{ matrix.cpu }}.dmg
-        bodyFile: SyncClipboard.Server.zip
+        artifacts: SyncClipboard.Server.zip

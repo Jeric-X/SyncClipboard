@@ -14,17 +14,17 @@ jobs:
     strategy:
       matrix:
         cpu: [x64, arm64]
-        dotnet_runtime: ['true', 'false']
-        win_app_sdk: ['true', 'false']
+        dotnet_runtime: ['true']
+        win_app_sdk: ['true']
         include:
           - dotnet_runtime: 'true'
-            dotnet_runtime_filename: '_with-dotnet-runtime'
-          - dotnet_runtime: 'false'
             dotnet_runtime_filename: ''
+          - dotnet_runtime: 'false'
+            dotnet_runtime_filename: '_no-dotnet-runtime'
           - win_app_sdk: 'true'
-            win_app_sdk_filename: '_with-win-app-sdk'
-          - win_app_sdk: 'false'
             win_app_sdk_filename: ''
+          - win_app_sdk: 'false'
+            win_app_sdk_filename: '_no-win-app-sdk'
 
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     needs: win-build

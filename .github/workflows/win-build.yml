@@ -13,16 +13,16 @@ jobs:
         include:
           - dotnet_runtime: 'self-contained'
             if_self: 'true'
-            dotnet_runtime_filename: '_with-dotnet-runtime'
-          - dotnet_runtime: 'no-self-contained'
             dotnet_runtime_filename: ''
+          - dotnet_runtime: 'no-self-contained'
+            dotnet_runtime_filename: '_no-dotnet-runtime'
             if_self: 'false'
           - win_app_sdk: 'win_app_sdk'
             if_app_sdk: 'true'
-            win_app_sdk_filename: '_with-win-app-sdk'
+            win_app_sdk_filename: ''
           - win_app_sdk: 'no_win_app_sdk'
             if_app_sdk: 'false'
-            win_app_sdk_filename: ''
+            win_app_sdk_filename: '_no-win-app-sdk'
 
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
@@ -47,7 +47,7 @@ jobs:
       working-directory: ./src
       run: dotnet restore SyncClipboard.WinUI3
 
-      # msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /v:m -restore
+      # msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=true /v:m -restore
     - name: Build SyncClipboard.WinUI3
       run: >
         msbuild
