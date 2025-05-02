@@ -1,13 +1,13 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Animation;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using System;
-using SyncClipboard.Core.I18n;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Windows.Storage.Pickers;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -72,6 +72,47 @@ namespace SyncClipboard.WinUI3.Views
             _SyncSettingDialog.ErrorTip = res;
             args.Cancel = true;
             return;
+        }
+
+        private async Task<string?> GetFileByPicker(Button button, IEnumerable<string> types)
+        {
+            button.IsEnabled = false;
+            using ScopeGuard scropGuard = new(() => button.IsEnabled = true);
+
+            var openPicker = new FileOpenPicker
+            {
+                ViewMode = PickerViewMode.List
+            };
+            types.ForEach(openPicker.FileTypeFilter.Add);
+            openPicker.FileTypeFilter.Add("*");
+
+            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+            var window = ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>());
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+
+            // Initialize the file picker with the window handle (HWND).
+            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+            var file = await openPicker.PickSingleFileAsync();
+            return file?.Path;
+        }
+
+        private async void SetCertificatePemPath(object sender, Microsoft.UI.Xaml.RoutedEventArgs _)
+        {
+            var fileName = await GetFileByPicker((Button)sender, SyncSettingViewModel.CertificatePemFileTypes);
+            _viewModel.CertificatePemPath = fileName ?? _viewModel.CertificatePemPath;
+        }
+
+        private async void SetCertificatePemKeyPath(object sender, Microsoft.UI.Xaml.RoutedEventArgs _)
+        {
+            var fileName = await GetFileByPicker((Button)sender, SyncSettingViewModel.CertificatePemKeyFileTypes);
+            _viewModel.CertificatePemKeyPath = fileName ?? _viewModel.CertificatePemKeyPath;
+        }
+
+        private async void SetCustomConfigurationFilePath(object sender, Microsoft.UI.Xaml.RoutedEventArgs _)
+        {
+            var fileName = await GetFileByPicker((Button)sender, SyncSettingViewModel.CustomConfigurationFileTypes);
+            _viewModel.CustomConfigurationFilePath = fileName ?? _viewModel.CustomConfigurationFilePath;
         }
     }
 }

@@ -585,4 +585,25 @@
   <data name="OpenInstallFolder" xml:space="preserve">
     <value>Open Install Folder</value>
   </data>
+  <data name="EnableHttps" xml:space="preserve">
+    <value>Enable HTTPS</value>
+  </data>
+  <data name="CertificatePemPath" xml:space="preserve">
+    <value>PEM Certificate File Path</value>
+  </data>
+  <data name="CertificatePemKeyPath" xml:space="preserve">
+    <value>PEM Certificate Key File Path</value>
+  </data>
+  <data name="EnableCustomConfigurationFile" xml:space="preserve">
+    <value>Use Custom Configuration File</value>
+  </data>
+  <data name="CustomConfigurationFilePath" xml:space="preserve">
+    <value>Custom Configuration File Path</value>
+  </data>
+  <data name="CustomConfigFileDescription" xml:space="preserve">
+    <value>The custom configuration file is not used for the username and password</value>
+  </data>
+  <data name="CustomConfigFileLink" xml:space="preserve">
+    <value>https://github.com/Jeric-X/SyncClipboard/blob/master/docs/README_EN.md#server-configuration</value>
+  </data>
 </root>

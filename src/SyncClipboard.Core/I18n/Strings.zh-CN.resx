@@ -585,4 +585,25 @@
   <data name="OpenInstallFolder" xml:space="preserve">
     <value>打开程序所在目录</value>
   </data>
+  <data name="EnableHttps" xml:space="preserve">
+    <value>启用HTTPS</value>
+  </data>
+  <data name="CertificatePemPath" xml:space="preserve">
+    <value>PEM证书文件路径</value>
+  </data>
+  <data name="CertificatePemKeyPath" xml:space="preserve">
+    <value>PEM证书Key文件路径</value>
+  </data>
+  <data name="EnableCustomConfigurationFile" xml:space="preserve">
+    <value>使用自定义配置文件</value>
+  </data>
+  <data name="CustomConfigurationFilePath" xml:space="preserve">
+    <value>自定义配置文件路径</value>
+  </data>
+  <data name="CustomConfigFileDescription" xml:space="preserve">
+    <value>用户名和密码不会从自定义配置文件读取</value>
+  </data>
+  <data name="CustomConfigFileLink" xml:space="preserve">
+    <value>https://github.com/Jeric-X/SyncClipboard#服务器配置</value>
+  </data>
 </root>

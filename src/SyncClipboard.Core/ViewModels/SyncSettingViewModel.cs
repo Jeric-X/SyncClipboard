@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -9,18 +10,41 @@ public partial class SyncSettingViewModel : ObservableObject
 {
     #region server
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNormalClientEnable))]
-    [NotifyPropertyChangedFor(nameof(UseManulServer))]
-    [NotifyPropertyChangedFor(nameof(ClientEnabled))]
     private bool serverEnable;
     partial void OnServerEnableChanged(bool value) => ServerConfig = ServerConfig with { SwitchOn = value };
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNormalClientEnable))]
-    [NotifyPropertyChangedFor(nameof(UseManulServer))]
-    [NotifyPropertyChangedFor(nameof(ClientEnabled))]
     private bool clientMixedMode;
     partial void OnClientMixedModeChanged(bool value) => ServerConfig = ServerConfig with { ClientMixedMode = value };
+
+    [ObservableProperty]
+    private bool enableHttps;
+    partial void OnEnableHttpsChanged(bool value) => ServerConfig = ServerConfig with { EnableHttps = value };
+
+    public static readonly IEnumerable<string> CertificatePemFileTypes = [".pem"];
+    [ObservableProperty]
+    private string certificatePemPath;
+    partial void OnCertificatePemPathChanged(string value) => ServerConfig = ServerConfig with { CertificatePemPath = value };
+
+    public static readonly IEnumerable<string> CertificatePemKeyFileTypes = [".pem"];
+    [ObservableProperty]
+    private string certificatePemKeyPath;
+    partial void OnCertificatePemKeyPathChanged(string value) => ServerConfig = ServerConfig with { CertificatePemKeyPath = value };
+
+    [ObservableProperty]
+    private bool enableCustomConfigurationFile;
+    partial void OnEnableCustomConfigurationFileChanged(bool value) => ServerConfig = ServerConfig with { EnableCustomConfigurationFile = value };
+
+    public static readonly IEnumerable<string> CustomConfigurationFileTypes = [".json"];
+    [ObservableProperty]
+    private string customConfigurationFilePath;
+    partial void OnCustomConfigurationFilePathChanged(string value) => ServerConfig = ServerConfig with { CustomConfigurationFilePath = value };
+
+    [RelayCommand]
+    private static void OpenCustomConfigDescLink()
+    {
+        Sys.OpenWithDefaultApp(I18n.Strings.CustomConfigFileLink);
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
@@ -29,7 +53,19 @@ public partial class SyncSettingViewModel : ObservableObject
     {
         ServerEnable = value.SwitchOn;
         ClientMixedMode = value.ClientMixedMode;
+        EnableHttps = value.EnableHttps;
+        CertificatePemPath = value.CertificatePemPath;
+        CertificatePemKeyPath = value.CertificatePemKeyPath;
+        EnableCustomConfigurationFile = value.EnableCustomConfigurationFile;
+        CustomConfigurationFilePath = value.CustomConfigurationFilePath;
         _configManager.SetConfig(value);
+
+        OnPropertyChanged(nameof(IsNormalClientEnable));
+        OnPropertyChanged(nameof(UseManulServer));
+        OnPropertyChanged(nameof(ClientEnabled));
+        OnPropertyChanged(nameof(ShowHttpsConfig));
+        OnPropertyChanged(nameof(ShowHttpsCertConfig));
+        OnPropertyChanged(nameof(ShowUseLocalServelSwitch));
     }
 
     #endregion
@@ -149,7 +185,11 @@ public partial class SyncSettingViewModel : ObservableObject
 
     public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
 
-    public bool UseManulServer => !UseLocalServer && IsNormalClientEnable;
+    public bool UseManulServer => (!UseLocalServer || EnableCustomConfigurationFile) && IsNormalClientEnable;
+
+    public bool ShowHttpsConfig => !EnableCustomConfigurationFile;
+    public bool ShowHttpsCertConfig => EnableHttps && !EnableCustomConfigurationFile;
+    public bool ShowUseLocalServelSwitch => IsNormalClientEnable && !EnableCustomConfigurationFile;
 
     public bool ClientEnabled
     {
@@ -199,6 +239,11 @@ public partial class SyncSettingViewModel : ObservableObject
         serverConfig = _configManager.GetConfig<ServerConfig>();
         serverEnable = serverConfig.SwitchOn;
         clientMixedMode = serverConfig.ClientMixedMode;
+        enableHttps = serverConfig.EnableHttps;
+        certificatePemPath = serverConfig.CertificatePemPath;
+        certificatePemKeyPath = serverConfig.CertificatePemKeyPath;
+        enableCustomConfigurationFile = serverConfig.EnableCustomConfigurationFile;
+        customConfigurationFilePath = serverConfig.CustomConfigurationFilePath;
 
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
         clientConfig = _configManager.GetConfig<SyncConfig>();

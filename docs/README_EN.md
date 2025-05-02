@@ -9,13 +9,15 @@
   - [Features](#features)
   - [Server](#server)
     - [Standalone Server](#standalone-server)
+      - [Server Configuration](#server-configuration)
       - [Docker](#docker)
-      - [Docker Compose](#docker-compose)
+      - [Arch Linux](#arch-linux)
     - [Desktop Client Built-in Server](#desktop-client-built-in-server)
     - [WebDAV Server](#webdav-server)
   - [Client](#client)
     - [Windows](#windows)
     - [Linux, macOS](#linux-macos)
+    - [Arch Linux](#arch-linux-1)
     - [IOS](#ios)
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
@@ -40,28 +42,59 @@
 
 ## Server
 ### Standalone Server
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0). Run with:
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
-Content root folder is `SyncClipboard.Server.dll`'s parent folder, there will be temporary folders created when running.  
-Port, username, password can be changed in `appsettings.json`.  
-Choosing a different content root folder is possible. Copy a new `appsettings.json` to the folder and run with:
+Content root folder is `SyncClipboard.Server.dll`'s parent folder. Writing permission is needed. Choosing a different content root folder is possible. Copy a new `appsettings.json` to the folder and run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
 ```
 
-Username and password can be set by env variables. When env variables `SYNCCLIPBOARD_USERNAME` and `SYNCCLIPBOARD_PASSWORD` are both not empty, the two variables will be used as username and password.
+#### Server Configuration
+`appsettings.json` is the config file.
+```jsonc
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "Kestrel": {
+    "Endpoints": {
+      "http": {
+        "Url": "http://*:5033"
+      },
+      //"https": {
+      //  "Url": "https://*:5033"
+      //}
+    },
+    //"Certificates": {
+    //  "Default": {
+    //    "Path": "/path/to/pem",
+    //    "KeyPath": "/path/to/pem_key"
+    //  }
+    //}
+  },
+  "AppSettings": {
+    "UserName": "your_username",
+    "Password": "your_password"
+  }
+}
+```
+For more information, please refer to the [official Microsoft documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-8.0#configure-https-in-appsettingsjson).
 
-Notes：
-- Default Username is `admin`, default Password is `admin`, default port is `5033`.
-- Address to fill in client is `http://ip(or domain name):port`, nothing can be omitted.
-- Http is not encrypted, including username and password. A https reverse proxy is needed on public network.
+Username and password can be set by environment variables. When the environment variables SYNCCLIPBOARD_USERNAME and SYNCCLIPBOARD_PASSWORD are both set, they will be used as the username and password.
 
+> [!WARNING]  
+> HTTP transmits data in plaintext. When deploying the server on a public network, please enable HTTPS or configure HTTPS using a reverse proxy tool. If obtaining a certificate from a certificate authority is not possible, it is recommended to use the open-source tool [mkcert](https://github.com/FiloSottile/mkcert) or other methods to generate a self-signed certificate.
 
 #### Docker
 
-```
+```shell
+# docker
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
@@ -69,25 +102,12 @@ docker run -d \
   -e SYNCCLIPBOARD_PASSWORD=your_password \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
-```
 
-#### Docker Compose
-
-Copy a [docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml) file.
-
-```
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
-```
-
-Change env variables `SYNCCLIPBOARD_USERNAME` and `SYNCCLIPBOARD_PASSWORD` in `docker-compose.yml` to your username and password, then run
-
-```
+# docker compose
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml
 docker compose up -d
 ```
-
-Notes:
-- Server related files are under `src/SyncClipboard.Server` directory. You can download them manually.
-- Docker image is hosted on [Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server).
+To configure HTTPS, map the `appsettings.json` and certificate files manually. The path for `appsettings.json` inside the container is `/app/appsettings.json`.
 
 #### Arch Linux
 
@@ -97,14 +117,14 @@ You can install it directly from [AUR](https://aur.archlinux.org/packages/synccl
 paru -Sy syncclipboard-server
 ```
 
-Then edit its configuration file `/etc/syncclipboard/appsettings.json` as needed; be sure to change the username and password. Once modified, start the service (it is highly recommended to configure a reverse proxy and enable HTTPS):
+The configuration file path is `/etc/syncclipboard/appsettings.json`. After modifying the configuration, you can start the service using `systemctl` command:
 
 ```shell
 sudo systemctl enable --now syncclipboard.service
 ```
 
 ### Desktop Client Built-in Server
-Desktop client (Windows/Linux/macOS) has a built-in server, basically the same as standalone server but can be configured with GUI.
+Desktop client (Windows/Linux/macOS) has a built-in server, can be configured with GUI.
 
 ### WebDAV Server
   

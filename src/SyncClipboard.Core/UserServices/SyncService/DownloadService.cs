@@ -327,6 +327,10 @@ public class DownloadService : Service
                     ex = new Exception("Request timeout");
                 }
 
+                if (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
                 _toastReporter?.Cancel();
                 _toastReporter = null;
                 SetStatusOnError(ref errorTimes, ex);

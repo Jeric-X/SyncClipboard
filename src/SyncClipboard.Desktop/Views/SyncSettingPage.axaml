@@ -35,22 +35,30 @@
         <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}"
+                             Description="{x:Static i18n:Strings.ServerDescription}"
+                             IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE753;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.Footer>
-                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ServerEnable, Mode=TwoWay}" />
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                              OffContent="{x:Static i18n:Strings.Off}"
+                              IsChecked="{Binding ServerEnable, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
                 <ui:SettingsExpanderItem Description="{Binding ServerConfigDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
-                                <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                <ui:FontIcon FontSize="24"
+                                             Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}"
+                                             FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </ToggleButton>
                             <Button Click="SetServerConfig">
-                                <ui:FontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                <ui:FontIcon Glyph="&#xE115;"
+                                             FontSize="24"
+                                             FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </Button>
                         </StackPanel>
                     </ui:SettingsExpanderItem.Footer>
@@ -71,8 +79,60 @@
                                     </Flyout>
                                 </Button.Flyout>
                             </Button>
-                            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ClientMixedMode, Mode=TwoWay}" />
+                            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                          OffContent="{x:Static i18n:Strings.Off}"
+                                          IsChecked="{Binding ClientMixedMode, Mode=TwoWay}" />
                         </StackPanel>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableCustomConfigurationFile}" Description="{x:Static i18n:Strings.CustomConfigFileDescription}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Command="{Binding OpenCustomConfigDescLinkCommand}">
+                                <ui:FontIcon Glyph="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            </Button>
+                            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                          OffContent="{x:Static i18n:Strings.Off}"
+                                          IsChecked="{Binding EnableCustomConfigurationFile, Mode=TwoWay}" />
+                        </StackPanel>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CustomConfigurationFilePath}"
+                                         Description="{Binding CustomConfigurationFilePath, Mode=OneWay}"
+                                         IsVisible="{Binding EnableCustomConfigurationFile, Mode=OneWay}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Click="SetCustomConfigurationFilePath">
+                            <ui:FontIcon Glyph="&#xE838;" />
+                        </Button>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableHttps}" IsVisible="{Binding ShowHttpsConfig}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                      OffContent="{x:Static i18n:Strings.Off}"
+                                      IsChecked="{Binding EnableHttps, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemPath}"
+                                         Description="{Binding CertificatePemPath, Mode=OneWay}"
+                                         IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Click="SetCertificatePemPath">
+                            <ui:FontIcon Glyph="&#xE838;"
+                                         FontSize="24"
+                                         FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemKeyPath}"
+                                         Description="{Binding CertificatePemKeyPath, Mode=OneWay}"
+                                         IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Click="SetCertificatePemKeyPath">
+                            <ui:FontIcon Glyph="&#xE838;"
+                                         FontSize="24"
+                                         FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
@@ -88,26 +148,36 @@
                               IsEnabled="{Binding IsNormalClientEnable, Mode=OneWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.UseBuiltInServerDescription}" Content="{x:Static i18n:Strings.UseSelfHostServer}" IsVisible="{Binding IsNormalClientEnable}">
+                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.UseBuiltInServerDescription}"
+                                         Content="{x:Static i18n:Strings.UseSelfHostServer}"
+                                         IsVisible="{Binding ShowUseLocalServelSwitch}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UseLocalServer, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                      OffContent="{x:Static i18n:Strings.Off}"
+                                      IsChecked="{Binding UseLocalServer, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem IsVisible="{Binding UseManulServer}" Description="{Binding ClientConfigDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowClientPassword, Mode=TwoWay}">
-                                <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                <ui:FontIcon FontSize="24"
+                                             Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}"
+                                             FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </ToggleButton>
                             <Button Click="SetClientConfig">
-                                <ui:FontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                <ui:FontIcon Glyph="&#xE115;"
+                                             FontSize="24"
+                                             FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </Button>
                         </StackPanel>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem IsVisible="{Binding UseManulServer}" Content="{x:Static i18n:Strings.TrustInsecureCertificate}">
+                <ui:SettingsExpanderItem IsVisible="{Binding IsNormalClientEnable}" Content="{x:Static i18n:Strings.TrustInsecureCertificate}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                      OffContent="{x:Static i18n:Strings.Off}"
+                                      IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsVisible="{Binding UseManulServer}">
@@ -119,32 +189,44 @@
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding IntervalTime, Mode=TwoWay}" />
+                        <ui:NumberBox Minimum="0"
+                                      Maximum="100000"
+                                      Value="{Binding IntervalTime, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding RetryTimes, Mode=TwoWay}" />
+                        <ui:NumberBox Minimum="0"
+                                      Maximum="100000"
+                                      Value="{Binding RetryTimes, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding TimeOut, Mode=TwoWay}" />
+                        <ui:NumberBox Minimum="0"
+                                      Maximum="100000"
+                                      Value="{Binding TimeOut, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DeleteServerTemporaryFileAutoly}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDeleleServerFile, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                      OffContent="{x:Static i18n:Strings.Off}"
+                                      IsChecked="{Binding AutoDeleleServerFile, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterManuallyUpload}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnManualUpload, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                      OffContent="{x:Static i18n:Strings.Off}"
+                                      IsChecked="{Binding NotifyOnManualUpload, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}"
+                                      OffContent="{x:Static i18n:Strings.Off}"
+                                      IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"

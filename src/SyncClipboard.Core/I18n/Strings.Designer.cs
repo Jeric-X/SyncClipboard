@@ -115,6 +115,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 PEM Certificate Key File Path 的本地化字符串。
+        /// </summary>
+        public static string CertificatePemKeyPath {
+            get {
+                return ResourceManager.GetString("CertificatePemKeyPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 PEM Certificate File Path 的本地化字符串。
+        /// </summary>
+        public static string CertificatePemPath {
+            get {
+                return ResourceManager.GetString("CertificatePemPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 This change effects after restart 的本地化字符串。
         /// </summary>
         public static string ChangingLangInfo {
@@ -273,6 +291,33 @@ namespace SyncClipboard.Core.I18n {
         public static string CopyAppDataFolderPath {
             get {
                 return ResourceManager.GetString("CopyAppDataFolderPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 The custom configuration file is not used for the username and password 的本地化字符串。
+        /// </summary>
+        public static string CustomConfigFileDescription {
+            get {
+                return ResourceManager.GetString("CustomConfigFileDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 https://github.com/Jeric-X/SyncClipboard/blob/master/docs/README_EN.md#server-configuration 的本地化字符串。
+        /// </summary>
+        public static string CustomConfigFileLink {
+            get {
+                return ResourceManager.GetString("CustomConfigFileLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Custom Configuration File Path 的本地化字符串。
+        /// </summary>
+        public static string CustomConfigurationFilePath {
+            get {
+                return ResourceManager.GetString("CustomConfigurationFilePath", resourceCulture);
             }
         }
         
@@ -439,11 +484,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Use Custom Configuration File 的本地化字符串。
+        /// </summary>
+        public static string EnableCustomConfigurationFile {
+            get {
+                return ResourceManager.GetString("EnableCustomConfigurationFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Enable Downloading 的本地化字符串。
         /// </summary>
         public static string EnableDownload {
             get {
                 return ResourceManager.GetString("EnableDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enable HTTPS 的本地化字符串。
+        /// </summary>
+        public static string EnableHttps {
+            get {
+                return ResourceManager.GetString("EnableHttps", resourceCulture);
             }
         }
         

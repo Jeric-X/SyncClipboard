@@ -13,7 +13,19 @@ namespace SyncClipboard.Core.Utilities.Web
         protected override uint Timeout => _syncConfig.TimeOut != 0 ? _syncConfig.TimeOut : base.Timeout;
         protected override string User => _syncConfig.UseLocalServer ? _serverConfig.UserName : _syncConfig.UserName;
         protected override string Token => _syncConfig.UseLocalServer ? _serverConfig.Password : _syncConfig.Password;
-        protected override string BaseAddress => _syncConfig.UseLocalServer ? $"http://127.0.0.1:{_serverConfig.Port}" : _syncConfig.RemoteURL;
+        protected override string BaseAddress
+        {
+            get
+            {
+                if (_syncConfig.UseLocalServer && !_serverConfig.EnableCustomConfigurationFile)
+                {
+                    var protocol = _serverConfig.EnableHttps ? "https" : "http";
+                    return $"{protocol}://127.0.0.1:{_serverConfig.Port}";
+                }
+                return _syncConfig.RemoteURL;
+            }
+        }
+
         protected override bool TrustInsecureCertificate => _syncConfig.TrustInsecureCertificate;
 
         private readonly IAppConfig _appConfig;

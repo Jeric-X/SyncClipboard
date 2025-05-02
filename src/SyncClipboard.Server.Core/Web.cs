@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Abstract;
 using SyncClipboard.Server.Core.Controller;
 using SyncClipboard.Server.Core.CredentialChecker;
+using System.Net;
 using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Server.Core;
@@ -51,7 +52,39 @@ public class Web
                 WebRootPath = Path.Combine(serverConfig.Path, "server"),
             }
         );
-        builder.WebHost.UseUrls($"http://*:{serverConfig.Port}");
+
+        if (serverConfig.EnableCustomConfigurationFile)
+        {
+            var configFile = serverConfig.CustomConfigurationFilePath;
+            if (string.IsNullOrEmpty(configFile))
+            {
+                throw new ArgumentException("CustomConfigurationFilePath is empty");
+            }
+            builder.Configuration.AddJsonFile(configFile, optional: false, reloadOnChange: true);
+        }
+        else
+        {
+            if (serverConfig.EnableHttps)
+            {
+                var dict = new Dictionary<string, string?>
+                {
+                    {"Kestrel:Certificates:Default:KeyPath", serverConfig.CertificatePemKeyPath},
+                    {"Kestrel:Certificates:Default:Path", serverConfig.CertificatePemPath}
+                };
+                builder.Configuration.AddInMemoryCollection(dict);
+            }
+
+            builder.WebHost.UseKestrel((context, serverOptions) =>
+            {
+                serverOptions.Listen(IPAddress.Any, serverConfig.Port, listenOptions =>
+                {
+                    if (serverConfig.EnableHttps)
+                    {
+                        listenOptions.UseHttps();
+                    }
+                });
+            });
+        }
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);
         app.UseSyncCliboardServer(serverConfig);

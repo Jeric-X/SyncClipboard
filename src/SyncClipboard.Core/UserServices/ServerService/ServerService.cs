@@ -86,6 +86,11 @@ public class ServerService : Service
                         _serverConfig.UserName,
                         _serverConfig.Password,
                         _serverConfig.ClientMixedMode,
+                        _serverConfig.EnableHttps,
+                        _serverConfig.CertificatePemPath,
+                        _serverConfig.CertificatePemKeyPath,
+                        _serverConfig.EnableCustomConfigurationFile,
+                        _serverConfig.CustomConfigurationFilePath,
                         _programConfig.DiagnoseMode,
                         _serviceProvider
                     )

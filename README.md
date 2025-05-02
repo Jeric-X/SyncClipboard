@@ -10,13 +10,15 @@
   - [功能](#功能)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
+      - [服务器配置](#服务器配置)
       - [Docker](#docker)
-      - [Docker Compose](#docker-compose)
+      - [Arch Linux](#arch-linux)
     - [客户端内置服务器](#客户端内置服务器)
     - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
     - [Windows](#windows)
     - [Linux, macOS](#linux-macos)
+    - [Arch Linux](#arch-linux-1)
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
@@ -43,24 +45,57 @@
 
 ## 服务器
 ### 独立服务器
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 6.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/6.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 8.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
-工作目录与dll所在目录一致，会产生临时文件，在`appsettings.json`中可以修改绑定的ip和端口，以及客户端认证需要的用户名和密码  
-如需修改工作目录，拷贝一份appsettings.json到新工作目录并修改`--contentRoot`后的路径  
+工作目录与dll所在目录一致，需要写入权限。如需修改工作目录，拷贝一份`appsettings.json`到新工作目录并修改`--contentRoot`后的路径  
+
+#### 服务器配置
+服务器通过`appsettings.json`文件配置，形式如下：
+```jsonc
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "Kestrel": {
+    "Endpoints": {
+      "http": {
+        "Url": "http://*:5033"
+      },
+      //"https": {
+      //  "Url": "https://*:5033"
+      //}
+    },
+    //"Certificates": {
+    //  "Default": {
+    //    "Path": "/path/to/pem",
+    //    "KeyPath": "/path/to/pem_key"
+    //  }
+    //}
+  },
+  "AppSettings": {
+    "UserName": "your_username",
+    "Password": "your_password"
+  }
+}
+```
+如需启用HTTPS，请取消`https`和`Certificates`部分的注释，并设定HTTPS证书路径。最后将`http`部分注释或删除以关闭不安全的连接。如需同时启用HTTP和HTTPS，请将二者`Url`设置为不同的端口号  
+不同类型证书的配置方法可以参考[微软官方文档](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-9.0#configure-https-in-appsettingsjson)
 
 用户名和密码支持使用环境变量配置，当环境变量`SYNCCLIPBOARD_USERNAME`、`SYNCCLIPBOARD_PASSWORD`均不为空时，将优先使用这两个环境变量作为用户名和密码
 
-注意：
-- 默认用户名是`admin`，密码是`admin`，端口号是`5033`
-- 客户端处填写`http://ip:端口号`，`http`不可省略
-- http使用明文传输(包括本软件用于认证使用的基于Basic Auth的账号密码)，在公网部署考虑使用反向代理工具配置SSL
-- 内置服务器并不是WebDAV实现
+> [!WARNING]  
+> HTTP使用明文传输，在公共网络部署服务器请启用HTTPS或使用反向代理工具配置HTTPS。无法从证书颁发机构获取证书时，推荐使用开源工具[mkcert](https://github.com/FiloSottile/mkcert)或其他方式生成自签名证书
 
 #### Docker
 
-```
+```shell
+# docker
 docker run -d \
   --name=syncclipboard-server \
   -p 5033:5033 \
@@ -68,26 +103,12 @@ docker run -d \
   -e SYNCCLIPBOARD_PASSWORD=your_password \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
-```
 
-#### Docker Compose
-
-在宿主机中拷贝一份[docker-compose.yml](https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml)
-
-```
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml > docker-compose.yml
-```
-
-将`docker-compose.yml`文件中的`SYNCCLIPBOARD_USERNAME`、`SYNCCLIPBOARD_PASSWORD`等号后边修改为你的用户名和密码，或使用其他方式覆盖这两个环境变量  
-执行
-
-```
+# docker compose
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml
 docker compose up -d
 ```
-
-注意：
-- 服务器和容器相关文件储存在`src/SyncClipboard.Server`目录中，命令行无法下载时可以手动下载
-- Docker镜像的托管地址是[Docker Hub/jericx/syncclipboard-server](https://hub.docker.com/r/jericx/syncclipboard-server)
+如需配置HTTPS，请自行映射`appsettings.json`和证书文件，`appsettings.json`的容器内路径为`/app/appsettings.json`
 
 #### Arch Linux
 
@@ -97,7 +118,7 @@ docker compose up -d
 paru -Sy syncclipboard-server
 ```
 
-然后按需编辑其配置文件 `/etc/syncclipboard/appsettings.json`，用户名和密码一定要修改。修改后启动即可（强烈建议配置反代并启用https）：
+配置文件路径为`/etc/syncclipboard/appsettings.json`，修改配置后使用`systemctl`命令启动即可：
 
 ```shell
 sudo systemctl enable --now syncclipboard.service
@@ -105,7 +126,7 @@ sudo systemctl enable --now syncclipboard.service
 
 ### 客户端内置服务器
 
-桌面客户端（Windows/Linux/macOS）内置了服务器，可以使用可视界面配置，注意事项同上
+桌面客户端（Windows/Linux/macOS）内置了服务器功能，可以使用可视界面配置
 
 ### WebDAV服务器
 可以使用支持WebDAV协议的网盘作为服务器  
