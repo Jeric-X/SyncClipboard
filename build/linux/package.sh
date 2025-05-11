@@ -63,9 +63,18 @@ if [[ $bin_source_dir != $BIN_DIR ]]; then
 fi
 
 read -r version < $CHANGES_MD
-if [[ ${version:0:1} == "v" ]]; then
-    version=${version:1}
+
+beta_version='10000'
+if [[ $version == *"-beta"* ]]; then
+    beta_version=$(echo $version | grep -oP '(?<=-beta)\d+')
+    base_version=$(echo $version | sed -E 's/^v|(-beta[0-9]+)//g')
+else
+    base_version=$(echo $version | sed -E 's/^v//g')
 fi
+version=$base_version\[$beta_version\]
+
+echo "beta_version : $beta_version"
+echo "base_version : $base_version"
 echo "version : $version"
 
 pupnet $CONF_PATH --app-version $version --kind $package_kind -r $rid -y
