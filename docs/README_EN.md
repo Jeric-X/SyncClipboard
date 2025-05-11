@@ -16,8 +16,15 @@
     - [WebDAV Server](#webdav-server)
   - [Client](#client)
     - [Windows](#windows)
-    - [Linux, macOS](#linux-macos)
-    - [Arch Linux](#arch-linux-1)
+      - [Portable Version](#portable-version)
+      - [Troubleshooting](#troubleshooting)
+    - [macOS](#macos)
+      - [Manual Installation](#manual-installation)
+      - [Troubleshooting](#troubleshooting-1)
+    - [Linux](#linux)
+      - [手动安装](#手动安装)
+      - [Arch Linux](#arch-linux-1)
+      - [Troubleshooting](#troubleshooting-2)
     - [IOS](#ios)
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
@@ -147,38 +154,51 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 
 </details>
 
-### Windows   
-Download the `SyncClipboard.zip` from [Release](https://github.com/Jeric-X/SyncClipboard/releases/) Page.  
-After extracting, run `SyncClipboard.exe`.  
-  
-Dependencies：   
-- [.NET 6.0 Desktop](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer) runtime
-- [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer) runtime    
-- Windows10 2004 or above
-- Microsoft [Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font). It is included by default on Windows 11. You can download it [here](https://aka.ms/SegoeFluentIcons).
-  
-Notes: 
-- Config files are saved in `%AppData%\SyncClipboard\`. Users can delete them manually.
+### Windows
+#### Portable Version
 
-### Linux, macOS
-Downloading page: [SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboard.Desktop/releases)  
+Download the zip file starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Extract it and run `SyncClipboard.exe`.
 
-Notes:
-- File name with `no-self-contained`: [.NET 6.0 Desktop](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime and [ASP.NET Core 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) runtime are required.
-- File name with `self-contained`: should run with no dependencies.
-- Config files are saved in `~/.config/SyncClipboard/`(Linux), `~/Library/Application Support/SyncClipboard/`(macOS). Uninstaller won't delete them. Users can delete them manually.
-- Not suport upgrading directly with `deb` or `rpm` package. Delete old version first, then install the new version.
-- Linux: Hotkey is not supported on Wayland.
-- macOS: `"SyncClipboard" is damaged, can't be opened`. Use the following command in terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- macOS: Hotkey requires Accessibility permission. After installing a new version, the permission should be re-granted.
+#### Troubleshooting
+- The minimum supported OS version is Windows 10 2004.
+- If the interface icons are displayed incorrectly on Windows 10, download and install the Microsoft [Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons) font.
 
-### Arch Linux
+### macOS
+#### Manual Installation
+Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
 
-Arch Linux users can directly install from [AUR](https://aur.archlinux.org/packages/syncclipboard-desktop):
+#### Troubleshooting
+- System prompts `“SyncClipboard” cannot be opened because the developer cannot be verified`  
+Go to `Settings` -> `Privacy & Security` on macOS, and click `Open Anyway`.
+- System prompts `"SyncClipboard" is damaged, can't be opened`  
+Run the following command in the terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
+- Hotkeys require Accessibility permissions. The software will prompt for authorization when needed.
+
+### Linux
+#### 手动安装
+在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
+
+#### Arch Linux
+
+Arch Linux users can directly install from [AUR](https://aur.archlinux.org/packages/syncclipboard-desktop) (maintained by [@devome](https://github.com/devome)):
 
 ```shell
 paru -Sy syncclipboard-desktop
 ```
+
+After installation, you can launch it from the menu. If launching via the command `syncclipboard-desktop` results in an error, set the environment variable `LANG` to `en_US.UTF-8` or just start it using `LANG=en_US.UTF-8 syncclipboard-desktop`.
+
+#### Troubleshooting
+- When using `deb` or `rpm` packages, you need to uninstall the old version before installing a new one, as direct upgrades are not supported.
+- Hotkeys are not supported on Wayland.
+- The language cannot be auto-detected and defaults to English. You can change the language in SyncClipboard's settings after launching.
+
+> [!NOTE]  
+> SyncClipboard's configuration and temporary files are stored in:  
+> Windows: `%AppData%\SyncClipboard\`  
+> macOS: `~/Library/Application Support/SyncClipboard/`  
+> Linux: `~/.config/SyncClipboard/`  
+> To completely remove SyncClipboard, manually delete these directories.
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  

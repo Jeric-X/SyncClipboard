@@ -17,8 +17,15 @@
     - [WebDAV服务器](#webdav服务器)
   - [客户端](#客户端)
     - [Windows](#windows)
-    - [Linux, macOS](#linux-macos)
-    - [Arch Linux](#arch-linux-1)
+      - [免安装板](#免安装板)
+      - [故常排除](#故常排除)
+    - [macOS](#macos)
+      - [手动安装](#手动安装)
+      - [故常排除](#故常排除-1)
+    - [Linux](#linux)
+      - [手动安装](#手动安装-1)
+      - [Arch Linux](#arch-linux-1)
+      - [故常排除](#故常排除-2)
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
@@ -85,7 +92,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 }
 ```
 如需启用HTTPS，请取消`https`和`Certificates`部分的注释，并设定HTTPS证书路径。最后将`http`部分注释或删除以关闭不安全的连接。如需同时启用HTTP和HTTPS，请将二者`Url`设置为不同的端口号  
-不同类型证书的配置方法可以参考[微软官方文档](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-9.0#configure-https-in-appsettingsjson)
+不同类型证书的配置方法可以参考[微软官方文档](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-8.0#configure-https-in-appsettingsjson)
 
 用户名和密码支持使用环境变量配置，当环境变量`SYNCCLIPBOARD_USERNAME`、`SYNCCLIPBOARD_PASSWORD`均不为空时，将优先使用这两个环境变量作为用户名和密码  
 
@@ -150,39 +157,52 @@ sudo systemctl enable --now syncclipboard.service
 </details>
 
 ### Windows
-下载地址：[Release](https://github.com/Jeric-X/SyncClipboard/releases/)页面中的`SyncClipboard.zip`，解压缩后运行`SyncClipboard.exe`  
+#### 免安装板
 
-依赖：   
-- [.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
-- [ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.16-windows-x64-installer)，未安装会弹窗提醒并跳转到微软官方下载页面  
-- Windows10 2004及以上
-- 微软[Segoe Fluent Icons](https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font)图标字体，Windows11自带无需安装，Windows10需要手动下载安装（[官方地址](https://aka.ms/SegoeFluentIcons)），否则界面图标会大范围出错
+在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的zip文件，解压后运行`SyncClipboard.exe`
 
-注意：
-- 删除软件时，配置文件目录不会被删除，配置文件储存在`%AppData%\SyncClipboard\`，需要彻底删除软件时请手动删除整个目录
+#### 故常排除
+- 支持的最低系统版本为Windows10 2004
+- 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
-### Linux, macOS
-下载地址：[SyncClipboard.Desktop](https://github.com/Jeric-X/SyncClipboard.Desktop/releases)，根据系统选择你需要的安装包  
 
-注意：
-- 名称中带有`no-self-contained`：依赖[.NET 6.0桌面运行时](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)和[ASP.NET Core 6.0运行时](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
-- 名称中带有`self-contained`：通常可以直接运行
-- 删除软件时，配置文件目录不会被删除，配置文件储存在`~/.config/SyncClipboard/`(Linux)，`~/Library/Application Support/SyncClipboard/`(macOS)，需要彻底删除软件时请手动删除整个目录
-- 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
-- Linux: 快捷键在Wayland不可用
-- Linux: 无法自动识别语言，默认为英语
-- macOS: `“SyncClipboard”已损坏，无法打开`，在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- macOS: 快捷键依赖辅助功能权限(Accessibility)，软件在需要时会弹窗提示（所有快捷键为空时则不需要），每个新版本需要重新授予权限
+### macOS
+#### 手动安装
+在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 
-### Arch Linux
+#### 故常排除
+- 系统提示`由于开发者无法验证，“SyncClipboard”无法打开`  
+在macOS的`设置`->`隐私与安全性`页面，点击`仍要打开`
+- 系统提示`“SyncClipboard”已损坏，无法打开`  
+在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
+- 快捷键依赖辅助功能权限，软件在需要时会弹窗提示授权
 
-Arch Linux 用户可以直接从 [AUR](https://aur.archlinux.org/packages/syncclipboard-desktop) 安装：
+### Linux
+#### 手动安装
+在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
+
+#### Arch Linux
+
+Arch Linux 用户可以直接从[AUR](https://aur.archlinux.org/packages/syncclipboard-desktop)安装（由 [@devome](https://github.com/devome) 维护）：
 
 ```shell
 paru -Sy syncclipboard-desktop
 ```
 
-安装后从菜单中启动即可，如果要从命令行中启动，请注意需要英文环境，即以 `LANG=en_US.UTF-8 syncclipboard-desktop` 来启动，启动后可以在软件内设置语言为中文。配置保存路径为：`~/.config/SyncClipboard`。
+安装后从菜单中启动即可。如果在命令行中使用命令`syncclipboard-desktop`启动报错，请将环境变量`LANG`设置为`en_US.UTF-8`，以`LANG=en_US.UTF-8 syncclipboard-desktop`来启动。
+
+#### 故常排除
+- 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
+- 快捷键在Wayland不可用
+- 无法自动识别语言，默认为英语，启动后可以在SyncClipboard的设置中修改
+
+> [!NOTE]  
+> SyncClipboard的配置文件和临时文件存储在  
+> Windows: `%AppData%\SyncClipboard\`  
+> macOS: `~/Library/Application Support/SyncClipboard/`  
+> Linux: `~/.config/SyncClipboard/`  
+> 需要彻底删除SyncClipboard时请手动删除目录
+
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
