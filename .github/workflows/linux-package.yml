@@ -98,7 +98,7 @@ jobs:
 
       - name: rename package
         run: >
-          mv ${{ matrix.package-head }}*-1${{ matrix.package-tail }}.${{ matrix.package-type }}
+          mv ${{ matrix.package-head }}*-*${{ matrix.package-tail }}.${{ matrix.package-type }}
           SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
         working-directory: ./build/linux/output
 
