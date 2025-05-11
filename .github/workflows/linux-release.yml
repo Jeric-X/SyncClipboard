@@ -54,8 +54,8 @@ jobs:
           #   package-tail: .arm64
           - type: self-contained
             package-dotnet-runtime: ''
-          - type: no-self-contained
-            package-dotnet-runtime: '_no-dotnet-runtime'
+          # - type: no-self-contained
+          #   package-dotnet-runtime: '_no-dotnet-runtime'
         exclude: # rpmbuild arm64 failed https://github.com/kuiperzone/PupNet-Deploy/issues/3
           - package-type: rpm
             cpu: arm64
@@ -68,7 +68,7 @@ jobs:
         with:
           name: feature
 
-      - name: Download package
+      - name: Download package SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
         uses: actions/download-artifact@v4
         with:
           name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}

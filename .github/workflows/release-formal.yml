@@ -10,9 +10,15 @@ jobs:
   release-formal:
     runs-on: windows-latest
     steps:
+      - name: Download last-job-built change log
+        uses: actions/download-artifact@v4
+        with:
+          name: feature
+
       - name: Release
         uses: ncipollo/release-action@v1
         with:
           draft: false
           allowUpdates: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}
+          bodyFile: feature.txt

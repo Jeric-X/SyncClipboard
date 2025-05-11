@@ -65,5 +65,5 @@ jobs:
     - name: Upload build artifacts SyncClipboard.WinUI3
       uses: actions/upload-artifact@v4
       with:
-        name: SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip
+        name: win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}
         path: WinUI3/

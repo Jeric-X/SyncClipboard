@@ -49,9 +49,9 @@ jobs:
           #   package-head: syncclipboard_
           #   package-tail: .arm64
           - type: self-contained
-            package-dotnet-runtime: _with-dotnet-runtime
-          - type: no-self-contained
             package-dotnet-runtime: ''
+          - type: no-self-contained
+            package-dotnet-runtime: '_no-dotnet-runtime'
         exclude: # rpmbuild arm64 failed https://github.com/kuiperzone/PupNet-Deploy/issues/3
           - package-type: rpm
             cpu: arm64
