@@ -25,9 +25,21 @@ body:
     required: true
 - type: input
   attributes:
-    label: 桌面端信息 | Desktop
-    description: 'OS: [e.g. Windows 10 22H2, MacOS 11, Ubuntu Linux 22.0], Synclipboard Version: [e.g. v2.7.0]'
+    label: 桌面端操作系统 | Desktop OS
+    description: 'OS: [e.g. Windows 10 22H2, MacOS 11, Ubuntu Linux 22.0]'
   validations:
+    required: false
+- type: input
+  attributes:
+    label: 桌面端SyncClipboard版本 | Desktop SyncClipboard Version
+    description: 'Synclipboard Version: [e.g. v2.7.0]'
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: 日志文件 | Log File
+    description: '`%AppData%\SyncClipboard\log\`(Windows), `~/Library/Application Support/SyncClipboard/log/`(macOS), `~/.config/SyncClipboard/log/`(Linux)'
+  validations: 
     required: false
 - type: input
   attributes:
