@@ -28,7 +28,7 @@ internal partial class ClipboardFactory
     [
         new HandlerMapping(Format.TextUtf8, HandleLinuxTextUtf8),
         new HandlerMapping(Format.Text, HandleLinuxTextNormal),
-        
+
         new HandlerMapping(Format.FileList, HandleFiles),
         new HandlerMapping(Format.UriList, HandleLinuxUriList),
         new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
@@ -78,7 +78,7 @@ internal partial class ClipboardFactory
         var uriListbytes = await Clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
         ArgumentNullException.ThrowIfNull(uriListbytes, nameof(HandleLinuxUriList));
         var uriListStr = Encoding.UTF8.GetString(uriListbytes);
-        meta.Files = GetValidPathFromList(uriListStr.Split(["\r\n", "\r", "\n"], StringSplitOptions.None));;
+        meta.Files = GetValidPathFromList(uriListStr.Split(["\r\n", "\r", "\n"], StringSplitOptions.None));
     }
 
     [SupportedOSPlatform("linux")]

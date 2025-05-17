@@ -19,11 +19,11 @@ public class FreshableTask(Func<CancellationToken, Task> task)
         }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, token ?? CancellationToken.None);
-        
+
         await _semaphore.WaitAsync(cts.Token);
         using var scopeGuard = new ScopeGuard(() => _semaphore.Release());
 
-        try 
+        try
         {
             await _task(cts.Token);
         }
