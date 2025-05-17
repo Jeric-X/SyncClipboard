@@ -78,8 +78,10 @@ abstract public class ClipboardHander : Service
             {
                 await HandleClipboard(clipboardMetaInfomation, profile, cancelToken);
             }
-            catch (OperationCanceledException)
-            { }
+            catch when (cancelToken.IsCancellationRequested)
+            {
+                Logger.Write(LOG_TAG, $"Error: {SERVICE_NAME} {nameof(HandleClipboard)}");
+            }
         }
     }
 

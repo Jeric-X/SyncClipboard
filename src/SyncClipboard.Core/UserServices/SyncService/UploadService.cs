@@ -194,14 +194,25 @@ public class UploadService : ClipboardHander
         return _downServiceChangingLocal;
     }
 
-    private async Task<bool> IsObsoleteMeta(ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task<bool> IsObsoleteProfile(Profile profile, CancellationToken token)
     {
         if (OperatingSystem.IsWindows())
         {
             return false;
         }
-        var latest = await _clipboardFactory.GetMetaInfomation(token);
-        return latest != meta;
+        try
+        {
+            var latest = await _clipboardFactory.CreateProfileFromLocal(token);
+            if (Profile.Same(profile, latest))
+            {
+                return false;
+            }
+            return true;
+        }
+        catch when (token.IsCancellationRequested is false)
+        {
+            return false;
+        }
     }
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
@@ -230,9 +241,21 @@ public class UploadService : ClipboardHander
                 }
             }
 
-            if (IsDownloadServiceWorking(profile) || await IsObsoleteMeta(meta, token) || !profile.IsAvailableFromLocal())
+            if (IsDownloadServiceWorking(profile))
             {
-                _logger.Write(LOG_TAG, "Stop Push.");
+                _logger.Write(LOG_TAG, "Stop Push: Download service is working or profile is same as last downloaded.");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
+                return;
+            }
+            if (await IsObsoleteProfile(profile, token))
+            {
+                _logger.Write(LOG_TAG, "Stop Push: Clipboard profile is obsolete.");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
+                return;
+            }
+            if (!profile.IsAvailableFromLocal())
+            {
+                _logger.Write(LOG_TAG, "Stop Push: Profile is not available from local.");
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }

@@ -1,9 +1,12 @@
 ﻿using Avalonia.Input.Platform;
+using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,27 +32,31 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
     {
-        ClipboardMetaInfomation meta = new();
         var clipboard = App.Current.MainWindow.Clipboard!;
+        const int MAX_RETRY_TIMES = 5;
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < MAX_RETRY_TIMES; i++)
         {
             await _semaphoreSlim.WaitAsync(ctk);
             try
             {
-                if (OperatingSystem.IsLinux())
+                var formats = await Clipboard.GetFormatsAsync().WaitAsync(ctk);
+                if (formats is null)
                 {
-                    return await HandleLinuxClipboard(ctk);
+                    Logger.Write(LOG_TAG, $"GetFormatsAsync() is null");
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    return await HandleLinuxClipboard(formats, ctk);
                 }
                 else if (OperatingSystem.IsMacOS())
                 {
-                    return await HandleMacosClipboard(ctk);
+                    return await HandleMacosClipboard(formats, ctk);
                 }
                 else
                 {
-                    meta.Text = await clipboard?.GetTextAsync().WaitAsync(ctk)!;
+                    return new ClipboardMetaInfomation { Text = await clipboard?.GetTextAsync().WaitAsync(ctk)! };
                 }
-                break;
             }
             catch (Exception ex) when (ctk.IsCancellationRequested is false)
             {
@@ -59,6 +66,12 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             await Task.Delay(200, ctk);
         }
 
-        return meta;
+        throw new Exception("Can't get clipboard data");
+    }
+
+    private static async Task HandleFiles(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        var items = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as IEnumerable<IStorageItem>;
+        meta.Files = items?.Select(item => item.Path.LocalPath).ToArray();
     }
 }

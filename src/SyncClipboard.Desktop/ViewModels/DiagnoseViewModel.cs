@@ -7,8 +7,10 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Runner;
 using System;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ViewModels;
@@ -24,10 +26,13 @@ internal partial class DiagnoseViewModel : ObservableObject
 
     private readonly IClipboardChangingListener _clipboardListener;
     private readonly ConfigManager _configManager;
+    private readonly FreshableTask refreshTask;// = new(RefreshClipboardType);
 
     public DiagnoseViewModel()
     {
-        RefreshCommand.ExecuteAsync(null);
+        refreshTask = new(RefreshClipboardType);
+
+        RefreshCommand.Execute(null);
 
         _clipboardListener = App.Current.Services.GetRequiredService<IClipboardChangingListener>();
         _configManager = App.Current.Services.GetRequiredService<ConfigManager>();
@@ -49,26 +54,31 @@ internal partial class DiagnoseViewModel : ObservableObject
 
     private async void ClipboardChangedHandler(ClipboardMetaInfomation _1, Profile _2)
     {
-        await Dispatcher.UIThread.InvokeAsync(() => RefreshCommand.ExecuteAsync(null));
+        await Dispatcher.UIThread.InvokeAsync(() => RefreshCommand.Execute(null));
     }
 
     [RelayCommand]
-    public async Task Refresh()
+    public void Refresh()
+    {
+        var _ = refreshTask.Run();
+    }
+
+    private async Task RefreshClipboardType(CancellationToken token)
     {
         ClipboardTypes.Clear();
-        var types = await App.Current.Clipboard.GetFormatsAsync();
+        var types = await App.Current.Clipboard.GetFormatsAsync().WaitAsync(token);
         foreach (var item in types ?? [])
         {
             var str = item;
             try
             {
-                var contentObj = await App.Current.Clipboard.GetDataAsync(item);
+                var contentObj = await App.Current.Clipboard.GetDataAsync(item).WaitAsync(token);
                 if (contentObj is not null)
                 {
                     str += Environment.NewLine + contentObj?.GetType().FullName ?? string.Empty;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (token.IsCancellationRequested is false)
             {
                 str += Environment.NewLine + ex.Message;
             }

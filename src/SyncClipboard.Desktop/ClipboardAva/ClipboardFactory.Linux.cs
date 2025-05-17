@@ -1,9 +1,10 @@
-﻿using Avalonia.Input.Platform;
-using FluentAvalonia.Core;
+﻿using FluentAvalonia.Core;
+using ImageMagick;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text;
@@ -18,14 +19,6 @@ using HandlerMapping = System.Collections.Generic.KeyValuePair<
     >
 >;
 
-using EffectsHandlerMapping = System.Collections.Generic.KeyValuePair<
-   string,
-   System.Func<
-       Avalonia.Input.Platform.IClipboard,
-       System.Threading.CancellationToken,
-       System.Threading.Tasks.Task<SyncClipboard.Core.Models.DragDropEffects?>
-   >
->;
 namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal partial class ClipboardFactory
@@ -33,61 +26,76 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private List<HandlerMapping> FormatHandlerlist =>
     [
-        new HandlerMapping(Format.UriList, HandleLinuxFile),
-        new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
-        new HandlerMapping(Format.ImagePng, HandleLinuxImage),
         new HandlerMapping(Format.TextUtf8, HandleLinuxTextUtf8),
         new HandlerMapping(Format.Text, HandleLinuxTextNormal),
+        
+        new HandlerMapping(Format.FileList, HandleFiles),
+        new HandlerMapping(Format.UriList, HandleLinuxUriList),
+        new HandlerMapping(Format.GnomeFiles, HandleGnomeFile),
+
         new HandlerMapping(Format.TextHtml, HandleLinuxHtml),
+        new HandlerMapping(Format.CompoundText, HandleCompoundText),
+        new HandlerMapping(Format.KdeCutSelection, HandleKdeCutSelection),
     ];
 
     [SupportedOSPlatform("linux")]
-    private async Task<ClipboardMetaInfomation> HandleLinuxClipboard(CancellationToken token)
+    private async Task<ClipboardMetaInfomation> HandleLinuxClipboard(string[] formats, CancellationToken token)
     {
-        var clipboard = App.Current.MainWindow.Clipboard!;
-        var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
-
         ClipboardMetaInfomation meta = new();
+        bool hasExcoption = false;
+
         foreach (var handlerMapping in FormatHandlerlist)
         {
             if (formats.Contains(handlerMapping.Key))
             {
-                await handlerMapping.Value.Invoke(meta, token);
-                meta.Effects ??= await ParseEffects(clipboard, formats, token);
+                try
+                {
+                    await handlerMapping.Value.Invoke(meta, token);
+                }
+                catch (Exception ex) when (token.IsCancellationRequested is false)
+                {
+                    Logger.Write(ex.Message);
+                    hasExcoption = true;
+                }
             }
+        }
+
+        await HandleLinuxImage(meta, formats, token);
+
+        if (hasExcoption && meta.Empty())
+        {
+            throw new Exception("Clipboard is empty because of exception");
         }
 
         return meta;
     }
 
     [SupportedOSPlatform("linux")]
-    private async Task HandleLinuxFile(ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task HandleLinuxUriList(ClipboardMetaInfomation meta, CancellationToken token)
     {
         if (meta.Files is not null) return;
 
         var uriListbytes = await Clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
-        ArgumentNullException.ThrowIfNull(uriListbytes);
-        var uriList = Encoding.UTF8.GetString(uriListbytes);
-        meta.Files = uriList
-                .Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
-                .Where(x => !string.IsNullOrEmpty(x))
-                .Select(x =>
-                {
-                    try { return new Uri(x).LocalPath; }
-                    catch { }
-                    return "";
-                })
-                .Where(x => !string.IsNullOrEmpty(x))
-                .ToArray();
+        ArgumentNullException.ThrowIfNull(uriListbytes, nameof(HandleLinuxUriList));
+        var uriListStr = Encoding.UTF8.GetString(uriListbytes);
+        meta.Files = GetValidPathFromList(uriListStr.Split(["\r\n", "\r", "\n"], StringSplitOptions.None));;
     }
 
     [SupportedOSPlatform("linux")]
     private static async Task HandleLinuxText(string format, ClipboardMetaInfomation meta, CancellationToken token)
     {
-        if (meta.Text is not null) return;
-        var textBytes = await Clipboard.GetDataAsync(format).WaitAsync(token) as byte[];
-        ArgumentNullException.ThrowIfNull(textBytes);
-        meta.Text = Encoding.UTF8.GetString(textBytes);
+        if (meta.Text is not null)
+        {
+            return;
+        }
+        if (await Clipboard.GetDataAsync(format).WaitAsync(token) is not byte[] textBytes)
+        {
+            meta.Text = await Clipboard.GetTextAsync().WaitAsync(token);
+        }
+        else
+        {
+            meta.Text = Encoding.UTF8.GetString(textBytes);
+        }
     }
 
     [SupportedOSPlatform("linux")]
@@ -106,7 +114,7 @@ internal partial class ClipboardFactory
     private async Task HandleLinuxHtml(ClipboardMetaInfomation meta, CancellationToken token)
     {
         var htmlBytes = await Clipboard.GetDataAsync(Format.TextHtml).WaitAsync(token) as byte[];
-        ArgumentNullException.ThrowIfNull(htmlBytes);
+        ArgumentNullException.ThrowIfNull(htmlBytes, nameof(HandleLinuxHtml));
         meta.Html = Encoding.UTF8.GetString(htmlBytes);
     }
 
@@ -119,30 +127,69 @@ internal partial class ClipboardFactory
     ];
 
     [SupportedOSPlatform("linux")]
-    private async Task HandleLinuxImage(ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task HandleLinuxImage(ClipboardMetaInfomation meta, string[] formats, CancellationToken token)
     {
-        meta.OriginalType = ClipboardMetaInfomation.ImageType;
-
-        foreach (var imagetype in ImageTypeList)
+        foreach (var type in formats)
         {
-            var bytes = await Clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
-            if (bytes is not null)
+            if (type.StartsWith("image/") is false)
             {
+                continue;
+            }
+
+            meta.OriginalType = ClipboardMetaInfomation.ImageType;
+            try
+            {
+                if (await Clipboard.GetDataAsync(type).WaitAsync(token) is not byte[] bytes)
+                {
+                    continue;
+                }
+
+                using MagickImage magickImage = new(bytes);     // check if the image is valid
                 meta.Image = new ClipboardImage(bytes);
                 break;
             }
+            catch (Exception ex) when (token.IsCancellationRequested is false)
+            {
+                Logger.Write(ex.Message);
+            }
         }
 
-        if (meta.Image is null)
+        if (meta.OriginalType == ClipboardMetaInfomation.ImageType && meta.Image is null && meta.Files is null)
         {
-            string text = "Unknow Image";
-            var timeStamp = await Clipboard.GetDataAsync(Format.TimeStamp).WaitAsync(token) as byte[];
-            if (timeStamp is not null)
+            if (Path.Exists(meta.Text))
             {
-                text += BitConverter.ToInt32(timeStamp);
+                meta.Files = [meta.Text];
             }
-            meta.Text = text;
+            else
+            {
+                throw new Exception("Can't get image from clipboard");
+            }
         }
+    }
+
+
+    [SupportedOSPlatform("linux")]
+    private string[] GetValidPathFromList(IEnumerable<string> pathList)
+    {
+        var erroCount = 0;
+        List<string> uriList = [];
+        foreach (var line in pathList)
+        {
+            try
+            {
+                uriList.Add(new Uri(line).LocalPath);
+            }
+            catch
+            {
+                erroCount++;
+                if (erroCount >= 8)
+                {
+                    Logger.Write($"can't get files from path list");
+                    return uriList.ToArray();
+                }
+            }
+        }
+        return uriList.ToArray();
     }
 
     [SupportedOSPlatform("linux")]
@@ -151,6 +198,7 @@ internal partial class ClipboardFactory
         if (meta.Files is not null) return;
 
         var bytes = await Clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(bytes, nameof(HandleGnomeFile));
         var str = Encoding.UTF8.GetString(bytes!);
         var pathList = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
@@ -160,58 +208,32 @@ internal partial class ClipboardFactory
             meta.Effects = DragDropEffects.Move;
         }
 
-        meta.Files = pathList[1..].Select(x =>
-        {
-            try { return new Uri(x).LocalPath; }
-            catch { }
-            return "";
-        })
-        .Where(x => !string.IsNullOrEmpty(x))
-        .ToArray();
+        meta.Files = GetValidPathFromList(pathList);
     }
 
     [SupportedOSPlatform("linux")]
-    private static readonly List<EffectsHandlerMapping> EffectsHandlerlist =
-    [
-        new EffectsHandlerMapping(Format.CompoundText, HandleCompoundText),
-        new EffectsHandlerMapping(Format.KdeCutSelection, HandleKdeCutSelection),
-    ];
-
-    [SupportedOSPlatform("linux")]
-    private static async Task<DragDropEffects?> ParseEffects(IClipboard clipboard, string[] formats, CancellationToken token)
+    private static async Task HandleCompoundText(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        foreach (var handlerMapping in EffectsHandlerlist)
-        {
-            if (formats.Contains(handlerMapping.Key))
-            {
-                return await handlerMapping.Value.Invoke(clipboard, token);
-            }
-        }
-        return null;
-    }
-
-    [SupportedOSPlatform("linux")]
-    private static async Task<DragDropEffects?> HandleCompoundText(IClipboard clipboard, CancellationToken token)
-    {
-        var bytes = await clipboard.GetDataAsync(Format.CompoundText).WaitAsync(token) as byte[];
+        var bytes = await Clipboard.GetDataAsync(Format.CompoundText).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(bytes, nameof(HandleCompoundText));
         var str = Encoding.UTF8.GetString(bytes!);
         string[] lines = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
         if (lines.Length >= 3 && lines[1] == "cut")
         {
-            return DragDropEffects.Move;
+            meta.Effects = DragDropEffects.Move;
         }
-        return null;
+        meta.Text ??= str;
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task<DragDropEffects?> HandleKdeCutSelection(IClipboard clipboard, CancellationToken token)
+    private static async Task HandleKdeCutSelection(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await clipboard.GetDataAsync(Format.KdeCutSelection).WaitAsync(token) as byte[];
+        var bytes = await Clipboard.GetDataAsync(Format.KdeCutSelection).WaitAsync(token) as byte[];
+        ArgumentNullException.ThrowIfNull(bytes, nameof(HandleKdeCutSelection));
         var str = Encoding.UTF8.GetString(bytes!);
         if (str == "1")
         {
-            return DragDropEffects.Move;
+            meta.Effects = DragDropEffects.Move;
         }
-        return null;
     }
 }

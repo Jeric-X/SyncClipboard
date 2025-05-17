@@ -69,4 +69,9 @@ public record class ClipboardMetaInfomation
     {
         return $"Text={Text} Html={Html} Files='{string.Join(',', Files ?? [])}' DragDropEffects={Effects} OriginalType={OriginalType}";
     }
+
+    public bool Empty()
+    {
+        return Text is null && Html is null && Files is null && Image is null;
+    }
 }

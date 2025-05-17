@@ -25,7 +25,7 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("macos")]
     private List<HandlerMapping> MacFormatHandlerlist =>
     [
-        new HandlerMapping(Format.FileList, HandleMacosFile),
+        new HandlerMapping(Format.FileList, HandleFiles),
         new HandlerMapping(Format.PublicTiff, HandleMacosImage),
         new HandlerMapping(Format.PublicHtml, HandleMacHtml),
         new HandlerMapping(Format.MacText, HandleMacText),
@@ -34,11 +34,8 @@ internal partial class ClipboardFactory
     ];
 
     [SupportedOSPlatform("macos")]
-    private async Task<ClipboardMetaInfomation> HandleMacosClipboard(CancellationToken token)
+    private async Task<ClipboardMetaInfomation> HandleMacosClipboard(string[] formats, CancellationToken token)
     {
-        var clipboard = App.Current.MainWindow.Clipboard!;
-        var formats = await clipboard.GetFormatsAsync().WaitAsync(token);
-
         ClipboardMetaInfomation meta = new();
         foreach (var handlerMapping in MacFormatHandlerlist)
         {
@@ -49,13 +46,6 @@ internal partial class ClipboardFactory
         }
 
         return meta;
-    }
-
-    [SupportedOSPlatform("macos")]
-    private async Task HandleMacosFile(ClipboardMetaInfomation meta, CancellationToken token)
-    {
-        var items = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as IEnumerable<IStorageItem>;
-        meta.Files = items?.Select(item => item.Path.LocalPath).ToArray();
     }
 
     [SupportedOSPlatform("macos")]
