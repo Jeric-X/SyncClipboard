@@ -23,6 +23,8 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal partial class ClipboardFactory
 {
+    private ClipboardMetaInfomation _metaCache = new();
+
     [SupportedOSPlatform("linux")]
     private List<HandlerMapping> FormatHandlerlist =>
     [
@@ -43,6 +45,12 @@ internal partial class ClipboardFactory
     {
         ClipboardMetaInfomation meta = new();
         bool hasExcoption = false;
+
+        await HandleTimeStamp(formats, meta, token);
+        if (meta.TimeStamp is not null && _metaCache.TimeStamp == meta.TimeStamp)
+        {
+            return _metaCache;
+        }
 
         foreach (var handlerMapping in FormatHandlerlist)
         {
@@ -67,7 +75,30 @@ internal partial class ClipboardFactory
             throw new Exception("Clipboard is empty because of exception");
         }
 
+        _metaCache = meta;
         return meta;
+    }
+
+    [SupportedOSPlatform("linux")]
+    private async Task HandleTimeStamp(string[] formats, ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        if (formats.Contains(Format.TimeStamp) is false)
+        {
+            return;
+        }
+
+        try
+        {
+            var timeStamp = await Clipboard.GetDataAsync(Format.TimeStamp).WaitAsync(token) as byte[];
+            if (timeStamp is not null)
+            {
+                meta.TimeStamp = BitConverter.ToInt32(timeStamp);
+            }
+        }
+        catch (Exception ex) when (token.IsCancellationRequested is false)
+        {
+            Logger.Write(ex.Message);
+        }
     }
 
     [SupportedOSPlatform("linux")]

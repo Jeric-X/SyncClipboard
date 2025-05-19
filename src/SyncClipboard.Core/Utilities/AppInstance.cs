@@ -49,9 +49,13 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
                     window?.Show();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.Write(ex.ToString());
+            }
+            catch (OperationCanceledException)
+            {
+                logger.Write("AppInstance", "Exited Normally");
             }
         }
     }

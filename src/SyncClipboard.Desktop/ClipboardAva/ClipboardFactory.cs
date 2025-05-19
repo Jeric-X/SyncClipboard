@@ -14,6 +14,7 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal partial class ClipboardFactory : ClipboardFactoryBase
 {
+    private const int MAX_RETRY_TIMES = 5;
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
     protected override IWebDav WebDav { get; set; }
@@ -32,8 +33,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
     {
-        var clipboard = App.Current.MainWindow.Clipboard!;
-        const int MAX_RETRY_TIMES = 5;
+        bool hasClipboard = false;
 
         for (int i = 0; i < MAX_RETRY_TIMES; i++)
         {
@@ -45,17 +45,21 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                 {
                     Logger.Write(LOG_TAG, $"GetFormatsAsync() is null");
                 }
-                else if (OperatingSystem.IsLinux())
-                {
-                    return await HandleLinuxClipboard(formats, ctk);
-                }
-                else if (OperatingSystem.IsMacOS())
-                {
-                    return await HandleMacosClipboard(formats, ctk);
-                }
                 else
                 {
-                    return new ClipboardMetaInfomation { Text = await clipboard?.GetTextAsync().WaitAsync(ctk)! };
+                    hasClipboard = true;
+                    if (OperatingSystem.IsLinux())
+                    {
+                        return await HandleLinuxClipboard(formats, ctk);
+                    }
+                    else if (OperatingSystem.IsMacOS())
+                    {
+                        return await HandleMacosClipboard(formats, ctk);
+                    }
+                    else
+                    {
+                        return new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync().WaitAsync(ctk)! };
+                    }
                 }
             }
             catch (Exception ex) when (ctk.IsCancellationRequested is false)
@@ -66,6 +70,11 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             await Task.Delay(200, ctk);
         }
 
+        if (hasClipboard is false)
+        {
+            Logger.Write(LOG_TAG, $"Clipboard is empty");
+            return new ClipboardMetaInfomation();
+        }
         throw new Exception("Can't get clipboard data");
     }
 

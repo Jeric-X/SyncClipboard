@@ -7,6 +7,7 @@ public record class ClipboardMetaInfomation
 {
     public const string ImageType = "Image";
 
+    public int? TimeStamp;
     public bool? ExcludeForSync;
     public bool? ExcludeForHistory;
     public string? Text;
@@ -30,6 +31,11 @@ public record class ClipboardMetaInfomation
 
     public virtual bool Equals(ClipboardMetaInfomation? other)
     {
+        if (TimeStamp is not null && other?.TimeStamp is not null)
+        {
+            return TimeStamp == other.TimeStamp;
+        }
+
         return (object)this == other ||
             (other is not null
             && EqualityContract == other.EqualityContract
@@ -51,6 +57,11 @@ public record class ClipboardMetaInfomation
 
     public override int GetHashCode()
     {
+        if (TimeStamp is not null)
+        {
+            return TimeStamp.Value;
+        }
+
         List<int> hashList =
         [
             EqualityContract.GetHashCode(),
