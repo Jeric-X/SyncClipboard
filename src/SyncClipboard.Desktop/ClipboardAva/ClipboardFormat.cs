@@ -18,6 +18,7 @@ internal static class Format
     [SupportedOSPlatform("linux")] public const string CompoundText = "COMPOUND_TEXT";
     [SupportedOSPlatform("linux")] public const string KdeCutSelection = "application/x-kde-cutselection";
     [SupportedOSPlatform("linux")] public const string TextHtml = "text/html";
+    [SupportedOSPlatform("linux")] public const string Targets = "TARGETS";
 
     [SupportedOSPlatform("macos")] public const string PublicPng = "public.png";
     [SupportedOSPlatform("macos")] public const string PublicTiff = "public.tiff";

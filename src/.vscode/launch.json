@@ -51,7 +51,7 @@
             "internalConsoleOptions": "openOnSessionStart",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "DISPLAY": ":2"
+                "DISPLAY": ":0"
             }
         },
         {

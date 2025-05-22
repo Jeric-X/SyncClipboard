@@ -1,9 +1,9 @@
-﻿using Avalonia.Input.Platform;
-using Avalonia.Platform.Storage;
+﻿using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +19,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override IServiceProvider ServiceProvider { get; set; }
     protected override IWebDav WebDav { get; set; }
 
-    private static IClipboard Clipboard => App.Current.Clipboard;
+    private readonly MultiSourceClipboardReader Clipboard;
 
     private const string LOG_TAG = nameof(ClipboardFactory);
     public static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
@@ -29,6 +29,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
         WebDav = ServiceProvider.GetRequiredService<IWebDav>();
+        Clipboard = ServiceProvider.GetRequiredService<MultiSourceClipboardReader>();
     }
 
     public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
@@ -40,7 +41,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             await _semaphoreSlim.WaitAsync(ctk);
             try
             {
-                var formats = await Clipboard.GetFormatsAsync().WaitAsync(ctk);
+                var formats = await Clipboard.GetFormatsAsync(ctk);
                 if (formats is null)
                 {
                     Logger.Write(LOG_TAG, $"GetFormatsAsync() is null");
@@ -58,7 +59,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                     }
                     else
                     {
-                        return new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync().WaitAsync(ctk)! };
+                        return new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
                     }
                 }
             }
@@ -78,9 +79,9 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         throw new Exception("Can't get clipboard data");
     }
 
-    private static async Task HandleFiles(ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task HandleFiles(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var items = await Clipboard.GetDataAsync(Format.FileList).WaitAsync(token) as IEnumerable<IStorageItem>;
+        var items = await Clipboard.GetDataAsync(Format.FileList, token) as IEnumerable<IStorageItem>;
         meta.Files = items?.Select(item => item.Path.LocalPath).ToArray();
     }
 }

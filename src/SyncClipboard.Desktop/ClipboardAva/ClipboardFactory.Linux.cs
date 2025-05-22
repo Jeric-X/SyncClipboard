@@ -89,11 +89,7 @@ internal partial class ClipboardFactory
 
         try
         {
-            var timeStamp = await Clipboard.GetDataAsync(Format.TimeStamp).WaitAsync(token) as byte[];
-            if (timeStamp is not null)
-            {
-                meta.TimeStamp = BitConverter.ToInt32(timeStamp);
-            }
+            meta.TimeStamp = await Clipboard.GetTimeStamp(token);
         }
         catch (Exception ex) when (token.IsCancellationRequested is false)
         {
@@ -106,22 +102,22 @@ internal partial class ClipboardFactory
     {
         if (meta.Files is not null) return;
 
-        var uriListbytes = await Clipboard.GetDataAsync(Format.UriList).WaitAsync(token) as byte[];
+        var uriListbytes = await Clipboard.GetDataAsync(Format.UriList, token) as byte[];
         ArgumentNullException.ThrowIfNull(uriListbytes, nameof(HandleLinuxUriList));
         var uriListStr = Encoding.UTF8.GetString(uriListbytes);
         meta.Files = GetValidPathFromList(uriListStr.Split(["\r\n", "\r", "\n"], StringSplitOptions.None));
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task HandleLinuxText(string format, ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task HandleLinuxText(string format, ClipboardMetaInfomation meta, CancellationToken token)
     {
         if (meta.Text is not null)
         {
             return;
         }
-        if (await Clipboard.GetDataAsync(format).WaitAsync(token) is not byte[] textBytes)
+        if (await Clipboard.GetDataAsync(format, token) is not byte[] textBytes)
         {
-            meta.Text = await Clipboard.GetTextAsync().WaitAsync(token);
+            meta.Text = await Clipboard.GetTextAsync(token);
         }
         else
         {
@@ -144,7 +140,7 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleLinuxHtml(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var htmlBytes = await Clipboard.GetDataAsync(Format.TextHtml).WaitAsync(token) as byte[];
+        var htmlBytes = await Clipboard.GetDataAsync(Format.TextHtml, token) as byte[];
         ArgumentNullException.ThrowIfNull(htmlBytes, nameof(HandleLinuxHtml));
         meta.Html = Encoding.UTF8.GetString(htmlBytes);
     }
@@ -170,7 +166,7 @@ internal partial class ClipboardFactory
             meta.OriginalType = ClipboardMetaInfomation.ImageType;
             try
             {
-                if (await Clipboard.GetDataAsync(type).WaitAsync(token) is not byte[] bytes)
+                if (await Clipboard.GetDataAsync(type, token) is not byte[] bytes)
                 {
                     continue;
                 }
@@ -228,7 +224,7 @@ internal partial class ClipboardFactory
     {
         if (meta.Files is not null) return;
 
-        var bytes = await Clipboard.GetDataAsync(Format.GnomeFiles).WaitAsync(token) as byte[];
+        var bytes = await Clipboard.GetDataAsync(Format.GnomeFiles, token) as byte[];
         ArgumentNullException.ThrowIfNull(bytes, nameof(HandleGnomeFile));
         var str = Encoding.UTF8.GetString(bytes!);
         var pathList = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
@@ -243,9 +239,9 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task HandleCompoundText(ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task HandleCompoundText(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await Clipboard.GetDataAsync(Format.CompoundText).WaitAsync(token) as byte[];
+        var bytes = await Clipboard.GetDataAsync(Format.CompoundText, token) as byte[];
         ArgumentNullException.ThrowIfNull(bytes, nameof(HandleCompoundText));
         var str = Encoding.UTF8.GetString(bytes!);
         string[] lines = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
@@ -257,9 +253,9 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("linux")]
-    private static async Task HandleKdeCutSelection(ClipboardMetaInfomation meta, CancellationToken token)
+    private async Task HandleKdeCutSelection(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await Clipboard.GetDataAsync(Format.KdeCutSelection).WaitAsync(token) as byte[];
+        var bytes = await Clipboard.GetDataAsync(Format.KdeCutSelection, token) as byte[];
         ArgumentNullException.ThrowIfNull(bytes, nameof(HandleKdeCutSelection));
         var str = Encoding.UTF8.GetString(bytes!);
         if (str == "1")

@@ -1,16 +1,21 @@
 ﻿using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ImageMagick;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ViewModels;
 
 internal partial class DiagnoseDetailViewModel : ObservableObject
 {
+    private readonly MultiSourceClipboardReader Clipboard = App.Current.Services.GetRequiredService<MultiSourceClipboardReader>();
+
     [ObservableProperty]
     private bool isImage;
     [ObservableProperty]
@@ -58,7 +63,7 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
         {
             Clear();
             var type = formatAndCSType.Split(Environment.NewLine)[0];
-            var clipboard = await App.Current.Clipboard.GetDataAsync(type!);
+            var clipboard = await Clipboard.GetDataAsync(type!, CancellationToken.None);
             if (clipboard is string str)
             {
                 IsString = true;

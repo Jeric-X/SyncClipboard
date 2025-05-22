@@ -4,6 +4,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,7 +38,7 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
     [SupportedOSPlatform("linux")]
     public static void SetTimeStamp(DataObject dataObject)
     {
-        dataObject.Set(Format.TimeStamp, BitConverter.GetBytes(Environment.TickCount));
+        dataObject.Set(Format.TimeStamp, Encoding.UTF8.GetBytes($"{Environment.TickCount}{Environment.NewLine}"));
     }
 
     public virtual Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)

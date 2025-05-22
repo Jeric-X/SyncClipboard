@@ -27,7 +27,7 @@ public class FreshableTask(Func<CancellationToken, Task> task)
         {
             await _task(cts.Token);
         }
-        catch when (_cts.Token.IsCancellationRequested is false)
+        catch when (_cts.Token.IsCancellationRequested)
         {
         }
     }

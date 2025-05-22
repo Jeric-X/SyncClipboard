@@ -7,6 +7,7 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.ClipboardAva;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using SyncClipboard.Desktop.Utilities;
 using SyncClipboard.Desktop.Views;
 
@@ -23,6 +24,8 @@ public class AppServices
         services.AddTransient<IAppConfig, AppConfig>();
 
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
+        services.AddSingleton<MultiSourceClipboardReader>();
+        services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();
 
         services.AddSingleton<ClipboardFactory>();
         services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());
@@ -40,9 +43,14 @@ public class AppServices
 
         services.AddTransient<IFontManager, FontManager>();
 
-        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+        if (OperatingSystem.IsWindows())
         {
             services.AddSingleton<INotification, Notification>();
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            services.AddSingleton<IClipboardReader, XClipReader>();
         }
 
         if (!OperatingSystem.IsMacOS())

@@ -8,6 +8,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading;
@@ -26,18 +27,20 @@ internal partial class DiagnoseViewModel : ObservableObject
 
     private readonly IClipboardChangingListener _clipboardListener;
     private readonly ConfigManager _configManager;
-    private readonly FreshableTask refreshTask;// = new(RefreshClipboardType);
+    private readonly FreshableTask refreshTask;
+    private readonly MultiSourceClipboardReader Clipboard;
 
     public DiagnoseViewModel()
     {
         refreshTask = new(RefreshClipboardType);
 
-        RefreshCommand.Execute(null);
-
         _clipboardListener = App.Current.Services.GetRequiredService<IClipboardChangingListener>();
         _configManager = App.Current.Services.GetRequiredService<ConfigManager>();
+        Clipboard = App.Current.Services.GetRequiredService<MultiSourceClipboardReader>();
         _configManager.ListenConfig<ProgramConfig>(AotuRefreshChanged);
         _config = _configManager.GetConfig<ProgramConfig>();
+
+        RefreshCommand.Execute(null);
         AotuRefreshChanged(_config);
     }
 
@@ -66,13 +69,13 @@ internal partial class DiagnoseViewModel : ObservableObject
     private async Task RefreshClipboardType(CancellationToken token)
     {
         ClipboardTypes.Clear();
-        var types = await App.Current.Clipboard.GetFormatsAsync().WaitAsync(token);
+        var types = await Clipboard.GetFormatsAsync(token);
         foreach (var item in types ?? [])
         {
             var str = item;
             try
             {
-                var contentObj = await App.Current.Clipboard.GetDataAsync(item).WaitAsync(token);
+                var contentObj = await Clipboard.GetDataAsync(item, token);
                 if (contentObj is not null)
                 {
                     str += Environment.NewLine + contentObj?.GetType().FullName ?? string.Empty;

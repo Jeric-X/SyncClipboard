@@ -62,7 +62,7 @@ internal partial class ClipboardFactory
 
         foreach (var imagetype in MacImageTypeList)
         {
-            var bytes = await Clipboard.GetDataAsync(imagetype).WaitAsync(token) as byte[];
+            var bytes = await Clipboard.GetDataAsync(imagetype, token) as byte[];
             if (bytes is not null)
             {
                 meta.Image = new ClipboardImage(bytes);
@@ -79,7 +79,7 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("macos")]
     private async Task HandleMacHtml(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var htmlBytes = await Clipboard.GetDataAsync(Format.PublicHtml).WaitAsync(token) as byte[];
+        var htmlBytes = await Clipboard.GetDataAsync(Format.PublicHtml, token) as byte[];
         ArgumentNullException.ThrowIfNull(htmlBytes);
         meta.Html = Encoding.UTF8.GetString(htmlBytes);
     }
@@ -87,7 +87,7 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("macos")]
     private async Task HandleMacText(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        meta.Text = await Clipboard?.GetTextAsync().WaitAsync(token)!;
+        meta.Text = await Clipboard.GetTextAsync(token);
     }
 
     [SupportedOSPlatform("macos")]
