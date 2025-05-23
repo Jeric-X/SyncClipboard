@@ -1,3 +1,6 @@
+v3.0.0-beta2
+- Linux：当系统安装了xclip或wl-clipboard时，使用这些工具辅助获取剪贴板
+
 v3.0.0-beta1
 - 打开配置文件将使用系统默认文本编辑器
 - 服务端支持启用HTTPS
