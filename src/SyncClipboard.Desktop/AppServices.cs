@@ -51,6 +51,7 @@ public class AppServices
         if (OperatingSystem.IsLinux())
         {
             services.AddSingleton<IClipboardReader, XClipReader>();
+            services.AddSingleton<IClipboardReader, WlClipboardReader>();
         }
 
         if (!OperatingSystem.IsMacOS())

@@ -13,6 +13,8 @@ public class AvaloniaClipboardReader(IMainWindow mainWindow) : IClipboardReader
 {
     private readonly IClipboard _clipboard = (mainWindow as Window)?.Clipboard ?? throw new ArgumentNullException(nameof(mainWindow));
 
+    public string SourceName => "Avalonia";
+
     public async Task<string[]?> GetFormatsAsync(CancellationToken token)
     {
         return await _clipboard.GetFormatsAsync().WaitAsync(token);

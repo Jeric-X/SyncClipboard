@@ -3,17 +3,31 @@ using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 
-public class MultiSourceClipboardReader(IEnumerable<IClipboardReader> sources) : IClipboardReader
+public class MultiSourceClipboardReader : IClipboardReader
 {
-    private readonly IEnumerable<IClipboardReader> _sources = sources ?? throw new ArgumentNullException(nameof(sources));
+    private readonly IEnumerable<IClipboardReader> _sources;
+    private List<string> _prohibitSources = [];
+
+    public string SourceName => "MultiSourceClipboardReader";
+
+    public MultiSourceClipboardReader(IEnumerable<IClipboardReader> sources, ConfigManager config)
+    {
+        _sources = sources ?? throw new ArgumentNullException(nameof(sources));
+        config.GetAndListenConfig<ClipboardFactoryConfig>(config => _prohibitSources = config.ProhibitSources);
+    }
 
     private async Task<T?> TryGetFromSourcesAsync<T>(Func<IClipboardReader, CancellationToken, Task<T?>> getter, CancellationToken token)
     {
         foreach (var source in _sources)
         {
+            if (_prohibitSources.Contains(source.SourceName))
+                continue;
+
             try
             {
                 var result = await getter(source, token).ConfigureAwait(false);

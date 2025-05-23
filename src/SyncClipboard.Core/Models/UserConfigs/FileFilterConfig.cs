@@ -23,6 +23,6 @@ public record FileFilterConfig
 
     public override int GetHashCode()
     {
-        return new int[] { FileFilterMode.GetHashCode(), WhiteList.ListHashCode(), BlackList.ListHashCode() }.GetHashCode();
+        return new int[] { FileFilterMode.GetHashCode(), WhiteList.ListHashCode(), BlackList.ListHashCode() }.ListHashCode();
     }
 }

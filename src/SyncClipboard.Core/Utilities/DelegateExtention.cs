@@ -12,14 +12,14 @@ public static class DelegateExtention
             }
             catch (Exception ex)
             {
-                AppCore.Current?.Logger.Write(logTag, $"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
+                AppCore.Current?.Logger.Write(logTag, $"Invoke Ignore Exception {ex.Message}\n{ex.StackTrace}");
             }
         };
     }
 
     public static Action<T> NoExcept<T>(this Action<T> action, string? logTag = null)
     {
-        return (T arg) =>
+        return arg =>
         {
             try
             {
@@ -27,7 +27,7 @@ public static class DelegateExtention
             }
             catch (Exception ex)
             {
-                AppCore.Current?.Logger.Write(logTag, $"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
+                AppCore.Current?.Logger.Write(logTag, $"Invoke Ignore Exception {ex.Message}\n{ex.StackTrace}");
             }
         };
     }
@@ -40,7 +40,7 @@ public static class DelegateExtention
         }
         catch (Exception ex)
         {
-            AppCore.Current?.Logger.Write(logTag, $"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
+            AppCore.Current?.Logger.Write(logTag, $"Invoke Ignore Exception {ex.Message}\n{ex.StackTrace}");
         }
     }
 
@@ -52,7 +52,7 @@ public static class DelegateExtention
         }
         catch (Exception ex)
         {
-            AppCore.Current?.Logger.Write($"Invoke Unhandled Exception {ex.Message}\n{ex.StackTrace}");
+            AppCore.Current?.Logger.Write($"Invoke Ignore Exception {ex.Message}\n{ex.StackTrace}");
         }
     }
 }

@@ -29,18 +29,19 @@ namespace SyncClipboard.Core.Commons
             Load();
         }
 
-        public T? GetConfig<T>(string key)
+        public T? GetConfig<T>(string key) where T : IEquatable<T>, new()
         {
             var node = _jsonNode[key];
             if (node is null)
             {
-                return default;
+                SetConfig<T>(key, new());
+                return new();
             }
 
             return node.Deserialize<T>();
         }
 
-        public T GetConfig<T>() where T : new()
+        public T GetConfig<T>() where T : IEquatable<T>, new()
         {
             return GetConfig<T>(ConfigKey.GetKeyFromType<T>()) ?? new();
         }
@@ -78,7 +79,7 @@ namespace SyncClipboard.Core.Commons
             ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
         }
 
-        public void GetAndListenConfig<T>(MessageHandler<T> action) where T : new()
+        public void GetAndListenConfig<T>(MessageHandler<T> action) where T : IEquatable<T>, new()
         {
             ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
             action?.Invoke(GetConfig<T>());

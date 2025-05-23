@@ -6,6 +6,7 @@ namespace SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 
 public interface IClipboardReader
 {
+    public string SourceName { get; }
     Task<string[]?> GetFormatsAsync(CancellationToken token);
     Task<string?> GetTextAsync(CancellationToken token);
     Task<object?> GetDataAsync(string format, CancellationToken token);
