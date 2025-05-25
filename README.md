@@ -171,10 +171,9 @@ sudo systemctl enable --now syncclipboard.service
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 
 #### 故常排除
-- 系统提示`由于开发者无法验证，“SyncClipboard”无法打开`  
+- 系统提示`由于开发者无法验证，“SyncClipboard”无法打开`： 
 在macOS的`设置`->`隐私与安全性`页面，点击`仍要打开`
-- 系统提示`“SyncClipboard”已损坏，无法打开`  
-在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
+- 系统提示`“SyncClipboard”已损坏，无法打开`：在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
 - 快捷键依赖辅助功能权限，软件在需要时会弹窗提示授权
 
 ### Linux
@@ -192,16 +191,14 @@ paru -Sy syncclipboard-desktop
 安装后从菜单中启动即可。如果在命令行中使用命令`syncclipboard-desktop`启动报错，请将环境变量`LANG`设置为`en_US.UTF-8`，以`LANG=en_US.UTF-8 syncclipboard-desktop`来启动。
 
 #### 故常排除
+- 剪贴板同步不及时、无法同步、上传乱码：建议在系统内安装`xclip`（X11）或`wl-clipboard`（Wayland），SyncClipboard会使用这些工具辅助获取剪贴板以增强稳定性。使用`xclip -version`或`wl-paste -version`命令确认是否已安装
 - 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
-- 快捷键在Wayland不可用
+- 快捷键在Wayland可能无法使用
 - 无法自动识别语言，默认为英语，启动后可以在SyncClipboard的设置中修改
 
 > [!NOTE]  
-> SyncClipboard的配置文件和临时文件存储在  
-> Windows: `%AppData%\SyncClipboard\`  
-> macOS: `~/Library/Application Support/SyncClipboard/`  
-> Linux: `~/.config/SyncClipboard/`  
-> 需要彻底删除SyncClipboard时请手动删除目录
+> 需要彻底删除SyncClipboard时请手动删除配置文件和临时文件目录：  
+> `%AppData%\SyncClipboard\`(Windows)，`~/Library/Application Support/SyncClipboard/`(macOS)，`~/.config/SyncClipboard/`(Linux)
 
 
 ### IOS 

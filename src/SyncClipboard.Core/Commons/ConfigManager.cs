@@ -1,8 +1,10 @@
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
-using System.Diagnostics;
 using SyncClipboard.Core.Utilities;
+#if MACOS || LINUX
+using System.Diagnostics;
+#endif
 
 namespace SyncClipboard.Core.Commons;
 
@@ -37,8 +39,8 @@ public class ConfigManager : ConfigBase
 #endif
 #if WINDOWS
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),
-        new MenuItem(I18n.Strings.OpenInstallFolder, () => Process.Start("explorer", $"\"{Env.ProgramDirectory}\"")),
-        new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Process.Start("explorer", $"\"{Env.AppDataDirectory}\"")),
+        new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.OpenFolderInExplorer(Env.ProgramDirectory)),
+        new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInExplorer(Env.AppDataDirectory)),
 #endif
 #if LINUX
         new MenuItem(I18n.Strings.ReloadConfigFile, Load),

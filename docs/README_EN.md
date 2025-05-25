@@ -22,7 +22,7 @@
       - [Manual Installation](#manual-installation)
       - [Troubleshooting](#troubleshooting-1)
     - [Linux](#linux)
-      - [手动安装](#手动安装)
+      - [Manual Installation](#manual-installation-1)
       - [Arch Linux](#arch-linux-1)
       - [Troubleshooting](#troubleshooting-2)
     - [IOS](#ios)
@@ -168,15 +168,13 @@ Download the zip file starting with `SyncClipboard_win_` from the [Release](http
 Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
 
 #### Troubleshooting
-- System prompts `“SyncClipboard” cannot be opened because the developer cannot be verified`  
-Go to `Settings` -> `Privacy & Security` on macOS, and click `Open Anyway`.
-- System prompts `"SyncClipboard" is damaged, can't be opened`  
-Run the following command in the terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
+- System prompts `“SyncClipboard” cannot be opened because the developer cannot be verified`: Go to `Settings` -> `Privacy & Security` on macOS, and click `Open Anyway`.
+- System prompts `"SyncClipboard" is damaged, can't be opened`: Run the following command in the terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
 - Hotkeys require Accessibility permissions. The software will prompt for authorization when needed.
 
 ### Linux
-#### 手动安装
-在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
+#### Manual Installation
+Download the installation package starting with `SyncClipboard_linux_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page.
 
 #### Arch Linux
 
@@ -189,16 +187,14 @@ paru -Sy syncclipboard-desktop
 After installation, you can launch it from the menu. If launching via the command `syncclipboard-desktop` results in an error, set the environment variable `LANG` to `en_US.UTF-8` or just start it using `LANG=en_US.UTF-8 syncclipboard-desktop`.
 
 #### Troubleshooting
+- Clipboard sync is delayed, fails, or uploads garbled text: It is recommended to install `xclip` (for X11) or `wl-clipboard` (for Wayland) on your system. SyncClipboard will use these tools to help access the clipboard and improve stability. Use the commands `xclip -version` or `wl-paste -version` to check if they are installed.
 - When using `deb` or `rpm` packages, you need to uninstall the old version before installing a new one, as direct upgrades are not supported.
-- Hotkeys are not supported on Wayland.
+- Hotkeys may not work on Wayland.
 - The language cannot be auto-detected and defaults to English. You can change the language in SyncClipboard's settings after launching.
 
 > [!NOTE]  
-> SyncClipboard's configuration and temporary files are stored in:  
-> Windows: `%AppData%\SyncClipboard\`  
-> macOS: `~/Library/Application Support/SyncClipboard/`  
-> Linux: `~/.config/SyncClipboard/`  
-> To completely remove SyncClipboard, manually delete these directories.
+> To completely remove SyncClipboard, manually delete the configuration and temporary file directories:  
+> `%AppData%\SyncClipboard\` (Windows), `~/Library/Application Support/SyncClipboard/` (macOS), `~/.config/SyncClipboard/` (Linux)
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  

@@ -1,3 +1,8 @@
+v3.0.0
+- Linux：使用第三方工具xclip(X11)或wl-clipboard(Wayland)辅助获取剪贴板以增强稳定性，建议所有Linux用户根据桌面环境安装
+- 服务端支持启用HTTPS
+- 打开配置文件将使用系统默认文本编辑器
+
 v3.0.0-beta2
 - Linux：当系统安装了xclip或wl-clipboard时，使用这些工具辅助获取剪贴板
 
