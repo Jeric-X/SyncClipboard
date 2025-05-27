@@ -12,6 +12,7 @@ using SyncClipboard.WinUI3.Win32;
 using System;
 using System.Drawing.Text;
 using System.Linq;
+using Windows.Graphics;
 using Windows.UI;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
@@ -44,6 +45,7 @@ namespace SyncClipboard.WinUI3.Views
             this.SetWindowIcon("Assets/icon.ico");
             Closed += SettingWindow_Closed;
 
+            this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
             ChangeTitleBarButtonForegroundColor((FrameworkElement)Content, null);
             ((FrameworkElement)Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
 
@@ -52,8 +54,6 @@ namespace SyncClipboard.WinUI3.Views
 
         private void OnWindowLoaded()
         {
-            this.SetWindowSize(_viewModel.Width, _viewModel.Height);
-
             if (!IsIconFontInstalled())
             {
                 var notifyer = App.Current.Services.GetRequiredService<INotification>();
@@ -122,8 +122,6 @@ namespace SyncClipboard.WinUI3.Views
 
         private void SettingWindow_Closed(object _, WindowEventArgs args)
         {
-            _viewModel.Height = this.AppWindow.Size.Height;
-            _viewModel.Width = this.AppWindow.Size.Width;
             this.AppWindow.Hide();
             args.Handled = true;
         }
@@ -169,6 +167,12 @@ namespace SyncClipboard.WinUI3.Views
 
         private void Window_SizeChanged(object _, WindowSizeChangedEventArgs args)
         {
+            if (_mainWindowLoaded)
+            {
+                _viewModel.Height = this.AppWindow.Size.Height;
+                _viewModel.Width = this.AppWindow.Size.Width;
+            }
+
             if (args.Size.Width < 800)
             {
                 SplitPane.IsPaneOpen = false;
