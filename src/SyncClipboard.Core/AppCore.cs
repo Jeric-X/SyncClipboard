@@ -13,6 +13,7 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace SyncClipboard.Core
@@ -74,10 +75,36 @@ namespace SyncClipboard.Core
             RegisterForSystemHotkey(mainWindow);
             InitTrayIcon();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
-            contextMenu.AddMenuItemGroup([new(Strings.Exit, mainWindow.ExitApp)]);
+            contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
             CheckUpdate();
         }
+
+        private void RestartApp()
+        {
+            if (string.IsNullOrEmpty(Env.ProgramPath))
+            {
+                Notification.SendText("Can't restart application.", "Can't get program path");
+                return;
+            }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Env.ProgramPath,
+                UseShellExecute = true,
+                Arguments = StartArguments.ShutdownPrivious
+            };
+
+            try
+            {
+                Process.Start(startInfo);
+            }
+            catch (Exception ex)
+            {
+                Notification.SendText("Can't restart application.", ex.Message);
+            }
+        }
+
 
         private void RegisterForSystemHotkey(IMainWindow mainWindow)
         {

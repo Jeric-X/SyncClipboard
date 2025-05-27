@@ -11,8 +11,7 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        using var mutex = AppInstance.EnsureSingleInstance();
-        if (mutex is null)
+        if (AppInstance.EnsureSingleInstance(args) is false)
         {
             return;
         }

@@ -606,4 +606,7 @@
   <data name="CustomConfigFileLink" xml:space="preserve">
     <value>https://github.com/Jeric-X/SyncClipboard#服务器配置</value>
   </data>
+  <data name="RestartApp" xml:space="preserve">
+    <value>重新启动</value>
+  </data>
 </root>

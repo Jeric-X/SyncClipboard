@@ -16,10 +16,9 @@ public static partial class Program
     private static partial void XamlCheckProcessRequirements();
 
     [STAThread]
-    private static void Main(string[] _)
+    private static void Main(string[] args)
     {
-        using var mutex = AppInstance.EnsureSingleInstance();
-        if (mutex is null)
+        if (AppInstance.EnsureSingleInstance(args) is false)
         {
             return;
         }

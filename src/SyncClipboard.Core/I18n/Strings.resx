@@ -606,4 +606,7 @@
   <data name="CustomConfigFileLink" xml:space="preserve">
     <value>https://github.com/Jeric-X/SyncClipboard/blob/master/docs/README_EN.md#server-configuration</value>
   </data>
+  <data name="RestartApp" xml:space="preserve">
+    <value>Restart</value>
+  </data>
 </root>

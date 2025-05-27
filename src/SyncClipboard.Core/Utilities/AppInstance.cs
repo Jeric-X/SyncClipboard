@@ -8,11 +8,13 @@ namespace SyncClipboard.Core.Utilities;
 public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposable
 {
     private const string ActiveCommand = "Active";
+    private const string ShutdownCommand = "Shutdown";
     private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
     private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
     private bool _disposed = false;
 
     private CancellationTokenSource? _cancellationSource = null;
+    private static Mutex? GlobalMutex = null;
 
     ~AppInstance() => Dispose();
 
@@ -24,7 +26,22 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         }
         CancelWaitForOtherInstanceToActiveAsync();
         GC.SuppressFinalize(this);
+        GlobalMutex?.ReleaseMutex();
+        GlobalMutex?.Dispose();
         _disposed = true;
+    }
+
+    private void ParseCommand(string? command)
+    {
+        if (command is ActiveCommand)
+        {
+            window?.Show();
+        }
+        else if (command is ShutdownCommand)
+        {
+            AppCore.Current?.Stop();
+            Environment.Exit(0);
+        }
     }
 
     public async void WaitForOtherInstanceToActiveAsync()
@@ -42,12 +59,9 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
                 using var pipeServer = new NamedPipeServerStream(PipePrefix, PipeDirection.InOut, 1);
                 await pipeServer.WaitForConnectionAsync(cancellationToken);
                 using var reader = new StreamReader(pipeServer);
-                var command = await reader.ReadLineAsync().WaitAsync(cancellationToken);
+                var command = await reader.ReadLineAsync(cancellationToken);
 
-                if (command is ActiveCommand)
-                {
-                    window?.Show();
-                }
+                ParseCommand(command);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -68,7 +82,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         _cancellationSource = null;
     }
 
-    private static async Task ActiveOtherInstance()
+    private static async Task SendCommandToOtherInstance(string command)
     {
         using var pipeClient = new NamedPipeClientStream(".", PipePrefix, PipeDirection.InOut);
         var token = new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token;
@@ -76,7 +90,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         {
             await pipeClient.ConnectAsync(token);
             using var writer = new StreamWriter(pipeClient);
-            writer.WriteLine(ActiveCommand);
+            writer.WriteLine(command);
             writer.Flush();
         }
         catch (Exception ex)
@@ -85,14 +99,68 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         }
     }
 
-    public static Mutex? EnsureSingleInstance()
+    private static Task ShutdownOtherInstance()
+    {
+        return SendCommandToOtherInstance(ShutdownCommand);
+    }
+
+    private static Task ActiveOtherInstance()
+    {
+        return SendCommandToOtherInstance(ActiveCommand);
+    }
+
+    public static Mutex? CreateMutexOrWakeUp()
     {
         Mutex mutex = new(false, MutexPrefix, out bool createdNew);
         if (!createdNew)
         {
             ActiveOtherInstance().Wait();
+            mutex.Dispose();
             return null;
         }
         return mutex;
+    }
+
+    public static Mutex? ForceCreateMutex()
+    {
+        Mutex mutex = new(false, MutexPrefix, out bool createdNew);
+        if (!createdNew)
+        {
+            ShutdownOtherInstance().Wait();
+        }
+        return mutex;
+    }
+
+    public static bool EnsureSingleInstance(string[] args)
+    {
+        Mutex? mutex;
+        if (args.Contains(StartArguments.ShutdownPrivious))
+        {
+            mutex = ForceCreateMutex();
+        }
+        else
+        {
+            mutex = CreateMutexOrWakeUp();
+        }
+
+        if (mutex is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (mutex.WaitOne(TimeSpan.FromSeconds(10)))
+            {
+                GlobalMutex = mutex;
+                return true;
+            }
+            return false;
+        }
+        catch (AbandonedMutexException)
+        {
+            GlobalMutex = CreateMutexOrWakeUp();
+            return GlobalMutex?.WaitOne(TimeSpan.FromSeconds(10)) ?? false;
+        }
     }
 }
