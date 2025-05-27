@@ -6,12 +6,12 @@ using System.Text.Json.Nodes;
 
 namespace SyncClipboard.Core.Commons
 {
-    public class ConfigBase
+    public class ConfigBase(INotification notification)
     {
         public event Action? ConfigChanged;
 
         protected string Path { get; set; } = null!;
-        protected INotification? Notification { get; set; } = null;
+        protected INotification? Notification { get; set; } = notification;
 
         private readonly Dictionary<string, Type> _registedTypeList = [];
         private readonly Dictionary<string, HashSet<MessageDispatcher>> _registedChangedHandlerList = [];
@@ -19,11 +19,7 @@ namespace SyncClipboard.Core.Commons
         private JsonNode _jsonNode = new JsonObject();
         private JsonNode _jsonNodeBackUp = new JsonObject();
 
-        public ConfigBase()
-        {
-        }
-
-        public ConfigBase(string path)
+        public ConfigBase(string path, INotification notification) : this(notification)
         {
             Path = path;
             Load();

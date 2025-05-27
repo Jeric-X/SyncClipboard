@@ -10,9 +10,8 @@ namespace SyncClipboard.Core.Commons;
 
 public class ConfigManager : ConfigBase
 {
-    public ConfigManager(StaticConfig staticConfig, INotification notification)
+    public ConfigManager(StaticConfig staticConfig, INotification notification) : base(notification)
     {
-        Notification = notification;
         bool portableUserConfig = staticConfig.GetConfig<EnvConfig>().PortableUserConfig;
         SetPath(portableUserConfig);
         Load();

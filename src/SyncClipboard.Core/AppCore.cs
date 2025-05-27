@@ -166,6 +166,7 @@ namespace SyncClipboard.Core
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<StaticConfig>();
+            services.AddSingleton<RuntimeConfig>();
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();

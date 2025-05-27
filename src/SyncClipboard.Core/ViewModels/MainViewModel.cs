@@ -1,11 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels
 {
-    public partial class MainViewModel(IServiceProvider services) : ObservableObject
+    public partial class MainViewModel(IServiceProvider services, RuntimeConfig runtimeConfig) : ObservableObject
     {
         public ObservableCollection<PageDefinition> MainWindowPage { get; } =
         [
@@ -52,6 +54,19 @@ namespace SyncClipboard.Core.ViewModels
             }
 
             NavigateTo(BreadcrumbList[index], NavigationTransitionEffect.FromLeft);
+        }
+
+
+        public int Width
+        {
+            get => runtimeConfig.GetConfig<MainWindowConfig>().Width;
+            set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<MainWindowConfig>() with { Width = value });
+        }
+
+        public int Height
+        {
+            get => runtimeConfig.GetConfig<MainWindowConfig>().Height;
+            set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<MainWindowConfig>() with { Height = value });
         }
     }
 }

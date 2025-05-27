@@ -5,9 +5,8 @@ namespace SyncClipboard.Core.Commons;
 
 public class StaticConfig : ConfigBase
 {
-    public StaticConfig(INotification notification)
+    public StaticConfig(INotification notification) : base(notification)
     {
-        Notification = notification;
         Path = Env.StaticConfigPath;
         Load();
     }

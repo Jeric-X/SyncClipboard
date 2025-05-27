@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -24,8 +25,17 @@ public partial class MainWindow : Window, IMainWindow
         InitializeComponent();
     }
 
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        Height = _viewModel.Height;
+        Width = _viewModel.Width;
+        base.OnLoaded(e);
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        _viewModel.Height = (int)Height;
+        _viewModel.Width = (int)Width;
         this.Hide();
         e.Cancel = true;
     }

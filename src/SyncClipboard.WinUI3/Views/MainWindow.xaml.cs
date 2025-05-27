@@ -42,7 +42,6 @@ namespace SyncClipboard.WinUI3.Views
 
             // AppWindow.SetIcon() has issue https://github.com/microsoft/microsoft-ui-xaml/issues/8134, so use P/Invoke
             this.SetWindowIcon("Assets/icon.ico");
-            this.SetWindowSize(850, 530);
             Closed += SettingWindow_Closed;
 
             ChangeTitleBarButtonForegroundColor((FrameworkElement)Content, null);
@@ -53,6 +52,8 @@ namespace SyncClipboard.WinUI3.Views
 
         private void OnWindowLoaded()
         {
+            this.SetWindowSize(_viewModel.Width, _viewModel.Height);
+
             if (!IsIconFontInstalled())
             {
                 var notifyer = App.Current.Services.GetRequiredService<INotification>();
@@ -121,6 +122,8 @@ namespace SyncClipboard.WinUI3.Views
 
         private void SettingWindow_Closed(object _, WindowEventArgs args)
         {
+            _viewModel.Height = this.AppWindow.Size.Height;
+            _viewModel.Width = this.AppWindow.Size.Width;
             this.AppWindow.Hide();
             args.Handled = true;
         }
