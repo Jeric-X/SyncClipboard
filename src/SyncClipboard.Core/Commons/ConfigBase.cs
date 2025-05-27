@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 
 namespace SyncClipboard.Core.Commons
 {
-    public class ConfigBase(INotification notification)
+    public class ConfigBase(INotification? notification = null)
     {
         public event Action? ConfigChanged;
 
@@ -19,7 +19,7 @@ namespace SyncClipboard.Core.Commons
         private JsonNode _jsonNode = new JsonObject();
         private JsonNode _jsonNodeBackUp = new JsonObject();
 
-        public ConfigBase(string path, INotification notification) : this(notification)
+        public ConfigBase(string path, INotification? notification = null) : this(notification)
         {
             Path = path;
             Load();
