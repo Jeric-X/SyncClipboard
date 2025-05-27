@@ -28,8 +28,10 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private List<HandlerMapping> FormatHandlerlist =>
     [
-        new HandlerMapping(Format.TextUtf8, HandleLinuxTextUtf8),
-        new HandlerMapping(Format.Text, HandleLinuxTextNormal),
+        new HandlerMapping(Format.Text, (meta, token) => HandleLinuxText(Format.Text, meta, token)),
+        new HandlerMapping(Format.Utf8String, (meta, token) => HandleLinuxText(Format.Utf8String, meta, token)),
+        new HandlerMapping(Format.TextUtf8, (meta, token) => HandleLinuxText(Format.TextUtf8, meta, token)),
+        new HandlerMapping(Format.TEXT, (meta, token) => HandleLinuxText(Format.TEXT, meta, token)),
 
         new HandlerMapping(Format.FileList, HandleFiles),
         new HandlerMapping(Format.UriList, HandleLinuxUriList),
@@ -115,26 +117,16 @@ internal partial class ClipboardFactory
         {
             return;
         }
-        if (await Clipboard.GetDataAsync(format, token) is not byte[] textBytes)
+
+        var data = await Clipboard.GetDataAsync(format, token);
+        if (data is string text)
         {
-            meta.Text = await Clipboard.GetTextAsync(token);
+            meta.Text = text;
         }
-        else
+        else if (data is byte[] textBytes)
         {
             meta.Text = Encoding.UTF8.GetString(textBytes);
         }
-    }
-
-    [SupportedOSPlatform("linux")]
-    private Task HandleLinuxTextUtf8(ClipboardMetaInfomation meta, CancellationToken token)
-    {
-        return HandleLinuxText(Format.TextUtf8, meta, token);
-    }
-
-    [SupportedOSPlatform("linux")]
-    private Task HandleLinuxTextNormal(ClipboardMetaInfomation meta, CancellationToken token)
-    {
-        return HandleLinuxText(Format.Text, meta, token);
     }
 
     [SupportedOSPlatform("linux")]

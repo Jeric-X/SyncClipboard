@@ -16,7 +16,7 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
     {
         var utf8Text = Encoding.UTF8.GetBytes(metaInfomation?.Text ?? "");
         var dataObject = new DataObject();
-        dataObject.Set(Format.Text, utf8Text);
+        dataObject.Set(Format.TEXT, utf8Text);
         dataObject.Set("text/plain", utf8Text);
         dataObject.Set("text/plain;charset=utf-8", utf8Text);
         return dataObject;

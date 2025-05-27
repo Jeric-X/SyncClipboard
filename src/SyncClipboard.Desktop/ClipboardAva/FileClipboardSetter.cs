@@ -35,7 +35,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
     [SupportedOSPlatform("linux")]
     private static void SetLinux(DataObject dataObject, string[] files)
     {
-        dataObject.Set(Format.Text, Encoding.UTF8.GetBytes(string.Join('\n', files)));
+        dataObject.Set(Format.TEXT, Encoding.UTF8.GetBytes(string.Join('\n', files)));
 
         var uriEnum = files.Select(file => new Uri(file).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
         var uris = string.Join("\n", uriEnum);

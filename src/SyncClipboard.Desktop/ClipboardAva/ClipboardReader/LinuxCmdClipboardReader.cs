@@ -55,7 +55,7 @@ public class LinuxCmdClipboardReader : IClipboardReader
 
     public virtual async Task<string?> GetTextAsync(CancellationToken token)
     {
-        return await GetDataAsync(Format.Text, token) as string;
+        return await GetDataAsync(Format.TEXT, token) as string;
     }
 
     public async Task<object?> GetDataAsync(string format, CancellationToken token)

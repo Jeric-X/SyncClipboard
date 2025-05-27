@@ -52,6 +52,11 @@ namespace SyncClipboard.Core
         {
             var appConfig = Services.GetRequiredService<IAppConfig>();
             Logger.Write($"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
+            if (OperatingSystem.IsLinux())
+            {
+                Logger.Write("App core", $"DISPLAY:{Environment.GetEnvironmentVariable("DISPLAY")}");
+                Logger.Write("App core", $"WAYLAND_DISPLAY:{Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")}");
+            }
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
 
