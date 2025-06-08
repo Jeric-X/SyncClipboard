@@ -25,6 +25,9 @@
       - [Manual Installation](#manual-installation-1)
       - [Arch Linux](#arch-linux-1)
       - [Troubleshooting](#troubleshooting-2)
+    - [Desktop Client Command Line Arguments](#desktop-client-command-line-arguments)
+      - [--shutdown-previous](#--shutdown-previous)
+      - [--command-{command-name}](#--command-command-name)
     - [IOS](#ios)
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
@@ -195,6 +198,19 @@ After installation, you can launch it from the menu. If launching via the comman
 > [!NOTE]  
 > To completely remove SyncClipboard, manually delete the configuration and temporary file directories:  
 > `%AppData%\SyncClipboard\` (Windows), `~/Library/Application Support/SyncClipboard/` (macOS), `~/.config/SyncClipboard/` (Linux)
+
+### Desktop Client Command Line Arguments
+
+#### --shutdown-previous
+Closes any running instance of SyncClipboard and starts a new one.
+
+#### --command-{command-name}
+Executes the specified command, where `{command-name}` is the name of the command. After setting a shortcut key, you can view the corresponding command name in the configuration file. Even if the shortcut key configuration is cleared, the command line argument remains valid.  
+If a SyncClipboard instance is already running, it will not start a new instance but will instruct the running SyncClipboard to execute the command. If no instance is running, the command will be executed immediately after startup.  
+Multiple `--command-{command-name}` arguments are supported, multiple commands are executed simultaneously.  
+
+> [!NOTE]  
+> When using command line arguments on macOS, please use the full path to the executable: `/Applications/SyncClipboard.app/Contents/MacOS/SyncClipboard.Desktop.MacOS`
 
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  

@@ -26,6 +26,9 @@
       - [手动安装](#手动安装-1)
       - [Arch Linux](#arch-linux-1)
       - [故常排除](#故常排除-2)
+    - [桌面客户端命令行参数](#桌面客户端命令行参数)
+      - [--shutdown-previous](#--shutdown-previous)
+      - [--command-{command-name}](#--command-command-name)
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
@@ -200,6 +203,18 @@ paru -Sy syncclipboard-desktop
 > 需要彻底删除SyncClipboard时请手动删除配置文件和临时文件目录：  
 > `%AppData%\SyncClipboard\`(Windows)，`~/Library/Application Support/SyncClipboard/`(macOS)，`~/.config/SyncClipboard/`(Linux)
 
+### 桌面客户端命令行参数
+
+#### --shutdown-previous
+关闭已经运行的SyncClipboard，运行新的实例
+
+#### --command-{command-name}
+运行指定命令，`{command-name}`为命令名称，设置快捷键后，在配置文件中可以查看对应的命令名称，即使清除快捷键配置，命令行参数仍然有效  
+当存在已经运行的SyncClipboard时，不会启动新的实例，而是调用已经运行的SyncClipboard执行命令。当不存在已经运行的SyncClipboard时，将在启动完成后立刻执行命令  
+支持多个`--command-{command-name}`参数，多个命令同时执行  
+
+> [!NOTE]  
+> macOS使用命令行参数时，请使用可执行程序的完整路径`/Applications/SyncClipboard.app/Contents/MacOS/SyncClipboard.Desktop.MacOS`
 
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  

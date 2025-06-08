@@ -1,10 +1,10 @@
-namespace SyncClipboard.Core.Commons
+﻿namespace SyncClipboard.Core.Commons
 {
     public static class Env
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
-        public const string AppVersion = "3.0.0.1";
+        public const string AppVersion = "3.0.1";
         public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
