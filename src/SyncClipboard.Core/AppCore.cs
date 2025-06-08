@@ -78,6 +78,20 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
             CheckUpdate();
+            RunStartUpCommands();
+        }
+
+        private void RunStartUpCommands()
+        {
+            var HotkeyManager = Services.GetRequiredService<HotkeyManager>();
+
+            foreach (var arg in Environment.GetCommandLineArgs())
+            {
+                if (arg.StartsWith(StartArguments.CommandPrefix))
+                {
+                    HotkeyManager.RunCommand(arg[StartArguments.CommandPrefix.Length..]);
+                }
+            }
         }
 
         private void RestartApp()

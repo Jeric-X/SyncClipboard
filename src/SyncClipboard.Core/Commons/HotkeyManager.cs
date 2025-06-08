@@ -230,4 +230,17 @@ public class HotkeyManager
     {
         return hotkey == Hotkey.Nothing || _nativeHotkeyRegistry.IsValidHotkeyForm(hotkey);
     }
+
+    public void RunCommand(string commandName)
+    {
+        if (Guid.TryParse(commandName, out Guid guid) is false)
+        {
+            return;
+        }
+
+        if (_hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? status) && status.Command is not null)
+        {
+            status.Command.Command.InvokeNoExcept();
+        }
+    }
 }

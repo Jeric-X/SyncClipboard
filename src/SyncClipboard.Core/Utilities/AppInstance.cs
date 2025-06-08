@@ -5,7 +5,7 @@ using System.IO.Pipes;
 
 namespace SyncClipboard.Core.Utilities;
 
-public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposable
+public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManager hotkeyManager) : IDisposable
 {
     private const string ActiveCommand = "Active";
     private const string ShutdownCommand = "Shutdown";
@@ -33,6 +33,12 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
 
     private void ParseCommand(string? command)
     {
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            logger.Write("Received empty command, ignoring.");
+            return;
+        }
+
         if (command is ActiveCommand)
         {
             window?.Show();
@@ -41,6 +47,15 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         {
             AppCore.Current?.Stop();
             Environment.Exit(0);
+        }
+        else if (command.StartsWith(StartArguments.CommandPrefix))
+        {
+            var cmdName = command[StartArguments.CommandPrefix.Length..];
+            hotkeyManager.RunCommand(cmdName);
+        }
+        else
+        {
+            logger.Write($"Unknown command received: {command}");
         }
     }
 
@@ -109,12 +124,25 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         return SendCommandToOtherInstance(ActiveCommand);
     }
 
-    public static Mutex? CreateMutexOrWakeUp()
+    public static Mutex? CreateMutexOrWakeUp(string[] args)
     {
         Mutex mutex = new(false, MutexPrefix, out bool createdNew);
         if (!createdNew)
         {
-            ActiveOtherInstance().Wait();
+            if (args.Any(args => args.StartsWith(StartArguments.CommandPrefix)))
+            {
+                foreach (var arg in args)
+                {
+                    if (arg.StartsWith(StartArguments.CommandPrefix))
+                    {
+                        SendCommandToOtherInstance(arg).Wait();
+                    }
+                }
+            }
+            else
+            {
+                ActiveOtherInstance().Wait();
+            }
             mutex.Dispose();
             return null;
         }
@@ -140,7 +168,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         }
         else
         {
-            mutex = CreateMutexOrWakeUp();
+            mutex = CreateMutexOrWakeUp(args);
         }
 
         if (mutex is null)
@@ -159,7 +187,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger) : IDisposabl
         }
         catch (AbandonedMutexException)
         {
-            GlobalMutex = CreateMutexOrWakeUp();
+            GlobalMutex = new(false, MutexPrefix);
             return GlobalMutex?.WaitOne(TimeSpan.FromSeconds(10)) ?? false;
         }
     }
