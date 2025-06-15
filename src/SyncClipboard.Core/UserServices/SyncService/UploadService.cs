@@ -48,11 +48,6 @@ public class UploadService : ClipboardHander
     public override string SERVICE_NAME => I18n.Strings.ClipboardSyncing;
     public override string LOG_TAG => "PUSH";
 
-    protected override ILogger Logger => _logger;
-    protected override string? ContextMenuGroupName { get; } = SyncService.ContextMenuGroupName;
-    protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
-    protected override IClipboardChangingListener ClipboardChangingListener => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
-
     protected override bool SwitchOn
     {
         get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
@@ -101,6 +96,8 @@ public class UploadService : ClipboardHander
         _serverConfig = _configManager.GetConfig<ServerConfig>();
         _keyEventSimulator = keyEventSimulator;
         _hotkeyManager = hotkeyManager;
+
+        ContextMenuGroupName = SyncService.ContextMenuGroupName;
     }
 
     public override void Load()

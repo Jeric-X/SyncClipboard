@@ -18,10 +18,6 @@ public class ConvertService : ClipboardHander
     public override string SERVICE_NAME => I18n.Strings.ImageCompatibility;
     public override string LOG_TAG => "COMPATIBILITY";
 
-    protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
-    protected override IClipboardChangingListener ClipboardChangingListener
-                                                  => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
-    protected override ILogger Logger => _logger;
     protected override bool SwitchOn
     {
         get => _clipboardConfig.ConvertSwitchOn;

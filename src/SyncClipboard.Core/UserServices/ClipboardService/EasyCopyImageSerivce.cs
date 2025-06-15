@@ -23,10 +23,6 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     private const string STOPPED_STATUS = "Stopped.";
     private const string RUNNING_STATUS = "Running.";
 
-    protected override ILogger Logger => _logger;
-    protected override IContextMenu? ContextMenu => _serviceProvider.GetRequiredService<IContextMenu>();
-    protected override IClipboardChangingListener ClipboardChangingListener
-                                                  => _serviceProvider.GetRequiredService<IClipboardChangingListener>();
     protected override bool SwitchOn
     {
         get => _clipboardAssistConfig.EasyCopyImageSwitchOn;

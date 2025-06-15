@@ -154,31 +154,9 @@ public class HotkeyManager
         if (collection is null)
             _commandCollections.Add(commandCollection);
         else
-            commandCollection.Commands.ForEach(command => collection.Commands.Add(command));
+            commandCollection.Commands.ForEach(collection.Commands.Add);
 
         RegisterCommands(commandCollection.Commands);
-    }
-
-    public void RegisterCommands(string name, IEnumerable<UniqueCommand> commands, string? fontIcon = null)
-    {
-        var collection = _commandCollections.Find(collection => collection.Name == name);
-        if (collection is null)
-            _commandCollections.Add(new(name, fontIcon ?? PageDefinition.Hotkey.FontIcon!, commands));
-        else
-            commands.ForEach(command => collection.Commands.Add(command));
-
-        RegisterCommands(commands);
-    }
-
-    public void RegisterCommand(string name, UniqueCommand command, string? fontIcon = null)
-    {
-        var collection = _commandCollections.Find(collection => collection.Name == name);
-        if (collection is null)
-            _commandCollections.Add(new(name, fontIcon ?? PageDefinition.Hotkey.FontIcon!, command));
-        else
-            collection.Commands.Add(command);
-
-        RegisterCommand(command);
     }
 
     public void SetHotKey(Guid guid, Hotkey hotkey)

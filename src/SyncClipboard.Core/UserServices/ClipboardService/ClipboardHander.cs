@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -6,16 +7,23 @@ namespace SyncClipboard.Core.UserServices.ClipboardService;
 
 abstract public class ClipboardHander : Service
 {
-    protected abstract bool SwitchOn { get; set; }
-    protected abstract ILogger Logger { get; }
     public abstract string SERVICE_NAME { get; }
     public abstract string LOG_TAG { get; }
+    protected abstract bool SwitchOn { get; set; }
+    protected ILogger Logger { get; }
 
-    protected abstract IClipboardChangingListener ClipboardChangingListener { get; }
+    private readonly IServiceProvider sp = AppCore.Current.Services;
+    private IClipboardChangingListener ClipboardChangingListener { get; }
+    private IContextMenu ContextMenu => sp.GetRequiredService<IContextMenu>();
+    private ToggleMenuItem? ToggleMenuItem { get; set; }
+    protected string? ContextMenuGroupName { get; init; }
 
-    protected ToggleMenuItem? ToggleMenuItem { get; set; }
-    protected virtual string? ContextMenuGroupName { get; } = null;
-    protected abstract IContextMenu? ContextMenu { get; }
+    public ClipboardHander()
+    {
+        sp = AppCore.Current.Services;
+        Logger = sp.GetRequiredService<ILogger>();
+        ClipboardChangingListener = sp.GetRequiredService<IClipboardChangingListener>();
+    }
 
     protected override void StartService()
     {
