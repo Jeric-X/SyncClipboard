@@ -85,7 +85,7 @@
             <ui:SettingsExpander.Footer>
                 <ComboBox SelectedItem="{Binding Theme, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Themes}">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="m:LocaleString">
+                        <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=x:String}">
                             <TextBlock Text="{Binding ShownString}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>

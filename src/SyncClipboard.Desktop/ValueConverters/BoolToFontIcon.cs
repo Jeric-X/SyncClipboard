@@ -10,7 +10,10 @@ public class BoolToFontIcon : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         var isError = value as bool?;
-        ArgumentNullException.ThrowIfNull(nameof(isError));
+        if (!isError.HasValue)
+        {
+            throw new ArgumentException("value is not type bool", nameof(value));
+        }
         return Converter.ServiceStatusToFontIcon(isError!.Value);
     }
 

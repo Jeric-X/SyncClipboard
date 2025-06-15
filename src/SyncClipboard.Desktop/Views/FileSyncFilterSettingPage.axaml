@@ -26,7 +26,7 @@
             <ui:SettingsExpander.Footer>
                 <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="m:LocaleString">
+                        <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=x:String}">
                             <TextBlock Text="{Binding ShownString}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>

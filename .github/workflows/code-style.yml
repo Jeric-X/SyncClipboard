@@ -26,13 +26,13 @@ jobs:
         dotnet workload restore
         dotnet restore
 
-    - name: Check code style
-      working-directory: ./src
-      run: |
-        dotnet format --verify-no-changes --no-restore
+    # - name: Check code style
+    #   working-directory: ./src
+    #   run: |
+    #     dotnet format --verify-no-changes --no-restore
 
     - name: Check code style info
-      continue-on-error: true
+      # continue-on-error: true
       working-directory: ./src
       run: |
         dotnet format --verify-no-changes --severity info --no-restore

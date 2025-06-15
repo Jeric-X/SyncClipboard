@@ -60,7 +60,7 @@ public partial class SystemSettingViewModel : ObservableObject
         DiagnoseMode = value.DiagnoseMode;
         Font = value.Font;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
-        Theme = Themes.FirstOrDefault(x => x.String == ProgramConfig.Theme) ?? Themes[0];
+        Theme = Themes.FirstOrDefault(x => x.Key == ProgramConfig.Theme) ?? Themes[0];
         _configManager.SetConfig(value);
     }
 
@@ -73,7 +73,7 @@ public partial class SystemSettingViewModel : ObservableObject
     public string DisplayMemberPath = nameof(LanguageModel.DisplayName);
     public string? ChangingLangInfo => I18nHelper.GetChangingLanguageInfo(Language);
 
-    public static readonly LocaleString[] Themes =
+    public static readonly LocaleString<string>[] Themes =
     [
         new ("", Strings.SystemStyle),
         new ("Light", Strings.Light),
@@ -81,11 +81,11 @@ public partial class SystemSettingViewModel : ObservableObject
     ];
 
     [ObservableProperty]
-    private LocaleString theme;
-    partial void OnThemeChanged(LocaleString value)
+    private LocaleString<string> theme;
+    partial void OnThemeChanged(LocaleString<string> value)
     {
-        ProgramConfig = ProgramConfig with { Theme = value.String };
-        _services.GetRequiredService<IMainWindow>().ChangeTheme(value.String);
+        ProgramConfig = ProgramConfig with { Theme = value.Key };
+        _services.GetRequiredService<IMainWindow>().ChangeTheme(value.Key);
     }
 
     public static readonly LocaleString<bool>[] UserConfigPositions =
@@ -120,7 +120,7 @@ public partial class SystemSettingViewModel : ObservableObject
         programConfig = _configManager.GetConfig<ProgramConfig>();
         language = Languages.FirstOrDefault(x => x.LocaleTag == programConfig.Language) ?? Languages[0];
         font = programConfig.Font;
-        theme = Themes.FirstOrDefault(x => x.String == programConfig.Theme) ?? Themes[0];
+        theme = Themes.FirstOrDefault(x => x.Key == programConfig.Theme) ?? Themes[0];
         hideWindowOnStartUp = programConfig.HideWindowOnStartup;
         logRemainDays = programConfig.LogRemainDays;
         tempFileRemainDays = programConfig.TempFileRemainDays;

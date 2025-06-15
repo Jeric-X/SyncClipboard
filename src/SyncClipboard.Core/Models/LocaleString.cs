@@ -1,7 +1,5 @@
 ﻿namespace SyncClipboard.Core.Models;
 
-public record class LocaleString(string String, string ShownString);
-
 public record class LocaleString<T>
 {
     public T Key { get; }

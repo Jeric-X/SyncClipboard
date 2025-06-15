@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class FileSyncFilterSettingViewModel : ObservableObject
 {
-    public static readonly LocaleString[] Modes =
+    public static readonly LocaleString<string>[] Modes =
     [
         new ("", Strings.None),
         new ("BlackList", Strings.BlackList),
@@ -18,14 +18,14 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     ];
 
     [ObservableProperty]
-    private LocaleString filterMode = Modes[0];
-    partial void OnFilterModeChanged(LocaleString value) => FilterConfig = FilterConfig with { FileFilterMode = value.String };
+    private LocaleString<string> filterMode = Modes[0];
+    partial void OnFilterModeChanged(LocaleString<string> value) => FilterConfig = FilterConfig with { FileFilterMode = value.Key };
 
     [ObservableProperty]
     private FileFilterConfig filterConfig = new();
     partial void OnFilterConfigChanged(FileFilterConfig value)
     {
-        FilterMode = Modes.FirstOrDefault(x => x.String == FilterConfig.FileFilterMode) ?? Modes[0];
+        FilterMode = Modes.FirstOrDefault(x => x.Key == FilterConfig.FileFilterMode) ?? Modes[0];
         if (FilterConfig.FileFilterMode == "BlackList")
         {
             ShownText = string.Join(Environment.NewLine, value.BlackList);

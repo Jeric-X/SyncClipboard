@@ -10,7 +10,10 @@ public class BoolToPasswordIconConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         var show = value as bool?;
-        ArgumentNullException.ThrowIfNull(nameof(show));
+        if (!show.HasValue)
+        {
+            throw new ArgumentException("value is not type bool", nameof(value));
+        }
         return Converter.BoolToPasswordFontIcon(show!.Value);
     }
 

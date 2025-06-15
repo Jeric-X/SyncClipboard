@@ -28,8 +28,13 @@ dotnet_diagnostic.CC0072.severity = none
 dotnet_diagnostic.CsWinRT1029.severity = none
 dotnet_diagnostic.CsWinRT1028.severity = none
 
-# IDE0305: Add()��AddRange()��AsSpan()��ToList() �� ToArray() https://learn.microsoft.com/zh-cn/dotnet/fundamentals/code-analysis/style-rules/ide0305
+# IDE0305: Add()/AddRange()/AsSpan()/ToList()/ToArray() https://learn.microsoft.com/zh-cn/dotnet/fundamentals/code-analysis/style-rules/ide0305
 dotnet_diagnostic.IDE0305.severity = none
+
+# SYSLIB1096: 转换为“GeneratedComInterface”
+# SYSLIB1054: 使用 “LibraryImportAttribute” 而不是 “DllImportAttribute” 在编译时生成 P/Invoke 封送代码
+dotnet_diagnostic.SYSLIB1096.severity = none
+dotnet_diagnostic.SYSLIB1054.severity = none
 
 [{SyncClipboard.Core/Clipboard/Profile/*.cs,SyncClipboard.Core/UserServices/**}]
 # IDE0130: namespace

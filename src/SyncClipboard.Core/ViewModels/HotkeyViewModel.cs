@@ -7,9 +7,7 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public record UniqueCommandViewModel(string Name, Guid Guid, bool IsError, Hotkey Hotkey);
 
-public record CommandCollectionViewModel(string Name, string FontIcon, List<UniqueCommandViewModel>? Commands);
 
 public partial class HotkeyViewModel : ObservableObject
 {

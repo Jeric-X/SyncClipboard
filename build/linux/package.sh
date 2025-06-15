@@ -19,8 +19,8 @@ function arg_info() {
     echo "-s <bin_source_dir>           source directory of the binaries"
 }
 
-while getopts "o:v:k:r:s:" option;
-do 
+while getopts "k:r:s:" option;
+do
     case "$option" in
         k)
             package_kind=$OPTARG
@@ -78,6 +78,3 @@ echo "base_version : $base_version"
 echo "version : $version"
 
 pupnet $CONF_PATH --app-version $version --kind $package_kind -r $rid -y
-if [ $? -ne 0 ]; then
-    exit 1
-fi

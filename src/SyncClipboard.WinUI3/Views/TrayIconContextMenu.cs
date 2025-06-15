@@ -96,7 +96,7 @@ namespace SyncClipboard.WinUI3.Views
                 Text = menuitem.Text,
                 IsChecked = menuitem.Checked
             };
-            menuitem.CheckedChanged += (bool status) => flyoutItem.IsChecked = status;
+            menuitem.CheckedChanged += status => flyoutItem.IsChecked = status;
 
             if (menuitem.Action is not null)
             {

@@ -128,27 +128,53 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
     }
 
+    private static bool IsNotImage(Profile profile, ClipboardMetaInfomation metaInfo)
+    {
+        return profile.Type == ProfileType.Text
+            || (profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType)
+            || (metaInfo.OriginalType is not null && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType);
+    }
+
+    private static bool IsFocusOnFileOperation(Profile _, ClipboardMetaInfomation metaInfo)
+    {
+        return metaInfo.Files?.Length > 1
+            || (metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move;
+    }
+
+    // 在Linux上不借助第三方工具的情况时，Image很容易获取失败
+    private static bool IsAreadyAdjustButGetImageFailed(Profile _, ClipboardMetaInfomation metaInfo)
+    {
+        return metaInfo.Image is null
+            && metaInfo.Files is not null
+            && metaInfo.Html is not null
+            && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType;
+    }
+
+    private static bool IsAreadyAdjust(Profile _, ClipboardMetaInfomation metaInfo)
+    {
+        return metaInfo.Image is not null
+            && metaInfo.Files is not null
+            && metaInfo.Html is not null;
+    }
+
     private static bool NeedAdjust(Profile profile, ClipboardMetaInfomation metaInfo)
     {
-        bool[] badCaseList = [
-            profile.Type == ProfileType.Text,
-            profile.Type != ProfileType.Image && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
-            metaInfo.OriginalType is not null && metaInfo.OriginalType != ClipboardMetaInfomation.ImageType,
-            metaInfo.Files?.Length > 1,
-            (metaInfo.Effects & DragDropEffects.Move) == DragDropEffects.Move,
-            metaInfo.Html is not null && metaInfo.Files is not null && metaInfo.Image is null
-                && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType,
+        Func<Profile, ClipboardMetaInfomation, bool>[] checkList =
+        [
+            IsNotImage,
+            IsFocusOnFileOperation,
+            IsAreadyAdjustButGetImageFailed,
+            IsAreadyAdjust,
         ];
 
-        foreach (var badCase in badCaseList)
+        foreach (var checkFunc in checkList)
         {
-            if (badCase)
+            if (checkFunc(profile, metaInfo))
             {
                 return false;
             }
         }
-
-        return metaInfo.Files is null || metaInfo.Html is null || metaInfo.Image is null;
+        return true;
     }
 
     private static async Task AdjustClipboard(Profile profile, CancellationToken cancellationToken)
