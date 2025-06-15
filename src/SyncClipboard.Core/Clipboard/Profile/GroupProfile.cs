@@ -46,7 +46,6 @@ public class GroupProfile : FileProfile
             var hash = await Task.Run(() => CaclHash(files, contentControl, token)).WaitAsync(token);
             return new GroupProfile(files, hash, contentControl);
         }
-
     }
 
     private static int FileCompare(FileInfo file1, FileInfo file2)
