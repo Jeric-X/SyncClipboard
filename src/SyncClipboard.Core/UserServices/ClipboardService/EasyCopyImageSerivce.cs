@@ -63,7 +63,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         Commands = {
             new UniqueCommand(
                 I18n.Strings.SwitchImageAssistant,
-                Guid.Parse("337275BE-57A2-2E97-6096-FF3D087D8A9C"),
+                "337275BE-57A2-2E97-6096-FF3D087D8A9C",
                 () => SwitchImageAssistant(!_clipboardAssistConfig.EasyCopyImageSwitchOn)
             )
         }

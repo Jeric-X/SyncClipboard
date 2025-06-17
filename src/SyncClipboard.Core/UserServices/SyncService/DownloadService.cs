@@ -47,31 +47,31 @@ public class DownloadService : Service
     private bool ClientSwitchOn => _syncConfig.SyncSwitchOn || (_serverConfig.ClientMixedMode && _serverConfig.SwitchOn);
 
     #region Hotkey
-    private static readonly Guid QuickDownloadAndPasteGuid = Guid.Parse("8a4a033e-31da-1b87-76ea-548885866b66");
+    private static readonly string QuickDownloadAndPasteGuid = "8a4a033e-31da-1b87-76ea-548885866b66";
 
     private UniqueCommandCollection CommandCollection => new(PageDefinition.SyncSetting.Title, PageDefinition.SyncSetting.FontIcon!)
     {
         Commands = {
             new UniqueCommand(
                 I18n.Strings.SwitchClipboardSyncing,
-                Guid.Parse("26D8A39E-F50D-CC71-FE15-647F67FDB2F9"),
+                "26D8A39E-F50D-CC71-FE15-647F67FDB2F9",
                 () => SwitchClipboardSyncing(!_syncConfig.SyncSwitchOn)
             ),
             new UniqueCommand(
                 I18n.Strings.SwitchBuiltInServer,
-                Guid.Parse("145740F4-03F7-6F6C-5B93-B027C7C49C59"),
+                "145740F4-03F7-6F6C-5B93-B027C7C49C59",
                 () => SwitchBuiltInServer(!_serverConfig.SwitchOn)
             ),
             new UniqueCommand(
                 I18n.Strings.SwitchMixedClientMode,
-                Guid.Parse("1D5C8163-E2E0-D099-A334-62A4B4F2BCE5"),
+                "1D5C8163-E2E0-D099-A334-62A4B4F2BCE5",
                 () => SwitchMixedClientMode(!_serverConfig.ClientMixedMode)
             ),
             _uploadService.QuickUploadCommand,
             _uploadService.QuickUploadWithoutFilterCommand,
             new UniqueCommand(
                 I18n.Strings.DownloadOnce,
-                Guid.Parse("95396FFF-E5FE-45D3-9D70-4A43FA34FF31"),
+                "95396FFF-E5FE-45D3-9D70-4A43FA34FF31",
                 QuickDownload
             ),
             _uploadService.CopyAndQuickUploadCommand,

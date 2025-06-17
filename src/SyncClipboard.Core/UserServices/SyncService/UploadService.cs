@@ -19,10 +19,10 @@ public class UploadService : ClipboardHander
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
 
-    private static readonly Guid QuickUploadGuid = Guid.Parse("D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850");
-    private static readonly Guid CopyAndQuickUploadGuid = Guid.Parse("D13672E9-D14C-4D48-847E-10B030F4B608");
-    private static readonly Guid QuickUploadWithoutFilterGuid = Guid.Parse("6C5314DF-B504-25EA-074D-396E5C69BAF1");
-    private static readonly Guid CopyAndQuickUploadWithoutFilterGuid = Guid.Parse("40E0B462-FCED-C4CD-7126-1F5204443DC1");
+    private static readonly string QuickUploadGuid = "D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850";
+    private static readonly string CopyAndQuickUploadGuid = "D13672E9-D14C-4D48-847E-10B030F4B608";
+    private static readonly string QuickUploadWithoutFilterGuid = "6C5314DF-B504-25EA-074D-396E5C69BAF1";
+    private static readonly string CopyAndQuickUploadWithoutFilterGuid = "40E0B462-FCED-C4CD-7126-1F5204443DC1";
     public UniqueCommand QuickUploadCommand => new UniqueCommand(
         I18n.Strings.UploadOnce,
         QuickUploadGuid,

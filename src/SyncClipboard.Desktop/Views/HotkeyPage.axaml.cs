@@ -24,7 +24,7 @@ public partial class HotkeyPage : UserControl
     private async void EditButtonClick(object? sender, RoutedEventArgs e)
     {
         ViewModel.EditingHotkey = Hotkey.Nothing;
-        ViewModel.EditingGuid = (Guid)((Button)sender!).DataContext!;
+        ViewModel.EditingCmdId = (string)((Button)sender!).DataContext!;
         var dialog = new ContentDialog
         {
             [!ContentDialog.IsPrimaryButtonEnabledProperty] = ViewModelBinding("SetHotkeyCanExecute"),

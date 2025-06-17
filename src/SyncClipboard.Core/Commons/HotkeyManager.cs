@@ -13,18 +13,18 @@ public class HotkeyManager
     private readonly INativeHotkeyRegistry _nativeHotkeyRegistry;
     private readonly ConfigManager _configManager;
     private readonly List<UniqueCommandCollection> _commandCollections = [];
-    private readonly Dictionary<Guid, HotkeyStatus> _hotkeyCommandMap = [];
+    private readonly Dictionary<string, HotkeyStatus> _hotkeyCommandMap = [];
 
     private HotkeyConfig _hotkeyConfig = new();
 
     public ReadOnlyCollection<UniqueCommandCollection> CommandCollections { get; }
-    public ReadOnlyDictionary<Guid, HotkeyStatus> HotkeyStatusMap { get; }
+    public ReadOnlyDictionary<string, HotkeyStatus> HotkeyStatusMap { get; }
     public event Action? HotkeyStatusChanged;
 
     public HotkeyManager(INativeHotkeyRegistry nativeHotkeyRegistry, ConfigManager configManager)
     {
         CommandCollections = _commandCollections.AsReadOnly();
-        HotkeyStatusMap = new ReadOnlyDictionary<Guid, HotkeyStatus>(_hotkeyCommandMap);
+        HotkeyStatusMap = new ReadOnlyDictionary<string, HotkeyStatus>(_hotkeyCommandMap);
 
         _nativeHotkeyRegistry = nativeHotkeyRegistry;
         _configManager = configManager;
@@ -54,10 +54,10 @@ public class HotkeyManager
         }
     }
 
-    private List<UniqueCommand> DeleteHotkeyCommandMap(IEnumerable<Guid> guids)
+    private List<UniqueCommand> DeleteHotkeyCommandMap(IEnumerable<string> ids)
     {
         List<UniqueCommand> registedCommands = [];
-        foreach (var guid in guids)
+        foreach (var guid in ids)
         {
             var status = _hotkeyCommandMap[guid];
             if (status.IsReady)
@@ -74,9 +74,9 @@ public class HotkeyManager
         return registedCommands;
     }
 
-    private void SetHotkeyCommandMap(Guid guid, Hotkey hotkey)
+    private void SetHotkeyCommandMap(string id, Hotkey hotkey)
     {
-        var found = _hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? hotkeyStatus);
+        var found = _hotkeyCommandMap.TryGetValue(id, out HotkeyStatus? hotkeyStatus);
         if (hotkeyStatus is not null)
         {
             if (hotkeyStatus.IsReady)
@@ -92,11 +92,11 @@ public class HotkeyManager
         }
         else
         {
-            _hotkeyCommandMap.Add(guid, new(hotkey));
+            _hotkeyCommandMap.Add(id, new(hotkey));
         }
     }
 
-    private void AddHotkeyCommandMap(IEnumerable<KeyValuePair<Guid, Hotkey>> hotkeys)
+    private void AddHotkeyCommandMap(IEnumerable<KeyValuePair<string, Hotkey>> hotkeys)
     {
         foreach (var (guid, hotkey) in hotkeys)
         {
@@ -124,7 +124,7 @@ public class HotkeyManager
 
     private void RegisterCommand(UniqueCommand command, bool notify = true)
     {
-        _hotkeyCommandMap.TryGetValue(command.Guid, out HotkeyStatus? hotkeyStatus);
+        _hotkeyCommandMap.TryGetValue(command.CmdId, out HotkeyStatus? hotkeyStatus);
         if (hotkeyStatus is null)
         {
             bool ready = false;
@@ -132,7 +132,7 @@ public class HotkeyManager
             {
                 ready = RegisterToNative(command.Hotkey, command.Command);
             }
-            _hotkeyCommandMap.Add(command.Guid, new(command.Hotkey, ready, command));
+            _hotkeyCommandMap.Add(command.CmdId, new(command.Hotkey, ready, command));
         }
         else
         {
@@ -159,26 +159,26 @@ public class HotkeyManager
         RegisterCommands(commandCollection.Commands);
     }
 
-    public void SetHotKey(Guid guid, Hotkey hotkey)
+    public void SetHotKey(string id, Hotkey hotkey)
     {
-        _hotkeyConfig.Hotkeys.TryGetValue(guid, out var existHotkey);
+        _hotkeyConfig.Hotkeys.TryGetValue(id, out var existHotkey);
         if (existHotkey is not null)
         {
-            _hotkeyConfig.Hotkeys[guid] = hotkey;
+            _hotkeyConfig.Hotkeys[id] = hotkey;
         }
         else
         {
-            _hotkeyConfig.Hotkeys.Add(guid, hotkey);
+            _hotkeyConfig.Hotkeys.Add(id, hotkey);
         }
 
-        SetHotkeyCommandMap(guid, hotkey);
+        SetHotkeyCommandMap(id, hotkey);
         HotkeyStatusChanged?.Invoke();
         _configManager.SetConfig(_hotkeyConfig);
     }
 
-    public void SetHotKeyToDefault(Guid guid)
+    public void SetHotKeyToDefault(string id)
     {
-        if (!_hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? status))
+        if (!_hotkeyCommandMap.TryGetValue(id, out HotkeyStatus? status))
         {
             return;
         }
@@ -198,7 +198,7 @@ public class HotkeyManager
             status.IsReady = RegisterToNative(status.Hotkey, status.Command.Command);
         }
 
-        _hotkeyConfig.Hotkeys.Remove(guid);
+        _hotkeyConfig.Hotkeys.Remove(id);
 
         HotkeyStatusChanged?.Invoke();
         _configManager.SetConfig(_hotkeyConfig);
@@ -209,14 +209,9 @@ public class HotkeyManager
         return hotkey == Hotkey.Nothing || _nativeHotkeyRegistry.IsValidHotkeyForm(hotkey);
     }
 
-    public void RunCommand(string commandName)
+    public void RunCommand(string cmdId)
     {
-        if (Guid.TryParse(commandName, out Guid guid) is false)
-        {
-            return;
-        }
-
-        if (_hotkeyCommandMap.TryGetValue(guid, out HotkeyStatus? status) && status.Command is not null)
+        if (_hotkeyCommandMap.TryGetValue(cmdId, out HotkeyStatus? status) && status.Command is not null)
         {
             status.Command.Command.InvokeNoExcept();
         }

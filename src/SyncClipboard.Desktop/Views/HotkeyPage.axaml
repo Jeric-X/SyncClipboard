@@ -50,10 +50,10 @@
                                             </Button.Flyout>
                                         </Button>
                                         <local:HotkeyViewer Margin="5,0,10,0" IsError="{Binding IsError}" Hotkey="{Binding Hotkey}" />
-                                        <Button ToolTip.Tip="{x:Static i18n:Strings.Edit}" Click="EditButtonClick" DataContext="{Binding Guid}">
+                                        <Button ToolTip.Tip="{x:Static i18n:Strings.Edit}" Click="EditButtonClick" DataContext="{Binding CmdId}">
                                             <ui:FontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                         </Button>
-                                        <Button Command="{Binding #_HotkeyPage.ViewModel.SetToDefaultCommand}" CommandParameter="{Binding Guid}" ToolTip.Tip="{x:Static i18n:Strings.ResetToDefault}">
+                                        <Button Command="{Binding #_HotkeyPage.ViewModel.SetToDefaultCommand}" CommandParameter="{Binding CmdId}" ToolTip.Tip="{x:Static i18n:Strings.ResetToDefault}">
                                             <ui:FontIcon Glyph="&#xE7A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                         </Button>
                                     </StackPanel>
