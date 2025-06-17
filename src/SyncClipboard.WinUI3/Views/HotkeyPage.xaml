@@ -43,11 +43,11 @@
                                         <local:HotkeyViewer Margin="5,0,10,0" IsError="{x:Bind IsError}" Hotkey="{x:Bind Hotkey}" />
                                         <Button Content="&#xE70F;"
                                                 Click="EditButtonClick"
-                                                DataContext="{x:Bind Guid}"
+                                                DataContext="{x:Bind CmdId}"
                                                 ToolTipService.ToolTip="{x:Bind i18n:Strings.Edit}" />
                                         <Button Content="&#xE7A7;"
                                                 Click="SetToDefaultButtonClick"
-                                                DataContext="{x:Bind Guid}"
+                                                DataContext="{x:Bind CmdId}"
                                                 ToolTipService.ToolTip="{x:Bind i18n:Strings.ResetToDefault}" />
                                     </StackPanel>
                                 </ui:SettingsCard>

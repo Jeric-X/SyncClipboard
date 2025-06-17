@@ -130,12 +130,12 @@ namespace SyncClipboard.Core
                 Commands = {
                     new UniqueCommand(
                         Strings.OpenMainUI,
-                        Guid.Parse("6DB18835-1DAD-0495-E126-45F5D2D193A7"),
+                        "6DB18835-1DAD-0495-E126-45F5D2D193A7",
                         mainWindow.Show
                     ),
                     new UniqueCommand(
                         Strings.CompletelyExit,
-                        Guid.Parse("2F30872E-B412-F580-7C20-F0D063A85BE0"),
+                        "2F30872E-B412-F580-7C20-F0D063A85BE0",
                         mainWindow.ExitApp
                     )
                 }

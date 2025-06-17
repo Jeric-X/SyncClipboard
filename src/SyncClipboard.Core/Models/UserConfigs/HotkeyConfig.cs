@@ -5,7 +5,7 @@ namespace SyncClipboard.Core.Models.UserConfigs;
 
 public record HotkeyConfig
 {
-    public Dictionary<Guid, Hotkey> Hotkeys { get; set; } = [];
+    public Dictionary<string, Hotkey> Hotkeys { get; set; } = [];
 
     public virtual bool Equals(HotkeyConfig? other)
     {

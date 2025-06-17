@@ -36,19 +36,19 @@ public partial class HotkeyViewModel : ObservableObject
     public bool SetHotkeyCanExecute => !IsEditingHasError;
 
     [ObservableProperty]
-    private Guid editingGuid;
+    private string editingCmdId = string.Empty;
 
     [RelayCommand(CanExecute = nameof(SetHotkeyCanExecute))]
     private void SetHotkey()
     {
-        _hotkeyManager.SetHotKey(EditingGuid, EditingHotkey);
+        _hotkeyManager.SetHotKey(EditingCmdId, EditingHotkey);
     }
 
     [RelayCommand]
     private void ClearEditingHotkey() => EditingHotkey = Hotkey.Nothing;
 
     [RelayCommand]
-    private void SetToDefault(Guid guid) => _hotkeyManager.SetHotKeyToDefault(guid);
+    private void SetToDefault(string cmdId) => _hotkeyManager.SetHotKeyToDefault(cmdId);
 
     private readonly HotkeyManager _hotkeyManager;
 
@@ -67,9 +67,9 @@ public partial class HotkeyViewModel : ObservableObject
             var commandList = new List<UniqueCommandViewModel>();
             foreach (var command in collection.Commands)
             {
-                var status = _hotkeyManager.HotkeyStatusMap[command.Guid];
+                var status = _hotkeyManager.HotkeyStatusMap[command.CmdId];
                 var isError = status.Hotkey is not null && !status.IsReady;
-                commandList.Add(new UniqueCommandViewModel(command.Name, command.Guid, isError, status.Hotkey ?? Hotkey.Nothing));
+                commandList.Add(new UniqueCommandViewModel(command.Name, command.CmdId, isError, status.Hotkey ?? Hotkey.Nothing));
             }
             collectionList.Add(new(collection.Name, collection.FontIcon, commandList));
         }
