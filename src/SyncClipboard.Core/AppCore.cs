@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Quartz;
 using SharpHook;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
@@ -10,11 +12,11 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace SyncClipboard.Core
 {
@@ -24,7 +26,7 @@ namespace SyncClipboard.Core
         public static AppCore Current => _current ?? throw new Exception("Appcore is not initialized");
         public static AppCore? TryGetCurrent() => _current;
         public IServiceProvider Services { get; }
-        public ILogger Logger { get; }
+        public Interfaces.ILogger Logger { get; }
         public ITrayIcon TrayIcon => Services.GetRequiredService<ITrayIcon>();
         public INotification Notification => Services.GetRequiredService<INotification>();
         public ConfigManager ConfigManager { get; }
@@ -35,7 +37,7 @@ namespace SyncClipboard.Core
         {
             Services = serviceProvider;
             _current = this;
-            Logger = serviceProvider.GetRequiredService<ILogger>();
+            Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
             ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
         }
 
@@ -67,8 +69,8 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
-            PrepareRemoteWorkingFolder();
-            DelegateExtention.InvokeNoExcept(() => PrepareWorkingFolder(configManager));
+            SetUpRemoteWorkFolder();
+            SetUpLocalWorkFolder();
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 
@@ -79,6 +81,7 @@ namespace SyncClipboard.Core
             ShowMainWindow(configManager, mainWindow);
             CheckUpdate();
             RunStartUpCommands();
+            Services.GetRequiredService<IScheduler>().Start();
         }
 
         private void RunStartUpCommands()
@@ -204,11 +207,16 @@ namespace SyncClipboard.Core
 
         public static void ConfigCommonService(IServiceCollection services)
         {
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Warning);
+            });
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<StaticConfig>();
             services.AddSingleton<RuntimeConfig>();
-            services.AddSingleton<ILogger, Logger>();
+            services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();
 
@@ -217,8 +225,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();
             services.AddTransient<GithubUpdater>();
-            services.AddTransient<System.Timers.Timer>();
-
+            services.AddQuartz();
+            services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
         }
 
@@ -246,7 +254,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
         }
 
-        private async void PrepareRemoteWorkingFolder()
+        private async void SetUpRemoteWorkFolder()
         {
             try
             {
@@ -260,80 +268,16 @@ namespace SyncClipboard.Core
             catch { }
         }
 
-        private void PrepareWorkingFolder(ConfigManager configManager)
+        private void SetUpLocalWorkFolder()
         {
-            DeletePreviousTempFile();
-            PlannedTask(configManager);
-
-            var timer = Services.GetRequiredService<System.Timers.Timer>();
-            timer.Interval = TimeSpan.FromDays(1).TotalMilliseconds;
-            timer.Elapsed += (_, _) => PlannedTask(configManager);
-            timer.Start();
-        }
-
-        private static void PlannedTask(ConfigManager configManager)
-        {
-            try
-            {
-                var config = configManager.GetConfig<ProgramConfig>();
-                if (config.TempFileRemainDays != 0)
-                {
-                    var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
-                    foreach (var dirs in tempFolders)
-                    {
-                        var isTime = DateTime.TryParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var createTime);
-                        if (!isTime || ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays)))
-                        {
-                            dirs.Delete(true);
-                        }
-                    }
-                }
-
-                var logFolder = new DirectoryInfo(Env.LogFolder);
-                if (logFolder.Exists && config.LogRemainDays != 0)
-                {
-                    var logFiles = logFolder.EnumerateFiles("????????.txt");
-                    var dumpFiles = logFolder.EnumerateFiles("????-??-?? ??-??-??.dmp");
-                    DeleteOutDateFile(logFiles, "yyyyMMdd", TimeSpan.FromDays(config.LogRemainDays));
-                    DeleteOutDateFile(dumpFiles, "yyyy-MM-dd HH-mm-ss", TimeSpan.FromDays(config.LogRemainDays));
-                }
-            }
-            catch { }
-        }
-
-        private static void DeleteOutDateFile(IEnumerable<FileSystemInfo> files, string format, TimeSpan time)
-        {
-            foreach (var file in files)
-            {
-                var createTime = DateTime.ParseExact(
-                    Path.GetFileNameWithoutExtension(file.Name),
-                    format,
-                    CultureInfo.InvariantCulture);
-                if ((DateTime.Today - createTime) > time)
-                {
-                    file.Delete();
-                }
-            }
-        }
-
-        // 删除历史版本的临时文件，在未来版本中删除
-        private static void DeletePreviousTempFile()
-        {
-            try
-            {
-                var files = new DirectoryInfo(Env.AppDataFileFolder).EnumerateFiles();
-                foreach (var file in files)
-                {
-                    file.Delete();
-                }
-
-                var oldImageFolder = Path.Combine(Env.AppDataFileFolder, "temp images");
-                if (Directory.Exists(oldImageFolder))
-                {
-                    Directory.Delete(oldImageFolder, true);
-                }
-            }
-            catch { }
+            IScheduler scheduler = Services.GetRequiredService<IScheduler>();
+            scheduler.ScheduleJob(
+                JobBuilder.Create<AppdataFileDeleteJob>().Build(),
+                TriggerBuilder.Create()
+                    .StartNow()
+                    .WithSimpleSchedule(x => x.WithIntervalInHours(24).RepeatForever())
+                    .Build()
+            );
         }
     }
 }

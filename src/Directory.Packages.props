@@ -3,6 +3,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.4" />
+    <PackageVersion Include="Quartz" Version="3.14.0" />
+    <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.0" />
     <PackageVersion Include="DotNetZip" Version="1.16.0" />
     <PackageVersion Include="Magick.NET-Q16-x64" Version="13.5.0" />
