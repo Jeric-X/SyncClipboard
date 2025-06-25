@@ -79,7 +79,7 @@ jobs:
 
       - name: set update info
         run: |
-          chmod +x SetUpdateSource.sh
+          chmod +x ./build/SetUpdateSource.sh
           ./build/SetUpdateSource.sh -m manual -s github -o linux-bin -n SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
 
       - name: Download last-job-built change log

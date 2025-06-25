@@ -38,7 +38,7 @@ jobs:
 
       - name: set update info
         run: |
-          chmod +x SetUpdateSource.sh
+          chmod +x ./build/SetUpdateSource.sh
           ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n SyncClipboard_win_${{ matrix.cpu }}_portable${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip
 
       - name: Zip SyncClipboard.WinUI3
