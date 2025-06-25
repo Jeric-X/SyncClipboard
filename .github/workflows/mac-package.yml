@@ -60,6 +60,11 @@ jobs:
           mv src/SyncClipboard.Desktop.MacOS/bin/Release/net8.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app
           chmod +x build/macos/SyncClipboard.app/Contents/MacOS/SyncClipboard.Desktop.MacOS
 
+      - name: set update info
+        run: |
+          chmod +x SetUpdateSource.sh
+          ./build/SetUpdateSource.sh -m manual -s github -o build/macos/SyncClipboard.app/Contents/MacOS -n SyncClipboard_macos_${{ matrix.cpu }}.dmg
+
       - name: Package app
         run: | 
           chmod +x buildAppBundle.sh

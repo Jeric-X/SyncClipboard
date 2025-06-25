@@ -51,7 +51,8 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
             var createTime = DateTime.ParseExact(
                 Path.GetFileNameWithoutExtension(file.Name),
                 format,
-                CultureInfo.InvariantCulture);
+                CultureInfo.InvariantCulture
+            );
             if ((DateTime.Today - createTime) > time)
             {
                 file.Delete();
