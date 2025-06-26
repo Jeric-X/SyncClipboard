@@ -199,9 +199,7 @@ public class FileProfile : Profile
             I18n.Strings.ClipboardFileUpdated,
             FileName,
             DefaultButton(),
-#if WINDOWS
-            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFileInExplorer(FullPath)),
-#endif
+            new Button(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
             new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
         );
     }

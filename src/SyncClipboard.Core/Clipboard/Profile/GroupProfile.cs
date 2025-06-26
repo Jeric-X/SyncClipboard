@@ -189,10 +189,8 @@ public class GroupProfile : FileProfile
         notification.SendText(
             I18n.Strings.ClipboardFileUpdated,
             ShowcaseText(),
-            DefaultButton()
-#if WINDOWS
-            , new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInExplorer(FullPath[..^4] + "\\"))
-#endif
+            DefaultButton(),
+            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInFileManager(FullPath[..^4] + "\\"))
         );
     }
 
