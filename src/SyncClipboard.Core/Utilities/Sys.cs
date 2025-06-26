@@ -5,8 +5,9 @@ namespace SyncClipboard.Core.Utilities;
 
 public static class Sys
 {
-    public static Process? OpenWithDefaultApp(string arg)
+    public static Process? OpenWithDefaultApp(string? arg)
     {
+        ArgumentNullException.ThrowIfNull(arg);
         return Process.Start(new ProcessStartInfo(arg) { UseShellExecute = true });
     }
 
