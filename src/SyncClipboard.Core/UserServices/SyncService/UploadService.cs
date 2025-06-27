@@ -369,11 +369,11 @@ public class UploadService : ClipboardHander
     private void QuickUploadWithContentControl() => QuickUpload(true);
     private void QuickUploadIgnoreContentControl() => QuickUpload(false);
 
-    private async void CopyAndQuickUpload(bool contentControl)
+    private async void CopyAndQuickUpload(bool contentControl, string cmdId)
     {
         await Task.Run(() =>
         {
-            if (_hotkeyManager.HotkeyStatusMap.TryGetValue(CopyAndQuickUploadGuid, out var status))
+            if (_hotkeyManager.HotkeyStatusMap.TryGetValue(cmdId, out var status))
             {
                 status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
             }
@@ -390,6 +390,6 @@ public class UploadService : ClipboardHander
         QuickUpload(contentControl);
     }
 
-    private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true);
-    private void CopyAndQuickUploadIgnoreContentControl() => CopyAndQuickUpload(false);
+    private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true, CopyAndQuickUploadGuid);
+    private void CopyAndQuickUploadIgnoreContentControl() => CopyAndQuickUpload(false, CopyAndQuickUploadWithoutFilterGuid);
 }
