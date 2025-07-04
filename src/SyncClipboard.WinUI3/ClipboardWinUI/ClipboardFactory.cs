@@ -29,11 +29,11 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private const string LOG_TAG = nameof(ClipboardFactory);
 
     private delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
-    private static List<KeyValuePair<string, FormatHandler>> FormatHandlerlist => new Dictionary<string, FormatHandler>
+    private static List<KeyValuePair<string, FormatHandler>> FormatHandlerlist => new SortedDictionary<string, FormatHandler>
     {
         [StandardDataFormats.Text] = HanleText,
-        ["DeviceIndependentBitmap"] = HanleDib,
         [StandardDataFormats.Bitmap] = HanleBitmap,
+        ["DeviceIndependentBitmap"] = HanleDib,
         [StandardDataFormats.Html] = HanleHtml,
         [StandardDataFormats.StorageItems] = HanleFiles,
         ["FileDrop"] = HanleFiles2,
@@ -88,6 +88,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     private static async Task HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
+        if (meta.Image is not null) return;
         var res = await ClipboardData.GetDataAsync("DeviceIndependentBitmap").AsTask().WaitAsync(ctk);
         using var stream = res.As<IRandomAccessStream>();
         meta.Image = new ClipboardImage(await RandomStreamToBytes(stream, ctk));
