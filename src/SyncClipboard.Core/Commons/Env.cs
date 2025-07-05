@@ -9,6 +9,7 @@
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
         public const string RemoteProfilePath = "SyncClipboard.json";
+        public const string UpdateInfoFile = "update_info.json";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
         public static readonly string ProgramPath = Environment.ProcessPath ?? "";
@@ -16,10 +17,12 @@
         public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
         public static readonly string RuntimeConfigPath = FullPath("RuntimeConfig.json");
         public static readonly string StaticConfigPath = Path.Combine(ProgramDirectory, "StaticConfig.json");
+        public static readonly string UpdateInfoPath = Path.Combine(ProgramDirectory, UpdateInfoFile);
         public static readonly string AppDataFileFolder = GetOrCreateFolder(FullPath("file"));
         public static string TemplateFileFolder => GetTemplateFileFolder();
         public static readonly string RemoteFileFolder = "file";
         public static readonly string LogFolder = FullPath("log");
+        public static readonly string UpdateFolder = GetOrCreateFolder(FullPath("update"));
 
         public static string FullPath(string relativePath)
         {

@@ -10,9 +10,9 @@ public class GithubUpdater(IHttp http, IAppConfig appConfig, ConfigManager confi
     public string Version => appConfig.AppVersion;
     private string UpdateApiUrl => appConfig.UpdateApiUrl;
 
-    public async Task<(bool, GitHubRelease)> Check()
+    public async Task<(bool, GitHubRelease)> Check(CancellationToken? token = null)
     {
-        var latestRelease = await GetlatestRelease();
+        var latestRelease = await GetlatestRelease(token ?? CancellationToken.None);
 
         var nowAppVersion = AppVersion.Parse(Version);
         var newAppVersion = AppVersion.Parse(latestRelease.TagName!);
@@ -24,12 +24,12 @@ public class GithubUpdater(IHttp http, IAppConfig appConfig, ConfigManager confi
         return (false, latestRelease);
     }
 
-    private async Task<GitHubRelease> GetlatestRelease()
+    private async Task<GitHubRelease> GetlatestRelease(CancellationToken token)
     {
         var allowPrerelease = configManager.GetConfig<ProgramConfig>().CheckUpdateForBeta;
         for (int i = 1; ; i++)
         {
-            var releaseList = await http.GetHttpClient().GetFromJsonAsync<List<GitHubRelease>>($"{UpdateApiUrl}?page={i}");
+            var releaseList = await http.GetHttpClient().GetFromJsonAsync<List<GitHubRelease>>($"{UpdateApiUrl}?page={i}", token);
             ArgumentNullException.ThrowIfNull(releaseList);
             foreach (var release in releaseList)
             {

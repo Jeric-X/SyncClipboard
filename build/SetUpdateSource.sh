@@ -47,8 +47,10 @@ mkdir -p "$output_dir"
 
 cat > "$output_dir/update_info.json" <<EOF
 {
-    "manage_type": "$manage_type",
-    "update_src": "$update_src",
-    "package_name": "$package_name"
+    "UpdateInfo": {
+        "manage_type": "$manage_type",
+        "update_src": "$update_src",
+        "package_name": "$package_name"
+    }
 }
 EOF

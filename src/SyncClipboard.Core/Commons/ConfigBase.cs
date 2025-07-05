@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
@@ -20,6 +21,12 @@ namespace SyncClipboard.Core.Commons
         private JsonNode _jsonNodeBackUp = new JsonObject();
 
         public ConfigBase(string path, INotification? notification = null) : this(notification)
+        {
+            Path = path;
+            Load();
+        }
+
+        public ConfigBase(string path, IServiceProvider sp) : this(sp.GetRequiredService<INotification>())
         {
             Path = path;
             Load();

@@ -27,7 +27,7 @@ internal partial class DiagnoseViewModel : ObservableObject
 
     private readonly IClipboardChangingListener _clipboardListener;
     private readonly ConfigManager _configManager;
-    private readonly FreshableTask refreshTask;
+    private readonly SingletonTask refreshTask;
     private readonly MultiSourceClipboardReader Clipboard;
 
     public DiagnoseViewModel()

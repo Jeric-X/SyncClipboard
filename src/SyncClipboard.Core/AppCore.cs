@@ -70,7 +70,6 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
             SetUpRemoteWorkFolder();
-            SetUpLocalWorkFolder();
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 
@@ -81,7 +80,7 @@ namespace SyncClipboard.Core
             ShowMainWindow(configManager, mainWindow);
             CheckUpdate();
             RunStartUpCommands();
-            Services.GetRequiredService<IScheduler>().Start();
+            Job.SetUpSchedulerJobs(Services);
         }
 
         private void RunStartUpCommands()
@@ -216,9 +215,11 @@ namespace SyncClipboard.Core
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<StaticConfig>();
             services.AddSingleton<RuntimeConfig>();
+            services.AddKeyedTransient(Env.UpdateInfoFile, (sp, key) => new ConfigBase(Env.UpdateInfoPath, sp));
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();
+            services.AddSingleton<UpdateChecker>();
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
@@ -266,18 +267,6 @@ namespace SyncClipboard.Core
                 }
             }
             catch { }
-        }
-
-        private void SetUpLocalWorkFolder()
-        {
-            IScheduler scheduler = Services.GetRequiredService<IScheduler>();
-            scheduler.ScheduleJob(
-                JobBuilder.Create<AppdataFileDeleteJob>().Build(),
-                TriggerBuilder.Create()
-                    .StartNow()
-                    .WithSimpleSchedule(x => x.WithIntervalInHours(24).RepeatForever())
-                    .Build()
-            );
         }
     }
 }
