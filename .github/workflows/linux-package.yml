@@ -89,7 +89,7 @@ jobs:
 
       - name: Install pupnet and denpendencies
         run: |
-          dotnet tool install -g KuiperZone.PupNet
+          dotnet tool install -g KuiperZone.PupNet --version 1.8.0
           sudo apt install libfuse2
 
       - name: Package
