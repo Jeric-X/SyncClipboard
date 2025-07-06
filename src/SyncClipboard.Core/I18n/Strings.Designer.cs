@@ -88,6 +88,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Check for Updates Automatically 的本地化字符串。
+        /// </summary>
+        public static string AutoCheckUpdates {
+            get {
+                return ResourceManager.GetString("AutoCheckUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download New Version Automatically 的本地化字符串。
+        /// </summary>
+        public static string AutoDownloadUpdates {
+            get {
+                return ResourceManager.GetString("AutoDownloadUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Black List 的本地化字符串。
         /// </summary>
         public static string BlackList {
@@ -142,7 +160,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Checking for update…… 的本地化字符串。
+        ///   查找类似 Checking for updates…… 的本地化字符串。
         /// </summary>
         public static string CheckingUpdate {
             get {
@@ -151,7 +169,16 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Check Update 的本地化字符串。
+        ///   查找类似 Please check on the about page 的本地化字符串。
+        /// </summary>
+        public static string CheckOnAboutPage {
+            get {
+                return ResourceManager.GetString("CheckOnAboutPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Check for Updates 的本地化字符串。
         /// </summary>
         public static string CheckUpdate {
             get {
@@ -160,20 +187,11 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Check Update for Beta Channel 的本地化字符串。
+        ///   查找类似 Check for Updates for Beta Channel 的本地化字符串。
         /// </summary>
         public static string CheckUpdateForBetaChannel {
             get {
                 return ResourceManager.GetString("CheckUpdateForBetaChannel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Check Update on Startup 的本地化字符串。
-        /// </summary>
-        public static string CheckUpdateOnStartup {
-            get {
-                return ResourceManager.GetString("CheckUpdateOnStartup", resourceCulture);
             }
         }
         
@@ -412,6 +430,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Downloading 的本地化字符串。
+        /// </summary>
+        public static string Downloading {
+            get {
+                return ResourceManager.GetString("Downloading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Download file 的本地化字符串。
         /// </summary>
         public static string DownloadingFile {
@@ -430,11 +457,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Download the Installer 的本地化字符串。
+        /// </summary>
+        public static string DownloadInstaller {
+            get {
+                return ResourceManager.GetString("DownloadInstaller", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Download Once Immediately 的本地化字符串。
         /// </summary>
         public static string DownloadOnce {
             get {
                 return ResourceManager.GetString("DownloadOnce", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Download 的本地化字符串。
+        /// </summary>
+        public static string DownloadPage {
+            get {
+                return ResourceManager.GetString("DownloadPage", resourceCulture);
             }
         }
         
@@ -547,6 +592,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Error 的本地化字符串。
+        /// </summary>
+        public static string Error {
+            get {
+                return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Exit 的本地化字符串。
         /// </summary>
         public static string Exit {
@@ -655,11 +709,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Found new version 的本地化字符串。
+        ///   查找类似 Found new version:  的本地化字符串。
         /// </summary>
         public static string FoundNewVersion {
             get {
                 return ResourceManager.GetString("FoundNewVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Go to About Page 的本地化字符串。
+        /// </summary>
+        public static string GoToAboutPage {
+            get {
+                return ResourceManager.GetString("GoToAboutPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Hash mismatch 的本地化字符串。
+        /// </summary>
+        public static string HashMismatch {
+            get {
+                return ResourceManager.GetString("HashMismatch", resourceCulture);
             }
         }
         
@@ -669,6 +741,15 @@ namespace SyncClipboard.Core.I18n {
         public static string HideOnStartup {
             get {
                 return ResourceManager.GetString("HideOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Home 的本地化字符串。
+        /// </summary>
+        public static string HomePage {
+            get {
+                return ResourceManager.GetString("HomePage", resourceCulture);
             }
         }
         
@@ -727,7 +808,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 It&apos;s the latest version 的本地化字符串。
+        ///   查找类似 SyncClipboard is the latest version 的本地化字符串。
         /// </summary>
         public static string ItsLatestVersion {
             get {
@@ -844,6 +925,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 New version package has been downloaded 的本地化字符串。
+        /// </summary>
+        public static string NewVersionDownloaded {
+            get {
+                return ResourceManager.GetString("NewVersionDownloaded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 None 的本地化字符串。
         /// </summary>
         public static string None {
@@ -916,7 +1006,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Open folder 的本地化字符串。
+        ///   查找类似 Show in File Manager 的本地化字符串。
         /// </summary>
         public static string OpenFolder {
             get {
@@ -957,6 +1047,15 @@ namespace SyncClipboard.Core.I18n {
         public static string OpenSourceDependencies {
             get {
                 return ResourceManager.GetString("OpenSourceDependencies", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Go to the Update Page 的本地化字符串。
+        /// </summary>
+        public static string OpenUpdatePage {
+            get {
+                return ResourceManager.GetString("OpenUpdatePage", resourceCulture);
             }
         }
         
@@ -1029,6 +1128,15 @@ namespace SyncClipboard.Core.I18n {
         public static string QueryInterval {
             get {
                 return ResourceManager.GetString("QueryInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Ready to check for updates 的本地化字符串。
+        /// </summary>
+        public static string ReadyToCheckUpdate {
+            get {
+                return ResourceManager.GetString("ReadyToCheckUpdate", resourceCulture);
             }
         }
         
@@ -1155,15 +1263,6 @@ namespace SyncClipboard.Core.I18n {
         public static string Settings {
             get {
                 return ResourceManager.GetString("Settings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Software Home Page 的本地化字符串。
-        /// </summary>
-        public static string SoftwareHomePage {
-            get {
-                return ResourceManager.GetString("SoftwareHomePage", resourceCulture);
             }
         }
         
@@ -1407,6 +1506,15 @@ namespace SyncClipboard.Core.I18n {
         public static string TrustInsecureCertificate {
             get {
                 return ResourceManager.GetString("TrustInsecureCertificate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 New version {0} found, please update from {1} 的本地化字符串。
+        /// </summary>
+        public static string UpdateFrom3rdSrc {
+            get {
+                return ResourceManager.GetString("UpdateFrom3rdSrc", resourceCulture);
             }
         }
         

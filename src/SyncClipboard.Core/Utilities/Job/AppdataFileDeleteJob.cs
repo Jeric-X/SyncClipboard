@@ -1,6 +1,7 @@
 using Quartz;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Updater;
 using System.Globalization;
 
 namespace SyncClipboard.Core.Utilities.Job;
@@ -18,6 +19,8 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
     {
         try
         {
+            DeleteUpdatePackageFiles();
+
             var config = configManager.GetConfig<ProgramConfig>();
             if (config.TempFileRemainDays != 0)
             {
@@ -58,5 +61,29 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
                 file.Delete();
             }
         }
+    }
+
+    private static void DeleteUpdatePackageFiles()
+    {
+        var updateFolder = new DirectoryInfo(Env.UpdateFolder);
+        if (!updateFolder.Exists)
+        {
+            return;
+        }
+        updateFolder.EnumerateFiles().ForEach(file => file.Delete());
+
+        List<KeyValuePair<DirectoryInfo, AppVersion>> updateDirs = [];
+        updateFolder.EnumerateDirectories().ForEach(dir =>
+        {
+            if (AppVersion.TryParse(dir.Name, out var appVersion))
+            {
+                updateDirs.Add(new KeyValuePair<DirectoryInfo, AppVersion>(dir, appVersion));
+            }
+            else
+            {
+                dir.Delete(true);
+            }
+        });
+        updateDirs.OrderByDescending(x => x.Value).Skip(2).ForEach(x => x.Key.Delete());
     }
 }

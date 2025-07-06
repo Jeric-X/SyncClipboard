@@ -98,6 +98,20 @@ namespace SyncClipboard.WinUI3.Views
             NavigateTo(page, platformEffect, parameter);
         }
 
+        public void OpenPage(PageDefinition page, object? para)
+        {
+            void action()
+            {
+                this.Show();
+                var index = _viewModel.MainWindowPage.IndexOf(page);
+                if (index != -1)
+                {
+                    _MenuList.SelectedIndex = _viewModel.MainWindowPage.IndexOf(page);
+                }
+            }
+            RunOnMainThread(action);
+        }
+
         public void NavigateToLastLevel()
         {
             _viewModel.NavigateToLastLevel();
@@ -201,16 +215,21 @@ namespace SyncClipboard.WinUI3.Views
             }
         }
 
-        public void Show()
+        private void RunOnMainThread(Action action)
         {
             if (this.DispatcherQueue.HasThreadAccess)
             {
-                ShowWindow();
+                action.Invoke();
             }
             else
             {
-                this.DispatcherQueue.TryEnqueue(ShowWindow);
+                this.DispatcherQueue.TryEnqueue(action.Invoke);
             }
+        }
+
+        public void Show()
+        {
+            RunOnMainThread(ShowWindow);
         }
 
         void ShowWindow()

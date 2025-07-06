@@ -41,6 +41,11 @@
     <Style Selector="TextBox">
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
+	<Style Selector="HyperlinkButton">
+		<Setter Property="Padding" Value="0,0,0,-1" />
+		<Setter Property="FontSize" Value="12" />
+		<Setter Property="FontWeight" Value="SemiBold" />
+	</Style>
   </Application.Styles>
   <NativeMenu.Menu>
     <NativeMenu />

@@ -10,11 +10,19 @@ internal class ThreadDispatcher(DispatcherQueue dispatcherQueue) : IThreadDispat
 {
     public Task<T> RunOnMainThreadAsync<T>(Func<Task<T>> func)
     {
+        if (dispatcherQueue.HasThreadAccess)
+        {
+            return func.Invoke();
+        }
         return dispatcherQueue.EnqueueAsync(func);
     }
 
     public Task RunOnMainThreadAsync(Func<Task> func)
     {
+        if (dispatcherQueue.HasThreadAccess)
+        {
+            return func.Invoke();
+        }
         return dispatcherQueue.EnqueueAsync(func);
     }
 }

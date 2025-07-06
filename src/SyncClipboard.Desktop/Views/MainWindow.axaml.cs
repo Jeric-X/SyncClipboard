@@ -1,5 +1,4 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -23,13 +22,8 @@ public partial class MainWindow : Window, IMainWindow
             this.ExtendClientAreaToDecorationsHint = true;
         }
         InitializeComponent();
-    }
-
-    protected override void OnLoaded(RoutedEventArgs e)
-    {
         Height = _viewModel.Height;
         Width = _viewModel.Width;
-        base.OnLoaded(e);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -59,6 +53,20 @@ public partial class MainWindow : Window, IMainWindow
             _ => throw new NotImplementedException()
         };
         _MainView.NavigateTo(page, platformEffect, para);
+    }
+
+    public void OpenPage(PageDefinition page, object? para)
+    {
+        void action()
+        {
+            this.ShowMainWindow();
+            var index = _viewModel.MainWindowPage.IndexOf(page);
+            if (index != -1)
+            {
+                _MainView._MenuList.SelectedIndex = _viewModel.MainWindowPage.IndexOf(page);
+            }
+        }
+        RunOnMainThread(action);
     }
 
     public void NavigateToLastLevel()
@@ -104,19 +112,21 @@ public partial class MainWindow : Window, IMainWindow
         this.Activate();
     }
 
-    void IMainWindow.Show()
+    private void RunOnMainThread(Action action)
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            ShowMainWindow();
+            action();
         }
         else
         {
-            Dispatcher.UIThread.InvokeAsync(new Action(() =>
-            {
-                ShowMainWindow();
-            }));
+            Dispatcher.UIThread.InvokeAsync(action);
         }
+    }
+
+    void IMainWindow.Show()
+    {
+        RunOnMainThread(ShowMainWindow);
     }
 
     public void ChangeTheme(string theme)

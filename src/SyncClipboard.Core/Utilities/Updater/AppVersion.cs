@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Utilities.Updater;
@@ -10,16 +11,26 @@ public class AppVersion : IComparable<AppVersion>
 
     public static AppVersion Parse(string versionStr)
     {
+        if (TryParse(versionStr, out var appVersion))
+            return appVersion;
+
+        throw new ArgumentException("Can not parse the string to Version");
+    }
+
+    public static bool TryParse(string versionStr, [NotNullWhen(true)] out AppVersion? appVersion)
+    {
         var expression = @"^v?(?'verNum'\d+\.\d+\.\d+(\.\d)?)(-beta(?'betaNum'\d+))?$";
         var match = Regex.Match(versionStr, expression);
         if (match.Success)
         {
             var verNumStr = match.Groups["verNum"].Value;
             var betaNum = match.Groups["betaNum"];
-            return new AppVersion(verNumStr, betaNum.Success ? betaNum.Value : null);
+            appVersion = new AppVersion(verNumStr, betaNum.Success ? betaNum.Value : null);
+            return true;
         }
 
-        throw new ArgumentException("Can not parse the string to Version");
+        appVersion = null;
+        return false;
     }
 
     public int CompareTo(AppVersion? other)

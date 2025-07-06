@@ -42,6 +42,7 @@ public class AppServices
         services.AddSingleton<IGlobalHook>((sp) => new SimpleGlobalHook(true));
 
         services.AddTransient<IFontManager, FontManager>();
+        services.AddTransient<IThreadDispatcher, ThreadDispatcher>();
 
         if (OperatingSystem.IsWindows())
         {

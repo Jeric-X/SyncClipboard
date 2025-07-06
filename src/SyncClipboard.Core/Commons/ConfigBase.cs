@@ -37,7 +37,7 @@ namespace SyncClipboard.Core.Commons
             var node = _jsonNode[key];
             if (node is null)
             {
-                SetConfig<T>(key, new());
+                //SetConfig<T>(key, new());
                 return new();
             }
 
@@ -86,6 +86,12 @@ namespace SyncClipboard.Core.Commons
         {
             ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
             action?.Invoke(GetConfig<T>());
+        }
+
+        public T GetListenConfig<T>(MessageHandler<T> action) where T : IEquatable<T>, new()
+        {
+            ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
+            return GetConfig<T>();
         }
 
         public void SetConfig<T>(string key, T newValue) where T : IEquatable<T>
@@ -170,7 +176,7 @@ namespace SyncClipboard.Core.Commons
             {
                 _jsonNode = new JsonObject();
                 _jsonNodeBackUp = _jsonNode.DeepClone();
-                Save();
+                //Save();
             }
             NotifyAllRegistedHandler();
             ConfigChanged?.Invoke();

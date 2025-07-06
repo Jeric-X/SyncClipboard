@@ -7,33 +7,58 @@
       xmlns:ui="using:CommunityToolkit.WinUI.Controls"
       xmlns:m="using:SyncClipboard.Core.Models"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="SyncClipboard" Description="{x:Bind _aboutViewModel.Version}" IsExpanded="True">
+        <ui:SettingsExpander Header="SyncClipboard" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <ImageIcon Source="{ThemeResource AppLogo}" />
             </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.Description>
+                <StackPanel Margin="0,4,0,0" Orientation="Vertical">
+                    <TextBlock Text="{x:Bind _aboutViewModel.Version}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <HyperlinkButton Content="{x:Bind i18n:Strings.HomePage}" Command="{x:Bind _aboutViewModel.OpenHomePageCommand}" />
+                        <HyperlinkButton Content="{x:Bind i18n:Strings.DownloadPage}" Command="{x:Bind _aboutViewModel.OpenReleasePageCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </ui:SettingsExpander.Description>
             <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="{x:Bind _aboutViewModel.UpdateInfo, Mode=OneWay}">
-                    <Button Content="{x:Bind i18n:Strings.OpenDownloadPage}" Command="{x:Bind _aboutViewModel.OpenUpdateUrlCommand}" />
-                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateForBetaChannel}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.CheckUpdateForBeta, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateOnStartup}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.AutoCheckUpdates}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.CheckUpdateOnStartUp, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.SoftwareHomePage}">
-                    <ui:SettingsCard.Description>
-                        <HyperlinkButton Content="{x:Bind vm:AboutViewModel.HomePage}" Click="HyperlinkButton_Click" />
-                    </ui:SettingsCard.Description>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.AutoDownloadUpdates}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.AutoDownloadUpdate, Mode=TwoWay}" />
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <InfoBar Title="{x:Bind _aboutViewModel.UpdateStatus.Message, Mode=OneWay}"
+                 Margin="0,-10,0,0"
+                 Severity="{x:Bind vc:ConvertMethod.ConvertSeverity(_aboutViewModel.UpdateStatus.Severity), Mode=OneWay}"
+                 IsOpen="True"
+                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_aboutViewModel.UpdateStatus.ShowPannel), Mode=OneWay}"
+                 Message="{x:Bind _aboutViewModel.UpdateStatus.ExtraMessage, Mode=OneWay}"
+                 IsClosable="False">
+            <InfoBar.ActionButton>
+                <Button HorizontalAlignment="Right"
+                        Content="{x:Bind _aboutViewModel.UpdateStatus.ActionButtonText, Mode=OneWay}"
+                        Command="{x:Bind _aboutViewModel.UpdateStatus.RunActionCommand}"
+                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_aboutViewModel.UpdateStatus.EnableActionButton), Mode=OneWay}" />
+            </InfoBar.ActionButton>
+            <InfoBar.Content>
+                <ProgressBar Margin="0,0,16,0"
+                             IsIndeterminate="{x:Bind _aboutViewModel.UpdateStatus.IsIndeterminate, Mode=OneWay}"
+                             Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_aboutViewModel.UpdateStatus.EnableProgressbar), Mode=OneWay}"
+                             Value="{x:Bind _aboutViewModel.UpdateStatus.ProgressValue, Mode=OneWay}" />
+            </InfoBar.Content>
+        </InfoBar>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{x:Bind _aboutViewModel.Dependencies}">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE1D3;" />

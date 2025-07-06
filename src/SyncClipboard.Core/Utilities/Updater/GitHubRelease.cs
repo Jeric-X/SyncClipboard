@@ -10,7 +10,7 @@ public class GitHubRelease
         public string? Name { get; set; }
 
         [JsonPropertyName("size")]
-        public long Size { get; set; }
+        public ulong Size { get; set; }
 
         [JsonPropertyName("digest")]
         public string? Digest { get; set; }

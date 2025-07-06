@@ -243,10 +243,7 @@
   <data name="CheckUpdate" xml:space="preserve">
     <value>检查更新</value>
   </data>
-  <data name="CheckUpdateOnStartup" xml:space="preserve">
-    <value>启动时检查更新</value>
-  </data>
-  <data name="SoftwareHomePage" xml:space="preserve">
+  <data name="HomePage" xml:space="preserve">
     <value>软件主页</value>
   </data>
   <data name="OpenSourceDependencies" xml:space="preserve">
@@ -271,7 +268,7 @@
     <value>语言</value>
   </data>
   <data name="FoundNewVersion" xml:space="preserve">
-    <value>检测到新版本</value>
+    <value>检测到新版本： </value>
   </data>
   <data name="OpenDownloadPage" xml:space="preserve">
     <value>打开下载页面</value>
@@ -298,7 +295,7 @@
     <value>打开</value>
   </data>
   <data name="OpenFolder" xml:space="preserve">
-    <value>打开文件夹</value>
+    <value>在文件夹中显示</value>
   </data>
   <data name="ClipboardImageUpdated" xml:space="preserve">
     <value>图片同步成功</value>
@@ -608,5 +605,44 @@
   </data>
   <data name="RestartApp" xml:space="preserve">
     <value>重新启动</value>
+  </data>
+  <data name="DownloadPage" xml:space="preserve">
+    <value>下载地址</value>
+  </data>
+  <data name="AutoCheckUpdates" xml:space="preserve">
+    <value>自动检查更新</value>
+  </data>
+  <data name="AutoDownloadUpdates" xml:space="preserve">
+    <value>自动下载更新</value>
+  </data>
+  <data name="GoToAboutPage" xml:space="preserve">
+    <value>打开关于</value>
+  </data>
+  <data name="CheckOnAboutPage" xml:space="preserve">
+    <value>请在关于页面查看</value>
+  </data>
+  <data name="DownloadInstaller" xml:space="preserve">
+    <value>下载安装包</value>
+  </data>
+  <data name="HashMismatch" xml:space="preserve">
+    <value>哈希值不匹配</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="OpenUpdatePage" xml:space="preserve">
+    <value>前往更新页面</value>
+  </data>
+  <data name="ReadyToCheckUpdate" xml:space="preserve">
+    <value>现在可以运行更新检查</value>
+  </data>
+  <data name="UpdateFrom3rdSrc" xml:space="preserve">
+    <value>发现新版本{0}，请使用{1}更新</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>正在下载</value>
+  </data>
+  <data name="NewVersionDownloaded" xml:space="preserve">
+    <value>新版本安装包已下载</value>
   </data>
 </root>

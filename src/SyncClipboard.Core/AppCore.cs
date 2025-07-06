@@ -67,6 +67,7 @@ namespace SyncClipboard.Core
             var mainWindow = Services.GetRequiredService<IMainWindow>();
 
             contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
             SetUpRemoteWorkFolder();
@@ -78,7 +79,6 @@ namespace SyncClipboard.Core
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
-            CheckUpdate();
             RunStartUpCommands();
             Job.SetUpSchedulerJobs(Services);
         }
@@ -162,38 +162,6 @@ namespace SyncClipboard.Core
             if (config.HideWindowOnStartup is false)
             {
                 mainWindow.Show();
-            }
-        }
-
-        private async void CheckUpdate()
-        {
-            var configManager = Services.GetRequiredService<ConfigManager>();
-            var updateChecker = Services.GetRequiredService<GithubUpdater>();
-            var notificationManager = Services.GetService<INotification>();
-            if (notificationManager is null)
-            {
-                return;
-            }
-
-            bool checkOnStartup = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
-            if (checkOnStartup)
-            {
-                try
-                {
-                    var (needUpdate, newVersion) = await updateChecker.Check();
-                    if (needUpdate)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(1));
-                        notificationManager.SendText(
-                            Strings.FoundNewVersion,
-                            $"v{updateChecker.Version} -> {newVersion.TagName}",
-                            new Button(Strings.OpenDownloadPage, () => Sys.OpenWithDefaultApp(newVersion.HtmlUrl))
-                        );
-                    }
-                }
-                catch
-                {
-                }
             }
         }
 

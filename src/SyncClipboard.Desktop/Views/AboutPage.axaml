@@ -7,6 +7,7 @@
              xmlns:m="using:SyncClipboard.Core.Models"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
              d:DesignWidth="800"
              d:DesignHeight="450"
              x:DataType="vm:AboutViewModel"
@@ -18,11 +19,7 @@
         <DataTemplate x:Key="HyperLink" x:DataType="m:OpenSourceSoftware">
             <StackPanel Orientation="Vertical">
                 <TextBlock Text="{Binding Name}" />
-                <HyperlinkButton Padding="0,0,0,-1"
-                                 Content="{Binding HomePage}"
-                                 FontSize="12"
-                                 Click="HyperlinkButton_Click"
-                                 FontWeight="SemiBold" />
+                <HyperlinkButton Content="{Binding HomePage}" Click="HyperlinkButton_Click" />
             </StackPanel>
         </DataTemplate>
         <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
@@ -34,27 +31,50 @@
                              IsExpanded="True"
                              IconSource="{StaticResource AppLogoSource}">
             <ui:SettingsExpander.Footer>
-                <Button Content="{x:Static i18n:Strings.CheckUpdate}" Command="{Binding CheckForUpdateCommand}" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <HyperlinkButton FontSize="13" Content="{x:Static i18n:Strings.HomePage}" Command="{Binding OpenHomePageCommand}" />
+                    <HyperlinkButton FontSize="13" Content="{x:Static i18n:Strings.DownloadPage}" Command="{Binding OpenReleasePageCommand}" />
+                    <Button Content="{x:Static i18n:Strings.CheckUpdate}" Command="{Binding CheckForUpdateCommand}" />
+                </StackPanel>
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{Binding UpdateInfo}">
-                    <ui:SettingsExpanderItem.Footer>
-                        <Button Content="{x:Static i18n:Strings.OpenDownloadPage}" Command="{Binding OpenUpdateUrlCommand}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CheckUpdateForBetaChannel}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding CheckUpdateForBeta, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CheckUpdateOnStartup}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AutoCheckUpdates}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding CheckUpdateOnStartUp, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{Binding SyncClipboard}" ContentTemplate="{StaticResource HyperLink}" />
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AutoDownloadUpdates}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDownloadUpdate, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <ui:InfoBar Title="{Binding UpdateStatus.Message, Mode=OneWay}"
+                    Margin="0,-10,0,0"
+                    IsOpen="True"
+                    IsVisible="{Binding UpdateStatus.ShowPannel, Mode=OneWay}"
+                    Message="{Binding UpdateStatus.ExtraMessage, Mode=OneWay}"
+                    Severity="{Binding UpdateStatus.Severity, Converter={x:Static vc:FuncConverter.ConvertSeverity}, Mode=OneWay}"
+                    IsClosable="False">
+            <ui:InfoBar.ActionButton>
+                <Button HorizontalAlignment="Right"
+                        Content="{Binding UpdateStatus.ActionButtonText, Mode=OneWay}"
+                        Command="{Binding UpdateStatus.RunActionCommand}"
+                        IsVisible="{Binding UpdateStatus.EnableActionButton, Mode=OneWay}" />
+            </ui:InfoBar.ActionButton>
+            <ui:InfoBar.Content>
+                <ProgressBar Margin="0,0,16,0"
+                             IsIndeterminate="{Binding UpdateStatus.IsIndeterminate, Mode=OneWay}"
+                             IsVisible="{Binding UpdateStatus.EnableProgressbar, Mode=OneWay}"
+                             Value="{Binding UpdateStatus.ProgressValue, Mode=OneWay}" />
+            </ui:InfoBar.Content>
+        </ui:InfoBar>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{Binding Dependencies}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />

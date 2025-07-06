@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static SyncClipboard.Core.Utilities.Updater.GitHubRelease;
 using SyncClipboard.Abstract.Notification;
+using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
@@ -21,12 +22,23 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
 
     private bool NeedUpdate { get; set; } = false;
     private GitHubRelease? GithubRelease { get; set; } = null;
-    private string DownloadPath => Path.Combine(Env.UpdateFolder, updateInfo.PackageName);
-
+    private string DownloadPath
+    {
+        get
+        {
+            var versionFolder = Path.Combine(Env.UpdateFolder, GithubRelease?.TagName ?? "latest");
+            if (!Directory.Exists(versionFolder))
+            {
+                Directory.CreateDirectory(versionFolder);
+            }
+            return Path.Combine(versionFolder, updateInfo.PackageName);
+        }
+    }
 
     private readonly GithubUpdater githubUpdater;
     private readonly IHttp http;
     private readonly ILogger logger;
+    private readonly IMainWindow mainWindow;
     private readonly ConfigManager configManager;
 
     private readonly INotification notification;
@@ -42,6 +54,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         IHttp http,
         ILogger logger,
         INotification notification,
+        IMainWindow mainWindow,
         ConfigManager configManager,
         [FromKeyedServices(Env.UpdateInfoFile)] ConfigBase updateInfoConfig)
     {
@@ -50,6 +63,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.logger = logger;
         this.configManager = configManager;
         this.notification = notification;
+        this.mainWindow = mainWindow;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
         SetStatus(UpdaterState.Idle);
     }
@@ -74,6 +88,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         };
     }
 
+    private readonly HashSet<string> notifiedVersion = [];
     private void SendNotification()
     {
         if (CurrentState.State is not (UpdaterState.ReadyForDownload
@@ -83,35 +98,44 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         {
             return;
         }
+        if (string.IsNullOrEmpty(GithubRelease?.TagName) || notifiedVersion.Add(GithubRelease.TagName) is false)
+        {
+            return;
+        }
 
         var stateText = GetStateText(CurrentState.State);
         List<Button> buttons = [
-            new Button("Open About Page", () => { })
+            new Button(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null))
         ];
 
-        // 与特定state关联的按钮可能过时，需要在state改变时清除之前的通知
-        // 
-        // var action = GetStateAction();
-        // if (action is not null)
-        // {
-        //     var (actionText, manualAction) = action.Value;
-        //     buttons.Add(new Button(actionText, () => manualAction(CancellationToken.None)));
-        // }
+        /*与特定state关联的按钮可能过时，需要在state改变时清除这个按钮
 
-        notification.SendText(stateText, "Please check in About page.", buttons.ToArray());
+        var action = GetStateAction();
+        if (action is not null)
+        {
+            var (actionText, manualAction) = action.Value;
+            buttons.Add(new Button(actionText, () => manualAction(CancellationToken.None)));
+        }*/
+
+        notification.SendText(stateText, I18n.Strings.CheckOnAboutPage, buttons.ToArray());
+    }
+
+    public Task RunAutoUpdateFlow()
+    {
+        return SingletonTask(token => AutoUpdateFlow(true, token))(CancellationToken.None);
     }
 
     public Task RunUpdateFlow()
     {
-        return SingletonTask(UpdateFlow)(CancellationToken.None);
+        return SingletonTask(token => AutoUpdateFlow(false, token))(CancellationToken.None);
     }
 
-    private async Task UpdateFlow(CancellationToken token)
+    private async Task AutoUpdateFlow(bool isAutoUpdate, CancellationToken token)
     {
-        if (updateInfo.ManageType == UpdateInfoConfig.TypeExternal)
+        /*if (updateInfo.ManageType == UpdateInfoConfig.TypeExternal)
         {
             return;
-        }
+        }*/
 
         using var guard = new ScopeGuard(SendNotification);
 
@@ -122,7 +146,8 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             return;
         }
 
-        if (configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate is false)
+        var autoDownloadUpdate = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
+        if (isAutoUpdate && configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate is false)
         {
             return;
         }
@@ -130,18 +155,19 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         await DownloadUpdatePackage(token);
     }
 
-    private const string CheckNewVersionText = "Check for Updates";
     private async Task CheckNewVersion(CancellationToken token)
     {
         SetStatus(UpdaterState.CheckingForUpdate);
         (NeedUpdate, GithubRelease) = await githubUpdater.Check(token);
         if (NeedUpdate)
         {
-            if (updateInfo.ManageType == UpdateInfoConfig.TypeManual && updateInfo.UpdateSrc == "github")
+            if (updateInfo.ManageType == UpdateInfoConfig.TypeManual
+                && updateInfo.UpdateSrc == "github"
+                && !string.IsNullOrEmpty(updateInfo.PackageName))
             {
                 SetStatus(UpdaterState.ReadyForDownload);
             }
-            else if (string.IsNullOrEmpty(updateInfo.UpdateSrc) is false)
+            else if (string.IsNullOrEmpty(updateInfo.UpdateSrc) is false && updateInfo.UpdateSrc != "github")
             {
                 SetStatus(UpdaterState.UpdateAvailableAt3rdPartySrc);
             }
@@ -156,7 +182,6 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         }
     }
 
-    private const string DownloadUpdateText = "Download Update Package";
     private async Task DownloadUpdatePackage(CancellationToken token)
     {
         SetStatus(UpdaterState.Downloading);
@@ -165,26 +190,51 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             throw new InvalidOperationException("No Update Available.");
         }
 
+        using var SHA256 = System.Security.Cryptography.SHA256.Create();
         var githubAsset = GetGithubAsset();
         var downloadUrl = githubAsset.BrowserDownloadUrl!;
+
+        if (Directory.Exists(DownloadPath))
+        {
+            Directory.Delete(DownloadPath, true);
+        }
+
+        if (File.Exists(DownloadPath))
+        {
+            var existFileStream = File.OpenRead(DownloadPath);
+            var existHash = await SHA256.ComputeHashAsync(existFileStream, token);
+            var existHashString = $"sha256:{Convert.ToHexString(existHash)}";
+            existFileStream.Dispose();
+            if (string.Compare(githubAsset.Digest, existHashString, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                File.Delete(DownloadPath);
+            }
+            else
+            {
+                SetStatus(UpdaterState.Downloaded);
+                return;
+            }
+        }
+
         await http.GetFile(
             downloadUrl,
             DownloadPath,
             new Progress<HttpDownloadProgress>(progress =>
             {
+                progress.TotalBytesToReceive ??= githubAsset.Size;
                 DownloadProgressChanged?.Invoke(progress);
             }),
             token
         );
 
-        using var SHA256 = System.Security.Cryptography.SHA256.Create();
         using var fileStream = File.OpenRead(DownloadPath);
         var localHash = await SHA256.ComputeHashAsync(fileStream, token);
+        var localHashString = $"sha256:{Convert.ToHexString(localHash)}";
 
-        if (string.Compare(githubAsset.Digest, $"sha256:{BitConverter.ToString(localHash)}", StringComparison.OrdinalIgnoreCase) != 0)
+        if (string.Compare(githubAsset.Digest, localHashString, StringComparison.OrdinalIgnoreCase) != 0)
         {
             logger.Write($"Downloaded file hash does not match the expected hash. Expected: {githubAsset.Digest}, Actual: sha256:{BitConverter.ToString(localHash)}");
-            throw new InvalidOperationException("Downloaded file hash does not match the expected hash.");
+            throw new InvalidOperationException(I18n.Strings.HashMismatch);
         }
 
         SetStatus(UpdaterState.Downloaded);
@@ -203,7 +253,6 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         throw new InvalidOperationException($"No GitHub Asset for {updateInfo.PackageName} Available.");
     }
 
-    private const string CancelText = "Cancel";
     private Task CancelUpdate(CancellationToken token)
     {
         singletonTask.Cancel();
@@ -211,11 +260,15 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         return Task.CompletedTask;
     }
 
-    private const string OpenInFileManagerText = "Open in File Manager";
     private Task OpenInFileManager(CancellationToken _)
     {
-        SetStatus(UpdaterState.Canceled);
         Sys.ShowPathInFileManager(DownloadPath);
+        return Task.CompletedTask;
+    }
+
+    private Task OpenUpdatePage(CancellationToken _)
+    {
+        Sys.OpenWithDefaultApp(GithubRelease!.HtmlUrl);
         return Task.CompletedTask;
     }
 
@@ -223,9 +276,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     {
         CurrentState = new UpdaterStatus(
             UpdaterState.Failed,
-            $"Checking for update failed with message: {message}",
-            CheckNewVersionText,
-            SingletonTask(CheckNewVersion)
+            message
         );
         StateChanged?.Invoke(CurrentState);
     }
@@ -234,8 +285,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     private void SetStatus(UpdaterState state)
     {
         var stateText = GetStateText(state);
-        var res = GetStateAction();
-        var (actionText, manualAction) = GetStateAction() ?? (CheckNewVersionText, SingletonTask(CheckNewVersion));
+        var (actionText, manualAction) = GetStateAction(state) ?? (string.Empty, null)!; //(CheckNewVersionText, SingletonTask(CheckNewVersion));
         CurrentState = new UpdaterStatus(state, stateText, actionText, manualAction);
         StateChanged?.Invoke(CurrentState);
     }
@@ -244,33 +294,33 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     {
         return state switch
         {
-            UpdaterState.Idle => "Ready for checking updates.",
-            UpdaterState.CheckingForUpdate => "Checking for updates...",
-            UpdaterState.Canceled => "Update check canceled.",
-            UpdaterState.ReadyForDownload => $"New version {GithubRelease!.TagName} found.",
-            UpdaterState.UpToDate => "You are using the latest version.",
-            UpdaterState.UpdateAvailableAt3rdPartySrc => $"New version {GithubRelease!.TagName} found, please update from {updateInfo.UpdateSrc}.",
-            UpdaterState.UpdateAvailable => $"New version {GithubRelease!.TagName} found.",
-            UpdaterState.Downloading => $"Downloading {updateInfo.PackageName}...",
-            UpdaterState.Downloaded => $"New version {GithubRelease!.TagName} package has been downloaded.",
-            UpdaterState.Failed => "Update check failed.",
+            UpdaterState.Idle => I18n.Strings.ReadyToCheckUpdate,
+            UpdaterState.CheckingForUpdate => I18n.Strings.CheckingUpdate,
+            UpdaterState.Canceled => I18n.Strings.Canceled,
+            UpdaterState.ReadyForDownload => I18n.Strings.FoundNewVersion + GithubRelease!.TagName,
+            UpdaterState.UpToDate => I18n.Strings.ItsLatestVersion,
+            UpdaterState.UpdateAvailableAt3rdPartySrc => string.Format(I18n.Strings.UpdateFrom3rdSrc, GithubRelease!.TagName, updateInfo.UpdateSrc),
+            UpdaterState.UpdateAvailable => I18n.Strings.FoundNewVersion + GithubRelease!.TagName,
+            UpdaterState.Downloading => $"{I18n.Strings.Downloading} {updateInfo.PackageName}",
+            UpdaterState.Downloaded => I18n.Strings.NewVersionDownloaded,
+            UpdaterState.Failed => I18n.Strings.Error,
             _ => "Unknown state"
         };
     }
 
-    private (string, CancelableTask)? GetStateAction()
+    private (string, CancelableTask)? GetStateAction(UpdaterState state)
     {
-        return CurrentState.State switch
+        return state switch
         {
             // UpdaterState.Idle => null,
-            UpdaterState.CheckingForUpdate => (CancelText, SingletonTask(CancelUpdate)),
+            UpdaterState.CheckingForUpdate => (I18n.Strings.Cancel, SingletonTask(CancelUpdate)),
             // UpdaterState.Canceled => null,
-            UpdaterState.ReadyForDownload => (DownloadUpdateText, SingletonTask(DownloadUpdatePackage)),
+            UpdaterState.ReadyForDownload => (I18n.Strings.DownloadInstaller, SingletonTask(DownloadUpdatePackage)),
             // UpdaterState.UpToDate => null,
-            UpdaterState.UpdateAvailableAt3rdPartySrc => null,
-            // UpdaterState.UpdateAvailable => null,
-            UpdaterState.Downloading => (CancelText, SingletonTask(CancelUpdate)),
-            UpdaterState.Downloaded => (OpenInFileManagerText, SingletonTask(OpenInFileManager)),
+            //UpdaterState.UpdateAvailableAt3rdPartySrc => null,
+            UpdaterState.UpdateAvailable => (I18n.Strings.OpenUpdatePage, OpenUpdatePage),
+            UpdaterState.Downloading => (I18n.Strings.Cancel, SingletonTask(CancelUpdate)),
+            UpdaterState.Downloaded => (I18n.Strings.OpenFolder, SingletonTask(OpenInFileManager)),
             // UpdaterState.Failed => null,
             _ => null
         };

@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -12,15 +11,11 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class AboutViewModel : ObservableObject
 {
-    public static string HomePage => Env.HomePage;
-    public IAppConfig AppConfig => _services.GetRequiredService<IAppConfig>();
-    public string Version => AppConfig.AppVersion;
+    public string Version => _appConfig.AppVersion;
 
-    private readonly IServiceProvider _services;
     private readonly ConfigManager _configManager;
-
-    private GithubUpdater UpdateChecker => _services.GetRequiredService<GithubUpdater>();
-    private string _updateUrl;
+    private readonly UpdateChecker _updateChecker;
+    private readonly IAppConfig _appConfig;
 
     [ObservableProperty]
     private bool checkUpdateOnStartUp;
@@ -30,44 +25,39 @@ public partial class AboutViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    private bool autoDownloadUpdate;
+    partial void OnAutoDownloadUpdateChanged(bool value)
+    {
+        _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { AutoDownloadUpdate = value });
+    }
+
+    [ObservableProperty]
     private bool checkUpdateForBeta;
     partial void OnCheckUpdateForBetaChanged(bool value)
     {
         _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateForBeta = value });
     }
 
-    public AboutViewModel(ConfigManager configManager, IServiceProvider serviceProvider)
+    public AboutViewModel(ConfigManager configManager, IAppConfig appConfig, UpdateChecker updateChecker)
     {
-        _services = serviceProvider;
         _configManager = configManager;
-        if (_alreadyCheckedUpdate is false)
-        {
-            CheckForUpdateCommand.ExecuteAsync(null);
-        }
+        _appConfig = appConfig;
+        _updateChecker = updateChecker;
+
         checkUpdateOnStartUp = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
         checkUpdateForBeta = configManager.GetConfig<ProgramConfig>().CheckUpdateForBeta;
-        configManager.ListenConfig<ProgramConfig>(config => { CheckUpdateOnStartUp = config.CheckUpdateOnStartUp; });
+        autoDownloadUpdate = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
 
-        _updateUrl = AppConfig.UpdateUrl;
-    }
-
-    public OpenSourceSoftware SyncClipboard { get; } = new(I18n.Strings.SoftwareHomePage, Env.HomePage, "");
-
-#if DEBUG
-    private static bool _alreadyCheckedUpdate = true;
-#else           
-    private static bool _alreadyCheckedUpdate = false;
-#endif
-
-    private static string _updateInfo = I18n.Strings.CheckingUpdate;
-    public string UpdateInfo
-    {
-        get => _updateInfo;
-        private set
+        configManager.ListenConfig<ProgramConfig>(config =>
         {
-            _updateInfo = value;
-            OnPropertyChanged(nameof(UpdateInfo));
-        }
+            CheckUpdateOnStartUp = config.CheckUpdateOnStartUp;
+            CheckUpdateForBeta = config.CheckUpdateForBeta;
+            AutoDownloadUpdate = config.AutoDownloadUpdate;
+        });
+
+        _updateChecker.DownloadProgressChanged += DownloadProgressChanged;
+        _updateChecker.StateChanged += UpdateStateChanged;
+        UpdateStateChanged(_updateChecker.CurrentState);
     }
 
     public List<OpenSourceSoftware> Dependencies { get; } =
@@ -86,33 +76,101 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("DotNetZip.Semverd", "https://github.com/haf/DotNetZip.Semverd", "DotNetZip.Semverd/LICENSE.txt"),
     ];
 
+
     [RelayCommand]
-    public void OpenUpdateUrl()
+    public static void OpenHomePage()
     {
-        Sys.OpenWithDefaultApp(_updateUrl);
+        Sys.OpenWithDefaultApp(Env.HomePage);
+    }
+
+    [RelayCommand]
+    public void OpenReleasePage()
+    {
+        Sys.OpenWithDefaultApp(_appConfig.UpdateUrl);
+    }
+
+    public partial class UpdateStatusViewModel : ObservableObject
+    {
+        [ObservableProperty]
+        private bool showPannel = false;
+        [ObservableProperty]
+        private Severity severity = Severity.Info;
+        [ObservableProperty]
+        private string message = string.Empty;
+        [ObservableProperty]
+        private string extraMessage = string.Empty;
+        [ObservableProperty]
+        private bool enableProgressbar = false;
+        [ObservableProperty]
+        private bool enableActionButton = false;
+        [ObservableProperty]
+        private bool isIndeterminate = false;
+        [ObservableProperty]
+        private double progressValue = 0;
+        [ObservableProperty]
+        private string actionButtonText = string.Empty;
+        public Func<CancellationToken, Task>? Action;
+        [RelayCommand]
+        private void RunAction()
+        {
+            if (Action is not null)
+            {
+                Action(CancellationToken.None);
+            }
+        }
+    }
+
+    public UpdateStatusViewModel UpdateStatus { get; } = new();
+
+    private void UpdateStateChanged(UpdaterStatus status)
+    {
+        UpdateStatus.ShowPannel = status.State != UpdaterState.Idle;
+        UpdateStatus.Message = status.Message;
+        UpdateStatus.ExtraMessage = string.Empty;
+        UpdateStatus.EnableProgressbar = status.State is UpdaterState.Downloading or UpdaterState.CheckingForUpdate;
+        UpdateStatus.IsIndeterminate = true;
+        UpdateStatus.ProgressValue = 0;
+
+        UpdateStatus.ActionButtonText = status.ActionText;
+        UpdateStatus.Action = status.ManualAction;
+        UpdateStatus.EnableActionButton = status.ManualAction is not null && !string.IsNullOrEmpty(status.ActionText);
+
+        if (status.State is UpdaterState.Failed)
+        {
+            UpdateStatus.ExtraMessage = status.Message;
+            UpdateStatus.Message = I18n.Strings.Error;
+        }
+
+        UpdateStatus.Severity = status.State switch
+        {
+            UpdaterState.Idle => Severity.Info,
+            UpdaterState.CheckingForUpdate => Severity.Info,
+            UpdaterState.UpdateAvailable => Severity.Warning,
+            UpdaterState.UpdateAvailableAt3rdPartySrc => Severity.Warning,
+            UpdaterState.ReadyForDownload => Severity.Warning,
+            UpdaterState.UpToDate => Severity.Success,
+            UpdaterState.Downloading => Severity.Info,
+            UpdaterState.Downloaded => Severity.Warning,
+            UpdaterState.Failed => Severity.Error,
+            UpdaterState.Canceled => Severity.Warning,
+            _ => Severity.Error
+        };
+    }
+
+    private void DownloadProgressChanged(HttpDownloadProgress progress)
+    {
+        if (progress.End)
+        {
+            UpdateStatus.ProgressValue = 100;
+            return;
+        }
+        UpdateStatus.ProgressValue = 100.0 * progress.BytesReceived / progress.TotalBytesToReceive!.Value;
+        UpdateStatus.IsIndeterminate = false;
     }
 
     [RelayCommand]
     public async Task CheckForUpdate()
     {
-        _alreadyCheckedUpdate = true;
-        UpdateInfo = I18n.Strings.CheckingUpdate;
-        try
-        {
-            var (needUpdate, githubRelease) = await UpdateChecker.Check();
-            _updateUrl = githubRelease.HtmlUrl!;
-            if (needUpdate)
-            {
-                UpdateInfo = $"{I18n.Strings.FoundNewVersion}\nv{UpdateChecker.Version} -> {githubRelease.TagName}";
-            }
-            else
-            {
-                UpdateInfo = $"{I18n.Strings.ItsLatestVersion}\n{string.Format(I18n.Strings.SoftwareUpdateInfo, UpdateChecker.Version, githubRelease.TagName)}";
-            }
-        }
-        catch
-        {
-            UpdateInfo = I18n.Strings.FailedToCheck;
-        }
+        await _updateChecker.RunAutoUpdateFlow();
     }
 }

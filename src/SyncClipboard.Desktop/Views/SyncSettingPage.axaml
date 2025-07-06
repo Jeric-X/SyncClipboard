@@ -181,11 +181,7 @@
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsVisible="{Binding UseManulServer}">
-                    <HyperlinkButton Padding="0,0,0,-1"
-                                     Content="{x:Static i18n:Strings.UseNextcloud}"
-                                     Command="{Binding LoginWithNextcloudCommand}"
-                                     FontSize="12"
-                                     FontWeight="SemiBold" />
+                    <HyperlinkButton Content="{x:Static i18n:Strings.UseNextcloud}" Command="{Binding LoginWithNextcloudCommand}" />
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding IsNormalClientEnable}">
                     <ui:SettingsExpanderItem.Footer>

@@ -241,13 +241,10 @@
     <value>Download the original file and copy it after copying a image in browser</value>
   </data>
   <data name="CheckUpdate" xml:space="preserve">
-    <value>Check Update</value>
+    <value>Check for Updates</value>
   </data>
-  <data name="CheckUpdateOnStartup" xml:space="preserve">
-    <value>Check Update on Startup</value>
-  </data>
-  <data name="SoftwareHomePage" xml:space="preserve">
-    <value>Software Home Page</value>
+  <data name="HomePage" xml:space="preserve">
+    <value>Home</value>
   </data>
   <data name="OpenSourceDependencies" xml:space="preserve">
     <value>Open Source Dependencies</value>
@@ -271,13 +268,13 @@
     <value>Language</value>
   </data>
   <data name="FoundNewVersion" xml:space="preserve">
-    <value>Found new version</value>
+    <value>Found new version: </value>
   </data>
   <data name="OpenDownloadPage" xml:space="preserve">
     <value>Update</value>
   </data>
   <data name="ItsLatestVersion" xml:space="preserve">
-    <value>It's the latest version</value>
+    <value>SyncClipboard is the latest version</value>
   </data>
   <data name="LocalVersion" xml:space="preserve">
     <value>Local version</value>
@@ -298,7 +295,7 @@
     <value>Open</value>
   </data>
   <data name="OpenFolder" xml:space="preserve">
-    <value>Open folder</value>
+    <value>Show in File Manager</value>
   </data>
   <data name="ClipboardImageUpdated" xml:space="preserve">
     <value>Clipboard image updated</value>
@@ -382,7 +379,7 @@
     <value>200</value>
   </data>
   <data name="CheckingUpdate" xml:space="preserve">
-    <value>Checking for update……</value>
+    <value>Checking for updates……</value>
   </data>
   <data name="SystemOperations" xml:space="preserve">
     <value>System Operations</value>
@@ -511,7 +508,7 @@
     <value>Download</value>
   </data>
   <data name="CheckUpdateForBetaChannel" xml:space="preserve">
-    <value>Check Update for Beta Channel</value>
+    <value>Check for Updates for Beta Channel</value>
   </data>
   <data name="Uploaded" xml:space="preserve">
     <value>Clipboard Uploaded</value>
@@ -608,5 +605,44 @@
   </data>
   <data name="RestartApp" xml:space="preserve">
     <value>Restart</value>
+  </data>
+  <data name="DownloadPage" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="AutoCheckUpdates" xml:space="preserve">
+    <value>Check for Updates Automatically</value>
+  </data>
+  <data name="AutoDownloadUpdates" xml:space="preserve">
+    <value>Download New Version Automatically</value>
+  </data>
+  <data name="GoToAboutPage" xml:space="preserve">
+    <value>Go to About Page</value>
+  </data>
+  <data name="CheckOnAboutPage" xml:space="preserve">
+    <value>Please check on the about page</value>
+  </data>
+  <data name="DownloadInstaller" xml:space="preserve">
+    <value>Download the Installer</value>
+  </data>
+  <data name="HashMismatch" xml:space="preserve">
+    <value>Hash mismatch</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="OpenUpdatePage" xml:space="preserve">
+    <value>Go to the Update Page</value>
+  </data>
+  <data name="ReadyToCheckUpdate" xml:space="preserve">
+    <value>Ready to check for updates</value>
+  </data>
+  <data name="UpdateFrom3rdSrc" xml:space="preserve">
+    <value>New version {0} found, please update from {1}</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>Downloading</value>
+  </data>
+  <data name="NewVersionDownloaded" xml:space="preserve">
+    <value>New version package has been downloaded</value>
   </data>
 </root>
