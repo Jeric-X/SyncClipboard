@@ -66,6 +66,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.mainWindow = mainWindow;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
         SetStatus(UpdaterState.Idle);
+        logger.WriteAsync(updateInfo.ToString());
     }
 
     private CancelableTask SingletonTask(CancelableTask task)
