@@ -36,7 +36,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          8.0.x
+          9.0.x
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -60,7 +60,7 @@ jobs:
         /v:m -restore
 
     - name: copy SyncClipboard.WinUI3
-      run: xcopy src\SyncClipboard.WinUI3\bin\${{ matrix.cpu }}\Release\net8.0-windows10.0.19041.0\win-${{ matrix.cpu }} WinUI3\ /s /e
+      run: xcopy src\SyncClipboard.WinUI3\bin\${{ matrix.cpu }}\Release\net9.0-windows10.0.19041.0\win-${{ matrix.cpu }} WinUI3\ /s /e
 
     - name: Upload build artifacts SyncClipboard.WinUI3
       uses: actions/upload-artifact@v4
