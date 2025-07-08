@@ -63,7 +63,7 @@ jobs:
       - name: set update info
         run: |
           chmod +x ./build/SetUpdateSource.sh
-          ./build/SetUpdateSource.sh -m manual -s github -o build/macos/SyncClipboard.app/Contents/MacOS -n SyncClipboard_macos_${{ matrix.cpu }}.dmg
+          ./build/SetUpdateSource.sh -m manual -s github -o build/macos/SyncClipboard.app/Contents/MonoBundle -n SyncClipboard_macos_${{ matrix.cpu }}.dmg
 
       - name: Package app
         run: | 
