@@ -51,14 +51,14 @@ jobs:
           jericx/syncclipboard-server:${{ github.ref_name }}
           jericx/syncclipboard-server:latest
 
-    - name: Update Docker Hub Description
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: peter-evans/dockerhub-description@v4
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: jericx/syncclipboard-server
-        readme-filepath: src/SyncClipboard.Server/README_DOCKER.md
+    # - name: Update Docker Hub Description
+    #   if: startsWith(github.ref, 'refs/tags/')
+    #   uses: peter-evans/dockerhub-description@v4
+    #   with:
+    #     username: ${{ secrets.DOCKER_USERNAME }}
+    #     password: ${{ secrets.DOCKER_PASSWORD }}
+    #     repository: jericx/syncclipboard-server
+    #     readme-filepath: src/SyncClipboard.Server/README_DOCKER.md
 
     - name: Download last-job-built artifact SyncClipboard.Server
       if: startsWith(github.ref, 'refs/tags/')
