@@ -52,7 +52,10 @@ namespace SyncClipboard.Core.Utilities.Web
 
         protected void ReInitHttpClient()
         {
-            HttpClient = CreateHttpClient();
+            var newClient = CreateHttpClient();
+            var oldClient = HttpClient;
+            HttpClient = newClient;
+            oldClient?.Dispose();
             SetAuthHeader();
         }
 

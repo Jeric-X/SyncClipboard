@@ -6,57 +6,61 @@
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:core="using:SyncClipboard.Core.Commons"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:m="using:SyncClipboard.Core.Models"
              Name="{x:Static core:Env.SoftName}"
              RequestedThemeVariant="Default">
-  <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
-  <Application.Resources>
-    <ResourceDictionary>
-      <ResourceDictionary.ThemeDictionaries>
-        <ResourceDictionary x:Key="Light">
-          <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
+    <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+            <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
+            <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
+            <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
+            <ui:ImageIconSource x:Key="AppLogoSource" />
+            <ui:ImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
+            <ui:ImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
+            <DataTemplate x:Key="LocaleStringTemplate" x:DataType="{x:Type m:LocaleString, x:TypeArguments=x:String}">
+                <TextBlock Text="{Binding ShownString}" />
+            </DataTemplate>
         </ResourceDictionary>
-        <ResourceDictionary x:Key="Dark">
-          <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
-        </ResourceDictionary>
-      </ResourceDictionary.ThemeDictionaries>
-      <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-      <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-      <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
-      <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
-      <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
-      <ui:ImageIconSource x:Key="AppLogoSource" />
-      <ui:ImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
-      <ui:ImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
-    </ResourceDictionary>
-  </Application.Resources>
-  <Application.Styles>
-    <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
-    <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
-    <Style Selector="Window">
-      <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
-    </Style>
-    <Style Selector="TextBlock">
-      <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
-    </Style>
-    <Style Selector="TextBox">
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-	<Style Selector="HyperlinkButton">
-		<Setter Property="Padding" Value="0,0,0,-1" />
-		<Setter Property="FontSize" Value="12" />
-		<Setter Property="FontWeight" Value="SemiBold" />
-	</Style>
-  </Application.Styles>
-  <NativeMenu.Menu>
-    <NativeMenu />
-  </NativeMenu.Menu>
-  <TrayIcon.Icons>
-    <TrayIcons>
-      <TrayIcon Icon="/Assets/default.ico" MacOSProperties.IsTemplateIcon="True" ToolTipText="Avalonia Tray Icon ToolTip">
-        <TrayIcon.Menu>
-          <NativeMenu />
-        </TrayIcon.Menu>
-      </TrayIcon>
-    </TrayIcons>
-  </TrayIcon.Icons>
+    </Application.Resources>
+    <Application.Styles>
+        <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
+        <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="HyperlinkButton">
+            <Setter Property="Padding" Value="0,0,0,-1" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </Application.Styles>
+    <NativeMenu.Menu>
+        <NativeMenu />
+    </NativeMenu.Menu>
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="/Assets/default.ico" MacOSProperties.IsTemplateIcon="True" ToolTipText="Avalonia Tray Icon ToolTip">
+                <TrayIcon.Menu>
+                    <NativeMenu />
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
 </Application>

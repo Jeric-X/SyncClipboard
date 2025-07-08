@@ -39,7 +39,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     {
         try
         {
-            await ProcessClipboard(meta, profile, false, cancelToken);
+            await ProcessClipboard(meta, profile, cancelToken);
         }
         catch (Exception ex)
         {
@@ -111,7 +111,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         base.Load();
     }
 
-    private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, Profile profile, bool useProxy, CancellationToken cancellationToken)
+    private async Task ProcessClipboard(ClipboardMetaInfomation metaInfo, Profile profile, CancellationToken cancellationToken)
     {
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
         if (NeedAdjust(profile, metaInfo) is not true)
@@ -121,7 +121,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
 
         if (DownloadWebImageEnabled && !string.IsNullOrEmpty(metaInfo.Html))
         {
-            profile = await ProcessImageFromWeb(metaInfo, useProxy, cancellationToken) ?? profile;
+            profile = await ProcessImageFromWeb(metaInfo, cancellationToken) ?? profile;
         }
 
         await AdjustClipboard(profile, cancellationToken);
@@ -193,7 +193,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         }
     }
 
-    private async Task<Profile?> ProcessImageFromWeb(ClipboardMetaInfomation metaInfo, bool useProxy, CancellationToken ctk)
+    private async Task<Profile?> ProcessImageFromWeb(ClipboardMetaInfomation metaInfo, CancellationToken ctk)
     {
         var match = RegexUrl().Match(metaInfo.Html!);    // 性能未测试，benchmark参考 https://www.bilibili.com/video/av441496306/?p=1&plat_id=313&t=15m53s
         if (match.Success) // 是从浏览器复制的图片
@@ -203,7 +203,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
 
             try
             {
-                var localPath = await DownloadImage(new Uri(match.Groups["imgUrl"].Value), useProxy, ctk);
+                var localPath = await DownloadImage(new Uri(match.Groups["imgUrl"].Value), ctk);
                 if (!ImageHelper.FileIsImage(localPath))
                 {
                     TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
@@ -219,7 +219,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         return null;
     }
 
-    private async Task<string> DownloadImage(Uri imageUri, bool useProxy, CancellationToken token)
+    private async Task<string> DownloadImage(Uri imageUri, CancellationToken token)
     {
         using var downloadingCts = new CancellationTokenSource();
         var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, downloadingCts.Token).Token;
@@ -234,18 +234,10 @@ public partial class EasyCopyImageSerivce : ClipboardHander
                 new Button(I18n.Strings.Cancel, downloadingCts.Cancel)
             );
         }
-        if (useProxy)
-        {
-            var fullPath = Path.Combine(Env.TemplateFileFolder, "proxy " + filename.Value);
-            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, linkedToken, true);
-            return fullPath;
-        }
-        else
-        {
-            var fullPath = Path.Combine(Env.TemplateFileFolder, filename.Value);
-            await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, linkedToken);
-            return fullPath;
-        }
+
+        var fullPath = Path.Combine(Env.TemplateFileFolder, filename.Value);
+        await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, linkedToken);
+        return fullPath;
     }
 
     [GeneratedRegex("[^/]+(?!.*/)")]

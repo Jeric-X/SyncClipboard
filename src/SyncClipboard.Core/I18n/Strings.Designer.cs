@@ -268,6 +268,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Config 的本地化字符串。
+        /// </summary>
+        public static string Config {
+            get {
+                return ResourceManager.GetString("Config", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Confirm 的本地化字符串。
         /// </summary>
         public static string Confirm {
@@ -336,6 +345,15 @@ namespace SyncClipboard.Core.I18n {
         public static string CustomConfigurationFilePath {
             get {
                 return ResourceManager.GetString("CustomConfigurationFilePath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Custom Proxy 的本地化字符串。
+        /// </summary>
+        public static string CustomProxy {
+            get {
+                return ResourceManager.GetString("CustomProxy", resourceCulture);
             }
         }
         
@@ -646,6 +664,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Failed to set proxy 的本地化字符串。
+        /// </summary>
+        public static string FailedToSetProxy {
+            get {
+                return ResourceManager.GetString("FailedToSetProxy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Failed to start server 的本地化字符串。
         /// </summary>
         public static string FailedToStartServer {
@@ -714,6 +741,15 @@ namespace SyncClipboard.Core.I18n {
         public static string FoundNewVersion {
             get {
                 return ResourceManager.GetString("FoundNewVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 General 的本地化字符串。
+        /// </summary>
+        public static string General {
+            get {
+                return ResourceManager.GetString("General", resourceCulture);
             }
         }
         
@@ -1123,6 +1159,42 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Proxy 的本地化字符串。
+        /// </summary>
+        public static string Proxy {
+            get {
+                return ResourceManager.GetString("Proxy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Proxy Address 的本地化字符串。
+        /// </summary>
+        public static string ProxyAddress {
+            get {
+                return ResourceManager.GetString("ProxyAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Proxy Setting 的本地化字符串。
+        /// </summary>
+        public static string ProxySetting {
+            get {
+                return ResourceManager.GetString("ProxySetting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Proxy Type 的本地化字符串。
+        /// </summary>
+        public static string ProxyType {
+            get {
+                return ResourceManager.GetString("ProxyType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Query Interval (sec) 的本地化字符串。
         /// </summary>
         public static string QueryInterval {
@@ -1425,6 +1497,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SystemOperations {
             get {
                 return ResourceManager.GetString("SystemOperations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 System Proxy 的本地化字符串。
+        /// </summary>
+        public static string SystemProxy {
+            get {
+                return ResourceManager.GetString("SystemProxy", resourceCulture);
             }
         }
         

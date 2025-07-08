@@ -20,4 +20,13 @@ public sealed partial class SystemSettingPage : Page
         _viewModel = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
         this.DataContext = _viewModel;
     }
+
+    private void ShowProxySettingDialog(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        var dialog = new ProxySettingDialog
+        {
+            XamlRoot = this.XamlRoot
+        };
+        _ = dialog.ShowAsync();
+    }
 }

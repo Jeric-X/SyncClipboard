@@ -51,7 +51,7 @@ namespace SyncClipboard.Core
             I18nHelper.SetProgramLanguage(langTag);
         }
 
-        public void Run()
+        private void LogInitInfo()
         {
             var appConfig = Services.GetRequiredService<IAppConfig>();
             Logger.Write($"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
@@ -60,6 +60,11 @@ namespace SyncClipboard.Core
                 Logger.Write("App core", $"DISPLAY:{Environment.GetEnvironmentVariable("DISPLAY")}");
                 Logger.Write("App core", $"WAYLAND_DISPLAY:{Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")}");
             }
+        }
+
+        public void Run()
+        {
+            LogInitInfo();
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
 
@@ -70,7 +75,9 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
+            ProxyManager.Init(configManager);
             SetUpRemoteWorkFolder();
+
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 
@@ -207,6 +214,7 @@ namespace SyncClipboard.Core
             services.AddTransient<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();
             services.AddTransient<FileSyncFilterSettingViewModel>();
+            services.AddTransient<ProxySettingViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<HotkeyViewModel>();

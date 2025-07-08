@@ -1,7 +1,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.UserConfigs;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.Utilities.Web
 {
@@ -9,84 +9,51 @@ namespace SyncClipboard.Core.Utilities.Web
     {
         public const string USER_AGENT = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36";
 
-        private string _proxy;
-
-        public Http(ConfigManager configManager)
+        public Http()
         {
-            configManager.ListenConfig<ProgramConfig>(ConfigChanged);
-            var programConfig = configManager.GetConfig<ProgramConfig>();
-
-            _proxy = programConfig.Proxy;
+            CreateClient();
+            ProxyManager.GlobalProxyChanged += CreateClient;
         }
 
-        private void ConfigChanged(ProgramConfig config)
+        [MemberNotNull(nameof(HttpClient))]
+        private void CreateClient()
         {
-            if (config.Proxy != _proxy)
+            var httpClient = new HttpClient
             {
-                _proxy = config.Proxy;
-                HttpClientProxy.Dispose();
-                _lazyHttpClientProxy = null;
-            }
+                Timeout = TimeSpan.FromSeconds(120),
+            };
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
+
+            var old = HttpClient;
+            HttpClient = httpClient;
+            old?.Dispose();
         }
 
-        private static readonly Lazy<HttpClient> lazyHttpClient = new(
-            () =>
-            {
-                HttpClient client = new(
-                    new SocketsHttpHandler()
-                    {
-                        ConnectTimeout = TimeSpan.FromSeconds(60),
-                    });
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
-                return client;
-            }
-        );
-
-        private static HttpClient HttpClient => lazyHttpClient.Value;
-        private HttpClient HttpClientProxy => GetHttpClientProxy();
-
-        private HttpClient? _lazyHttpClientProxy = null;
-
-        private HttpClient GetHttpClientProxy()
-        {
-            if (_lazyHttpClientProxy is null)
-            {
-                _lazyHttpClientProxy = new(
-                    new SocketsHttpHandler()
-                    {
-                        ConnectTimeout = TimeSpan.FromSeconds(60),
-                        Proxy = new System.Net.WebProxy(_proxy, true),
-                        UseProxy = true
-                    }
-                );
-                _lazyHttpClientProxy.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
-            }
-            return _lazyHttpClientProxy;
-        }
+        private HttpClient HttpClient;
 
         Task<Type?> IHttp.PostTextRecieveJson<Type>(string url, IEnumerable<KeyValuePair<string, string>>? list,
-            CancellationToken? cancelToken, bool useProxy) where Type : default
+            CancellationToken? cancelToken) where Type : default
         {
-            HttpClient client = useProxy ? HttpClientProxy : HttpClient;
+            HttpClient client = HttpClient;
             return client.PostTextRecieveJson<Type>(url, list, cancelToken);
         }
 
-        Task IHttp.GetFile(string url, string localFilePath, CancellationToken? cancelToken, bool useProxy)
+        Task IHttp.GetFile(string url, string localFilePath, CancellationToken? cancelToken)
         {
-            HttpClient client = useProxy ? HttpClientProxy : HttpClient;
+            HttpClient client = HttpClient;
             return client.GetFile(url, localFilePath, cancelToken);
         }
 
         Task IHttp.GetFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress,
-            CancellationToken? cancelToken, bool useProxy)
+            CancellationToken? cancelToken)
         {
-            HttpClient client = useProxy ? HttpClientProxy : HttpClient;
+            HttpClient client = HttpClient;
             return client.GetFile(url, localFilePath, progress, cancelToken);
         }
 
-        HttpClient IHttp.GetHttpClient(bool useProxy)
+        HttpClient IHttp.GetHttpClient()
         {
-            return useProxy ? HttpClientProxy : HttpClient;
+            return HttpClient;
         }
     }
 }

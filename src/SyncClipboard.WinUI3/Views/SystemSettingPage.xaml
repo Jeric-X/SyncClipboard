@@ -11,53 +11,46 @@
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xE770;" />
-            </ui:SettingsCard.HeaderIcon>
-            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.HideOnStartup}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xE1C5;" />
-            </ui:SettingsCard.HeaderIcon>
-            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.HideWindowOnStartUp, Mode=TwoWay}" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.TempFileRemainDays}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xE130;" />
-            </ui:SettingsCard.HeaderIcon>
-            <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.TempFileRemainDays, Mode=TwoWay}" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xE9F9;" />
-            </ui:SettingsCard.HeaderIcon>
-            <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.UserConfigLocation}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xEC25;" />
-            </ui:SettingsCard.HeaderIcon>
-            <ComboBox SelectedItem="{x:Bind _viewModel.UserConfigPosition, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.UserConfigPositions}" DisplayMemberPath="ShownString" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xE128;" />
-            </ui:SettingsCard.HeaderIcon>
-            <ComboBox SelectedItem="{x:Bind _viewModel.Language, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Languages}" DisplayMemberPath="{x:Bind _viewModel.DisplayMemberPath, Mode=OneTime}" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.Theme}">
-            <ui:SettingsCard.HeaderIcon>
-                <FontIcon Glyph="&#xE793;" />
-            </ui:SettingsCard.HeaderIcon>
-            <ComboBox SelectedItem="{x:Bind _viewModel.Theme, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Themes}" DisplayMemberPath="ShownString" />
-        </ui:SettingsCard>
-        <ui:SettingsCard Header="{x:Bind i18n:Strings.DiagnoseMode}">
-            <ui:SettingsCard.HeaderIcon>
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.General}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE9F5;" />
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HideOnStartup}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.HideWindowOnStartUp, Mode=TwoWay}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.UserConfigLocation}">
+                    <ComboBox SelectedItem="{x:Bind _viewModel.UserConfigPosition, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.UserConfigPositions}" DisplayMemberPath="ShownString" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.Language}" Description="{x:Bind _viewModel.ChangingLangInfo, Mode=OneWay}">
+                    <ComboBox SelectedItem="{x:Bind _viewModel.Language, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Languages}" DisplayMemberPath="{x:Bind _viewModel.DisplayMemberPath, Mode=OneTime}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.Theme}">
+                    <ComboBox SelectedItem="{x:Bind _viewModel.Theme, Mode=TwoWay}" ItemsSource="{x:Bind vm:SystemSettingViewModel.Themes}" DisplayMemberPath="ShownString" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.Proxy}">
+                    <Button Click="ShowProxySettingDialog" Content="{x:Bind i18n:Strings.Config}" />
+                </ui:SettingsCard>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.Diagnose}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE9D9;" />
-            </ui:SettingsCard.HeaderIcon>
-            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.DiagnoseMode, Mode=TwoWay}" />
-        </ui:SettingsCard>
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.TempFileRemainDays}">
+                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.TempFileRemainDays, Mode=TwoWay}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
+                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.DiagnoseMode}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.DiagnoseMode, Mode=TwoWay}" />
+                </ui:SettingsCard>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
     </StackPanel>
 </Page>

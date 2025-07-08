@@ -645,4 +645,31 @@
   <data name="NewVersionDownloaded" xml:space="preserve">
     <value>New version package has been downloaded</value>
   </data>
+  <data name="General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="SystemProxy" xml:space="preserve">
+    <value>System Proxy</value>
+  </data>
+  <data name="CustomProxy" xml:space="preserve">
+    <value>Custom Proxy</value>
+  </data>
+  <data name="ProxySetting" xml:space="preserve">
+    <value>Proxy Setting</value>
+  </data>
+  <data name="ProxyType" xml:space="preserve">
+    <value>Proxy Type</value>
+  </data>
+  <data name="ProxyAddress" xml:space="preserve">
+    <value>Proxy Address</value>
+  </data>
+  <data name="Proxy" xml:space="preserve">
+    <value>Proxy</value>
+  </data>
+  <data name="Config" xml:space="preserve">
+    <value>Config</value>
+  </data>
+  <data name="FailedToSetProxy" xml:space="preserve">
+    <value>Failed to set proxy</value>
+  </data>
 </root>

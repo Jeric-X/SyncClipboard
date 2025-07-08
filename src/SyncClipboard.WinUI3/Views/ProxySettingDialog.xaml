@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentDialog x:Class="SyncClipboard.WinUI3.Views.ProxySettingDialog"
+               xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:local="using:SyncClipboard.WinUI3.Views"
+               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+               xmlns:vm="using:SyncClipboard.Core.ViewModels"
+               xmlns:i18n="using:SyncClipboard.Core.I18n"
+               Title="{x:Bind i18n:Strings.ProxySetting}"
+               PrimaryButtonText="{x:Bind i18n:Strings.Confirm}"
+               PrimaryButtonCommand="{x:Bind _viewModel.SaveCommand}"
+               CloseButtonText="{x:Bind i18n:Strings.Cancel}"
+               mc:Ignorable="d">
+    <ContentDialog.Resources>
+        <Style TargetType="local:ProxySettingDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
+    </ContentDialog.Resources>
+    <ScrollViewer Padding="0,0,10,0" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="12">
+            <ComboBox Header="{x:Bind i18n:Strings.ProxyType}"
+                      SelectedItem="{x:Bind _viewModel.Type, Mode=TwoWay}"
+                      ItemsSource="{x:Bind vm:ProxySettingViewModel.Types}"
+                      DisplayMemberPath="ShownString" />
+            <TextBox Header="{x:Bind i18n:Strings.ProxyAddress}" Text="{x:Bind _viewModel.Address, Mode=TwoWay}" IsEnabled="{x:Bind _viewModel.EnableCustomAddress, Mode=OneWay}" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

@@ -136,6 +136,11 @@ public partial class AboutViewModel : ObservableObject
         UpdateStatus.Action = status.ManualAction;
         UpdateStatus.EnableActionButton = status.ManualAction is not null && !string.IsNullOrEmpty(status.ActionText);
 
+        if (status.State is UpdaterState.Downloading)
+        {
+            DownloadProgressChanged(_updateChecker.DownloadProgress);
+        }
+
         if (status.State is UpdaterState.Failed)
         {
             UpdateStatus.ExtraMessage = status.Message;
@@ -165,8 +170,12 @@ public partial class AboutViewModel : ObservableObject
             UpdateStatus.ProgressValue = 100;
             return;
         }
-        UpdateStatus.ProgressValue = 100.0 * progress.BytesReceived / progress.TotalBytesToReceive!.Value;
-        UpdateStatus.IsIndeterminate = false;
+
+        if (progress.TotalBytesToReceive.HasValue)
+        {
+            UpdateStatus.ProgressValue = 100.0 * progress.BytesReceived / progress.TotalBytesToReceive.Value;
+            UpdateStatus.IsIndeterminate = false;
+        }
     }
 
     [RelayCommand]

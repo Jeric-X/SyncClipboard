@@ -27,44 +27,32 @@
                 <UserControl />
             </OnPlatform.Default>
         </OnPlatform>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.HideOnStartup}">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.General}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE1C5;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                <ui:FontIconSource Glyph="&#xE9F5;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
-                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.TempFileRemainDays}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE130;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
-                <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding TempFileRemainDays, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.LogRemainDays}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE9F9;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
-                <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding LogRemainDays, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.Language}" Description="{Binding ChangingLangInfo, Mode=OneWay}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE128;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
-                <ComboBox SelectedItem="{Binding Language, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Languages}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="m:LanguageModel">
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HideOnStartup}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.Language}" Description="{Binding ChangingLangInfo, Mode=OneWay}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding Language, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Languages}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="m:LanguageModel">
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.Theme}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding Theme, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Themes}" ItemTemplate="{StaticResource LocaleStringTemplate}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.Font}">
                     <ui:SettingsExpanderItem.Footer>
                         <ComboBox SelectedItem="{Binding Font, Mode=TwoWay}" ItemsSource="{Binding FontList}">
@@ -76,29 +64,34 @@
                         </ComboBox>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.Proxy}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Click="ShowProxySettingDialog" Content="{x:Static i18n:Strings.Config}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.Theme}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE706;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
-                <ComboBox SelectedItem="{Binding Theme, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.Themes}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=x:String}">
-                            <TextBlock Text="{Binding ShownString}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.DiagnoseMode}">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Diagnose}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE9D9;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
-                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DiagnoseMode, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TempFileRemainDays}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding TempFileRemainDays, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.LogRemainDays}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding LogRemainDays, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DiagnoseMode}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DiagnoseMode, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <OnPlatform>
             <OnPlatform.Default>

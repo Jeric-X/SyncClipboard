@@ -185,6 +185,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
 
     private async Task DownloadUpdatePackage(CancellationToken token)
     {
+        DownloadProgress = new();
         SetStatus(UpdaterState.Downloading);
         if (GithubRelease == null)
         {
@@ -223,6 +224,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             new Progress<HttpDownloadProgress>(progress =>
             {
                 progress.TotalBytesToReceive ??= githubAsset.Size;
+                DownloadProgress = progress;
                 DownloadProgressChanged?.Invoke(progress);
             }),
             token

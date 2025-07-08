@@ -39,6 +39,7 @@ namespace SyncClipboard.Core.Utilities.Web
             _serverConfig = configManager.GetConfig<ServerConfig>();
             Logger = logger;
             _appConfig = appConfig;
+            ProxyManager.GlobalProxyChanged += ReInitHttpClient;
         }
 
         private async void UserConfigChanged()

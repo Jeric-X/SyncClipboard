@@ -645,4 +645,31 @@
   <data name="NewVersionDownloaded" xml:space="preserve">
     <value>新版本安装包已下载</value>
   </data>
+  <data name="General" xml:space="preserve">
+    <value>通用</value>
+  </data>
+  <data name="SystemProxy" xml:space="preserve">
+    <value>系统代理</value>
+  </data>
+  <data name="CustomProxy" xml:space="preserve">
+    <value>自定义代理</value>
+  </data>
+  <data name="ProxySetting" xml:space="preserve">
+    <value>代理服务器设置</value>
+  </data>
+  <data name="ProxyType" xml:space="preserve">
+    <value>代理类型</value>
+  </data>
+  <data name="ProxyAddress" xml:space="preserve">
+    <value>代理服务器地址</value>
+  </data>
+  <data name="Proxy" xml:space="preserve">
+    <value>代理服务器</value>
+  </data>
+  <data name="Config" xml:space="preserve">
+    <value>配置</value>
+  </data>
+  <data name="FailedToSetProxy" xml:space="preserve">
+    <value>代理服务器设置失败</value>
+  </data>
 </root>

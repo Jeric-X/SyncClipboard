@@ -1,0 +1,32 @@
+<ui:ContentDialog x:Class="SyncClipboard.Desktop.Views.ProxySettingDialog"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:ui="using:FluentAvalonia.UI.Controls"
+                  xmlns:i18n="using:SyncClipboard.Core.I18n"
+                  xmlns:m="using:SyncClipboard.Core.Models"
+                  xmlns:vm="using:SyncClipboard.Core.ViewModels"
+                  Title="{x:Static i18n:Strings.ProxySetting}"
+                  x:DataType="vm:ProxySettingViewModel"
+                  d:DesignWidth="800"
+                  d:DesignHeight="450"
+                  PrimaryButtonText="{x:Static i18n:Strings.Confirm}"
+                  PrimaryButtonCommand="{Binding SaveCommand}"
+                  CloseButtonText="{x:Static i18n:Strings.Cancel}"
+                  mc:Ignorable="d">
+    <ScrollViewer Padding="0,0,10,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="12">
+            <TextBlock Text="{x:Static i18n:Strings.ProxyType}" />
+            <ComboBox SelectedItem="{Binding Type, Mode=TwoWay}" ItemsSource="{x:Static vm:ProxySettingViewModel.Types}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=m:ProxyType}">
+                        <TextBlock Text="{Binding ShownString}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{x:Static i18n:Strings.ProxyAddress}" />
+            <TextBox Text="{Binding Address, Mode=TwoWay}" IsEnabled="{Binding EnableCustomAddress, Mode=OneWay}" />
+        </StackPanel>
+    </ScrollViewer>
+</ui:ContentDialog>

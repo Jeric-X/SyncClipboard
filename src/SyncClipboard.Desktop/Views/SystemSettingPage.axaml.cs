@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.ViewModels;
-using System;
 using System.Diagnostics;
 using System.Threading;
 
@@ -37,5 +36,11 @@ public partial class SystemSettingPage : UserControl
         {
             App.Current.Logger.Write("Open Nautilus failed");
         }
+    }
+
+    private void ShowProxySettingDialog(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var dialog = new ProxySettingDialog();
+        dialog.ShowAsync();
     }
 }

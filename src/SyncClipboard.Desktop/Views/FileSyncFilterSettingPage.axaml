@@ -24,13 +24,7 @@
                 <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.Footer>
-                <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=x:String}">
-                            <TextBlock Text="{Binding ShownString}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}" ItemTemplate="{StaticResource LocaleStringTemplate}" />
             </ui:SettingsExpander.Footer>
         </ui:SettingsExpander>
         <Grid Grid.Row="1" Margin="0,10,0,0" IsVisible="{Binding EnableText, Mode=OneWay}">
