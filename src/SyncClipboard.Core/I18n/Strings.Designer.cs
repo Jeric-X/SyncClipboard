@@ -70,6 +70,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Add SyncCliboard to system application launcher 的本地化字符串。
+        /// </summary>
+        public static string AddAppImageToUserAppLauncher {
+            get {
+                return ResourceManager.GetString("AddAppImageToUserAppLauncher", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Address 的本地化字符串。
         /// </summary>
         public static string Address {
@@ -1227,6 +1236,15 @@ namespace SyncClipboard.Core.I18n {
         public static string ReloadConfigFile {
             get {
                 return ResourceManager.GetString("ReloadConfigFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Remove SyncClipboard from system application launcher 的本地化字符串。
+        /// </summary>
+        public static string RemoveAppImageFromUserAppLauncher {
+            get {
+                return ResourceManager.GetString("RemoveAppImageFromUserAppLauncher", resourceCulture);
             }
         }
         

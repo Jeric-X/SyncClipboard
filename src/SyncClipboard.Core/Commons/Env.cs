@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-
-namespace SyncClipboard.Core.Commons
+﻿namespace SyncClipboard.Core.Commons
 {
     public static class Env
     {
@@ -12,7 +10,6 @@ namespace SyncClipboard.Core.Commons
 
         public const string RemoteProfilePath = "SyncClipboard.json";
         public const string UpdateInfoFile = "update_info.json";
-        [SupportedOSPlatform("linux")]
         public const string LinuxPackageAppId = "xyz.jericx.desktop.syncclipboard";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
@@ -24,6 +21,7 @@ namespace SyncClipboard.Core.Commons
         public static readonly string StaticConfigPath = Path.Combine(ProgramDirectory, "StaticConfig.json");
         public static readonly string UpdateInfoPath = Path.Combine(ProgramDirectory, UpdateInfoFile);
         public static readonly string AppDataFileFolder = GetOrCreateFolder(FullPath("file"));
+        public static readonly string AppDataAssetsFolder = GetOrCreateFolder(FullPath("assets"));
         public static string TemplateFileFolder => GetTemplateFileFolder();
         public static readonly string RemoteFileFolder = "file";
         public static readonly string LogFolder = FullPath("log");
@@ -71,7 +69,6 @@ namespace SyncClipboard.Core.Commons
             return _templateFileFolder;
         }
 
-        [SupportedOSPlatform("linux")]
         public static string? GetAppImageExecPath()
         {
             var ARGV0 = Environment.GetEnvironmentVariable("ARGV0");

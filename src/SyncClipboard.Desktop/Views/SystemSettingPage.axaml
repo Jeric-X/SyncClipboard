@@ -7,6 +7,9 @@
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
              xmlns:m="using:SyncClipboard.Core.Models"
+             xmlns:v="using:SyncClipboard.Desktop.Views"
+             xmlns:Sys="using:System"
+             xmlns:SysGeneric="using:System.Collections.Generic"
              d:DesignWidth="800"
              d:DesignHeight="450"
              x:DataType="vm:SystemSettingViewModel"
@@ -85,27 +88,19 @@
         </ui:SettingsExpander>
         <OnPlatform>
             <OnPlatform.Default>
-                <ui:SettingsExpander Header="{x:Static i18n:Strings.SystemOperations}" IsExpanded="True">
+                <ui:SettingsExpander Header="{x:Static i18n:Strings.SystemOperations}" IsExpanded="True" ItemsSource="{x:Static v:SystemSettingPage.Operations}">
                     <ui:SettingsExpander.IconSource>
                         <ui:FontIconSource Glyph="&#xE90F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </ui:SettingsExpander.IconSource>
-                    <ui:SettingsExpander.Items>
-                        <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CompletelyExit}">
-                            <ui:SettingsExpanderItem.Footer>
-                                <Button Content="{x:Static i18n:Strings.Run}" Click="ExitApp" />
-                            </ui:SettingsExpanderItem.Footer>
-                        </ui:SettingsExpanderItem>
-                        <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CopyAppDataFolderPath}">
-                            <ui:SettingsExpanderItem.Footer>
-                                <Button Content="{x:Static i18n:Strings.Run}" Click="CopyAppDataFolderPath" />
-                            </ui:SettingsExpanderItem.Footer>
-                        </ui:SettingsExpanderItem>
-                        <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.OpenDataFolderInNautilus}">
-                            <ui:SettingsExpanderItem.Footer>
-                                <Button Content="{x:Static i18n:Strings.Run}" Click="OpenDataFolderInNautilus" />
-                            </ui:SettingsExpanderItem.Footer>
-                        </ui:SettingsExpanderItem>
-                    </ui:SettingsExpander.Items>
+                    <ui:SettingsExpander.ItemTemplate>
+                        <DataTemplate x:DataType="{x:Type SysGeneric:KeyValuePair, x:TypeArguments='x:String,Sys:Action'}">
+                            <ui:SettingsExpanderItem Content="{Binding Key, Mode=OneTime}">
+                                <ui:SettingsExpanderItem.Footer>
+                                    <Button Content="{x:Static i18n:Strings.Run}" Command="{Binding $parent[v:SystemSettingPage].RunOperationCommand}" CommandParameter="{Binding Value, Mode=OneTime}" />
+                                </ui:SettingsExpanderItem.Footer>
+                            </ui:SettingsExpanderItem>
+                        </DataTemplate>
+                    </ui:SettingsExpander.ItemTemplate>
                 </ui:SettingsExpander>
             </OnPlatform.Default>
             <OnPlatform.macOS>

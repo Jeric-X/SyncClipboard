@@ -1,7 +1,12 @@
 using Avalonia.Controls;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -15,18 +20,49 @@ public partial class SystemSettingPage : UserControl
         DataContext = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
     }
 
-    private void ExitApp(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    public static List<KeyValuePair<string, Action>> Operations { get; } = GetOperations();
+
+    private static List<KeyValuePair<string, Action>> GetOperations()
     {
-        App.Current.ExitApp();
+        List<KeyValuePair<string, Action>> operations = [
+            new (Strings.CompletelyExit, App.Current.ExitApp),
+            new (Strings.CopyAppDataFolderPath, CopyAppDataFolderPath),
+            new (Strings.OpenDataFolderInNautilus, OpenDataFolderInNautilus),
+        ];
+
+        if (OperatingSystem.IsLinux() && Core.Commons.Env.GetAppImageExecPath() != null)
+        {
+            operations.AddRange([
+                new (Strings.AddAppImageToUserAppLauncher, AddAppImageToUserAppLauncher),
+                new (Strings.RemoveAppImageFromUserAppLauncher, RemoveAppImageFromUserAppLauncher)
+            ]);
+        }
+        return operations;
     }
 
-    private void CopyAppDataFolderPath(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    [RelayCommand]
+    private void RunOperation(Action operation)
+    {
+        operation.Invoke();
+    }
+
+    private static void AddAppImageToUserAppLauncher()
+    {
+        DesktopEntryHelper.SetLinuxDesktopEntry("~/.local/share/applications");
+    }
+
+    private static void RemoveAppImageFromUserAppLauncher()
+    {
+        DesktopEntryHelper.RemvoeLinuxDesktopEntry("~/.local/share/applications");
+    }
+
+    private static void CopyAppDataFolderPath()
     {
         var profile = new TextProfile(Core.Commons.Env.AppDataDirectory);
         _ = profile.SetLocalClipboard(true, CancellationToken.None);
     }
 
-    private void OpenDataFolderInNautilus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private static void OpenDataFolderInNautilus()
     {
         try
         {

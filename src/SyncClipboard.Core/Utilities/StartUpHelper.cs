@@ -54,9 +54,7 @@ public class StartUpHelper
     [SupportedOSPlatform("linux")]
     private static void SetLinux(bool enable)
     {
-        var desktopFileName = $"{Env.LinuxPackageAppId}.desktop";
         var autoStartFolder = Path.Combine(Env.UserAppDataDirectory, "autostart");
-        var autoStartDestkopFilePath = Path.Combine(autoStartFolder, desktopFileName);
         if (enable)
         {
             if (Directory.Exists(autoStartFolder) is false)
@@ -64,24 +62,11 @@ public class StartUpHelper
                 Directory.CreateDirectory(autoStartFolder);
             }
 
-            var EmbeddedPath = Path.Combine(Env.ProgramDirectory, desktopFileName);
-            if (Env.GetAppImageExecPath() is string appImagePath)
-            {
-                var desktop = File.ReadAllText(EmbeddedPath)
-                    .Replace("/usr/bin/SyncClipboard.Desktop.Default", appImagePath);
-                File.WriteAllText(autoStartDestkopFilePath, desktop);
-            }
-            else
-            {
-                File.Copy(EmbeddedPath, autoStartDestkopFilePath, true);
-            }
+            DesktopEntryHelper.SetLinuxDesktopEntry(autoStartFolder);
         }
         else
         {
-            if (File.Exists(autoStartDestkopFilePath))
-            {
-                File.Delete(autoStartDestkopFilePath);
-            }
+            DesktopEntryHelper.RemvoeLinuxDesktopEntry(autoStartFolder);
         }
     }
 
