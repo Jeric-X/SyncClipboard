@@ -60,6 +60,9 @@ namespace SyncClipboard.Core
             {
                 Logger.Write(LOG_TAG, $"DISPLAY:{Environment.GetEnvironmentVariable("DISPLAY")}");
                 Logger.Write(LOG_TAG, $"WAYLAND_DISPLAY:{Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")}");
+                Logger.Write(LOG_TAG, $"ARGV0:{Environment.GetEnvironmentVariable("ARGV0")}");
+                Logger.Write(LOG_TAG, $"APPIMAGE:{Environment.GetEnvironmentVariable("APPIMAGE")}");
+                Logger.Write(LOG_TAG, $"OWD:{Environment.GetEnvironmentVariable("OWD")}");
             }
         }
 

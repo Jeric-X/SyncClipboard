@@ -12,7 +12,7 @@
         public const string UpdateInfoFile = "update_info.json";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
-        public static readonly string ProgramPath = Environment.ProcessPath ?? "";
+        public static readonly string ProgramPath = GetProgramPath();
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
         public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
         public static readonly string RuntimeConfigPath = FullPath("RuntimeConfig.json");
@@ -60,6 +60,20 @@
                 Directory.CreateDirectory(_templateFileFolder);
             }
             return _templateFileFolder;
+        }
+
+        private static string GetProgramPath()
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                var appImageArgv0 = Environment.GetEnvironmentVariable("ARGV0");
+                if (string.IsNullOrEmpty(appImageArgv0) is false)
+                {
+                    return appImageArgv0;
+                }
+            }
+
+            return Environment.ProcessPath ?? throw new Exception("Can not get program path.");
         }
     }
 }
