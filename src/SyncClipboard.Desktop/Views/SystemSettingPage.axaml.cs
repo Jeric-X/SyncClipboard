@@ -8,6 +8,7 @@ using SyncClipboard.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 
 namespace SyncClipboard.Desktop.Views;
@@ -48,12 +49,12 @@ public partial class SystemSettingPage : UserControl
 
     private static void AddAppImageToUserAppLauncher()
     {
-        DesktopEntryHelper.SetLinuxDesktopEntry("~/.local/share/applications");
+        DesktopEntryHelper.SetLinuxDesktopEntry(Path.GetFullPath("~/.local/share/applications"));
     }
 
     private static void RemoveAppImageFromUserAppLauncher()
     {
-        DesktopEntryHelper.RemvoeLinuxDesktopEntry("~/.local/share/applications");
+        DesktopEntryHelper.RemvoeLinuxDesktopEntry(Path.GetFullPath("~/.local/share/applications"));
     }
 
     private static void CopyAppDataFolderPath()

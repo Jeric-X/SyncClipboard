@@ -66,9 +66,24 @@ namespace SyncClipboard.Core
             }
         }
 
+        private void InitAppImageEntry()
+        {
+            if (OperatingSystem.IsLinux() && Env.GetAppImageExecPath() is not null)
+            {
+                var runTimeConfig = Services.GetRequiredKeyedService<ConfigBase>(Env.RuntimeConfigName);
+                var linuxRuntimeConfig = runTimeConfig.GetConfig<LinuxRuntimeConfig>();
+                if (linuxRuntimeConfig.AppImageEntryInited is false)
+                {
+                    DesktopEntryHelper.SetLinuxDesktopEntry(Env.LinuxUserDesktopEntryFolder);
+                    runTimeConfig.SetConfig(linuxRuntimeConfig with { AppImageEntryInited = true });
+                }
+            }
+        }
+
         public void Run()
         {
             LogEnvInfo();
+            InitAppImageEntry();
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
 
@@ -194,8 +209,8 @@ namespace SyncClipboard.Core
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<StaticConfig>();
-            services.AddSingleton<RuntimeConfig>();
             services.AddKeyedTransient(Env.UpdateInfoFile, (sp, key) => new ConfigBase(Env.UpdateInfoPath, sp));
+            services.AddKeyedSingleton(Env.RuntimeConfigName, (sp, key) => new ConfigBase(Env.RuntimeConfigPath, sp));
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();

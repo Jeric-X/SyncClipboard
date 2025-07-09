@@ -191,7 +191,7 @@ After installation, you can launch it from the menu. If launching via the comman
 
 #### Troubleshooting
 - Clipboard sync is delayed, fails, or uploads garbled text: It is recommended to install `xclip` (for X11) or `wl-clipboard` (for Wayland) on your system. SyncClipboard will use these tools to help access the clipboard and improve stability. Use the commands `xclip -version` or `wl-paste -version` to check if they are installed.
-- When using `deb` or `rpm` packages, you need to uninstall the old version before installing a new one, as direct upgrades are not supported.
+- When upgrading using `deb` or `rpm` installation packages, if the upgrade fails, please uninstall the old version before installing the new one.
 - Hotkeys may not work on Wayland.
 - The language cannot be auto-detected and defaults to English. You can change the language in SyncClipboard's settings after launching.
 

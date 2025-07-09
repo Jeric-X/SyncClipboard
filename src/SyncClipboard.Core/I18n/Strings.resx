@@ -673,9 +673,9 @@
     <value>Failed to set proxy</value>
   </data>
   <data name="AddAppImageToUserAppLauncher" xml:space="preserve">
-    <value>Add SyncCliboard to system application launcher</value>
+    <value>Add SyncCliboard to application launcher</value>
   </data>
   <data name="RemoveAppImageFromUserAppLauncher" xml:space="preserve">
-    <value>Remove SyncClipboard from system application launcher</value>
+    <value>Remove SyncClipboard from application launcher</value>
   </data>
 </root>

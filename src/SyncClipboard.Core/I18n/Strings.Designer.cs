@@ -70,7 +70,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Add SyncCliboard to system application launcher 的本地化字符串。
+        ///   查找类似 Add SyncCliboard to application launcher 的本地化字符串。
         /// </summary>
         public static string AddAppImageToUserAppLauncher {
             get {
@@ -1240,7 +1240,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Remove SyncClipboard from system application launcher 的本地化字符串。
+        ///   查找类似 Remove SyncClipboard from application launcher 的本地化字符串。
         /// </summary>
         public static string RemoveAppImageFromUserAppLauncher {
             get {

@@ -7,7 +7,9 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels
 {
-    public partial class MainViewModel(IServiceProvider services, RuntimeConfig runtimeConfig) : ObservableObject
+    public partial class MainViewModel(
+        IServiceProvider services,
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig) : ObservableObject
     {
         public ObservableCollection<PageDefinition> MainWindowPage { get; } =
         [

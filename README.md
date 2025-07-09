@@ -195,7 +195,7 @@ paru -Sy syncclipboard-desktop
 
 #### 故常排除
 - 剪贴板同步不及时、无法同步、上传乱码：建议在系统内安装`xclip`（X11）或`wl-clipboard`（Wayland），SyncClipboard会使用这些工具辅助获取剪贴板以增强稳定性。使用`xclip -version`或`wl-paste -version`命令确认是否已安装
-- 使用`deb`、`rpm`安装包时，每次更新版本需要先删除旧版，再安装新版，不支持直接更新
+- 使用`deb`、`rpm`安装包时，升级安装失败时，请先删除旧版再安装新版
 - 快捷键在Wayland可能无法使用
 - 无法自动识别语言，默认为英语，启动后可以在SyncClipboard的设置中修改
 

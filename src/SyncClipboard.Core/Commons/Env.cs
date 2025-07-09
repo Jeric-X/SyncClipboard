@@ -8,16 +8,18 @@
         public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
+        public const string RuntimeConfigName = "RuntimeConfig.json";
         public const string RemoteProfilePath = "SyncClipboard.json";
         public const string UpdateInfoFile = "update_info.json";
         public const string LinuxPackageAppId = "xyz.jericx.desktop.syncclipboard";
+        public static readonly string LinuxUserDesktopEntryFolder = Path.GetFullPath("~/.local/share/applications");
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
         public static readonly string UserAppDataDirectory = GetUserAppDataDirectory();
         public static readonly string ProgramPath = GetProgramPath();
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
         public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
-        public static readonly string RuntimeConfigPath = FullPath("RuntimeConfig.json");
+        public static readonly string RuntimeConfigPath = FullPath(RuntimeConfigName);
         public static readonly string StaticConfigPath = Path.Combine(ProgramDirectory, "StaticConfig.json");
         public static readonly string UpdateInfoPath = Path.Combine(ProgramDirectory, UpdateInfoFile);
         public static readonly string AppDataFileFolder = GetOrCreateFolder(FullPath("file"));
