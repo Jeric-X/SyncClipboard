@@ -22,6 +22,7 @@ namespace SyncClipboard.Core
 {
     public class AppCore
     {
+        private const string LOG_TAG = "AppCore";
         private static AppCore? _current;
         public static AppCore Current => _current ?? throw new Exception("Appcore is not initialized");
         public static AppCore? TryGetCurrent() => _current;
@@ -54,11 +55,11 @@ namespace SyncClipboard.Core
         private void LogInitInfo()
         {
             var appConfig = Services.GetRequiredService<IAppConfig>();
-            Logger.Write($"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
+            Logger.Write(LOG_TAG, $"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
             if (OperatingSystem.IsLinux())
             {
-                Logger.Write("App core", $"DISPLAY:{Environment.GetEnvironmentVariable("DISPLAY")}");
-                Logger.Write("App core", $"WAYLAND_DISPLAY:{Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")}");
+                Logger.Write(LOG_TAG, $"DISPLAY:{Environment.GetEnvironmentVariable("DISPLAY")}");
+                Logger.Write(LOG_TAG, $"WAYLAND_DISPLAY:{Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")}");
             }
         }
 
@@ -96,6 +97,7 @@ namespace SyncClipboard.Core
 
             foreach (var arg in Environment.GetCommandLineArgs())
             {
+                Logger.Write(LOG_TAG, $"command arg: {arg}");
                 if (arg.StartsWith(StartArguments.CommandPrefix))
                 {
                     HotkeyManager.RunCommand(arg[StartArguments.CommandPrefix.Length..]);
