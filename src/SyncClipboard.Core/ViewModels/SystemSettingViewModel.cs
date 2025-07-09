@@ -131,6 +131,8 @@ public partial class SystemSettingViewModel : ObservableObject
         userConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);
     }
 
+    public bool ShowStartUpSetting { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
+
     public bool StartUpWithSystem
     {
         get => StartUpHelper.Status();

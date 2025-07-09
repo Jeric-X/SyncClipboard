@@ -12,26 +12,16 @@
              x:DataType="vm:SystemSettingViewModel"
              mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <OnPlatform>
-            <OnPlatform.Windows>
-                <ui:SettingsExpander Header="{x:Static i18n:Strings.RunAtSystemStartup}">
-                    <ui:SettingsExpander.IconSource>
-                        <ui:FontIconSource Glyph="&#xE770;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                    </ui:SettingsExpander.IconSource>
-                    <ui:SettingsExpander.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding StartUpWithSystem, Mode=TwoWay}" />
-                    </ui:SettingsExpander.Footer>
-                </ui:SettingsExpander>
-            </OnPlatform.Windows>
-            <OnPlatform.Default>
-                <UserControl />
-            </OnPlatform.Default>
-        </OnPlatform>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.General}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE9F5;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RunAtSystemStartup}" IsVisible="{Binding ShowStartUpSetting}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding StartUpWithSystem, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HideOnStartup}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />

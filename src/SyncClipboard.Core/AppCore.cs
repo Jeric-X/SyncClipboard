@@ -52,7 +52,7 @@ namespace SyncClipboard.Core
             I18nHelper.SetProgramLanguage(langTag);
         }
 
-        private void LogInitInfo()
+        private void LogEnvInfo()
         {
             var appConfig = Services.GetRequiredService<IAppConfig>();
             Logger.Write(LOG_TAG, $"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
@@ -68,7 +68,7 @@ namespace SyncClipboard.Core
 
         public void Run()
         {
-            LogInitInfo();
+            LogEnvInfo();
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
 

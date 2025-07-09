@@ -1,4 +1,6 @@
-﻿namespace SyncClipboard.Core.Commons
+﻿using System.Runtime.Versioning;
+
+namespace SyncClipboard.Core.Commons
 {
     public static class Env
     {
@@ -10,8 +12,11 @@
 
         public const string RemoteProfilePath = "SyncClipboard.json";
         public const string UpdateInfoFile = "update_info.json";
+        [SupportedOSPlatform("linux")]
+        public const string LinuxPackageAppId = "xyz.jericx.desktop.syncclipboard";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
+        public static readonly string UserAppDataDirectory = GetUserAppDataDirectory();
         public static readonly string ProgramPath = GetProgramPath();
         public static readonly string UserConfigFile = FullPath("SyncClipboard.json");
         public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
@@ -29,12 +34,16 @@
             return Path.Combine(AppDataDirectory, relativePath);
         }
 
-        private static string GetAppDataDirectory()
+        private static string GetUserAppDataDirectory()
         {
-            var appDataParent = Environment.GetFolderPath(
+            return Environment.GetFolderPath(
                    Environment.SpecialFolder.ApplicationData,
                    Environment.SpecialFolderOption.Create) ?? throw new Exception("Can not open system app data folder.");
-            var appDataDirectory = Path.Combine(appDataParent, SoftName);
+        }
+
+        private static string GetAppDataDirectory()
+        {
+            var appDataDirectory = Path.Combine(GetUserAppDataDirectory(), SoftName);
             return appDataDirectory;
         }
 
@@ -62,14 +71,28 @@
             return _templateFileFolder;
         }
 
+        [SupportedOSPlatform("linux")]
+        public static string? GetAppImageExecPath()
+        {
+            var ARGV0 = Environment.GetEnvironmentVariable("ARGV0");
+            var APPDIR = Environment.GetEnvironmentVariable("APPDIR");
+            var OWD = Environment.GetEnvironmentVariable("OWD");
+            if (string.IsNullOrEmpty(ARGV0) is false &&
+                string.IsNullOrEmpty(APPDIR) is false &&
+                string.IsNullOrEmpty(OWD) is false)
+            {
+                return Path.GetFullPath(ARGV0);
+            }
+            return null;
+        }
+
         private static string GetProgramPath()
         {
             if (OperatingSystem.IsLinux())
             {
-                var appImageArgv0 = Environment.GetEnvironmentVariable("ARGV0");
-                if (string.IsNullOrEmpty(appImageArgv0) is false)
+                if (GetAppImageExecPath() is string appImagePath)
                 {
-                    return appImageArgv0;
+                    return appImagePath;
                 }
             }
 
