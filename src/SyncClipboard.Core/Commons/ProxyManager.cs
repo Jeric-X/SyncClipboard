@@ -17,7 +17,7 @@ public static class ProxyManager
             HttpClient.DefaultProxy = proxyConfig.Type switch
             {
                 ProxyType.System => systemProxy,
-                ProxyType.Custom => new WebProxy(proxyConfig.Address),
+                ProxyType.Custom => new WebProxy(proxyConfig.Address) { BypassProxyOnLocal = true },
                 _ => new WebProxy()
             };
         }
