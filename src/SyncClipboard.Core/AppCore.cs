@@ -68,16 +68,16 @@ namespace SyncClipboard.Core
 
         private void InitAppImageEntry()
         {
-            if (OperatingSystem.IsLinux() && Env.GetAppImageExecPath() is not null)
+            if (OperatingSystem.IsLinux() && Env.GetAppImageExecPath() is string appImagePath)
             {
                 var runTimeConfig = Services.GetRequiredKeyedService<ConfigBase>(Env.RuntimeConfigName);
                 var linuxRuntimeConfig = runTimeConfig.GetConfig<LinuxRuntimeConfig>();
-                if (linuxRuntimeConfig.AppImageEntryInited is false)
+                if (linuxRuntimeConfig.AppImageEntryPath != appImagePath)
                 {
                     try
                     {
                         DesktopEntryHelper.SetLinuxDesktopEntry(Env.LinuxUserDesktopEntryFolder);
-                        runTimeConfig.SetConfig(linuxRuntimeConfig with { AppImageEntryInited = true });
+                        runTimeConfig.SetConfig(linuxRuntimeConfig with { AppImageEntryPath = appImagePath });
                     }
                     catch { }
                 }

@@ -2,5 +2,5 @@
 
 public record class LinuxRuntimeConfig
 {
-    public bool AppImageEntryInited { get; set; } = false;
+    public string AppImageEntryPath { get; set; } = string.Empty;
 }
