@@ -74,8 +74,12 @@ namespace SyncClipboard.Core
                 var linuxRuntimeConfig = runTimeConfig.GetConfig<LinuxRuntimeConfig>();
                 if (linuxRuntimeConfig.AppImageEntryInited is false)
                 {
-                    DesktopEntryHelper.SetLinuxDesktopEntry(Env.LinuxUserDesktopEntryFolder);
-                    runTimeConfig.SetConfig(linuxRuntimeConfig with { AppImageEntryInited = true });
+                    try
+                    {
+                        DesktopEntryHelper.SetLinuxDesktopEntry(Env.LinuxUserDesktopEntryFolder);
+                        runTimeConfig.SetConfig(linuxRuntimeConfig with { AppImageEntryInited = true });
+                    }
+                    catch { }
                 }
             }
         }

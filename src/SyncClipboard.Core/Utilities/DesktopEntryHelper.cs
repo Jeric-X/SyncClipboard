@@ -9,6 +9,11 @@ public static class DesktopEntryHelper
         var fileName = $"{Env.LinuxPackageAppId}.desktop";
         var filePath = Path.Combine(folder, fileName);
 
+        if (Directory.Exists(folder) is false)
+        {
+            Directory.CreateDirectory(folder);
+        }
+
         var EmbeddedPath = Path.Combine(Env.ProgramDirectory, fileName);
         if (Env.GetAppImageExecPath() is string appImagePath)
         {

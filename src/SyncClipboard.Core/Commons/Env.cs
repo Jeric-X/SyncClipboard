@@ -12,7 +12,7 @@
         public const string RemoteProfilePath = "SyncClipboard.json";
         public const string UpdateInfoFile = "update_info.json";
         public const string LinuxPackageAppId = "xyz.jericx.desktop.syncclipboard";
-        public static readonly string LinuxUserDesktopEntryFolder = Path.GetFullPath("~/.local/share/applications");
+        public static readonly string LinuxUserDesktopEntryFolder = UserPath(".local/share/applications");
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string AppDataDirectory = GetOrCreateFolder(GetAppDataDirectory());
         public static readonly string UserAppDataDirectory = GetUserAppDataDirectory();
@@ -39,6 +39,17 @@
             return Environment.GetFolderPath(
                    Environment.SpecialFolder.ApplicationData,
                    Environment.SpecialFolderOption.Create) ?? throw new Exception("Can not open system app data folder.");
+        }
+
+        public static string GetUserHomeFolder()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile,
+                   Environment.SpecialFolderOption.Create) ?? throw new Exception("Can not open user home folder.");
+        }
+
+        public static string UserPath(string path)
+        {
+            return Path.Combine(GetUserHomeFolder(), path);
         }
 
         private static string GetAppDataDirectory()

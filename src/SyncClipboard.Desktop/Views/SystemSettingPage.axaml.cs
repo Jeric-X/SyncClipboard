@@ -38,6 +38,13 @@ public partial class SystemSettingPage : UserControl
                 new (Strings.RemoveAppImageFromUserAppLauncher, RemoveAppImageFromUserAppLauncher)
             ]);
         }
+
+#if DEBUG
+        operations.AddRange([
+                new (Strings.AddAppImageToUserAppLauncher, AddAppImageToUserAppLauncher),
+                new (Strings.RemoveAppImageFromUserAppLauncher, RemoveAppImageFromUserAppLauncher)
+            ]);
+#endif
         return operations;
     }
 
@@ -49,12 +56,12 @@ public partial class SystemSettingPage : UserControl
 
     private static void AddAppImageToUserAppLauncher()
     {
-        DesktopEntryHelper.SetLinuxDesktopEntry(Path.GetFullPath("~/.local/share/applications"));
+        DesktopEntryHelper.SetLinuxDesktopEntry(Core.Commons.Env.LinuxUserDesktopEntryFolder);
     }
 
     private static void RemoveAppImageFromUserAppLauncher()
     {
-        DesktopEntryHelper.RemvoeLinuxDesktopEntry(Path.GetFullPath("~/.local/share/applications"));
+        DesktopEntryHelper.RemvoeLinuxDesktopEntry(Core.Commons.Env.LinuxUserDesktopEntryFolder);
     }
 
     private static void CopyAppDataFolderPath()
