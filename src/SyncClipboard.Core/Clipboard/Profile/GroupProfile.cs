@@ -190,7 +190,7 @@ public class GroupProfile : FileProfile
             I18n.Strings.ClipboardFileUpdated,
             ShowcaseText(),
             DefaultButton(),
-            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInFileManager(FullPath[..^4] + "\\"))
+            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInFileManager(FullPath[..^4]))
         );
     }
 
