@@ -4,6 +4,25 @@ namespace SyncClipboard.Core.Utilities;
 
 public static class DesktopEntryHelper
 {
+    public static string GetLinuxDesktopEntryContent()
+    {
+        var fileName = $"{Env.LinuxPackageAppId}.desktop";
+        var EmbeddedPath = Path.Combine(Env.ProgramDirectory, fileName);
+        if (Env.GetAppImageExecPath() is string appImagePath)
+        {
+            var iconPath = Path.Combine(Env.AppDataAssetsFolder, "icon.svg");
+            File.Copy(Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg"), iconPath, true);
+            var desktopContent = File.ReadAllText(EmbeddedPath)
+                .Replace("/usr/bin/SyncClipboard.Desktop.Default", appImagePath)
+                .Replace("Icon=xyz.jericx.desktop.syncclipboard", $"Icon={iconPath}");
+            return desktopContent;
+        }
+        else
+        {
+            return File.ReadAllText(EmbeddedPath);
+        }
+    }
+
     public static void SetLinuxDesktopEntry(string folder)
     {
         var fileName = $"{Env.LinuxPackageAppId}.desktop";
@@ -14,20 +33,7 @@ public static class DesktopEntryHelper
             Directory.CreateDirectory(folder);
         }
 
-        var EmbeddedPath = Path.Combine(Env.ProgramDirectory, fileName);
-        if (Env.GetAppImageExecPath() is string appImagePath)
-        {
-            var iconPath = Path.Combine(Env.AppDataAssetsFolder, "icon.svg");
-            File.Copy(Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg"), iconPath, true);
-            var desktop = File.ReadAllText(EmbeddedPath)
-                .Replace("/usr/bin/SyncClipboard.Desktop.Default", appImagePath)
-                .Replace("Icon=xyz.jericx.desktop.syncclipboard", $"Icon={iconPath}");
-            File.WriteAllText(filePath, desktop);
-        }
-        else
-        {
-            File.Copy(EmbeddedPath, filePath, true);
-        }
+        File.WriteAllText(filePath, GetLinuxDesktopEntryContent());
     }
 
     public static void RemvoeLinuxDesktopEntry(string folder)

@@ -83,16 +83,17 @@ public class StartUpHelper
         var desktopFileName = $"{Env.LinuxPackageAppId}.desktop";
         var autoStartFolder = Path.Combine(Env.UserAppDataDirectory, "autostart");
         var autoStartDestkopFilePath = Path.Combine(autoStartFolder, desktopFileName);
-        if (File.Exists(autoStartDestkopFilePath) is false)
+        var fileInfo = new FileInfo(autoStartDestkopFilePath);
+        if (fileInfo.Exists is false)
         {
             return false;
         }
 
-        if (Env.GetAppImageExecPath() is string appImagePath)
+        if (fileInfo.Length > 1024 * 1024)  // 1Mb
         {
-            var desktopContent = File.ReadAllText(autoStartDestkopFilePath);
-            return desktopContent.Contains(appImagePath);
+            return false;
         }
-        return true;
+
+        return File.ReadAllText(autoStartDestkopFilePath) == DesktopEntryHelper.GetLinuxDesktopEntryContent();
     }
 }
