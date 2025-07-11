@@ -13,20 +13,15 @@
       BorderBrush="Transparent"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="SyncClipboard" IsExpanded="True">
+        <ui:SettingsExpander Header="SyncClipboard" IsExpanded="True" Description="{x:Bind _aboutViewModel.Version}">
             <ui:SettingsExpander.HeaderIcon>
                 <ImageIcon Source="{ThemeResource AppLogo}" />
             </ui:SettingsExpander.HeaderIcon>
-            <ui:SettingsExpander.Description>
-                <StackPanel Margin="0,4,0,0" Orientation="Vertical">
-                    <TextBlock Text="{x:Bind _aboutViewModel.Version}" />
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <HyperlinkButton Content="{x:Bind i18n:Strings.HomePage}" Command="{x:Bind _aboutViewModel.OpenHomePageCommand}" />
-                        <HyperlinkButton Content="{x:Bind i18n:Strings.DownloadPage}" Command="{x:Bind _aboutViewModel.OpenReleasePageCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </ui:SettingsExpander.Description>
-            <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <HyperlinkButton FontWeight="SemiBold" Padding="0" Content="{x:Bind i18n:Strings.HomePage}" Command="{x:Bind _aboutViewModel.OpenHomePageCommand}" />
+                <HyperlinkButton FontWeight="SemiBold" Padding="0" Content="{x:Bind i18n:Strings.DownloadPage}" Command="{x:Bind _aboutViewModel.OpenReleasePageCommand}" />
+                <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
+            </StackPanel>
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.CheckUpdateForBetaChannel}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _aboutViewModel.CheckUpdateForBeta, Mode=TwoWay}" />
