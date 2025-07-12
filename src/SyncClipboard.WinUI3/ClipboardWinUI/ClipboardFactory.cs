@@ -29,20 +29,20 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private const string LOG_TAG = nameof(ClipboardFactory);
 
     private delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
-    private static List<KeyValuePair<string, FormatHandler>> FormatHandlerlist => new SortedDictionary<string, FormatHandler>
-    {
-        [StandardDataFormats.Text] = HanleText,
-        [StandardDataFormats.Bitmap] = HanleBitmap,
-        ["DeviceIndependentBitmap"] = HanleDib,
-        [StandardDataFormats.Html] = HanleHtml,
-        [StandardDataFormats.StorageItems] = HanleFiles,
-        ["FileDrop"] = HanleFiles2,
-        ["Preferred DropEffect"] = HanleDropEffect,
-        ["Object Descriptor"] = HanleObjectDescriptor,
-        ["ExcludeClipboardContentFromMonitorProcessing"] = HandleExclueMonitorProcessing,
-        ["CanIncludeInClipboardHistory"] = HandleExclueHistory,
-        ["CanUploadToCloudClipboard"] = HandleExclueUpload,
-    }.ToList();
+    private static readonly List<KeyValuePair<string, FormatHandler>> FormatHandlerlist =
+    [
+        new (StandardDataFormats.Text, HanleText),
+        new (StandardDataFormats.Bitmap, HanleBitmap),
+        new ("DeviceIndependentBitmap", HanleDib),
+        new (StandardDataFormats.Html, HanleHtml),
+        new (StandardDataFormats.StorageItems, HanleFiles),
+        new ("FileDrop", HanleFiles2),
+        new ("Preferred DropEffect", HanleDropEffect),
+        new ("Object Descriptor", HanleObjectDescriptor),
+        new ("ExcludeClipboardContentFromMonitorProcessing", HandleExclueMonitorProcessing),
+        new ("CanIncludeInClipboardHistory", HandleExclueHistory),
+        new ("CanUploadToCloudClipboard", HandleExclueUpload),
+    ];
 
     private static Task HandleExclueMonitorProcessing(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {

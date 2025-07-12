@@ -4,7 +4,7 @@
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
-        public const string AppVersion = "3.0.2-beta3";
+        public const string AppVersion = "3.0.2";
         public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
