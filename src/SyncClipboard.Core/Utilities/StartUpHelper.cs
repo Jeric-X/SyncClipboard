@@ -94,6 +94,6 @@ public class StartUpHelper
             return false;
         }
 
-        return File.ReadAllText(autoStartDestkopFilePath) == DesktopEntryHelper.GetLinuxDesktopEntryContent();
+        return File.ReadLines(autoStartDestkopFilePath).Any(line => line == $"TryExec={Env.ProgramPath}");
     }
 }
