@@ -30,6 +30,11 @@ public partial class MainWindow : Window, IMainWindow
     {
         _viewModel.Height = (int)Height;
         _viewModel.Width = (int)Width;
+        if (e.CloseReason == WindowCloseReason.ApplicationShutdown || e.CloseReason == WindowCloseReason.OSShutdown)
+        {
+            base.OnClosing(e);
+            return;
+        }
         this.Hide();
         e.Cancel = true;
     }
