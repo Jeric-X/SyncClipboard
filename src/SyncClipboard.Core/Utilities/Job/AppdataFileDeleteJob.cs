@@ -84,6 +84,6 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
                 dir.Delete(true);
             }
         });
-        updateDirs.OrderByDescending(x => x.Value).Skip(2).ForEach(x => x.Key.Delete());
+        updateDirs.OrderByDescending(x => x.Value).Skip(2).ForEach(x => x.Key.Delete(true));
     }
 }
