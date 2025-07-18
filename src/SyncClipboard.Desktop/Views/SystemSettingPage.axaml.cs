@@ -8,7 +8,6 @@ using SyncClipboard.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading;
 
 namespace SyncClipboard.Desktop.Views;

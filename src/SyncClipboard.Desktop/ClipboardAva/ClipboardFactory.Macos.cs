@@ -65,8 +65,11 @@ internal partial class ClipboardFactory
             var bytes = await Clipboard.GetDataAsync(imagetype, token) as byte[];
             if (bytes is not null)
             {
-                meta.Image = new ClipboardImage(bytes);
-                break;
+                meta.Image = ClipboardImage.TryCreateImage(bytes);
+                if (meta.Image != null)
+                {
+                    break;
+                }
             }
         }
 

@@ -163,9 +163,11 @@ internal partial class ClipboardFactory
                     continue;
                 }
 
-                using MagickImage magickImage = new(bytes);     // check if the image is valid
-                meta.Image = new ClipboardImage(bytes);
-                break;
+                meta.Image = ClipboardImage.TryCreateImage(bytes);
+                if (meta.Image != null)
+                {
+                    break;
+                }
             }
             catch (Exception ex) when (token.IsCancellationRequested is false)
             {

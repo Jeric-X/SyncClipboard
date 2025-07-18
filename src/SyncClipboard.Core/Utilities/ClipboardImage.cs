@@ -16,6 +16,18 @@ public class ClipboardImage : IClipboardImage
         _imageBytes = imageBytes;
     }
 
+    public static ClipboardImage? TryCreateImage(byte[]? imageBytes)
+    {
+        try
+        {
+            ArgumentNullException.ThrowIfNull(imageBytes, nameof(imageBytes));
+            using MagickImage magickImage = new(imageBytes);
+            return new ClipboardImage(imageBytes);
+        }
+        catch { }
+        return null;
+    }
+
     public void Save(string path)
     {
         var hash = _imageBytes.ListHashCode();
