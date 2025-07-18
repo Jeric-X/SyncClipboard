@@ -168,7 +168,6 @@ sudo systemctl enable --now syncclipboard.service
 - 支持的最低系统版本为Windows10 2004
 - 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
-
 ### macOS
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
@@ -196,6 +195,7 @@ paru -Sy syncclipboard-desktop
 #### 故常排除
 - 剪贴板同步不及时、无法同步、上传乱码：建议在系统内安装`xclip`（X11）或`wl-clipboard`（Wayland），SyncClipboard会使用这些工具辅助获取剪贴板以增强稳定性。使用`xclip -version`或`wl-paste -version`命令确认是否已安装
 - 使用`deb`、`rpm`安装包时，升级安装失败时，请先删除旧版再安装新版
+- 使用`AppImage`包时，请确认AppImage文件具有可执行权限
 - 快捷键在Wayland可能无法使用
 - 无法自动识别语言，默认为英语，启动后可以在SyncClipboard的设置中修改
 
