@@ -18,7 +18,10 @@ public class MainWindow : Desktop.Views.MainWindow
 
     private void Lifitime_Activated(object? sender, ActivatedEventArgs e)
     {
-        ShowMainWindow();
+        if (e.Kind == ActivationKind.Reopen)
+        {
+            ShowMainWindow();
+        }
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
