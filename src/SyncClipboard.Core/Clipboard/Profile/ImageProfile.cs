@@ -59,7 +59,7 @@ public class ImageProfile : FileProfile
         {
             Directory.CreateDirectory(ImageTemplateFolder);
         }
-        var filePath = Path.Combine(ImageTemplateFolder, $"{Path.GetRandomFileName()}.{GetImageExtention()}");
+        var filePath = Path.Combine(ImageTemplateFolder, $"Image_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.{GetImageExtention()}");
         image.Save(filePath);
         return filePath;
     }

@@ -20,7 +20,7 @@ public class GroupProfile : FileProfile
         => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
 
     private GroupProfile(IEnumerable<string> files, string hash, bool contentControl)
-        : base(Path.Combine(LocalTemplateFolder, $"{Path.GetRandomFileName()}.zip"), hash)
+        : base(Path.Combine(LocalTemplateFolder, $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip"), hash)
     {
         _files = [.. files];
         ContentControl = contentControl;
