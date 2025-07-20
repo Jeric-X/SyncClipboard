@@ -246,8 +246,8 @@
   <data name="HomePage" xml:space="preserve">
     <value>软件主页</value>
   </data>
-  <data name="OpenSourceDependencies" xml:space="preserve">
-    <value>开源软件依赖</value>
+  <data name="Dependencies" xml:space="preserve">
+    <value>软件依赖</value>
   </data>
   <data name="UploadService" xml:space="preserve">
     <value>上传服务</value>

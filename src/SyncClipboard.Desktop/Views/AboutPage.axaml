@@ -82,7 +82,7 @@
             <ui:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="m:OpenSourceSoftware">
                     <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                             IsClickEnabled="True"
+                                             IsClickEnabled="{Binding IsValidLicensePath}"
                                              Click="SettingsExpanderItem_Click"
                                              Content="{Binding}"
                                              ContentTemplate="{StaticResource HyperLink}" />

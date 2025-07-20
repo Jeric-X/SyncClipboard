@@ -14,7 +14,6 @@ public static class DesktopEntryHelper
             File.Copy(Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg"), iconPath, true);
             var desktopContent = File.ReadAllText(EmbeddedPath)
                 .Replace("/usr/bin/SyncClipboard.Desktop.Default", appImagePath)
-                .Replace("env LANG=en_US.UTF-8 ", string.Empty)
                 .Replace("Icon=xyz.jericx.desktop.syncclipboard", $"Icon={iconPath}");
             return desktopContent;
         }

@@ -246,8 +246,8 @@
   <data name="HomePage" xml:space="preserve">
     <value>Home</value>
   </data>
-  <data name="OpenSourceDependencies" xml:space="preserve">
-    <value>Open Source Dependencies</value>
+  <data name="Dependencies" xml:space="preserve">
+    <value>Dependencies</value>
   </data>
   <data name="UploadService" xml:space="preserve">
     <value>Upload Service</value>

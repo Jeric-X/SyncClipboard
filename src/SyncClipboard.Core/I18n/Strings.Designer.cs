@@ -1087,7 +1087,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Open Source Dependencies 的本地化字符串。
+        ///   查找类似 Dependencies 的本地化字符串。
         /// </summary>
         public static string OpenSourceDependencies {
             get {

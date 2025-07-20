@@ -20,8 +20,8 @@
                     <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
-            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
-            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简</FontFamily>
+            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简,$Default</FontFamily>
+            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简,$Default</FontFamily>
             <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
             <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
             <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>

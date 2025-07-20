@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Media;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Desktop.Default;
@@ -27,10 +28,19 @@ class Program
         }
     }
 
+    private static string Font(string name)
+    {
+        return $"avares://SyncClipboard.Desktop.Default/Assets/Fonts#{name}";
+    }
+
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure(() => new App(AppServices.ConfigureServices()))
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
+            .LogToTrace()
+            .With(new FontManagerOptions
+            {
+                DefaultFamilyName = $"{Font("MiSans")}",
+            });
 }
