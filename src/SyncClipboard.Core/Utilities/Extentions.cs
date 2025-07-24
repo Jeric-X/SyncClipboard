@@ -16,14 +16,6 @@ public static class Extentions
 
     public static INotification ShowText(this INotificationManager notificationManager, string title, string message, IEnumerable<ActionButton>? buttons = null)
     {
-        var notification = notificationManager.Create();
-        notification.Title = title;
-        notification.Message = message;
-        if (buttons != null)
-        {
-            notification.Buttons = buttons.ToList();
-        }
-        notification.Show();
-        return notification;
+        return notificationManager.Show(title, message, buttons);
     }
 }
