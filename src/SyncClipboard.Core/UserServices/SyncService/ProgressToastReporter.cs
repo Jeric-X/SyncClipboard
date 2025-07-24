@@ -1,4 +1,4 @@
-using SyncClipboard.Abstract.Notification;
+using NativeNotification.Interface;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 
@@ -6,20 +6,21 @@ namespace SyncClipboard.Core.UserServices;
 
 public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 {
-    private readonly IProgressBar _progressBar;
+    private readonly IProgressNotification _progressBar;
     private readonly Counter _counter;
-    public ProgressToastReporter(string filename, string title, INotification notificationManager, params Button[] buttons)
+    public ProgressToastReporter(string filename, string title, INotificationManager notificationManager, params ActionButton[] buttons)
     {
-        _progressBar = notificationManager.CreateProgressNotification(title);
+        _progressBar = notificationManager.CreateProgress();
+        _progressBar.Title = title;
         _progressBar.ProgressTitle = filename;
-        _progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
+        //_progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
         _progressBar.ProgressValue = 0;
         _progressBar.ProgressValueTip = I18n.Strings.Preparing;
         _progressBar.Buttons = buttons.ToList();
 
         AppCore.Current.Logger.Write("ProgressToastReporter created");
-        _progressBar.ShowSilent();
-        _counter = new Counter((_) => _progressBar.Upadate(), 500, ulong.MaxValue);
+        _progressBar.Show(new NotificationDeliverOption { Silent = true });
+        _counter = new Counter((_) => _progressBar.Update(), 500, ulong.MaxValue);
     }
 
     public void Cancel()
@@ -27,7 +28,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         AppCore.Current.Logger.Write("ProgressToastReporter status set to cancel");
         _counter.Cancle();
         _progressBar.ProgressValueTip = I18n.Strings.Canceled;
-        _progressBar.Upadate();
+        _progressBar.Update();
     }
 
     public void CancelSicent()

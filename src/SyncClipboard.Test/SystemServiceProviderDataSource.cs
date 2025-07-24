@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Abstract.Notification;
+﻿using NativeNotification.Interface;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using System.Reflection;
@@ -17,7 +17,7 @@ public class SystemServiceProviderDataSource : ServiceProviderDataSourceBase
             typeof(ILogger),
             typeof(IWebDav),
             typeof(IHttp),
-            typeof(INotification)
+            typeof(INotificationManager)
         ];
 
         List<object[]> res = [];

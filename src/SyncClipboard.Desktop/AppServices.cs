@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SharpHook;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
@@ -43,11 +42,6 @@ public class AppServices
 
         services.AddTransient<IFontManager, FontManager>();
         services.AddTransient<IThreadDispatcher, ThreadDispatcher>();
-
-        if (OperatingSystem.IsWindows())
-        {
-            services.AddSingleton<INotification, Notification>();
-        }
 
         if (OperatingSystem.IsLinux())
         {

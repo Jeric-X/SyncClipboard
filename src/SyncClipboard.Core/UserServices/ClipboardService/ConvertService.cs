@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -100,14 +100,15 @@ public class ConvertService : ClipboardHander
     internal static async Task<string> CompatibilityCast(IServiceProvider services, string localPath, CancellationToken ctk)
     {
         var filename = Path.GetFileName(localPath);
-        var notification = services.GetRequiredService<INotification>();
-        var progressBar = notification.CreateProgressNotification(filename[..Math.Min(filename.Length, 50)]);
+        var notification = services.GetRequiredService<INotificationManager>();
+        var progressBar = notification.CreateProgress();
+        progressBar.Title = filename[..Math.Min(filename.Length, 50)];
         try
         {
             progressBar.IsIndeterminate = true;
             progressBar.ProgressValueTip = "Converting";
             progressBar.Image = new Uri(localPath);
-            progressBar.ShowSilent();
+            progressBar.Show(new NotificationDeliverOption { Silent = true });
             return await ImageHelper.CompatibilityCast(localPath, Env.TemplateFileFolder, ctk);
         }
         finally

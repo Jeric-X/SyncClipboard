@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -38,7 +39,7 @@ public abstract class Profile
     protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
     protected static ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
-    private static INotification NotificationManager => ServiceProvider.GetRequiredService<INotification>();
+    private static INotificationManager NotificationManager => ServiceProvider.GetRequiredService<INotificationManager>();
     private static bool EnableNotify => Config.GetConfig<SyncConfig>().NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
@@ -64,9 +65,9 @@ public abstract class Profile
 
     public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
 
-    protected virtual void SetNotification(INotification notificationManager)
+    protected virtual void SetNotification(INotificationManager notificationManager)
     {
-        notificationManager.SendText(I18n.Strings.ClipboardUpdated, Text);
+        notificationManager.ShowText(I18n.Strings.ClipboardUpdated, Text);
     }
 
     public async Task SetLocalClipboard(bool notify, CancellationToken ctk, bool mutex = true)
@@ -140,8 +141,8 @@ public abstract class Profile
         return str;
     }
 
-    protected Button DefaultButton()
+    protected ActionButton DefaultButton()
     {
-        return new Button(I18n.Strings.Copy, () => { _ = SetLocalClipboard(false, CancellationToken.None); });
+        return new ActionButton(I18n.Strings.Copy, () => { _ = SetLocalClipboard(false, CancellationToken.None); });
     }
 }

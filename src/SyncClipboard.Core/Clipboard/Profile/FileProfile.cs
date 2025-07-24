@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -192,16 +192,18 @@ public class FileProfile : Profile
         }
     }
 
-    protected override void SetNotification(INotification notification)
+    protected override void SetNotification(INotificationManager notificationManager)
     {
+        var notification = notificationManager.Create();
         ArgumentNullException.ThrowIfNull(FullPath);
-        notification.SendText(
-            I18n.Strings.ClipboardFileUpdated,
-            FileName,
+        notification.Title = I18n.Strings.ClipboardFileUpdated;
+        notification.Message = FileName;
+        notification.Buttons = [
             DefaultButton(),
-            new Button(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
-            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
-        );
+            new ActionButton(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
+            new ActionButton(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
+        ];
+        notification.Show();
     }
 
     protected bool Oversized()

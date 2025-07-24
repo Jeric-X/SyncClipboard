@@ -45,6 +45,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="NativeNotification" />
     <PackageReference Include="SharpHook" />
     <PackageReference Include="DotNetZip" />
     <PackageReference Include="System.Net.Http.Json" />

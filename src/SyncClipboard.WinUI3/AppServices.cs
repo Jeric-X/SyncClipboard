@@ -1,15 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.WinUI3.ClipboardWinUI;
 using SyncClipboard.WinUI3.Views;
 using SyncClipboard.WinUI3.Win32;
-using SyncClipboard.Core.Utilities.Fake;
 using SyncClipboard.WinUI3.Utilities;
-using SyncClipboard.Windows.Notification;
 
 namespace SyncClipboard.WinUI3;
 
@@ -35,7 +32,6 @@ public class AppServices
         services.AddSingleton<TrayIcon>(sp => ((MainWindow)sp.GetRequiredService<IMainWindow>()).TrayIcon);
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
-        services.AddSingleton((sp) => FakeFactory.Create<INotification, NotificationManager, FakeNotification>("Windows Notification"));
         services.AddSingleton<INativeHotkeyRegistry>(sp => new NativeHotkeyRegistry((MainWindow)sp.GetRequiredService<IMainWindow>()));
 
         services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));

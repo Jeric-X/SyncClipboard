@@ -1,5 +1,6 @@
 ﻿using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using System.Net;
 
 namespace SyncClipboard.Core.Commons;
@@ -24,7 +25,7 @@ public static class ProxyManager
         catch (Exception ex)
         {
             AppCore.Current.Logger.Write("Proxy", ex.Message);
-            AppCore.Current.Notification.SendText(I18n.Strings.FailedToSetProxy, ex.Message);
+            AppCore.Current.NotificationManager.ShowText(I18n.Strings.FailedToSetProxy, ex.Message);
             HttpClient.DefaultProxy = new WebProxy(); // Fallback to no proxy
         }
         GlobalProxyChanged?.Invoke();

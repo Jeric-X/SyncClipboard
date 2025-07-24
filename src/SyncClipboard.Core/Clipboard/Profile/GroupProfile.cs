@@ -1,7 +1,7 @@
 ﻿using Ionic.Zip;
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -182,16 +182,19 @@ public class GroupProfile : FileProfile
 
     protected override Task CheckHash(string _, bool _1, CancellationToken _2) => Task.CompletedTask;
 
-    protected override void SetNotification(INotification notification)
+    protected override void SetNotification(INotificationManager notificationManager)
     {
         ArgumentNullException.ThrowIfNull(_files);
         ArgumentNullException.ThrowIfNull(FullPath);
-        notification.SendText(
-            I18n.Strings.ClipboardFileUpdated,
-            ShowcaseText(),
+
+        var notification = notificationManager.Create();
+        notification.Title = I18n.Strings.ClipboardFileUpdated;
+        notification.Message = ShowcaseText();
+        notification.Buttons = [
             DefaultButton(),
-            new Button(I18n.Strings.OpenFolder, () => Sys.OpenFolderInFileManager(FullPath[..^4]))
-        );
+            new ActionButton(I18n.Strings.OpenFolder, () => Sys.OpenFolderInFileManager(FullPath[..^4]))
+        ];
+        notification.Show();
     }
 
     public override string ShowcaseText()

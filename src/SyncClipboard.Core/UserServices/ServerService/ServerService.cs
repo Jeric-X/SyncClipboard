@@ -1,9 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Server.Core;
 
 namespace SyncClipboard.Core.UserServices.ServerService;
@@ -24,7 +25,7 @@ public class ServerService : Service
     private readonly ILogger _logger;
     private readonly ITrayIcon _trayIcon;
 
-    private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
+    private INotificationManager NotificationManager => _serviceProvider.GetRequiredService<INotificationManager>();
 
     public ServerService(IServiceProvider serviceProvider)
     {
@@ -101,7 +102,7 @@ public class ServerService : Service
             {
                 _logger.Write(LOG_TAG, ex.ToString());
                 _trayIcon.SetStatusString(SERVICE_NAME, ex.Message, true);
-                NotificationManager.SendText(I18n.Strings.FailedToStartServer, ex.Message);
+                NotificationManager.ShowText(I18n.Strings.FailedToStartServer, ex.Message);
             }
         }
     }

@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract.Notification;
+using NativeNotification.Interface;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -14,7 +14,7 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) : ObservableObject
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private INotification NotificationManager => _serviceProvider.GetRequiredService<INotification>();
+    private INotificationManager NotificationManager => _serviceProvider.GetRequiredService<INotificationManager>();
     private ConfigManager ConfigManager => _serviceProvider.GetRequiredService<ConfigManager>();
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
@@ -81,7 +81,7 @@ public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) :
         catch (TaskCanceledException) { }
         catch (Exception ex)
         {
-            NotificationManager.SendText(I18n.Strings.FailedToAuth, GetErrorMessage(ex));
+            NotificationManager.ShowText(I18n.Strings.FailedToAuth, GetErrorMessage(ex));
         }
         finally
         {

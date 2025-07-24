@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using SyncClipboard.Abstract.Notification;
+using NativeNotification.Interface;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
@@ -16,7 +16,6 @@ using Windows.Graphics;
 using Windows.UI;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
-using Button = SyncClipboard.Abstract.Notification.Button;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -56,13 +55,15 @@ namespace SyncClipboard.WinUI3.Views
         {
             if (!IsIconFontInstalled())
             {
-                var notifyer = App.Current.Services.GetRequiredService<INotification>();
-                notifyer.SendText(
-                    Strings.IconMissingDetected,
-                    Strings.DownloadAndInstallIconFont,
-                    new Button(Strings.Details, () => Sys.OpenWithDefaultApp("https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font")),
-                    new Button(Strings.Download, () => Sys.OpenWithDefaultApp("https://aka.ms/SegoeFluentIcons"))
-                );
+                var manager = App.Current.Services.GetRequiredService<INotificationManager>();
+                var notification = manager.Create();
+                notification.Title = Strings.IconMissingDetected;
+                notification.Message = Strings.DownloadAndInstallIconFont;
+                notification.Buttons = [
+                    new ActionButton(Strings.Details, () => Sys.OpenWithDefaultApp("https://learn.microsoft.com/zh-cn/windows/apps/design/style/segoe-fluent-icons-font")),
+                    new ActionButton(Strings.Download, () => Sys.OpenWithDefaultApp("https://aka.ms/SegoeFluentIcons"))
+                ];
+                notification.Show();
             }
         }
 

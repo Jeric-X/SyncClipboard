@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -54,17 +54,20 @@ public class TextProfile : Profile
         await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
-    protected override void SetNotification(INotification notification)
+    protected override void SetNotification(INotificationManager notificationManager)
     {
+        var notification = notificationManager.Create();
+        notification.Title = I18n.Strings.ClipboardTextUpdated;
+        notification.Message = Text;
         if (Text.Length >= 4 && HasUrl(Text, out var url))
         {
-            var button = new Button(I18n.Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url));
-            notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton(), button);
+            notification.Buttons = [new ActionButton(I18n.Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url)), DefaultButton()];
         }
         else
         {
-            notification.SendText(I18n.Strings.ClipboardTextUpdated, Text, DefaultButton());
+            notification.Buttons = [DefaultButton()];
         }
+        notification.Show();
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()

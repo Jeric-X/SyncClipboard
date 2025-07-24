@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -72,19 +72,16 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     private void SwitchImageAssistant(bool isOn)
     {
         _configManager.SetConfig(_clipboardAssistConfig with { EasyCopyImageSwitchOn = isOn });
-        var para = new NotificationPara
-        {
-            Duration = TimeSpan.FromSeconds(2),
-            Title = isOn ? I18n.Strings.SwitchOnImageAssistant : I18n.Strings.SwitchOffImageAssistant
-        };
-        _notificationManager.SendTemporary(para);
+        var notification = _notificationManager.Shared;
+        notification.Title = isOn ? I18n.Strings.SwitchOnImageAssistant : I18n.Strings.SwitchOffImageAssistant;
+        notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
     }
     #endregion Hotkey
 
     private ProgressToastReporter? _progress;
     private readonly object _progressLocker = new();
 
-    private readonly INotification _notificationManager;
+    private readonly INotificationManager _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IServiceProvider _serviceProvider;
@@ -97,7 +94,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
-        _notificationManager = _serviceProvider.GetRequiredService<INotification>();
+        _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
 
         serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
@@ -231,7 +228,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
                 filename.Value[..Math.Min(filename.Value.Length, 50)],
                 I18n.Strings.DownloadingWebImage,
                 _notificationManager,
-                new Button(I18n.Strings.Cancel, downloadingCts.Cancel)
+                new ActionButton(I18n.Strings.Cancel, downloadingCts.Cancel)
             );
         }
 

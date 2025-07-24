@@ -1,9 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NativeNotification;
+using NativeNotification.Interface;
 using Quartz;
 using SharpHook;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
@@ -29,7 +30,7 @@ namespace SyncClipboard.Core
         public IServiceProvider Services { get; }
         public Interfaces.ILogger Logger { get; }
         public ITrayIcon TrayIcon => Services.GetRequiredService<ITrayIcon>();
-        public INotification Notification => Services.GetRequiredService<INotification>();
+        public INotificationManager NotificationManager => Services.GetRequiredService<INotificationManager>();
         public ConfigManager ConfigManager { get; }
 
         private ServiceManager? ServiceManager { get; set; }
@@ -131,7 +132,7 @@ namespace SyncClipboard.Core
         {
             if (string.IsNullOrEmpty(Env.ProgramPath))
             {
-                Notification.SendText("Can't restart application.", "Can't get program path");
+                NotificationManager.ShowText("Can't restart application.", "Can't get program path.");
                 return;
             }
 
@@ -148,7 +149,7 @@ namespace SyncClipboard.Core
             }
             catch (Exception ex)
             {
-                Notification.SendText("Can't restart application.", ex.Message);
+                NotificationManager.ShowText("Can't restart application.", ex.Message);
             }
         }
 
@@ -228,6 +229,13 @@ namespace SyncClipboard.Core
             services.AddQuartz();
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
+            services.AddTransient<INotificationManager>(sp => ManagerFactory.GetNotificationManager(
+                new NativeNotificationOption
+                {
+                    AppName = Env.SoftName,
+                    RemoveNotificationOnContentClick = false,
+                    AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
+                }));
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)

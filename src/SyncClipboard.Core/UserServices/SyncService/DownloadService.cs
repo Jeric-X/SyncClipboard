@@ -1,9 +1,9 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SharpHook;
 using SharpHook.Native;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -28,7 +28,7 @@ public class DownloadService : Service
 
     private bool _downServiceChangingLocal = false;
 
-    private readonly INotification _notificationManager;
+    private readonly INotificationManager _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
@@ -87,35 +87,27 @@ public class DownloadService : Service
     private void SwitchClipboardSyncing(bool isOn)
     {
         _configManager.SetConfig(_syncConfig with { SyncSwitchOn = isOn });
-        var para = new NotificationPara
-        {
-            Duration = TimeSpan.FromSeconds(2),
-            Title = isOn ? I18n.Strings.SwitchOnClipboardSyncing : I18n.Strings.SwitchOffClipboardSyncing,
-        };
-        _notificationManager.SendTemporary(para);
+        var notification = _notificationManager.Shared;
+        notification.Title = isOn ? I18n.Strings.SwitchOnClipboardSyncing : I18n.Strings.SwitchOffClipboardSyncing;
+        notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
     }
 
     private void SwitchBuiltInServer(bool isOn)
     {
         _configManager.SetConfig(_serverConfig with { SwitchOn = isOn });
-        var para = new NotificationPara
-        {
-            Duration = TimeSpan.FromSeconds(2),
-            Title = isOn ? I18n.Strings.SwitchOnBuiltInServer : I18n.Strings.SwitchOffBuiltInServer
-        };
-        _notificationManager.SendTemporary(para);
+        var notification = _notificationManager.Shared;
+        notification.Title = isOn ? I18n.Strings.SwitchOnBuiltInServer : I18n.Strings.SwitchOffBuiltInServer;
+        notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
     }
 
     private void SwitchMixedClientMode(bool isOn)
     {
         _configManager.SetConfig(_serverConfig with { ClientMixedMode = isOn });
-        var para = new NotificationPara
-        {
-            Duration = TimeSpan.FromSeconds(2),
-            Title = isOn ? I18n.Strings.SwitchOnMixedClientMode : I18n.Strings.SwitchOffMixedClientMode
-        };
-        _notificationManager.SendTemporary(para);
+        var notification = _notificationManager.Shared;
+        notification.Title = isOn ? I18n.Strings.SwitchOnMixedClientMode : I18n.Strings.SwitchOffMixedClientMode;
+        notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
     }
+
     #endregion
 
     public DownloadService(
@@ -135,7 +127,7 @@ public class DownloadService : Service
         _configManager.ListenConfig<ServerConfig>(ServerConfigChanged);
         _serverConfig = _configManager.GetConfig<ServerConfig>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
-        _notificationManager = _serviceProvider.GetRequiredService<INotification>();
+        _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
         _uploadService = uploadService;
@@ -302,7 +294,7 @@ public class DownloadService : Service
         _logger.Write(ex.ToString());
         if (errorTimes > _syncConfig.RetryTimes)
         {
-            _notificationManager.SendText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
+            _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
             throw new Exception("Download retry times reach limit");
         }
     }

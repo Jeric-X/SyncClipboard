@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract.Notification;
+using NativeNotification.Interface;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Text.Json;
@@ -7,12 +7,12 @@ using System.Text.Json.Nodes;
 
 namespace SyncClipboard.Core.Commons
 {
-    public class ConfigBase(INotification? notification = null)
+    public class ConfigBase(INotificationManager? notification = null)
     {
         public event Action? ConfigChanged;
 
         protected string Path { get; set; } = null!;
-        protected INotification? Notification { get; set; } = notification;
+        protected INotificationManager? NotificationManager { get; set; } = notification;
 
         private readonly Dictionary<string, Type> _registedTypeList = [];
         private readonly Dictionary<string, HashSet<MessageDispatcher>> _registedChangedHandlerList = [];
@@ -20,13 +20,13 @@ namespace SyncClipboard.Core.Commons
         private JsonNode _jsonNode = new JsonObject();
         private JsonNode _jsonNodeBackUp = new JsonObject();
 
-        public ConfigBase(string path, INotification? notification = null) : this(notification)
+        public ConfigBase(string path, INotificationManager? notificationManager = null) : this(notificationManager)
         {
             Path = path;
             Load();
         }
 
-        public ConfigBase(string path, IServiceProvider sp) : this(sp.GetRequiredService<INotification>())
+        public ConfigBase(string path, IServiceProvider sp) : this(sp.GetRequiredService<INotificationManager>())
         {
             Path = path;
             Load();
@@ -158,7 +158,7 @@ namespace SyncClipboard.Core.Commons
             }
             catch (Exception e)
             {
-                Notification?.SendText("Failed to write config file", e.Message);
+                NotificationManager?.ShowText("Failed to write config file", e.Message);
                 AppCore.TryGetCurrent()?.Logger.Write($"Failed to write config file to {Path}, err message: {e.Message}");
                 _jsonNode = _jsonNodeBackUp.DeepClone();
             }

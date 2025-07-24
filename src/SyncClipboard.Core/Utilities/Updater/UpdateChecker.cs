@@ -1,14 +1,14 @@
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities.Runner;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Models.UserConfigs;
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Runner;
+using SyncClipboard.Core.ViewModels;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using static SyncClipboard.Core.Utilities.Updater.GitHubRelease;
-using SyncClipboard.Abstract.Notification;
-using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
@@ -41,7 +41,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     private readonly IMainWindow mainWindow;
     private readonly ConfigManager configManager;
 
-    private readonly INotification notification;
+    private readonly INotificationManager notificationManager;
     private readonly UpdateInfoConfig updateInfo;
 
     private readonly SingletonTask singletonTask = new();
@@ -53,7 +53,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         GithubUpdater githubUpdater,
         IHttp http,
         ILogger logger,
-        INotification notification,
+        INotificationManager notification,
         IMainWindow mainWindow,
         ConfigManager configManager,
         [FromKeyedServices(Env.UpdateInfoFile)] ConfigBase updateInfoConfig)
@@ -62,7 +62,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.http = http;
         this.logger = logger;
         this.configManager = configManager;
-        this.notification = notification;
+        this.notificationManager = notification;
         this.mainWindow = mainWindow;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
         SetStatus(UpdaterState.Idle);
@@ -105,8 +105,8 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         }
 
         var stateText = GetStateText(CurrentState.State);
-        List<Button> buttons = [
-            new Button(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null))
+        List<ActionButton> buttons = [
+            new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null))
         ];
 
         /*与特定state关联的按钮可能过时，需要在state改变时清除这个按钮
@@ -118,7 +118,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             buttons.Add(new Button(actionText, () => manualAction(CancellationToken.None)));
         }*/
 
-        notification.SendText(stateText, I18n.Strings.CheckOnAboutPage, buttons.ToArray());
+        notificationManager.ShowText(stateText, I18n.Strings.CheckOnAboutPage, buttons);
     }
 
     public Task RunAutoUpdateFlow()

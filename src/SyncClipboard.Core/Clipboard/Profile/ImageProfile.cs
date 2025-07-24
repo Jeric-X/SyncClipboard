@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -69,16 +69,18 @@ public class ImageProfile : FileProfile
         return "png";
     }
 
-    protected override void SetNotification(INotification notification)
+    protected override void SetNotification(INotificationManager notificationManager)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
-        notification.SendImage(
-            I18n.Strings.ClipboardImageUpdated,
-            FileName,
-            new Uri(FullPath),
+        var notification = notificationManager.Create();
+        notification.Title = I18n.Strings.ClipboardImageUpdated;
+        notification.Message = FileName;
+        notification.Image = new Uri(FullPath);
+        notification.Buttons = [
             DefaultButton(),
-            new Button(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
-            new Button(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
-        );
+            new ActionButton(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
+            new ActionButton(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
+        ];
+        notification.Show();
     }
 }

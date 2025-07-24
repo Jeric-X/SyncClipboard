@@ -1,9 +1,9 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SharpHook;
 using SharpHook.Native;
 using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Notification;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -11,6 +11,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -65,7 +66,7 @@ public class UploadService : ClipboardHander
     private Profile? _profileCache;
     private DownloadService DownloadService { get; set; } = null!;
 
-    private readonly INotification _notificationManager;
+    private readonly INotificationManager _notificationManager;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
@@ -88,7 +89,7 @@ public class UploadService : ClipboardHander
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
-        _notificationManager = _serviceProvider.GetRequiredService<INotification>();
+        _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
         _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
@@ -324,7 +325,7 @@ public class UploadService : ClipboardHander
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
         var status = profile.ToolTip();
-        _notificationManager.SendText(I18n.Strings.FailedToUpload + status, errMessage);
+        _notificationManager.ShowText(I18n.Strings.FailedToUpload + status, errMessage);
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
     }
 
@@ -352,17 +353,22 @@ public class UploadService : ClipboardHander
             var profile = await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
             await HandleClipboard(meta, profile, token);
             if (NotifyOnManualUpload)
-                _notificationManager.SendTemporary(
-                    new NotificationPara(I18n.Strings.Uploaded, profile.ShowcaseText())
-                    {
-                        Duration = TimeSpan.FromSeconds(4)
-                    }
-                );
+            {
+                var notification = _notificationManager.Shared;
+                notification.Title = I18n.Strings.Uploaded;
+                notification.Message = profile.ShowcaseText();
+                notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
+            }
         }
         catch (Exception ex)
         {
             if (NotifyOnManualUpload)
-                _notificationManager.SendTemporary(new NotificationPara("Failed to upload manually", ex.Message));
+            {
+                var notification = _notificationManager.Shared;
+                notification.Title = "Failed to upload manually";
+                notification.Message = ex.Message;
+                notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
+            }
         }
     }
 
