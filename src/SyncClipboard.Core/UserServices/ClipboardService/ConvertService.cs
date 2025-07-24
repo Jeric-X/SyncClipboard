@@ -101,7 +101,7 @@ public class ConvertService : ClipboardHander
     {
         var filename = Path.GetFileName(localPath);
         var notification = services.GetRequiredService<INotificationManager>();
-        var progressBar = notification.CreateProgress();
+        var progressBar = notification.CreateProgress(true);
         progressBar.Title = filename[..Math.Min(filename.Length, 50)];
         try
         {

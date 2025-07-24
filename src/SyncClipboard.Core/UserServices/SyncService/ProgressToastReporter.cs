@@ -10,7 +10,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
     private readonly Counter _counter;
     public ProgressToastReporter(string filename, string title, INotificationManager notificationManager, params ActionButton[] buttons)
     {
-        _progressBar = notificationManager.CreateProgress();
+        _progressBar = notificationManager.CreateProgress(true);
         _progressBar.Title = title;
         _progressBar.ProgressTitle = filename;
         //_progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
