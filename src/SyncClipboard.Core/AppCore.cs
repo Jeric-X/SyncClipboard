@@ -199,6 +199,7 @@ namespace SyncClipboard.Core
 
         public void Stop()
         {
+            NotificationManager.RomoveAllNotifications();
             ServiceManager?.StopAllService();
             var disposable = Services as IDisposable;
             disposable?.Dispose();

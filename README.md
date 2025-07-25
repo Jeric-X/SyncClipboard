@@ -298,6 +298,7 @@ PUT /SyncClipboard.json
 ```
 
 ## 项目依赖
+[NativeNotification](https://github.com/Jeric-X/NativeNotification)  
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  
 [.NET Community Toolkit](https://github.com/CommunityToolkit/dotnet)  
 [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)  

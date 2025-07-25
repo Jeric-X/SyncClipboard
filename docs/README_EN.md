@@ -294,6 +294,7 @@ PUT /SyncClipboard.json
 ```
 
 ## Open Source Dependencies
+[NativeNotification](https://github.com/Jeric-X/NativeNotification) 
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  
 [.NET Community Toolkit](https://github.com/CommunityToolkit/dotnet)  
 [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)  
@@ -306,4 +307,4 @@ PUT /SyncClipboard.json
 [Tmds.DBus](https://github.com/tmds/Tmds.DBus)  
 [SharpHook](https://github.com/TolikPylypchuk/SharpHook)  
 [DotNetZip.Semverd](https://github.com/haf/DotNetZip.Semverd)  
-[Quartz.NET](https://github.com/quartznet/quartznet)  
+[Quartz.NET](https://github.com/quartznet/quartznet)   

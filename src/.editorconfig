@@ -39,3 +39,6 @@ dotnet_diagnostic.SYSLIB1054.severity = none
 [{SyncClipboard.Core/Clipboard/Profile/*.cs,SyncClipboard.Core/UserServices/**}]
 # IDE0130: namespace
 dotnet_diagnostic.IDE0130.severity = none
+
+[*.csproj]
+indent_size = 2
