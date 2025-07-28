@@ -20,10 +20,10 @@
             }
         },
         {
-            "name": "DebugDesktop",
+            "name": "DebugLinux",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "DebugDesktop",
+            "preLaunchTask": "DebugLinux",
             "program": "dotnet",
             "args": [
                 "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
@@ -40,7 +40,7 @@
             "name": "DebugDesktopRemote",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "DebugDesktop",
+            "preLaunchTask": "DebugLinux",
             "program": "dotnet",
             "args": [
                 "${workspaceFolder}/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"

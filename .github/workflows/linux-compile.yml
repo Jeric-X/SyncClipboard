@@ -49,10 +49,10 @@ jobs:
       run: dotnet restore SyncClipboard.Desktop.Default
 
     # - name
-        #  msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:RuntimeIdentifier=osx-arm64 /p:Platform=ARM64 /p:SelfContained=false /p:OutDir=../../osx-arm64-no-self-contained /p:Configuration=Release /t:Publish /v:m  
+        #  msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:TargetFramework=net8.0 /p:RuntimeIdentifier=osx-arm64 /p:Platform=ARM64 /p:SelfContained=false /p:OutDir=../../osx-arm64-no-self-contained /p:Configuration=Release /t:Publish /v:m  
     - name: Build linux-${{ matrix.cpu }}-${{ matrix.type }} 
       run: |
-        msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:RuntimeIdentifier=linux-${{ matrix.cpu }} /p:Platform=${{ matrix.cpu }} /p:SelfContained=${{ matrix.ifSelf }} /p:OutDir=../../linux-${{ matrix.cpu }}-${{ matrix.type }} /p:Configuration=Release /t:Publish /v:m  
+        msBuild SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj /p:TargetFramework=net8.0 /p:RuntimeIdentifier=linux-${{ matrix.cpu }} /p:Platform=${{ matrix.cpu }} /p:SelfContained=${{ matrix.ifSelf }} /p:OutDir=../../linux-${{ matrix.cpu }}-${{ matrix.type }} /p:Configuration=Release /t:Publish /v:m
       working-directory: ./src
 
     - name: Upload linux-${{ matrix.cpu }}-${{ matrix.type }}

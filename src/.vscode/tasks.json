@@ -24,7 +24,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "DebugDesktop",
+            "label": "DebugLinux",
             "command": "dotnet",
             "type": "process",
             "args": [
@@ -32,6 +32,7 @@
                 "${workspaceFolder}/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj",
                 "-c",
                 "Debug",
+                "/p:TargetFramework=net8.0",
                 // Ask dotnet build to generate full paths for file names.
                 "/property:GenerateFullPaths=true",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
