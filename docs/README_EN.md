@@ -216,8 +216,8 @@ Multiple `--command-{command-name}` arguments are supported, multiple commands a
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
-- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/1a57093a04ec4f45a5ca7d4de82020e7)
-- Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/542ad23b33314b36807c05a5d8aa5c22). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
+- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/d1b9e49556e04c2ca290590294afbd99)
+- Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/1ced32f011bc4d3498dca9960dc2c0d5). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
