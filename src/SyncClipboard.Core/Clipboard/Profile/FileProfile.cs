@@ -171,7 +171,7 @@ public class FileProfile : Profile
         try
         {
             Logger.Write("calc md5 start");
-            var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             var md5Oper = MD5.Create();
             var retVal = await md5Oper.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
             file.Close();

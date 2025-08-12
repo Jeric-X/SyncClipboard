@@ -107,7 +107,7 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public async Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null)
         {
-            using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read);
+            using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using var streamContent = new StreamContent(fileStream);
             await HttpClient.PutAsync(url, streamContent, AdjustCancelToken(cancelToken));
         }
