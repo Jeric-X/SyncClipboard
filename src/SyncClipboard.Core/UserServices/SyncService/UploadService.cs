@@ -292,6 +292,7 @@ public class UploadService : ClipboardHander
     private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
     {
         string errMessage = "";
+        string? stackTrace = null;
         for (int i = 0; i <= _syncConfig.RetryTimes; i++)
         {
             try
@@ -319,6 +320,7 @@ public class UploadService : ClipboardHander
             catch (Exception ex)
             {
                 errMessage = ex.Message;
+                stackTrace = ex.StackTrace;
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, string.Format(I18n.Strings.UploadFailedStatus, i + 1, errMessage), true);
             }
 
@@ -327,6 +329,7 @@ public class UploadService : ClipboardHander
         var status = profile.ToolTip();
         _notificationManager.ShowText(I18n.Strings.FailedToUpload + status, errMessage);
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
+        _logger.Write(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
     }
 
     private async Task CleanServerTempFile(CancellationToken cancelToken)
