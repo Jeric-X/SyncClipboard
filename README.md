@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=Jeric-X&project=SyncClipboard&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 # SyncClipboard
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-entry.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
 
