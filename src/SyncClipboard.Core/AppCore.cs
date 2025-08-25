@@ -11,8 +11,10 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
+using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
@@ -159,6 +161,8 @@ namespace SyncClipboard.Core
             var hotkeyManager = Services.GetService<HotkeyManager>();
             if (hotkeyManager is null) return;
 
+            var HistoryWindow = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
+
             UniqueCommandCollection CommandCollection = new(Strings.System, PageDefinition.SystemSetting.FontIcon!)
             {
                 Commands = {
@@ -171,6 +175,11 @@ namespace SyncClipboard.Core
                         Strings.CompletelyExit,
                         "2F30872E-B412-F580-7C20-F0D063A85BE0",
                         mainWindow.ExitApp
+                    ),
+                    new UniqueCommand(
+                        "Show/Hide History Window",
+                        "SwitchHistoryWindowVisible",
+                        HistoryWindow.Focus
                     )
                 }
             };
@@ -221,6 +230,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();
             services.AddSingleton<UpdateChecker>();
+            services.AddSingleton<HistoryManager>();
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
@@ -251,6 +261,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<HotkeyViewModel>();
+            services.AddTransient<HistoryViewModel>();
         }
 
         public static void ConfigurateUserService(IServiceCollection services)
@@ -262,6 +273,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, UploadService>(sp => sp.GetRequiredService<UploadService>());
             services.AddSingleton<DownloadService>();
             services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
+            services.AddSingleton<IService, HistoryService>();
         }
 
         private async void SetUpRemoteWorkFolder()

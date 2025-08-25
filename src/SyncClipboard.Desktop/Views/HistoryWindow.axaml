@@ -1,0 +1,44 @@
+<Window x:Class="SyncClipboard.Desktop.Views.HistoryWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:m="using:SyncClipboard.Core.Models"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        xmlns:views="clr-namespace:SyncClipboard.Desktop.Views"
+        xmlns:vm="using:SyncClipboard.Core.ViewModels"
+        xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+        Title="History"
+        Width="850"
+        Height="530"
+        d:DesignHeight="450"
+        d:DesignWidth="800"
+        x:DataType="vm:HistoryViewModel"
+        Icon="/Assets/icon.ico"
+        x:Name="_HistoryWindow"
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d">
+    <ListBox ItemsSource="{Binding HistoryItems}" SelectionMode="Single" >
+        <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="m:HistoryRecord">
+                <Grid ColumnDefinitions="Auto, *, Auto">
+                    <ui:FontIcon Grid.Column="0"
+                                 Glyph="&#xE9CE;"
+                                 FontSize="20"
+                                 Margin="0,5,0,0"
+                                 VerticalAlignment="Top"
+                                 FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <TextBlock Padding="5,5,0,0"
+                               Grid.Column="1"
+                               FontSize="16"
+                               Text="{Binding Text, Converter={x:Static vc:FuncConverter.SubStr}}" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="5,0,0,0">
+                        <Button Command="{Binding #_HistoryWindow.ViewModel.DeleteItemCommand}" CommandParameter="{Binding .}">
+                            <ui:FontIcon Glyph="&#xE9CE;" FontSize="20" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
+</Window>

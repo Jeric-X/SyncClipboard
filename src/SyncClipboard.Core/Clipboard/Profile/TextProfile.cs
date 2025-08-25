@@ -93,4 +93,13 @@ public class TextProfile : Profile
     }
 
     public override bool IsAvailableAfterFilter() => Config.GetConfig<SyncConfig>().EnableUploadText;
+
+    public override HistoryRecord CreateHistoryRecord()
+    {
+        return new HistoryRecord
+        {
+            Hash = Text,
+            Text = Text,
+        };
+    }
 }

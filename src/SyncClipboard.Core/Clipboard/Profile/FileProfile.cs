@@ -251,4 +251,13 @@ public class FileProfile : Profile
         ArgumentNullException.ThrowIfNull(FullPath);
         return new ClipboardMetaInfomation() { Files = [FullPath], Text = FileName };
     }
+
+    public override HistoryRecord CreateHistoryRecord()
+    {
+        return new HistoryRecord
+        {
+            Text = FileName,
+            FilePath = FullPath ?? string.Empty,
+        };
+    }
 }
