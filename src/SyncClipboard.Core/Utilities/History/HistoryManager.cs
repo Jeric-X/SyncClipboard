@@ -17,7 +17,6 @@ public class HistoryManager : IDisposable
         }
 
         await _dbContext.HistoryRecords.AddAsync(record, token);
-        _dbContext.HistoryRecords.Distinct();
         await _dbContext.SaveChangesAsync(token);
         HistoryChanged?.Invoke();
     }
@@ -52,4 +51,4 @@ public class HistoryManager : IDisposable
         _dbContext.Dispose();
         GC.SuppressFinalize(this);
     }
-}   
+}

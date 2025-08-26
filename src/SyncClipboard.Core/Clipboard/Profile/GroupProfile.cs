@@ -48,6 +48,16 @@ public class GroupProfile : FileProfile
         }
     }
 
+    public static async Task<Profile> Create(string[] files, CancellationToken token)
+    {
+        var filterdFiles = files.Where(file => IsFileAvailableAfterFilter(file));
+        if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
+            return await Create(filterdFiles.First(), true, token);
+
+        var hash = await Task.Run(() => CaclHash(filterdFiles, true, token)).WaitAsync(token);
+        return new GroupProfile(filterdFiles, hash, true);
+    }
+
     private static int FileCompare(FileInfo file1, FileInfo file2)
     {
         if (file1.Length == file2.Length)
@@ -213,5 +223,15 @@ public class GroupProfile : FileProfile
     {
         bool hasItem = _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name)) != null;
         return hasItem && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadMultiFile;
+    }
+
+    public override HistoryRecord CreateHistoryRecord()
+    {
+        return new HistoryRecord
+        {
+            Type = ProfileType.Group,
+            Text = FileName,
+            FilePath = string.Join('\n', _files ?? []),
+        };
     }
 }

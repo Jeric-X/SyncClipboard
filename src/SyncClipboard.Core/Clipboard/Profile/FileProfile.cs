@@ -256,6 +256,7 @@ public class FileProfile : Profile
     {
         return new HistoryRecord
         {
+            Type = ProfileType.File,
             Text = FileName,
             FilePath = FullPath ?? string.Empty,
         };

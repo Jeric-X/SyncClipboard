@@ -11,7 +11,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using SyncClipboard.Core.Utilities.Keyboard;
 
 namespace SyncClipboard.Core.UserServices;
 

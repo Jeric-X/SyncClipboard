@@ -10,6 +10,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.UserServices;

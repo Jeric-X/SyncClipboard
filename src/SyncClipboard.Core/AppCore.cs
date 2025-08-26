@@ -16,6 +16,7 @@ using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
+using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
@@ -229,6 +230,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();
+            services.AddTransient<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<HistoryManager>();
 
@@ -240,7 +242,7 @@ namespace SyncClipboard.Core
             services.AddQuartz();
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
-            services.AddTransient<INotificationManager>(sp => ManagerFactory.GetNotificationManager(
+            services.AddSingleton<INotificationManager>(sp => ManagerFactory.GetNotificationManager(
                 new NativeNotificationOption
                 {
                     AppName = Env.SoftName,

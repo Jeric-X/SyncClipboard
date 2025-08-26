@@ -98,6 +98,7 @@ public class TextProfile : Profile
     {
         return new HistoryRecord
         {
+            Type = ProfileType.Text,
             Hash = Text,
             Text = Text,
         };

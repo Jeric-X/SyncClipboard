@@ -24,7 +24,7 @@
         public static readonly string UpdateInfoPath = Path.Combine(ProgramDirectory, UpdateInfoFile);
         public static readonly string AppDataFileFolder = GetOrCreateFolder(FullPath("file"));
         public static readonly string AppDataAssetsFolder = GetOrCreateFolder(FullPath("assets"));
-        public static readonly string AppDataDbPath = GetOrCreateFolder(FullPath("DataBase"));
+        public static readonly string AppDataDbPath = GetOrCreateFolder(FullPath("data"));
         public static string TemplateFileFolder => GetTemplateFileFolder();
         public static readonly string RemoteFileFolder = "file";
         public static readonly string LogFolder = FullPath("log");

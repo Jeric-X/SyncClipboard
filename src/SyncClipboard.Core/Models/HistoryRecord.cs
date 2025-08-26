@@ -17,7 +17,7 @@ public class HistoryRecord
         {
             return false;
         }
-        
+
         if (Type != other.Type)
         {
             return false;

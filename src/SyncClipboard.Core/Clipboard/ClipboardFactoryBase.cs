@@ -54,6 +54,29 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnknownProfile();
     }
 
+    public async Task<Profile> CreateProfileFromHistoryRecord(HistoryRecord historyRecord, CancellationToken ctk)
+    {
+        switch (historyRecord.Type)
+        {
+            case ProfileType.Text:
+                return new TextProfile(historyRecord.Text);
+            case ProfileType.File:
+                {
+                    if (ImageHelper.FileIsImage(historyRecord.FilePath))
+                    {
+                        return await ImageProfile.Create(historyRecord.FilePath, ctk);
+                    }
+                    return await FileProfile.Create(historyRecord.FilePath, ctk);
+                }
+            case ProfileType.Image:
+                return await ImageProfile.Create(historyRecord.FilePath, ctk);
+            case ProfileType.Group:
+                return await GroupProfile.Create(historyRecord.FilePath.Split('\n'), ctk);
+        }
+
+        return new UnknownProfile();
+    }
+
     private async Task<Profile> UploadAndReturnBlankProfile(CancellationToken ctk)
     {
         var blankProfile = new TextProfile("");

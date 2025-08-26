@@ -1,7 +1,7 @@
 ﻿using SharpHook.Native;
 using SyncClipboard.Core.Models.Keyboard;
 
-namespace SyncClipboard.Core.Utilities;
+namespace SyncClipboard.Core.Utilities.Keyboard;
 
 public static class KeyCodeMap
 {
