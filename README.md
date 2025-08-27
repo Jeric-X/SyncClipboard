@@ -1,5 +1,5 @@
 # SyncClipboard
-[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-entry.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
+[![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-entry.yml/badge.svg?branch=dev)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Adev)
 
 中文 | [English](docs/README_EN.md)  
 

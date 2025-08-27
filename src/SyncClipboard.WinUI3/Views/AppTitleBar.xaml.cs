@@ -21,16 +21,16 @@ namespace SyncClipboard.WinUI3.Views
             this.InitializeComponent();
         }
 
-        public void ShowNavigationButton()
-        {
-            _NavigationButton.Visibility = Visibility.Collapsed;
-            _DraggableArea.Margin = new(18, 0, 0, 0);
-        }
-
         public void HideNavigationButton()
         {
+            _NavigationButton.Visibility = Visibility.Collapsed;
+            _DraggableArea.Padding = new(26, 8, 0, 8);
+        }
+
+        public void ShowNavigationButton()
+        {
             _NavigationButton.Visibility = Visibility.Visible;
-            _DraggableArea.Margin = new(0, 0, 0, 0);
+            _DraggableArea.Padding = new(8, 8, 0, 8);
         }
 
         private void NavigationButton_Click(object _, RoutedEventArgs _1)

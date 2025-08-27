@@ -21,29 +21,41 @@
     <Window.Styles>
         <Style Selector="Button">
             <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="FontSize" Value="14" />
         </Style>
     </Window.Styles>
-    <ListBox ItemsSource="{Binding HistoryItems}" SelectionMode="Single" KeyDown="ListBox_KeyDown">
+    <ListBox x:Name="_ListBox"
+             ItemsSource="{Binding HistoryItems}"
+             SelectionMode="Single"
+             KeyDown="ListBox_KeyDown"
+             DoubleTapped="ListBox_DoubleTapped">
+        <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel />
+            </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
         <ListBox.ItemTemplate>
             <DataTemplate x:DataType="m:HistoryRecord">
-                <Grid MinHeight="10"
-                      ColumnDefinitions="Auto, *, Auto"
-                      Background="Transparent"
-                      PointerPressed="ItemPressed">
+                <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
                     <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
-                        <ui:FontIcon VerticalAlignment="Center" Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </Border>
                     <TextBlock Grid.Column="1"
                                Padding="8,8,0,8"
                                VerticalAlignment="Center"
                                FontSize="12"
-                               Text="{Binding Text, Converter={x:Static vc:FuncConverter.SubStr}}" />
+                               Text="{Binding Text, Converter={x:Static vc:FuncConverter.LimitLines}}" />
                     <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
+                        <Button Click="CopyButtonClicked">
+                            <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                        <Button Click="PasteButtonClicked">
+                            <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
                         <Button Command="{Binding #_HistoryWindow.ViewModel.DeleteItemCommand}" CommandParameter="{Binding .}">
-                            <ui:FontIcon Glyph="&#xE74D;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                     </StackPanel>
                 </Grid>

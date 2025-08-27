@@ -1,8 +1,9 @@
-﻿using System;
-using System.Linq;
-using Avalonia.Data.Converters;
+﻿using Avalonia.Data.Converters;
 using FluentAvalonia.UI.Controls;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
+using System;
+using System.Linq;
 
 namespace SyncClipboard.Desktop.ValueConverters;
 
@@ -18,7 +19,7 @@ public class FuncConverter
             _ => InfoBarSeverity.Informational,
         });
 
-    public static FuncValueConverter<string?, string> SubStr { get; } =
+    public static FuncValueConverter<string?, string> LimitLines { get; } =
         new FuncValueConverter<string?, string>(input =>
         {
             const int MAX_LINES = 10;
@@ -33,5 +34,18 @@ public class FuncConverter
             }
             input = string.Join(Environment.NewLine, lines);
             return input;
+        });
+
+    public static FuncValueConverter<ProfileType?, string> ProfileTypeToFontIcon { get; } =
+        new FuncValueConverter<ProfileType?, string>(input =>
+        {
+            return input switch
+            {
+                ProfileType.Text => "\uE185",
+                ProfileType.File => "\uED43",
+                ProfileType.Group => "\uED43",
+                ProfileType.Image => "\udba0\udc7f",
+                _ => "\uE10A",
+            };
         });
 }

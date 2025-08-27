@@ -12,7 +12,7 @@
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ImageAssistant}" Description="{x:Bind i18n:Strings.ImageAssistantDescription}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE158;" />
+                <FontIcon Glyph="&#xE8B9;" />
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EasyCopyImageSwitchOn, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>

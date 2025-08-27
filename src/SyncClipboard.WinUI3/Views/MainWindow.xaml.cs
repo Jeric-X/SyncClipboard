@@ -13,7 +13,6 @@ using System;
 using System.Drawing.Text;
 using System.Linq;
 using Windows.Graphics;
-using Windows.UI;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
 
@@ -45,8 +44,7 @@ namespace SyncClipboard.WinUI3.Views
             Closed += SettingWindow_Closed;
 
             this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
-            ChangeTitleBarButtonForegroundColor((FrameworkElement)Content, null);
-            ((FrameworkElement)Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
+            this.SetTitleBarButtonForegroundColor();
 
             _MenuList.SelectedIndex = 0;
         }
@@ -192,13 +190,13 @@ namespace SyncClipboard.WinUI3.Views
             {
                 SplitPane.IsPaneOpen = false;
                 SplitPane.DisplayMode = SplitViewDisplayMode.Overlay;
-                _AppTitleBar.HideNavigationButton();
+                _AppTitleBar.ShowNavigationButton();
             }
             else
             {
                 SplitPane.DisplayMode = SplitViewDisplayMode.Inline;
                 SplitPane.IsPaneOpen = true;
-                _AppTitleBar.ShowNavigationButton();
+                _AppTitleBar.HideNavigationButton();
                 SplitPane.PaneBackground = (Brush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
             }
         }
@@ -266,13 +264,6 @@ namespace SyncClipboard.WinUI3.Views
                 "Dark" => ElementTheme.Dark,
                 _ => ElementTheme.Default,
             };
-        }
-
-        private void ChangeTitleBarButtonForegroundColor(FrameworkElement sender, object? _)
-        {
-            var actualTheme = sender.ActualTheme.ToString();
-            var themeResource = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[actualTheme];
-            AppWindow.TitleBar.ButtonForegroundColor = (Color)themeResource["TitleBarButtonForegroundColor"];
         }
     }
 }

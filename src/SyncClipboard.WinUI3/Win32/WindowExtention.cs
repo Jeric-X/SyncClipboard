@@ -1,11 +1,12 @@
 ﻿using Microsoft.UI.Xaml;
 using System;
 using System.Runtime.InteropServices;
+using Windows.UI;
 
 namespace SyncClipboard.WinUI3.Win32;
 
 // From https://github.com/microsoft/microsoft-ui-xaml/issues/8134#issuecomment-1429388672
-public static partial class WindowIconExtention
+public static partial class WindowExtention
 {
     [LibraryImport("User32.dll", EntryPoint = "LoadImageW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     private static partial nint LoadImage(nint hInst, string lpszName, UInt32 uType, int cxDesired, int cyDesired, UInt32 fuLoad);
@@ -26,5 +27,18 @@ public static partial class WindowIconExtention
         IntPtr icon = LoadImage(IntPtr.Zero, path, IMAGE_ICON, 64, 64, LR_LOADFROMFILE);
         IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
         _ = SendMessage(hWnd, WM_SETICON, ICON_BIG, icon);
+    }
+
+    public static void SetTitleBarButtonForegroundColor(this Window window)
+    {
+        void ChangeTitleBarButtonForegroundColor(FrameworkElement sender, object? _)
+        {
+            var actualTheme = sender.ActualTheme.ToString();
+            var themeResource = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[actualTheme];
+            window.AppWindow.TitleBar.ButtonForegroundColor = (Color)themeResource["TitleBarButtonForegroundColor"];
+        }
+
+        ChangeTitleBarButtonForegroundColor((FrameworkElement)window.Content, null);
+        ((FrameworkElement)window.Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
     }
 }

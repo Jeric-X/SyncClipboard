@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Abstract;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -82,5 +83,12 @@ public class ImageProfile : FileProfile
             new ActionButton(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
         ];
         notification.Show();
+    }
+
+    public override HistoryRecord CreateHistoryRecord()
+    {
+        var record = base.CreateHistoryRecord();
+        record.Type = ProfileType.Image;
+        return record;
     }
 }

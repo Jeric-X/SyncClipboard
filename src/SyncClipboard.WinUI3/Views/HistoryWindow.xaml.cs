@@ -1,0 +1,162 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
+using SyncClipboard.Core.ViewModels;
+using SyncClipboard.WinUI3.Win32;
+using System.Threading;
+using Windows.Graphics;
+using Windows.System;
+using WinUIEx;
+
+// To learn more about WinUI, the WinUI project structure,
+// and more about our project templates, see: http://aka.ms/winui-project-info.
+
+namespace SyncClipboard.WinUI3.Views;
+
+/// <summary>
+/// An empty window that can be used on its own or navigated to within a Frame.
+/// </summary>
+public sealed partial class HistoryWindow : Window, IWindow
+{
+    private readonly HistoryViewModel _viewModel;
+    public HistoryViewModel ViewModel => _viewModel;
+    public HistoryWindow()
+    {
+        _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
+        this.AppWindow.Resize(new SizeInt32(1200, 800));
+
+        InitializeComponent();
+
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(_AppTitleBar.DraggableArea);
+        _AppTitleBar.HideNavigationButton();
+        this.SetTitleBarButtonForegroundColor();
+
+        this.Closed += OnHistoryWindowClosed;
+        _ListView.Focus(FocusState.Programmatic);
+    }
+
+    private void OnHistoryWindowClosed(object sender, WindowEventArgs args)
+    {
+        this.AppWindow.Hide();
+        args.Handled = true;
+    }
+
+    public void Focus()
+    {
+        if (!this.Visible)
+        {
+            this.CenterOnScreen();
+            this.Activate();
+            this.SetForegroundWindow();
+        }
+        this.SetForegroundWindow();
+    }
+
+    public void SwitchVisible()
+    {
+        if (!this.Visible)
+        {
+            this.CenterOnScreen();
+            this.Activate();
+            this.SetForegroundWindow();
+        }
+        else
+        {
+            this.AppWindow.Hide();
+        }
+    }
+
+    private async void PasteButtonClicked(object sender, RoutedEventArgs e)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecord record)
+        {
+            this.Hide();
+            await _viewModel.CopyToClipboard(record, true, CancellationToken.None);
+        }
+    }
+    private void ListViewItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        var history = ((ListViewItem?)sender)?.DataContext;
+        if (history is HistoryRecord record)
+        {
+            _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+            this.Hide();
+        }
+    }
+
+    private void DeleteButtonClicked(object sender, RoutedEventArgs e)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecord record)
+        {
+            _viewModel.DeleteItem(record);
+        }
+    }
+
+    private void CopyButtonClicked(object sender, RoutedEventArgs e)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecord record)
+        {
+            _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+            this.Hide();
+        }
+    }
+
+    private void Grid_KeyDown(object _sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Escape)
+        {
+            this.Hide();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == VirtualKey.Down || e.Key == VirtualKey.Up)
+        {
+            KeyUpDownPressed(e.Key);
+            return;
+        }
+    }
+
+    private void KeyUpDownPressed(VirtualKey key)
+    {
+        if (_ListView.Items.Count == 0)
+        {
+            return;
+        }
+
+        if (key == VirtualKey.Down)
+        {
+            if (_ListView.Items.Count > (_ListView.SelectedIndex + 1))
+            {
+                _ListView.SelectedIndex++;
+            }
+        }
+        else if (key == VirtualKey.Up)
+        {
+            if (_ListView.SelectedIndex > 0)
+            {
+                _ListView.SelectedIndex--;
+            }
+        }
+        _ListView.ScrollIntoView(_ListView.SelectedItem);
+    }
+
+    private async void EnterKeyTriggered(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (_ListView.SelectedValue is not HistoryRecord record)
+        {
+            return;
+        }
+        args.Handled = true;
+        this.Hide();
+        var paste = sender.Modifiers != VirtualKeyModifiers.Menu;
+        await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
+    }
+}

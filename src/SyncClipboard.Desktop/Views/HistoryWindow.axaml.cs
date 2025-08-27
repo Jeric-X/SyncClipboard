@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -11,7 +12,7 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HistoryWindow : Window, IWindow
 {
-    public readonly HistoryViewModel _viewModel;
+    private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
     public HistoryWindow()
     {
@@ -20,7 +21,7 @@ public partial class HistoryWindow : Window, IWindow
         InitializeComponent();
     }
 
-    protected override void OnKeyUp(KeyEventArgs e)
+    protected override void OnKeyDown(KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
         {
@@ -28,7 +29,7 @@ public partial class HistoryWindow : Window, IWindow
             e.Handled = true;
             return;
         }
-        base.OnKeyUp(e);
+        base.OnKeyDown(e);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -46,7 +47,6 @@ public partial class HistoryWindow : Window, IWindow
     {
         if (!this.IsVisible)
         {
-            ViewModel.Refresh();
             this.Show();
             this.Activate();
         }
@@ -62,43 +62,44 @@ public partial class HistoryWindow : Window, IWindow
         this.Activate();
     }
 
-    private const int DoubleClickThreshold = 300;
-    private CancellationTokenSource? _cts;
+    #region Manually Handle Click and Double Click
+    //private const int DoubleClickThreshold = 300;
+    //private CancellationTokenSource? _cts;
 
-    private void ItemPressed(object? sender, PointerPressedEventArgs e)
-    {
-        var record = (HistoryRecord?)((Grid?)sender)?.DataContext;
-        if (record == null)
-        {
-            return;
-        }
+    //private void ItemPressed(object? sender, PointerPressedEventArgs e)
+    //{
+    //    var record = (HistoryRecord?)((Grid?)sender)?.DataContext;
+    //    if (record == null)
+    //    {
+    //        return;
+    //    }
 
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-        _ = DelayTriggerClickEvent(record, e, _cts.Token);
-    }
+    //    _cts?.Cancel();
+    //    _cts = new CancellationTokenSource();
+    //    _ = DelayTriggerClickEvent(record, e, _cts.Token);
+    //}
 
-    private async Task DelayTriggerClickEvent(HistoryRecord record, PointerPressedEventArgs e, CancellationToken token)
-    {
-        if (e.ClickCount >= 2)
-        {
-            await _viewModel.CopyToClipboard(record, false, token);
-            this.Hide();
-            return;
-        }
+    //private async Task DelayTriggerClickEvent(HistoryRecord record, PointerPressedEventArgs e, CancellationToken token)
+    //{
+    //    if (e.ClickCount >= 2)
+    //    {
+    //        await _viewModel.CopyToClipboard(record, false, token);
+    //        this.Hide();
+    //        return;
+    //    }
 
-        await Task.Delay(DoubleClickThreshold, token);
-        if (e.ClickCount == 1)
-        {
-            this.Hide();
-            await _viewModel.CopyToClipboard(record, true, token);
-        }
-    }
+    //    await Task.Delay(DoubleClickThreshold, token);
+    //    if (e.ClickCount == 1)
+    //    {
+    //        this.Hide();
+    //        await _viewModel.CopyToClipboard(record, true, token);
+    //    }
+    //}
+    #endregion
 
     private async void ListBox_KeyDown(object? sender, KeyEventArgs e)
     {
         var history = ((ListBox?)sender)?.SelectedValue;
-
         if (history is not HistoryRecord record)
         {
             return;
@@ -111,5 +112,42 @@ public partial class HistoryWindow : Window, IWindow
             var paste = e.KeyModifiers != KeyModifiers.Alt;
             await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
         }
+    }
+
+    private void PasteButtonClicked(object? sender, RoutedEventArgs e)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is not HistoryRecord record)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        this.Hide();
+        _ = _viewModel.CopyToClipboard(record, true, CancellationToken.None);
+    }
+
+    private void CopyButtonClicked(object? sender, RoutedEventArgs e)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is not HistoryRecord record)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        this.Hide();
+        _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+    }
+
+    private void ListBox_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        var history = ((ListBox?)sender)?.SelectedValue;
+        if (history is not HistoryRecord record)
+        {
+            return;
+        }
+        this.Hide();
+        _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
     }
 }

@@ -4,6 +4,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
+using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -17,22 +18,30 @@ public partial class HistoryViewModel : ObservableObject
         this.historyManager = historyManager;
         this.clipboardFactory = clipboardFactory;
         this.keyboard = keyboard;
-        this.historyManager.HistoryChanged += Refresh;
-    }
-
-    public List<HistoryRecord> HistoryItems
-    {
-        get
+        historyItems = new(historyManager.GetHistory());
+        this.historyManager.HistoryAdded += record =>
         {
-            var list = historyManager.GetHistory();
-            return list;
-        }
+            HistoryItems.Insert(0, record);
+        };
+        this.historyManager.HistoryRemoved += record => HistoryItems.Remove(record);
     }
 
-    public void Refresh()
-    {
-        OnPropertyChanged(nameof(HistoryItems));
-    }
+    [ObservableProperty]
+    public ObservableCollection<HistoryRecord> historyItems;
+
+    //public List<HistoryRecord> HistoryItems
+    //{
+    //    get
+    //    {
+    //        var list = historyManager.GetHistory();
+    //        return list;
+    //    }
+    //}
+
+    //public void Refresh()
+    //{
+    //    OnPropertyChanged(nameof(HistoryItems));
+    //}
 
     [RelayCommand]
     public Task DeleteItem(HistoryRecord record)

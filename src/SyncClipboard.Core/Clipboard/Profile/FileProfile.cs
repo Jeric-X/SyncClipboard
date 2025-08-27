@@ -259,6 +259,7 @@ public class FileProfile : Profile
             Type = ProfileType.File,
             Text = FileName,
             FilePath = FullPath ?? string.Empty,
+            Hash = Hash
         };
     }
 }
