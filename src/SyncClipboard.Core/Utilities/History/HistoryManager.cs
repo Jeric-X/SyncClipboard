@@ -1,32 +1,63 @@
-using SyncClipboard.Abstract;
+using Microsoft.EntityFrameworkCore;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-public class HistoryManager : IDisposable
+public class HistoryManager
 {
-    private readonly string DbName = "history.db";
-
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
+    public event Action<HistoryRecord>? HistoryUpdated;
 
-    //private readonly HistoryDbContext _dbContext = new HistoryDbContext();
+    private HistoryConfig _historyConfig = new();
+
+    public HistoryManager(ConfigManager configManager)
+    {
+        _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
+        LoadConfig(_historyConfig);
+    }
+
+    private async void LoadConfig(HistoryConfig config)
+    {
+        _historyConfig = config;
+
+        using var _dbContext = await GetDbContext();
+        if (SetRecordsMaxCount(_dbContext.HistoryRecords, config.MaxItemCount) != 0)
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+    }
+
+    private uint SetRecordsMaxCount(DbSet<HistoryRecord> records, uint maxCount)
+    {
+        uint count = (uint)records.Count();
+
+        if (count > maxCount)
+        {
+            var toDeletes = records.OrderBy(r => r.Timestamp).Take((int)(count - maxCount)).ToArray();
+            records.RemoveRange(toDeletes);
+            toDeletes.ForEach(r => HistoryRemoved?.Invoke(r));
+            return count - maxCount;
+        }
+        return 0;
+    }
 
     public async Task AddHistory(HistoryRecord record, CancellationToken token = default)
     {
-        using var _dbContext = new HistoryDbContext(DbName);
-        _dbContext.Database.EnsureCreated();
-        if (
-            _dbContext.HistoryRecords.Any(
-                r => r.Type == record.Type
-                &&
-                (
-                    (r.Type == ProfileType.Text && r.Text == record.Text)
-                    ||
-                    (r.Type != ProfileType.Text && r.Hash == record.Hash)
-                )
-            )
-        )
+        using var _dbContext = await GetDbContext();
+        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
+        {
+            entity.Timestamp = record.Timestamp;
+            await _dbContext.SaveChangesAsync(token);
+            HistoryUpdated?.Invoke(entity);
+            return;
+        }
+
+        SetRecordsMaxCount(_dbContext.HistoryRecords, _historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0);
+
+        if (_historyConfig.MaxItemCount <= 0)
         {
             return;
         }
@@ -36,10 +67,9 @@ public class HistoryManager : IDisposable
         HistoryAdded?.Invoke(record);
     }
 
-    public List<HistoryRecord> GetHistory()
+    public static async Task<List<HistoryRecord>> GetHistory()
     {
-        using var _dbContext = new HistoryDbContext(DbName);
-        _dbContext.Database.EnsureCreated();
+        using var _dbContext = await GetDbContext();
         return _dbContext.HistoryRecords
             .OrderByDescending(r => r.Timestamp)
             .ToList();
@@ -47,9 +77,8 @@ public class HistoryManager : IDisposable
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)
     {
-        using var _dbContext = new HistoryDbContext(DbName);
-        _dbContext.Database.EnsureCreated();
-        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Text == record.Text && r.Hash == record.Hash);
+        using var _dbContext = await GetDbContext();
+        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
         if (entity != null)
         {
             _dbContext.HistoryRecords.Remove(entity);
@@ -58,14 +87,11 @@ public class HistoryManager : IDisposable
         }
     }
 
-    ~HistoryManager()
+    private static async Task<HistoryDbContext> GetDbContext()
     {
-        Dispose();
-    }
-
-    public void Dispose()
-    {
-        //_dbContext.Dispose();
-        GC.SuppressFinalize(this);
+        var _dbContext = new HistoryDbContext();
+        await _dbContext.Database.MigrateAsync();
+        await _dbContext.Database.EnsureCreatedAsync();
+        return _dbContext;
     }
 }

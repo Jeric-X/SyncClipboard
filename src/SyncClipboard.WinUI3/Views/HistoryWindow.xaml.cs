@@ -1,9 +1,11 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
 using System.Threading;
@@ -23,9 +25,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
-    public HistoryWindow()
+    private bool _windowLoaded = false;
+
+    public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel)
     {
-        _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
+        _viewModel = viewModel;
         this.AppWindow.Resize(new SizeInt32(1200, 800));
 
         InitializeComponent();
@@ -35,8 +39,34 @@ public sealed partial class HistoryWindow : Window, IWindow
         _AppTitleBar.HideNavigationButton();
         this.SetTitleBarButtonForegroundColor();
 
+        this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
+        this.SizeChanged += HistoryWindow_SizeChanged;
+
+        configManager.GetAndListenConfig<ProgramConfig>(config => this.SetTheme(config.Theme));
+
         this.Closed += OnHistoryWindowClosed;
-        _ListView.Focus(FocusState.Programmatic);
+        _ListView.Loaded += async (_, _) => await _viewModel.Init();
+
+        this.Activated += (_, args) =>
+        {
+            if (args.WindowActivationState == WindowActivationState.Deactivated)
+            {
+                if (configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
+                {
+                    this.Hide();
+                }
+            }
+        };
+
+    }
+
+    private void HistoryWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
+    {
+        if (_windowLoaded)
+        {
+            _viewModel.Height = this.AppWindow.Size.Height;
+            _viewModel.Width = this.AppWindow.Size.Width;
+        }
     }
 
     private void OnHistoryWindowClosed(object sender, WindowEventArgs args)
@@ -45,13 +75,26 @@ public sealed partial class HistoryWindow : Window, IWindow
         args.Handled = true;
     }
 
+    private void ShowWindow()
+    {
+        if (!_windowLoaded)
+        {
+            this.CenterOnScreen();
+        }
+
+        this.Activate();
+        this.SetForegroundWindow();
+        if (!_windowLoaded)
+        {
+            _windowLoaded = true;
+        }
+    }
+
     public void Focus()
     {
         if (!this.Visible)
         {
-            this.CenterOnScreen();
-            this.Activate();
-            this.SetForegroundWindow();
+            ShowWindow();
         }
         this.SetForegroundWindow();
     }
@@ -60,9 +103,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         if (!this.Visible)
         {
-            this.CenterOnScreen();
-            this.Activate();
-            this.SetForegroundWindow();
+            ShowWindow();
         }
         else
         {
@@ -158,5 +199,19 @@ public sealed partial class HistoryWindow : Window, IWindow
         this.Hide();
         var paste = sender.Modifiers != VirtualKeyModifiers.Menu;
         await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
+    }
+
+    private void Image_ImageOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Image image)
+        {
+            return;
+        }
+
+        if (image.ActualHeight > 200)
+        {
+            image.MaxHeight = 200;
+            image.Stretch = Stretch.Uniform;
+        }
     }
 }

@@ -97,9 +97,11 @@ namespace SyncClipboard.Core
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             var mainWindow = Services.GetRequiredService<IMainWindow>();
+            var historyWindow = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
 
             contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
             contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem("History", historyWindow.Focus), "Top Group");
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
             ProxyManager.Init(configManager);
@@ -200,7 +202,6 @@ namespace SyncClipboard.Core
             var config = configManager.GetConfig<ProgramConfig>();
 
             mainWindow.SetFont(config.Font);
-            mainWindow.ChangeTheme(config.Theme);
             if (config.HideWindowOnStartup is false)
             {
                 mainWindow.Show();
@@ -264,6 +265,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<HotkeyViewModel>();
             services.AddTransient<HistoryViewModel>();
+            services.AddTransient<HistorySettingViewModel>();
         }
 
         public static void ConfigurateUserService(IServiceCollection services)

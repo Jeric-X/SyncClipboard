@@ -41,4 +41,14 @@ public static partial class WindowExtention
         ChangeTitleBarButtonForegroundColor((FrameworkElement)window.Content, null);
         ((FrameworkElement)window.Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
     }
+
+    public static void SetTheme(this Window window, string theme)
+    {
+        ((FrameworkElement)window.Content).RequestedTheme = theme switch
+        {
+            "Light" => ElementTheme.Light,
+            "Dark" => ElementTheme.Dark,
+            _ => ElementTheme.Default,
+        };
+    }
 }

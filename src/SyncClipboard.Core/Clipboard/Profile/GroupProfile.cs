@@ -230,8 +230,9 @@ public class GroupProfile : FileProfile
         return new HistoryRecord
         {
             Type = ProfileType.Group,
-            Text = FileName,
-            FilePath = string.Join('\n', _files ?? []),
+            Text = string.Join('\n', _files ?? []),
+            FilePath = _files ?? [],
+            Hash = Hash,
         };
     }
 }

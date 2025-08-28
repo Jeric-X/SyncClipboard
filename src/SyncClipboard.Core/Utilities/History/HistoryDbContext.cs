@@ -5,8 +5,9 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-public class HistoryDbContext(string dbName) : DbContext
+public class HistoryDbContext : DbContext
 {
+    private const string dbName = "history.db";
     public DbSet<HistoryRecord> HistoryRecords { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)

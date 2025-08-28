@@ -134,16 +134,6 @@ public partial class MainWindow : Window, IMainWindow
         RunOnMainThread(ShowMainWindow);
     }
 
-    public void ChangeTheme(string theme)
-    {
-        App.Current.RequestedThemeVariant = theme switch
-        {
-            "Light" => ThemeVariant.Light,
-            "Dark" => ThemeVariant.Dark,
-            _ => ThemeVariant.Default,
-        };
-    }
-
     [RelayCommand]
     private void CloseWindow() => this.Close();
 

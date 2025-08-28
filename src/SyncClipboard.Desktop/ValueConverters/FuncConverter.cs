@@ -1,4 +1,5 @@
 ﻿using Avalonia.Data.Converters;
+using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
@@ -41,11 +42,22 @@ public class FuncConverter
         {
             return input switch
             {
-                ProfileType.Text => "\uE185",
+                ProfileType.Text => "\uE164",
                 ProfileType.File => "\uED43",
                 ProfileType.Group => "\uED43",
                 ProfileType.Image => "\udba0\udc7f",
                 _ => "\uE10A",
             };
+        });
+
+    public static FuncValueConverter<string, Bitmap?> ToBitImage { get; } =
+        new FuncValueConverter<string, Bitmap?>(input =>
+        {
+            try
+            {
+                return new Bitmap(input!);
+            }
+            catch { }
+            return null;
         });
 }

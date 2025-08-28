@@ -85,7 +85,6 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnThemeChanged(LocaleString<string> value)
     {
         ProgramConfig = ProgramConfig with { Theme = value.Key };
-        _services.GetRequiredService<IMainWindow>().ChangeTheme(value.Key);
     }
 
     public static readonly LocaleString<bool>[] UserConfigPositions =

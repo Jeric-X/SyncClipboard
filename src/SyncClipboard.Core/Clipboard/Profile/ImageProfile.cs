@@ -89,6 +89,7 @@ public class ImageProfile : FileProfile
     {
         var record = base.CreateHistoryRecord();
         record.Type = ProfileType.Image;
+        record.Text = FileName;
         return record;
     }
 }

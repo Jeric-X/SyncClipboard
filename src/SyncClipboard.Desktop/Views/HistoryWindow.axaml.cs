@@ -1,12 +1,14 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -14,11 +16,33 @@ public partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
-    public HistoryWindow()
+    public HistoryWindow(ConfigManager configManager)
     {
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
         DataContext = ViewModel;
+
         InitializeComponent();
+
+        this.Loaded += async (_, _) =>
+        {
+            await _viewModel.Init();
+        };
+
+        this.Deactivated += (_, _) =>
+        {
+            if (configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
+            {
+                this.Hide();
+            }
+        };
+
+        Height = _viewModel.Height;
+        Width = _viewModel.Width;
+        this.SizeChanged += (_, _) =>
+        {
+            _viewModel.Height = (int)Height;
+            _viewModel.Width = (int)Width;
+        };
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -47,8 +71,7 @@ public partial class HistoryWindow : Window, IWindow
     {
         if (!this.IsVisible)
         {
-            this.Show();
-            this.Activate();
+            FocusOnScreen();
         }
         else
         {
@@ -56,10 +79,19 @@ public partial class HistoryWindow : Window, IWindow
         }
     }
 
-    public void Focus()
+    private void FocusOnScreen()
     {
         this.Show();
+        if (this.WindowState == WindowState.Minimized)
+        {
+            this.WindowState = WindowState.Normal;
+        }
         this.Activate();
+    }
+
+    void IWindow.Focus()
+    {
+        FocusOnScreen();
     }
 
     #region Manually Handle Click and Double Click
@@ -149,5 +181,19 @@ public partial class HistoryWindow : Window, IWindow
         }
         this.Hide();
         _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+    }
+
+    private void Image_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not Image image)
+        {
+            return;
+        }
+
+        if (image.Bounds.Size.Height > 200)
+        {
+            image.MaxHeight = 200;
+            image.Stretch = Stretch.Uniform;
+        }
     }
 }

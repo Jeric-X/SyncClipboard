@@ -15,6 +15,7 @@ namespace SyncClipboard.Core.ViewModels
         [
             PageDefinition.SyncSetting,
             PageDefinition.CliboardAssistant,
+            PageDefinition.HistorySetting,
             PageDefinition.ServiceStatus,
             PageDefinition.Hotkey,
             PageDefinition.SystemSetting,

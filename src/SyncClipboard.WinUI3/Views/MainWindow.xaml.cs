@@ -4,8 +4,10 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using NativeNotification.Interface;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
@@ -47,6 +49,10 @@ namespace SyncClipboard.WinUI3.Views
             this.SetTitleBarButtonForegroundColor();
 
             _MenuList.SelectedIndex = 0;
+
+            App.Current.Services.GetRequiredService<ConfigManager>().GetAndListenConfig<ProgramConfig>(config =>
+                this.SetTheme(config.Theme)
+            );
         }
 
         private void OnWindowLoaded()
@@ -254,16 +260,6 @@ namespace SyncClipboard.WinUI3.Views
         public void ExitApp()
         {
             App.Current.ExitApp();
-        }
-
-        public void ChangeTheme(string theme)
-        {
-            ((FrameworkElement)Content).RequestedTheme = theme switch
-            {
-                "Light" => ElementTheme.Light,
-                "Dark" => ElementTheme.Dark,
-                _ => ElementTheme.Default,
-            };
         }
     }
 }

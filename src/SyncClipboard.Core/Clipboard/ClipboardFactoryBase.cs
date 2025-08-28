@@ -3,7 +3,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.Utilities.Image;
 using System.Net;
 using System.Text.Json;
@@ -62,16 +61,16 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
                 return new TextProfile(historyRecord.Text);
             case ProfileType.File:
                 {
-                    if (ImageHelper.FileIsImage(historyRecord.FilePath))
+                    if (ImageHelper.FileIsImage(historyRecord.FilePath[0]))
                     {
-                        return await ImageProfile.Create(historyRecord.FilePath, ctk);
+                        return await ImageProfile.Create(historyRecord.FilePath[0], ctk);
                     }
-                    return await FileProfile.Create(historyRecord.FilePath, ctk);
+                    return await FileProfile.Create(historyRecord.FilePath[0], ctk);
                 }
             case ProfileType.Image:
-                return await ImageProfile.Create(historyRecord.FilePath, ctk);
+                return await ImageProfile.Create(historyRecord.FilePath[0], ctk);
             case ProfileType.Group:
-                return await GroupProfile.Create(historyRecord.FilePath.Split('\n'), ctk);
+                return await GroupProfile.Create(historyRecord.FilePath, ctk);
         }
 
         return new UnknownProfile();

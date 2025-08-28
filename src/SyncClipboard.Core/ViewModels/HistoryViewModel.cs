@@ -1,52 +1,57 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public partial class HistoryViewModel : ObservableObject
+public partial class HistoryViewModel(
+    HistoryManager historyManager,
+    IClipboardFactory clipboardFactory,
+    VirtualKeyboard keyboard,
+    [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig) : ObservableObject
 {
-    private readonly HistoryManager historyManager;
-    private readonly IClipboardFactory clipboardFactory;
-    private readonly VirtualKeyboard keyboard;
-    public HistoryViewModel(HistoryManager historyManager, IClipboardFactory clipboardFactory, VirtualKeyboard keyboard)
+    [ObservableProperty]
+    public ObservableCollection<HistoryRecord> historyItems = [];
+
+    public int Width
     {
-        this.historyManager = historyManager;
-        this.clipboardFactory = clipboardFactory;
-        this.keyboard = keyboard;
-        historyItems = new(historyManager.GetHistory());
-        this.historyManager.HistoryAdded += record =>
-        {
-            HistoryItems.Insert(0, record);
-        };
-        this.historyManager.HistoryRemoved += record => HistoryItems.Remove(record);
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().Width;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { Width = value });
     }
 
-    [ObservableProperty]
-    public ObservableCollection<HistoryRecord> historyItems;
-
-    //public List<HistoryRecord> HistoryItems
-    //{
-    //    get
-    //    {
-    //        var list = historyManager.GetHistory();
-    //        return list;
-    //    }
-    //}
-
-    //public void Refresh()
-    //{
-    //    OnPropertyChanged(nameof(HistoryItems));
-    //}
+    public int Height
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().Height;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { Height = value });
+    }
 
     [RelayCommand]
     public Task DeleteItem(HistoryRecord record)
     {
         return historyManager.DeleteHistory(record);
+    }
+
+    public async Task Init()
+    {
+        HistoryItems = new(await HistoryManager.GetHistory());
+        historyManager.HistoryAdded += record => HistoryItems.Insert(0, record);
+        historyManager.HistoryRemoved += record => HistoryItems.Remove(record);
+        historyManager.HistoryUpdated += record =>
+        {
+            if (HistoryItems.FirstOrDefault() == record)
+            {
+                return;
+            }
+            HistoryItems.Remove(record);
+            HistoryItems.Insert(0, record);
+        };
     }
 
     public async Task CopyToClipboard(HistoryRecord record, bool paste, CancellationToken token)

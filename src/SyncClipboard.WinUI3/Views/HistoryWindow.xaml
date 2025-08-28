@@ -13,13 +13,27 @@
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
-    <Grid KeyDown="Grid_KeyDown" KeyboardAcceleratorPlacementMode="Hidden">
+    <Grid x:Name="_HistoryWindowGrid" KeyDown="Grid_KeyDown" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.Resources>
             <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
                 <Setter Property="Height" Value="28" />
                 <Setter Property="Width" Value="28" />
                 <Setter Property="Padding" Value="0,0,0,0" />
             </Style>
+            <DataTemplate x:Key="normalTemplate" x:DataType="m:HistoryRecord">
+                <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+            </DataTemplate>
+            <DataTemplate x:Key="imageTemplate" x:DataType="m:HistoryRecord">
+                <StackPanel Orientation="Vertical" Spacing="5">
+                    <Image HorizontalAlignment="Left" Stretch="None" ImageOpened="Image_ImageOpened">
+                        <Image.Source>
+                            <BitmapImage UriSource="{x:Bind FilePath[0]}" />
+                        </Image.Source>
+                    </Image>
+                    <TextBlock HorizontalAlignment="Left" Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+                </StackPanel>
+            </DataTemplate>
+            <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />
         </Grid.Resources>
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="Enter" Invoked="EnterKeyTriggered" />
@@ -42,11 +56,13 @@
                             <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>
-                            <TextBlock Grid.Column="1"
-                                       Padding="8,8,0,8"
-                                       VerticalAlignment="Center"
-                                       FontSize="12"
-                                       Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+                            <ContentControl Grid.Column="1"
+                                            Padding="8,8,0,8"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            Content="{x:Bind}"
+                                            ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
                             <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Click="CopyButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="&#xE8C8;" FontSize="12" />

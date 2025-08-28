@@ -46,7 +46,7 @@ internal static class ConvertMethod
     {
         return type switch
         {
-            ProfileType.Text => "\uE8E9",
+            ProfileType.Text => "\uE8C1",
             ProfileType.File => "\uED43",
             ProfileType.Group => "\uED43",
             ProfileType.Image => "\uEB9F",
