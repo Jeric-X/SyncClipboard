@@ -99,10 +99,8 @@ namespace SyncClipboard.Core
             var mainWindow = Services.GetRequiredService<IMainWindow>();
             var historyWindow = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
 
-            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
-            contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
-            contextMenu.AddMenuItem(new MenuItem(Strings.HistoryPanel, historyWindow.Focus), "Top Group");
-            contextMenu.AddMenuItemGroup(configManager.Menu);
+            AddSystemContextMenu(contextMenu, mainWindow, historyWindow);
+            RegisterForSystemHotkey(mainWindow);
 
             ProxyManager.Init(configManager);
             SetUpRemoteWorkFolder();
@@ -110,7 +108,6 @@ namespace SyncClipboard.Core
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 
-            RegisterForSystemHotkey(mainWindow);
             InitTrayIcon();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
@@ -158,6 +155,23 @@ namespace SyncClipboard.Core
             }
         }
 
+        private void AddSystemContextMenu(IContextMenu contextMenu, IMainWindow mainWindow, IWindow historyWindow)
+        {
+            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.HistoryPanel, historyWindow.Focus), "Top Group");
+
+            MenuItem[] menu =
+            [
+                new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
+                new MenuItem(I18n.Strings.ReloadConfigFile, ConfigManager.Load),
+#if !MACOS
+                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
+#endif
+                new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
+            ];
+            contextMenu.AddMenuItemGroup(menu);
+        }
 
         private void RegisterForSystemHotkey(IMainWindow mainWindow)
         {
@@ -180,8 +194,8 @@ namespace SyncClipboard.Core
                         mainWindow.ExitApp
                     ),
                     new UniqueCommand(
-                        "Show/Hide History Window",
-                        "SwitchHistoryWindowVisible",
+                        Strings.OpenHistoryPanel,
+                        "OpenHistoryPanel",
                         HistoryWindow.Focus
                     )
                 }

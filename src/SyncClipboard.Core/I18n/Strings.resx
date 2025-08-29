@@ -693,4 +693,7 @@
   <data name="UnableToCopyByMissingFile" xml:space="preserve">
     <value>Unable to copy because of missing files</value>
   </data>
+  <data name="OpenHistoryPanel" xml:space="preserve">
+    <value>Open History Panel</value>
+  </data>
 </root>

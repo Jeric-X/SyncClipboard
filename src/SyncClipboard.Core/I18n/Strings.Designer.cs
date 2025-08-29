@@ -1105,6 +1105,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Open History Panel 的本地化字符串。
+        /// </summary>
+        public static string OpenHistoryPanel {
+            get {
+                return ResourceManager.GetString("OpenHistoryPanel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Open in browser 的本地化字符串。
         /// </summary>
         public static string OpenInBrowser {
