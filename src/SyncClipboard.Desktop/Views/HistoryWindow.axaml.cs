@@ -16,9 +16,10 @@ public partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
-    public HistoryWindow(ConfigManager configManager)
+    public HistoryWindow()
     {
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
+        var configManager = App.Current.Services.GetRequiredService<ConfigManager>();
         DataContext = ViewModel;
 
         InitializeComponent();
@@ -32,7 +33,7 @@ public partial class HistoryWindow : Window, IWindow
         {
             if (configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
             {
-                this.Hide();
+                this.Close();
             }
         };
 
@@ -49,7 +50,7 @@ public partial class HistoryWindow : Window, IWindow
     {
         if (e.Key == Key.Escape)
         {
-            this.Hide();
+            this.Close();
             e.Handled = true;
             return;
         }
@@ -75,11 +76,11 @@ public partial class HistoryWindow : Window, IWindow
         }
         else
         {
-            this.Hide();
+            this.Close();
         }
     }
 
-    private void FocusOnScreen()
+    protected virtual void FocusOnScreen()
     {
         this.Show();
         if (this.WindowState == WindowState.Minimized)
@@ -116,14 +117,14 @@ public partial class HistoryWindow : Window, IWindow
     //    if (e.ClickCount >= 2)
     //    {
     //        await _viewModel.CopyToClipboard(record, false, token);
-    //        this.Hide();
+    //        this.Close();
     //        return;
     //    }
 
     //    await Task.Delay(DoubleClickThreshold, token);
     //    if (e.ClickCount == 1)
     //    {
-    //        this.Hide();
+    //        this.Close();
     //        await _viewModel.CopyToClipboard(record, true, token);
     //    }
     //}
@@ -140,7 +141,7 @@ public partial class HistoryWindow : Window, IWindow
         if (e.Key == Key.Enter && (e.KeyModifiers == KeyModifiers.None || e.KeyModifiers == KeyModifiers.Alt))
         {
             e.Handled = true;
-            this.Hide();
+            this.Close();
             var paste = e.KeyModifiers != KeyModifiers.Alt;
             await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
         }
@@ -155,7 +156,7 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         e.Handled = true;
-        this.Hide();
+        this.Close();
         _ = _viewModel.CopyToClipboard(record, true, CancellationToken.None);
     }
 
@@ -168,7 +169,7 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         e.Handled = true;
-        this.Hide();
+        this.Close();
         _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
     }
 
@@ -179,7 +180,7 @@ public partial class HistoryWindow : Window, IWindow
         {
             return;
         }
-        this.Hide();
+        this.Close();
         _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
     }
 
