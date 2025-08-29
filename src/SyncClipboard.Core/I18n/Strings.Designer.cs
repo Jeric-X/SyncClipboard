@@ -817,6 +817,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 History Panel 的本地化字符串。
+        /// </summary>
+        public static string HistoryPanel {
+            get {
+                return ResourceManager.GetString("HistoryPanel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Home 的本地化字符串。
         /// </summary>
         public static string HomePage {

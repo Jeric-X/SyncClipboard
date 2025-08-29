@@ -8,9 +8,10 @@
         xmlns:views="clr-namespace:SyncClipboard.Desktop.Views"
         xmlns:vm="using:SyncClipboard.Core.ViewModels"
         xmlns:local="using:SyncClipboard.Desktop.Views"
+        xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
         x:Name="_HistoryWindow"
-        Title="History"
+        Title="{x:Static i18n:Strings.ClipboardHistory}"
         Width="850"
         Height="530"
         d:DesignHeight="450"
@@ -34,7 +35,8 @@
             </DataTemplate>
             <DataTemplate x:Key="Image" DataType="m:HistoryRecord">
                 <StackPanel Spacing="4" Orientation="Vertical">
-                    <Image HorizontalAlignment="Left"
+                    <Image MaxHeight="202"
+                           HorizontalAlignment="Left"
                            Stretch="None"
                            Source="{Binding FilePath[0], Converter={x:Static vc:FuncConverter.ToBitImage}}"
                            Loaded="Image_Loaded" />

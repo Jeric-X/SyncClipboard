@@ -15,6 +15,7 @@ public class HistoryManager
 
     public HistoryManager(ConfigManager configManager)
     {
+        MigrateDatabase();
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
         LoadConfig(_historyConfig);
     }
@@ -90,8 +91,23 @@ public class HistoryManager
     private static async Task<HistoryDbContext> GetDbContext()
     {
         var _dbContext = new HistoryDbContext();
-        await _dbContext.Database.MigrateAsync();
         await _dbContext.Database.EnsureCreatedAsync();
         return _dbContext;
+    }
+
+    private static void MigrateDatabase()
+    {
+        var dbContext = new HistoryDbContext();
+        try
+        {
+            dbContext.Database.ExecuteSqlRaw("DELETE FROM __EFMigrationsLock;");
+        }
+        catch { }
+
+        var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        if (pendingMigrations.Any())
+        {
+            dbContext.Database.Migrate();
+        }
     }
 }

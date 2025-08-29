@@ -687,4 +687,7 @@
   <data name="MaxItemCount" xml:space="preserve">
     <value>Maximum number of records</value>
   </data>
+  <data name="HistoryPanel" xml:space="preserve">
+    <value>History Panel</value>
+  </data>
 </root>

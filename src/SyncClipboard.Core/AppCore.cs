@@ -101,7 +101,7 @@ namespace SyncClipboard.Core
 
             contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
             contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
-            contextMenu.AddMenuItem(new MenuItem("History", historyWindow.Focus), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.HistoryPanel, historyWindow.Focus), "Top Group");
             contextMenu.AddMenuItemGroup(configManager.Menu);
 
             ProxyManager.Init(configManager);

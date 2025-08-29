@@ -28,7 +28,7 @@ public static class ApplicationActivationHelper
         }
     }
 
-    public static void FocusMenuBar(this Window window)
+    public static void FocusMenuBar(this Window _)
     {
         // 这是一个workaround，切换NSApplicationActivationPolicy后系统菜单无法被点击，需要先Focus到其他App
         NSRunningApplication.GetRunningApplications("com.apple.dock")

@@ -9,6 +9,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
 using System.Threading;
+using Windows.Foundation;
 using Windows.Graphics;
 using Windows.System;
 using WinUIEx;
@@ -35,8 +36,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         InitializeComponent();
 
         ExtendsContentIntoTitleBar = true;
-        SetTitleBar(_AppTitleBar.DraggableArea);
-        _AppTitleBar.HideNavigationButton();
+        SetTitleBar(_DraggableArea);
         this.SetTitleBarButtonForegroundColor();
 
         this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
@@ -45,7 +45,6 @@ public sealed partial class HistoryWindow : Window, IWindow
         configManager.GetAndListenConfig<ProgramConfig>(config => this.SetTheme(config.Theme));
 
         this.Closed += OnHistoryWindowClosed;
-        _ListView.Loaded += async (_, _) => await _viewModel.Init();
 
         this.Activated += (_, args) =>
         {
@@ -80,6 +79,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (!_windowLoaded)
         {
             this.CenterOnScreen();
+            _ = _viewModel.Init();
         }
 
         this.Activate();
@@ -208,10 +208,15 @@ public sealed partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        if (image.ActualHeight > 200)
+        _InvisualableImage.Source = image.Source;
+        _InvisualableImage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var desiredSize = _InvisualableImage.DesiredSize;
+
+        if (desiredSize.Height > 200)
         {
-            image.MaxHeight = 200;
             image.Stretch = Stretch.Uniform;
         }
+        image.Visibility = Visibility.Visible;
+        _InvisualableImage.Source = null;
     }
 }

@@ -6,6 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+        xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:m="using:SyncClipboard.Core.Models"
         x:Name="_HistoryWindow"
         Title="HistoryWindow"
@@ -25,7 +26,11 @@
             </DataTemplate>
             <DataTemplate x:Key="imageTemplate" x:DataType="m:HistoryRecord">
                 <StackPanel Orientation="Vertical" Spacing="5">
-                    <Image HorizontalAlignment="Left" Stretch="None" ImageOpened="Image_ImageOpened">
+                    <Image MaxHeight="200"
+                           HorizontalAlignment="Left"
+                           Stretch="None"
+                           ImageOpened="Image_ImageOpened"
+                           Visibility="Collapsed">
                         <Image.Source>
                             <BitmapImage UriSource="{x:Bind FilePath[0]}" />
                         </Image.Source>
@@ -43,7 +48,15 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <local:AppTitleBar x:Name="_AppTitleBar" Height="36" VerticalAlignment="Top" />
+        <Border x:Name="_DraggableArea" Grid.Row="0" Height="32">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Bind i18n:Strings.ClipboardHistory}" />
+        </Border>
+        <Grid Grid.Row="1">
+            <Image x:Name="_InvisualableImage"
+                   Stretch="None"
+                   IsHitTestVisible="False"
+                   Opacity="0" />
+        </Grid>
         <ListView x:Name="_ListView"
                   Grid.Row="1"
                   IsTabStop="False"

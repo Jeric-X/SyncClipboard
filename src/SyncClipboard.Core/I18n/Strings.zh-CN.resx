@@ -687,4 +687,7 @@
   <data name="MaxItemCount" xml:space="preserve">
     <value>最大记录条数</value>
   </data>
+  <data name="HistoryPanel" xml:space="preserve">
+    <value>历史记录面板</value>
+  </data>
 </root>
