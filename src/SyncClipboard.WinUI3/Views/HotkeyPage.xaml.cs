@@ -39,7 +39,7 @@ namespace SyncClipboard.WinUI3.Views
 
         private void SetToDefaultButtonClick(object sender, RoutedEventArgs _)
         {
-            _viewModel.SetToDefaultCommand.Execute((Guid)((Button)sender).DataContext);
+            _viewModel.SetToDefaultCommand.Execute((string)((Button)sender).DataContext);
         }
     }
 }
