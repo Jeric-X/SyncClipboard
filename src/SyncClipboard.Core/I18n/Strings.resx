@@ -690,4 +690,7 @@
   <data name="HistoryPanel" xml:space="preserve">
     <value>History Panel</value>
   </data>
+  <data name="UnableToCopyByMissingFile" xml:space="preserve">
+    <value>Unable to copy because of missing files</value>
+  </data>
 </root>

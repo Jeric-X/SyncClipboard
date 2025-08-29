@@ -1645,6 +1645,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Unable to copy because of missing files 的本地化字符串。
+        /// </summary>
+        public static string UnableToCopyByMissingFile {
+            get {
+                return ResourceManager.GetString("UnableToCopyByMissingFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 New version {0} found, please update from {1} 的本地化字符串。
         /// </summary>
         public static string UpdateFrom3rdSrc {

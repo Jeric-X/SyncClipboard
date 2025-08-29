@@ -18,4 +18,13 @@ public static class Extentions
     {
         return notificationManager.Show(title, message, buttons);
     }
+
+    public static void SharedQuickMessage(this INotificationManager notificationManager, string title, string message, IEnumerable<ActionButton>? buttons = null)
+    {
+        notificationManager.Shared.Remove();
+        notificationManager.Shared.Title = title;
+        notificationManager.Shared.Message = message;
+        notificationManager.Shared.Buttons = buttons?.ToList() ?? [];
+        notificationManager.Shared.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
+    }
 }
