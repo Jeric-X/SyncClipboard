@@ -4,8 +4,10 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using NativeNotification.Interface;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
@@ -13,7 +15,6 @@ using System;
 using System.Drawing.Text;
 using System.Linq;
 using Windows.Graphics;
-using Windows.UI;
 using WinUIEx;
 using Application = Microsoft.UI.Xaml.Application;
 
@@ -45,10 +46,13 @@ namespace SyncClipboard.WinUI3.Views
             Closed += SettingWindow_Closed;
 
             this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
-            ChangeTitleBarButtonForegroundColor((FrameworkElement)Content, null);
-            ((FrameworkElement)Content).ActualThemeChanged += ChangeTitleBarButtonForegroundColor;
+            this.SetTitleBarButtonForegroundColor();
 
             _MenuList.SelectedIndex = 0;
+
+            App.Current.Services.GetRequiredService<ConfigManager>().GetAndListenConfig<ProgramConfig>(config =>
+                this.SetTheme(config.Theme)
+            );
         }
 
         private void OnWindowLoaded()
@@ -192,13 +196,13 @@ namespace SyncClipboard.WinUI3.Views
             {
                 SplitPane.IsPaneOpen = false;
                 SplitPane.DisplayMode = SplitViewDisplayMode.Overlay;
-                _AppTitleBar.HideNavigationButton();
+                _AppTitleBar.ShowNavigationButton();
             }
             else
             {
                 SplitPane.DisplayMode = SplitViewDisplayMode.Inline;
                 SplitPane.IsPaneOpen = true;
-                _AppTitleBar.ShowNavigationButton();
+                _AppTitleBar.HideNavigationButton();
                 SplitPane.PaneBackground = (Brush)Application.Current.Resources["LayerOnMicaBaseAltFillColorTransparentBrush"];
             }
         }
@@ -256,23 +260,6 @@ namespace SyncClipboard.WinUI3.Views
         public void ExitApp()
         {
             App.Current.ExitApp();
-        }
-
-        public void ChangeTheme(string theme)
-        {
-            ((FrameworkElement)Content).RequestedTheme = theme switch
-            {
-                "Light" => ElementTheme.Light,
-                "Dark" => ElementTheme.Dark,
-                _ => ElementTheme.Default,
-            };
-        }
-
-        private void ChangeTitleBarButtonForegroundColor(FrameworkElement sender, object? _)
-        {
-            var actualTheme = sender.ActualTheme.ToString();
-            var themeResource = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[actualTheme];
-            AppWindow.TitleBar.ButtonForegroundColor = (Color)themeResource["TitleBarButtonForegroundColor"];
         }
     }
 }

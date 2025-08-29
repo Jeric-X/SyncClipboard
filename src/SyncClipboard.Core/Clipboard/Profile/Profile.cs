@@ -25,6 +25,7 @@ public abstract class Profile
     public abstract string ToolTip();
     public abstract string ShowcaseText();
     public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
+    public abstract HistoryRecord CreateHistoryRecord();
 
     protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }
     protected abstract bool Same(Profile rhs);

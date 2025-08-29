@@ -1,0 +1,84 @@
+<Window x:Class="SyncClipboard.Desktop.Views.HistoryWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:m="using:SyncClipboard.Core.Models"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        xmlns:views="clr-namespace:SyncClipboard.Desktop.Views"
+        xmlns:vm="using:SyncClipboard.Core.ViewModels"
+        xmlns:local="using:SyncClipboard.Desktop.Views"
+        xmlns:i18n="using:SyncClipboard.Core.I18n"
+        xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+        x:Name="_HistoryWindow"
+        Title="{x:Static i18n:Strings.ClipboardHistory}"
+        Width="850"
+        Height="530"
+        d:DesignHeight="450"
+        d:DesignWidth="800"
+        x:DataType="vm:HistoryViewModel"
+        Icon="/Assets/icon.ico"
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d">
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+    </Window.Styles>
+    <Window.DataTemplates>
+        <local:ClipboardViewerTemplateSelector>
+            <DataTemplate x:Key="Normal" DataType="m:HistoryRecord">
+                <TextBlock Text="{Binding Text, Converter={x:Static vc:FuncConverter.LimitLines}}" />
+            </DataTemplate>
+            <DataTemplate x:Key="Image" DataType="m:HistoryRecord">
+                <StackPanel Spacing="4" Orientation="Vertical">
+                    <Image MaxHeight="202"
+                           HorizontalAlignment="Left"
+                           Stretch="None"
+                           Source="{Binding FilePath[0], Converter={x:Static vc:FuncConverter.ToBitImage}}"
+                           Loaded="Image_Loaded" />
+                    <TextBlock HorizontalAlignment="Left" Text="{Binding Text, Converter={x:Static vc:FuncConverter.LimitLines}}" />
+                </StackPanel>
+            </DataTemplate>
+        </local:ClipboardViewerTemplateSelector>
+    </Window.DataTemplates>
+    <ListBox x:Name="_ListBox"
+             ItemsSource="{Binding HistoryItems}"
+             SelectionMode="Single"
+             KeyDown="ListBox_KeyDown"
+             DoubleTapped="ListBox_DoubleTapped">
+        <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel />
+            </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="m:HistoryRecord">
+                <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
+                    <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
+                        <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Border>
+                    <ContentControl Grid.Column="1"
+                                    Padding="8,8,0,8"
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    Content="{Binding .}" />
+                    <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
+                        <Button Click="CopyButtonClicked">
+                            <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                        <Button Click="PasteButtonClicked">
+                            <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                        <Button Command="{Binding #_HistoryWindow.ViewModel.DeleteItemCommand}" CommandParameter="{Binding .}">
+                            <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
+</Window>

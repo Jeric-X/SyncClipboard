@@ -11,7 +11,7 @@ namespace SyncClipboard.Core.Commons
     {
         public event Action? ConfigChanged;
 
-        protected string Path { get; set; } = null!;
+        public string Path { get; protected set; } = null!;
         protected INotificationManager? NotificationManager { get; set; } = notification;
 
         private readonly Dictionary<string, Type> _registedTypeList = [];

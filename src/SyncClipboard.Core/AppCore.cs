@@ -11,9 +11,12 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
+using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
+using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
@@ -94,10 +97,10 @@ namespace SyncClipboard.Core
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             var mainWindow = Services.GetRequiredService<IMainWindow>();
+            var historyWindow = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
 
-            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
-            contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
-            contextMenu.AddMenuItemGroup(configManager.Menu);
+            AddSystemContextMenu(contextMenu, mainWindow, historyWindow);
+            RegisterForSystemHotkey(mainWindow);
 
             ProxyManager.Init(configManager);
             SetUpRemoteWorkFolder();
@@ -105,7 +108,6 @@ namespace SyncClipboard.Core
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
 
-            RegisterForSystemHotkey(mainWindow);
             InitTrayIcon();
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
@@ -153,11 +155,30 @@ namespace SyncClipboard.Core
             }
         }
 
+        private void AddSystemContextMenu(IContextMenu contextMenu, IMainWindow mainWindow, IWindow historyWindow)
+        {
+            contextMenu.AddMenuItem(new MenuItem(Strings.Settings, mainWindow.Show), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
+            contextMenu.AddMenuItem(new MenuItem(Strings.HistoryPanel, historyWindow.Focus), "Top Group");
+
+            MenuItem[] menu =
+            [
+                new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
+                new MenuItem(I18n.Strings.ReloadConfigFile, ConfigManager.Load),
+#if !MACOS
+                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
+#endif
+                new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
+            ];
+            contextMenu.AddMenuItemGroup(menu);
+        }
 
         private void RegisterForSystemHotkey(IMainWindow mainWindow)
         {
             var hotkeyManager = Services.GetService<HotkeyManager>();
             if (hotkeyManager is null) return;
+
+            var HistoryWindow = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
 
             UniqueCommandCollection CommandCollection = new(Strings.System, PageDefinition.SystemSetting.FontIcon!)
             {
@@ -171,6 +192,11 @@ namespace SyncClipboard.Core
                         Strings.CompletelyExit,
                         "2F30872E-B412-F580-7C20-F0D063A85BE0",
                         mainWindow.ExitApp
+                    ),
+                    new UniqueCommand(
+                        Strings.OpenHistoryPanel,
+                        "OpenHistoryPanel",
+                        HistoryWindow.Focus
                     )
                 }
             };
@@ -190,7 +216,6 @@ namespace SyncClipboard.Core
             var config = configManager.GetConfig<ProgramConfig>();
 
             mainWindow.SetFont(config.Font);
-            mainWindow.ChangeTheme(config.Theme);
             if (config.HideWindowOnStartup is false)
             {
                 mainWindow.Show();
@@ -220,7 +245,9 @@ namespace SyncClipboard.Core
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();
+            services.AddTransient<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
+            services.AddSingleton<HistoryManager>();
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
@@ -230,7 +257,7 @@ namespace SyncClipboard.Core
             services.AddQuartz();
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
-            services.AddTransient<INotificationManager>(sp => ManagerFactory.GetNotificationManager(
+            services.AddSingleton<INotificationManager>(sp => ManagerFactory.GetNotificationManager(
                 new NativeNotificationOption
                 {
                     AppName = Env.SoftName,
@@ -251,6 +278,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<HotkeyViewModel>();
+            services.AddTransient<HistoryViewModel>();
+            services.AddTransient<HistorySettingViewModel>();
         }
 
         public static void ConfigurateUserService(IServiceCollection services)
@@ -262,6 +291,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, UploadService>(sp => sp.GetRequiredService<UploadService>());
             services.AddSingleton<DownloadService>();
             services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
+            services.AddSingleton<IService, HistoryService>();
         }
 
         private async void SetUpRemoteWorkFolder()

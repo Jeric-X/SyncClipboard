@@ -232,6 +232,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 History 的本地化字符串。
+        /// </summary>
+        public static string ClipboardHistory {
+            get {
+                return ResourceManager.GetString("ClipboardHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Clipboard image updated 的本地化字符串。
         /// </summary>
         public static string ClipboardImageUpdated {
@@ -264,6 +273,15 @@ namespace SyncClipboard.Core.I18n {
         public static string ClipboardUpdated {
             get {
                 return ResourceManager.GetString("ClipboardUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Close history window when lost focus 的本地化字符串。
+        /// </summary>
+        public static string CloseHistoryWindowWhenLostFocus {
+            get {
+                return ResourceManager.GetString("CloseHistoryWindowWhenLostFocus", resourceCulture);
             }
         }
         
@@ -390,6 +408,15 @@ namespace SyncClipboard.Core.I18n {
         public static string DeleteServerTemporaryFileAutoly {
             get {
                 return ResourceManager.GetString("DeleteServerTemporaryFileAutoly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Dependencies 的本地化字符串。
+        /// </summary>
+        public static string Dependencies {
+            get {
+                return ResourceManager.GetString("Dependencies", resourceCulture);
             }
         }
         
@@ -790,6 +817,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 History Panel 的本地化字符串。
+        /// </summary>
+        public static string HistoryPanel {
+            get {
+                return ResourceManager.GetString("HistoryPanel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Home 的本地化字符串。
         /// </summary>
         public static string HomePage {
@@ -943,6 +979,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Maximum number of records 的本地化字符串。
+        /// </summary>
+        public static string MaxItemCount {
+            get {
+                return ResourceManager.GetString("MaxItemCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Mixed Client Mode 的本地化字符串。
         /// </summary>
         public static string MixedClientMode {
@@ -1060,6 +1105,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Open History Panel 的本地化字符串。
+        /// </summary>
+        public static string OpenHistoryPanel {
+            get {
+                return ResourceManager.GetString("OpenHistoryPanel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Open in browser 的本地化字符串。
         /// </summary>
         public static string OpenInBrowser {
@@ -1083,15 +1137,6 @@ namespace SyncClipboard.Core.I18n {
         public static string OpenMainUI {
             get {
                 return ResourceManager.GetString("OpenMainUI", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Dependencies 的本地化字符串。
-        /// </summary>
-        public static string OpenSourceDependencies {
-            get {
-                return ResourceManager.GetString("OpenSourceDependencies", resourceCulture);
             }
         }
         
@@ -1605,6 +1650,15 @@ namespace SyncClipboard.Core.I18n {
         public static string TrustInsecureCertificate {
             get {
                 return ResourceManager.GetString("TrustInsecureCertificate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Unable to copy because of missing files 的本地化字符串。
+        /// </summary>
+        public static string UnableToCopyByMissingFile {
+            get {
+                return ResourceManager.GetString("UnableToCopyByMissingFile", resourceCulture);
             }
         }
         

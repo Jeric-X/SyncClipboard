@@ -75,7 +75,7 @@
                              Value="{Binding UpdateStatus.ProgressValue, Mode=OneWay}" />
             </ui:InfoBar.Content>
         </ui:InfoBar>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.OpenSourceDependencies}" IsExpanded="True" ItemsSource="{Binding Dependencies}">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.Dependencies}" IsExpanded="True" ItemsSource="{Binding Dependencies}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>

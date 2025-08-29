@@ -5,6 +5,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -93,4 +94,17 @@ public class TextProfile : Profile
     }
 
     public override bool IsAvailableAfterFilter() => Config.GetConfig<SyncConfig>().EnableUploadText;
+
+    public override HistoryRecord CreateHistoryRecord()
+    {
+        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(Text);
+        byte[] hashBytes = MD5.HashData(inputBytes);
+        var hash = Convert.ToHexString(hashBytes);
+        return new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = hash,
+            Text = Text,
+        };
+    }
 }

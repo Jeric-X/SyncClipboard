@@ -8,6 +8,7 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
 
     public static readonly PageDefinition SyncSetting = new("SyncSetting", I18n.Strings.Syncing, "\uEBD3");
     public static readonly PageDefinition CliboardAssistant = new("CliboardAssistant", I18n.Strings.Assistant, "\uF406");
+    public static readonly PageDefinition HistorySetting = new("HistorySetting", I18n.Strings.ClipboardHistory, "\uE1D3");
     public static readonly PageDefinition ServiceStatus = new("ServiceStatus", I18n.Strings.Status, "\uE9D2");
     public static readonly PageDefinition SystemSetting = new("SystemSetting", I18n.Strings.SystemSettings, "\uE115");
     public static readonly PageDefinition About = new("About", I18n.Strings.About, "\uE946");

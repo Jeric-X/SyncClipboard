@@ -41,6 +41,11 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             await _semaphoreSlim.WaitAsync(ctk);
             try
             {
+                if (OperatingSystem.IsWindows())
+                {
+                    return new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
+                }
+
                 var formats = await Clipboard.GetFormatsAsync(ctk);
                 if (formats is null)
                 {
@@ -56,10 +61,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                     else if (OperatingSystem.IsMacOS())
                     {
                         return await HandleMacosClipboard(formats, ctk);
-                    }
-                    else
-                    {
-                        return new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
                     }
                 }
             }

@@ -25,14 +25,4 @@ public class ConfigManager : ConfigBase
     {
         Path = portableUserConfig ? Env.PortableUserConfigFile : Env.UserConfigFile;
     }
-
-    public MenuItem[] Menu =>
-    [
-        new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(Path)),
-        new MenuItem(I18n.Strings.ReloadConfigFile, Load),
-#if !MACOS
-        new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
-#endif
-        new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
-    ];
 }

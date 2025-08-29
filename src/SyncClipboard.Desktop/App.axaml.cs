@@ -7,7 +7,9 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Desktop.Views;
 using System;
 
@@ -18,6 +20,7 @@ public partial class App : Application
     public IServiceProvider Services { get; private set; }
     public new static App Current => (App)Application.Current!;
     public MainWindow MainWindow => (MainWindow)Services.GetRequiredService<IMainWindow>();
+    public ConfigManager ConfigManager => Services.GetRequiredService<ConfigManager>();
     public ILogger Logger;
     public IClipboard Clipboard => MainWindow.Clipboard!;
 
@@ -66,6 +69,10 @@ public partial class App : Application
         }
         base.OnFrameworkInitializationCompleted();
 
+        ConfigManager.GetAndListenConfig<ProgramConfig>(config =>
+        {
+            SetTheme(config.Theme);
+        });
         ThemeSetting();
         ActualThemeVariantChanged += (_, _) => ThemeSetting();
 
@@ -83,6 +90,16 @@ public partial class App : Application
         {
             Resources["AppLogoSource"] = Resources["AppLogoSourceDark"]!;
         }
+    }
+
+    public static void SetTheme(string theme)
+    {
+        App.Current.RequestedThemeVariant = theme switch
+        {
+            "Light" => ThemeVariant.Light,
+            "Dark" => ThemeVariant.Dark,
+            _ => ThemeVariant.Default,
+        };
     }
 
     public void ExitApp()

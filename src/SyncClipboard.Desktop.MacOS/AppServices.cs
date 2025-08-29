@@ -13,6 +13,7 @@ public class AppServices
         Desktop.AppServices.ConfigDesktopCommonService(services);
 
         services.AddSingleton<IMainWindow, MainWindow>();
+        services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         return services;
     }

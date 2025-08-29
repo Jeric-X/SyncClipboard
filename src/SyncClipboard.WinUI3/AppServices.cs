@@ -23,6 +23,7 @@ public class AppServices
         services.AddTransient<IAppConfig, AppConfig>();
 
         services.AddSingleton<IMainWindow, MainWindow>();
+        services.AddKeyedSingleton<IWindow, HistoryWindow>(nameof(HistoryWindow));
         services.AddSingleton<ClipboardListener>();
         services.AddSingleton<IClipboardChangingListener>(sp => sp.GetRequiredService<ClipboardListener>());
         services.AddSingleton<IClipboardMoniter>(sp => sp.GetRequiredService<ClipboardListener>());

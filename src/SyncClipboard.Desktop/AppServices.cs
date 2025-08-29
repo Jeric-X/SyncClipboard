@@ -52,6 +52,7 @@ public class AppServices
         if (!OperatingSystem.IsMacOS())
         {
             services.AddSingleton<IMainWindow, MainWindow>();
+            services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         }
     }
 

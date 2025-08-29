@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window x:Class="SyncClipboard.WinUI3.Views.HistoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:SyncClipboard.WinUI3.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+        xmlns:i18n="using:SyncClipboard.Core.I18n"
+        xmlns:m="using:SyncClipboard.Core.Models"
+        x:Name="_HistoryWindow"
+        Title="HistoryWindow"
+        mc:Ignorable="d">
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="Base" />
+    </Window.SystemBackdrop>
+    <Grid x:Name="_HistoryWindowGrid" KeyDown="Grid_KeyDown" KeyboardAcceleratorPlacementMode="Hidden">
+        <Grid.Resources>
+            <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
+                <Setter Property="Height" Value="28" />
+                <Setter Property="Width" Value="28" />
+                <Setter Property="Padding" Value="0,0,0,0" />
+            </Style>
+            <DataTemplate x:Key="normalTemplate" x:DataType="m:HistoryRecord">
+                <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+            </DataTemplate>
+            <DataTemplate x:Key="imageTemplate" x:DataType="m:HistoryRecord">
+                <StackPanel Orientation="Vertical" Spacing="5">
+                    <Image MaxHeight="200"
+                           HorizontalAlignment="Left"
+                           Stretch="None"
+                           ImageOpened="Image_ImageOpened"
+                           Visibility="Collapsed">
+                        <Image.Source>
+                            <BitmapImage UriSource="{x:Bind FilePath[0]}" />
+                        </Image.Source>
+                    </Image>
+                    <TextBlock HorizontalAlignment="Left" Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+                </StackPanel>
+            </DataTemplate>
+            <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />
+        </Grid.Resources>
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="Enter" Invoked="EnterKeyTriggered" />
+            <KeyboardAccelerator Key="Enter" Modifiers="Menu" Invoked="EnterKeyTriggered" />
+        </Grid.KeyboardAccelerators>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border x:Name="_DraggableArea" Grid.Row="0" Height="32">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Bind i18n:Strings.ClipboardHistory}" />
+        </Border>
+        <Grid Grid.Row="1">
+            <Image x:Name="_InvisualableImage"
+                   Stretch="None"
+                   IsHitTestVisible="False"
+                   Opacity="0" />
+        </Grid>
+        <ListView x:Name="_ListView"
+                  Grid.Row="1"
+                  IsTabStop="False"
+                  ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
+                  SelectionMode="Single">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="m:HistoryRecord">
+                    <ListViewItem IsTabStop="False" DoubleTapped="ListViewItem_DoubleTapped">
+                        <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
+                            <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
+                                <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
+                            </Border>
+                            <ContentControl Grid.Column="1"
+                                            Padding="8,8,0,8"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            Content="{x:Bind}"
+                                            ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
+                                <Button Click="CopyButtonClicked" IsTabStop="False">
+                                    <FontIcon Glyph="&#xE8C8;" FontSize="12" />
+                                </Button>
+                                <Button Click="PasteButtonClicked" IsTabStop="False">
+                                    <FontIcon Glyph="&#xE77F;" FontSize="12" />
+                                </Button>
+                                <Button Click="DeleteButtonClicked" IsTabStop="False">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="12" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </ListViewItem>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Window>

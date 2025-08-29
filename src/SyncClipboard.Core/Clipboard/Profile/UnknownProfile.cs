@@ -36,4 +36,9 @@ public class UnknownProfile : Profile
     {
         return "Do not support this type of clipboard";
     }
+
+    public override HistoryRecord CreateHistoryRecord()
+    {
+        throw new NotImplementedException();
+    }
 }

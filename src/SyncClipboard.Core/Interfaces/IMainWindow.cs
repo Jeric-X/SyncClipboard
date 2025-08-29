@@ -19,6 +19,5 @@ namespace SyncClipboard.Core.Interfaces
         public void NavigateToNextLevel(PageDefinition page, object? para);
         public void SetFont(string font);
         public void ExitApp();
-        public void ChangeTheme(string theme);
     }
 }

@@ -102,7 +102,7 @@
                                          IsVisible="{Binding EnableCustomConfigurationFile, Mode=OneWay}">
                     <ui:SettingsExpanderItem.Footer>
                         <Button Click="SetCustomConfigurationFilePath">
-                            <ui:FontIcon Glyph="&#xE838;" />
+                            <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}"/>
                         </Button>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
@@ -118,9 +118,7 @@
                                          IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
                     <ui:SettingsExpanderItem.Footer>
                         <Button Click="SetCertificatePemPath">
-                            <ui:FontIcon Glyph="&#xE838;"
-                                         FontSize="24"
-                                         FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
@@ -129,9 +127,7 @@
                                          IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
                     <ui:SettingsExpanderItem.Footer>
                         <Button Click="SetCertificatePemKeyPath">
-                            <ui:FontIcon Glyph="&#xE838;"
-                                         FontSize="24"
-                                         FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>

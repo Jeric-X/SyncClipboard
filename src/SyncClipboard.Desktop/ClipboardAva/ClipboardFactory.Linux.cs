@@ -138,15 +138,7 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("linux")]
-    private static readonly string[] ImageTypeList =
-    [
-        Format.ImagePng,
-        Format.ImageJpeg,
-        Format.ImageBmp,
-    ];
-
-    [SupportedOSPlatform("linux")]
-    private async Task HandleLinuxImage(ClipboardMetaInfomation meta, string[] formats, CancellationToken token)
+    private async Task HandleAllImageTypeData(ClipboardMetaInfomation meta, string[] formats, CancellationToken token)
     {
         foreach (var type in formats)
         {
@@ -174,6 +166,12 @@ internal partial class ClipboardFactory
                 Logger.Write(ex.Message);
             }
         }
+    }
+
+    [SupportedOSPlatform("linux")]
+    private async Task HandleLinuxImage(ClipboardMetaInfomation meta, string[] formats, CancellationToken token)
+    {
+        await HandleAllImageTypeData(meta, formats, token);
 
         if (meta.OriginalType == ClipboardMetaInfomation.ImageType && meta.Image is null && meta.Files is null)
         {
