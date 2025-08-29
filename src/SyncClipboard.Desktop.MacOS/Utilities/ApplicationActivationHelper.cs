@@ -7,7 +7,6 @@ namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 public static class ApplicationActivationHelper
 {
-
     public static HashSet<Window> ActiveWindows { get; } = [];
 
     public static void AddWindow(this Window window)

@@ -56,7 +56,6 @@ public sealed partial class HistoryWindow : Window, IWindow
                 }
             }
         };
-
     }
 
     private void HistoryWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
