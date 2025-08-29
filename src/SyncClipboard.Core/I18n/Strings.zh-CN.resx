@@ -678,4 +678,13 @@
   <data name="RemoveAppImageFromUserAppLauncher" xml:space="preserve">
     <value>将SyncClipboard从用户应用程序列表移除</value>
   </data>
+  <data name="ClipboardHistory" xml:space="preserve">
+    <value>历史记录</value>
+  </data>
+  <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
+    <value>失去焦点时关闭历史记录窗口</value>
+  </data>
+  <data name="MaxItemCount" xml:space="preserve">
+    <value>最大记录条数</value>
+  </data>
 </root>

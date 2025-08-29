@@ -678,4 +678,13 @@
   <data name="RemoveAppImageFromUserAppLauncher" xml:space="preserve">
     <value>Remove SyncClipboard from application launcher</value>
   </data>
+  <data name="ClipboardHistory" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
+    <value>Close history window when lost focus</value>
+  </data>
+  <data name="MaxItemCount" xml:space="preserve">
+    <value>Maximum number of records</value>
+  </data>
 </root>

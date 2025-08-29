@@ -9,7 +9,7 @@ namespace SyncClipboard.Core.UserServices.ClipboardService;
 
 public class HistoryService(HistoryManager historyManager, ConfigManager configManager) : ClipboardHander
 {
-    public override string SERVICE_NAME => "History Service";
+    public override string SERVICE_NAME => I18n.Strings.ClipboardHistory;
 
     public override string LOG_TAG => "History";
     protected override bool SwitchOn
