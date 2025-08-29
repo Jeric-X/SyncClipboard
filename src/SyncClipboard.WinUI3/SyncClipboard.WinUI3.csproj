@@ -24,6 +24,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!--<PublishAot>false</PublishAot>
     <IsAotCompatible>false</IsAotCompatible>-->
+    <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <Target Name="DeleteServerAppsettings" AfterTargets="Build">

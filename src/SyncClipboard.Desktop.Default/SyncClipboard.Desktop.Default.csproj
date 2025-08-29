@@ -9,6 +9,7 @@
     <ApplicationIcon>..\SyncClipboard.Desktop\Assets\icon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm64;</RuntimeIdentifiers>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <Target Name="CopyFiles" AfterTargets="Build">
