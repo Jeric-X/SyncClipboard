@@ -225,6 +225,8 @@ public sealed partial class HistoryWindow : Window, IWindow
             return;
         }
 
+        _ListView.SelectedValue = record;
+
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         _ = DelayTriggerClickEvent(record, _cts.Token);
@@ -236,7 +238,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (_clickCount >= 2)
         {
             this.Close();
-            await _viewModel.CopyToClipboard(record, true, token);
+            await _viewModel.CopyToClipboard(record, false, token);
             _clickCount = 0;
             return;
         }
