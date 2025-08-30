@@ -64,8 +64,11 @@
                   SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="m:HistoryRecord">
-                    <ListViewItem IsTabStop="False" DoubleTapped="ListViewItem_DoubleTapped">
-                        <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
+                    <ListViewItem IsTabStop="False" >
+                        <Grid MinHeight="10"
+                              PointerPressed="Grid_PointerPressed"
+                              ColumnDefinitions="Auto, *, Auto"
+                              Background="Transparent">
                             <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>

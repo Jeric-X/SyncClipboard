@@ -46,8 +46,8 @@
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.0.240109" />
     <PackageVersion Include="CommunityToolkit.WinUI.Converters" Version="8.0.240109" />
     <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.0.131" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.5.240428000" />
-    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.3233" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
     <PackageVersion Include="WinUIEx" Version="2.3.4" />
     <PackageVersion Include="Vanara.PInvoke.DbgHelp" Version="4.0.1" />
     <PackageVersion Include="Vanara.PInvoke.Kernel32" Version="4.0.1" />

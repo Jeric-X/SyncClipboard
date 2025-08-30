@@ -107,10 +107,10 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         using IRandomAccessStream randomAccessStream = res.As<IRandomAccessStream>();
         using var stream = randomAccessStream.AsStreamForRead();
         using BinaryReader reader = new(stream);
-        byte[] bytes = reader.ReadBytes(Marshal.SizeOf(typeof(OBJECTDESCRIPTOR)));
+        byte[] bytes = reader.ReadBytes(Marshal.SizeOf<OBJECTDESCRIPTOR>());
 
         GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-        OBJECTDESCRIPTOR? descriptor = (OBJECTDESCRIPTOR?)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(OBJECTDESCRIPTOR));
+        OBJECTDESCRIPTOR? descriptor = Marshal.PtrToStructure<OBJECTDESCRIPTOR>(handle.AddrOfPinnedObject());
         handle.Free();
 
         if (descriptor.HasValue is false)

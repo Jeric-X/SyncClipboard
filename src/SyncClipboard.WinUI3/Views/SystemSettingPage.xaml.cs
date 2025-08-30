@@ -21,7 +21,7 @@ public sealed partial class SystemSettingPage : Page
         this.DataContext = _viewModel;
     }
 
-    private void ShowProxySettingDialog(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private void ShowProxySettingDialog(object _0, Microsoft.UI.Xaml.RoutedEventArgs _1)
     {
         var dialog = new ProxySettingDialog
         {

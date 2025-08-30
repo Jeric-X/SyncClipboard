@@ -15,7 +15,7 @@ public sealed partial class HotkeyInput : UserControl
     private readonly HashSet<VK> _pressedKeys = [];
     private readonly HashSet<VK> _pressingKeys = [];
     private SafeHHOOK? _keyboardHook;
-    // 不能直接把方法名作为delegate传入native调用，会被GC回收
+    // 涓嶈兘鐩存帴鎶婃柟娉曞悕浣滀负delegate浼犲叆native璋冪敤锛屼細琚獹C鍥炴敹
     private readonly HookProc _hookProc;
 
     public HotkeyInput()
@@ -45,7 +45,7 @@ public sealed partial class HotkeyInput : UserControl
 
     private IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        var hookPara = (KBDLLHOOKSTRUCT?)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
+        KBDLLHOOKSTRUCT? hookPara = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
         if (nCode < 0 || !hookPara.HasValue)
         {
             return User32.CallNextHookEx(HHOOK.NULL, nCode, wParam, lParam);

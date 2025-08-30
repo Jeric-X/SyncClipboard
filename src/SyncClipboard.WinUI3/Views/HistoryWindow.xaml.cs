@@ -9,6 +9,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Win32;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.System;
@@ -110,7 +111,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
-    private async void PasteButtonClicked(object sender, RoutedEventArgs e)
+    private async void PasteButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
         if (history is HistoryRecord record)
@@ -119,17 +120,8 @@ public sealed partial class HistoryWindow : Window, IWindow
             await _viewModel.CopyToClipboard(record, true, CancellationToken.None);
         }
     }
-    private void ListViewItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-    {
-        var history = ((ListViewItem?)sender)?.DataContext;
-        if (history is HistoryRecord record)
-        {
-            _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
-            this.Hide();
-        }
-    }
 
-    private void DeleteButtonClicked(object sender, RoutedEventArgs e)
+    private void DeleteButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
         if (history is HistoryRecord record)
@@ -138,17 +130,17 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
-    private void CopyButtonClicked(object sender, RoutedEventArgs e)
+    private void CopyButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
         if (history is HistoryRecord record)
         {
-            _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+            var _1 = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
             this.Hide();
         }
     }
 
-    private void Grid_KeyDown(object _sender, KeyRoutedEventArgs e)
+    private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Escape)
         {
@@ -200,7 +192,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
     }
 
-    private void Image_ImageOpened(object sender, RoutedEventArgs e)
+    private void Image_ImageOpened(object sender, RoutedEventArgs _)
     {
         if (sender is not Image image)
         {
@@ -218,4 +210,39 @@ public sealed partial class HistoryWindow : Window, IWindow
         image.Visibility = Visibility.Visible;
         _InvisualableImage.Source = null;
     }
+
+    #region Manually Handle Click and Double Click
+    private const int DoubleClickThreshold = 300;
+    private CancellationTokenSource? _cts;
+    private int _clickCount = 0;
+
+    private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        e.Handled = true;
+        var record = (HistoryRecord?)((Grid?)sender)?.DataContext;
+        if (record == null)
+        {
+            return;
+        }
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        _ = DelayTriggerClickEvent(record, _cts.Token);
+    }
+
+    private async Task DelayTriggerClickEvent(HistoryRecord record, CancellationToken token)
+    {
+        _clickCount++;
+        if (_clickCount >= 2)
+        {
+            this.Close();
+            await _viewModel.CopyToClipboard(record, true, token);
+            _clickCount = 0;
+            return;
+        }
+
+        await Task.Delay(DoubleClickThreshold, token);
+        _clickCount = 0;
+    }
+    #endregion
 }
