@@ -1,6 +1,6 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.UI.Media.Animation;
@@ -139,4 +139,13 @@ public partial class MainWindow : Window, IMainWindow
 
     [RelayCommand]
     protected virtual void MinimizeWindow() => this.Close();
+
+    private void Window_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            this.Close();
+            e.Handled = true;
+        }
+    }
 }

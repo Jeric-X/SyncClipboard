@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using NativeNotification.Interface;
@@ -260,6 +261,11 @@ namespace SyncClipboard.WinUI3.Views
         public void ExitApp()
         {
             App.Current.ExitApp();
+        }
+
+        private void EscPressed(KeyboardAccelerator _0, KeyboardAcceleratorInvokedEventArgs _1)
+        {
+            this.Close();
         }
     }
 }

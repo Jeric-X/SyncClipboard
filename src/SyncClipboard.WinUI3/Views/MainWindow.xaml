@@ -13,6 +13,9 @@
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
     <Grid x:Name="_Grid">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="Escape" Invoked="EscPressed"  />
+        </Grid.KeyboardAccelerators>
         <Grid.Resources>
             <ResourceDictionary>
                 <ResourceDictionary.ThemeDictionaries>

@@ -12,6 +12,7 @@
         d:DesignHeight="450"
         Icon="/Assets/icon.ico"
         WindowStartupLocation="CenterScreen"
+        KeyDown="Window_KeyDown"
         mc:Ignorable="d">
     <views:MainView x:Name="_MainView" />
     <NativeMenu.Menu>
