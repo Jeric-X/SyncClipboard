@@ -14,7 +14,7 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
     protected override void FocusOnScreen()
     {
         this.AddWindow();
-        this.FocusMenuBar();
+        // this.FocusMenuBar();
         base.FocusOnScreen();
     }
 }
