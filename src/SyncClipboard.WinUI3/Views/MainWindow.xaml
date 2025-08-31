@@ -12,9 +12,9 @@
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
-    <Grid x:Name="_Grid">
+    <Grid x:Name="_Grid" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator Key="Escape" Invoked="EscPressed"  />
+            <KeyboardAccelerator Key="Escape" Invoked="EscPressed" />
         </Grid.KeyboardAccelerators>
         <Grid.Resources>
             <ResourceDictionary>
