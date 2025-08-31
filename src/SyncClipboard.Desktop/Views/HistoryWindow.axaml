@@ -17,6 +17,8 @@
         d:DesignHeight="450"
         d:DesignWidth="800"
         x:DataType="vm:HistoryViewModel"
+        TransparencyLevelHint="AcrylicBlur"
+        Background="Transparent"
         Icon="/Assets/icon.ico"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d">
@@ -45,40 +47,67 @@
             </DataTemplate>
         </local:ClipboardViewerTemplateSelector>
     </Window.DataTemplates>
-    <ListBox x:Name="_ListBox"
-             ItemsSource="{Binding HistoryItems}"
-             SelectionMode="Single"
-             KeyDown="ListBox_KeyDown"
-             DoubleTapped="ListBox_DoubleTapped">
-        <ListBox.ItemsPanel>
-            <ItemsPanelTemplate>
-                <StackPanel />
-            </ItemsPanelTemplate>
-        </ListBox.ItemsPanel>
-        <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="m:HistoryRecord">
-                <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
-                    <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
-                        <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+    <Panel>
+        <ExperimentalAcrylicBorder IsHitTestVisible="False">
+            <ExperimentalAcrylicBorder.Material>
+                <ExperimentalAcrylicMaterial BackgroundSource="Digger"
+                                             TintColor="{DynamicResource WindowBackgroudColor}"
+                                             TintOpacity="1"
+                                             FallbackColor="{DynamicResource WindowBackgroudColor}"
+                                             MaterialOpacity="0.65" />
+            </ExperimentalAcrylicBorder.Material>
+        </ExperimentalAcrylicBorder>
+        <Grid RowDefinitions="Auto, *">
+            <OnPlatform>
+                <OnPlatform.Default>
+                    <Border Height="36" IsHitTestVisible="False">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static i18n:Strings.ClipboardHistory}" />
                     </Border>
-                    <ContentControl Grid.Column="1"
-                                    Padding="8,8,0,8"
-                                    VerticalAlignment="Center"
-                                    FontSize="12"
-                                    Content="{Binding .}" />
-                    <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
-                        <Button Click="CopyButtonClicked">
-                            <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </Button>
-                        <Button Click="PasteButtonClicked">
-                            <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </Button>
-                        <Button Command="{Binding #_HistoryWindow.ViewModel.DeleteItemCommand}" CommandParameter="{Binding .}">
-                            <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </DataTemplate>
-        </ListBox.ItemTemplate>
-    </ListBox>
+                </OnPlatform.Default>
+                <OnPlatform.macOS>
+                    <Border Height="26" IsHitTestVisible="False" />
+                </OnPlatform.macOS>
+                <OnPlatform.Linux>
+                    <Border Height="0" />
+                </OnPlatform.Linux>
+            </OnPlatform>
+            <ListBox x:Name="_ListBox"
+                     Grid.Row="1"
+                     ItemsSource="{Binding HistoryItems}"
+                     SelectionMode="Single"
+                     KeyDown="ListBox_KeyDown"
+                     DoubleTapped="ListBox_DoubleTapped">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="m:HistoryRecord">
+                        <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
+                            <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
+                                <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            </Border>
+                            <ContentControl Grid.Column="1"
+                                            Padding="8,8,0,8"
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            Content="{Binding .}" />
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
+                                <Button Click="CopyButtonClicked">
+                                    <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                                <Button Click="PasteButtonClicked">
+                                    <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                                <Button Command="{Binding #_HistoryWindow.ViewModel.DeleteItemCommand}" CommandParameter="{Binding .}">
+                                    <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Panel>
 </Window>

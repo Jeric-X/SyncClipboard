@@ -15,9 +15,11 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
+                    <Color x:Key="WindowBackgroudColor">White</Color>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
+                    <Color x:Key="WindowBackgroudColor">Black</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简,$Default</FontFamily>

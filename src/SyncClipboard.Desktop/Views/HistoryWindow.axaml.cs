@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
+using System;
 using System.Threading;
 
 namespace SyncClipboard.Desktop.Views;
@@ -21,6 +23,16 @@ public partial class HistoryWindow : Window, IWindow
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
         var configManager = App.Current.Services.GetRequiredService<ConfigManager>();
         DataContext = ViewModel;
+
+        if (OperatingSystem.IsLinux() is false)
+        {
+            this.ExtendClientAreaToDecorationsHint = true;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            this.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
+        }
 
         InitializeComponent();
 

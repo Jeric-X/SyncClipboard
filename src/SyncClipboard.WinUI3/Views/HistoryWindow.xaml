@@ -12,7 +12,7 @@
         Title="HistoryWindow"
         mc:Ignorable="d">
     <Window.SystemBackdrop>
-        <MicaBackdrop Kind="Base" />
+        <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
     <Grid x:Name="_HistoryWindowGrid" KeyDown="Grid_KeyDown" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.Resources>
@@ -64,7 +64,7 @@
                   SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="m:HistoryRecord">
-                    <ListViewItem IsTabStop="False" >
+                    <ListViewItem IsTabStop="False">
                         <Grid MinHeight="10"
                               PointerPressed="Grid_PointerPressed"
                               ColumnDefinitions="Auto, *, Auto"
