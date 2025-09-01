@@ -5,6 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.4" />
     <PackageVersion Include="NativeNotification" Version="1.0.2" />
+    <PackageVersion Include="NativeNotification.Interface" Version="1.0.2" />
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.0" />

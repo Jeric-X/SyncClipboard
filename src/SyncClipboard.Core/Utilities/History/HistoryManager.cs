@@ -25,20 +25,26 @@ public class HistoryManager
         _historyConfig = config;
 
         using var _dbContext = await GetDbContext();
-        if (SetRecordsMaxCount(_dbContext.HistoryRecords, config.MaxItemCount) != 0)
+        if (await SetRecordsMaxCount(_dbContext, config.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
         }
     }
 
-    private uint SetRecordsMaxCount(DbSet<HistoryRecord> records, uint maxCount)
+    private async Task<uint> SetRecordsMaxCount(HistoryDbContext _dbContext, uint maxCount, CancellationToken token = default)
     {
+        var records = _dbContext.HistoryRecords;
         uint count = (uint)records.Count();
 
         if (count > maxCount)
         {
-            var toDeletes = records.OrderBy(r => r.Timestamp).Take((int)(count - maxCount)).ToArray();
+            var toDeletes = records
+                .Where(r => !r.Stared && !r.Pinned)
+                .OrderBy(r => r.Timestamp)
+                .Take((int)(count - maxCount))
+                .ToArray();
             records.RemoveRange(toDeletes);
+            await _dbContext.SaveChangesAsync(token);
             toDeletes.ForEach(r => HistoryRemoved?.Invoke(r));
             return count - maxCount;
         }
@@ -52,13 +58,14 @@ public class HistoryManager
         {
             entity.Timestamp = record.Timestamp;
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity);
+            HistoryRemoved?.Invoke(entity);
+            HistoryAdded?.Invoke(entity);
             return;
         }
 
-        SetRecordsMaxCount(_dbContext.HistoryRecords, _historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0);
+        await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
 
-        if (_historyConfig.MaxItemCount <= 0)
+        if (_historyConfig.MaxItemCount <= _dbContext.HistoryRecords.Count())
         {
             return;
         }
@@ -74,6 +81,23 @@ public class HistoryManager
         return _dbContext.HistoryRecords
             .OrderByDescending(r => r.Timestamp)
             .ToList();
+    }
+
+    public async Task UpdateHistory(HistoryRecord record, CancellationToken token = default)
+    {
+        using var _dbContext = await GetDbContext();
+        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        if (entity != null)
+        {
+            entity.Stared = record.Stared;
+            entity.Pinned = record.Pinned;
+            entity.Timestamp = record.Timestamp;
+            entity.Text = record.Text;
+            entity.FilePath = record.FilePath;
+            await _dbContext.SaveChangesAsync(token);
+            HistoryUpdated?.Invoke(entity);
+            await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount, token);
+        }
     }
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)

@@ -6,11 +6,11 @@ using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 using System;
 using System.Threading;
+using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -113,7 +113,7 @@ public partial class HistoryWindow : Window, IWindow
 
     //private void ItemPressed(object? sender, PointerPressedEventArgs e)
     //{
-    //    var record = (HistoryRecord?)((Grid?)sender)?.DataContext;
+    //    var record = (HistoryRecordVM?)((Grid?)sender)?.DataContext;
     //    if (record == null)
     //    {
     //        return;
@@ -124,7 +124,7 @@ public partial class HistoryWindow : Window, IWindow
     //    _ = DelayTriggerClickEvent(record, e, _cts.Token);
     //}
 
-    //private async Task DelayTriggerClickEvent(HistoryRecord record, PointerPressedEventArgs e, CancellationToken token)
+    //private async Task DelayTriggerClickEvent(HistoryRecordVM record, PointerPressedEventArgs e, CancellationToken token)
     //{
     //    if (e.ClickCount >= 2)
     //    {
@@ -145,7 +145,7 @@ public partial class HistoryWindow : Window, IWindow
     private async void ListBox_KeyDown(object? sender, KeyEventArgs e)
     {
         var history = ((ListBox?)sender)?.SelectedValue;
-        if (history is not HistoryRecord record)
+        if (history is not HistoryRecordVM record)
         {
             return;
         }
@@ -162,7 +162,7 @@ public partial class HistoryWindow : Window, IWindow
     private void PasteButtonClicked(object? sender, RoutedEventArgs e)
     {
         var history = ((Button?)sender)?.DataContext;
-        if (history is not HistoryRecord record)
+        if (history is not HistoryRecordVM record)
         {
             return;
         }
@@ -175,7 +175,7 @@ public partial class HistoryWindow : Window, IWindow
     private void CopyButtonClicked(object? sender, RoutedEventArgs e)
     {
         var history = ((Button?)sender)?.DataContext;
-        if (history is not HistoryRecord record)
+        if (history is not HistoryRecordVM record)
         {
             return;
         }
@@ -188,7 +188,7 @@ public partial class HistoryWindow : Window, IWindow
     private void ListBox_DoubleTapped(object? sender, TappedEventArgs e)
     {
         var history = ((ListBox?)sender)?.SelectedValue;
-        if (history is not HistoryRecord record)
+        if (history is not HistoryRecordVM record)
         {
             return;
         }

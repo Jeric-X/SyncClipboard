@@ -19,7 +19,7 @@
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.MaxItemCount}">
-                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.MaxItemCount, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.MaxItemCount, Mode=TwoWay}" />
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>

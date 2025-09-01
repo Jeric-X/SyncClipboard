@@ -9,6 +9,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.ViewModels.Sub;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -21,7 +22,7 @@ public partial class HistoryViewModel(
     [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig) : ObservableObject
 {
     [ObservableProperty]
-    public ObservableCollection<HistoryRecord> historyItems = [];
+    public ObservableCollection<HistoryRecordVM> historyItems = [];
 
     public int Width
     {
@@ -36,28 +37,48 @@ public partial class HistoryViewModel(
     }
 
     [RelayCommand]
-    public Task DeleteItem(HistoryRecord record)
+    public Task DeleteItem(HistoryRecordVM record)
     {
-        return historyManager.DeleteHistory(record);
+        return historyManager.DeleteHistory(record.ToHistoryRecord());
+    }
+
+    [RelayCommand]
+    public Task ChangeStarStatus(HistoryRecordVM record)
+    {
+        record.Stared = !record.Stared;
+        return historyManager.UpdateHistory(record.ToHistoryRecord());
+    }
+
+    [RelayCommand]
+    public Task ChangePinStatus(HistoryRecordVM record)
+    {
+        record.Pinned = !record.Pinned;
+        return historyManager.UpdateHistory(record.ToHistoryRecord());
     }
 
     public async Task Init()
     {
-        HistoryItems = new(await HistoryManager.GetHistory());
-        historyManager.HistoryAdded += record => HistoryItems.Insert(0, record);
-        historyManager.HistoryRemoved += record => HistoryItems.Remove(record);
+        var records = await HistoryManager.GetHistory();
+        foreach (var record in records)
+        {
+            HistoryItems.Add(new HistoryRecordVM(record));
+        }
+
+        historyManager.HistoryAdded += record => HistoryItems.Insert(0, new HistoryRecordVM(record));
+        historyManager.HistoryRemoved += record => HistoryItems.Remove(new HistoryRecordVM(record));
         historyManager.HistoryUpdated += record =>
         {
-            if (HistoryItems.FirstOrDefault() == record)
+            var newRecord = new HistoryRecordVM(record);
+            var oldRecord = HistoryItems.FirstOrDefault(r => r == newRecord);
+            if (oldRecord == null)
             {
                 return;
             }
-            HistoryItems.Remove(record);
-            HistoryItems.Insert(0, record);
+            oldRecord.Update(newRecord);
         };
     }
 
-    public async Task CopyToClipboard(HistoryRecord record, bool paste, CancellationToken token)
+    public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
         foreach (var path in record.FilePath)
         {
@@ -68,7 +89,7 @@ public partial class HistoryViewModel(
             }
         }
 
-        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record, token);
+        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
         await profile.SetLocalClipboard(false, token);
         if (paste)
         {

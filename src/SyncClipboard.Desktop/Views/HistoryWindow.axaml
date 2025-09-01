@@ -7,6 +7,7 @@
         xmlns:ui="using:FluentAvalonia.UI.Controls"
         xmlns:views="clr-namespace:SyncClipboard.Desktop.Views"
         xmlns:vm="using:SyncClipboard.Core.ViewModels"
+        xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
         xmlns:local="using:SyncClipboard.Desktop.Views"
         xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
@@ -32,10 +33,10 @@
     </Window.Styles>
     <Window.DataTemplates>
         <local:ClipboardViewerTemplateSelector>
-            <DataTemplate x:Key="Normal" DataType="m:HistoryRecord">
+            <DataTemplate x:Key="Normal" DataType="vms:HistoryRecordVM">
                 <TextBlock Text="{Binding Text, Converter={x:Static vc:FuncConverter.LimitLines}}" />
             </DataTemplate>
-            <DataTemplate x:Key="Image" DataType="m:HistoryRecord">
+            <DataTemplate x:Key="Image" DataType="vms:HistoryRecordVM">
                 <StackPanel Spacing="4" Orientation="Vertical">
                     <Image MaxHeight="202"
                            HorizontalAlignment="Left"
@@ -83,7 +84,7 @@
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>
                 <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="m:HistoryRecord">
+                    <DataTemplate x:DataType="vms:HistoryRecordVM">
                         <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
                             <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
@@ -99,6 +100,9 @@
                                 </Button>
                                 <Button Click="PasteButtonClicked">
                                     <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                                <Button Command="{Binding #_HistoryWindow.ViewModel.ChangeStarStatusCommand}" CommandParameter="{Binding .}">
+                                    <ui:FontIcon Glyph="{Binding Stared, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
                                 <Button Command="{Binding #_HistoryWindow.ViewModel.DeleteItemCommand}" CommandParameter="{Binding .}">
                                     <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />

@@ -2,7 +2,7 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Metadata;
 using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.Collections.Generic;
 
@@ -15,7 +15,7 @@ internal class ClipboardViewerTemplateSelector : IDataTemplate
 
     public Control Build(object? param)
     {
-        if (param is not HistoryRecord record)
+        if (param is not HistoryRecordVM record)
         {
             throw new ArgumentNullException(nameof(param));
         }
@@ -29,7 +29,7 @@ internal class ClipboardViewerTemplateSelector : IDataTemplate
 
     public bool Match(object? data)
     {
-        if (data is HistoryRecord)
+        if (data is HistoryRecordVM)
         {
             return true;
         }

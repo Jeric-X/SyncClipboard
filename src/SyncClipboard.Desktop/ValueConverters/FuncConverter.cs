@@ -60,4 +60,24 @@ public class FuncConverter
             catch { }
             return null;
         });
+
+    public static FuncValueConverter<bool, string> ToStarIcon { get; } =
+        new FuncValueConverter<bool, string>(input =>
+        {
+            if (input)
+            {
+                return "\uE1CF";
+            }
+            return "\uE1CE";
+        });
+
+    public static FuncValueConverter<bool, string> ToPinIcon { get; } =
+        new FuncValueConverter<bool, string>(input =>
+        {
+            if (input)
+            {
+                return "\uE77F";
+            }
+            return "\uE8C8";
+        });
 }
