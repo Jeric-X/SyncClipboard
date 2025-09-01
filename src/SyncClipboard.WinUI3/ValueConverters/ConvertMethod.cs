@@ -53,4 +53,14 @@ internal static class ConvertMethod
             _ => "\uF87E",
         };
     }
+
+    public static string ToStarIcon(bool input)
+    {
+        return input ? "\uE735" : "\uE734";
+    }
+
+    public static string ToPinIcon(bool input)
+    {
+        return input ? "\uE842" : "\uE178";
+    }
 }

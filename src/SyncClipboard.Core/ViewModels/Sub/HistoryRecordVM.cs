@@ -12,14 +12,14 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private string text = record.Text;
     public ProfileType Type { get; set; } = record.Type;
     [ObservableProperty]
-    public string[] filePath = record.FilePath;
+    private string[] filePath = record.FilePath;
     public string Hash { get; set; } = record.Hash;
     [ObservableProperty]
-    public DateTime timestamp = record.Timestamp;
+    private DateTime timestamp = record.Timestamp;
     [ObservableProperty]
-    public bool stared = record.Stared;
+    private bool stared = record.Stared;
     [ObservableProperty]
-    public bool pinned = record.Pinned;
+    private bool pinned = record.Pinned;
 
     public HistoryRecord ToHistoryRecord()
     {

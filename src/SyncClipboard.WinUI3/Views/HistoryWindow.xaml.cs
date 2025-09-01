@@ -4,9 +4,9 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.Win32;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,7 +114,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private async void PasteButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
-        if (history is HistoryRecord record)
+        if (history is HistoryRecordVM record)
         {
             this.Hide();
             await _viewModel.CopyToClipboard(record, true, CancellationToken.None);
@@ -124,16 +124,25 @@ public sealed partial class HistoryWindow : Window, IWindow
     private void DeleteButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
-        if (history is HistoryRecord record)
+        if (history is HistoryRecordVM record)
         {
             _viewModel.DeleteItem(record);
+        }
+    }
+
+    private void StarButtonClicked(object sender, RoutedEventArgs _)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecordVM record)
+        {
+            _viewModel.ChangeStarStatus(record);
         }
     }
 
     private void CopyButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
-        if (history is HistoryRecord record)
+        if (history is HistoryRecordVM record)
         {
             var _1 = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
             this.Hide();
@@ -182,7 +191,7 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private async void EnterKeyTriggered(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (_ListView.SelectedValue is not HistoryRecord record)
+        if (_ListView.SelectedValue is not HistoryRecordVM record)
         {
             return;
         }
@@ -219,7 +228,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         e.Handled = true;
-        var record = (HistoryRecord?)((Grid?)sender)?.DataContext;
+        var record = (HistoryRecordVM?)((Grid?)sender)?.DataContext;
         if (record == null)
         {
             return;
@@ -232,7 +241,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         _ = DelayTriggerClickEvent(record, _cts.Token);
     }
 
-    private async Task DelayTriggerClickEvent(HistoryRecord record, CancellationToken token)
+    private async Task DelayTriggerClickEvent(HistoryRecordVM record, CancellationToken token)
     {
         _clickCount++;
         if (_clickCount >= 2)

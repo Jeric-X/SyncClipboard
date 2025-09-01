@@ -1,7 +1,7 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Core.ViewModels.Sub;
 
 #nullable disable
 
@@ -14,7 +14,7 @@ public class ClipboardViewerTemplateSelector : DataTemplateSelector
 
     protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
     {
-        if (item is HistoryRecord record)
+        if (item is HistoryRecordVM record)
         {
             if (record.Type == ProfileType.Image)
             {

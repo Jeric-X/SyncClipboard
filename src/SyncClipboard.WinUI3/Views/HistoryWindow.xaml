@@ -8,6 +8,7 @@
         xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
         xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:m="using:SyncClipboard.Core.Models"
+        xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
         x:Name="_HistoryWindow"
         Title="HistoryWindow"
         mc:Ignorable="d">
@@ -20,11 +21,15 @@
                 <Setter Property="Height" Value="28" />
                 <Setter Property="Width" Value="28" />
                 <Setter Property="Padding" Value="0,0,0,0" />
+                <Setter Property="FontSize" Value="12" />
             </Style>
-            <DataTemplate x:Key="normalTemplate" x:DataType="m:HistoryRecord">
+            <Style TargetType="FontIcon">
+                <Setter Property="FontSize" Value="12" />
+            </Style>
+            <DataTemplate x:Key="normalTemplate" x:DataType="vms:HistoryRecordVM">
                 <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
             </DataTemplate>
-            <DataTemplate x:Key="imageTemplate" x:DataType="m:HistoryRecord">
+            <DataTemplate x:Key="imageTemplate" x:DataType="vms:HistoryRecordVM">
                 <StackPanel Orientation="Vertical" Spacing="5">
                     <Image MaxHeight="200"
                            HorizontalAlignment="Left"
@@ -54,6 +59,7 @@
         <Grid Grid.Row="1">
             <Image x:Name="_InvisualableImage"
                    Stretch="None"
+                   MaxHeight="201"
                    IsHitTestVisible="False"
                    Opacity="0" />
         </Grid>
@@ -63,7 +69,7 @@
                   ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
                   SelectionMode="Single">
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="m:HistoryRecord">
+                <DataTemplate x:DataType="vms:HistoryRecordVM">
                     <ListViewItem IsTabStop="False">
                         <Grid MinHeight="10"
                               PointerPressed="Grid_PointerPressed"
@@ -81,10 +87,13 @@
                                             ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
                             <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Click="CopyButtonClicked" IsTabStop="False">
-                                    <FontIcon Glyph="&#xE8C8;" FontSize="12" />
+                                    <FontIcon Glyph="&#xE8C8;" />
                                 </Button>
                                 <Button Click="PasteButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="&#xE77F;" FontSize="12" />
+                                </Button>
+                                <Button Click="StarButtonClicked" IsTabStop="False">
+                                    <FontIcon Glyph="{x:Bind vc:ConvertMethod.ToStarIcon(Stared), Mode=OneWay}" FontSize="12" />
                                 </Button>
                                 <Button Click="DeleteButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="&#xE74D;" FontSize="12" />
