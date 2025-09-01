@@ -55,9 +55,8 @@ public class TextProfile : Profile
         await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
-    protected override void SetNotification(INotificationManager notificationManager)
+    protected override void SetNotification(INotification notification)
     {
-        var notification = notificationManager.Create();
         notification.Title = I18n.Strings.ClipboardTextUpdated;
         notification.Message = Text;
         if (Text.Length >= 4 && HasUrl(Text, out var url))

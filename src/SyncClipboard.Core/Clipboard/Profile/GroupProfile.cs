@@ -192,12 +192,11 @@ public class GroupProfile : FileProfile
 
     protected override Task CheckHash(string _, bool _1, CancellationToken _2) => Task.CompletedTask;
 
-    protected override void SetNotification(INotificationManager notificationManager)
+    protected override void SetNotification(INotification notification)
     {
         ArgumentNullException.ThrowIfNull(_files);
         ArgumentNullException.ThrowIfNull(FullPath);
 
-        var notification = notificationManager.Create();
         notification.Title = I18n.Strings.ClipboardFileUpdated;
         notification.Message = ShowcaseText();
         notification.Buttons = [

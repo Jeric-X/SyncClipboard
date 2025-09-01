@@ -40,7 +40,7 @@ public abstract class Profile
     protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
     protected static ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
-    private static INotificationManager NotificationManager => ServiceProvider.GetRequiredService<INotificationManager>();
+    private static INotification SharedNotification => ServiceProvider.GetRequiredKeyedService<INotification>("ProfileNotification");
     private static bool EnableNotify => Config.GetConfig<SyncConfig>().NotifyOnDownloaded;
 
     private ClipboardMetaInfomation? @metaInfomation;
@@ -66,9 +66,21 @@ public abstract class Profile
 
     public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
 
-    protected virtual void SetNotification(INotificationManager notificationManager)
+    protected virtual void SetNotification(INotification notification)
     {
-        notificationManager.ShowText(I18n.Strings.ClipboardUpdated, Text);
+        notification.Title = I18n.Strings.ClipboardUpdated;
+        notification.Message = Text;
+        notification.Show();
+    }
+
+    private static void ResetNotification(INotification notification)
+    {
+        notification.Title = string.Empty;
+        notification.Message = string.Empty;
+        notification.Image = null;
+        notification.Buttons = [];
+        notification.ContentAction = null;
+        notification.Remove();
     }
 
     public async Task SetLocalClipboard(bool notify, CancellationToken ctk, bool mutex = true)
@@ -93,7 +105,8 @@ public abstract class Profile
             if (notify && EnableNotify)
             {
                 Logger.Write("System notification has sent.");
-                SetNotification(NotificationManager);
+                ResetNotification(SharedNotification);
+                SetNotification(SharedNotification);
             }
         }
         finally

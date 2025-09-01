@@ -70,10 +70,9 @@ public class ImageProfile : FileProfile
         return "png";
     }
 
-    protected override void SetNotification(INotificationManager notificationManager)
+    protected override void SetNotification(INotification notification)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
-        var notification = notificationManager.Create();
         notification.Title = I18n.Strings.ClipboardImageUpdated;
         notification.Message = FileName;
         notification.Image = new Uri(FullPath);

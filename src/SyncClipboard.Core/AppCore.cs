@@ -264,6 +264,7 @@ namespace SyncClipboard.Core
                     RemoveNotificationOnContentClick = false,
                     AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
                 }));
+            services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)

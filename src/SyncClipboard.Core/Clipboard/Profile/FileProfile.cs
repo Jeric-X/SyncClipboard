@@ -192,9 +192,8 @@ public class FileProfile : Profile
         }
     }
 
-    protected override void SetNotification(INotificationManager notificationManager)
+    protected override void SetNotification(INotification notification)
     {
-        var notification = notificationManager.Create();
         ArgumentNullException.ThrowIfNull(FullPath);
         notification.Title = I18n.Strings.ClipboardFileUpdated;
         notification.Message = FileName;
