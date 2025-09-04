@@ -35,6 +35,7 @@
                            HorizontalAlignment="Left"
                            Stretch="None"
                            ImageOpened="Image_ImageOpened"
+                           PointerPressed="Image_PointerPressed"
                            Visibility="Collapsed">
                         <Image.Source>
                             <BitmapImage UriSource="{x:Bind FilePath[0]}" />
@@ -58,8 +59,8 @@
         </Border>
         <Grid Grid.Row="1">
             <Image x:Name="_InvisualableImage"
-                   Stretch="None"
                    MaxHeight="201"
+                   Stretch="None"
                    IsHitTestVisible="False"
                    Opacity="0" />
         </Grid>

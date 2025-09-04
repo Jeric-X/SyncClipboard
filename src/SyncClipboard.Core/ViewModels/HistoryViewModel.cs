@@ -56,6 +56,17 @@ public partial class HistoryViewModel(
         return historyManager.UpdateHistory(record.ToHistoryRecord());
     }
 
+    [RelayCommand]
+    public static void ViewImage(HistoryRecordVM record)
+    {
+        if (record.FilePath.Length == 0 || !File.Exists(record.FilePath[0]))
+        {
+            return;
+        }
+
+        Sys.OpenWithDefaultApp(record.FilePath[0]);
+    }
+
     public async Task Init()
     {
         var records = await HistoryManager.GetHistory();

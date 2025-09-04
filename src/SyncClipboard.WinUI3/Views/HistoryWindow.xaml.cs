@@ -5,9 +5,11 @@ using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.Win32;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -28,6 +30,8 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
     private bool _windowLoaded = false;
+    private readonly MultiTimesEventSimulator _historyItemEvents = new(TimeSpan.FromMilliseconds(300));
+    private readonly MultiTimesEventSimulator _imageClickEvents = new(TimeSpan.FromMilliseconds(300));
 
     public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel)
     {
@@ -56,6 +60,25 @@ public sealed partial class HistoryWindow : Window, IWindow
                     this.Hide();
                 }
             }
+        };
+
+        _imageClickEvents[2] += () =>
+        {
+            if (_ListView.SelectedValue is not HistoryRecordVM record)
+            {
+                return;
+            }
+            _viewModel.ViewImageCommand.Execute(record);
+        };
+
+        _historyItemEvents[2] += async () =>
+        {
+            if (_ListView.SelectedValue is not HistoryRecordVM record)
+            {
+                return;
+            }
+            this.Hide();
+            await _viewModel.CopyToClipboard(record, false, CancellationToken.None);
         };
     }
 
@@ -220,40 +243,26 @@ public sealed partial class HistoryWindow : Window, IWindow
         _InvisualableImage.Source = null;
     }
 
-    #region Manually Handle Click and Double Click
-    private const int DoubleClickThreshold = 300;
-    private CancellationTokenSource? _cts;
-    private int _clickCount = 0;
-
     private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         e.Handled = true;
-        var record = (HistoryRecordVM?)((Grid?)sender)?.DataContext;
+        SetSelectedItem((HistoryRecordVM?)((Grid?)sender)?.DataContext);
+        _historyItemEvents.TriggerOriginalEvent();
+    }
+
+    private void Image_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        e.Handled = true;
+        SetSelectedItem((HistoryRecordVM?)((Image?)sender)?.DataContext);
+        _imageClickEvents.TriggerOriginalEvent();
+    }
+
+    private void SetSelectedItem(HistoryRecordVM? record)
+    {
         if (record == null)
         {
             return;
         }
-
         _ListView.SelectedValue = record;
-
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-        _ = DelayTriggerClickEvent(record, _cts.Token);
     }
-
-    private async Task DelayTriggerClickEvent(HistoryRecordVM record, CancellationToken token)
-    {
-        _clickCount++;
-        if (_clickCount >= 2)
-        {
-            this.Close();
-            await _viewModel.CopyToClipboard(record, false, token);
-            _clickCount = 0;
-            return;
-        }
-
-        await Task.Delay(DoubleClickThreshold, token);
-        _clickCount = 0;
-    }
-    #endregion
 }
