@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
@@ -15,14 +15,20 @@ using System.Collections.ObjectModel;
 namespace SyncClipboard.Core.ViewModels;
 
 public partial class HistoryViewModel(
+    ConfigManager configManager,
     HistoryManager historyManager,
     IClipboardFactory clipboardFactory,
     VirtualKeyboard keyboard,
     INotificationManager notificationManager,
     [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig) : ObservableObject
 {
+    private IWindow window = null!;
+
     [ObservableProperty]
-    public ObservableCollection<HistoryRecordVM> historyItems = [];
+    private int selectedIndex = -1;
+
+    [ObservableProperty]
+    private ObservableCollection<HistoryRecordVM> historyItems = [];
 
     public int Width
     {
@@ -56,19 +62,19 @@ public partial class HistoryViewModel(
         return historyManager.UpdateHistory(record.ToHistoryRecord());
     }
 
-    [RelayCommand]
-    public static void ViewImage(HistoryRecordVM record)
+    public void ViewImage(HistoryRecordVM record)
     {
         if (record.FilePath.Length == 0 || !File.Exists(record.FilePath[0]))
         {
             return;
         }
-
+        _remainWindowForViewDetail = true;
         Sys.OpenWithDefaultApp(record.FilePath[0]);
     }
 
-    public async Task Init()
+    public async Task Init(IWindow window)
     {
+        this.window = window;
         var records = await HistoryManager.GetHistory();
         foreach (var record in records)
         {
@@ -102,9 +108,26 @@ public partial class HistoryViewModel(
 
         var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
         await profile.SetLocalClipboard(false, token);
+        SelectedIndex = -1;
+        window.ScrollToTop();
+        window.Close();
         if (paste)
         {
             keyboard.Paste();
+        }
+    }
+
+    public void OnGotFocus()
+    {
+        _remainWindowForViewDetail = false;
+    }
+
+    private bool _remainWindowForViewDetail = false;
+    public void OnLostFocus()
+    {
+        if (!_remainWindowForViewDetail && configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
+        {
+            window.Close();
         }
     }
 }

@@ -42,6 +42,7 @@
                            HorizontalAlignment="Left"
                            Stretch="None"
                            Source="{Binding FilePath[0], Converter={x:Static vc:FuncConverter.ToBitImage}}"
+                           DoubleTapped="Image_DoubleTapped"
                            Loaded="Image_Loaded" />
                     <TextBlock HorizontalAlignment="Left" Text="{Binding Text, Converter={x:Static vc:FuncConverter.LimitLines}}" />
                 </StackPanel>
@@ -76,6 +77,7 @@
                      Grid.Row="1"
                      ItemsSource="{Binding HistoryItems}"
                      SelectionMode="Single"
+                     SelectedIndex="{Binding SelectedIndex}"
                      KeyDown="ListBox_KeyDown"
                      DoubleTapped="ListBox_DoubleTapped">
                 <ListBox.ItemsPanel>

@@ -1,3 +1,4 @@
+using CommunityToolkit.WinUI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -11,7 +12,6 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.Win32;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.System;
@@ -55,10 +55,11 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             if (args.WindowActivationState == WindowActivationState.Deactivated)
             {
-                if (configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
-                {
-                    this.Hide();
-                }
+                _viewModel.OnLostFocus();
+            }
+            else
+            {
+                _viewModel.OnGotFocus();
             }
         };
 
@@ -68,7 +69,7 @@ public sealed partial class HistoryWindow : Window, IWindow
             {
                 return;
             }
-            _viewModel.ViewImageCommand.Execute(record);
+            _viewModel.ViewImage(record);
         };
 
         _historyItemEvents[2] += async () =>
@@ -77,7 +78,6 @@ public sealed partial class HistoryWindow : Window, IWindow
             {
                 return;
             }
-            this.Hide();
             await _viewModel.CopyToClipboard(record, false, CancellationToken.None);
         };
     }
@@ -102,7 +102,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (!_windowLoaded)
         {
             this.CenterOnScreen();
-            _ = _viewModel.Init();
+            _ = _viewModel.Init(this);
         }
 
         this.Activate();
@@ -139,7 +139,6 @@ public sealed partial class HistoryWindow : Window, IWindow
         var history = ((Button?)sender)?.DataContext;
         if (history is HistoryRecordVM record)
         {
-            this.Hide();
             await _viewModel.CopyToClipboard(record, true, CancellationToken.None);
         }
     }
@@ -168,7 +167,6 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (history is HistoryRecordVM record)
         {
             var _1 = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
-            this.Hide();
         }
     }
 
@@ -219,7 +217,6 @@ public sealed partial class HistoryWindow : Window, IWindow
             return;
         }
         args.Handled = true;
-        this.Hide();
         var paste = sender.Modifiers != VirtualKeyModifiers.Menu;
         await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
     }
@@ -246,23 +243,27 @@ public sealed partial class HistoryWindow : Window, IWindow
     private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         e.Handled = true;
-        SetSelectedItem((HistoryRecordVM?)((Grid?)sender)?.DataContext);
+        SetSelectedItem((HistoryRecordVM)((Grid?)sender)?.DataContext!);
         _historyItemEvents.TriggerOriginalEvent();
     }
 
     private void Image_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         e.Handled = true;
-        SetSelectedItem((HistoryRecordVM?)((Image?)sender)?.DataContext);
+        SetSelectedItem((HistoryRecordVM)((Image?)sender)?.DataContext!);
         _imageClickEvents.TriggerOriginalEvent();
     }
 
-    private void SetSelectedItem(HistoryRecordVM? record)
+    private void SetSelectedItem(HistoryRecordVM record)
     {
-        if (record == null)
-        {
-            return;
-        }
         _ListView.SelectedValue = record;
+    }
+
+    public void ScrollToTop()
+    {
+        if (_ListView.Items.Count != 0)
+        {
+            _ListView.SmoothScrollIntoViewWithIndexAsync(0);
+        }
     }
 }

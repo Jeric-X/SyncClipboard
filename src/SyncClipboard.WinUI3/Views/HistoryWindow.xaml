@@ -68,6 +68,7 @@
                   Grid.Row="1"
                   IsTabStop="False"
                   ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
+                  SelectedIndex="{x:Bind _viewModel.SelectedIndex, Mode=TwoWay}"
                   SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vms:HistoryRecordVM">
