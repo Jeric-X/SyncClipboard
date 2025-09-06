@@ -58,6 +58,8 @@ public sealed partial class HistoryWindow : Window, IWindow
             else
             {
                 _viewModel.OnGotFocus();
+                // 窗口激活时将焦点设置到搜索框
+                _SearchTextBox.Focus(FocusState.Programmatic);
             }
         };
 
@@ -280,5 +282,19 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             _FilterSelectorBar.SelectedItem = _FilterSelectorBar.Items[(int)_viewModel.SelectedFilter];
         }
+    }
+
+    private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs _)
+    {
+        if (sender is TextBox textBox)
+        {
+            _viewModel.SearchText = textBox.Text;
+        }
+    }
+
+    private void FilterSelectorBar_PointerPressed(object _, PointerRoutedEventArgs e)
+    {
+        // 事件继续传递会导致搜索框失去焦点
+        e.Handled = true;
     }
 }

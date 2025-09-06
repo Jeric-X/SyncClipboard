@@ -711,4 +711,7 @@
   <data name="HistoryFilterStarred" xml:space="preserve">
     <value>Starred</value>
   </data>
+  <data name="HistorySearchPlaceholder" xml:space="preserve">
+    <value>Search text or filename...</value>
+  </data>
 </root>

@@ -50,6 +50,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Border x:Name="_DraggableArea" Grid.Row="0" Height="28">
@@ -60,9 +61,20 @@
                      Padding="0,-10,0,0"
                      HorizontalAlignment="Center"
                      IsTabStop="False"
+                     PointerPressed="FilterSelectorBar_PointerPressed"
                      AllowFocusOnInteraction="False"
                      SelectionChanged="SelectorBar_SelectionChanged" />
-        <Grid Grid.Row="2">
+        <TextBox x:Name="_SearchTextBox"
+                 Grid.Row="2"
+                 Margin="20,8,20,8"
+                 VerticalContentAlignment="Center"
+                 Text="{x:Bind _viewModel.SearchText, Mode=TwoWay}"
+                 PlaceholderText="{x:Bind i18n:Strings.HistorySearchPlaceholder}"
+                 BorderThickness="1"
+                 FontSize="14"
+                 CornerRadius="6"
+                 TextChanged="SearchTextBox_TextChanged" />
+        <Grid Grid.Row="3">
             <Image x:Name="_InvisualableImage"
                    MaxHeight="201"
                    Stretch="None"
@@ -70,7 +82,7 @@
                    Opacity="0" />
         </Grid>
         <ListView x:Name="_ListView"
-                  Grid.Row="2"
+                  Grid.Row="3"
                   IsTabStop="False"
                   ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
                   SelectedIndex="{x:Bind _viewModel.SelectedIndex, Mode=TwoWay}"

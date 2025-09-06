@@ -41,7 +41,11 @@ public partial class HistoryWindow : Window, IWindow
         };
 
         this.Deactivated += (_, _) => _viewModel.OnLostFocus();
-        this.Activated += (_, _) => _viewModel.OnGotFocus();
+        this.Activated += (_, _) =>
+        {
+            _viewModel.OnGotFocus();
+            _SearchTextBox.Focus();
+        };
 
         Height = _viewModel.Height;
         Width = _viewModel.Width;

@@ -56,16 +56,57 @@ public partial class HistoryViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedFilterOption));
     }
 
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilter();
+    }
+
     private void ApplyFilter()
     {
-        viewController.AttachFilter(record => SelectedFilter switch
+        viewController.AttachFilter(record =>
         {
-            HistoryFilterType.All => true,
-            HistoryFilterType.Text => record.Type == ProfileType.Text,
-            HistoryFilterType.Image => record.Type == ProfileType.Image,
-            HistoryFilterType.File => record.Type == ProfileType.File,
-            HistoryFilterType.Starred => record.Stared,
-            _ => true
+            // 首先应用类型过滤
+            var typeMatches = SelectedFilter switch
+            {
+                HistoryFilterType.All => true,
+                HistoryFilterType.Text => record.Type == ProfileType.Text,
+                HistoryFilterType.Image => record.Type == ProfileType.Image,
+                HistoryFilterType.File => record.Type == ProfileType.File,
+                HistoryFilterType.Starred => record.Stared,
+                _ => true
+            };
+
+            // 如果类型不匹配，直接返回false
+            if (!typeMatches) return false;
+
+            // 如果没有搜索文本，返回类型匹配结果
+            if (string.IsNullOrWhiteSpace(SearchText)) return true;
+
+            // 应用搜索文本过滤
+            var searchText = SearchText;
+
+            // 搜索文本内容
+            if (!string.IsNullOrEmpty(record.Text) &&
+                record.Text.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // 搜索文件名
+            if (record.FilePath?.Length > 0)
+            {
+                foreach (var filePath in record.FilePath)
+                {
+                    var fileName = Path.GetFileName(filePath);
+                    if (!string.IsNullOrEmpty(fileName) &&
+                        fileName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         });
     }
 
@@ -74,6 +115,9 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
+
+    [ObservableProperty]
+    private string searchText = string.Empty;
 
     public LocaleString<HistoryFilterType> SelectedFilterOption
     {
@@ -217,22 +261,6 @@ public partial class HistoryViewModel : ObservableObject
 
             case Key.Up:
                 NavigateUp();
-                return true;
-
-            case Key.Left:
-                NavigateToPreviousFilter();
-                return true;
-
-            case Key.Right:
-                NavigateToNextFilter();
-                return true;
-
-            case Key.Home:
-                NavigateToFirst();
-                return true;
-
-            case Key.End:
-                NavigateToLast();
                 return true;
 
             case Key.Enter:
