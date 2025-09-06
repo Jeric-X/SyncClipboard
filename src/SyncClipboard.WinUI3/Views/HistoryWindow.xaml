@@ -8,6 +8,7 @@
         xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
         xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:m="using:SyncClipboard.Core.Models"
+        xmlns:vm="using:SyncClipboard.Core.ViewModels"
         xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
         x:Name="_HistoryWindow"
         Title="HistoryWindow"
@@ -46,18 +47,22 @@
             </DataTemplate>
             <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />
         </Grid.Resources>
-        <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator Key="Enter" Invoked="EnterKeyTriggered" />
-            <KeyboardAccelerator Key="Enter" Modifiers="Menu" Invoked="EnterKeyTriggered" />
-        </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Border x:Name="_DraggableArea" Grid.Row="0" Height="32">
+        <Border x:Name="_DraggableArea" Grid.Row="0" Height="28">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Bind i18n:Strings.ClipboardHistory}" />
         </Border>
-        <Grid Grid.Row="1">
+        <SelectorBar x:Name="_FilterSelectorBar"
+                     Grid.Row="1"
+                     Padding="0,-10,0,0"
+                     HorizontalAlignment="Center"
+                     IsTabStop="False"
+                     AllowFocusOnInteraction="False"
+                     SelectionChanged="SelectorBar_SelectionChanged" />
+        <Grid Grid.Row="2">
             <Image x:Name="_InvisualableImage"
                    MaxHeight="201"
                    Stretch="None"
@@ -65,7 +70,7 @@
                    Opacity="0" />
         </Grid>
         <ListView x:Name="_ListView"
-                  Grid.Row="1"
+                  Grid.Row="2"
                   IsTabStop="False"
                   ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
                   SelectedIndex="{x:Bind _viewModel.SelectedIndex, Mode=TwoWay}"

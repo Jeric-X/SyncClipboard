@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="ObservableCollections" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="NativeNotification" />
@@ -59,11 +60,12 @@
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Server.Core\SyncClipboard.Server.Core.csproj" />
   </ItemGroup>
-  
-  <Target Name="Print Message" BeforeTargets="Build">
+
+  <Target Name="Print Message"
+    BeforeTargets="Build">
     <Message Text="RuntimeIdentifier $(RuntimeIdentifier)" />
   </Target>
-  
+
   <ItemGroup>
     <Compile Update="I18n\Strings.Designer.cs">
       <DesignTime>True</DesignTime>

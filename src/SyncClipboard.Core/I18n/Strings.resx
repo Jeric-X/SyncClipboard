@@ -696,4 +696,19 @@
   <data name="OpenHistoryPanel" xml:space="preserve">
     <value>Open History Panel</value>
   </data>
+  <data name="HistoryFilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="HistoryFilterText" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="HistoryFilterImage" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="HistoryFilterFile" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="HistoryFilterStarred" xml:space="preserve">
+    <value>Starred</value>
+  </data>
 </root>

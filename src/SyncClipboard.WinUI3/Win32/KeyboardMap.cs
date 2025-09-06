@@ -244,4 +244,30 @@ internal static class KeyboardMap
 
         return newDict;
     }
+
+    /// <summary>
+    /// 将WinUI3 VirtualKey转换为Core键值
+    /// </summary>
+    /// <param name="virtualKey">WinUI3 VirtualKey</param>
+    /// <returns>Core键值，如果找不到映射则返回null</returns>
+    public static Key? ConvertFromVirtualKey(Windows.System.VirtualKey virtualKey)
+    {
+        // 将WinUI3 VirtualKey转换为VK枚举
+        var vk = (VK)(int)virtualKey;
+        return VirtualKeyMap.TryGetValue(vk, out var coreKey) ? coreKey : null;
+    }
+
+    /// <summary>
+    /// 将Core键值转换为WinUI3 VirtualKey
+    /// </summary>
+    /// <param name="coreKey">Core键值</param>
+    /// <returns>WinUI3 VirtualKey，如果找不到映射则返回null</returns>
+    public static Windows.System.VirtualKey? ConvertToVirtualKey(Key coreKey)
+    {
+        if (VirtualKeyMapReverse.TryGetValue(coreKey, out var vk))
+        {
+            return (Windows.System.VirtualKey)(int)vk;
+        }
+        return null;
+    }
 }

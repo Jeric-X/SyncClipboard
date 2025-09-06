@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
@@ -22,9 +23,6 @@ using WinUIEx;
 
 namespace SyncClipboard.WinUI3.Views;
 
-/// <summary>
-/// An empty window that can be used on its own or navigated to within a Frame.
-/// </summary>
 public sealed partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
@@ -69,17 +67,20 @@ public sealed partial class HistoryWindow : Window, IWindow
             {
                 return;
             }
-            _viewModel.ViewImage(record);
+            _viewModel.HandleImageDoubleClick(record);
         };
 
-        _historyItemEvents[2] += async () =>
+        _historyItemEvents[2] += () =>
         {
             if (_ListView.SelectedValue is not HistoryRecordVM record)
             {
                 return;
             }
-            await _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+            _viewModel.HandleItemDoubleClick(record);
         };
+
+        // 初始化 SelectorBar 选项
+        InitializeSelectorBar();
     }
 
     private void HistoryWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
@@ -172,53 +173,27 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Escape)
+        var isShiftPressed = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        var isAltPressed = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+        var key = KeyboardMap.ConvertFromVirtualKey(e.Key);
+
+        if (!key.HasValue)
         {
-            this.Hide();
-            e.Handled = true;
-            return;
+            throw new NotSupportedException($"WinUI3 VirtualKey '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
         }
 
-        if (e.Key == VirtualKey.Down || e.Key == VirtualKey.Up)
-        {
-            KeyUpDownPressed(e.Key);
-            return;
-        }
+        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed);
+
+        e.Handled = handled;
     }
 
-    private void KeyUpDownPressed(VirtualKey key)
+    public void ScrollToSelectedItem()
     {
-        if (_ListView.Items.Count == 0)
+        if (_ListView.SelectedItem != null)
         {
-            return;
+            _ListView.ScrollIntoView(_ListView.SelectedItem);
         }
-
-        if (key == VirtualKey.Down)
-        {
-            if (_ListView.Items.Count > (_ListView.SelectedIndex + 1))
-            {
-                _ListView.SelectedIndex++;
-            }
-        }
-        else if (key == VirtualKey.Up)
-        {
-            if (_ListView.SelectedIndex > 0)
-            {
-                _ListView.SelectedIndex--;
-            }
-        }
-        _ListView.ScrollIntoView(_ListView.SelectedItem);
-    }
-
-    private async void EnterKeyTriggered(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (_ListView.SelectedValue is not HistoryRecordVM record)
-        {
-            return;
-        }
-        args.Handled = true;
-        var paste = sender.Modifiers != VirtualKeyModifiers.Menu;
-        await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
     }
 
     private void Image_ImageOpened(object sender, RoutedEventArgs _)
@@ -230,6 +205,7 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         _InvisualableImage.Source = image.Source;
         _InvisualableImage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        _InvisualableImage.Source = null;
         var desiredSize = _InvisualableImage.DesiredSize;
 
         if (desiredSize.Height > 200)
@@ -237,7 +213,6 @@ public sealed partial class HistoryWindow : Window, IWindow
             image.Stretch = Stretch.Uniform;
         }
         image.Visibility = Visibility.Visible;
-        _InvisualableImage.Source = null;
     }
 
     private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -264,6 +239,46 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (_ListView.Items.Count != 0)
         {
             _ListView.SmoothScrollIntoViewWithIndexAsync(0);
+        }
+    }
+
+    private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs _)
+    {
+        _viewModel.SelectedFilter = ((LocaleString<HistoryFilterType>)sender.SelectedItem.DataContext).Key;
+    }
+
+    private void InitializeSelectorBar()
+    {
+        _FilterSelectorBar.Items.Clear();
+
+        foreach (var option in _viewModel.FilterOptions)
+        {
+            var item = new SelectorBarItem
+            {
+                Text = option.ShownString,
+                DataContext = option,
+                IsTabStop = false,
+            };
+            _FilterSelectorBar.Items.Add(item);
+        }
+
+        _FilterSelectorBar.SelectedItem = _FilterSelectorBar.Items[(int)_viewModel.SelectedFilter];
+
+
+        _viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(_viewModel.SelectedFilter))
+            {
+                UpdateSelectorBarSelection();
+            }
+        };
+    }
+
+    private void UpdateSelectorBarSelection()
+    {
+        if ((int)_viewModel.SelectedFilter < _FilterSelectorBar.Items.Count)
+        {
+            _FilterSelectorBar.SelectedItem = _FilterSelectorBar.Items[(int)_viewModel.SelectedFilter];
         }
     }
 }

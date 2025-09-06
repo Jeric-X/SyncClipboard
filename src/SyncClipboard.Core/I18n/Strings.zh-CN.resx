@@ -696,4 +696,19 @@
   <data name="OpenHistoryPanel" xml:space="preserve">
     <value>打开历史记录面板</value>
   </data>
+  <data name="HistoryFilterAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="HistoryFilterText" xml:space="preserve">
+    <value>文字</value>
+  </data>
+  <data name="HistoryFilterImage" xml:space="preserve">
+    <value>图片</value>
+  </data>
+  <data name="HistoryFilterFile" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="HistoryFilterStarred" xml:space="preserve">
+    <value>收藏</value>
+  </data>
 </root>

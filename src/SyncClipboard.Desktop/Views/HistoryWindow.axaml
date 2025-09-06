@@ -31,6 +31,11 @@
             <Setter Property="FontSize" Value="14" />
         </Style>
     </Window.Styles>
+    <Window.Resources>
+        <ResourceDictionary>
+            <x:Double x:Key="TabItemMinHeight">38</x:Double>
+        </ResourceDictionary>
+    </Window.Resources>
     <Window.DataTemplates>
         <local:ClipboardViewerTemplateSelector>
             <DataTemplate x:Key="Normal" DataType="vms:HistoryRecordVM">
@@ -43,6 +48,7 @@
                            Stretch="None"
                            Source="{Binding FilePath[0], Converter={x:Static vc:FuncConverter.ToBitImage}}"
                            DoubleTapped="Image_DoubleTapped"
+                           Opacity="0"
                            Loaded="Image_Loaded" />
                     <TextBlock HorizontalAlignment="Left" Text="{Binding Text, Converter={x:Static vc:FuncConverter.LimitLines}}" />
                 </StackPanel>
@@ -59,11 +65,11 @@
                                              MaterialOpacity="0.65" />
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
-        <Grid RowDefinitions="Auto, *">
+        <Grid RowDefinitions="Auto, Auto, *">
             <OnPlatform>
                 <OnPlatform.Default>
-                    <Border Height="36" IsHitTestVisible="False">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static i18n:Strings.ClipboardHistory}" />
+                    <Border Height="26" IsHitTestVisible="False">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" Text="{x:Static i18n:Strings.ClipboardHistory}" />
                     </Border>
                 </OnPlatform.Default>
                 <OnPlatform.macOS>
@@ -73,12 +79,23 @@
                     <Border Height="0" />
                 </OnPlatform.Linux>
             </OnPlatform>
+            <TabStrip Grid.Row="1"
+                      HorizontalAlignment="Center"
+                      ItemsSource="{Binding FilterOptions}"
+                      SelectedItem="{Binding SelectedFilterOption}"
+                      IsTabStop="False"
+                      Focusable="False">
+                <TabStrip.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=vms:HistoryFilterType}">
+                        <TextBlock Text="{Binding ShownString}" FontSize="14" />
+                    </DataTemplate>
+                </TabStrip.ItemTemplate>
+            </TabStrip>
             <ListBox x:Name="_ListBox"
-                     Grid.Row="1"
+                     Grid.Row="2"
                      ItemsSource="{Binding HistoryItems}"
                      SelectionMode="Single"
                      SelectedIndex="{Binding SelectedIndex}"
-                     KeyDown="ListBox_KeyDown"
                      DoubleTapped="ListBox_DoubleTapped">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>

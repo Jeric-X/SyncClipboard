@@ -2,33 +2,103 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
+using ObservableCollections;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.ViewModels.Sub;
-using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public partial class HistoryViewModel(
-    ConfigManager configManager,
-    HistoryManager historyManager,
-    IClipboardFactory clipboardFactory,
-    VirtualKeyboard keyboard,
-    INotificationManager notificationManager,
-    [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig) : ObservableObject
+public partial class HistoryViewModel : ObservableObject
 {
     private IWindow window = null!;
+
+    private readonly ConfigManager configManager;
+    private readonly HistoryManager historyManager;
+    private readonly IClipboardFactory clipboardFactory;
+    private readonly VirtualKeyboard keyboard;
+    private readonly INotificationManager notificationManager;
+    private readonly ConfigBase runtimeConfig;
+
+    public HistoryViewModel(
+        ConfigManager configManager,
+        HistoryManager historyManager,
+        IClipboardFactory clipboardFactory,
+        VirtualKeyboard keyboard,
+        INotificationManager notificationManager,
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
+    {
+        this.configManager = configManager;
+        this.historyManager = historyManager;
+        this.clipboardFactory = clipboardFactory;
+        this.keyboard = keyboard;
+        this.notificationManager = notificationManager;
+        this.runtimeConfig = runtimeConfig;
+
+        viewController = allHistoryItems.CreateView(x => x);
+        HistoryItems = viewController.ToNotifyCollectionChanged();
+
+        // 设置初始过滤器
+        ApplyFilter();
+    }
+
+    partial void OnSelectedFilterChanged(HistoryFilterType value)
+    {
+        ApplyFilter();
+        OnPropertyChanged(nameof(SelectedFilterOption));
+    }
+
+    private void ApplyFilter()
+    {
+        viewController.AttachFilter(record => SelectedFilter switch
+        {
+            HistoryFilterType.All => true,
+            HistoryFilterType.Text => record.Type == ProfileType.Text,
+            HistoryFilterType.Image => record.Type == ProfileType.Image,
+            HistoryFilterType.File => record.Type == ProfileType.File,
+            HistoryFilterType.Starred => record.Stared,
+            _ => true
+        });
+    }
 
     [ObservableProperty]
     private int selectedIndex = -1;
 
     [ObservableProperty]
-    private ObservableCollection<HistoryRecordVM> historyItems = [];
+    private HistoryFilterType selectedFilter = HistoryFilterType.All;
+
+    public LocaleString<HistoryFilterType> SelectedFilterOption
+    {
+        get => FilterOptions.FirstOrDefault(x => x.Key.Equals(SelectedFilter)) ?? FilterOptions[0];
+        set
+        {
+            if (value != null)
+            {
+                SelectedFilter = value.Key;
+            }
+        }
+    }
+
+    public List<LocaleString<HistoryFilterType>> FilterOptions { get; } =
+        [
+            new(HistoryFilterType.All, I18n.Strings.HistoryFilterAll),
+            new(HistoryFilterType.Text, I18n.Strings.HistoryFilterText),
+            new(HistoryFilterType.Image, I18n.Strings.HistoryFilterImage),
+            new(HistoryFilterType.File, I18n.Strings.HistoryFilterFile),
+            new(HistoryFilterType.Starred, I18n.Strings.HistoryFilterStarred)
+        ];
+
+    public INotifyCollectionChangedSynchronizedViewList<HistoryRecordVM> HistoryItems { get; }
+    private readonly ISynchronizedView<HistoryRecordVM, HistoryRecordVM> viewController;
+    private readonly ObservableList<HistoryRecordVM> allHistoryItems = [];
 
     public int Width
     {
@@ -62,6 +132,136 @@ public partial class HistoryViewModel(
         return historyManager.UpdateHistory(record.ToHistoryRecord());
     }
 
+    public void NavigateToNextFilter()
+    {
+        var currentIndex = (int)SelectedFilter;
+        var filterCount = FilterOptions.Count;
+        var nextIndex = (currentIndex + 1) % filterCount;
+        SelectedFilter = (HistoryFilterType)nextIndex;
+        window?.ScrollToTop();
+    }
+
+    public void NavigateToPreviousFilter()
+    {
+        var currentIndex = (int)SelectedFilter;
+        var filterCount = FilterOptions.Count;
+        var prevIndex = (currentIndex - 1 + filterCount) % filterCount;
+        SelectedFilter = (HistoryFilterType)prevIndex;
+        window?.ScrollToTop();
+    }
+
+    public void NavigateDown()
+    {
+        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (count == 0) return;
+
+        var maxIndex = count - 1;
+        if (SelectedIndex < maxIndex)
+        {
+            SelectedIndex++;
+        }
+        window?.ScrollToSelectedItem();
+    }
+
+    public void NavigateUp()
+    {
+        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (count == 0) return;
+
+        if (SelectedIndex > 0)
+        {
+            SelectedIndex--;
+        }
+        window?.ScrollToSelectedItem();
+    }
+
+    public void NavigateToFirst()
+    {
+        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (count == 0) return;
+
+        SelectedIndex = 0;
+        window?.ScrollToSelectedItem();
+    }
+
+    public void NavigateToLast()
+    {
+        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (count == 0) return;
+
+        SelectedIndex = count - 1;
+        window?.ScrollToSelectedItem();
+    }
+
+    /// <summary>
+    /// 处理统一的键值输入 - 推荐的类型安全方法
+    /// </summary>
+    /// <param name="key">键值</param>
+    /// <param name="isShiftPressed">是否按下Shift键</param>
+    /// <param name="isAltPressed">是否按下Alt键</param>
+    /// <returns>是否处理了该键</returns>
+    public bool HandleKeyPress(Key key, bool isShiftPressed = false, bool isAltPressed = false)
+    {
+        switch (key)
+        {
+            case Key.Tab:
+                if (isShiftPressed)
+                    NavigateToPreviousFilter();
+                else
+                    NavigateToNextFilter();
+                return true;
+
+            case Key.Down:
+                NavigateDown();
+                return true;
+
+            case Key.Up:
+                NavigateUp();
+                return true;
+
+            case Key.Left:
+                NavigateToPreviousFilter();
+                return true;
+
+            case Key.Right:
+                NavigateToNextFilter();
+                return true;
+
+            case Key.Home:
+                NavigateToFirst();
+                return true;
+
+            case Key.End:
+                NavigateToLast();
+                return true;
+
+            case Key.Enter:
+                HandleEnterKey(isAltPressed);
+                return true;
+
+            case Key.Esc:
+                window?.Close();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private async void HandleEnterKey(bool isAltPressed)
+    {
+        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (SelectedIndex < 0 || SelectedIndex >= count)
+            return;
+
+        var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
+        if (selectedItem == null) return;
+
+        // Alt键表示不粘贴到剪贴板，只是复制操作
+        var paste = !isAltPressed;
+        await CopyToClipboard(selectedItem, paste, CancellationToken.None);
+    }
+
     public void ViewImage(HistoryRecordVM record)
     {
         if (record.FilePath.Length == 0 || !File.Exists(record.FilePath[0]))
@@ -76,17 +276,14 @@ public partial class HistoryViewModel(
     {
         this.window = window;
         var records = await HistoryManager.GetHistory();
-        foreach (var record in records)
-        {
-            HistoryItems.Add(new HistoryRecordVM(record));
-        }
+        allHistoryItems.AddRange(records.Select(x => new HistoryRecordVM(x)));
 
-        historyManager.HistoryAdded += record => HistoryItems.Insert(0, new HistoryRecordVM(record));
-        historyManager.HistoryRemoved += record => HistoryItems.Remove(new HistoryRecordVM(record));
+        historyManager.HistoryAdded += record => allHistoryItems.Insert(0, new HistoryRecordVM(record));
+        historyManager.HistoryRemoved += record => allHistoryItems.Remove(new HistoryRecordVM(record));
         historyManager.HistoryUpdated += record =>
         {
             var newRecord = new HistoryRecordVM(record);
-            var oldRecord = HistoryItems.FirstOrDefault(r => r == newRecord);
+            var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
             if (oldRecord == null)
             {
                 return;
@@ -123,11 +320,30 @@ public partial class HistoryViewModel(
     }
 
     private bool _remainWindowForViewDetail = false;
+
     public void OnLostFocus()
     {
         if (!_remainWindowForViewDetail && configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
         {
             window.Close();
         }
+    }
+
+    /// <summary>
+    /// 处理列表项双击事件
+    /// </summary>
+    /// <param name="record">历史记录项</param>
+    public void HandleItemDoubleClick(HistoryRecordVM record)
+    {
+        _ = CopyToClipboard(record, false, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// 处理图片双击事件
+    /// </summary>
+    /// <param name="record">历史记录项</param>
+    public void HandleImageDoubleClick(HistoryRecordVM record)
+    {
+        ViewImage(record);
     }
 }

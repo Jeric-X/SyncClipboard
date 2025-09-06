@@ -54,12 +54,24 @@ public partial class HistoryWindow : Window, IWindow
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
+        var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
+
+        var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
+
+        if (!key.HasValue)
         {
-            this.Close();
+            throw new NotSupportedException($"Avalonia key '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
+        }
+
+        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed);
+
+        if (handled)
+        {
             e.Handled = true;
             return;
         }
+
         base.OnKeyDown(e);
     }
 
@@ -101,19 +113,11 @@ public partial class HistoryWindow : Window, IWindow
         FocusOnScreen();
     }
 
-    private async void ListBox_KeyDown(object? sender, KeyEventArgs e)
+    public void ScrollToSelectedItem()
     {
-        var history = ((ListBox?)sender)?.SelectedValue;
-        if (history is not HistoryRecordVM record)
+        if (_ListBox.SelectedItem != null)
         {
-            return;
-        }
-
-        if (e.Key == Key.Enter && (e.KeyModifiers == KeyModifiers.None || e.KeyModifiers == KeyModifiers.Alt))
-        {
-            e.Handled = true;
-            var paste = e.KeyModifiers != KeyModifiers.Alt;
-            await _viewModel.CopyToClipboard(record, paste, CancellationToken.None);
+            _ListBox.ScrollIntoView(_ListBox.SelectedItem);
         }
     }
 
@@ -148,7 +152,7 @@ public partial class HistoryWindow : Window, IWindow
         {
             return;
         }
-        _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+        _viewModel.HandleItemDoubleClick(record);
     }
 
     private void Image_DoubleTapped(object? sender, TappedEventArgs e)
@@ -159,7 +163,7 @@ public partial class HistoryWindow : Window, IWindow
         {
             return;
         }
-        _viewModel.ViewImage(record);
+        _viewModel.HandleImageDoubleClick(record);
     }
 
     private void Image_Loaded(object? sender, RoutedEventArgs e)
@@ -174,6 +178,7 @@ public partial class HistoryWindow : Window, IWindow
             image.MaxHeight = 200;
             image.Stretch = Stretch.Uniform;
         }
+        image.Opacity = 1;
     }
 
     public void ScrollToTop()

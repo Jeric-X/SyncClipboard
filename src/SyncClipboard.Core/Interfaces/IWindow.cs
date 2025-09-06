@@ -6,4 +6,5 @@ public interface IWindow
     void Focus();
     void Close();
     void ScrollToTop() { }
+    void ScrollToSelectedItem() { }
 }

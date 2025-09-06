@@ -817,6 +817,51 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 All 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterAll {
+            get {
+                return ResourceManager.GetString("HistoryFilterAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 File 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterFile {
+            get {
+                return ResourceManager.GetString("HistoryFilterFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Image 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterImage {
+            get {
+                return ResourceManager.GetString("HistoryFilterImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Starred 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterStarred {
+            get {
+                return ResourceManager.GetString("HistoryFilterStarred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Text 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterText {
+            get {
+                return ResourceManager.GetString("HistoryFilterText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 History Panel 的本地化字符串。
         /// </summary>
         public static string HistoryPanel {
