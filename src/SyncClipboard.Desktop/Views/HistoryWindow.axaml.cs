@@ -1,15 +1,15 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.Threading;
-using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -180,9 +180,31 @@ public partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        if (image.Bounds.Size.Height > 200)
+        if (image.Source is null)
         {
-            image.MaxHeight = 200;
+            image.PropertyChanged += (sender, e) =>
+            {
+                if (e.Property.Name == "Source" && e.NewValue != null)
+                {
+                    SetImageVisual(image);
+                }
+            };
+        }
+        else
+        {
+            SetImageVisual(image);
+        }
+    }
+
+    private void SetImageVisual(Image image)
+    {
+        _InvisualableImage.Source = image.Source;
+        _InvisualableImage.Measure(new Avalonia.Size(double.PositiveInfinity, double.PositiveInfinity));
+        _InvisualableImage.Source = null;
+        var desiredSize = _InvisualableImage.DesiredSize;
+
+        if (desiredSize.Height > 200)
+        {
             image.Stretch = Stretch.Uniform;
         }
         image.Opacity = 1;

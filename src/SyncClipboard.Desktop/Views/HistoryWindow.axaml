@@ -5,12 +5,13 @@
         xmlns:m="using:SyncClipboard.Core.Models"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="using:FluentAvalonia.UI.Controls"
-        xmlns:views="clr-namespace:SyncClipboard.Desktop.Views"
+        xmlns:views="using:SyncClipboard.Desktop.Views"
         xmlns:vm="using:SyncClipboard.Core.ViewModels"
         xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
         xmlns:local="using:SyncClipboard.Desktop.Views"
         xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+        xmlns:asyncImage="using:AsyncImageLoader"
         x:Name="_HistoryWindow"
         Title="{x:Static i18n:Strings.ClipboardHistory}"
         Width="850"
@@ -52,8 +53,8 @@
                 <StackPanel Spacing="4" Orientation="Vertical">
                     <Image MaxHeight="202"
                            HorizontalAlignment="Left"
+                           asyncImage:ImageLoader.Source="{Binding FilePath[0]}"
                            Stretch="None"
-                           Source="{Binding FilePath[0], Converter={x:Static vc:FuncConverter.ToBitImage}}"
                            DoubleTapped="Image_DoubleTapped"
                            Opacity="0"
                            Loaded="Image_Loaded" />
@@ -107,6 +108,12 @@
                      BorderThickness="1"
                      FontSize="14"
                      CornerRadius="6" />
+            <Image x:Name="_InvisualableImage"
+                   Grid.Row="3"
+                   MaxHeight="800"
+                   Stretch="None"
+                   IsHitTestVisible="False"
+                   Opacity="0" />
             <ListBox x:Name="_ListBox"
                      Grid.Row="3"
                      ItemsSource="{Binding HistoryItems}"
