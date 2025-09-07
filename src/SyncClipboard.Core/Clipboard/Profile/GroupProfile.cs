@@ -2,10 +2,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Abstract;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.History;
 using System.Text;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -20,10 +22,25 @@ public class GroupProfile : FileProfile
         => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
 
     private GroupProfile(IEnumerable<string> files, string hash, bool contentControl)
-        : base(Path.Combine(LocalTemplateFolder, $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip"), hash)
+        : base(GetGroupFilePath(hash), hash)
     {
         _files = [.. files];
         ContentControl = contentControl;
+    }
+
+    private static string GetGroupFilePath(string hash)
+    {
+        var historyConfig = Config.GetConfig<HistoryConfig>();
+        if (historyConfig.EnableHistory)
+        {
+            var historyFolder = Path.Combine(Env.HistoryFileFolder, hash);
+            Directory.CreateDirectory(historyFolder);
+            return Path.Combine(historyFolder, $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip");
+        }
+        else
+        {
+            return Path.Combine(LocalTemplateFolder, $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip");
+        }
     }
 
     public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
@@ -125,7 +142,7 @@ public class GroupProfile : FileProfile
     {
         return Task.Run(() =>
         {
-            var filePath = Path.Combine(LocalTemplateFolder, FileName);
+            var filePath = GetTempLocalFilePath();
 
             using ZipFile zip = new ZipFile();
             zip.AlternateEncoding = Encoding.UTF8;
@@ -160,10 +177,10 @@ public class GroupProfile : FileProfile
         }, token).WaitAsync(token);
     }
 
-    public override async Task BeforeSetLocal(CancellationToken token, IProgress<HttpDownloadProgress>? progress)
+    protected override async Task DownloadFromRemote(IProgress<HttpDownloadProgress>? progress, CancellationToken cancelToken)
     {
-        await base.BeforeSetLocal(token, progress);
-        await ExtractFiles(token);
+        await base.DownloadFromRemote(progress, cancelToken);
+        await ExtractFiles(cancelToken);
     }
 
     public async Task ExtractFiles(CancellationToken token)
@@ -191,6 +208,42 @@ public class GroupProfile : FileProfile
     }
 
     protected override Task CheckHash(string _, bool _1, CancellationToken _2) => Task.CompletedTask;
+
+    protected override async Task<bool> TryGetFromHistoryCache()
+    {
+        try
+        {
+            var historyConfig = Config.GetConfig<HistoryConfig>();
+            if (!historyConfig.EnableHistory)
+            {
+                return false;
+            }
+
+            var historyRecord = await HistoryManager.GetHistoryRecord(Hash, Type);
+            if (historyRecord == null || historyRecord.FilePath.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var filePath in historyRecord.FilePath)
+            {
+                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                {
+                    return false;
+                }
+            }
+            _files = historyRecord.FilePath;
+            FullPath = Path.GetDirectoryName(_files[0]) + ".zip";
+
+            Logger.Write("[PULL] Found group files in history cache, using existing file paths");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("[PULL] Error accessing history cache for GroupProfile: " + ex.Message);
+            return false;
+        }
+    }
 
     protected override void SetNotification(INotification notification)
     {

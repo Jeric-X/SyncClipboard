@@ -19,8 +19,12 @@
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.MaxItemCount}">
-                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.MaxItemCount, Mode=TwoWay}" />
+                    <NumberBox Minimum="1" Maximum="1000" Value="{x:Bind _viewModel.MaxItemCount, Mode=TwoWay}" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryRetentionMinutes}" Description="{x:Bind i18n:Strings.HistoryRetentionDescription}">
+                    <NumberBox Minimum="0" Maximum="525600" Value="{x:Bind _viewModel.HistoryRetentionMinutes, Mode=TwoWay}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Description="{x:Bind i18n:Strings.HistoryDescription}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
     </StackPanel>

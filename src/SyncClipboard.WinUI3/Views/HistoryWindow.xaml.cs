@@ -58,7 +58,6 @@ public sealed partial class HistoryWindow : Window, IWindow
             else
             {
                 _viewModel.OnGotFocus();
-                // 窗口激活时将焦点设置到搜索框
                 _SearchTextBox.Focus(FocusState.Programmatic);
             }
         };
@@ -110,6 +109,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         this.Activate();
         this.SetForegroundWindow();
+
+        // 每次显示窗口时设置搜索框焦点并选中所有内容
+        _SearchTextBox.Focus(FocusState.Programmatic);
+        _SearchTextBox.SelectAll();
+
         if (!_windowLoaded)
         {
             _windowLoaded = true;

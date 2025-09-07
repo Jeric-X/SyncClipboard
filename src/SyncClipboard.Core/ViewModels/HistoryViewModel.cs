@@ -333,6 +333,7 @@ public partial class HistoryViewModel : ObservableObject
 
         var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
         await profile.SetLocalClipboard(false, token);
+        SearchText = string.Empty;
         SelectedIndex = -1;
         window.ScrollToTop();
         window.Close();

@@ -110,6 +110,9 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowState = WindowState.Normal;
         }
         this.Activate();
+
+        _SearchTextBox.Focus();
+        _SearchTextBox.SelectAll();
     }
 
     void IWindow.Focus()

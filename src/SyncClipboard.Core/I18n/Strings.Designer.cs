@@ -817,20 +817,11 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 History Panel 的本地化字符串。
+        ///   查找类似 History records will become invalid when users manually delete files 的本地化字符串。
         /// </summary>
-        public static string HistoryPanel {
+        public static string HistoryDescription {
             get {
-                return ResourceManager.GetString("HistoryPanel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Search text or filename... 的本地化字符串。
-        /// </summary>
-        public static string HistorySearchPlaceholder {
-            get {
-                return ResourceManager.GetString("HistorySearchPlaceholder", resourceCulture);
+                return ResourceManager.GetString("HistoryDescription", resourceCulture);
             }
         }
         
@@ -844,11 +835,11 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Text 的本地化字符串。
+        ///   查找类似 File 的本地化字符串。
         /// </summary>
-        public static string HistoryFilterText {
+        public static string HistoryFilterFile {
             get {
-                return ResourceManager.GetString("HistoryFilterText", resourceCulture);
+                return ResourceManager.GetString("HistoryFilterFile", resourceCulture);
             }
         }
         
@@ -862,20 +853,56 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 File 的本地化字符串。
-        /// </summary>
-        public static string HistoryFilterFile {
-            get {
-                return ResourceManager.GetString("HistoryFilterFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Starred 的本地化字符串。
         /// </summary>
         public static string HistoryFilterStarred {
             get {
                 return ResourceManager.GetString("HistoryFilterStarred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Text 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterText {
+            get {
+                return ResourceManager.GetString("HistoryFilterText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 History Panel 的本地化字符串。
+        /// </summary>
+        public static string HistoryPanel {
+            get {
+                return ResourceManager.GetString("HistoryPanel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Set to 0 to disable time-based cleanup 的本地化字符串。
+        /// </summary>
+        public static string HistoryRetentionDescription {
+            get {
+                return ResourceManager.GetString("HistoryRetentionDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 History retention time (minutes) 的本地化字符串。
+        /// </summary>
+        public static string HistoryRetentionMinutes {
+            get {
+                return ResourceManager.GetString("HistoryRetentionMinutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Search text or filename... 的本地化字符串。
+        /// </summary>
+        public static string HistorySearchPlaceholder {
+            get {
+                return ResourceManager.GetString("HistorySearchPlaceholder", resourceCulture);
             }
         }
         

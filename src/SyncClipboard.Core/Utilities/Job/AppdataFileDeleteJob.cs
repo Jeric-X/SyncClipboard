@@ -28,7 +28,7 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
                 foreach (var dirs in tempFolders)
                 {
                     var isTime = DateTime.TryParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var createTime);
-                    if (!isTime || ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays)))
+                    if (isTime && ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays)))
                     {
                         dirs.Delete(true);
                     }

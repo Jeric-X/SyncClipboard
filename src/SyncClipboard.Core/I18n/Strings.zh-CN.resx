@@ -687,6 +687,15 @@
   <data name="MaxItemCount" xml:space="preserve">
     <value>最大记录条数</value>
   </data>
+  <data name="HistoryRetentionDescription" xml:space="preserve">
+    <value>0表示不限制时长</value>
+  </data>
+  <data name="HistoryRetentionMinutes" xml:space="preserve">
+    <value>历史记录保存时长(分钟)</value>
+  </data>
+  <data name="HistoryDescription" xml:space="preserve">
+    <value>当用户手动删除文件时，历史记录也会失效</value>
+  </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>历史记录面板</value>
   </data>

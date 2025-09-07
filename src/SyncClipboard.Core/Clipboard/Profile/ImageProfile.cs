@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Abstract;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -29,8 +31,27 @@ public class ImageProfile : FileProfile
         {
             try
             {
-                var fullPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
-                return await Create(fullPath, contentControl, token);
+                var tempPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
+                var imageProfile = await Create(tempPath, contentControl, token);
+
+                // 如果启用历史记录，移动文件到历史记录文件夹
+                var historyConfig = Config.GetConfig<HistoryConfig>();
+                if (historyConfig.EnableHistory)
+                {
+                    var historyFolder = Path.Combine(Env.HistoryFileFolder, imageProfile.Hash);
+                    Directory.CreateDirectory(historyFolder);
+
+                    var fileName = Path.GetFileName(tempPath);
+                    var historyPath = Path.Combine(historyFolder, fileName);
+
+                    if (tempPath != historyPath)
+                    {
+                        File.Move(tempPath, historyPath);
+                        imageProfile.FullPath = historyPath;
+                    }
+                }
+
+                return imageProfile;
             }
             catch when (!token.IsCancellationRequested)
             {

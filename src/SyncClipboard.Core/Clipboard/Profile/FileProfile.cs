@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Image;
 using System.Security.Cryptography;
 using System.Text;
@@ -63,7 +64,17 @@ public class FileProfile : Profile
 
     protected string GetTempLocalFilePath()
     {
-        return Path.Combine(LocalTemplateFolder, FileName);
+        var historyConfig = Config.GetConfig<HistoryConfig>();
+        if (historyConfig.EnableHistory)
+        {
+            var historyFolder = Path.Combine(Env.HistoryFileFolder, Hash);
+            Directory.CreateDirectory(historyFolder);
+            return Path.Combine(historyFolder, FileName);
+        }
+        else
+        {
+            return Path.Combine(LocalTemplateFolder, FileName);
+        }
     }
 
     public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
@@ -88,8 +99,45 @@ public class FileProfile : Profile
         await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
+    protected virtual async Task<bool> TryGetFromHistoryCache()
+    {
+        try
+        {
+            var historyRecord = await HistoryManager.GetHistoryRecord(Hash, Type);
+            if (historyRecord == null || historyRecord.FilePath.Length == 0)
+            {
+                return false;
+            }
+
+            var existingFilePath = historyRecord.FilePath[0];
+            if (string.IsNullOrEmpty(existingFilePath) || !File.Exists(existingFilePath))
+            {
+                return false;
+            }
+
+            FullPath = existingFilePath;
+            Logger.Write("[PULL] Found file in history cache, using existing path: " + existingFilePath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("[PULL] Error accessing history cache: " + ex.Message);
+            return false;
+        }
+    }
+
     public override async Task BeforeSetLocal(CancellationToken cancelToken,
         IProgress<HttpDownloadProgress>? progress = null)
+    {
+        if (await TryGetFromHistoryCache())
+        {
+            return;
+        }
+
+        await DownloadFromRemote(progress, cancelToken);
+    }
+
+    protected virtual async Task DownloadFromRemote(IProgress<HttpDownloadProgress>? progress, CancellationToken cancelToken)
     {
         if (!string.IsNullOrEmpty(FullPath))
         {

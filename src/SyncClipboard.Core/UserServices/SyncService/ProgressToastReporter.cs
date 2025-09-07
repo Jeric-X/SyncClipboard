@@ -19,7 +19,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar.Buttons = buttons.ToList();
 
         AppCore.Current.Logger.Write("ProgressToastReporter created");
-        _progressBar.Show(new NotificationDeliverOption { Silent = true });
+        //_progressBar.Show(new NotificationDeliverOption { Silent = true });
         _counter = new Counter((_) => _progressBar.Update(), 500, ulong.MaxValue);
     }
 

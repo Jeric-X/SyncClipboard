@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Interfaces;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -12,9 +14,11 @@ public class HistoryManager
     public event Action<HistoryRecord>? HistoryUpdated;
 
     private HistoryConfig _historyConfig = new();
+    private readonly ILogger _logger;
 
-    public HistoryManager(ConfigManager configManager)
+    public HistoryManager(ConfigManager configManager, ILogger logger)
     {
+        _logger = logger;
         MigrateDatabase();
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
         LoadConfig(_historyConfig);
@@ -33,6 +37,12 @@ public class HistoryManager
 
     private async Task<uint> SetRecordsMaxCount(HistoryDbContext _dbContext, uint maxCount, CancellationToken token = default)
     {
+        // 如果 maxCount 为 0，使用默认值 1
+        if (maxCount == 0)
+        {
+            maxCount = 1;
+        }
+
         var records = _dbContext.HistoryRecords;
         uint count = (uint)records.Count();
 
@@ -43,12 +53,48 @@ public class HistoryManager
                 .OrderBy(r => r.Timestamp)
                 .Take((int)(count - maxCount))
                 .ToArray();
-            records.RemoveRange(toDeletes);
-            await _dbContext.SaveChangesAsync(token);
-            toDeletes.ForEach(r => HistoryRemoved?.Invoke(r));
+
+            foreach (var record in toDeletes)
+            {
+                await DeleteHistoryInternal(_dbContext, record, token);
+            }
+
             return count - maxCount;
         }
         return 0;
+    }
+
+    public static string? GetTempFolderPath(HistoryRecord record)
+    {
+        if (string.IsNullOrEmpty(record.Hash) || (record.Type != ProfileType.File && record.Type != ProfileType.Image && record.Type != ProfileType.Group))
+            return null;
+
+        var tempFolder = Path.Combine(Env.HistoryFileFolder, record.Hash);
+        return Directory.Exists(tempFolder) ? tempFolder : null;
+    }
+
+    private async Task DeleteHistoryInternal(HistoryDbContext _dbContext, HistoryRecord record, CancellationToken token = default)
+    {
+        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        if (entity != null)
+        {
+            var tempFolderPath = GetTempFolderPath(entity);
+            if (!string.IsNullOrEmpty(tempFolderPath) && Directory.Exists(tempFolderPath))
+            {
+                try
+                {
+                    Directory.Delete(tempFolderPath, true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Write("HistoryManager", $"Failed to delete temp folder {tempFolderPath}: {ex.Message}");
+                }
+            }
+
+            _dbContext.HistoryRecords.Remove(entity);
+            await _dbContext.SaveChangesAsync(token);
+            HistoryRemoved?.Invoke(record);
+        }
     }
 
     public async Task AddHistory(HistoryRecord record, CancellationToken token = default)
@@ -57,6 +103,7 @@ public class HistoryManager
         if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
         {
             entity.Timestamp = record.Timestamp;
+            entity.FilePath = record.FilePath;
             await _dbContext.SaveChangesAsync(token);
             HistoryRemoved?.Invoke(entity);
             HistoryAdded?.Invoke(entity);
@@ -83,6 +130,12 @@ public class HistoryManager
             .ToList();
     }
 
+    public static async Task<HistoryRecord?> GetHistoryRecord(string hash, ProfileType type)
+    {
+        using var _dbContext = await GetDbContext();
+        return _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == type && r.Hash == hash);
+    }
+
     public async Task UpdateHistory(HistoryRecord record, CancellationToken token = default)
     {
         using var _dbContext = await GetDbContext();
@@ -103,12 +156,94 @@ public class HistoryManager
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)
     {
         using var _dbContext = await GetDbContext();
-        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
-        if (entity != null)
+        await DeleteHistoryInternal(_dbContext, record, token);
+    }
+
+    public async Task CleanupExpiredHistory(CancellationToken token = default)
+    {
+        try
         {
-            _dbContext.HistoryRecords.Remove(entity);
-            await _dbContext.SaveChangesAsync(token);
-            HistoryRemoved?.Invoke(record);
+            if (!_historyConfig.EnableHistory || _historyConfig.HistoryRetentionMinutes == 0)
+            {
+                return;
+            }
+
+            var cutoffTime = DateTime.UtcNow.AddMinutes(-_historyConfig.HistoryRetentionMinutes);
+
+            using var _dbContext = await GetDbContext();
+            var expiredRecords = _dbContext.HistoryRecords
+                .Where(r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned)
+                .ToList();
+
+            foreach (var record in expiredRecords)
+            {
+                await DeleteHistoryInternal(_dbContext, record, token);
+            }
+
+            if (expiredRecords.Count > 0)
+            {
+                _logger.Write("HistoryManager", $"Cleaned up {expiredRecords.Count} expired history records");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("HistoryManager", $"Error during history cleanup: {ex.Message}");
+        }
+    }
+
+    public void CleanupOrphanedHistoryFolders()
+    {
+        try
+        {
+            var historyFolder = Env.HistoryFileFolder;
+            if (!Directory.Exists(historyFolder))
+            {
+                return;
+            }
+
+            using var _dbContext = new HistoryDbContext();
+            var existingHashes = _dbContext.HistoryRecords
+                .Where(r => r.Type == ProfileType.File || r.Type == ProfileType.Image || r.Type == ProfileType.Group)
+                .Select(r => r.Hash)
+                .ToHashSet();
+
+            var directories = Directory.GetDirectories(historyFolder);
+            var cutoffTime = DateTime.Now.AddDays(-7); // 7天前的时间点
+
+            foreach (var dir in directories)
+            {
+                var dirName = Path.GetFileName(dir);
+
+                try
+                {
+                    if (existingHashes.Contains(dirName))
+                    {
+                        continue;
+                    }
+
+                    var dirInfo = new DirectoryInfo(dir);
+                    if (dirInfo.CreationTime <= cutoffTime)
+                    {
+                        try
+                        {
+                            Directory.Delete(dir, true);
+                            _logger.Write("HistoryManager", $"Deleted orphaned history folder: {dirName} (created: {dirInfo.CreationTime})");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Write("HistoryManager", $"Failed to delete orphaned folder {dir}: {ex.Message}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Write("HistoryManager", $"Error checking folder {dir}: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("HistoryManager", $"Error during orphaned folder cleanup: {ex.Message}");
         }
     }
 
