@@ -907,6 +907,57 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 ↑/↓: Navigate items
+        ///Tab/Shift+Tab: Switch filters
+        ///Enter: Copy and paste
+        ///Alt+Enter: Copy only
+        ///Esc: Close window 的本地化字符串。
+        /// </summary>
+        public static string HistoryWindowKeyboardList {
+            get {
+                return ResourceManager.GetString("HistoryWindowKeyboardList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Keyboard Shortcuts 的本地化字符串。
+        /// </summary>
+        public static string HistoryWindowKeyboardShortcuts {
+            get {
+                return ResourceManager.GetString("HistoryWindowKeyboardShortcuts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Single click: Select item
+        ///Double click item: Copy to clipboard
+        ///Double click image: View full image 的本地化字符串。
+        /// </summary>
+        public static string HistoryWindowMouseList {
+            get {
+                return ResourceManager.GetString("HistoryWindowMouseList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mouse Operations 的本地化字符串。
+        /// </summary>
+        public static string HistoryWindowMouseOperations {
+            get {
+                return ResourceManager.GetString("HistoryWindowMouseOperations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 History Window Operations 的本地化字符串。
+        /// </summary>
+        public static string HistoryWindowOperations {
+            get {
+                return ResourceManager.GetString("HistoryWindowOperations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Home 的本地化字符串。
         /// </summary>
         public static string HomePage {

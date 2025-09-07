@@ -444,6 +444,27 @@
   <data name="SwitchOffClipboardSyncing" xml:space="preserve">
     <value>剪贴板同步已关闭</value>
   </data>
+  <data name="HistoryWindowOperations" xml:space="preserve">
+    <value>历史记录窗口操作说明</value>
+  </data>
+  <data name="HistoryWindowKeyboardShortcuts" xml:space="preserve">
+    <value>键盘快捷键</value>
+  </data>
+  <data name="HistoryWindowMouseOperations" xml:space="preserve">
+    <value>鼠标操作</value>
+  </data>
+  <data name="HistoryWindowKeyboardList" xml:space="preserve">
+    <value>↑/↓：导航项目
+Tab/Shift+Tab：切换筛选器
+Enter：复制并粘贴
+Alt+Enter：仅复制
+Esc：关闭窗口</value>
+  </data>
+  <data name="HistoryWindowMouseList" xml:space="preserve">
+    <value>单击：选择项目
+双击项目：复制到剪贴板
+双击图片：查看完整图片</value>
+  </data>
   <data name="SwitchOnBuiltInServer" xml:space="preserve">
     <value>内置服务器已开启</value>
   </data>

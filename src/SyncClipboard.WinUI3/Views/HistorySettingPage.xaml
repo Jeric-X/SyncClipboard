@@ -27,5 +27,14 @@
                 <ui:SettingsCard Description="{x:Bind i18n:Strings.HistoryDescription}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryWindowOperations}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE946;" />
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryWindowKeyboardShortcuts}" Description="{x:Bind i18n:Strings.HistoryWindowKeyboardList}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryWindowMouseOperations}" Description="{x:Bind i18n:Strings.HistoryWindowMouseList}" />
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
     </StackPanel>
 </Page>

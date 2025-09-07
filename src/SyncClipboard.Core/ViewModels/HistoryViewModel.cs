@@ -71,7 +71,7 @@ public partial class HistoryViewModel : ObservableObject
                 HistoryFilterType.All => true,
                 HistoryFilterType.Text => record.Type == ProfileType.Text,
                 HistoryFilterType.Image => record.Type == ProfileType.Image,
-                HistoryFilterType.File => record.Type == ProfileType.File,
+                HistoryFilterType.File => record.Type == ProfileType.File || record.Type == ProfileType.Group,
                 HistoryFilterType.Starred => record.Stared,
                 _ => true
             };
