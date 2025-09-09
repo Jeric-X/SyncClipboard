@@ -237,13 +237,6 @@ public partial class HistoryViewModel : ObservableObject
         window?.ScrollToSelectedItem();
     }
 
-    /// <summary>
-    /// 处理统一的键值输入 - 推荐的类型安全方法
-    /// </summary>
-    /// <param name="key">键值</param>
-    /// <param name="isShiftPressed">是否按下Shift键</param>
-    /// <param name="isAltPressed">是否按下Alt键</param>
-    /// <returns>是否处理了该键</returns>
     public bool HandleKeyPress(Key key, bool isShiftPressed = false, bool isAltPressed = false)
     {
         switch (key)
@@ -331,12 +324,13 @@ public partial class HistoryViewModel : ObservableObject
             }
         }
 
-        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
-        await profile.SetLocalClipboard(false, token);
-        SearchText = string.Empty;
         SelectedIndex = -1;
         window.ScrollToTop();
         window.Close();
+        SearchText = string.Empty;
+
+        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
+        await profile.SetLocalClipboard(false, token);
         if (paste)
         {
             keyboard.Paste();
@@ -358,19 +352,11 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// 处理列表项双击事件
-    /// </summary>
-    /// <param name="record">历史记录项</param>
     public void HandleItemDoubleClick(HistoryRecordVM record)
     {
         _ = CopyToClipboard(record, false, CancellationToken.None);
     }
 
-    /// <summary>
-    /// 处理图片双击事件
-    /// </summary>
-    /// <param name="record">历史记录项</param>
     public void HandleImageDoubleClick(HistoryRecordVM record)
     {
         ViewImage(record);

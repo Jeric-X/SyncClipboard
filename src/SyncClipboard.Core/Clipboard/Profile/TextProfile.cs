@@ -96,7 +96,7 @@ public class TextProfile : Profile
 
     public override HistoryRecord CreateHistoryRecord()
     {
-        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(Text);
+        byte[] inputBytes = System.Text.Encoding.Unicode.GetBytes(Text);
         byte[] hashBytes = MD5.HashData(inputBytes);
         var hash = Convert.ToHexString(hashBytes);
         return new HistoryRecord
