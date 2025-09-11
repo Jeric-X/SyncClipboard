@@ -454,7 +454,8 @@
     <value>鼠标操作</value>
   </data>
   <data name="HistoryWindowKeyboardList" xml:space="preserve">
-    <value>↑/↓：导航项目
+    <value>Ctrl+F：搜索
+↑/↓：导航项目
 Tab/Shift+Tab：切换筛选器
 Enter：复制并粘贴
 Alt+Enter：仅复制

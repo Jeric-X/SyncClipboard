@@ -181,8 +181,17 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
     {
-        var isShiftPressed = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
-        var isAltPressed = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        if (e.Key == VirtualKey.F && isCtrlPressed)
+        {
+            _SearchTextBox.Focus(FocusState.Programmatic);
+            _SearchTextBox.SelectAll();
+            e.Handled = true;
+            return;
+        }
+
+        var isShiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        var isAltPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
         var key = KeyboardMap.ConvertFromVirtualKey(e.Key);
 

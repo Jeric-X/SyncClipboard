@@ -454,7 +454,8 @@
     <value>Mouse Operations</value>
   </data>
   <data name="HistoryWindowKeyboardList" xml:space="preserve">
-    <value>↑/↓: Navigate items
+    <value>Ctrl+F: Search
+↑/↓: Navigate items
 Tab/Shift+Tab: Switch filters
 Enter: Copy and paste
 Alt+Enter: Copy only

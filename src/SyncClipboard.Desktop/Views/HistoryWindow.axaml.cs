@@ -58,6 +58,14 @@ public partial class HistoryWindow : Window, IWindow
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (e.Key == Key.F && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            _SearchTextBox.Focus();
+            _SearchTextBox.SelectAll();
+            e.Handled = true;
+            return;
+        }
+
         var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
 
