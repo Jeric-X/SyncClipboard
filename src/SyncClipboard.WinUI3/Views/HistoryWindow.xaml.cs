@@ -1,4 +1,5 @@
 using CommunityToolkit.WinUI;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -39,8 +40,9 @@ public sealed partial class HistoryWindow : Window, IWindow
         InitializeComponent();
 
         ExtendsContentIntoTitleBar = true;
-        SetTitleBar(_DraggableArea);
+        SetTitleBar(_TitleBar);
         this.SetTitleBarButtonForegroundColor();
+        _TitleBar.Loaded += (_, _) => SetNonClientPointerSource();
 
         this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
         this.SizeChanged += HistoryWindow_SizeChanged;
@@ -91,6 +93,7 @@ public sealed partial class HistoryWindow : Window, IWindow
             _viewModel.Height = this.AppWindow.Size.Height;
             _viewModel.Width = this.AppWindow.Size.Width;
         }
+        SetNonClientPointerSource();
     }
 
     private void OnHistoryWindowClosed(object sender, WindowEventArgs args)
@@ -110,7 +113,6 @@ public sealed partial class HistoryWindow : Window, IWindow
         this.Activate();
         this.SetForegroundWindow();
 
-        // 每次显示窗口时设置搜索框焦点并选中所有内容
         _SearchTextBox.Focus(FocusState.Programmatic);
         _SearchTextBox.SelectAll();
 
@@ -224,20 +226,25 @@ public sealed partial class HistoryWindow : Window, IWindow
     private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         e.Handled = true;
-        SetSelectedItem((HistoryRecordVM)((Grid?)sender)?.DataContext!);
+        var clickedItem = (HistoryRecordVM)((Grid?)sender)?.DataContext!;
+        if ((HistoryRecordVM?)_ListView.SelectedValue != clickedItem)
+        {
+            _ListView.SelectedValue = clickedItem;
+            _historyItemEvents.Reset();
+        }
         _historyItemEvents.TriggerOriginalEvent();
     }
 
     private void Image_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         e.Handled = true;
-        SetSelectedItem((HistoryRecordVM)((Image?)sender)?.DataContext!);
+        var clickedItem = (HistoryRecordVM)((Image?)sender)?.DataContext!;
+        if ((HistoryRecordVM?)_ListView.SelectedValue != clickedItem)
+        {
+            _ListView.SelectedValue = clickedItem;
+            _imageClickEvents.Reset();
+        }
         _imageClickEvents.TriggerOriginalEvent();
-    }
-
-    private void SetSelectedItem(HistoryRecordVM record)
-    {
-        _ListView.SelectedValue = record;
     }
 
     public void ScrollToTop()
@@ -300,5 +307,35 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         // 事件继续传递会导致搜索框失去焦点
         e.Handled = true;
+    }
+
+    private void SetNonClientPointerSource()
+    {
+        RectInt32[] rectArray = [
+            GetElementRect(_FilterSelectorBar),
+            //GetElementRect(_PinButton)
+        ];
+
+        InputNonClientPointerSource nonClientInputSrc = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
+        nonClientInputSrc.SetRegionRects(NonClientRegionKind.Passthrough, rectArray);
+    }
+
+    private RectInt32 GetElementRect(FrameworkElement element)
+    {
+        var scale = _TitleBar.XamlRoot.RasterizationScale;
+        var transform = element.TransformToVisual(null);
+        var bounds = transform.TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        RectInt32 rect = GetRect(bounds, scale);
+        return rect;
+    }
+
+    private RectInt32 GetRect(Rect bounds, double scale)
+    {
+        return new RectInt32(
+            _X: (int)Math.Round(bounds.X * scale),
+            _Y: (int)Math.Round(bounds.Y * scale),
+            _Width: (int)Math.Round(bounds.Width * scale),
+            _Height: (int)Math.Round(bounds.Height * scale)
+        );
     }
 }

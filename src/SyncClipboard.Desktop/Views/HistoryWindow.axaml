@@ -73,34 +73,29 @@
                                              MaterialOpacity="0.65" />
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
-        <Grid RowDefinitions="Auto, Auto, Auto, *">
-            <OnPlatform>
-                <OnPlatform.Default>
-                    <Border Height="26" IsHitTestVisible="False">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" Text="{x:Static i18n:Strings.ClipboardHistory}" />
-                    </Border>
-                </OnPlatform.Default>
-                <OnPlatform.macOS>
-                    <Border Height="26" IsHitTestVisible="False" />
-                </OnPlatform.macOS>
-                <OnPlatform.Linux>
-                    <Border Height="0" />
-                </OnPlatform.Linux>
-            </OnPlatform>
-            <TabStrip Grid.Row="1"
-                      HorizontalAlignment="Center"
-                      ItemsSource="{Binding FilterOptions}"
-                      SelectedItem="{Binding SelectedFilterOption}"
-                      IsTabStop="False"
-                      Focusable="False">
-                <TabStrip.ItemTemplate>
-                    <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=vms:HistoryFilterType}">
-                        <TextBlock Text="{Binding ShownString}" FontSize="14" />
-                    </DataTemplate>
-                </TabStrip.ItemTemplate>
-            </TabStrip>
+        <Grid RowDefinitions="Auto, Auto, *">
+            <Border HorizontalAlignment="Center">
+                <Grid ColumnDefinitions="*, Auto, Auto">
+                    <!-- <Border Grid.Column="0" Width="{Binding #_PinButton.Bounds.Width}" /> -->
+                    <TabStrip Grid.Column="1"
+                              HorizontalAlignment="Center"
+                              ItemsSource="{Binding FilterOptions}"
+                              SelectedItem="{Binding SelectedFilterOption}"
+                              IsTabStop="False"
+                              Focusable="False">
+                        <TabStrip.ItemTemplate>
+                            <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=vms:HistoryFilterType}">
+                                <TextBlock Text="{Binding ShownString}" FontSize="14" />
+                            </DataTemplate>
+                        </TabStrip.ItemTemplate>
+                    </TabStrip>
+                    <!-- <Button x:Name="_PinButton" Grid.Column="2">
+                        <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button> -->
+                </Grid>
+            </Border>
             <TextBox x:Name="_SearchTextBox"
-                     Grid.Row="2"
+                     Grid.Row="1"
                      Margin="20,8,20,8"
                      VerticalContentAlignment="Center"
                      Text="{Binding SearchText}"
@@ -109,13 +104,13 @@
                      FontSize="14"
                      CornerRadius="6" />
             <Image x:Name="_InvisualableImage"
-                   Grid.Row="3"
+                   Grid.Row="2"
                    MaxHeight="800"
                    Stretch="None"
                    IsHitTestVisible="False"
                    Opacity="0" />
             <ListBox x:Name="_ListBox"
-                     Grid.Row="3"
+                     Grid.Row="2"
                      ItemsSource="{Binding HistoryItems}"
                      SelectionMode="Single"
                      SelectedIndex="{Binding SelectedIndex}"

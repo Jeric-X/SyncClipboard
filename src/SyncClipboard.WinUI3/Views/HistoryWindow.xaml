@@ -16,7 +16,10 @@
     <Window.SystemBackdrop>
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
-    <Grid x:Name="_HistoryWindowGrid" KeyDown="Grid_KeyDown" KeyboardAcceleratorPlacementMode="Hidden">
+    <Grid x:Name="_HistoryWindowGrid"
+          KeyDown="Grid_KeyDown"
+          KeyboardAcceleratorPlacementMode="Hidden"
+          RowDefinitions="Auto, Auto, *">
         <Grid.Resources>
             <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
                 <Setter Property="Height" Value="28" />
@@ -47,25 +50,26 @@
             </DataTemplate>
             <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />
         </Grid.Resources>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Border x:Name="_DraggableArea" Grid.Row="0" Height="28">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Bind i18n:Strings.ClipboardHistory}" />
-        </Border>
-        <SelectorBar x:Name="_FilterSelectorBar"
-                     Grid.Row="1"
-                     Padding="0,-10,0,0"
-                     HorizontalAlignment="Center"
-                     IsTabStop="False"
-                     PointerPressed="FilterSelectorBar_PointerPressed"
-                     AllowFocusOnInteraction="False"
-                     SelectionChanged="SelectorBar_SelectionChanged" />
+        <Grid x:Name="_TitleBar" Grid.Row="0">
+            <Border HorizontalAlignment="Center">
+                <Grid ColumnDefinitions="*, Auto, Auto">
+                    <!-- <Border MaxWidth="{x:Bind _PinButton.ActualWidth}" Background="Red" /> -->
+                    <SelectorBar x:Name="_FilterSelectorBar"
+                                 Grid.Column="1"
+                                 Padding="0,-4,0,0"
+                                 HorizontalAlignment="Center"
+                                 IsTabStop="False"
+                                 PointerPressed="FilterSelectorBar_PointerPressed"
+                                 AllowFocusOnInteraction="False"
+                                 SelectionChanged="SelectorBar_SelectionChanged" />
+                    <!-- <Button x:Name="_PinButton" Grid.Column="2">
+                        <FontIcon Glyph="&#xE77F;" />
+                    </Button> -->
+                </Grid>
+            </Border>
+        </Grid>
         <TextBox x:Name="_SearchTextBox"
-                 Grid.Row="2"
+                 Grid.Row="1"
                  Margin="20,8,20,8"
                  VerticalContentAlignment="Center"
                  Text="{x:Bind _viewModel.SearchText, Mode=TwoWay}"
@@ -74,7 +78,7 @@
                  FontSize="14"
                  CornerRadius="6"
                  TextChanged="SearchTextBox_TextChanged" />
-        <Grid Grid.Row="3">
+        <Grid Grid.Row="2">
             <Image x:Name="_InvisualableImage"
                    MaxHeight="201"
                    Stretch="None"
@@ -82,7 +86,7 @@
                    Opacity="0" />
         </Grid>
         <ListView x:Name="_ListView"
-                  Grid.Row="3"
+                  Grid.Row="2"
                   IsTabStop="False"
                   ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
                   SelectedIndex="{x:Bind _viewModel.SelectedIndex, Mode=TwoWay}"

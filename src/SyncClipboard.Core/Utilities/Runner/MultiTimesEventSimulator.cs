@@ -29,6 +29,12 @@ public class MultiTimesEventSimulator(TimeSpan _interval)
         _ = WaitForNextOriginalEvent(_cts.Token);
     }
 
+    public void Reset()
+    {
+        _clickCount = 0;
+        _cts?.Cancel();
+    }
+
     public void SetEvent(uint count, Action action)
     {
         _events[count] += action;
