@@ -86,6 +86,8 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         // 初始化 SelectorBar 选项
         InitializeSelectorBar();
+
+        this.SetTopmost(_viewModel.IsTopmost);
     }
 
     private void HistoryWindow_SizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs args)
@@ -179,6 +181,11 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             var _1 = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
         }
+    }
+
+    private void PinButton_Click(object _, RoutedEventArgs _1)
+    {
+        _viewModel.ToggleTopmost();
     }
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
@@ -324,7 +331,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         RectInt32[] rectArray = [
             GetElementRect(_FilterSelectorBar),
-            //GetElementRect(_PinButton)
+            GetElementRect(_PinButton)
         ];
 
         InputNonClientPointerSource nonClientInputSrc = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
@@ -360,5 +367,10 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         _viewModel.HandleKeyPress(Key.Down, false, false, true);
         args.Handled = true;
+    }
+
+    public void SetTopmost(bool topmost)
+    {
+        this.SetIsAlwaysOnTop(topmost);
     }
 }

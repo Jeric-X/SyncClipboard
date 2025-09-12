@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
+using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -54,6 +55,8 @@ public partial class HistoryWindow : Window, IWindow
             _viewModel.Height = (int)Height;
             _viewModel.Width = (int)Width;
         };
+
+        this.Topmost = _viewModel.IsTopmost;
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -161,6 +164,12 @@ public partial class HistoryWindow : Window, IWindow
         _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
     }
 
+    private void PinButton_Click(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        _viewModel.ToggleTopmost();
+    }
+
     private void ListBox_DoubleTapped(object? sender, TappedEventArgs e)
     {
         var history = ((ListBox?)sender)?.SelectedValue;
@@ -225,5 +234,10 @@ public partial class HistoryWindow : Window, IWindow
         {
             _ListBox.ScrollIntoView(0);
         }
+    }
+
+    public void SetTopmost(bool topmost)
+    {
+        this.Topmost = topmost;
     }
 }

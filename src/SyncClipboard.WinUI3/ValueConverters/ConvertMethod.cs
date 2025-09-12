@@ -61,6 +61,6 @@ internal static class ConvertMethod
 
     public static string ToPinIcon(bool input)
     {
-        return input ? "\uE842" : "\uE178";
+        return input ? "\uE841" : "\uE840";
     }
 }

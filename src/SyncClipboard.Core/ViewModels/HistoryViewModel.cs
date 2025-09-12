@@ -80,7 +80,7 @@ public partial class HistoryViewModel : ObservableObject
             if (!typeMatches) return false;
 
             // 如果没有搜索文本，返回类型匹配结果
-            if (string.IsNullOrWhiteSpace(SearchText)) return true;
+            if (string.IsNullOrEmpty(SearchText)) return true;
 
             // 应用搜索文本过滤
             var searchText = SearchText;
@@ -154,6 +154,19 @@ public partial class HistoryViewModel : ObservableObject
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().Height;
         set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { Height = value });
+    }
+
+    public bool IsTopmost
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().IsTopmost;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { IsTopmost = value });
+    }
+
+    public void ToggleTopmost()
+    {
+        IsTopmost = !IsTopmost;
+        window?.SetTopmost(IsTopmost);
+        OnPropertyChanged(nameof(IsTopmost));
     }
 
     [RelayCommand]
@@ -377,7 +390,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        if (!_remainWindowForViewDetail && configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
+        if (!_remainWindowForViewDetail && !IsTopmost && configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
         {
             window.Close();
         }

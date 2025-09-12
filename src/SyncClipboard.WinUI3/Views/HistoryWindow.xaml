@@ -53,7 +53,7 @@
         <Grid x:Name="_TitleBar" Grid.Row="0">
             <Border HorizontalAlignment="Center">
                 <Grid ColumnDefinitions="*, Auto, Auto">
-                    <!-- <Border MaxWidth="{x:Bind _PinButton.ActualWidth}" Background="Red" /> -->
+                    <Border MaxWidth="{x:Bind _PinButton.ActualWidth}" Background="Red" />
                     <SelectorBar x:Name="_FilterSelectorBar"
                                  Grid.Column="1"
                                  Padding="0,-4,0,0"
@@ -62,9 +62,9 @@
                                  PointerPressed="FilterSelectorBar_PointerPressed"
                                  AllowFocusOnInteraction="False"
                                  SelectionChanged="SelectorBar_SelectionChanged" />
-                    <!-- <Button x:Name="_PinButton" Grid.Column="2">
-                        <FontIcon Glyph="&#xE77F;" />
-                    </Button>-->
+                    <Button x:Name="_PinButton" Grid.Column="2" Click="PinButton_Click">
+                        <FontIcon Glyph="{x:Bind vc:ConvertMethod.ToPinIcon(_viewModel.IsTopmost), Mode=OneWay}" />
+                    </Button>
                 </Grid>
             </Border>
         </Grid>

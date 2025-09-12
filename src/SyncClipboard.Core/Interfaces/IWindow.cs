@@ -7,4 +7,5 @@ public interface IWindow
     void Close();
     void ScrollToTop() { }
     void ScrollToSelectedItem() { }
+    void SetTopmost(bool topmost) { }
 }

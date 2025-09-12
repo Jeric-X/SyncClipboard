@@ -76,7 +76,7 @@
         <Grid RowDefinitions="Auto, Auto, *">
             <Border HorizontalAlignment="Center">
                 <Grid ColumnDefinitions="*, Auto, Auto">
-                    <!-- <Border Grid.Column="0" Width="{Binding #_PinButton.Bounds.Width}" /> -->
+                    <Border Grid.Column="0" Width="{Binding #_PinButton.Bounds.Width}" />
                     <TabStrip Grid.Column="1"
                               HorizontalAlignment="Center"
                               ItemsSource="{Binding FilterOptions}"
@@ -89,9 +89,12 @@
                             </DataTemplate>
                         </TabStrip.ItemTemplate>
                     </TabStrip>
-                    <!-- <Button x:Name="_PinButton" Grid.Column="2">
-                        <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                    </Button> -->
+                    <Button x:Name="_PinButton"
+                            Grid.Column="2"
+                            Margin="0,4,0,0"
+                            Click="PinButton_Click">
+                        <ui:FontIcon Glyph="{Binding IsTopmost, Converter={x:Static vc:FuncConverter.ToPinIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
                 </Grid>
             </Border>
             <TextBox x:Name="_SearchTextBox"

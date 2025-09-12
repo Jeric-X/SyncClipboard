@@ -1,5 +1,6 @@
 ﻿using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
+using Avalonia.Media.TextFormatting.Unicode;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
@@ -45,7 +46,7 @@ public class FuncConverter
                 ProfileType.Text => "\uE164",
                 ProfileType.File => "\uED43",
                 ProfileType.Group => "\uED43",
-                ProfileType.Image => "\udba0\udc7f",
+                ProfileType.Image => char.ConvertFromUtf32((int)Convert.ToUInt32("F807F", 16)).ToString(),
                 _ => "\uE10A",
             };
         });
@@ -76,8 +77,8 @@ public class FuncConverter
         {
             if (input)
             {
-                return "\uE77F";
+                return char.ConvertFromUtf32((int)Convert.ToUInt32("F809B", 16)).ToString();
             }
-            return "\uE8C8";
+            return "\uE141";
         });
 }
