@@ -68,6 +68,7 @@ public partial class HistoryWindow : Window, IWindow
 
         var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
+        var isCtrlPressed = e.KeyModifiers.HasFlag(KeyModifiers.Control);
 
         var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
 
@@ -76,7 +77,7 @@ public partial class HistoryWindow : Window, IWindow
             throw new NotSupportedException($"Avalonia key '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
         }
 
-        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed);
+        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed);
 
         if (handled)
         {

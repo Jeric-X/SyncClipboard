@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
@@ -17,6 +18,7 @@ using System.Threading;
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.System;
+using Windows.UI.Core;
 using WinUIEx;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -86,7 +88,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         InitializeSelectorBar();
     }
 
-    private void HistoryWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
+    private void HistoryWindow_SizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs args)
     {
         if (_windowLoaded)
         {
@@ -181,7 +183,7 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
     {
-        var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
         if (e.Key == VirtualKey.F && isCtrlPressed)
         {
             _SearchTextBox.Focus(FocusState.Programmatic);
@@ -190,8 +192,8 @@ public sealed partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        var isShiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
-        var isAltPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        var isShiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
+        var isAltPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down);
 
         var key = KeyboardMap.ConvertFromVirtualKey(e.Key);
 
@@ -200,7 +202,7 @@ public sealed partial class HistoryWindow : Window, IWindow
             throw new NotSupportedException($"WinUI3 VirtualKey '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
         }
 
-        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed);
+        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed);
 
         e.Handled = handled;
     }
@@ -346,5 +348,17 @@ public sealed partial class HistoryWindow : Window, IWindow
             _Width: (int)Math.Round(bounds.Width * scale),
             _Height: (int)Math.Round(bounds.Height * scale)
         );
+    }
+
+    private void CtrlUp_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        _viewModel.HandleKeyPress(Key.Up, false, false, true);
+        args.Handled = true;
+    }
+
+    private void CtrlDown_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        _viewModel.HandleKeyPress(Key.Down, false, false, true);
+        args.Handled = true;
     }
 }

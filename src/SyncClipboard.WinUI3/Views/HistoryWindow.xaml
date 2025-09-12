@@ -64,7 +64,7 @@
                                  SelectionChanged="SelectorBar_SelectionChanged" />
                     <!-- <Button x:Name="_PinButton" Grid.Column="2">
                         <FontIcon Glyph="&#xE77F;" />
-                    </Button> -->
+                    </Button>-->
                 </Grid>
             </Border>
         </Grid>
@@ -77,7 +77,13 @@
                  BorderThickness="1"
                  FontSize="14"
                  CornerRadius="6"
-                 TextChanged="SearchTextBox_TextChanged" />
+                 KeyboardAcceleratorPlacementMode="Hidden"
+                 TextChanged="SearchTextBox_TextChanged">
+            <TextBox.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Up" Modifiers="Control" Invoked="CtrlUp_Invoked" />
+                <KeyboardAccelerator Key="Down" Modifiers="Control" Invoked="CtrlDown_Invoked" />
+            </TextBox.KeyboardAccelerators>
+        </TextBox>
         <Grid Grid.Row="2">
             <Image x:Name="_InvisualableImage"
                    MaxHeight="201"

@@ -237,8 +237,21 @@ public partial class HistoryViewModel : ObservableObject
         window?.ScrollToSelectedItem();
     }
 
-    public bool HandleKeyPress(Key key, bool isShiftPressed = false, bool isAltPressed = false)
+    public bool HandleKeyPress(Key key, bool isShiftPressed = false, bool isAltPressed = false, bool isCtrlPressed = false)
     {
+        if (isCtrlPressed)
+        {
+            switch (key)
+            {
+                case Key.Up:
+                    ScrollToTop();
+                    return true;
+                case Key.Down:
+                    ScrollToBottom();
+                    return true;
+            }
+        }
+
         switch (key)
         {
             case Key.Tab:
@@ -291,6 +304,24 @@ public partial class HistoryViewModel : ObservableObject
         }
         _remainWindowForViewDetail = true;
         Sys.OpenWithDefaultApp(record.FilePath[0]);
+    }
+
+    private void ScrollToTop()
+    {
+        if (HistoryItems.Any())
+        {
+            SelectedIndex = 0;
+            window?.ScrollToSelectedItem();
+        }
+    }
+
+    private void ScrollToBottom()
+    {
+        if (HistoryItems.Any())
+        {
+            SelectedIndex = ((IList<HistoryRecordVM>)HistoryItems).Count - 1;
+            window?.ScrollToSelectedItem();
+        }
     }
 
     public async Task Init(IWindow window)

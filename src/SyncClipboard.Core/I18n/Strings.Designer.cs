@@ -907,7 +907,9 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Ctrl+F: Search
+        ///   查找类似 Ctrl+F: Focus search box
+        ///Ctrl+↑: Scroll to top
+        ///Ctrl+↓: Scroll to bottom
         ///↑/↓: Navigate items
         ///Tab/Shift+Tab: Switch filters
         ///Enter: Copy and paste
