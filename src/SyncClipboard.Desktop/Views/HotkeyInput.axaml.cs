@@ -2,9 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
-using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Desktop.Utilities;
 using System.Collections.Generic;
@@ -15,13 +12,14 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HotkeyInput : UserControl
 {
-    private SharpHookHotkeyRegistry? _hotkeyRegistry;
     private readonly HashSet<AvaloniaKey> _pressedKeys = [];
     private readonly HashSet<AvaloniaKey> _pressingKeys = [];
 
     public HotkeyInput()
     {
         InitializeComponent();
+        KeyDown += OnKeyDown;
+        KeyUp += OnKeyUp;
     }
 
     public bool IsError
@@ -44,27 +42,9 @@ public partial class HotkeyInput : UserControl
         nameof(Hotkey), Hotkey.Nothing
     );
 
-    protected override void OnGotFocus(GotFocusEventArgs e)
-    {
-        _hotkeyRegistry = App.Current.Services.GetService<INativeHotkeyRegistry>() as SharpHookHotkeyRegistry;
-        if (_hotkeyRegistry != null)
-        {
-            _hotkeyRegistry.CheckGlobalHook();
-            _hotkeyRegistry.SupressHotkey = true;
-        }
-        KeyDown += OnKeyDown;
-        KeyUp += OnKeyUp;
-        base.OnGotFocus(e);
-    }
-
     protected override void OnLostFocus(RoutedEventArgs e)
     {
-        if (_hotkeyRegistry != null)
-        {
-            _hotkeyRegistry.SupressHotkey = false;
-        }
-        KeyDown -= OnKeyDown;
-        KeyUp -= OnKeyUp;
+        _pressingKeys.Clear();
         base.OnLostFocus(e);
     }
 
@@ -100,6 +80,6 @@ public partial class HotkeyInput : UserControl
                 keys.Add(key);
             }
         }
-        Dispatcher.UIThread.Post(() => Hotkey = new Hotkey(keys));
+        Hotkey = new Hotkey(keys);
     }
 }

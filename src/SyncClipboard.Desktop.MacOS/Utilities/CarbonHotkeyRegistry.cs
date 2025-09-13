@@ -107,7 +107,7 @@ internal class CarbonHotkeyRegistry : INativeHotkeyRegistry, IDisposable
         var hotkeyId = _nextHotkeyId++;
         var (keyCode, modifiers) = ConvertHotkeyToCarbonFormat(hotkey);
 
-        if (keyCode == 0)
+        if (keyCode == uint.MaxValue)
             return false;
 
         var eventHotKeyId = new EventHotKeyID
@@ -159,13 +159,13 @@ internal class CarbonHotkeyRegistry : INativeHotkeyRegistry, IDisposable
             return false;
 
         var (keyCode, _) = ConvertHotkeyToCarbonFormat(hotkey);
-        return keyCode != 0;
+        return keyCode != uint.MaxValue;
     }
 
     private static (uint keyCode, uint modifiers) ConvertHotkeyToCarbonFormat(Hotkey hotkey)
     {
         uint modifiers = 0;
-        uint keyCode = 0;
+        uint keyCode = uint.MaxValue;
 
         foreach (var key in hotkey.Keys)
         {
@@ -188,8 +188,8 @@ internal class CarbonHotkeyRegistry : INativeHotkeyRegistry, IDisposable
                     break;
                 default:
                     // Only one non-modifier key is allowed
-                    if (keyCode != 0)
-                        return (0, 0);
+                    if (keyCode != uint.MaxValue)
+                        return (uint.MaxValue, 0);
                     keyCode = GetVirtualKeyCode(key);
                     break;
             }
