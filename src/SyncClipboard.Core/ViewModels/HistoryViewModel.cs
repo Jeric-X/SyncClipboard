@@ -27,6 +27,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly VirtualKeyboard keyboard;
     private readonly INotificationManager notificationManager;
     private readonly ConfigBase runtimeConfig;
+    private readonly ILogger logger;
 
     public HistoryViewModel(
         ConfigManager configManager,
@@ -34,7 +35,8 @@ public partial class HistoryViewModel : ObservableObject
         IClipboardFactory clipboardFactory,
         VirtualKeyboard keyboard,
         INotificationManager notificationManager,
-        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
+        ILogger logger)
     {
         this.configManager = configManager;
         this.historyManager = historyManager;
@@ -42,6 +44,7 @@ public partial class HistoryViewModel : ObservableObject
         this.keyboard = keyboard;
         this.notificationManager = notificationManager;
         this.runtimeConfig = runtimeConfig;
+        this.logger = logger;
 
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
@@ -375,6 +378,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             if (!File.Exists(path))
             {
+                logger.Write("WARNING", $"{I18n.Strings.UnableToCopyByMissingFile}。Path: {path}, Hash: {record.Hash}, Text: {record.Text}");
                 notificationManager.SharedQuickMessage(record.Text, I18n.Strings.UnableToCopyByMissingFile);
                 return;
             }
