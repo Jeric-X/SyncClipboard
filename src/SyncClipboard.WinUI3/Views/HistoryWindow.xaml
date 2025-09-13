@@ -80,8 +80,8 @@
                  KeyboardAcceleratorPlacementMode="Hidden"
                  TextChanged="SearchTextBox_TextChanged">
             <TextBox.KeyboardAccelerators>
-                <KeyboardAccelerator Key="Up" Modifiers="Control" Invoked="CtrlUp_Invoked" />
-                <KeyboardAccelerator Key="Down" Modifiers="Control" Invoked="CtrlDown_Invoked" />
+                <KeyboardAccelerator Key="Home" Modifiers="Control" Invoked="CtrlHome_Invoked" />
+                <KeyboardAccelerator Key="End" Modifiers="Control" Invoked="CtrlEnd_Invoked" />
             </TextBox.KeyboardAccelerators>
         </TextBox>
         <Grid Grid.Row="2">

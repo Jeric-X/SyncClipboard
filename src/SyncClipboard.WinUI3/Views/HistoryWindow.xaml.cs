@@ -357,15 +357,15 @@ public sealed partial class HistoryWindow : Window, IWindow
         );
     }
 
-    private void CtrlUp_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
+    private void CtrlHome_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
     {
-        _viewModel.HandleKeyPress(Key.Up, false, false, true);
+        _viewModel.HandleKeyPress(Key.Home, false, false, true);
         args.Handled = true;
     }
 
-    private void CtrlDown_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
+    private void CtrlEnd_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
     {
-        _viewModel.HandleKeyPress(Key.Down, false, false, true);
+        _viewModel.HandleKeyPress(Key.End, false, false, true);
         args.Handled = true;
     }
 

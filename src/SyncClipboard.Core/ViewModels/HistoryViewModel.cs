@@ -189,6 +189,18 @@ public partial class HistoryViewModel : ObservableObject
         return historyManager.UpdateHistory(record.ToHistoryRecord());
     }
 
+    [RelayCommand]
+    public void CtrlHome()
+    {
+        ScrollToTop();
+    }
+
+    [RelayCommand]
+    public void CtrlEnd()
+    {
+        ScrollToBottom();
+    }
+
     public void NavigateToNextFilter()
     {
         var currentIndex = (int)SelectedFilter;
@@ -256,10 +268,10 @@ public partial class HistoryViewModel : ObservableObject
         {
             switch (key)
             {
-                case Key.Up:
+                case Key.Home:
                     ScrollToTop();
                     return true;
-                case Key.Down:
+                case Key.End:
                     ScrollToBottom();
                     return true;
             }

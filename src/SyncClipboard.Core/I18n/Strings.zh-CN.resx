@@ -465,8 +465,8 @@ Esc：关闭窗口</value>
   <data name="HistoryWindowKeyboardList" xml:space="preserve">
     <value>Ctrl+F：搜索
 ↑/↓：导航项目
-Ctrl+↑：滚动到顶部
-Ctrl+↓：滚动到底部
+Ctrl+Home：滚动到顶部
+Ctrl+End：滚动到底部
 Tab/Shift+Tab：切换筛选器
 Enter：复制并粘贴
 Alt+Enter：仅复制

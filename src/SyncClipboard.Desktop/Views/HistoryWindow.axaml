@@ -44,6 +44,10 @@
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
         </ResourceDictionary>
     </Window.Resources>
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+Home" Command="{Binding CtrlHomeCommand}" />
+        <KeyBinding Gesture="Ctrl+End" Command="{Binding CtrlEndCommand}" />
+    </Window.KeyBindings>
     <Window.DataTemplates>
         <local:ClipboardViewerTemplateSelector>
             <DataTemplate x:Key="Normal" DataType="vms:HistoryRecordVM">
