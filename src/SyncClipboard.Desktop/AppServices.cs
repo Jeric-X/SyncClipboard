@@ -37,7 +37,6 @@ public class AppServices
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
         services.AddTransient<IClipboardSetter<GroupProfile>, FileClipboardSetter>();
 
-        services.AddSingleton<INativeHotkeyRegistry, SharpHookHotkeyRegistry>();
         services.AddSingleton<IGlobalHook>((sp) => new SimpleGlobalHook(true));
 
         services.AddTransient<IFontManager, FontManager>();
@@ -52,6 +51,7 @@ public class AppServices
         if (!OperatingSystem.IsMacOS())
         {
             services.AddSingleton<IMainWindow, MainWindow>();
+            services.AddSingleton<INativeHotkeyRegistry, SharpHookHotkeyRegistry>();
             services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         }
     }

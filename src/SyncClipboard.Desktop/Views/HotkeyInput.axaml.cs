@@ -4,28 +4,24 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
-using SharpHook;
-using SharpHook.Native;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
-using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Desktop.Utilities;
 using System.Collections.Generic;
 using Key = SyncClipboard.Core.Models.Keyboard.Key;
+using AvaloniaKey = Avalonia.Input.Key;
 
 namespace SyncClipboard.Desktop.Views;
 
 public partial class HotkeyInput : UserControl
 {
     private SharpHookHotkeyRegistry? _hotkeyRegistry;
-    private readonly IGlobalHook _globalHook;
-    private readonly HashSet<KeyCode> _pressedKeys = [];
-    private readonly HashSet<KeyCode> _pressingKeys = [];
+    private readonly HashSet<AvaloniaKey> _pressedKeys = [];
+    private readonly HashSet<AvaloniaKey> _pressingKeys = [];
 
     public HotkeyInput()
     {
         InitializeComponent();
-        _globalHook = App.Current.Services.GetRequiredService<IGlobalHook>();
     }
 
     public bool IsError
@@ -56,10 +52,8 @@ public partial class HotkeyInput : UserControl
             _hotkeyRegistry.CheckGlobalHook();
             _hotkeyRegistry.SupressHotkey = true;
         }
-        _globalHook.KeyReleased -= OnKeyUp;
-        _globalHook.KeyReleased += OnKeyUp;
-        _globalHook.KeyPressed -= OnKeyDown;
-        _globalHook.KeyPressed += OnKeyDown;
+        KeyDown += OnKeyDown;
+        KeyUp += OnKeyUp;
         base.OnGotFocus(e);
     }
 
@@ -69,39 +63,39 @@ public partial class HotkeyInput : UserControl
         {
             _hotkeyRegistry.SupressHotkey = false;
         }
-        _globalHook.KeyReleased -= OnKeyUp;
-        _globalHook.KeyPressed -= OnKeyDown;
+        KeyDown -= OnKeyDown;
+        KeyUp -= OnKeyUp;
         base.OnLostFocus(e);
     }
 
-    private void OnKeyUp(object? sender, KeyboardHookEventArgs e)
+    private void OnKeyUp(object? sender, KeyEventArgs e)
     {
-        _pressingKeys.Remove(e.Data.KeyCode);
-        e.SuppressEvent = true;
+        _pressingKeys.Remove(e.Key);
+        e.Handled = true;
     }
 
-    private void OnKeyDown(object? sender, KeyboardHookEventArgs e)
+    private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (_pressingKeys.Count == 0)
         {
             _pressedKeys.Clear();
         }
 
-        if (KeyCodeMap.Map.ContainsKey(e.Data.KeyCode))
+        if (KeyboardMap.AvaloniaKeyMap.ContainsKey(e.Key))
         {
-            _pressedKeys.Add(e.Data.KeyCode);
-            _pressingKeys.Add(e.Data.KeyCode);
+            _pressedKeys.Add(e.Key);
+            _pressingKeys.Add(e.Key);
             UpdateHotkeyViewer();
         }
-        e.SuppressEvent = true;
+        e.Handled = true;
     }
 
     private void UpdateHotkeyViewer()
     {
         var keys = new List<Key>();
-        foreach (var virtualKey in _pressedKeys)
+        foreach (var avaloniaKey in _pressedKeys)
         {
-            if (KeyCodeMap.Map.TryGetValue(virtualKey, out Key key))
+            if (KeyboardMap.AvaloniaKeyMap.TryGetValue(avaloniaKey, out Key key))
             {
                 keys.Add(key);
             }

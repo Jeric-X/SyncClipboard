@@ -9,7 +9,7 @@
     <ApplicationId>xyz.jericx.desktop.syncclipboard</ApplicationId>
     <SelfContained>true</SelfContained>
     <SupportedOSPlatformVersion>10.15</SupportedOSPlatformVersion>
-    <Platforms>x64;ARM64</Platforms>
+    <Platforms>x64;ARM64;AnyCPU</Platforms>
     <CreatePackage>false</CreatePackage>
     <NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>
     <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
