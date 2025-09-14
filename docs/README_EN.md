@@ -174,7 +174,7 @@ Download the installation package starting with `SyncClipboard_macos_` from the 
 #### Troubleshooting
 - System prompts `“SyncClipboard” cannot be opened because the developer cannot be verified`: Go to `Settings` -> `Privacy & Security` on macOS, and click `Open Anyway`.
 - System prompts `"SyncClipboard" is damaged, can't be opened`: Run the following command in the terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- Hotkeys require Accessibility permissions. The software will prompt for authorization when needed.
+- Some features require simulating keyboard input to perform copy or paste operations, which depend on Accessibility permissions. SyncClipboard will prompt for authorization when needed.
 
 ### Linux
 #### Manual Installation
