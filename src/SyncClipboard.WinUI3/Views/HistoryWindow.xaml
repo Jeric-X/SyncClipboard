@@ -133,5 +133,15 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+        <InfoBar x:Name="_InfoBar"
+                 Grid.Row="2"
+                 IsOpen="{x:Bind _viewModel.ShowInfoBar, Mode=OneWay}"
+                 Message="{x:Bind _viewModel.InfoBarMessage, Mode=OneWay}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Bottom"
+                 Margin="0,0,0,100"
+                 Width="400"
+                 Severity="Warning"
+                 IsClosable="True" />
     </Grid>
 </Window>

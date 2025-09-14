@@ -454,7 +454,7 @@ Esc：关闭窗口</value>
     <value>剪贴板同步已关闭</value>
   </data>
   <data name="HistoryWindowOperations" xml:space="preserve">
-    <value>历史记录窗口操作说明</value>
+    <value>历史记录面板操作说明</value>
   </data>
   <data name="HistoryWindowKeyboardShortcuts" xml:space="preserve">
     <value>键盘快捷键</value>
@@ -470,7 +470,7 @@ Ctrl+End：滚动到底部
 Tab/Shift+Tab：切换筛选器
 Enter：复制并粘贴
 Alt+Enter：仅复制
-Esc：关闭窗口</value>
+Esc：关闭面板</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>单击：选择项目
@@ -715,7 +715,7 @@ Esc：关闭窗口</value>
     <value>历史记录</value>
   </data>
   <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
-    <value>失去焦点时关闭历史记录窗口</value>
+    <value>失去焦点时关闭历史记录面板</value>
   </data>
   <data name="MaxItemCount" xml:space="preserve">
     <value>最大记录条数</value>
@@ -755,5 +755,8 @@ Esc：关闭窗口</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
     <value>搜索文字或文件名...</value>
+  </data>
+  <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
+    <value>在快捷键设置中可以指定打开历史记录面板的快捷键</value>
   </data>
 </root>

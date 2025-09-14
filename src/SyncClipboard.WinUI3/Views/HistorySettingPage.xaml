@@ -9,7 +9,9 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardHistory}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardHistory}" 
+                            Description="{x:Bind i18n:Strings.HistoryPanelHotkeyDescription}"
+                            IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE1D3;" />
             </ui:SettingsExpander.HeaderIcon>

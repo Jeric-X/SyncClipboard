@@ -445,7 +445,7 @@
     <value>Switch Off Clipboard Syncing</value>
   </data>
   <data name="HistoryWindowOperations" xml:space="preserve">
-    <value>History Window Operations</value>
+    <value>History Panel Operations</value>
   </data>
   <data name="HistoryWindowKeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>
@@ -461,7 +461,7 @@ Ctrl+End: Scroll to bottom
 Tab/Shift+Tab: Switch filters
 Enter: Copy and paste
 Alt+Enter: Copy only
-Esc: Close window</value>
+Esc: Close panel</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>Single click: Select item
@@ -706,7 +706,7 @@ Double click image: View full image</value>
     <value>History</value>
   </data>
   <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
-    <value>Close history window when lost focus</value>
+    <value>Close history panel when lost focus</value>
   </data>
   <data name="MaxItemCount" xml:space="preserve">
     <value>Maximum number of records</value>
@@ -746,5 +746,8 @@ Double click image: View full image</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
     <value>Search text or filename...</value>
+  </data>
+  <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
+    <value>You can specify the hotkey to open the history panel in the Hotkey settings</value>
   </data>
 </root>

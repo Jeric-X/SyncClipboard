@@ -1,11 +1,11 @@
 ﻿using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
-using Avalonia.Media.TextFormatting.Unicode;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using System;
 using System.Linq;
+using Avalonia;
 
 namespace SyncClipboard.Desktop.ValueConverters;
 
@@ -80,5 +80,13 @@ public class FuncConverter
                 return char.ConvertFromUtf32((int)Convert.ToUInt32("F809B", 16)).ToString();
             }
             return "\uE141";
+        });
+
+    public static FuncValueConverter<double, Thickness> CalculateInfoBarMargin { get; } =
+        new FuncValueConverter<double, Thickness>(listBoxHeight =>
+        {
+            // 计算距离底部20%的位置作为Margin的Bottom值
+            var bottomMargin = listBoxHeight * 0.2;
+            return new Thickness(0, 0, 0, bottomMargin);
         });
 }

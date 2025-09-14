@@ -156,6 +156,16 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+            <ui:InfoBar x:Name="_InfoBar"
+                        Grid.Row="2"
+                        IsOpen="{Binding ShowInfoBar}"
+                        Message="{Binding InfoBarMessage}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
+                        Width="400"
+                        Severity="Warning"
+                        IsClosable="True" />
         </Grid>
     </Panel>
 </Window>

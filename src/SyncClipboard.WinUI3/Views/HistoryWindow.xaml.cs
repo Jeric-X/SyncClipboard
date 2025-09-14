@@ -87,6 +87,8 @@ public sealed partial class HistoryWindow : Window, IWindow
         // 初始化 SelectorBar 选项
         InitializeSelectorBar();
 
+        _ListView.SizeChanged += OnListViewSizeChanged;
+
         this.SetTopmost(_viewModel.IsTopmost);
     }
 
@@ -163,6 +165,14 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             _viewModel.DeleteItem(record);
         }
+    }
+
+    private void OnListViewSizeChanged(object _, SizeChangedEventArgs e)
+    {
+        // 动态计算InfoBar的位置，距离底部20%高度
+        var listViewHeight = e.NewSize.Height;
+        var bottomMargin = listViewHeight * 0.2;
+        _InfoBar.Margin = new Thickness(0, 0, 0, bottomMargin);
     }
 
     private void StarButtonClicked(object sender, RoutedEventArgs _)

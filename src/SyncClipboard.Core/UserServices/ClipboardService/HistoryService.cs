@@ -24,6 +24,18 @@ public class HistoryService(HistoryManager historyManager, ConfigManager configM
         {
             return;
         }
+
+        if (profile.Type == ProfileType.Text && string.IsNullOrEmpty(profile.Text))
+        {
+            return;
+        }
+
+        if (clipboardMetaInfomation.Effects.HasValue &&
+            clipboardMetaInfomation.Effects.Value.HasFlag(DragDropEffects.Move))
+        {
+            return;
+        }
+
         await historyManager.AddHistory(profile.CreateHistoryRecord(), token);
     }
 }

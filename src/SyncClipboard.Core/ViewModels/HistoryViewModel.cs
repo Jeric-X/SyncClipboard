@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using NativeNotification.Interface;
 using ObservableCollections;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
@@ -21,11 +20,18 @@ public partial class HistoryViewModel : ObservableObject
 {
     private IWindow window = null!;
 
+    [ObservableProperty]
+    private bool showInfoBar = false;
+
+    [ObservableProperty]
+    private string infoBarMessage = string.Empty;
+
+    private CancellationTokenSource? infoBarCancellationSource;
+
     private readonly ConfigManager configManager;
     private readonly HistoryManager historyManager;
     private readonly IClipboardFactory clipboardFactory;
     private readonly VirtualKeyboard keyboard;
-    private readonly INotificationManager notificationManager;
     private readonly ConfigBase runtimeConfig;
     private readonly ILogger logger;
 
@@ -34,7 +40,6 @@ public partial class HistoryViewModel : ObservableObject
         HistoryManager historyManager,
         IClipboardFactory clipboardFactory,
         VirtualKeyboard keyboard,
-        INotificationManager notificationManager,
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
         ILogger logger)
     {
@@ -42,7 +47,6 @@ public partial class HistoryViewModel : ObservableObject
         this.historyManager = historyManager;
         this.clipboardFactory = clipboardFactory;
         this.keyboard = keyboard;
-        this.notificationManager = notificationManager;
         this.runtimeConfig = runtimeConfig;
         this.logger = logger;
 
@@ -379,15 +383,23 @@ public partial class HistoryViewModel : ObservableObject
             if (!File.Exists(path))
             {
                 logger.Write("WARNING", $"{I18n.Strings.UnableToCopyByMissingFile}。Path: {path}, Hash: {record.Hash}, Text: {record.Text}");
-                notificationManager.SharedQuickMessage(record.Text, I18n.Strings.UnableToCopyByMissingFile);
+
+                InfoBarMessage = I18n.Strings.UnableToCopyByMissingFile;
+                ShowInfoBar = true;
+
+                infoBarCancellationSource?.Cancel();
+                infoBarCancellationSource = new CancellationTokenSource();
+                _ = HideInfoBarAfterDelayAsync(infoBarCancellationSource.Token);
                 return;
             }
         }
 
-        SelectedIndex = -1;
-        window.ScrollToTop();
-        window.Close();
-        SearchText = string.Empty;
+        if (paste || !IsTopmost)
+        {
+            SelectedIndex = -1;
+            window.ScrollToTop();
+            window.Close();
+        }
 
         var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
         await profile.SetLocalClipboard(false, token);
@@ -420,5 +432,21 @@ public partial class HistoryViewModel : ObservableObject
     public void HandleImageDoubleClick(HistoryRecordVM record)
     {
         ViewImage(record);
+    }
+
+    private async Task HideInfoBarAfterDelayAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(4000, cancellationToken);
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                ShowInfoBar = false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // 任务被取消，这是预期的行为
+        }
     }
 }
