@@ -42,6 +42,7 @@ namespace SyncClipboard.WinUI3
         {
             AppCore.Stop();
             UnhandledException -= App_UnhandledException;
+            Console.WriteLine("Exited");
             Environment.Exit(0);
         }
 
@@ -52,6 +53,7 @@ namespace SyncClipboard.WinUI3
 
         public void LogUnhandledException(Exception e)
         {
+            Console.WriteLine($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
             var path = Path.Combine(Core.Commons.Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
             File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
 

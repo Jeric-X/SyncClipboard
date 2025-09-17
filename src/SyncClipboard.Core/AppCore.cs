@@ -257,13 +257,26 @@ namespace SyncClipboard.Core
             services.AddQuartz();
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
-            services.AddSingleton<INotificationManager>(sp => ManagerFactory.GetNotificationManager(
-                new NativeNotificationOption
+            services.AddSingleton<INotificationManager>(
+                sp =>
                 {
-                    AppName = Env.SoftName,
-                    RemoveNotificationOnContentClick = false,
-                    AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
-                }));
+                    try
+                    {
+                        return ManagerFactory.GetNotificationManager(
+                        new NativeNotificationOption
+                        {
+                            AppName = Env.SoftName,
+                            RemoveNotificationOnContentClick = false,
+                            AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
+                        throw;
+                    }
+                }
+            );
             services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
         }
 
