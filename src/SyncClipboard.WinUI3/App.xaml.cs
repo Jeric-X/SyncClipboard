@@ -30,14 +30,11 @@ namespace SyncClipboard.WinUI3
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
+#pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑添加 "required" 修饰符或声明为可为 null。
         public App()
+#pragma warning restore CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑添加 "required" 修饰符或声明为可为 null。
         {
             UnhandledException += App_UnhandledException;
-
-            Services = AppServices.ConfigureServices().BuildServiceProvider();
-            Logger = Services.GetRequiredService<ILogger>();
-            AppCore = new AppCore(Services);
-
             this.InitializeComponent();
         }
 
@@ -58,8 +55,8 @@ namespace SyncClipboard.WinUI3
             var path = Path.Combine(Core.Commons.Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
             File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
 
-            Logger.Write($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
-            Logger.Flush();
+            Logger?.Write($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
+            Logger?.Flush();
 
             var mdei = new MINIDUMP_EXCEPTION_INFORMATION
             {
@@ -78,6 +75,9 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            Services = AppServices.ConfigureServices().BuildServiceProvider();
+            Logger = Services.GetRequiredService<ILogger>();
+            AppCore = new AppCore(Services);
             Logger.Write("App started");
             AppCore.Run();
         }
