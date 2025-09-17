@@ -55,6 +55,9 @@ namespace SyncClipboard.WinUI3
 
         public void LogUnhandledException(Exception e)
         {
+            var path = Path.Combine(Core.Commons.Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
+            File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
+
             Logger.Write($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
             Logger.Flush();
 
@@ -64,7 +67,6 @@ namespace SyncClipboard.WinUI3
                 ExceptionPointers = Marshal.GetExceptionPointers()
             };
 
-            var path = Path.Combine(Core.Commons.Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
             using FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Write);
             using Process process = Process.GetCurrentProcess();
             MiniDumpWriteDump(process, (uint)process.Id, fs.SafeFileHandle, MINIDUMP_TYPE.MiniDumpNormal, mdei, default);
