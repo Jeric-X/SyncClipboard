@@ -263,12 +263,13 @@ namespace SyncClipboard.Core
                     try
                     {
                         return ManagerFactory.GetNotificationManager(
-                        new NativeNotificationOption
-                        {
-                            AppName = Env.SoftName,
-                            RemoveNotificationOnContentClick = false,
-                            AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
-                        });
+                            new NativeNotificationOption
+                            {
+                                AppName = Env.SoftName,
+                                RemoveNotificationOnContentClick = false,
+                                AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
+                            }
+                        );
                     }
                     catch (Exception e)
                     {

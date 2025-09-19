@@ -122,6 +122,10 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
+    partial void OnSelectedFilterChanged(HistoryFilterType oldValue, HistoryFilterType newValue)
+    {
+        window?.ScrollToTop();
+    }
 
     [ObservableProperty]
     private string searchText = string.Empty;
