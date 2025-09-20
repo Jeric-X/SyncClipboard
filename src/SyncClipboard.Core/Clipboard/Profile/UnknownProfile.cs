@@ -15,11 +15,6 @@ public class UnknownProfile : Profile
         return "Do not support this type of clipboard";
     }
 
-    public override Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
-    {
-        return Task.CompletedTask;
-    }
-
     protected override bool Same(Profile rhs)
     {
         return rhs is UnknownProfile;

@@ -24,7 +24,6 @@ public abstract class Profile
     public abstract ProfileType Type { get; }
     public abstract string ToolTip();
     public abstract string ShowcaseText();
-    public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
     public abstract HistoryRecord CreateHistoryRecord();
 
     protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }
@@ -36,7 +35,6 @@ public abstract class Profile
     protected const string RemoteProfilePath = Env.RemoteProfilePath;
     protected static string LocalTemplateFolder => Env.TemplateFileFolder;
     protected static IServiceProvider ServiceProvider { get; } = AppCore.Current.Services;
-    protected static IWebDav WebDav => ServiceProvider.GetRequiredService<IWebDav>();
     protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
     protected static ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
@@ -53,18 +51,56 @@ public abstract class Profile
         }
     }
 
-    public virtual Task BeforeSetLocal(CancellationToken cancelToken,
-        IProgress<HttpDownloadProgress>? progress = null)
-    {
-        return Task.CompletedTask;
-    }
-
     public bool ContentControl { get; set; } = true;
     public virtual bool IsAvailableFromRemote() => true;
     public bool IsAvailableFromLocal() => !ContentControl || IsAvailableAfterFilter();
     public virtual bool IsAvailableAfterFilter() => true;
 
     public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
+
+    #region 数据访问接口 - 用于IRemoteClipboardServer
+
+    /// <summary>
+    /// 是否有关联的数据文件需要上传/下载
+    /// </summary>
+    public virtual bool HasDataFile => false;
+    
+    /// <summary>
+    /// 是否需要在上传前预处理数据（如GroupProfile需要打包成zip）
+    /// </summary>
+    public virtual bool RequiresPrepareData => false;
+    
+    /// <summary>
+    /// 准备数据（如压缩文件等）
+    /// </summary>
+    public virtual Task PrepareDataAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    
+    /// <summary>
+    /// 清理准备的数据
+    /// </summary>
+    public virtual Task CleanupPreparedDataAsync() => Task.CompletedTask;
+    
+    /// <summary>
+    /// 获取本地数据文件路径
+    /// </summary>
+    public virtual string? GetLocalDataPath() => null;
+    
+    /// <summary>
+    /// 设置本地数据文件路径
+    /// </summary>
+    public virtual void SetLocalDataPath(string path) { }
+    
+    /// <summary>
+    /// 获取数据流（用于上传）
+    /// </summary>
+    public virtual Task<Stream?> GetDataStreamAsync() => Task.FromResult<Stream?>(null);
+    
+    /// <summary>
+    /// 保存数据流（用于下载）
+    /// </summary>
+    public virtual Task SaveDataStreamAsync(Stream stream, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    #endregion
 
     protected virtual void SetNotification(INotification notification)
     {

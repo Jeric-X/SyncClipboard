@@ -12,6 +12,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Factories;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -19,10 +20,10 @@ public class DownloadService : Service
 {
     private readonly static string SERVICE_NAME = I18n.Strings.DownloadService;
     private const string LOG_TAG = "PULL";
-    private bool _isPullLoopRunning = false;
+    private bool _isEventDrivenModeActive = false;
     private bool _isQuickDownload = false;
     private bool _isQuickDownloadAndPaste = false;
-    private readonly object _isPullLoopRunningLocker = new();
+    private readonly object _serviceStateLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
     private Profile? _localProfileCache;
@@ -41,6 +42,7 @@ public class DownloadService : Service
     private readonly IEventSimulator _keyEventSimulator;
     private readonly HotkeyManager _hotkeyManager;
     private readonly UploadService _uploadService;
+    private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
@@ -118,7 +120,8 @@ public class DownloadService : Service
         IEventSimulator keyEventSimulator,
         IClipboardMoniter clipboardMoniter,
         IClipboardChangingListener clipboardChangingListener,
-        HotkeyManager hotkeyManager)
+        HotkeyManager hotkeyManager,
+        RemoteClipboardServerFactory remoteClipboardServerFactory)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -136,6 +139,7 @@ public class DownloadService : Service
         _hotkeyManager = hotkeyManager;
         _clipboardMoniter = clipboardMoniter;
         _clipboardListener = clipboardChangingListener;
+        _remoteClipboardServerFactory = remoteClipboardServerFactory;
 
         _hotkeyManager.RegisterCommands(CommandCollection);
     }
@@ -154,7 +158,7 @@ public class DownloadService : Service
 
     private void StopAndReload()
     {
-        SwitchOffPullLoop();
+        SwitchOffEventMode();
         ReLoad();
     }
 
@@ -173,12 +177,10 @@ public class DownloadService : Service
             _trayIcon.SetActiveStatus(false);
 
         if (SwitchOn)
-            SwitchOnPullLoop();
+            SwitchOnEventMode();
         else
-            SwitchOffPullLoop();
+            SwitchOffEventMode();
     }
-
-    private CancellationTokenSource? _cancelSource;
 
     protected override void StartService()
     {
@@ -187,36 +189,53 @@ public class DownloadService : Service
 
     protected override void StopSerivce()
     {
-        SwitchOffPullLoop();
+        SwitchOffEventMode();
     }
 
-    private void SwitchOnPullLoop()
+    private void SwitchOnEventMode()
     {
-        lock (_isPullLoopRunningLocker)
+        lock (_serviceStateLocker)
         {
-            if (!_isPullLoopRunning)
+            if (!_isEventDrivenModeActive)
             {
-                _isPullLoopRunning = true;
+                _isEventDrivenModeActive = true;
                 _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
                 _clipboardMoniter.ClipboardChanged += StopAndReloadByNewClipboard;
                 _clipboardListener.Changed -= ClipboardProfileChanged;
                 _clipboardListener.Changed += ClipboardProfileChanged;
-                StartPullLoop();
+                
+                // 订阅远程剪贴板服务器的RemoteProfileChanged事件
+                var remoteServer = _remoteClipboardServerFactory.Current;
+                if (remoteServer != null)
+                {
+                    remoteServer.RemoteProfileChanged -= OnRemoteProfileChanged;
+                    remoteServer.RemoteProfileChanged += OnRemoteProfileChanged;
+                }
+                
+                StartEventDrivenMode();
             }
         }
     }
 
-    private void SwitchOffPullLoop()
+    private void SwitchOffEventMode()
     {
-        lock (_isPullLoopRunningLocker)
+        lock (_serviceStateLocker)
         {
-            if (_isPullLoopRunning)
+            if (_isEventDrivenModeActive)
             {
-                _isPullLoopRunning = false;
+                _isEventDrivenModeActive = false;
                 _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
                 _clipboardListener.Changed -= ClipboardProfileChanged;
+                
+                // 取消订阅远程剪贴板服务器的RemoteProfileChanged事件
+                var remoteServer = _remoteClipboardServerFactory.Current;
+                if (remoteServer != null)
+                {
+                    remoteServer.RemoteProfileChanged -= OnRemoteProfileChanged;
+                }
+                
                 _localProfileCache = null;
-                StopPullLoop();
+                StopEventDrivenMode();
             }
         }
     }
@@ -229,33 +248,79 @@ public class DownloadService : Service
         }
     }
 
-    private async void StartPullLoop()
+    private void StartEventDrivenMode()
     {
-        _trayIcon.SetStatusString(SERVICE_NAME, "Running.");
-        _cancelSource = new CancellationTokenSource();
+        _trayIcon.SetStatusString(SERVICE_NAME, "Event-driven mode active.");
+        _logger.Write(LOG_TAG, "Event-driven mode started");
+    }
+
+    private void StopEventDrivenMode()
+    {
+        _trayIcon.SetStatusString(SERVICE_NAME, "Stopped.");
+        _logger.Write(LOG_TAG, "Event-driven mode stopped");
+    }
+
+    private async void OnRemoteProfileChanged(object? sender, ProfileChangedEventArgs e)
+    {
+        if (e.NewProfile == null || !SwitchOn)
+        {
+            return;
+        }
+
         try
         {
-            _logger.Write(LOG_TAG, "Loop start");
-            await PullLoop(_cancelSource.Token);
-            _logger.Write(LOG_TAG, "Loop exit normally");
-        }
-        catch (OperationCanceledException)
-        {
-            _toastReporter?.CancelSicent();
-            _toastReporter = null;
-            _logger.Write(LOG_TAG, "Canceled");
+            _logger.Write(LOG_TAG, $"Remote profile changed: {System.Text.Json.JsonSerializer.Serialize(e.NewProfile)}");
+            
+            // 使用ClipboardFactory创建Profile对象
+            // 注意：这里可能需要根据实际情况调整创建逻辑
+            var remoteProfile = await CreateProfileFromDto(e.NewProfile);
+            if (remoteProfile != null && NeedUpdate(remoteProfile))
+            {
+                await HandleRemoteProfileChange(remoteProfile);
+            }
         }
         catch (Exception ex)
         {
-            _logger.Write(LOG_TAG, "Exit with exception" + ex.Message);
+            _logger.Write(LOG_TAG, $"Error handling remote profile change: {ex.Message}");
+            _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
     }
 
-    private void StopPullLoop()
+    private async Task<Profile?> CreateProfileFromDto(ClipboardProfileDTO dto)
     {
-        _trayIcon.SetStatusString(SERVICE_NAME, "Stopped.");
-        _cancelSource?.Cancel();
-        _cancelSource = null;
+        // 从远程服务器获取Profile
+        try
+        {
+            var remoteServer = _remoteClipboardServerFactory.Current;
+            if (remoteServer == null) return null;
+
+            var profileDto = await remoteServer.GetProfileAsync(CancellationToken.None);
+            if (profileDto == null) return null;
+
+            return ClipboardFactoryBase.GetProfileBy(profileDto);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task HandleRemoteProfileChange(Profile remoteProfile)
+    {
+        await SyncService.remoteProfilemutex.WaitAsync();
+        try
+        {
+            await LocalClipboard.Semaphore.WaitAsync();
+            using var scopeGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
+
+            // 下载并设置新的剪贴板内容
+            await DownloadAndSetRemoteProfileToLocal(remoteProfile, CancellationToken.None);
+            _remoteProfileCache = remoteProfile;
+        }
+        finally
+        {
+            SyncService.remoteProfilemutex.Release();
+        }
     }
 
     private void ClipboardProfileChanged(ClipboardMetaInfomation _, Profile profile)
@@ -278,7 +343,7 @@ public class DownloadService : Service
     public void PushStartedHandler()
     {
         _logger.Write(LOG_TAG, "due to upload service start, cancel");
-        SwitchOffPullLoop();
+        SwitchOffEventMode();
     }
 
     public void PushStoppedHandler()
@@ -299,43 +364,6 @@ public class DownloadService : Service
             throw new Exception("Download retry times reach limit");
         }
     }
-    private async Task PullLoop(CancellationToken cancelToken)
-    {
-        int errorTimes = 0;
-        await Task.Delay(TimeSpan.FromSeconds(0.5), cancelToken);
-        while (!cancelToken.IsCancellationRequested && (_isQuickDownload || SwitchOn))
-        {
-            await SyncService.remoteProfilemutex.WaitAsync(cancelToken);
-            try
-            {
-                await DownloadProcess(cancelToken);
-                errorTimes = 0;
-                OnDownloadCompleted();
-            }
-            catch (Exception ex)
-            {
-                if (ex is TaskCanceledException)
-                {
-                    cancelToken.ThrowIfCancellationRequested();
-                    ex = new Exception("Request timeout");
-                }
-
-                if (ex.InnerException != null)
-                {
-                    ex = ex.InnerException;
-                }
-                _toastReporter?.Cancel();
-                _toastReporter = null;
-                SetStatusOnError(ref errorTimes, ex);
-            }
-            finally
-            {
-                SyncService.remoteProfilemutex.Release();
-            }
-
-            await Task.Delay(GetIntervalTime(), cancelToken);
-        }
-    }
 
     private TimeSpan GetIntervalTime()
     {
@@ -349,7 +377,22 @@ public class DownloadService : Service
         await LocalClipboard.Semaphore.WaitAsync(token);
         using var scopeGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
 
-        var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(token);
+        // 从远程服务器获取Profile
+        var remoteServer = _remoteClipboardServerFactory.Current;
+        if (remoteServer == null) 
+        {
+            _logger.Write(LOG_TAG, "No remote server available");
+            return;
+        }
+
+        var profileDto = await remoteServer.GetProfileAsync(token);
+        if (profileDto == null)
+        {
+            _logger.Write(LOG_TAG, "No remote profile available");
+            return;
+        }
+
+        var remoteProfile = ClipboardFactoryBase.GetProfileBy(profileDto);
         _logger.Write(LOG_TAG, "remote is " + remoteProfile.ToJsonString());
 
         if (NeedUpdate(remoteProfile))
@@ -396,7 +439,14 @@ public class DownloadService : Service
             {
                 _logger.Write("start download: " + remoteProfile.Text);
                 _toastReporter = new ProgressToastReporter(remoteProfile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
-                await remoteProfile.BeforeSetLocal(cancelToken, _toastReporter);
+                
+                // 使用IRemoteClipboardServer下载文件
+                var remoteServer = _remoteClipboardServerFactory.Current;
+                if (remoteServer != null)
+                {
+                    await remoteServer.DownloadProfileDataAsync(remoteProfile, _toastReporter, cancelToken);
+                }
+                
                 _logger.Write("end download: " + remoteProfile.Text);
             }
             _downServiceChangingLocal = true;
@@ -440,13 +490,40 @@ public class DownloadService : Service
         QuickDownload(true);
     }
 
-    private void QuickDownload(bool paste)
+    private async void QuickDownload(bool paste)
     {
-        SwitchOffPullLoop();
         _remoteProfileCache = null;
         _isQuickDownload = true;
         _isQuickDownloadAndPaste = paste;
-        SwitchOnPullLoop();
+        
+        // 快速下载时主动检查一次远程Profile
+        try
+        {
+            var remoteServer = _remoteClipboardServerFactory.Current;
+            if (remoteServer != null)
+            {
+                var remoteProfileDto = await remoteServer.GetProfileAsync();
+                if (remoteProfileDto != null)
+                {
+                    var remoteProfile = await CreateProfileFromDto(remoteProfileDto);
+                    if (remoteProfile != null && NeedUpdate(remoteProfile))
+                    {
+                        await HandleRemoteProfileChange(remoteProfile);
+                        OnDownloadCompleted();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(LOG_TAG, $"Quick download failed: {ex.Message}");
+            _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
+        }
+        finally
+        {
+            _isQuickDownload = false;
+            _isQuickDownloadAndPaste = false;
+        }
     }
 
     private void OnDownloadCompleted()

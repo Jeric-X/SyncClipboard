@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Factories;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private const int MAX_RETRY_TIMES = 5;
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
-    protected override IWebDav WebDav { get; set; }
+    protected override RemoteClipboardServerFactory RemoteServerFactory { get; set; }
 
     private readonly MultiSourceClipboardReader Clipboard;
 
@@ -28,7 +29,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     {
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
-        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
+        RemoteServerFactory = ServiceProvider.GetRequiredService<RemoteClipboardServerFactory>();
         Clipboard = ServiceProvider.GetRequiredService<MultiSourceClipboardReader>();
     }
 

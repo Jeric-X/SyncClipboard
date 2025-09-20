@@ -132,11 +132,39 @@ public class GroupProfile : FileProfile
         return hash.ToString();
     }
 
-    public override async Task UploadProfile(IWebDav webdav, CancellationToken token)
+    #region 数据访问接口实现
+
+    public override bool HasDataFile => true;
+    public override bool RequiresPrepareData => true;
+
+    public override async Task PrepareDataAsync(CancellationToken cancellationToken = default)
     {
-        await PrepareTransferFile(token);
-        await base.UploadProfile(webdav, token);
+        // 尝试从缓存获取
+        var cacheManager = ServiceProvider.GetRequiredService<ILocalFileCacheManager>();
+        var cachedZipPath = await cacheManager.GetCachedFilePathAsync(nameof(GroupProfile), Hash);
+        if (!string.IsNullOrEmpty(cachedZipPath))
+        {
+            FullPath = cachedZipPath;
+            return;
+        }
+        
+        // 生成新的zip文件
+        await PrepareTransferFile(cancellationToken);
+        
+        // 保存到缓存
+        if (!string.IsNullOrEmpty(FullPath))
+        {
+            await cacheManager.SaveCacheEntryAsync(nameof(GroupProfile), Hash, FullPath);
+        }
     }
+
+    public override Task CleanupPreparedDataAsync()
+    {
+        // 由缓存管理器统一管理，不需要手动清理
+        return Task.CompletedTask;
+    }
+
+    #endregion
 
     public Task PrepareTransferFile(CancellationToken token)
     {
@@ -177,12 +205,6 @@ public class GroupProfile : FileProfile
         }, token).WaitAsync(token);
     }
 
-    protected override async Task DownloadFromRemote(IProgress<HttpDownloadProgress>? progress, CancellationToken cancelToken)
-    {
-        await base.DownloadFromRemote(progress, cancelToken);
-        await ExtractFiles(cancelToken);
-    }
-
     public async Task ExtractFiles(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
@@ -206,8 +228,6 @@ public class GroupProfile : FileProfile
         ArgumentNullException.ThrowIfNull(_files);
         return new ClipboardMetaInfomation() { Files = _files };
     }
-
-    protected override Task CheckHash(string _, bool _1, CancellationToken _2) => Task.CompletedTask;
 
     protected override async Task<bool> TryGetFromHistoryCache()
     {

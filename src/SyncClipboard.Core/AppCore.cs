@@ -13,6 +13,8 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
+using SyncClipboard.Core.UserServices.RemoteClipboardServer;
+using SyncClipboard.Core.Factories;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
@@ -251,6 +253,11 @@ namespace SyncClipboard.Core
 
             services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
+            
+            // 注册新的远程剪贴板服务器架构
+            services.AddSingleton<ILocalFileCacheManager, LocalFileCacheManager>();
+            services.AddSingleton<RemoteClipboardServerFactory>();
+            
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();
             services.AddTransient<GithubUpdater>();

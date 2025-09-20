@@ -3,6 +3,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Factories;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,7 +23,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 {
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
-    protected override IWebDav WebDav { get; set; }
+    protected override RemoteClipboardServerFactory RemoteServerFactory { get; set; }
 
     private readonly IThreadDispatcher _dispatcher;
 
@@ -156,7 +157,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     {
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
-        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
+        RemoteServerFactory = ServiceProvider.GetRequiredService<RemoteClipboardServerFactory>();
         _dispatcher = ServiceProvider.GetRequiredService<IThreadDispatcher>();
     }
 

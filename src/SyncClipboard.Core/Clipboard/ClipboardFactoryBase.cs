@@ -4,6 +4,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Image;
+using SyncClipboard.Core.Factories;
 using System.Net;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 {
     protected abstract ILogger Logger { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
-    protected abstract IWebDav WebDav { get; set; }
+    protected abstract RemoteClipboardServerFactory RemoteServerFactory { get; set; }
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
     public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
@@ -78,9 +79,15 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
 
     private async Task<Profile> UploadAndReturnBlankProfile(CancellationToken ctk)
     {
-        var blankProfile = new TextProfile("");
-        await blankProfile.UploadProfile(WebDav, ctk);
-        return blankProfile;
+        // 使用RemoteClipboardServerFactory获取当前服务器实例并上传空Profile
+        var remoteServer = RemoteServerFactory.Current;
+        if (remoteServer != null)
+        {
+            return await remoteServer.SetBlankProfileAsync(ctk);
+        }
+        
+        // 如果没有远程服务器，返回本地空Profile
+        return new TextProfile("");
     }
 
     public async Task<Profile> CreateProfileFromLocal(CancellationToken ctk)
@@ -89,31 +96,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return await CreateProfileFromMeta(meta, ctk);
     }
 
-    public async Task<Profile> CreateProfileFromRemote(CancellationToken cancelToken)
-    {
-        try
-        {
-            var profileDTO = await WebDav.GetJson<ClipboardProfileDTO>(Env.RemoteProfilePath, cancelToken);
-            Logger.Write(nameof(ClipboardFactoryBase), profileDTO?.ToString() ?? "null");
-            ArgumentNullException.ThrowIfNull(profileDTO);
-
-            return GetProfileBy(profileDTO);
-        }
-        catch (Exception ex) when (
-            ex is JsonException ||
-            ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound } ||
-            ex is ArgumentException)
-        {
-            return await UploadAndReturnBlankProfile(cancelToken);
-        }
-        catch (Exception ex)
-        {
-            Logger.Write($"CreateFromRemote failed {ex}");
-            throw;
-        }
-    }
-
-    private static Profile GetProfileBy(ClipboardProfileDTO profileDTO)
+    public static Profile GetProfileBy(ClipboardProfileDTO profileDTO)
     {
         switch (profileDTO.Type)
         {

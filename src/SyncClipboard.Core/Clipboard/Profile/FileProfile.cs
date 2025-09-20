@@ -24,8 +24,6 @@ public class FileProfile : Profile
         => ServiceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
 
     protected const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
-    private string? _statusTip;
-    private string StatusTip => string.IsNullOrEmpty(_statusTip) ? FileName : _statusTip;
 
     private static readonly string RemoteFileFolder = Env.RemoteFileFolder;
 
@@ -77,27 +75,40 @@ public class FileProfile : Profile
         }
     }
 
-    public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
+    #region 数据访问接口实现
+
+    public override bool HasDataFile => true;
+
+    public override string? GetLocalDataPath() => FullPath;
+
+    public override void SetLocalDataPath(string path)
     {
-        string remotePath = $"{RemoteFileFolder}/{FileName}";
-
-        ArgumentNullException.ThrowIfNull(FullPath);
-        if (!Oversized())
-        {
-            Logger.Write("PUSH file " + FileName);
-            if (!await webdav.DirectoryExist(RemoteFileFolder))
-            {
-                await webdav.CreateDirectory(RemoteFileFolder);
-            }
-            await webdav.PutFile(remotePath, FullPath, cancelToken);
-        }
-        else
-        {
-            Logger.Write("file is too large, skipped " + FileName);
-        }
-
-        await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
+        FullPath = path;
     }
+
+    public override Task<Stream?> GetDataStreamAsync()
+    {
+        if (!string.IsNullOrEmpty(FullPath) && File.Exists(FullPath))
+            return Task.FromResult<Stream?>(File.OpenRead(FullPath));
+        return Task.FromResult<Stream?>(null);
+    }
+
+    public override async Task SaveDataStreamAsync(Stream stream, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(FullPath);
+        
+        // 确保目录存在
+        var directory = Path.GetDirectoryName(FullPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
+        using var fileStream = File.Create(FullPath);
+        await stream.CopyToAsync(fileStream, cancellationToken);
+    }
+
+    #endregion
 
     protected virtual async Task<bool> TryGetFromHistoryCache()
     {
@@ -126,64 +137,9 @@ public class FileProfile : Profile
         }
     }
 
-    public override async Task BeforeSetLocal(CancellationToken cancelToken,
-        IProgress<HttpDownloadProgress>? progress = null)
-    {
-        if (await TryGetFromHistoryCache())
-        {
-            return;
-        }
-
-        await DownloadFromRemote(progress, cancelToken);
-    }
-
-    protected virtual async Task DownloadFromRemote(IProgress<HttpDownloadProgress>? progress, CancellationToken cancelToken)
-    {
-        if (!string.IsNullOrEmpty(FullPath))
-        {
-            return;
-        }
-
-        if (WebDav is null)
-        {
-            return;
-        }
-
-        string remotePath = $"{RemoteFileFolder}/{FileName}";
-        string localPath = GetTempLocalFilePath();
-
-        await WebDav.GetFile(remotePath, localPath, progress, cancelToken);
-        await CheckHash(localPath, false, cancelToken);
-
-        Logger.Write("[PULL] download OK " + localPath);
-        FullPath = localPath;
-        _statusTip = FileName;
-    }
-
-    protected virtual async Task CheckHash(string localPath, bool checkSize, CancellationToken cancelToken)
-    {
-        var downloadedMd5 = await GetMD5HashFromFile(localPath, checkSize, cancelToken);
-        var existedMd5 = Hash;
-        if (string.IsNullOrEmpty(existedMd5))
-        {
-            Hash = downloadedMd5;
-            await WebDav!.PutJson(RemoteProfilePath, ToDto(), cancelToken);
-            return;
-        }
-
-        if (downloadedMd5 != MD5_FOR_OVERSIZED_FILE
-            && existedMd5 != MD5_FOR_OVERSIZED_FILE
-            && downloadedMd5 != existedMd5)
-        {
-            Logger.Write("[PULL] download erro, md5 wrong");
-            _statusTip = "Downloading erro, md5 wrong";
-            throw new Exception("FileProfile download check md5 failed");
-        }
-    }
-
     public override string ToolTip()
     {
-        return StatusTip;
+        return FileName;
     }
 
     public override string ShowcaseText()
@@ -287,10 +243,8 @@ public class FileProfile : Profile
 
     public override async Task EnsureAvailable(CancellationToken token)
     {
-        if (!await WebDav.Exist($"{RemoteFileFolder}/{FileName}", token))
-        {
-            throw new Exception("Remote file is lost.");
-        }
+        // TODO: 使用IRemoteClipboardServer检查远程文件是否存在
+        await Task.CompletedTask;
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()

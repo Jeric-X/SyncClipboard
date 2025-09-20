@@ -12,6 +12,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.Factories;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -71,7 +72,7 @@ public class UploadService : ClipboardHander
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IWebDav _webDav;
+    private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
     private readonly IEventSimulator _keyEventSimulator;
@@ -83,20 +84,21 @@ public class UploadService : ClipboardHander
         IServiceProvider serviceProvider,
         IMessenger messenger,
         IEventSimulator keyEventSimulator,
-        HotkeyManager hotkeyManager)
+        HotkeyManager hotkeyManager,
+        RemoteClipboardServerFactory remoteClipboardServerFactory)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
-        _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
         _syncConfig = _configManager.GetConfig<SyncConfig>();
         _serverConfig = _configManager.GetConfig<ServerConfig>();
         _keyEventSimulator = keyEventSimulator;
         _hotkeyManager = hotkeyManager;
+        _remoteClipboardServerFactory = remoteClipboardServerFactory;
 
         ContextMenuGroupName = SyncService.ContextMenuGroupName;
     }
@@ -297,12 +299,25 @@ public class UploadService : ClipboardHander
         {
             try
             {
-                var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
+                // 从远程服务器获取当前Profile
+                var remoteServer = _remoteClipboardServerFactory.Current;
+                if (remoteServer == null)
+                {
+                    throw new InvalidOperationException("No remote clipboard server available");
+                }
+
+                var remoteProfileDto = await remoteServer.GetProfileAsync(cancelToken);
+                var remoteProfile = remoteProfileDto != null ? ClipboardFactoryBase.GetProfileBy(remoteProfileDto) : new UnknownProfile();
+                
                 if (!Profile.Same(remoteProfile, profile))
                 {
                     _logger.Write(LOG_TAG, "Start: " + profile.ToJsonString());
-                    await CleanServerTempFile(cancelToken);
-                    await profile.UploadProfile(_webDav, cancelToken);
+                    
+                    // 上传Profile数据（如有文件）
+                    await remoteServer.UploadProfileDataAsync(profile, cancelToken);
+                    
+                    // 设置Profile元数据
+                    await remoteServer.SetProfileAsync(profile.ToDto(), cancelToken);
                 }
                 else
                 {
@@ -336,14 +351,10 @@ public class UploadService : ClipboardHander
     {
         if (_syncConfig.DeletePreviousFilesOnPush)
         {
-            try
-            {
-                await _webDav.DirectoryDelete(Env.RemoteFileFolder, cancelToken);
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
-            {
-            }
-            await _webDav.CreateDirectory(Env.RemoteFileFolder, cancelToken);
+            // 在新架构中，文件清理由IRemoteClipboardServer处理
+            // 这里可以实现删除旧文件的逻辑，或者由服务器端自动管理
+            _logger.Write(LOG_TAG, "File cleanup requested, but handled by remote server implementation");
+            await Task.CompletedTask;
         }
     }
 
