@@ -13,9 +13,7 @@ public partial class SyncSettingViewModel : ObservableObject
     private bool serverEnable;
     partial void OnServerEnableChanged(bool value) => ServerConfig = ServerConfig with { SwitchOn = value };
 
-    [ObservableProperty]
-    private bool clientMixedMode;
-    partial void OnClientMixedModeChanged(bool value) => ServerConfig = ServerConfig with { ClientMixedMode = value };
+
 
     [ObservableProperty]
     private bool enableHttps;
@@ -52,7 +50,6 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnServerConfigChanged(ServerConfig value)
     {
         ServerEnable = value.SwitchOn;
-        ClientMixedMode = value.ClientMixedMode;
         EnableHttps = value.EnableHttps;
         CertificatePemPath = value.CertificatePemPath;
         CertificatePemKeyPath = value.CertificatePemKeyPath;
@@ -60,7 +57,6 @@ public partial class SyncSettingViewModel : ObservableObject
         CustomConfigurationFilePath = value.CustomConfigurationFilePath;
         _configManager.SetConfig(value);
 
-        OnPropertyChanged(nameof(IsNormalClientEnable));
         OnPropertyChanged(nameof(UseManulServer));
         OnPropertyChanged(nameof(ClientEnabled));
         OnPropertyChanged(nameof(ShowHttpsConfig));
@@ -183,24 +179,16 @@ public partial class SyncSettingViewModel : ObservableObject
 
     #region for view only
 
-    public bool IsNormalClientEnable => !ServerEnable || !ClientMixedMode;
-
-    public bool UseManulServer => (!UseLocalServer || EnableCustomConfigurationFile) && IsNormalClientEnable;
+    public bool UseManulServer => !UseLocalServer || EnableCustomConfigurationFile;
 
     public bool ShowHttpsConfig => !EnableCustomConfigurationFile;
     public bool ShowHttpsCertConfig => EnableHttps && !EnableCustomConfigurationFile;
-    public bool ShowUseLocalServelSwitch => IsNormalClientEnable && !EnableCustomConfigurationFile;
+    public bool ShowUseLocalServelSwitch => !EnableCustomConfigurationFile;
 
     public bool ClientEnabled
     {
-        get => !IsNormalClientEnable || SyncEnable;
-        set
-        {
-            if (IsNormalClientEnable)
-            {
-                SyncEnable = value;
-            }
-        }
+        get => SyncEnable;
+        set => SyncEnable = value;
     }
 
     [ObservableProperty]
@@ -238,7 +226,6 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager.ListenConfig<ServerConfig>(config => ServerConfig = config);
         serverConfig = _configManager.GetConfig<ServerConfig>();
         serverEnable = serverConfig.SwitchOn;
-        clientMixedMode = serverConfig.ClientMixedMode;
         enableHttps = serverConfig.EnableHttps;
         certificatePemPath = serverConfig.CertificatePemPath;
         certificatePemKeyPath = serverConfig.CertificatePemKeyPath;

@@ -174,15 +174,6 @@ Esc：关闭窗口</value>
   <data name="PasswordTabRepeat" xml:space="preserve">
     <value>0</value>
   </data>
-  <data name="MixedClientMode" xml:space="preserve">
-    <value>客户端混合模式</value>
-  </data>
-  <data name="MixedClientOnInfo" xml:space="preserve">
-    <value>打开：当其他客户端连接时直接操作本机剪贴板，本机剪贴板强制被同步，本机相比普通客户端，没有轮询服务器产生的延迟。</value>
-  </data>
-  <data name="MixedClientOffInfo" xml:space="preserve">
-    <value>关闭：使用独立文件保存剪贴板信息。</value>
-  </data>
   <data name="Confirm" xml:space="preserve">
     <value>确定</value>
   </data>
@@ -485,15 +476,6 @@ Esc：关闭面板</value>
   </data>
   <data name="SwitchBuiltInServer" xml:space="preserve">
     <value>开启/关闭 内置服务器</value>
-  </data>
-  <data name="SwitchMixedClientMode" xml:space="preserve">
-    <value>开启/关闭 客户端混合模式</value>
-  </data>
-  <data name="SwitchOnMixedClientMode" xml:space="preserve">
-    <value>客户端混合模式已开启</value>
-  </data>
-  <data name="SwitchOffMixedClientMode" xml:space="preserve">
-    <value>客户端混合模式已关闭</value>
   </data>
   <data name="SwitchImageAssistant" xml:space="preserve">
     <value>开启/关闭 图片轻松拷贝</value>

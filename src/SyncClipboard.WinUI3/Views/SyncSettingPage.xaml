@@ -33,15 +33,11 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.Server}"
-                             Description="{x:Bind i18n:Strings.ServerDescription}"
-                             IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.Server}" Description="{x:Bind i18n:Strings.ServerDescription}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE753;" />
             </ui:SettingsExpander.HeaderIcon>
-            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                          OffContent="{x:Bind i18n:Strings.Off}"
-                          IsOn="{x:Bind _viewModel.ServerEnable, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ServerEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Description="{x:Bind _viewModel.ServerConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
@@ -53,28 +49,6 @@
                         </Button>
                     </StackPanel>
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.MixedClientMode}">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Button Width="32"
-                                Height="32"
-                                Padding="0"
-                                Content="&#xE9CE;"
-                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock Width="400" TextWrapping="WrapWholeWords">
-                                        <Run Text="{x:Bind i18n:Strings.MixedClientOnInfo}" />
-                                        <LineBreak /><LineBreak /><Run Text="{x:Bind i18n:Strings.MixedClientOffInfo}" />
-                                    </TextBlock>
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                      OffContent="{x:Bind i18n:Strings.Off}"
-                                      IsOn="{x:Bind _viewModel.ClientMixedMode, Mode=TwoWay}" />
-                    </StackPanel>
-                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.EnableCustomConfigurationFile}" Description="{x:Bind i18n:Strings.CustomConfigFileDescription}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Width="32"
@@ -84,33 +58,23 @@
                                 Command="{x:Bind _viewModel.OpenCustomConfigDescLinkCommand}"
                                 FontFamily="{ThemeResource SymbolThemeFontFamily}"
                                 Style="{ThemeResource DateTimePickerFlyoutButtonStyle}" />
-                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                      OffContent="{x:Bind i18n:Strings.Off}"
-                                      IsOn="{x:Bind _viewModel.EnableCustomConfigurationFile, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EnableCustomConfigurationFile, Mode=TwoWay}" />
                     </StackPanel>
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.CustomConfigurationFilePath}"
-                                 Description="{x:Bind _viewModel.CustomConfigurationFilePath, Mode=OneWay}"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.EnableCustomConfigurationFile), Mode=OneWay}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.CustomConfigurationFilePath}" Description="{x:Bind _viewModel.CustomConfigurationFilePath, Mode=OneWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.EnableCustomConfigurationFile), Mode=OneWay}">
                     <Button Click="SetCustomConfigurationFilePath">
                         <FontIcon Glyph="&#xE838;" />
                     </Button>
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.EnableHttps}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowHttpsConfig), Mode=OneWay}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.EnableHttps, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EnableHttps, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.CertificatePemPath}"
-                                 Description="{x:Bind _viewModel.CertificatePemPath, Mode=OneWay}"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowHttpsCertConfig), Mode=OneWay}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.CertificatePemPath}" Description="{x:Bind _viewModel.CertificatePemPath, Mode=OneWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowHttpsCertConfig), Mode=OneWay}">
                     <Button Click="SetCertificatePemPath">
                         <FontIcon Glyph="&#xE838;" />
                     </Button>
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.CertificatePemKeyPath}"
-                                 Description="{x:Bind _viewModel.CertificatePemKeyPath, Mode=OneWay}"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowHttpsCertConfig), Mode=OneWay}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.CertificatePemKeyPath}" Description="{x:Bind _viewModel.CertificatePemKeyPath, Mode=OneWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowHttpsCertConfig), Mode=OneWay}">
                     <Button Click="SetCertificatePemKeyPath">
                         <FontIcon Glyph="&#xE838;" />
                     </Button>
@@ -121,17 +85,10 @@
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" />
             </ui:SettingsExpander.HeaderIcon>
-            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                          OffContent="{x:Bind i18n:Strings.Off}"
-                          IsOn="{x:Bind _viewModel.ClientEnabled, Mode=TwoWay}"
-                          IsEnabled="{x:Bind _viewModel.IsNormalClientEnable, Mode=OneWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ClientEnabled, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Description="{x:Bind i18n:Strings.UseBuiltInServerDescription}"
-                                 Header="{x:Bind i18n:Strings.UseSelfHostServer}"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowUseLocalServelSwitch), Mode=OneWay}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
+                <ui:SettingsCard Description="{x:Bind i18n:Strings.UseBuiltInServerDescription}" Header="{x:Bind i18n:Strings.UseSelfHostServer}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowUseLocalServelSwitch), Mode=OneWay}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
@@ -143,14 +100,10 @@
                         </Button>
                     </StackPanel>
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNormalClientEnable), Mode=OneWay}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard VerticalContentAlignment="Stretch"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}"
-                                 ContentAlignment="Vertical">
+                <ui:SettingsCard VerticalContentAlignment="Stretch" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" ContentAlignment="Vertical">
                     <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
                         <ui:SettingsCard.Resources>
                         <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">
@@ -165,46 +118,28 @@
                         <HyperlinkButton Content="{x:Bind i18n:Strings.UseNextcloud}" Command="{x:Bind _viewModel.LoginWithNextcloudCommand}" />
                     </ui:SettingsCard.Description>
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNormalClientEnable), Mode=OneWay}">
-                    <NumberBox Minimum="0"
-                               Maximum="100000"
-                               Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.RetryTimes}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNormalClientEnable), Mode=OneWay}">
-                    <NumberBox Minimum="0"
-                               Maximum="100000"
-                               Value="{x:Bind _viewModel.RetryTimes, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.RetryTimes}">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.RetryTimes, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNormalClientEnable), Mode=OneWay}">
-                    <NumberBox Minimum="0"
-                               Maximum="100000"
-                               Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}">
+                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemporaryFileAutoly}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNormalClientEnable), Mode=OneWay}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemporaryFileAutoly}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterManuallyUpload}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNormalClientEnable), Mode=OneWay}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.NotifyOnManualUpload, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterManuallyUpload}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnManualUpload, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}"
-                                  OffContent="{x:Bind i18n:Strings.Off}"
-                                  IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnDownloaded, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.SyncContentControl}"
-                                 IsClickEnabled="True"
-                                 Command="{x:Bind _viewModel.OpenSyncContentControlPageCommand}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.SyncContentControl}" IsClickEnabled="True" Command="{x:Bind _viewModel.OpenSyncContentControlPageCommand}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <local:ServerSettingDialog x:Name="_ServerSettingDialog"
-                                   PrimaryButtonClick="ServerSettingDialog_OkClick"
-                                   TextBoxName="{x:Bind i18n:Strings.Port}" />
-        <local:ServerSettingDialog x:Name="_SyncSettingDialog"
-                                   PrimaryButtonClick="SyncSettingDialog_OkClick"
-                                   TextBoxName="{x:Bind i18n:Strings.Address}" />
+        <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Port}" />
+        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Address}" />
     </StackPanel>
 </Page>

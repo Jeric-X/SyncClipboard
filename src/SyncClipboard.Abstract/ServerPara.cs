@@ -5,7 +5,6 @@ public record class ServerPara(
     string Path,
     string UserName,
     string Password,
-    bool Passive,
     bool EnableHttps,
     string CertificatePemPath,
     string CertificatePemKeyPath,

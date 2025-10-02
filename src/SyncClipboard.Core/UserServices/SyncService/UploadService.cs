@@ -52,7 +52,7 @@ public class UploadService : ClipboardHander
 
     protected override bool SwitchOn
     {
-        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
+        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn;
         set
         {
             _syncConfig.SyncSwitchOn = value;

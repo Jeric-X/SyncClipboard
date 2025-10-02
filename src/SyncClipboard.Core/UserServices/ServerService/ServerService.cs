@@ -86,7 +86,6 @@ public class ServerService : Service
                         Env.AppDataDirectory,
                         _serverConfig.UserName,
                         _serverConfig.Password,
-                        _serverConfig.ClientMixedMode,
                         _serverConfig.EnableHttps,
                         _serverConfig.CertificatePemPath,
                         _serverConfig.CertificatePemKeyPath,
