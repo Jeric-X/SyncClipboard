@@ -1,0 +1,90 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.ServerConfigPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             x:DataType="vm:ServerConfigViewModel"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordFontIcon" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="Button">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="FontSize" Value="20" />
+        </Style>
+        <Style Selector="ToggleButton.FontIcon">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+    <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
+        <ui:SettingsExpander.IconSource>
+            <ui:FontIconSource Glyph="&#xE753;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+        </ui:SettingsExpander.IconSource>
+        <ui:SettingsExpander.Footer>
+            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ServerEnable, Mode=TwoWay}" />
+        </ui:SettingsExpander.Footer>
+        <ui:SettingsExpander.Items>
+            <ui:SettingsExpanderItem Description="{Binding ServerConfigDescription}">
+                <ui:SettingsExpanderItem.Footer>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
+                            <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </ToggleButton>
+                        <Button Click="SetServerConfig">
+                            <ui:FontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                    </StackPanel>
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableCustomConfigurationFile}" Description="{x:Static i18n:Strings.CustomConfigFileDescription}">
+                <ui:SettingsExpanderItem.Footer>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Command="{Binding OpenCustomConfigDescLinkCommand}">
+                            <ui:FontIcon Glyph="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </Button>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableCustomConfigurationFile, Mode=TwoWay}" />
+                    </StackPanel>
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CustomConfigurationFilePath}" Description="{Binding CustomConfigurationFilePath, Mode=OneWay}" IsVisible="{Binding EnableCustomConfigurationFile, Mode=OneWay}">
+                <ui:SettingsExpanderItem.Footer>
+                    <Button Click="SetCustomConfigurationFilePath">
+                        <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableHttps}" IsVisible="{Binding ShowHttpsConfig}">
+                <ui:SettingsExpanderItem.Footer>
+                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHttps, Mode=TwoWay}" />
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemPath}" Description="{Binding CertificatePemPath, Mode=OneWay}" IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
+                <ui:SettingsExpanderItem.Footer>
+                    <Button Click="SetCertificatePemPath">
+                        <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemKeyPath}" Description="{Binding CertificatePemKeyPath, Mode=OneWay}" IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
+                <ui:SettingsExpanderItem.Footer>
+                    <Button Click="SetCertificatePemKeyPath">
+                        <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+        </ui:SettingsExpander.Items>
+    </ui:SettingsExpander>
+</UserControl>

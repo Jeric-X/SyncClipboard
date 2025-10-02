@@ -14,6 +14,7 @@ namespace SyncClipboard.Core.ViewModels
         public ObservableCollection<PageDefinition> MainWindowPage { get; } =
         [
             PageDefinition.SyncSetting,
+            PageDefinition.ServerConfig,
             PageDefinition.CliboardAssistant,
             PageDefinition.HistorySetting,
             PageDefinition.ServiceStatus,
