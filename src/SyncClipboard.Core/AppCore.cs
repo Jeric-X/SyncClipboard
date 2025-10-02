@@ -15,6 +15,7 @@ using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Factories;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Keyboard;
@@ -250,7 +251,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<HistoryManager>();
 
             services.AddSingleton<IHttp, Http>();
-            services.AddSingleton<ILocalFileCacheManager, LocalFileCacheManager>();
+            services.AddSingleton<LocalFileCacheManager>();
             services.AddSingleton<RemoteClipboardServerFactory>();
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();

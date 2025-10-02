@@ -1,11 +1,12 @@
 using Quartz;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.FileCacheManager;
 
 namespace SyncClipboard.Core.Utilities.Job;
 
-public class LocalFileCacheCleanupJob(ILocalFileCacheManager cacheManager, ILogger logger) : IJob
+public class LocalFileCacheCleanupJob(LocalFileCacheManager cacheManager, ILogger logger) : IJob
 {
-    private readonly ILocalFileCacheManager _cacheManager = cacheManager;
+    private readonly LocalFileCacheManager _cacheManager = cacheManager;
     private readonly ILogger _logger = logger;
 
     public async Task Execute(IJobExecutionContext context)

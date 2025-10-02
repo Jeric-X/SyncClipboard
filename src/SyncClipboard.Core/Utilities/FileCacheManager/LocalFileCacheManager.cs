@@ -1,58 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace SyncClipboard.Core.Utilities;
+namespace SyncClipboard.Core.Utilities.FileCacheManager;
 
-public class LocalFileCacheEntry
-{
-    public string Id { get; set; } = string.Empty; // 主键
-    public string CacheType { get; set; } = string.Empty; // 缓存类型
-    public string FilePath { get; set; } = string.Empty; // 缓存文件路径
-    public DateTime CreatedTime { get; set; } // 创建时间
-    public DateTime LastAccessTime { get; set; } // 最后访问时间
-    public string CachedFileHash { get; set; } = string.Empty; // 缓存文件内容hash
-    public string Metadata { get; set; } = string.Empty; // 元数据
-    public long FileSize { get; set; } // 文件大小
-}
-
-public class LocalFileCacheDbContext : DbContext
-{
-    private readonly string _dbPath;
-
-    public LocalFileCacheDbContext()
-    {
-        _dbPath = Path.Combine(Env.AppDataFileFolder, "LocalFileCache.db");
-    }
-
-    public DbSet<LocalFileCacheEntry> CacheEntries { get; set; } = null!;
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlite($"Data Source={_dbPath}");
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<LocalFileCacheEntry>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.CacheType);
-            entity.HasIndex(e => e.LastAccessTime);
-            entity.HasIndex(e => e.CachedFileHash);
-            entity.HasIndex(e => new { e.CacheType, e.CachedFileHash });
-
-            entity.Property(e => e.Id).HasMaxLength(64);
-            entity.Property(e => e.CacheType).HasMaxLength(50);
-            entity.Property(e => e.FilePath).HasMaxLength(500);
-            entity.Property(e => e.CachedFileHash).HasMaxLength(64);
-        });
-    }
-}
-
-public sealed class LocalFileCacheManager : ILocalFileCacheManager, IDisposable
+public sealed class LocalFileCacheManager : IDisposable
 {
     private readonly LocalFileCacheDbContext _dbContext;
     private readonly ILogger _logger;
