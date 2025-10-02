@@ -15,7 +15,7 @@ namespace SyncClipboard.Core.Utilities.Web
         protected ILogger? Logger;
         protected abstract IAppConfig AppConfig { get; }
 
-        protected virtual uint Timeout => 300;
+        public virtual uint Timeout { get; init; } = 300;
         protected abstract string User { get; }
         protected abstract string Token { get; }
         protected abstract string BaseAddress { get; }

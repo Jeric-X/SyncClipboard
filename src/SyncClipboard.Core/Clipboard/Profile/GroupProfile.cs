@@ -7,7 +7,6 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.History;
 using System.Text;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -55,12 +54,12 @@ public class GroupProfile : FileProfile
             if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
                 return await Create(filterdFiles.First(), contentControl, token);
 
-            var hash = await Task.Run(() => CaclHash(filterdFiles, contentControl, token)).WaitAsync(token);
+            var hash = await CaclHashAsync(filterdFiles, contentControl, token);
             return new GroupProfile(filterdFiles, hash, contentControl);
         }
         else
         {
-            var hash = await Task.Run(() => CaclHash(files, contentControl, token)).WaitAsync(token);
+            var hash = await CaclHashAsync(files, contentControl, token);
             return new GroupProfile(files, hash, contentControl);
         }
     }
@@ -71,7 +70,7 @@ public class GroupProfile : FileProfile
         if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
             return await Create(filterdFiles.First(), true, token);
 
-        var hash = await Task.Run(() => CaclHash(filterdFiles, true, token)).WaitAsync(token);
+        var hash = await CaclHashAsync(filterdFiles, true, token);
         return new GroupProfile(filterdFiles, hash, true);
     }
 
@@ -90,6 +89,11 @@ public class GroupProfile : FileProfile
             Path.GetFileName(file1).ListHashCode(),
             Path.GetFileName(file2).ListHashCode()
         );
+    }
+
+    private static Task<string> CaclHashAsync(IEnumerable<string> filesEnum, bool contentControl, CancellationToken token)
+    {
+        return Task.Run(() => CaclHash(filesEnum, contentControl, token), token).WaitAsync(token);
     }
 
     private static string CaclHash(IEnumerable<string> filesEnum, bool contentControl, CancellationToken token)
@@ -132,10 +136,25 @@ public class GroupProfile : FileProfile
         return hash.ToString();
     }
 
-    public override async Task UploadProfile(IWebDav webdav, CancellationToken token)
+    public override bool HasDataFile => true;
+    public override bool RequiresPrepareData => true;
+
+    public override async Task PrepareDataAsync(CancellationToken cancellationToken = default)
     {
-        await PrepareTransferFile(token);
-        await base.UploadProfile(webdav, token);
+        var cacheManager = ServiceProvider.GetRequiredService<ILocalFileCacheManager>();
+        var cachedZipPath = await cacheManager.GetCachedFilePathAsync(nameof(GroupProfile), Hash);
+        if (!string.IsNullOrEmpty(cachedZipPath))
+        {
+            FullPath = cachedZipPath;
+            return;
+        }
+
+        await PrepareTransferFile(cancellationToken);
+
+        if (!string.IsNullOrEmpty(FullPath))
+        {
+            await cacheManager.SaveCacheEntryAsync(nameof(GroupProfile), Hash, FullPath);
+        }
     }
 
     public Task PrepareTransferFile(CancellationToken token)
@@ -177,12 +196,6 @@ public class GroupProfile : FileProfile
         }, token).WaitAsync(token);
     }
 
-    protected override async Task DownloadFromRemote(IProgress<HttpDownloadProgress>? progress, CancellationToken cancelToken)
-    {
-        await base.DownloadFromRemote(progress, cancelToken);
-        await ExtractFiles(cancelToken);
-    }
-
     public async Task ExtractFiles(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
@@ -205,44 +218,6 @@ public class GroupProfile : FileProfile
     {
         ArgumentNullException.ThrowIfNull(_files);
         return new ClipboardMetaInfomation() { Files = _files };
-    }
-
-    protected override Task CheckHash(string _, bool _1, CancellationToken _2) => Task.CompletedTask;
-
-    protected override async Task<bool> TryGetFromHistoryCache()
-    {
-        try
-        {
-            var historyConfig = Config.GetConfig<HistoryConfig>();
-            if (!historyConfig.EnableHistory)
-            {
-                return false;
-            }
-
-            var historyRecord = await HistoryManager.GetHistoryRecord(Hash, Type);
-            if (historyRecord == null || historyRecord.FilePath.Length == 0)
-            {
-                return false;
-            }
-
-            foreach (var filePath in historyRecord.FilePath)
-            {
-                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
-                {
-                    return false;
-                }
-            }
-            _files = historyRecord.FilePath;
-            FullPath = Path.GetDirectoryName(_files[0]) + ".zip";
-
-            Logger.Write("[PULL] Found group files in history cache, using existing file paths");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.Write("[PULL] Error accessing history cache for GroupProfile: " + ex.Message);
-            return false;
-        }
     }
 
     protected override void SetNotification(INotification notification)
@@ -275,6 +250,36 @@ public class GroupProfile : FileProfile
     {
         bool hasItem = _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name)) != null;
         return hasItem && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadMultiFile;
+    }
+
+    public override async Task CheckDownloadedData(CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(FullPath);
+
+        if (!File.Exists(FullPath))
+        {
+            throw new FileNotFoundException($"Zip file does not exist: {FullPath}", FullPath);
+        }
+
+        var extractPath = FullPath[..^4];
+        if (!Directory.Exists(extractPath))
+            Directory.CreateDirectory(extractPath);
+
+        using ZipFile zip = ZipFile.Read(FullPath);
+        await Task.Run(() => zip.ExtractAll(extractPath, ExtractExistingFileAction.DoNotOverwrite), token).WaitAsync(token);
+
+        _files = zip.EntryFileNames
+            .Select(file => file.TrimEnd('/'))
+            .Where(file => !file.Contains('/'))
+            .Select(file => Path.Combine(extractPath, file))
+            .ToArray();
+
+        var hash = await CaclHashAsync(_files, false, token);
+        if (hash != Hash)
+        {
+            var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
+            throw new InvalidDataException(errorMsg);
+        }
     }
 
     public override HistoryRecord CreateHistoryRecord()

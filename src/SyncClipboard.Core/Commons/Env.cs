@@ -9,7 +9,6 @@
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
 
         public const string RuntimeConfigName = "RuntimeConfig.json";
-        public const string RemoteProfilePath = "SyncClipboard.json";
         public const string UpdateInfoFile = "update_info.json";
         public const string LinuxPackageAppId = "xyz.jericx.desktop.syncclipboard";
         public static readonly string LinuxUserDesktopEntryFolder = UserPath(".local/share/applications");
@@ -27,7 +26,6 @@
         public static readonly string AppDataDbPath = GetOrCreateFolder(FullPath("data"));
         public static readonly string HistoryFileFolder = GetOrCreateFolder(Path.Combine(FullPath("file"), "history"));
         public static string TemplateFileFolder => GetTemplateFileFolder();
-        public static readonly string RemoteFileFolder = "file";
         public static readonly string LogFolder = FullPath("log");
         public static readonly string UpdateFolder = GetOrCreateFolder(FullPath("update"));
 

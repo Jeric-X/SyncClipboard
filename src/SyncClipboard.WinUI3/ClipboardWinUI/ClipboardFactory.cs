@@ -22,7 +22,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 {
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
-    protected override IWebDav WebDav { get; set; }
 
     private readonly IThreadDispatcher _dispatcher;
 
@@ -156,7 +155,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     {
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
-        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
         _dispatcher = ServiceProvider.GetRequiredService<IThreadDispatcher>();
     }
 

@@ -17,7 +17,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private const int MAX_RETRY_TIMES = 5;
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
-    protected override IWebDav WebDav { get; set; }
 
     private readonly MultiSourceClipboardReader Clipboard;
 
@@ -28,7 +27,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     {
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
-        WebDav = ServiceProvider.GetRequiredService<IWebDav>();
         Clipboard = ServiceProvider.GetRequiredService<MultiSourceClipboardReader>();
     }
 

@@ -76,16 +76,6 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     protected override void SetToolTip(string text)
     {
-        _trayIcon.ToolTipText = text;
-    }
-
-    public override void SetStatusString(string key, string statusStr, bool error)
-    {
-        base.SetStatusString(key, statusStr, error);
-    }
-
-    public override void SetStatusString(string key, string statusStr)
-    {
-        base.SetStatusString(key, statusStr);
+        _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.ToolTipText = text).Wait();
     }
 }
