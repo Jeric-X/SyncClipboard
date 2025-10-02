@@ -87,7 +87,7 @@ public class Web
         }
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);
-        app.UseSyncCliboardServer(serverConfig);
+        app.UseSyncCliboardServer();
         await app.StartAsync();
         return app;
     }

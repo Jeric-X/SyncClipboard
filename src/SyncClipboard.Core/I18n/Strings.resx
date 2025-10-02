@@ -165,15 +165,6 @@
   <data name="PasswordTabRepeat" xml:space="preserve">
     <value>1</value>
   </data>
-  <data name="MixedClientMode" xml:space="preserve">
-    <value>Mixed Client Mode</value>
-  </data>
-  <data name="MixedClientOnInfo" xml:space="preserve">
-    <value>On: When clients update/get clipboard infomation to/from this server, directly operate this machie's clipboard. So this machine's clipboard is shared forcely and with no delay.</value>
-  </data>
-  <data name="MixedClientOffInfo" xml:space="preserve">
-    <value>Off: Use standalone files to save clients' clipboard information.</value>
-  </data>
   <data name="Confirm" xml:space="preserve">
     <value>Confirm</value>
   </data>
@@ -476,15 +467,6 @@ Double click image: View full image</value>
   </data>
   <data name="SwitchBuiltInServer" xml:space="preserve">
     <value>Switch On/Off Built In Server</value>
-  </data>
-  <data name="SwitchMixedClientMode" xml:space="preserve">
-    <value>Switch On/Off Mixed Client Mode</value>
-  </data>
-  <data name="SwitchOnMixedClientMode" xml:space="preserve">
-    <value>Switch On Mixed Client Mode</value>
-  </data>
-  <data name="SwitchOffMixedClientMode" xml:space="preserve">
-    <value>Switch Off Mixed Client Mode</value>
   </data>
   <data name="SwitchImageAssistant" xml:space="preserve">
     <value>Switch On/Off Image Assistant</value>

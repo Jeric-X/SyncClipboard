@@ -52,8 +52,8 @@ public class DownloadService : Service
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
-    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && (!_serverConfig.ClientMixedMode || !_serverConfig.SwitchOn);
-    private bool ClientSwitchOn => _syncConfig.SyncSwitchOn || (_serverConfig.ClientMixedMode && _serverConfig.SwitchOn);
+    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn;
+    private bool ClientSwitchOn => _syncConfig.SyncSwitchOn;
 
     #region Hotkey
     private static readonly string QuickDownloadAndPasteGuid = "8a4a033e-31da-1b87-76ea-548885866b66";
@@ -70,11 +70,6 @@ public class DownloadService : Service
                 I18n.Strings.SwitchBuiltInServer,
                 "145740F4-03F7-6F6C-5B93-B027C7C49C59",
                 () => SwitchBuiltInServer(!_serverConfig.SwitchOn)
-            ),
-            new UniqueCommand(
-                I18n.Strings.SwitchMixedClientMode,
-                "1D5C8163-E2E0-D099-A334-62A4B4F2BCE5",
-                () => SwitchMixedClientMode(!_serverConfig.ClientMixedMode)
             ),
             _uploadService.QuickUploadCommand,
             _uploadService.QuickUploadWithoutFilterCommand,
@@ -106,14 +101,6 @@ public class DownloadService : Service
         _configManager.SetConfig(_serverConfig with { SwitchOn = isOn });
         var notification = _notificationManager.Shared;
         notification.Title = isOn ? I18n.Strings.SwitchOnBuiltInServer : I18n.Strings.SwitchOffBuiltInServer;
-        notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
-    }
-
-    private void SwitchMixedClientMode(bool isOn)
-    {
-        _configManager.SetConfig(_serverConfig with { ClientMixedMode = isOn });
-        var notification = _notificationManager.Shared;
-        notification.Title = isOn ? I18n.Strings.SwitchOnMixedClientMode : I18n.Strings.SwitchOffMixedClientMode;
         notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
     }
 

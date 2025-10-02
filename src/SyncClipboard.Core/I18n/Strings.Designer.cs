@@ -923,7 +923,7 @@ namespace SyncClipboard.Core.I18n {
         ///Tab/Shift+Tab: Switch filters
         ///Enter: Copy and paste
         ///Alt+Enter: Copy only
-        ///Esc: Close window 的本地化字符串。
+        ///Esc: Close panel 的本地化字符串。
         /// </summary>
         public static string HistoryWindowKeyboardList {
             get {
@@ -1128,33 +1128,6 @@ namespace SyncClipboard.Core.I18n {
         public static string MaxItemCount {
             get {
                 return ResourceManager.GetString("MaxItemCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Mixed Client Mode 的本地化字符串。
-        /// </summary>
-        public static string MixedClientMode {
-            get {
-                return ResourceManager.GetString("MixedClientMode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Off: Use standalone files to save clients&apos; clipboard information. 的本地化字符串。
-        /// </summary>
-        public static string MixedClientOffInfo {
-            get {
-                return ResourceManager.GetString("MixedClientOffInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 On: When clients update/get clipboard infomation to/from this server, directly operate this machie&apos;s clipboard. So this machine&apos;s clipboard is shared forcely and with no delay. 的本地化字符串。
-        /// </summary>
-        public static string MixedClientOnInfo {
-            get {
-                return ResourceManager.GetString("MixedClientOnInfo", resourceCulture);
             }
         }
         
@@ -1591,15 +1564,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Switch On/Off Mixed Client Mode 的本地化字符串。
-        /// </summary>
-        public static string SwitchMixedClientMode {
-            get {
-                return ResourceManager.GetString("SwitchMixedClientMode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Switch Off Built-In Server 的本地化字符串。
         /// </summary>
         public static string SwitchOffBuiltInServer {
@@ -1627,15 +1591,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Switch Off Mixed Client Mode 的本地化字符串。
-        /// </summary>
-        public static string SwitchOffMixedClientMode {
-            get {
-                return ResourceManager.GetString("SwitchOffMixedClientMode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Switch On Built-In Server 的本地化字符串。
         /// </summary>
         public static string SwitchOnBuiltInServer {
@@ -1659,15 +1614,6 @@ namespace SyncClipboard.Core.I18n {
         public static string SwitchOnImageAssistant {
             get {
                 return ResourceManager.GetString("SwitchOnImageAssistant", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Switch On Mixed Client Mode 的本地化字符串。
-        /// </summary>
-        public static string SwitchOnMixedClientMode {
-            get {
-                return ResourceManager.GetString("SwitchOnMixedClientMode", resourceCulture);
             }
         }
         

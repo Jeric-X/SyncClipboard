@@ -24,12 +24,12 @@
                 <ui:FontIconSource Glyph="&#xE8A4;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableDownload}" IsVisible="{Binding IsNormalClientEnable}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableDownload}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DownloadEnable, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUpload}" IsVisible="{Binding IsNormalClientEnable}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUpload}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UploadEnable, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
