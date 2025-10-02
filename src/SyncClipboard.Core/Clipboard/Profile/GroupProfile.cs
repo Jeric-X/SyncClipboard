@@ -3,10 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.FileCacheManager;
 using System.Text;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -141,7 +141,7 @@ public class GroupProfile : FileProfile
 
     public override async Task PrepareDataAsync(CancellationToken cancellationToken = default)
     {
-        var cacheManager = ServiceProvider.GetRequiredService<ILocalFileCacheManager>();
+        var cacheManager = ServiceProvider.GetRequiredService<LocalFileCacheManager>();
         var cachedZipPath = await cacheManager.GetCachedFilePathAsync(nameof(GroupProfile), Hash);
         if (!string.IsNullOrEmpty(cachedZipPath))
         {

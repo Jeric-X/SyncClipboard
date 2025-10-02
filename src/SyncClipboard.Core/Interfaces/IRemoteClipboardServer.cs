@@ -12,22 +12,3 @@ public interface IRemoteClipboardServer : IDisposable
     event EventHandler<ProfileChangedEventArgs> RemoteProfileChanged;
     event EventHandler<PollStatusEventArgs> PollStatusEvent;
 }
-
-public class ProfileChangedEventArgs : EventArgs
-{
-    public Profile NewProfile { get; init; } = new UnknownProfile();
-    public Profile OldProfile { get; init; } = new UnknownProfile();
-}
-
-public class PollStatusEventArgs : EventArgs
-{
-    public PollStatus Status { get; init; }
-    public string? Message { get; init; }
-    public Exception? Exception { get; init; }
-}
-
-public enum PollStatus
-{
-    StoppedDueToNetworkIssues,
-    Resumed
-}
