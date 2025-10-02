@@ -22,9 +22,7 @@ public abstract class Profile
     #region abstract
 
     public abstract ProfileType Type { get; }
-    public abstract string ToolTip();
     public abstract string ShowcaseText();
-    public abstract Task UploadProfile(IWebDav webdav, CancellationToken cancelToken);
     public abstract HistoryRecord CreateHistoryRecord();
 
     protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }
@@ -33,10 +31,8 @@ public abstract class Profile
 
     #endregion
 
-    protected const string RemoteProfilePath = Env.RemoteProfilePath;
     protected static string LocalTemplateFolder => Env.TemplateFileFolder;
     protected static IServiceProvider ServiceProvider { get; } = AppCore.Current.Services;
-    protected static IWebDav WebDav => ServiceProvider.GetRequiredService<IWebDav>();
     protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
     protected static ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
@@ -53,18 +49,16 @@ public abstract class Profile
         }
     }
 
-    public virtual Task BeforeSetLocal(CancellationToken cancelToken,
-        IProgress<HttpDownloadProgress>? progress = null)
-    {
-        return Task.CompletedTask;
-    }
-
     public bool ContentControl { get; set; } = true;
     public virtual bool IsAvailableFromRemote() => true;
     public bool IsAvailableFromLocal() => !ContentControl || IsAvailableAfterFilter();
     public virtual bool IsAvailableAfterFilter() => true;
 
-    public virtual Task EnsureAvailable(CancellationToken token) => Task.CompletedTask;
+    public virtual Task CheckDownloadedData(CancellationToken token) => Task.CompletedTask;
+    public virtual bool HasDataFile => false;
+    public virtual bool RequiresPrepareData => false;
+    public virtual Task PrepareDataAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public virtual string GetLocalDataPath() => string.Empty;
 
     protected virtual void SetNotification(INotification notification)
     {

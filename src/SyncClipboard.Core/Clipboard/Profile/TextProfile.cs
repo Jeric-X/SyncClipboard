@@ -23,11 +23,6 @@ public class TextProfile : Profile
         ContentControl = contentControl;
     }
 
-    public override string ToolTip()
-    {
-        return Text;
-    }
-
     public override string ShowcaseText()
     {
         if (Text.Length > 500)
@@ -48,11 +43,6 @@ public class TextProfile : Profile
         {
             return false;
         }
-    }
-
-    public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
-    {
-        await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
     }
 
     protected override void SetNotification(INotification notification)

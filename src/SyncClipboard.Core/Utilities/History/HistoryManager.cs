@@ -4,6 +4,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -15,11 +16,13 @@ public class HistoryManager
 
     private HistoryConfig _historyConfig = new();
     private readonly ILogger _logger;
+    private HistoryDbContext _dbContext;
+    private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
 
     public HistoryManager(ConfigManager configManager, ILogger logger)
     {
         _logger = logger;
-        MigrateDatabase();
+        InitDatabaseContext();
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
         LoadConfig(_historyConfig);
     }
@@ -28,7 +31,9 @@ public class HistoryManager
     {
         _historyConfig = config;
 
-        using var _dbContext = await GetDbContext();
+        await _dbSemaphore.WaitAsync();
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
         if (await SetRecordsMaxCount(_dbContext, config.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
@@ -97,9 +102,11 @@ public class HistoryManager
         }
     }
 
-    public async Task AddHistory(HistoryRecord record, CancellationToken token = default)
+    public async Task AddHistory(HistoryRecord record, CancellationToken token)
     {
-        using var _dbContext = await GetDbContext();
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
         if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
         {
             entity.Timestamp = record.Timestamp;
@@ -122,23 +129,29 @@ public class HistoryManager
         HistoryAdded?.Invoke(record);
     }
 
-    public static async Task<List<HistoryRecord>> GetHistory()
+    public async Task<List<HistoryRecord>> GetHistory()
     {
-        using var _dbContext = await GetDbContext();
+        await _dbSemaphore.WaitAsync();
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
         return _dbContext.HistoryRecords
             .OrderByDescending(r => r.Timestamp)
             .ToList();
     }
 
-    public static async Task<HistoryRecord?> GetHistoryRecord(string hash, ProfileType type)
+    public async Task<HistoryRecord?> GetHistoryRecord(string hash, ProfileType type, CancellationToken token)
     {
-        using var _dbContext = await GetDbContext();
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
         return _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == type && r.Hash == hash);
     }
 
     public async Task UpdateHistory(HistoryRecord record, CancellationToken token = default)
     {
-        using var _dbContext = await GetDbContext();
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
         var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
         if (entity != null)
         {
@@ -155,7 +168,9 @@ public class HistoryManager
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)
     {
-        using var _dbContext = await GetDbContext();
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
         await DeleteHistoryInternal(_dbContext, record, token);
     }
 
@@ -170,7 +185,9 @@ public class HistoryManager
 
             var cutoffTime = DateTime.UtcNow.AddMinutes(-_historyConfig.HistoryRetentionMinutes);
 
-            using var _dbContext = await GetDbContext();
+            await _dbSemaphore.WaitAsync(token);
+            using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
             var expiredRecords = _dbContext.HistoryRecords
                 .Where(r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned)
                 .ToList();
@@ -247,26 +264,21 @@ public class HistoryManager
         }
     }
 
-    private static async Task<HistoryDbContext> GetDbContext()
+    [MemberNotNull(nameof(_dbContext))]
+    private void InitDatabaseContext()
     {
-        var _dbContext = new HistoryDbContext();
-        await _dbContext.Database.EnsureCreatedAsync();
-        return _dbContext;
-    }
-
-    private static void MigrateDatabase()
-    {
-        var dbContext = new HistoryDbContext();
+        _dbContext = new HistoryDbContext();
         try
         {
-            dbContext.Database.ExecuteSqlRaw("DELETE FROM __EFMigrationsLock;");
+            _dbContext.Database.ExecuteSqlRaw("DELETE FROM __EFMigrationsLock;");
         }
         catch { }
 
-        var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        var pendingMigrations = _dbContext.Database.GetPendingMigrations();
         if (pendingMigrations.Any())
         {
-            dbContext.Database.Migrate();
+            _dbContext.Database.Migrate();
         }
+        _dbContext.Database.EnsureCreated();
     }
 }

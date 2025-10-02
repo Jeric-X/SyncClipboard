@@ -2,11 +2,9 @@
 using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Image;
 using System.Security.Cryptography;
 using System.Text;
@@ -24,10 +22,6 @@ public class FileProfile : Profile
         => ServiceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
 
     protected const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
-    private string? _statusTip;
-    private string StatusTip => string.IsNullOrEmpty(_statusTip) ? FileName : _statusTip;
-
-    private static readonly string RemoteFileFolder = Env.RemoteFileFolder;
 
     protected FileProfile(string fullPath, string hash, bool contentControl = true)
         : this(fullPath, Path.GetFileName(fullPath), hash, contentControl)
@@ -62,7 +56,7 @@ public class FileProfile : Profile
         return Create(fullPath, true, token);
     }
 
-    protected string GetTempLocalFilePath()
+    protected virtual string GetTempLocalFilePath()
     {
         var historyConfig = Config.GetConfig<HistoryConfig>();
         if (historyConfig.EnableHistory)
@@ -77,113 +71,15 @@ public class FileProfile : Profile
         }
     }
 
-    public override async Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
+    public override bool HasDataFile => true;
+
+    public override string GetLocalDataPath()
     {
-        string remotePath = $"{RemoteFileFolder}/{FileName}";
-
-        ArgumentNullException.ThrowIfNull(FullPath);
-        if (!Oversized())
+        if (string.IsNullOrEmpty(FullPath))
         {
-            Logger.Write("PUSH file " + FileName);
-            if (!await webdav.DirectoryExist(RemoteFileFolder))
-            {
-                await webdav.CreateDirectory(RemoteFileFolder);
-            }
-            await webdav.PutFile(remotePath, FullPath, cancelToken);
+            FullPath = GetTempLocalFilePath();
         }
-        else
-        {
-            Logger.Write("file is too large, skipped " + FileName);
-        }
-
-        await webdav.PutJson(RemoteProfilePath, ToDto(), cancelToken);
-    }
-
-    protected virtual async Task<bool> TryGetFromHistoryCache()
-    {
-        try
-        {
-            var historyRecord = await HistoryManager.GetHistoryRecord(Hash, Type);
-            if (historyRecord == null || historyRecord.FilePath.Length == 0)
-            {
-                return false;
-            }
-
-            var existingFilePath = historyRecord.FilePath[0];
-            if (string.IsNullOrEmpty(existingFilePath) || !File.Exists(existingFilePath))
-            {
-                return false;
-            }
-
-            FullPath = existingFilePath;
-            Logger.Write("[PULL] Found file in history cache, using existing path: " + existingFilePath);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.Write("[PULL] Error accessing history cache: " + ex.Message);
-            return false;
-        }
-    }
-
-    public override async Task BeforeSetLocal(CancellationToken cancelToken,
-        IProgress<HttpDownloadProgress>? progress = null)
-    {
-        if (await TryGetFromHistoryCache())
-        {
-            return;
-        }
-
-        await DownloadFromRemote(progress, cancelToken);
-    }
-
-    protected virtual async Task DownloadFromRemote(IProgress<HttpDownloadProgress>? progress, CancellationToken cancelToken)
-    {
-        if (!string.IsNullOrEmpty(FullPath))
-        {
-            return;
-        }
-
-        if (WebDav is null)
-        {
-            return;
-        }
-
-        string remotePath = $"{RemoteFileFolder}/{FileName}";
-        string localPath = GetTempLocalFilePath();
-
-        await WebDav.GetFile(remotePath, localPath, progress, cancelToken);
-        await CheckHash(localPath, false, cancelToken);
-
-        Logger.Write("[PULL] download OK " + localPath);
-        FullPath = localPath;
-        _statusTip = FileName;
-    }
-
-    protected virtual async Task CheckHash(string localPath, bool checkSize, CancellationToken cancelToken)
-    {
-        var downloadedMd5 = await GetMD5HashFromFile(localPath, checkSize, cancelToken);
-        var existedMd5 = Hash;
-        if (string.IsNullOrEmpty(existedMd5))
-        {
-            Hash = downloadedMd5;
-            await WebDav!.PutJson(RemoteProfilePath, ToDto(), cancelToken);
-            return;
-        }
-
-        if (downloadedMd5 != MD5_FOR_OVERSIZED_FILE
-            && existedMd5 != MD5_FOR_OVERSIZED_FILE
-            && downloadedMd5 != existedMd5)
-        {
-            Logger.Write("[PULL] download erro, md5 wrong");
-            _statusTip = "Downloading erro, md5 wrong";
-            throw new Exception("FileProfile download check md5 failed");
-        }
-    }
-
-    public override string ToolTip()
-    {
-        return StatusTip;
+        return FullPath;
     }
 
     public override string ShowcaseText()
@@ -285,11 +181,18 @@ public class FileProfile : Profile
         return true;
     }
 
-    public override async Task EnsureAvailable(CancellationToken token)
+    public override async Task CheckDownloadedData(CancellationToken token)
     {
-        if (!await WebDav.Exist($"{RemoteFileFolder}/{FileName}", token))
+        ArgumentNullException.ThrowIfNull(FullPath);
+        if (!File.Exists(FullPath))
         {
-            throw new Exception("Remote file is lost.");
+            throw new FileNotFoundException($"File does not exist: {FullPath}", FullPath);
+        }
+
+        var hash = await GetMD5HashFromFile(FullPath, false, token);
+        if (hash != Hash)
+        {
+            throw new InvalidDataException(FullPath);
         }
     }
 

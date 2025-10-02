@@ -7,6 +7,16 @@ namespace SyncClipboard.Desktop.Utilities;
 
 internal class ThreadDispatcher : IThreadDispatcher
 {
+    public async Task RunOnMainThreadAsync(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+        await Dispatcher.UIThread.InvokeAsync(action);
+    }
+
     public Task<T> RunOnMainThreadAsync<T>(Func<Task<T>> func)
     {
         if (Dispatcher.UIThread.CheckAccess())

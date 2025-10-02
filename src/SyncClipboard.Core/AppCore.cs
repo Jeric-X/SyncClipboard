@@ -13,6 +13,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
+using SyncClipboard.Core.Factories;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
@@ -103,7 +104,6 @@ namespace SyncClipboard.Core
             RegisterForSystemHotkey(mainWindow);
 
             ProxyManager.Init(configManager);
-            SetUpRemoteWorkFolder();
 
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
@@ -249,8 +249,9 @@ namespace SyncClipboard.Core
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<HistoryManager>();
 
-            services.AddSingleton<IWebDav, WebDavClient>();
             services.AddSingleton<IHttp, Http>();
+            services.AddSingleton<ILocalFileCacheManager, LocalFileCacheManager>();
+            services.AddSingleton<RemoteClipboardServerFactory>();
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();
             services.AddTransient<GithubUpdater>();
@@ -307,20 +308,6 @@ namespace SyncClipboard.Core
             services.AddSingleton<DownloadService>();
             services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
             services.AddSingleton<IService, HistoryService>();
-        }
-
-        private async void SetUpRemoteWorkFolder()
-        {
-            try
-            {
-                var webdav = Services.GetRequiredService<IWebDav>();
-                var res = await webdav.TestAlive();
-                if (res)
-                {
-                    await webdav.CreateDirectory(Env.RemoteFileFolder);
-                }
-            }
-            catch { }
         }
     }
 }

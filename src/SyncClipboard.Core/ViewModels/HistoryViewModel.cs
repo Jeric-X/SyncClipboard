@@ -363,7 +363,7 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        var records = await HistoryManager.GetHistory();
+        var records = await historyManager.GetHistory();
         allHistoryItems.AddRange(records.Select(x => new HistoryRecordVM(x)));
 
         historyManager.HistoryAdded += record => allHistoryItems.Insert(0, new HistoryRecordVM(record));

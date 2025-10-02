@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Core.Interfaces;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.AbstractClasses;
@@ -7,6 +8,8 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 {
     public abstract event Action MainWindowWakedUp;
     public abstract void Create();
+
+    private static IThreadDispatcher Dispatcher => AppCore.Current.Services.GetRequiredService<IThreadDispatcher>();
 
     #region Icon Animatinon
     private const int ANIMATED_ICON_DELAY_TIME = 150;
@@ -35,12 +38,12 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     public void ShowDownloadAnimation()
     {
-        SetDynamicNotifyIcon(DownloadIcons(), ANIMATED_ICON_DELAY_TIME);
+        Dispatcher.RunOnMainThreadAsync(() => SetDynamicNotifyIcon(DownloadIcons(), ANIMATED_ICON_DELAY_TIME));
     }
 
     public void ShowUploadAnimation()
     {
-        SetDynamicNotifyIcon(UploadIcons(), ANIMATED_ICON_DELAY_TIME);
+        Dispatcher.RunOnMainThreadAsync(() => SetDynamicNotifyIcon(UploadIcons(), ANIMATED_ICON_DELAY_TIME));
     }
 
     private void SetDynamicNotifyIcon(IEnumerable<IconType> icons, int delayTime)

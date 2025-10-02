@@ -12,6 +12,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.Factories;
 
 namespace SyncClipboard.Core.UserServices;
 
@@ -71,7 +72,7 @@ public class UploadService : ClipboardHander
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IWebDav _webDav;
+    private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
     private readonly IEventSimulator _keyEventSimulator;
@@ -83,20 +84,21 @@ public class UploadService : ClipboardHander
         IServiceProvider serviceProvider,
         IMessenger messenger,
         IEventSimulator keyEventSimulator,
-        HotkeyManager hotkeyManager)
+        HotkeyManager hotkeyManager,
+        RemoteClipboardServerFactory remoteClipboardServerFactory)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
         _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
-        _webDav = _serviceProvider.GetRequiredService<IWebDav>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
         _syncConfig = _configManager.GetConfig<SyncConfig>();
         _serverConfig = _configManager.GetConfig<ServerConfig>();
         _keyEventSimulator = keyEventSimulator;
         _hotkeyManager = hotkeyManager;
+        _remoteClipboardServerFactory = remoteClipboardServerFactory;
 
         ContextMenuGroupName = SyncService.ContextMenuGroupName;
     }
@@ -297,12 +299,13 @@ public class UploadService : ClipboardHander
         {
             try
             {
-                var remoteProfile = await _clipboardFactory.CreateProfileFromRemote(cancelToken);
+                var remoteServer = _remoteClipboardServerFactory.Current;
+                var remoteProfile = await remoteServer.GetProfileAsync(cancelToken) ?? new UnknownProfile();
+
                 if (!Profile.Same(remoteProfile, profile))
                 {
                     _logger.Write(LOG_TAG, "Start: " + profile.ToJsonString());
-                    await CleanServerTempFile(cancelToken);
-                    await profile.UploadProfile(_webDav, cancelToken);
+                    await remoteServer.SetProfileAsync(profile, cancelToken);
                 }
                 else
                 {
@@ -326,25 +329,10 @@ public class UploadService : ClipboardHander
 
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
-        var status = profile.ToolTip();
+        var status = profile.ShowcaseText();
         _notificationManager.ShowText(I18n.Strings.FailedToUpload + status, errMessage);
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
         _logger.Write(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
-    }
-
-    private async Task CleanServerTempFile(CancellationToken cancelToken)
-    {
-        if (_syncConfig.DeletePreviousFilesOnPush)
-        {
-            try
-            {
-                await _webDav.DirectoryDelete(Env.RemoteFileFolder, cancelToken);
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
-            {
-            }
-            await _webDav.CreateDirectory(Env.RemoteFileFolder, cancelToken);
-        }
     }
 
     private async void QuickUpload(bool contentControl)

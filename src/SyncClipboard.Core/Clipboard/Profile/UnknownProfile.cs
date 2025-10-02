@@ -10,16 +10,6 @@ public class UnknownProfile : Profile
 
     protected override IClipboardSetter<Profile> ClipboardSetter => throw new NotImplementedException();
 
-    public override string ToolTip()
-    {
-        return "Do not support this type of clipboard";
-    }
-
-    public override Task UploadProfile(IWebDav webdav, CancellationToken cancelToken)
-    {
-        return Task.CompletedTask;
-    }
-
     protected override bool Same(Profile rhs)
     {
         return rhs is UnknownProfile;
