@@ -8,15 +8,39 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SyncSettingViewModel : ObservableObject
 {
+    #region account management
+    [ObservableProperty]
+    private string currentAccountName = "未登录";
+
+    [ObservableProperty]
+    private bool isLoggedIn = false;
+
+    [ObservableProperty]
+    private bool hasMultipleAccounts = false;
+
+    [RelayCommand]
+    private void AddAccount()
+    {
+        _mainVM.NavigateToNextLevel(PageDefinition.AddAccount);
+    }
+
+    [RelayCommand]
+    private void RemoveAccount()
+    {
+        // TODO: 实现移除账号逻辑
+    }
+
+    [RelayCommand]
+    private void SelectAccount()
+    {
+        // TODO: 实现选择账号逻辑
+    }
+    #endregion
+
     #region client
     [ObservableProperty]
     private bool syncEnable;
     partial void OnSyncEnableChanged(bool value) => ClientConfig = ClientConfig with { SyncSwitchOn = value };
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UseManulServer))]
-    private bool useLocalServer;
-    partial void OnUseLocalServerChanged(bool value) => ClientConfig = ClientConfig with { UseLocalServer = value };
 
     [ObservableProperty]
     private uint intervalTime;
@@ -82,7 +106,6 @@ public partial class SyncSettingViewModel : ObservableObject
         IntervalTime = value.IntervalTime;
         RetryTimes = value.RetryTimes;
         SyncEnable = value.SyncSwitchOn;
-        UseLocalServer = value.UseLocalServer;
         TimeOut = value.TimeOut;
         MaxFileSize = value.MaxFileByte / 1024 / 1024;
         AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
@@ -120,8 +143,6 @@ public partial class SyncSettingViewModel : ObservableObject
 
     #region for view only
 
-    public bool UseManulServer => !UseLocalServer;
-
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
     public bool showClientPassword = false;
@@ -151,7 +172,6 @@ public partial class SyncSettingViewModel : ObservableObject
         intervalTime = clientConfig.IntervalTime;
         retryTimes = clientConfig.RetryTimes;
         syncEnable = clientConfig.SyncSwitchOn;
-        useLocalServer = clientConfig.UseLocalServer;
         timeOut = clientConfig.TimeOut;
         maxFileSize = clientConfig.MaxFileByte / 1024 / 1024;
         autoDeleleServerFile = clientConfig.DeletePreviousFilesOnPush;

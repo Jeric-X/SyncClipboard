@@ -35,6 +35,30 @@
         <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.LoginStatus}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE13D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <TextBlock Text="{Binding CurrentAccountName, Mode=OneWay}" />
+            </ui:SettingsExpander.Footer>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AddAccount}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding AddAccountCommand}"
+                                         ActionIconSource="{StaticResource GoIcon}" />
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RemoveAccount}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding RemoveAccountCommand}"
+                                         IsVisible="{Binding IsLoggedIn}"
+                                         ActionIconSource="{StaticResource GoIcon}" />
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SelectAccount}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding SelectAccountCommand}"
+                                         IsVisible="{Binding HasMultipleAccounts}"
+                                         ActionIconSource="{StaticResource GoIcon}" />
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE117;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
@@ -43,12 +67,7 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SyncEnable, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.UseBuiltInServerDescription}" Content="{x:Static i18n:Strings.UseSelfHostServer}" IsVisible="True">
-                    <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UseLocalServer, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem IsVisible="{Binding UseManulServer}" Description="{Binding ClientConfigDescription}">
+                <ui:SettingsExpanderItem Description="{Binding ClientConfigDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowClientPassword, Mode=TwoWay}">
@@ -65,7 +84,7 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem VerticalContentAlignment="Stretch" IsVisible="{Binding UseManulServer}">
+                <ui:SettingsExpanderItem VerticalContentAlignment="Stretch">
                     <HyperlinkButton Content="{x:Static i18n:Strings.UseNextcloud}" Command="{Binding LoginWithNextcloudCommand}" />
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}">

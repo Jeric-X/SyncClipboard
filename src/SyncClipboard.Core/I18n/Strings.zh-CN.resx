@@ -741,4 +741,22 @@ Esc：关闭面板</value>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>在快捷键设置中可以指定打开历史记录面板的快捷键</value>
   </data>
+  <data name="LoginStatus" xml:space="preserve">
+    <value>登录状态</value>
+  </data>
+  <data name="AddAccount" xml:space="preserve">
+    <value>添加账号</value>
+  </data>
+  <data name="RemoveAccount" xml:space="preserve">
+    <value>移除账号</value>
+  </data>
+  <data name="SelectAccount" xml:space="preserve">
+    <value>选择账号</value>
+  </data>
+  <data name="NotLoggedIn" xml:space="preserve">
+    <value>未登录</value>
+  </data>
+  <data name="ConnectionDetails" xml:space="preserve">
+    <value>连接详情</value>
+  </data>
 </root>

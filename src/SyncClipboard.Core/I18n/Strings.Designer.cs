@@ -70,6 +70,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Add Account 的本地化字符串。
+        /// </summary>
+        public static string AddAccount {
+            get {
+                return ResourceManager.GetString("AddAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Add SyncCliboard to application launcher 的本地化字符串。
         /// </summary>
         public static string AddAppImageToUserAppLauncher {
@@ -309,6 +318,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Confirm {
             get {
                 return ResourceManager.GetString("Confirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Connection Details 的本地化字符串。
+        /// </summary>
+        public static string ConnectionDetails {
+            get {
+                return ResourceManager.GetString("ConnectionDetails", resourceCulture);
             }
         }
         
@@ -1087,6 +1105,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Login Status 的本地化字符串。
+        /// </summary>
+        public static string LoginStatus {
+            get {
+                return ResourceManager.GetString("LoginStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Login with Browser 的本地化字符串。
         /// </summary>
         public static string LoginWithBrowser {
@@ -1146,6 +1173,15 @@ namespace SyncClipboard.Core.I18n {
         public static string None {
             get {
                 return ResourceManager.GetString("None", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Not Logged In 的本地化字符串。
+        /// </summary>
+        public static string NotLoggedIn {
+            get {
+                return ResourceManager.GetString("NotLoggedIn", resourceCulture);
             }
         }
         
@@ -1402,6 +1438,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Remove Account 的本地化字符串。
+        /// </summary>
+        public static string RemoveAccount {
+            get {
+                return ResourceManager.GetString("RemoveAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Remove SyncClipboard from application launcher 的本地化字符串。
         /// </summary>
         public static string RemoveAppImageFromUserAppLauncher {
@@ -1461,6 +1506,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SaveList {
             get {
                 return ResourceManager.GetString("SaveList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Select Account 的本地化字符串。
+        /// </summary>
+        public static string SelectAccount {
+            get {
+                return ResourceManager.GetString("SelectAccount", resourceCulture);
             }
         }
         
