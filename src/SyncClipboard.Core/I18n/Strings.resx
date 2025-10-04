@@ -732,4 +732,22 @@ Double click image: View full image</value>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>You can specify the hotkey to open the history panel in the Hotkey settings</value>
   </data>
+  <data name="LoginStatus" xml:space="preserve">
+    <value>Login Status</value>
+  </data>
+  <data name="AddAccount" xml:space="preserve">
+    <value>Add Account</value>
+  </data>
+  <data name="RemoveAccount" xml:space="preserve">
+    <value>Remove Account</value>
+  </data>
+  <data name="SelectAccount" xml:space="preserve">
+    <value>Select Account</value>
+  </data>
+  <data name="NotLoggedIn" xml:space="preserve">
+    <value>Not Logged In</value>
+  </data>
+  <data name="ConnectionDetails" xml:space="preserve">
+    <value>Connection Details</value>
+  </data>
 </root>

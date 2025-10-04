@@ -4,29 +4,27 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.Utilities.Image;
 using SyncClipboard.Core.Exceptions;
+using SyncClipboard.Core.I18n;
 using System.Text.Json;
 using System.Net;
 using System.Diagnostics.CodeAnalysis;
-namespace SyncClipboard.Core.UserServices.RemoteClipboardServer;
+using SyncClipboard.Core.RemoteServer.Adapter;
 
-public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
+namespace SyncClipboard.Core.RemoteServer;
+
+public sealed class PollingDrivenServer : IRemoteClipboardServer
 {
     #region constants
-    private const string RemoteProfilePath = "SyncClipboard.json";
-    private const string RemoteFileFolder = "file";
-    private const string ServiceName = "WebDavServer";
-
+    private static readonly string ServiceName = Strings.ConnectionDetails;
     #endregion
 
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IAppConfig _appConfig;
     private readonly ITrayIcon _trayIcon;
-
-    private WebDav _webDav;
+    private readonly IPollingServerAdapter _serverAdapter;
 
     // 轮询相关
     private Timer? _pollingTimer;
@@ -42,7 +40,6 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
 
     // 配置
     private SyncConfig _syncConfig;
-    private ServerConfig _serverConfig;
 
     private event EventHandler<ProfileChangedEventArgs>? RemoteProfileChangedImpl;
     public event EventHandler<ProfileChangedEventArgs>? RemoteProfileChanged
@@ -72,17 +69,15 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
         remove => PollStatusEventImpl -= value;
     }
 
-    public WebDavRemoteClipboardServer(ILogger logger, ConfigManager configManager, IAppConfig appConfig, ITrayIcon trayIcon)
+    public PollingDrivenServer(ILogger logger, ConfigManager configManager, IAppConfig appConfig, ITrayIcon trayIcon, IPollingServerAdapter serverAdapter)
     {
         _logger = logger;
         _configManager = configManager;
         _appConfig = appConfig;
         _trayIcon = trayIcon;
+        _serverAdapter = serverAdapter;
 
         _syncConfig = configManager.GetConfig<SyncConfig>();
-        _serverConfig = configManager.GetConfig<ServerConfig>();
-
-        _webDav = CreateWebDavInstance();
 
         configManager.ConfigChanged += OnConfigChanged;
         _ = InitializeAsync();
@@ -93,48 +88,19 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
     private void OnConfigChanged()
     {
         _syncConfig = _configManager.GetConfig<SyncConfig>();
-        _serverConfig = _configManager.GetConfig<ServerConfig>();
-
-        _webDav?.Dispose();
-        _webDav = CreateWebDavInstance();
 
         StartTestAliveBackgroudService();
-    }
-
-    private WebDav CreateWebDavInstance()
-    {
-        var credential = new WebDavCredential
-        {
-            Username = _syncConfig.UseLocalServer ? _serverConfig.UserName : _syncConfig.UserName,
-            Password = _syncConfig.UseLocalServer ? _serverConfig.Password : _syncConfig.Password,
-            Url = GetBaseAddress()
-        };
-
-        var timeout = _syncConfig.TimeOut != 0 ? _syncConfig.TimeOut : 30000; // 默认30秒
-        var webDav = new WebDav(credential, _appConfig, _syncConfig.TrustInsecureCertificate, _logger) { Timeout = timeout };
-
-        return webDav;
-    }
-
-    private string GetBaseAddress()
-    {
-        if (_syncConfig.UseLocalServer && !_serverConfig.EnableCustomConfigurationFile)
-        {
-            var protocol = _serverConfig.EnableHttps ? "https" : "http";
-            return $"{protocol}://127.0.0.1:{_serverConfig.Port}";
-        }
-        return _syncConfig.RemoteURL;
     }
 
     private async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            await _webDav.CreateDirectory(RemoteFileFolder, cancellationToken);
+            await _serverAdapter.InitializeAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.Write($"Warning: Failed to create remote directories: {ex.Message}");
+            _logger.Write($"Warning: Failed to initialize server adapter: {ex.Message}");
         }
     }
 
@@ -142,7 +108,7 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
     {
         try
         {
-            return await _webDav.Exist(GetBaseAddress(), cancellationToken);
+            return await _serverAdapter.TestConnectionAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -155,8 +121,12 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
     {
         try
         {
-            var profileDto = await _webDav.GetJson<ClipboardProfileDTO>(RemoteProfilePath, cancellationToken);
-            ArgumentNullException.ThrowIfNull(profileDto);
+            var profileDto = await _serverAdapter.GetProfileAsync(cancellationToken);
+            if (profileDto == null)
+            {
+                return await UploadAndReturnBlankProfile(cancellationToken);
+            }
+
             _trayIcon.SetStatusString(ServiceName, "Running.");
             return GetProfileBy(profileDto);
         }
@@ -201,9 +171,9 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
     {
         try
         {
-            await CleanServerTempFile(cancellationToken);
+            await _serverAdapter.CleanupTempFilesAsync(cancellationToken);
             await UploadProfileDataAsync(profile, cancellationToken);
-            await _webDav.PutJson(RemoteProfilePath, profile.ToDto(), cancellationToken);
+            await _serverAdapter.SetProfileAsync(profile.ToDto(), cancellationToken);
             _lastKnownProfile = profile;
 
             _logger.Write($"[PUSH] Profile metadata updated: {JsonSerializer.Serialize(profile.ToDto())}");
@@ -212,21 +182,6 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             ThrowServerException("Failed to set remote profile", ex);
-        }
-    }
-
-    private async Task CleanServerTempFile(CancellationToken cancelToken)
-    {
-        if (_syncConfig.DeletePreviousFilesOnPush)
-        {
-            try
-            {
-                await _webDav.DirectoryDelete(RemoteFileFolder, cancelToken);
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound)  // 如果文件夹不存在直接忽略
-            {
-            }
-            await _webDav.CreateDirectory(RemoteFileFolder, cancelToken);
         }
     }
 
@@ -265,8 +220,7 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
                 throw new FileNotFoundException($"Local data file not found: {localDataPath}");
             }
 
-            var remotePath = $"{RemoteFileFolder}/{profile.FileName}";
-            await _webDav.PutFile(remotePath, localDataPath, cancellationToken);
+            await _serverAdapter.UploadFileAsync(profile.FileName, localDataPath, cancellationToken);
             _logger.Write($"[PUSH] Upload completed for {profile.FileName}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -284,16 +238,8 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
 
         try
         {
-            var remotePath = $"{RemoteFileFolder}/{profile.FileName}";
-
             var dataPath = profile.GetLocalDataPath();
-            var directory = Path.GetDirectoryName(dataPath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await _webDav.GetFile(remotePath, dataPath, progress, cancellationToken);
+            await _serverAdapter.DownloadFileAsync(profile.FileName, dataPath, progress, cancellationToken);
             await profile.CheckDownloadedData(cancellationToken);
             _logger.Write($"[PULL] Downloaded {profile.FileName} to {dataPath}");
             _trayIcon.SetStatusString(ServiceName, "Running.");
@@ -489,7 +435,7 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
 
         _lastKnownProfile = new UnknownProfile();
 
-        throw new RemoteServerException(message, innerException!);
+        throw new RemoteServerException(message, innerException);
     }
 
     public void Dispose()
@@ -497,6 +443,5 @@ public sealed class WebDavRemoteClipboardServer : IRemoteClipboardServer
         StopPolling();
         StopTestAliveTimer();
         _configManager.ConfigChanged -= OnConfigChanged;
-        _webDav?.Dispose();
     }
 }

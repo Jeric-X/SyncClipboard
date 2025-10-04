@@ -33,16 +33,30 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.LoginStatus}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE13D;" />
+            </ui:SettingsExpander.HeaderIcon>
+            <TextBlock Text="{x:Bind _viewModel.CurrentAccountName, Mode=OneWay}" />
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.AddAccount}" IsClickEnabled="True" Command="{x:Bind _viewModel.AddAccountCommand}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.RemoveAccount}"
+                                 IsClickEnabled="True"
+                                 Command="{x:Bind _viewModel.RemoveAccountCommand}"
+                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsLoggedIn), Mode=OneWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.SelectAccount}"
+                                 IsClickEnabled="True"
+                                 Command="{x:Bind _viewModel.SelectAccountCommand}"
+                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.HasMultipleAccounts), Mode=OneWay}" />
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE117;" />
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Description="{x:Bind i18n:Strings.UseBuiltInServerDescription}" Header="{x:Bind i18n:Strings.UseSelfHostServer}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.UseLocalServer, Mode=TwoWay}" />
-                </ui:SettingsCard>
-                <ui:SettingsCard Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}">
+                <ui:SettingsCard Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton IsChecked="{x:Bind _viewModel.ShowClientPassword, Mode=TwoWay}">
                             <FontIcon Glyph="{x:Bind _viewModel.ShowClientPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" />
@@ -55,7 +69,7 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard VerticalContentAlignment="Stretch" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.UseManulServer), Mode=OneWay}" ContentAlignment="Vertical">
+                <ui:SettingsCard VerticalContentAlignment="Stretch" ContentAlignment="Vertical">
                     <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
                         <ui:SettingsCard.Resources>
                         <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">

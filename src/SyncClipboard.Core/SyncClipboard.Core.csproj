@@ -61,8 +61,7 @@
     <ProjectReference Include="..\SyncClipboard.Server.Core\SyncClipboard.Server.Core.csproj" />
   </ItemGroup>
 
-  <Target Name="Print Message"
-    BeforeTargets="Build">
+  <Target Name="Print Message" BeforeTargets="Build">
     <Message Text="RuntimeIdentifier $(RuntimeIdentifier)" />
   </Target>
 

@@ -12,7 +12,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Keyboard;
-using SyncClipboard.Core.Factories;
+using SyncClipboard.Core.RemoteServer;
 
 namespace SyncClipboard.Core.UserServices;
 

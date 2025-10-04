@@ -1,5 +1,8 @@
-﻿using NativeNotification.Interface;
+﻿using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.RemoteServer.Adapter;
 
 namespace SyncClipboard.Core.Utilities;
 
@@ -26,5 +29,14 @@ public static class Extentions
         notificationManager.Shared.Message = message;
         notificationManager.Shared.Buttons = buttons?.ToList() ?? [];
         notificationManager.Shared.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
+    }
+
+    public static void AddServerAdapter<TConfig, TAdapter>(this IServiceCollection services)
+        where TConfig : IAdapterConfig<TConfig>
+        where TAdapter : class, IStorageOnlyServerAdapter<TConfig>
+    {
+        var typeNameProperty = typeof(IAdapterConfig<TConfig>).GetProperty("TypeName", BindingFlags.Static | BindingFlags.Public);
+        var key = (string)typeNameProperty!.GetValue(null)!;
+        services.AddKeyedTransient<IStorageOnlyServerAdapter, TAdapter>(key);
     }
 }

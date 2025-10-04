@@ -13,7 +13,6 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
-using SyncClipboard.Core.Factories;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
@@ -23,6 +22,8 @@ using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
 using System.Diagnostics;
+using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
 
 namespace SyncClipboard.Core
 {
@@ -240,6 +241,7 @@ namespace SyncClipboard.Core
             });
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
+            services.AddSingleton<AccountManager>();
             services.AddSingleton<StaticConfig>();
             services.AddKeyedTransient(Env.UpdateInfoFile, (sp, key) => new ConfigBase(Env.UpdateInfoPath, sp));
             services.AddKeyedSingleton(Env.RuntimeConfigName, (sp, key) => new ConfigBase(Env.RuntimeConfigPath, sp));
@@ -259,28 +261,17 @@ namespace SyncClipboard.Core
             services.AddQuartz();
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
-            services.AddSingleton<INotificationManager>(
-                sp =>
+            services.AddSingleton(sp => ManagerFactory.GetNotificationManager(
+                new NativeNotificationOption
                 {
-                    try
-                    {
-                        return ManagerFactory.GetNotificationManager(
-                            new NativeNotificationOption
-                            {
-                                AppName = Env.SoftName,
-                                RemoveNotificationOnContentClick = false,
-                                AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
-                            }
-                        );
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine($"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
-                        throw;
-                    }
+                    AppName = Env.SoftName,
+                    RemoveNotificationOnContentClick = false,
+                    AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
                 }
-            );
+            ));
             services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
+
+            services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)
@@ -291,6 +282,7 @@ namespace SyncClipboard.Core
             services.AddTransient<AboutViewModel>();
             services.AddTransient<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();
+            services.AddTransient<AddAccountViewModel>();
             services.AddTransient<FileSyncFilterSettingViewModel>();
             services.AddTransient<ProxySettingViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();

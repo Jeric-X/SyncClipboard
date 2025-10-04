@@ -14,6 +14,11 @@ internal static class ConvertMethod
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public static bool BoolNegate(bool value)
+    {
+        return !value;
+    }
+
     public static InfoBarSeverity ConvertSeverity(Severity severity)
     {
         return severity switch

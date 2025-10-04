@@ -6,7 +6,7 @@ public class RemoteServerException : Exception
     {
     }
 
-    public RemoteServerException(string message, Exception innerException) : base(message, innerException)
+    public RemoteServerException(string message, Exception? innerException) : base(message, innerException)
     {
     }
 }

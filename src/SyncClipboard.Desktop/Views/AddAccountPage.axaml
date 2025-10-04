@@ -1,0 +1,113 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.AddAccountPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:AddAccountViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:AddAccountViewModel />
+    </Design.DataContext>
+    <UserControl.Styles>
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,8" />
+        </Style>
+    </UserControl.Styles>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,0,16" Spacing="16">
+                <!--  服务器地址  -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:FontIcon Glyph="&#xE12B;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <TextBlock Text="{x:Static i18n:Strings.Address}" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBox Text="{Binding ServerUrl, Mode=TwoWay}" Watermark="https://example.com" IsEnabled="{Binding !IsLoading}" />
+                        <TextBlock Text="请输入服务器地址，例如: https://your-server.com" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!--  用户名  -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:FontIcon Glyph="&#xE13D;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <TextBlock Text="{x:Static i18n:Strings.UserName}" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBox Text="{Binding Username, Mode=TwoWay}" Watermark="用户名" IsEnabled="{Binding !IsLoading}" />
+                    </StackPanel>
+                </Border>
+
+                <!--  密码  -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:FontIcon Glyph="&#xE1F6;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <TextBlock Text="{x:Static i18n:Strings.Password}" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBox Text="{Binding Password, Mode=TwoWay}"
+                                 PasswordChar="●"
+                                 RevealPassword="False"
+                                 Watermark="密码"
+                                 IsEnabled="{Binding !IsLoading}" />
+                        <TextBlock Text="请输入密码或应用程序专用密码" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!--  测试连接  -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:FontIcon Glyph="&#xE9D2;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <TextBlock Text="连接测试" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <Button HorizontalAlignment="Left"
+                                Content="测试连接"
+                                Command="{Binding TestConnectionCommand}"
+                                IsEnabled="{Binding !IsLoading}" />
+                        <TextBlock Text="测试服务器连接和认证信息是否正确" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!--  底部按钮  -->
+        <Border Grid.Row="1"
+                Padding="16"
+                Background="{DynamicResource AcrylicBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="12">
+                <Button Content="{x:Static i18n:Strings.Cancel}" Command="{Binding CancelCommand}" IsEnabled="{Binding !IsLoading}" />
+                <Button Content="{x:Static i18n:Strings.Confirm}"
+                        Classes="accent"
+                        Command="{Binding AddAccountCommand}"
+                        IsEnabled="{Binding !IsLoading}" />
+            </StackPanel>
+        </Border>
+
+        <!--  加载指示器  -->
+        <Border Grid.RowSpan="2" Background="{DynamicResource SmokeFillColorDefaultBrush}" IsVisible="{Binding IsLoading}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+                <ui:ProgressRing IsIndeterminate="True" />
+                <TextBlock HorizontalAlignment="Center" Text="正在添加账号..." />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

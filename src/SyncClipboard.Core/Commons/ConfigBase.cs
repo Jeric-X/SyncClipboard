@@ -120,6 +120,18 @@ namespace SyncClipboard.Core.Commons
             SetConfig(ConfigKey.GetKeyFromType<T>(), newValue);
         }
 
+        public JsonNode? GetNode(string key)
+        {
+            return _jsonNode[key];
+        }
+
+        public void SetNode(string key, JsonNode? node)
+        {
+            _jsonNode[key] = node;
+            Save();
+            ConfigChanged?.Invoke();
+        }
+
         private void NotifyRegistedHandler(string key, Type type, JsonNode? jsonNode)
         {
             if (!_registedChangedHandlerList.TryGetValue(key, out HashSet<MessageDispatcher>? dispathers))
