@@ -5,10 +5,10 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public record NavigationInfo(string PageName, string Parameter);
-
 public partial class AddAccountViewModel : ObservableObject
 {
+    public record NavigationInfoType(string PageName, string Parameter);
+
     private readonly ConfigManager _configManager;
     private readonly AccountManager _accountManager;
     private readonly MainViewModel _mainVM;
@@ -23,7 +23,7 @@ public partial class AddAccountViewModel : ObservableObject
         LoadAvailableTypes();
     }
 
-    public ObservableCollection<string> LoginTypes { get; } = new();
+    public ObservableCollection<string> LoginTypes { get; } = [];
 
     [ObservableProperty]
     private string selectedType = "";
@@ -32,7 +32,7 @@ public partial class AddAccountViewModel : ObservableObject
     private string configurationPageName = "";
 
     [ObservableProperty]
-    private NavigationInfo navigationInfo = new("", "");
+    private NavigationInfoType navigationInfo = new("", "");
 
     partial void OnSelectedTypeChanged(string value)
     {
@@ -44,13 +44,13 @@ public partial class AddAccountViewModel : ObservableObject
         if (string.IsNullOrEmpty(selectedType))
         {
             ConfigurationPageName = "";
-            NavigationInfo = new("", "");
+            NavigationInfo = new NavigationInfoType("", "");
             return;
         }
 
         // 检查选择的类型是否来源于 ILogInHelper
         var loginHelper = _logInHelpers.FirstOrDefault(helper => helper.TypeName == selectedType);
-        
+
         string pageName;
         if (loginHelper != null)
         {
@@ -62,15 +62,15 @@ public partial class AddAccountViewModel : ObservableObject
             // 其他类型使用默认配置页面
             pageName = PageDefinition.DefaultAddAccount.Name + "Page";
         }
-        
+
         ConfigurationPageName = pageName;
-        NavigationInfo = new(pageName, selectedType);
+        NavigationInfo = new NavigationInfoType(pageName, selectedType);
     }
 
     private void LoadAvailableTypes()
     {
         LoginTypes.Clear();
-        
+
         // 从 AccountManager 获取已注册的适配器类型
         foreach (var typeName in _accountManager.GetRegisteredTypeNames())
         {
