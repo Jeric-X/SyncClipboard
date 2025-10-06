@@ -16,7 +16,7 @@ public class RemoteClipboardServerFactory
     private readonly ITrayIcon _trayIcon;
     private readonly AccountManager _accountManager;
 
-    private IRemoteClipboardServer? _current;
+    private PollingDrivenServer? _current;
     private AccountConfig? _currentAccount;
     private IStorageOnlyServerAdapter? _currentAdapter;
     private SyncConfig _syncConfig;

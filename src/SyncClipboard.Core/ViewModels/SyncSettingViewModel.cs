@@ -23,7 +23,7 @@ public partial class SyncSettingViewModel : ObservableObject
 
     public bool IsNotLoggedIn => !IsLoggedIn;
 
-    public ObservableCollection<DisplayedAccountConfig> SavedAccounts { get; } = new();
+    public ObservableCollection<DisplayedAccountConfig> SavedAccounts { get; } = [];
 
     partial void OnIsLoggedInChanged(bool value)
     {
