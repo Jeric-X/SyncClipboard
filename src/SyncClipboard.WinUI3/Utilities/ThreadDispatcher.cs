@@ -8,6 +8,8 @@ namespace SyncClipboard.WinUI3.Utilities;
 
 internal class ThreadDispatcher(DispatcherQueue dispatcherQueue) : IThreadDispatcher
 {
+    public bool IsMainThread => dispatcherQueue.HasThreadAccess;
+
     public Task RunOnMainThreadAsync(Action action)
     {
         if (dispatcherQueue.HasThreadAccess)

@@ -22,6 +22,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
 
+        services.AddSingleton<IMainWindowDialog, Services.AvaloniaDialog>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<MultiSourceClipboardReader>();
         services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();

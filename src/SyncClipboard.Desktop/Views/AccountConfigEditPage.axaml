@@ -1,0 +1,169 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.AccountConfigEditPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:AccountConfigEditViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <UserControl.Styles>
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+    </UserControl.Styles>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!--  左侧内容区域  -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--  错误信息显示  -->
+            <ui:InfoBar Title="{x:Static i18n:Strings.Error}"
+                        Grid.Row="0"
+                        Margin="0,0,12,10"
+                        IsVisible="{Binding HasError}"
+                        Severity="Error"
+                        IsOpen="True"
+                        Message="{Binding ErrorMessage}"
+                        IsClosable="False" />
+
+            <!--  滚动内容区域  -->
+            <ScrollViewer Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
+                <!--  动态属性输入  -->
+                <ItemsRepeater ItemsSource="{Binding Properties}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Spacing="10" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate DataType="vm:PropertyInputViewModel">
+                            <Border Classes="Card">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+
+                                    <!--  属性描述  -->
+                                    <TextBlock Text="{Binding Description}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"
+                                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                    <TextBlock Text="{Binding ErrorMessage}"
+                                               Foreground="Red"
+                                               FontSize="12"
+                                               IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    <!--  根据属性类型选择不同的控件  -->
+
+                                    <!--  普通文本框  -->
+                                    <TextBox MinWidth="300"
+                                             HorizontalAlignment="Left"
+                                             Text="{Binding Value, Mode=TwoWay}"
+                                             Watermark="{Binding DisplayName}"
+                                             IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
+                                             IsVisible="{Binding IsText}" />
+
+                                    <!--  密码框  -->
+                                    <TextBox MinWidth="300"
+                                             HorizontalAlignment="Left"
+                                             Text="{Binding Value, Mode=TwoWay}"
+                                             Watermark="{Binding DisplayName}"
+                                             PasswordChar="●"
+                                             IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
+                                             IsVisible="{Binding IsPassword}" />
+
+                                    <!--  整数输入框  -->
+                                    <NumericUpDown MinWidth="300"
+                                                   HorizontalAlignment="Left"
+                                                   Value="{Binding NumericValue, Mode=TwoWay}"
+                                                   Watermark="{Binding DisplayName}"
+                                                   Increment="1"
+                                                   ParsingNumberStyle="Integer"
+                                                   IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
+                                                   IsVisible="{Binding IsInteger}" />
+
+                                    <!--  小数输入框  -->
+                                    <NumericUpDown MinWidth="300"
+                                                   HorizontalAlignment="Left"
+                                                   Value="{Binding NumericValue, Mode=TwoWay}"
+                                                   Watermark="{Binding DisplayName}"
+                                                   Increment="0.1"
+                                                   ParsingNumberStyle="Float"
+                                                   IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
+                                                   IsVisible="{Binding IsDecimal}" />
+
+                                    <!--  布尔值复选框  -->
+                                    <CheckBox Content="{Binding DisplayName}"
+                                              IsChecked="{Binding BoolValue, Mode=TwoWay}"
+                                              IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
+                                              IsVisible="{Binding IsBoolean}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </ScrollViewer>
+        </Grid>
+
+        <!--  右侧按钮区域  -->
+        <StackPanel Grid.Column="1"
+                    MinWidth="120"
+                    VerticalAlignment="Top"
+                    Spacing="12">
+            <Button HorizontalAlignment="Stretch"
+                    Content="{x:Static i18n:Strings.Confirm}"
+                    Classes="accent"
+                    Command="{Binding ConfirmCommand}"
+                    IsEnabled="{Binding !IsLoading}" />
+            <Button HorizontalAlignment="Stretch" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsLoading}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <!--  成功图标  -->
+                    <TextBlock Width="{Binding #PendingIcon.Bounds.Width}"
+                               Height="{Binding #PendingIcon.Bounds.Height}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsTestSuccess}"
+                               Text="✓"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="#4CAF50" />
+                    <!--  失败图标  -->
+                    <TextBlock Width="{Binding #PendingIcon.Bounds.Width}"
+                               Height="{Binding #PendingIcon.Bounds.Height}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsTestFailure}"
+                               Text="✗"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               Foreground="#F44336" />
+                    <!--  未测试图标  -->
+                    <TextBlock Name="PendingIcon"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsTestPending}"
+                               Text="○"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="#757575" />
+                    <TextBlock VerticalAlignment="Center" Text="{x:Static i18n:Strings.TestConnection}" />
+                </StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch"
+                    Content="{x:Static i18n:Strings.CancelTest}"
+                    Command="{Binding CancelTestCommand}"
+                    IsVisible="{Binding CanCancelTest}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

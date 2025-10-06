@@ -1,64 +1,101 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.RemoteServer.LogInHelper;
+using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
+
+public record NavigationInfo(string PageName, string Parameter);
 
 public partial class AddAccountViewModel : ObservableObject
 {
     private readonly ConfigManager _configManager;
+    private readonly AccountManager _accountManager;
     private readonly MainViewModel _mainVM;
+    private readonly IEnumerable<ILoginHelper> _logInHelpers;
 
-    public AddAccountViewModel(ConfigManager configManager, MainViewModel mainViewModel)
+    public AddAccountViewModel(ConfigManager configManager, AccountManager accountManager, MainViewModel mainViewModel, IEnumerable<ILoginHelper> logInHelpers)
     {
         _configManager = configManager;
+        _accountManager = accountManager;
         _mainVM = mainViewModel;
+        _logInHelpers = logInHelpers;
+        LoadAvailableTypes();
     }
 
-    [ObservableProperty]
-    private string serverUrl = "";
+    public ObservableCollection<string> LoginTypes { get; } = new();
 
     [ObservableProperty]
-    private string username = "";
+    private string selectedType = "";
 
     [ObservableProperty]
-    private string password = "";
+    private string configurationPageName = "";
 
     [ObservableProperty]
-    private bool isLoading = false;
+    private NavigationInfo navigationInfo = new("", "");
 
-    [RelayCommand]
-    private async Task AddAccount()
+    partial void OnSelectedTypeChanged(string value)
     {
-        // TODO: 实现添加账号逻辑
-        IsLoading = true;
-        try
-        {
-            // 这里将来会调用AccountManager来添加账号
-            await Task.Delay(1000); // 模拟异步操作
-            
-            // 添加成功后返回
-            _mainVM.NavigateToLastLevel();
-        }
-        catch
-        {
-            // TODO: 显示错误信息
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        LoadConfigurationPageName(value);
     }
 
-    [RelayCommand]
-    private void Cancel()
+    private void LoadConfigurationPageName(string selectedType)
     {
-        _mainVM.NavigateToLastLevel();
+        if (string.IsNullOrEmpty(selectedType))
+        {
+            ConfigurationPageName = "";
+            NavigationInfo = new("", "");
+            return;
+        }
+
+        // 检查选择的类型是否来源于 ILogInHelper
+        var loginHelper = _logInHelpers.FirstOrDefault(helper => helper.TypeName == selectedType);
+        
+        string pageName;
+        if (loginHelper != null)
+        {
+            // 来源于 ILogInHelper 的类型使用其指定的登录页面
+            pageName = loginHelper.LoginPageName;
+        }
+        else
+        {
+            // 其他类型使用默认配置页面
+            pageName = PageDefinition.DefaultAddAccount.Name + "Page";
+        }
+        
+        ConfigurationPageName = pageName;
+        NavigationInfo = new(pageName, selectedType);
     }
 
-    [RelayCommand]
-    private void TestConnection()
+    private void LoadAvailableTypes()
     {
-        // TODO: 实现测试连接逻辑
+        LoginTypes.Clear();
+        
+        // 从 AccountManager 获取已注册的适配器类型
+        foreach (var typeName in _accountManager.GetRegisteredTypeNames())
+        {
+            if (!LoginTypes.Contains(typeName))
+            {
+                LoginTypes.Add(typeName);
+            }
+        }
+
+        // 从 ILogInHelper 获取登录助手类型
+        foreach (var helper in _logInHelpers)
+        {
+            var typeName = helper.TypeName;
+            if (!string.IsNullOrEmpty(typeName) && !LoginTypes.Contains(typeName))
+            {
+                LoginTypes.Add(typeName);
+            }
+        }
+
+        // 如果有可用类型，默认选择第一个
+        if (LoginTypes.Count > 0)
+        {
+            SelectedType = LoginTypes[0];
+            // 确保在初始化时也触发配置界面的加载逻辑
+            LoadConfigurationPageName(SelectedType);
+        }
     }
 }

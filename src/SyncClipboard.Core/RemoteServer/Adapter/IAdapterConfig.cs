@@ -1,5 +1,5 @@
 using System.Reflection;
-using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Attributes;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter;
 
@@ -10,7 +10,7 @@ public interface IAdapterConfig<T>
         get
         {
             var type = typeof(T);
-            var accountAttribute = type.GetCustomAttribute<AccountConfigAttribute>();
+            var accountAttribute = type.GetCustomAttribute<AccountConfigTypeAttribute>();
             if (accountAttribute != null)
             {
                 return accountAttribute.GetName();

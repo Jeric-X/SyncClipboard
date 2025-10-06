@@ -2,16 +2,12 @@
 
 public record class SyncConfig
 {
-    public string RemoteURL { get; set; } = "";
-    public string UserName { get; set; } = "";
-    public string Password { get; set; } = "";
     public bool SyncSwitchOn { get; set; } = false;
     public bool PullSwitchOn { get; set; } = true;
     public bool PushSwitchOn { get; set; } = true;
     public bool EnableUploadText { get; set; } = true;
     public bool EnableUploadSingleFile { get; set; } = true;
     public bool EnableUploadMultiFile { get; set; } = true;
-    public bool DeletePreviousFilesOnPush { get; set; } = true;
     public bool NotifyOnDownloaded { get; set; } = false;
     public bool DoNotUploadWhenCut { get; set; } = false;
     public bool NotifyOnManualUpload { get; set; } = false;

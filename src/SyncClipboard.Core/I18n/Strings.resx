@@ -732,8 +732,8 @@ Double click image: View full image</value>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>You can specify the hotkey to open the history panel in the Hotkey settings</value>
   </data>
-  <data name="LoginStatus" xml:space="preserve">
-    <value>Login Status</value>
+  <data name="SyncAccount" xml:space="preserve">
+    <value>Sync Account</value>
   </data>
   <data name="AddAccount" xml:space="preserve">
     <value>Add Account</value>
@@ -749,5 +749,79 @@ Double click image: View full image</value>
   </data>
   <data name="ConnectionDetails" xml:space="preserve">
     <value>Connection Details</value>
+  </data>
+  <data name="AccountType" xml:space="preserve">
+    <value>Account Type</value>
+  </data>
+  <data name="SelectAccountType" xml:space="preserve">
+    <value>Select Account Type</value>
+  </data>
+  <data name="PleaseAddAccount" xml:space="preserve">
+    <value>Please add an account</value>
+  </data>
+  <data name="EditAccountConfig" xml:space="preserve">
+    <value>Edit Account Configuration</value>
+  </data>
+  <data name="DeleteAccount" xml:space="preserve">
+    <value>Delete Account</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="DeleteAccountConfirmMessage" xml:space="preserve">
+    <value>Are you sure you want to delete account '{0}'?
+
+This operation cannot be undone.</value>
+  </data>
+  <data name="ServerAddress" xml:space="preserve">
+    <value>Server Address</value>
+  </data>
+  <data name="ServerAddressDescription" xml:space="preserve">
+    <value>Full URL address of the WebDAV server</value>
+  </data>
+  <data name="UserNameDescription" xml:space="preserve">
+    <value>Username for logging into the WebDAV server</value>
+  </data>
+  <data name="PasswordDescription" xml:space="preserve">
+    <value>Password for logging into the WebDAV server</value>
+  </data>
+  <data name="TrustInsecureCertificateDescription" xml:space="preserve">
+    <value>Whether to trust self-signed or invalid SSL certificates</value>
+  </data>
+  <data name="TimeoutSeconds" xml:space="preserve">
+    <value>Timeout (seconds)</value>
+  </data>
+  <data name="TimeoutDescription" xml:space="preserve">
+    <value>Network request timeout in seconds</value>
+  </data>
+  <data name="DeletePreviousFilesDescription" xml:space="preserve">
+    <value>Whether to delete old files on the server when pushing new content</value>
+  </data>
+  <data name="TestConnection" xml:space="preserve">
+    <value>Test Connection</value>
+  </data>
+  <data name="CancelTest" xml:space="preserve">
+    <value>Cancel Test</value>
+  </data>
+  <data name="PleaseEnterValidValue" xml:space="preserve">
+    <value>Please enter a valid value</value>
+  </data>
+  <data name="CheckAndCorrectErrors" xml:space="preserve">
+    <value>Please check and correct input errors before trying again</value>
+  </data>
+  <data name="TestCancelled" xml:space="preserve">
+    <value>Test was cancelled.</value>
+  </data>
+  <data name="TestConnectionError" xml:space="preserve">
+    <value>Error occurred while testing connection: {0}</value>
+  </data>
+  <data name="SaveConfigFailed" xml:space="preserve">
+    <value>Failed to save configuration: {0}</value>
+  </data>
+  <data name="NoAdapterFound" xml:space="preserve">
+    <value>Cannot find server adapter implementation for this configuration type. Please contact the developer.</value>
+  </data>
+  <data name="CannotCreateConfigInstance" xml:space="preserve">
+    <value>Unable to create configuration instance, please check if input parameters are correct.</value>
   </data>
 </root>

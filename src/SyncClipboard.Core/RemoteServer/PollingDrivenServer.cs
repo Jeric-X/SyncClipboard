@@ -22,21 +22,19 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
 
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
-    private readonly IAppConfig _appConfig;
     private readonly ITrayIcon _trayIcon;
     private readonly IPollingServerAdapter _serverAdapter;
 
     // 轮询相关
-    private Timer? _pollingTimer;
     private Profile _lastKnownProfile = new UnknownProfile();
     private readonly object _pollingLock = new object();
     private bool _isPolling = false;
     private CancellationTokenSource? _pollingCancellationTokenSource;
 
-    // TestAlive定时器相关
-    private Timer? _testAliveTimer;
+    // TestAlive任务相关
+    private Task? _testAliveTask;
+    private CancellationTokenSource? _testAliveCancellationTokenSource;
     private readonly object _testAliveLock = new object();
-    private bool _testAliveRunning = false;
 
     // 配置
     private SyncConfig _syncConfig;
@@ -69,11 +67,10 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         remove => PollStatusEventImpl -= value;
     }
 
-    public PollingDrivenServer(ILogger logger, ConfigManager configManager, IAppConfig appConfig, ITrayIcon trayIcon, IPollingServerAdapter serverAdapter)
+    public PollingDrivenServer(ILogger logger, ConfigManager configManager, ITrayIcon trayIcon, IPollingServerAdapter serverAdapter)
     {
         _logger = logger;
         _configManager = configManager;
-        _appConfig = appConfig;
         _trayIcon = trayIcon;
         _serverAdapter = serverAdapter;
 
@@ -85,11 +82,19 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         StartTestAliveBackgroudService();
     }
 
+    public void OnAdapterConfigChanged()
+    {
+        StartTestAliveBackgroudService();
+    }
+
     private void OnConfigChanged()
     {
-        _syncConfig = _configManager.GetConfig<SyncConfig>();
-
-        StartTestAliveBackgroudService();
+        var oldConfig = _syncConfig;
+        if (_syncConfig != oldConfig)
+        {
+            _syncConfig = _configManager.GetConfig<SyncConfig>();
+            StartTestAliveBackgroudService();
+        }
     }
 
     private async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -108,9 +113,10 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
     {
         try
         {
-            return await _serverAdapter.TestConnectionAsync(cancellationToken);
+            await _serverAdapter.TestConnectionAsync(cancellationToken);
+            return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             _logger.Write($"Warning: Connection test failed: {ex.Message}");
             return false;
@@ -254,7 +260,8 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
     {
         lock (_pollingLock)
         {
-            if (_isPolling) return;
+            if (_isPolling)
+                return;
             _isPolling = true;
         }
 
@@ -328,73 +335,75 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         _pollingCancellationTokenSource?.Dispose();
         _pollingCancellationTokenSource = null;
 
-        _pollingTimer?.Dispose();
-        _pollingTimer = null;
-
         _logger.Write("[POLLING] Stopped monitoring remote profile changes");
     }
 
     private void StartTestAliveBackgroudService()
     {
+        if (isDisposed) return;
+
+        StopTestAliveTask();
         lock (_testAliveLock)
         {
-            _testAliveTimer?.Dispose();
-            _testAliveTimer = new Timer(OnTestAliveTimer, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
-            _logger.Write("[TEST_ALIVE] Started TestAlive timer (interval: 10 seconds)");
+            _testAliveCancellationTokenSource = new CancellationTokenSource();
+            _testAliveTask = RunTestAliveLoopAsync(_testAliveCancellationTokenSource.Token);
         }
     }
 
-    private async void OnTestAliveTimer(object? state)
+    private void ResumePolling()
     {
-        lock (_testAliveLock)
+        lock (_pollingLock)
         {
-            if (_testAliveRunning) return;
-            _testAliveRunning = true;
-        }
+            if (RemoteProfileChangedImpl != null && !_isPolling)
+            {
+                _logger.Write("[TEST_ALIVE] Connection restored, resuming polling");
 
+                PollStatusEventImpl?.Invoke(this, new PollStatusEventArgs
+                {
+                    Status = PollStatus.Resumed,
+                    Message = "Network connection restored, polling resumed"
+                });
+
+                StartPolling();
+            }
+        }
+    }
+
+    private async Task RunTestAliveLoopAsync(CancellationToken cancellationToken)
+    {
         try
         {
-            var isAlive = await TestConnectionAsync();
+            var testAliveInterval = TimeSpan.FromSeconds(10);
 
-            if (isAlive)
+            while (!cancellationToken.IsCancellationRequested && !isDisposed)
             {
-                lock (_pollingLock)
+                var isAlive = await TestConnectionAsync(cancellationToken);
+                if (isAlive)
                 {
-                    if (RemoteProfileChangedImpl != null && !_isPolling)
-                    {
-                        _logger.Write("[TEST_ALIVE] Connection restored, resuming polling");
-
-                        PollStatusEventImpl?.Invoke(this, new PollStatusEventArgs
-                        {
-                            Status = PollStatus.Resumed,
-                            Message = "Network connection restored, polling resumed"
-                        });
-
-                        StartPolling();
-                    }
+                    ResumePolling();
                 }
-            }
-            else
-            {
-                _logger.Write("[TEST_ALIVE] Connection test failed");
+                else
+                {
+                    _logger.Write("[TEST_ALIVE] Connection test failed");
+                }
+
+                await Task.Delay(testAliveInterval, cancellationToken);
             }
         }
-        finally
+        catch (OperationCanceledException)
         {
-            lock (_testAliveLock)
-            {
-                _testAliveRunning = false;
-            }
+            _logger.Write("[TEST_ALIVE] TestAlive task was cancelled");
         }
     }
 
-    private void StopTestAliveTimer()
+    private void StopTestAliveTask()
     {
         lock (_testAliveLock)
         {
-            _testAliveTimer?.Dispose();
-            _testAliveTimer = null;
-            _logger.Write("[TEST_ALIVE] Stopped TestAlive timer");
+            _testAliveCancellationTokenSource?.Cancel();
+            _testAliveCancellationTokenSource?.Dispose();
+            _testAliveCancellationTokenSource = null;
+            _testAliveTask = null;
         }
     }
 
@@ -438,10 +447,11 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         throw new RemoteServerException(message, innerException);
     }
 
+    bool isDisposed = false;
     public void Dispose()
     {
+        isDisposed = true;
         StopPolling();
-        StopTestAliveTimer();
-        _configManager.ConfigChanged -= OnConfigChanged;
+        StopTestAliveTask();
     }
 }

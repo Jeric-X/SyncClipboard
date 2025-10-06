@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.WinUI3.Views;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -24,6 +23,7 @@ namespace SyncClipboard.WinUI3
         public new static App Current => (App)Application.Current;
         public IServiceProvider Services { get; private set; }
         public ILogger Logger { get; private set; }
+        public MainWindow MainWindow => (MainWindow)Services.GetRequiredService<IMainWindow>();
         public AppCore AppCore { get; private set; }
 
         /// <summary>

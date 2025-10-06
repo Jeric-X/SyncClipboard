@@ -1,10 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
-using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.RemoteServer.Adapter.Default;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.RemoteServer;
 
@@ -13,39 +13,59 @@ public class RemoteClipboardServerFactory
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
-    private readonly IAppConfig _appConfig;
     private readonly ITrayIcon _trayIcon;
     private readonly AccountManager _accountManager;
 
     private IRemoteClipboardServer? _current;
     private AccountConfig? _currentAccount;
     private IStorageOnlyServerAdapter? _currentAdapter;
+    private SyncConfig _syncConfig;
+    private object? _configDetail;
+
+    public event EventHandler? CurrentServerChanged;
 
     public RemoteClipboardServerFactory(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
-        _appConfig = _serviceProvider.GetRequiredService<IAppConfig>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _accountManager = _serviceProvider.GetRequiredService<AccountManager>();
         _accountManager.CurrentAccountChanged += OnAccountChanged;
+
+        _syncConfig = _configManager.GetConfig<SyncConfig>();
+        _configManager.ListenConfig<SyncConfig>(OnSyncConfigChanged);
     }
 
-    private void OnAccountChanged(string type, string? accountId, object? config)
+    private void OnAccountChanged(AccountConfig accountConfig, object? config)
     {
-        if (_current is null || config is null)
+        if (config is null)
         {
+            DisposeExistServer();
+            _currentAccount = accountConfig;
+            _configDetail = config;
             return;
         }
 
-        if (type != _currentAccount?.AccountType)
+        if (accountConfig.AccountType != _currentAccount?.AccountType || accountConfig.AccountId != _currentAccount?.AccountId)
         {
-            ResetCurrentServer();
-            return;
+            ResetCurrentServer(accountConfig, config);
         }
+        else if (Equals(config, _configDetail) == false)
+        {
+            _configDetail = config;
+            _currentAdapter?.OnConfigChanged(_configDetail, _syncConfig);
+            _current?.OnAdapterConfigChanged();
+        }
+    }
 
-        _currentAdapter?.OnConfigChanged(config);
+    private void OnSyncConfigChanged(SyncConfig syncConfig)
+    {
+        _syncConfig = syncConfig;
+        if (_currentAdapter is not null && _configDetail is not null)
+        {
+            _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
+        }
     }
 
     public IRemoteClipboardServer Current
@@ -59,14 +79,27 @@ public class RemoteClipboardServerFactory
     }
 
     [MemberNotNull(nameof(_current))]
-    public void ResetCurrentServer(AccountConfig? newConfig = null)
+    public void ResetCurrentServer(AccountConfig? newConfig = null, object? configDetail = null)
     {
         DisposeExistServer();
         _currentAccount = newConfig ?? _configManager.GetConfig<AccountConfig>();
-        _currentAdapter = _serviceProvider.GetKeyedService<IStorageOnlyServerAdapter>(_currentAccount.AccountType);
+        _currentAdapter = GetAdapter(_currentAccount.AccountType);
 
         _currentAdapter ??= new DefaultStorageAdapter();
-        _current = new PollingDrivenServer(_logger, _configManager, _appConfig, _trayIcon, _currentAdapter);
+        _configDetail = configDetail ?? _accountManager.GetConfig(_currentAccount.AccountType, _currentAccount.AccountId);
+        if (_configDetail is not null)
+        {
+            _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
+        }
+        _current = new PollingDrivenServer(_logger, _configManager, _trayIcon, _currentAdapter);
+        CurrentServerChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public IStorageOnlyServerAdapter GetAdapter(string type)
+    {
+        var adapter = _serviceProvider.GetKeyedService<IStorageOnlyServerAdapter>(type);
+        adapter ??= new DefaultStorageAdapter();
+        return adapter;
     }
 
     public void DisposeExistServer()

@@ -6,6 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Web;
 
@@ -16,6 +17,7 @@ public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) :
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private INotificationManager NotificationManager => _serviceProvider.GetRequiredService<INotificationManager>();
     private ConfigManager ConfigManager => _serviceProvider.GetRequiredService<ConfigManager>();
+    private AccountManager AccountManager => _serviceProvider.GetRequiredService<AccountManager>();
     private IAppConfig AppConfig => _serviceProvider.GetRequiredService<IAppConfig>();
 
     private CancellationTokenSource? _cancelSource;
@@ -94,15 +96,17 @@ public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) :
     public void SetFolder(FileTreeViewModel node)
     {
         ArgumentNullException.ThrowIfNull(tempWebDavCredential);
-        var config = ConfigManager.GetConfig<SyncConfig>();
-        ConfigManager.SetConfig(
-            config with
-            {
-                UserName = tempWebDavCredential.Username,
-                Password = tempWebDavCredential.Password,
-                RemoteURL = $"{tempWebDavCredential.Url.Trim('/')}/{node.FullPath.Trim('/')}"
-            }
-        );
+
+        var webDavConfig = new WebDavConfig() with
+        {
+            UserName = tempWebDavCredential.Username,
+            Password = tempWebDavCredential.Password,
+            RemoteURL = $"{tempWebDavCredential.Url.Trim('/')}/{node.FullPath.Trim('/')}",
+        };
+
+        var accountId = AccountManager.CreateAccountId(WebDavConfig.TYPE_NAME);
+        AccountManager.SetConfig(accountId, WebDavConfig.TYPE_NAME, webDavConfig);
+
         _serviceProvider.GetRequiredService<MainViewModel>().NavigateToLastLevel();
     }
 

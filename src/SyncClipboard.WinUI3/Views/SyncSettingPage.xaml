@@ -8,6 +8,7 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      xmlns:models="using:SyncClipboard.Core.Models"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       MinWidth="550"
       d:DataContext="{d:DesignInstance vm:SyncSettingViewModel}"
@@ -15,11 +16,12 @@
       mc:Ignorable="d">
     <Page.Resources>
         <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordIconConverter" />
+        <vc:ObjectToVisibilityConverter x:Key="ObjectToVisibilityConverter" />
         <!--<Thickness x:Key="SettingsCardPadding">16,16,60,16</Thickness>
         <Thickness x:Key="SettingsExpanderItemPadding">58,8,60,8</Thickness>
         <Thickness x:Key="ClickableSettingsExpanderItemPadding">58,0,32,0</Thickness>
         <Thickness x:Key="SettingsExpanderItemBorderThickness">0,0,0,0</Thickness>-->
-        <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
+        <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />
             <Setter Property="Padding" Value="0,0,0,0" />
@@ -33,21 +35,32 @@
         </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.LoginStatus}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.SyncAccount}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE13D;" />
             </ui:SettingsExpander.HeaderIcon>
-            <TextBlock Text="{x:Bind _viewModel.CurrentAccountName, Mode=OneWay}" />
+            <StackPanel>
+                <ComboBox MinWidth="200"
+                          ItemsSource="{x:Bind _viewModel.SavedAccounts, Mode=OneWay}"
+                          SelectedItem="{x:Bind _viewModel.SelectedAccount, Mode=TwoWay}"
+                          PlaceholderText="{x:Bind i18n:Strings.SelectAccount}"
+                          Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsLoggedIn), Mode=OneWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:DisplayedAccountConfig">
+                            <TextBlock Text="{x:Bind DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{x:Bind i18n:Strings.PleaseAddAccount}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsNotLoggedIn), Mode=OneWay}" />
+            </StackPanel>
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.AddAccount}" IsClickEnabled="True" Command="{x:Bind _viewModel.AddAccountCommand}" />
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.RemoveAccount}"
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.EditAccountConfig}"
                                  IsClickEnabled="True"
-                                 Command="{x:Bind _viewModel.RemoveAccountCommand}"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsLoggedIn), Mode=OneWay}" />
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.SelectAccount}"
-                                 IsClickEnabled="True"
-                                 Command="{x:Bind _viewModel.SelectAccountCommand}"
-                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.HasMultipleAccounts), Mode=OneWay}" />
+                                 Command="{x:Bind _viewModel.EditAccountCommand}"
+                                 Visibility="{x:Bind _viewModel.SelectedAccount, Mode=OneWay, Converter={StaticResource ObjectToVisibilityConverter}}">
+                    <Button MinWidth="60" Content="{x:Bind i18n:Strings.DeleteAccount}" Command="{x:Bind _viewModel.RemoveAccountCommand}" />
+                </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardSyncing}" IsExpanded="True">
@@ -56,33 +69,8 @@
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.SyncEnable, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Description="{x:Bind _viewModel.ClientConfigDescription, Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton IsChecked="{x:Bind _viewModel.ShowClientPassword, Mode=TwoWay}">
-                            <FontIcon Glyph="{x:Bind _viewModel.ShowClientPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" />
-                        </ToggleButton>
-                        <Button Command="{x:Bind SetSyncCommand}">
-                            <FontIcon Glyph="&#xE115;" />
-                        </Button>
-                    </StackPanel>
-                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
-                </ui:SettingsCard>
-                <ui:SettingsCard VerticalContentAlignment="Stretch" ContentAlignment="Vertical">
-                    <!-- 第三方登录数量大于等于2时，不再使用Descrition，直接在Content中使用Stackpanel包装多个HyperlinkButton，并使用以下style
-                        <ui:SettingsCard.Resources>
-                        <Style BasedOn="{StaticResource DefaultHyperlinkButtonStyle}" TargetType="HyperlinkButton">
-                            <Style.Setters>
-                                <Setter Property="FontSize" Value="12" />
-                                <Setter Property="Padding" Value="0,0,0,-1" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                            </Style.Setters>
-                        </Style>
-                    </ui:SettingsCard.Resources>-->
-                    <ui:SettingsCard.Description>
-                        <HyperlinkButton Content="{x:Bind i18n:Strings.UseNextcloud}" Command="{x:Bind _viewModel.LoginWithNextcloudCommand}" />
-                    </ui:SettingsCard.Description>
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
@@ -93,9 +81,6 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}">
                     <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.DeleteServerTemporaryFileAutoly}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AutoDeleleServerFile, Mode=TwoWay}" />
-                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterManuallyUpload}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnManualUpload, Mode=TwoWay}" />
                 </ui:SettingsCard>
@@ -105,6 +90,5 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SyncContentControl}" IsClickEnabled="True" Command="{x:Bind _viewModel.OpenSyncContentControlPageCommand}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <local:ServerSettingDialog x:Name="_SyncSettingDialog" PrimaryButtonClick="SyncSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Address}" />
     </StackPanel>
 </Page>
