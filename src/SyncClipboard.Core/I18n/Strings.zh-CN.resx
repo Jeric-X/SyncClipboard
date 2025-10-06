@@ -741,8 +741,8 @@ Esc：关闭面板</value>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>在快捷键设置中可以指定打开历史记录面板的快捷键</value>
   </data>
-  <data name="LoginStatus" xml:space="preserve">
-    <value>登录状态</value>
+  <data name="SyncAccount" xml:space="preserve">
+    <value>同步账号</value>
   </data>
   <data name="AddAccount" xml:space="preserve">
     <value>添加账号</value>
@@ -758,5 +758,79 @@ Esc：关闭面板</value>
   </data>
   <data name="ConnectionDetails" xml:space="preserve">
     <value>连接详情</value>
+  </data>
+  <data name="AccountType" xml:space="preserve">
+    <value>账号类型</value>
+  </data>
+  <data name="SelectAccountType" xml:space="preserve">
+    <value>请选择账号类型</value>
+  </data>
+  <data name="PleaseAddAccount" xml:space="preserve">
+    <value>请添加账号</value>
+  </data>
+  <data name="EditAccountConfig" xml:space="preserve">
+    <value>修改账号配置</value>
+  </data>
+  <data name="DeleteAccount" xml:space="preserve">
+    <value>删除账号</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="DeleteAccountConfirmMessage" xml:space="preserve">
+    <value>您确定要删除账号 '{0}' 吗？
+
+此操作不可恢复。</value>
+  </data>
+  <data name="ServerAddress" xml:space="preserve">
+    <value>服务器地址</value>
+  </data>
+  <data name="ServerAddressDescription" xml:space="preserve">
+    <value>WebDAV服务器的完整URL地址</value>
+  </data>
+  <data name="UserNameDescription" xml:space="preserve">
+    <value>登录WebDAV服务器的用户名</value>
+  </data>
+  <data name="PasswordDescription" xml:space="preserve">
+    <value>登录WebDAV服务器的密码</value>
+  </data>
+  <data name="TrustInsecureCertificateDescription" xml:space="preserve">
+    <value>是否信任自签名或无效的SSL证书</value>
+  </data>
+  <data name="TimeoutSeconds" xml:space="preserve">
+    <value>超时时间(秒)</value>
+  </data>
+  <data name="TimeoutDescription" xml:space="preserve">
+    <value>网络请求的超时时间，单位为秒</value>
+  </data>
+  <data name="DeletePreviousFilesDescription" xml:space="preserve">
+    <value>推送新内容时是否删除服务器上的旧文件</value>
+  </data>
+  <data name="TestConnection" xml:space="preserve">
+    <value>测试连接</value>
+  </data>
+  <data name="CancelTest" xml:space="preserve">
+    <value>取消测试</value>
+  </data>
+  <data name="PleaseEnterValidValue" xml:space="preserve">
+    <value>请输入有效值</value>
+  </data>
+  <data name="CheckAndCorrectErrors" xml:space="preserve">
+    <value>请检查并修正输入错误后再试</value>
+  </data>
+  <data name="TestCancelled" xml:space="preserve">
+    <value>测试已被取消。</value>
+  </data>
+  <data name="TestConnectionError" xml:space="preserve">
+    <value>测试连接时发生错误: {0}</value>
+  </data>
+  <data name="SaveConfigFailed" xml:space="preserve">
+    <value>保存配置失败: {0}</value>
+  </data>
+  <data name="NoAdapterFound" xml:space="preserve">
+    <value>无法找到配置文件对应的服务端适配实现，请联系开发者</value>
+  </data>
+  <data name="CannotCreateConfigInstance" xml:space="preserve">
+    <value>无法创建配置实例，请检查输入参数是否正确。</value>
   </data>
 </root>

@@ -1,8 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
+using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -10,13 +13,36 @@ public partial class SyncSettingViewModel : ObservableObject
 {
     #region account management
     [ObservableProperty]
-    private string currentAccountName = "未登录";
+    private DisplayedAccountConfig? selectedAccount;
 
     [ObservableProperty]
     private bool isLoggedIn = false;
 
     [ObservableProperty]
     private bool hasMultipleAccounts = false;
+
+    public bool IsNotLoggedIn => !IsLoggedIn;
+
+    public ObservableCollection<DisplayedAccountConfig> SavedAccounts { get; } = new();
+
+    partial void OnIsLoggedInChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotLoggedIn));
+    }
+
+    partial void OnSelectedAccountChanged(DisplayedAccountConfig? value)
+    {
+        if (value != null)
+        {
+            var accountConfig = new AccountConfig
+            {
+                AccountId = value.AccountId,
+                AccountType = value.AccountType
+            };
+
+            _configManager.SetConfig(accountConfig);
+        }
+    }
 
     [RelayCommand]
     private void AddAccount()
@@ -25,15 +51,58 @@ public partial class SyncSettingViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RemoveAccount()
+    private async Task RemoveAccount()
     {
-        // TODO: 实现移除账号逻辑
+        if (SelectedAccount != null)
+        {
+            // 显示确认对话框
+            var confirmed = await _dialog.ShowConfirmationAsync(
+                Strings.ConfirmDelete,
+                string.Format(Strings.DeleteAccountConfirmMessage, SelectedAccount.DisplayName));
+
+            if (!confirmed)
+            {
+                return;
+            }
+            _ = _accountManager.RemoveConfig(SelectedAccount.AccountType, SelectedAccount.AccountId);
+        }
     }
 
     [RelayCommand]
-    private void SelectAccount()
+    private void EditAccount()
     {
-        // TODO: 实现选择账号逻辑
+        if (SelectedAccount != null)
+        {
+            var accountConfig = new AccountConfig
+            {
+                AccountId = SelectedAccount.AccountId,
+                AccountType = SelectedAccount.AccountType
+            };
+            _mainVM.NavigateToNextLevel(PageDefinition.DefaultAddAccount, accountConfig);
+        }
+    }
+
+    private void OnSavedAccountsChanged(IEnumerable<DisplayedAccountConfig> newAccounts)
+    {
+        LoadSavedAccounts(newAccounts);
+    }
+
+    private void LoadSavedAccounts(IEnumerable<DisplayedAccountConfig>? accounts = null)
+    {
+        SavedAccounts.Clear();
+        var accountsToLoad = accounts ?? _accountManager.GetSavedAccounts();
+        foreach (var account in accountsToLoad)
+        {
+            SavedAccounts.Add(account);
+        }
+
+        HasMultipleAccounts = SavedAccounts.Count > 1;
+        IsLoggedIn = SavedAccounts.Count > 0;
+
+        var currentConfig = _configManager.GetConfig<AccountConfig>();
+        SelectedAccount = SavedAccounts.FirstOrDefault(a =>
+            a.AccountId == currentConfig.AccountId &&
+            a.AccountType == currentConfig.AccountType);
     }
     #endregion
 
@@ -57,10 +126,6 @@ public partial class SyncSettingViewModel : ObservableObject
     [ObservableProperty]
     private uint maxFileSize;
     partial void OnMaxFileSizeChanged(uint value) => ClientConfig = ClientConfig with { MaxFileByte = value * 1024 * 1024 };
-
-    [ObservableProperty]
-    private bool autoDeleleServerFile;
-    partial void OnAutoDeleleServerFileChanged(bool value) => ClientConfig = ClientConfig with { DeletePreviousFilesOnPush = value };
 
     [ObservableProperty]
     private bool notifyOnDownloaded;
@@ -99,7 +164,6 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnMultiFileEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadMultiFile = value };
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
     private SyncConfig clientConfig;
     partial void OnClientConfigChanged(SyncConfig value)
     {
@@ -108,7 +172,6 @@ public partial class SyncSettingViewModel : ObservableObject
         SyncEnable = value.SyncSwitchOn;
         TimeOut = value.TimeOut;
         MaxFileSize = value.MaxFileByte / 1024 / 1024;
-        AutoDeleleServerFile = value.DeletePreviousFilesOnPush;
         NotifyOnDownloaded = value.NotifyOnDownloaded;
         NotifyOnManualUpload = value.NotifyOnManualUpload;
         DoNotUploadWhenCut = value.DoNotUploadWhenCut;
@@ -119,12 +182,6 @@ public partial class SyncSettingViewModel : ObservableObject
         SingleFileEnable = value.EnableUploadSingleFile;
         MultiFileEnable = value.EnableUploadMultiFile;
         _configManager.SetConfig(value);
-    }
-
-    [RelayCommand]
-    private void LoginWithNextcloud()
-    {
-        _mainVM.NavigateToNextLevel(PageDefinition.NextCloudLogIn);
     }
 
     [RelayCommand]
@@ -141,40 +198,27 @@ public partial class SyncSettingViewModel : ObservableObject
 
     #endregion
 
-    #region for view only
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ClientConfigDescription))]
-    public bool showClientPassword = false;
-
-    public string ClientConfigDescription =>
-@$"{I18n.Strings.Address}{new string('\t', int.Parse(I18n.Strings.PortTabRepeat))}: {ClientConfig.RemoteURL}
-{I18n.Strings.UserName}{new string('\t', int.Parse(I18n.Strings.UserNameTabRepeat))}: {ClientConfig.UserName}
-{I18n.Strings.Password}{new string('\t', int.Parse(I18n.Strings.PasswordTabRepeat))}: {GetPasswordString(ClientConfig.Password, ShowClientPassword)}";
-
-    private static string GetPasswordString(string origin, bool? show)
-    {
-        return show ?? false ? origin : "*********";
-    }
-
-    #endregion
-
     private readonly ConfigManager _configManager;
     private readonly MainViewModel _mainVM;
+    private readonly AccountManager _accountManager;
+    private readonly IMainWindowDialog _dialog;
 
-    public SyncSettingViewModel(ConfigManager configManager, MainViewModel mainViewModel)
+    public SyncSettingViewModel(ConfigManager configManager, MainViewModel mainViewModel, AccountManager accountManager, IMainWindowDialog dialog)
     {
         _configManager = configManager;
         _mainVM = mainViewModel;
+        _accountManager = accountManager;
+        _dialog = dialog;
 
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
+        _accountManager.SavedAccountsChanged += OnSavedAccountsChanged;
+
         clientConfig = _configManager.GetConfig<SyncConfig>();
         intervalTime = clientConfig.IntervalTime;
         retryTimes = clientConfig.RetryTimes;
         syncEnable = clientConfig.SyncSwitchOn;
         timeOut = clientConfig.TimeOut;
         maxFileSize = clientConfig.MaxFileByte / 1024 / 1024;
-        autoDeleleServerFile = clientConfig.DeletePreviousFilesOnPush;
         notifyOnDownloaded = clientConfig.NotifyOnDownloaded;
         notifyOnManualUpload = clientConfig.NotifyOnManualUpload;
         doNotUploadWhenCut = clientConfig.DoNotUploadWhenCut;
@@ -184,11 +228,7 @@ public partial class SyncSettingViewModel : ObservableObject
         textEnable = clientConfig.EnableUploadText;
         singleFileEnable = clientConfig.EnableUploadSingleFile;
         multiFileEnable = clientConfig.EnableUploadMultiFile;
-    }
 
-    public string? SetClientConfig(string url, string username, string password)
-    {
-        ClientConfig = ClientConfig with { RemoteURL = url, UserName = username, Password = password };
-        return null;
+        LoadSavedAccounts();
     }
 }

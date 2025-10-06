@@ -184,6 +184,18 @@ namespace SyncClipboard.Core.Utilities.Web
             res.EnsureSuccessStatusCode();
         }
 
+        public async Task Test(CancellationToken? cancelToken = null)
+        {
+            HttpRequestMessage requestMessage = new()
+            {
+                Method = new HttpMethod("PROPFIND")
+            };
+            requestMessage.Headers.Add("Depth", "1");
+
+            var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            res.EnsureSuccessStatusCode();
+        }
+
         public async Task<bool> TestAlive(CancellationToken? cancelToken = null)
         {
             HttpRequestMessage requestMessage = new()
@@ -194,17 +206,14 @@ namespace SyncClipboard.Core.Utilities.Web
 
             try
             {
-                var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
-                res.EnsureSuccessStatusCode();
+                await Test();
+                return true;
             }
             catch (Exception ex)
             {
                 Logger?.Write("[WebDAV] Test WebDav Failed, message = " + ex.Message);
                 return false;
             }
-
-            Logger?.Write("Test ok ");
-            return true;
         }
 
         public async Task Delete(string url, CancellationToken? cancelToken = null)

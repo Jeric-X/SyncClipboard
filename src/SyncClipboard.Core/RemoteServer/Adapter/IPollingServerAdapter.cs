@@ -5,7 +5,7 @@ namespace SyncClipboard.Core.RemoteServer.Adapter;
 
 public interface IPollingServerAdapter
 {
-    Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
+    Task TestConnectionAsync(CancellationToken cancellationToken = default);
 
     Task InitializeAsync(CancellationToken cancellationToken = default);
 

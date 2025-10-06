@@ -135,6 +135,7 @@ public class DownloadService : Service
         _remoteClipboardServerFactory = remoteClipboardServerFactory;
         _historyManager = _serviceProvider.GetRequiredService<HistoryManager>();
 
+        _remoteClipboardServerFactory.CurrentServerChanged += OnCurrentServerChanged;
         _hotkeyManager.RegisterCommands(CommandCollection);
     }
 
@@ -163,6 +164,12 @@ public class DownloadService : Service
         StopAndReload();
     }
 
+    private void OnCurrentServerChanged(object? sender, EventArgs e)
+    {
+        _logger.Write(LOG_TAG, "Current server changed, restarting download service");
+        StopAndReload();
+    }
+
     private void ReLoad()
     {
         if (ClientSwitchOn)
@@ -184,6 +191,7 @@ public class DownloadService : Service
     protected override void StopSerivce()
     {
         SwitchOffEventMode();
+        _remoteClipboardServerFactory.CurrentServerChanged -= OnCurrentServerChanged;
     }
 
     private void SwitchOnEventMode()
@@ -192,6 +200,8 @@ public class DownloadService : Service
         {
             if (!_isEventDrivenModeActive)
             {
+                StartEventDrivenMode();
+
                 _isEventDrivenModeActive = true;
                 _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
                 _clipboardMoniter.ClipboardChanged += StopAndReloadByNewClipboard;
@@ -200,14 +210,11 @@ public class DownloadService : Service
 
                 // 订阅远程剪贴板服务器的RemoteProfileChanged事件
                 var remoteServer = _remoteClipboardServerFactory.Current;
-                remoteServer.RemoteProfileChanged -= OnRemoteProfileChanged;
-                remoteServer.RemoteProfileChanged += OnRemoteProfileChanged;
-
-                // 订阅远程剪贴板服务器的PollStatusEvent事件
                 remoteServer.PollStatusEvent -= OnPollStatusChanged;
                 remoteServer.PollStatusEvent += OnPollStatusChanged;
 
-                StartEventDrivenMode();
+                remoteServer.RemoteProfileChanged -= OnRemoteProfileChanged;
+                remoteServer.RemoteProfileChanged += OnRemoteProfileChanged;
             }
         }
     }

@@ -11,4 +11,5 @@ public interface IRemoteClipboardServer : IDisposable
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
     event EventHandler<ProfileChangedEventArgs> RemoteProfileChanged;
     event EventHandler<PollStatusEventArgs> PollStatusEvent;
+    void OnAdapterConfigChanged();
 }

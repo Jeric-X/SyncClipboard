@@ -7,6 +7,8 @@ namespace SyncClipboard.Desktop.Utilities;
 
 internal class ThreadDispatcher : IThreadDispatcher
 {
+    public bool IsMainThread => Dispatcher.UIThread.CheckAccess();
+
     public async Task RunOnMainThreadAsync(Action action)
     {
         if (Dispatcher.UIThread.CheckAccess())

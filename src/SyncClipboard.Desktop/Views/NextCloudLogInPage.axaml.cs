@@ -21,6 +21,11 @@ public partial class NextCloudLogInPage : UserControl
         AddHandler(Frame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
     }
 
+    private void OnNavigatedTo(object? sender, NavigationEventArgs e)
+    {
+        App.Current.MainWindow.DispableScrollViewer();
+    }
+
     private async void TreeView_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         _TreeView.IsEnabled = false;
@@ -32,11 +37,6 @@ public partial class NextCloudLogInPage : UserControl
     {
         App.Current.MainWindow.EnableScrollViewer();
         _viewModel.Cancel();
-    }
-
-    private void OnNavigatedTo(object? sender, NavigationEventArgs e)
-    {
-        App.Current.MainWindow.DispableScrollViewer();
     }
 
     private void Button_Click(object? sender, RoutedEventArgs e)

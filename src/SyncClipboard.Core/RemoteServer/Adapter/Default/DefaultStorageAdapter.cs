@@ -1,5 +1,6 @@
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.Default;
 
@@ -11,13 +12,13 @@ public sealed class DefaultStorageAdapter : IStorageOnlyServerAdapter
 {
     private const string ErrorMessage = "No valid server adapter configured.";
 
-    public void OnConfigChanged(object config)
+    public void OnConfigChanged(object config, SyncConfig syncConfig)
     {
     }
 
-    public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
+    public Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(false);
+        return Task.CompletedTask;
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)

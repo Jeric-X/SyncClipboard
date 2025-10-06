@@ -1,7 +1,7 @@
-namespace SyncClipboard.Core.Commons;
+namespace SyncClipboard.Core.Attributes;
 
 [AttributeUsage(AttributeTargets.Class)]
-public class AccountConfigAttribute(string name) : Attribute
+public class AccountConfigTypeAttribute(string name) : Attribute
 {
     public string Name { get; } = name;
 

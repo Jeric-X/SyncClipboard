@@ -1,8 +1,9 @@
-﻿using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.RemoteServer.Adapter;
+using SyncClipboard.Core.RemoteServer.LogInHelper;
+using System.Reflection;
 
 namespace SyncClipboard.Core.Utilities;
 
@@ -38,5 +39,12 @@ public static class Extentions
         var typeNameProperty = typeof(IAdapterConfig<TConfig>).GetProperty("TypeName", BindingFlags.Static | BindingFlags.Public);
         var key = (string)typeNameProperty!.GetValue(null)!;
         services.AddKeyedTransient<IStorageOnlyServerAdapter, TAdapter>(key);
+    }
+
+    public static void AddLogInHelper<TConfig, THelper>(this IServiceCollection services)
+        where TConfig : IAdapterConfig<TConfig>
+        where THelper : class, ILoginHelper<TConfig>
+    {
+        services.AddTransient<ILoginHelper, THelper>();
     }
 }

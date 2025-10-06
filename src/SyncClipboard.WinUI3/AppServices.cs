@@ -22,6 +22,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
 
+        services.AddSingleton<IMainWindowDialog, Services.WinUIDialog>();
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddKeyedSingleton<IWindow, HistoryWindow>(nameof(HistoryWindow));
         services.AddSingleton<ClipboardListener>();

@@ -24,6 +24,7 @@ using SyncClipboard.Core.ViewModels;
 using System.Diagnostics;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
+using SyncClipboard.Core.RemoteServer.LogInHelper;
 
 namespace SyncClipboard.Core
 {
@@ -272,6 +273,7 @@ namespace SyncClipboard.Core
             services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
 
             services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
+            services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)
@@ -283,6 +285,7 @@ namespace SyncClipboard.Core
             services.AddTransient<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();
             services.AddTransient<AddAccountViewModel>();
+            services.AddTransient<AccountConfigEditViewModel>();
             services.AddTransient<FileSyncFilterSettingViewModel>();
             services.AddTransient<ProxySettingViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();

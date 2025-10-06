@@ -70,6 +70,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Account Type 的本地化字符串。
+        /// </summary>
+        public static string AccountType {
+            get {
+                return ResourceManager.GetString("AccountType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Add Account 的本地化字符串。
         /// </summary>
         public static string AddAccount {
@@ -151,6 +160,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Cancel Test 的本地化字符串。
+        /// </summary>
+        public static string CancelTest {
+            get {
+                return ResourceManager.GetString("CancelTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Unable to create configuration instance, please check if input parameters are correct. 的本地化字符串。
+        /// </summary>
+        public static string CannotCreateConfigInstance {
+            get {
+                return ResourceManager.GetString("CannotCreateConfigInstance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 PEM Certificate Key File Path 的本地化字符串。
         /// </summary>
         public static string CertificatePemKeyPath {
@@ -174,6 +201,15 @@ namespace SyncClipboard.Core.I18n {
         public static string ChangingLangInfo {
             get {
                 return ResourceManager.GetString("ChangingLangInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Please check and correct input errors before trying again 的本地化字符串。
+        /// </summary>
+        public static string CheckAndCorrectErrors {
+            get {
+                return ResourceManager.GetString("CheckAndCorrectErrors", resourceCulture);
             }
         }
         
@@ -322,6 +358,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Confirm Delete 的本地化字符串。
+        /// </summary>
+        public static string ConfirmDelete {
+            get {
+                return ResourceManager.GetString("ConfirmDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Connection Details 的本地化字符串。
         /// </summary>
         public static string ConnectionDetails {
@@ -417,6 +462,35 @@ namespace SyncClipboard.Core.I18n {
         public static string DefaultLanguage {
             get {
                 return ResourceManager.GetString("DefaultLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Delete Account 的本地化字符串。
+        /// </summary>
+        public static string DeleteAccount {
+            get {
+                return ResourceManager.GetString("DeleteAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Are you sure you want to delete account &apos;{0}&apos;?
+        ///
+        ///This operation cannot be undone. 的本地化字符串。
+        /// </summary>
+        public static string DeleteAccountConfirmMessage {
+            get {
+                return ResourceManager.GetString("DeleteAccountConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Whether to delete old files on the server when pushing new content 的本地化字符串。
+        /// </summary>
+        public static string DeletePreviousFilesDescription {
+            get {
+                return ResourceManager.GetString("DeletePreviousFilesDescription", resourceCulture);
             }
         }
         
@@ -597,6 +671,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Edit {
             get {
                 return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Edit Account Configuration 的本地化字符串。
+        /// </summary>
+        public static string EditAccountConfig {
+            get {
+                return ResourceManager.GetString("EditAccountConfig", resourceCulture);
             }
         }
         
@@ -1105,15 +1188,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Login Status 的本地化字符串。
-        /// </summary>
-        public static string LoginStatus {
-            get {
-                return ResourceManager.GetString("LoginStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Login with Browser 的本地化字符串。
         /// </summary>
         public static string LoginWithBrowser {
@@ -1164,6 +1238,15 @@ namespace SyncClipboard.Core.I18n {
         public static string NewVersionDownloaded {
             get {
                 return ResourceManager.GetString("NewVersionDownloaded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Cannot find server adapter implementation for this configuration type. Please contact the developer. 的本地化字符串。
+        /// </summary>
+        public static string NoAdapterFound {
+            get {
+                return ResourceManager.GetString("NoAdapterFound", resourceCulture);
             }
         }
         
@@ -1312,11 +1395,38 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Password for logging into the WebDAV server 的本地化字符串。
+        /// </summary>
+        public static string PasswordDescription {
+            get {
+                return ResourceManager.GetString("PasswordDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 1 的本地化字符串。
         /// </summary>
         public static string PasswordTabRepeat {
             get {
                 return ResourceManager.GetString("PasswordTabRepeat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Please add an account 的本地化字符串。
+        /// </summary>
+        public static string PleaseAddAccount {
+            get {
+                return ResourceManager.GetString("PleaseAddAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Please enter a valid value 的本地化字符串。
+        /// </summary>
+        public static string PleaseEnterValidValue {
+            get {
+                return ResourceManager.GetString("PleaseEnterValidValue", resourceCulture);
             }
         }
         
@@ -1501,6 +1611,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Failed to save configuration: {0} 的本地化字符串。
+        /// </summary>
+        public static string SaveConfigFailed {
+            get {
+                return ResourceManager.GetString("SaveConfigFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Save List 的本地化字符串。
         /// </summary>
         public static string SaveList {
@@ -1515,6 +1634,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SelectAccount {
             get {
                 return ResourceManager.GetString("SelectAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Select Account Type 的本地化字符串。
+        /// </summary>
+        public static string SelectAccountType {
+            get {
+                return ResourceManager.GetString("SelectAccountType", resourceCulture);
             }
         }
         
@@ -1551,6 +1679,24 @@ namespace SyncClipboard.Core.I18n {
         public static string Server {
             get {
                 return ResourceManager.GetString("Server", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Server Address 的本地化字符串。
+        /// </summary>
+        public static string ServerAddress {
+            get {
+                return ResourceManager.GetString("ServerAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Full URL address of the WebDAV server 的本地化字符串。
+        /// </summary>
+        public static string ServerAddressDescription {
+            get {
+                return ResourceManager.GetString("ServerAddressDescription", resourceCulture);
             }
         }
         
@@ -1672,6 +1818,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Sync Account 的本地化字符串。
+        /// </summary>
+        public static string SyncAccount {
+            get {
+                return ResourceManager.GetString("SyncAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Sync Content Control 的本地化字符串。
         /// </summary>
         public static string SyncContentControl {
@@ -1753,6 +1908,33 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Test was cancelled. 的本地化字符串。
+        /// </summary>
+        public static string TestCancelled {
+            get {
+                return ResourceManager.GetString("TestCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Test Connection 的本地化字符串。
+        /// </summary>
+        public static string TestConnection {
+            get {
+                return ResourceManager.GetString("TestConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Error occurred while testing connection: {0} 的本地化字符串。
+        /// </summary>
+        public static string TestConnectionError {
+            get {
+                return ResourceManager.GetString("TestConnectionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Theme 的本地化字符串。
         /// </summary>
         public static string Theme {
@@ -1771,11 +1953,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Network request timeout in seconds 的本地化字符串。
+        /// </summary>
+        public static string TimeoutDescription {
+            get {
+                return ResourceManager.GetString("TimeoutDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Timeout Period (sec) 的本地化字符串。
         /// </summary>
         public static string TimeoutPeriod {
             get {
                 return ResourceManager.GetString("TimeoutPeriod", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Timeout (seconds) 的本地化字符串。
+        /// </summary>
+        public static string TimeoutSeconds {
+            get {
+                return ResourceManager.GetString("TimeoutSeconds", resourceCulture);
             }
         }
         
@@ -1794,6 +1994,15 @@ namespace SyncClipboard.Core.I18n {
         public static string TrustInsecureCertificate {
             get {
                 return ResourceManager.GetString("TrustInsecureCertificate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Whether to trust self-signed or invalid SSL certificates 的本地化字符串。
+        /// </summary>
+        public static string TrustInsecureCertificateDescription {
+            get {
+                return ResourceManager.GetString("TrustInsecureCertificateDescription", resourceCulture);
             }
         }
         
@@ -1902,6 +2111,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UserName {
             get {
                 return ResourceManager.GetString("UserName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Username for logging into the WebDAV server 的本地化字符串。
+        /// </summary>
+        public static string UserNameDescription {
+            get {
+                return ResourceManager.GetString("UserNameDescription", resourceCulture);
             }
         }
         

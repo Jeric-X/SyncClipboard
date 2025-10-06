@@ -1,6 +1,7 @@
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Web;
 using System.Net;
 
@@ -18,6 +19,7 @@ public sealed class WebDavAdapter : IStorageOnlyServerAdapter<WebDavConfig>, IDi
     private readonly IAppConfig _appConfig;
 
     private WebDavConfig _webDavConfig;
+    private SyncConfig? _syncConfig;
 
     public WebDavAdapter(ILogger logger, IAppConfig appConfig)
     {
@@ -25,12 +27,14 @@ public sealed class WebDavAdapter : IStorageOnlyServerAdapter<WebDavConfig>, IDi
         _appConfig = appConfig;
 
         _webDavConfig = new WebDavConfig(); // 默认配置，将通过OnConfigChanged更新
+        _syncConfig = new SyncConfig(); // 默认SyncConfig，将通过OnConfigChanged更新
         _webDav = CreateWebDavInstance();
     }
 
-    public void OnConfigChanged(WebDavConfig config)
+    public void OnConfigChanged(WebDavConfig config, SyncConfig syncConfig)
     {
         _webDavConfig = config;
+        _syncConfig = syncConfig;
 
         _webDav?.Dispose();
         _webDav = CreateWebDavInstance();
@@ -45,15 +49,16 @@ public sealed class WebDavAdapter : IStorageOnlyServerAdapter<WebDavConfig>, IDi
             Url = _webDavConfig.RemoteURL
         };
 
-        var timeout = _webDavConfig.TimeOut != 0 ? _webDavConfig.TimeOut : 30000u; // 默认30秒
-        var webDav = new WebDav(credential, _appConfig, _webDavConfig.TrustInsecureCertificate, _logger) { Timeout = timeout };
+        var timeout = _syncConfig?.TimeOut != 0 ? _syncConfig?.TimeOut ?? 100u : 100u; // 默认100秒
+        var trustInsecureCertificate = _syncConfig?.TrustInsecureCertificate ?? false;
+        var webDav = new WebDav(credential, _appConfig, trustInsecureCertificate, _logger) { Timeout = timeout };
 
         return webDav;
     }
 
-    public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
+    public Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        return await _webDav.Exist(_webDavConfig.RemoteURL, cancellationToken);
+        return _webDav.Test(cancellationToken);
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)

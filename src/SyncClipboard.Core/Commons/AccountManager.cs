@@ -4,17 +4,23 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Reflection;
 using SyncClipboard.Core.RemoteServer.Adapter;
+using SyncClipboard.Core.Attributes;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Commons;
 
 public class AccountManager
 {
-    public delegate void AccountChangedHandler(string type, string? accountId, object? config);
+    public delegate void AccountChangedHandler(AccountConfig accountConfig, object? config);
     public event AccountChangedHandler? CurrentAccountChanged;
+
+    public delegate void SavedAccountsChangedHandler(IEnumerable<DisplayedAccountConfig> newAccounts);
+    public event SavedAccountsChangedHandler? SavedAccountsChanged;
 
     private const string Accounts = "SavedAccounts";
     private AccountConfig? _accountConfig;
     private object? _currentAccount;
+    private List<DisplayedAccountConfig> _lastSavedAccounts = [];
 
     private readonly ConfigManager _configManager;
     private readonly Dictionary<string, Type> _registedTypeList = [];
@@ -73,6 +79,11 @@ public class AccountManager
         return _registedTypeList.GetValueOrDefault(typeName);
     }
 
+    public IEnumerable<string> GetRegisteredTypeNames()
+    {
+        return _registedTypeList.Keys;
+    }
+
     public object? GetConfig(string type, string accountId)
     {
         var accountsNode = _configManager.GetNode(Accounts);
@@ -92,15 +103,21 @@ public class AccountManager
 
     public void SetConfig(string accountId, string type, object config)
     {
+        var registeredType = GetRegisteredType(type) ?? throw new ArgumentException($"Type '{type}' is not registered.", nameof(type));
+
         var accountsNode = _configManager.GetNode(Accounts) ?? new JsonObject();
-        var typeAccounts = accountsNode[type] ?? new JsonObject();
-        typeAccounts[accountId] = JsonSerializer.SerializeToNode(config);
+        if (accountsNode[type] is null)
+        {
+            accountsNode[type] = new JsonObject();
+        }
+        accountsNode[type]![accountId] = JsonSerializer.SerializeToNode(config, registeredType);
         _configManager.SetNode(Accounts, accountsNode);
 
         if (accountId == _accountConfig?.AccountId && type == _accountConfig?.AccountType)
         {
             _currentAccount = config;
-            CurrentAccountChanged?.Invoke(type, accountId, config);
+            var currentConfig = new AccountConfig { AccountId = accountId, AccountType = type };
+            CurrentAccountChanged?.Invoke(currentConfig, config);
         }
     }
 
@@ -116,6 +133,37 @@ public class AccountManager
         }
     }
 
+    public string CreateAccountId(string type)
+    {
+        var accountsNode = _configManager.GetNode(Accounts);
+        if (accountsNode is null)
+        {
+            return "1";
+        }
+
+        var typeAccounts = accountsNode[type];
+        if (typeAccounts is null)
+        {
+            return "1";
+        }
+
+        UInt128 maxId = 0;
+
+        foreach (var accountNode in typeAccounts.AsObject())
+        {
+            var accountId = accountNode.Key;
+            if (UInt128.TryParse(accountId, out var id))
+            {
+                if (id > maxId)
+                {
+                    maxId = id;
+                }
+            }
+        }
+
+        return (maxId + 1).ToString();
+    }
+
     private void OnAccountConfigChanged()
     {
         var accountConfig = _configManager.GetConfig<AccountConfig>();
@@ -125,59 +173,142 @@ public class AccountManager
         {
             _accountConfig = accountConfig;
             _currentAccount = account;
-            NotifyCurrentAccountChanged(accountConfig.AccountType, accountConfig.AccountId, account);
+            NotifyCurrentAccountChanged(accountConfig, account);
         }
         else if (!Equals(account, _currentAccount))
         {
             _currentAccount = account;
-            NotifyCurrentAccountChanged(accountConfig.AccountType, accountConfig.AccountId, account);
+            NotifyCurrentAccountChanged(accountConfig, account);
+        }
+
+        var currentAccounts = GetSavedAccounts().ToList();
+        bool changed = _lastSavedAccounts.Count != currentAccounts.Count || !_lastSavedAccounts.SequenceEqual(currentAccounts);
+        if (changed)
+        {
+            _lastSavedAccounts = currentAccounts;
+            SavedAccountsChanged?.Invoke(currentAccounts);
         }
     }
 
-    private void NotifyCurrentAccountChanged(string accountType, string? accountId, object? account)
+    private void NotifyCurrentAccountChanged(AccountConfig accountConfig, object? account)
     {
         if (account is null)
         {
-            CurrentAccountChanged?.Invoke(string.Empty, null, null);
+            CurrentAccountChanged?.Invoke(accountConfig, null);
         }
         else
         {
-            CurrentAccountChanged?.Invoke(accountType, accountId, account);
+            CurrentAccountChanged?.Invoke(accountConfig, account);
         }
     }
 
-    // /// <summary>
-    // /// 获取所有账户名称
-    // /// </summary>
-    // /// <returns>账户名称列表</returns>
-    // public IEnumerable<string> GetaccountIds()
-    // {
-    //     var accountConfig = _configManager.GetConfig<AccountsConfig>();
-    //     return accountConfig.Accounts.Keys;
-    // }
+    public IEnumerable<DisplayedAccountConfig> GetSavedAccounts()
+    {
+        var accountsNode = _configManager.GetNode(Accounts);
+        if (accountsNode is null)
+            yield break;
 
-    // /// <summary>
-    // /// 删除账户配置
-    // /// </summary>
-    // /// <param name="accountId">账户名称</param>
-    // /// <returns>是否成功删除</returns>
-    // public bool RemoveConfig(string accountId)
-    // {
-    //     ArgumentException.ThrowIfNullOrWhiteSpace(accountId);
+        foreach (var typeKvp in accountsNode.AsObject())
+        {
+            var accountType = typeKvp.Key;
+            var typeAccounts = typeKvp.Value;
 
-    //     var accountConfig = _configManager.GetConfig<AccountsConfig>();
+            if (typeAccounts is null)
+                continue;
 
-    //     if (!accountConfig.Accounts.ContainsKey(accountId))
-    //     {
-    //         return false;
-    //     }
+            foreach (var accountKvp in typeAccounts.AsObject())
+            {
+                var accountId = accountKvp.Key;
+                var displayName = GetAccountDisplayName(accountType, accountId, accountKvp.Value);
+                yield return new DisplayedAccountConfig
+                {
+                    AccountId = accountId,
+                    AccountType = accountType,
+                    DisplayName = displayName
+                };
+            }
+        }
+    }
 
-    //     accountConfig.Accounts.Remove(accountId);
-    //     _configManager.SetConfig(accountConfig);
+    private string GetAccountDisplayName(string accountType, string accountId, JsonNode? configNode)
+    {
+        try
+        {
+            if (!_registedTypeList.TryGetValue(accountType, out var configType) || configNode is null)
+            {
+                return $"{accountId} - {accountType}";
+            }
 
-    //     // 清理监听器
-    //     _listeners.Remove(accountId);
+            var config = configNode.Deserialize(configType);
+            if (config is null)
+            {
+                return $"{accountId} - {accountType}";
+            }
 
-    //     return true;
-    // }
+            var userNameProperty = configType.GetProperties()
+                .FirstOrDefault(p => p.GetCustomAttribute<UserNameAttribute>() != null);
+
+            if (userNameProperty != null)
+            {
+                var userName = userNameProperty.GetValue(config)?.ToString();
+                if (!string.IsNullOrEmpty(userName))
+                {
+                    return $"{userName} - {accountType}";
+                }
+            }
+
+            return $"{accountId} - {accountType}";
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"Error getting account display name: {ex.Message}");
+            return $"{accountId} - {accountType}";
+        }
+    }
+
+    /// <summary>
+    /// 删除账户配置
+    /// </summary>
+    /// <param name="accountType">账户类型</param>
+    /// <param name="accountId">账户ID</param>
+    /// <returns>是否成功删除</returns>
+    public bool RemoveConfig(string accountType, string accountId)
+    {
+        try
+        {
+            var accountsNode = _configManager.GetNode(Accounts);
+            if (accountsNode is null)
+                return false;
+
+            var typeAccounts = accountsNode[accountType];
+            if (typeAccounts is null)
+                return false;
+
+            var typeAccountsObj = typeAccounts.AsObject();
+            if (!typeAccountsObj.ContainsKey(accountId))
+                return false;
+
+            typeAccountsObj.Remove(accountId);
+
+            if (typeAccountsObj.Count == 0)
+            {
+                accountsNode.AsObject().Remove(accountType);
+            }
+
+            _configManager.SetNode(Accounts, accountsNode);
+
+            if (_accountConfig?.AccountType == accountType && _accountConfig?.AccountId == accountId)
+            {
+                var emptyConfig = new AccountConfig { AccountId = string.Empty, AccountType = string.Empty };
+                _configManager.SetConfig(emptyConfig);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"Error removing account config: {ex.Message}");
+            return false;
+        }
+    }
 }

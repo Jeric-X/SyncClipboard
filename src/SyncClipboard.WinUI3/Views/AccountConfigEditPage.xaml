@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.AccountConfigEditPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ui="using:CommunityToolkit.WinUI.Controls"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      d:DataContext="{d:DesignInstance vm:AccountConfigEditViewModel}"
+      mc:Ignorable="d">
+    <Page.Resources>
+        <vc:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+        <vc:StringToDoubleConverter x:Key="StringToDoubleConverter" />
+    </Page.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!--  左侧内容区域  -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--  错误信息显示  -->
+            <InfoBar Title="{x:Bind i18n:Strings.Error}"
+                     Grid.Row="0"
+                     Margin="0,0,10,10"
+                     IsOpen="True"
+                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.HasError), Mode=OneWay}"
+                     Severity="Error"
+                     Message="{x:Bind _viewModel.ErrorMessage, Mode=OneWay}"
+                     IsClosable="False" />
+
+            <!--  滚动内容区域  -->
+            <ScrollViewer Grid.Row="1" Padding="0,0,10,0" VerticalScrollBarVisibility="Auto">
+                <!--  动态属性输入  -->
+                <ItemsControl ItemsSource="{x:Bind _viewModel.Properties, Mode=OneWay}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PropertyInputViewModel">
+                            <ui:SettingsCard HorizontalContentAlignment="Left"
+                                             Header="{x:Bind DisplayName, Mode=OneWay}"
+                                             ContentAlignment="Vertical"
+                                             Description="{x:Bind Description, Mode=OneWay}">
+                                <ui:SettingsCard.Content>
+                                    <StackPanel HorizontalAlignment="Left" Spacing="8">
+                                        <!--  普通文本框  -->
+                                        <TextBox MinWidth="300"
+                                                 HorizontalAlignment="Left"
+                                                 Text="{x:Bind Value, Mode=TwoWay}"
+                                                 PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsText), Mode=OneWay}" />
+
+                                        <!--  密码框  -->
+                                        <PasswordBox MinWidth="300"
+                                                     Password="{x:Bind Value, Mode=TwoWay}"
+                                                     PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsPassword), Mode=OneWay}" />
+
+                                        <!--  整数输入框  -->
+                                        <NumberBox MinWidth="300"
+                                                   PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                   SpinButtonPlacementMode="Compact"
+                                                   SmallChange="1"
+                                                   Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsInteger), Mode=OneWay}"
+                                                   Value="{x:Bind NumericValue, Mode=TwoWay}" />
+
+                                        <!--  小数输入框  -->
+                                        <NumberBox MinWidth="300"
+                                                   PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                   SpinButtonPlacementMode="Compact"
+                                                   SmallChange="0.1"
+                                                   Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsDecimal), Mode=OneWay}"
+                                                   Value="{x:Bind NumericValue, Mode=TwoWay}" />
+
+                                        <!--  布尔值复选框  -->
+                                        <CheckBox Content="{x:Bind DisplayName, Mode=OneWay}" IsChecked="{x:Bind BoolValue, Mode=TwoWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsBoolean), Mode=OneWay}" />
+
+                                        <!--  错误信息  -->
+                                        <TextBlock Text="{x:Bind ErrorMessage, Mode=OneWay}"
+                                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                   Visibility="{x:Bind ErrorMessage, Converter={StaticResource StringToVisibilityConverter}, Mode=OneWay}" />
+                                    </StackPanel>
+                                </ui:SettingsCard.Content>
+                            </ui:SettingsCard>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <!--  右侧按钮区域  -->
+        <StackPanel Grid.Column="1"
+                    MinWidth="120"
+                    VerticalAlignment="Top"
+                    Spacing="12">
+            <Button HorizontalAlignment="Stretch"
+                    Content="{x:Bind i18n:Strings.Confirm}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Command="{x:Bind _viewModel.ConfirmCommand}"
+                    IsEnabled="{x:Bind vc:ConvertMethod.BoolNegate(_viewModel.IsLoading), Mode=OneWay}" />
+            <Button HorizontalAlignment="Stretch" Command="{x:Bind _viewModel.TestConnectionCommand}" IsEnabled="{x:Bind vc:ConvertMethod.BoolNegate(_viewModel.IsLoading), Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <!--  成功图标  -->
+                    <TextBlock Width="{Binding ElementName=PendingIcon, Path=ActualWidth, Mode=OneWay}"
+                               Height="{Binding ElementName=PendingIcon, Path=ActualHeight, Mode=OneWay}"
+                               VerticalAlignment="Center"
+                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTestSuccess), Mode=OneWay}"
+                               Text="✓"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="#4CAF50" />
+                    <!--  失败图标  -->
+                    <TextBlock Width="{Binding ElementName=PendingIcon, Path=ActualWidth, Mode=OneWay}"
+                               Height="{Binding ElementName=PendingIcon, Path=ActualHeight, Mode=OneWay}"
+                               VerticalAlignment="Center"
+                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTestFailure), Mode=OneWay}"
+                               Text="✗"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               Foreground="#F44336" />
+                    <!--  未测试图标  -->
+                    <TextBlock x:Name="PendingIcon"
+                               VerticalAlignment="Center"
+                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTestPending), Mode=OneWay}"
+                               Text="○"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               Foreground="#757575" />
+                    <TextBlock VerticalAlignment="Center" Text="{x:Bind i18n:Strings.TestConnection}" />
+                </StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch"
+                    Content="{x:Bind i18n:Strings.CancelTest}"
+                    Command="{x:Bind _viewModel.CancelTestCommand}"
+                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.CanCancelTest), Mode=OneWay}" />
+        </StackPanel>
+    </Grid>
+</Page>
