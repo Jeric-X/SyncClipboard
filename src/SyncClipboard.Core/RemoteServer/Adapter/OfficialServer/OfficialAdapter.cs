@@ -136,8 +136,8 @@ public sealed class OfficialAdapter(
 
     public void Dispose()
     {
-        _webDavAdapter.Dispose();
         DisconnectSignalR();
+        _webDavAdapter.Dispose();
     }
 
     public void StartListening()

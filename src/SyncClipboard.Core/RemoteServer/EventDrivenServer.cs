@@ -130,9 +130,11 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
 
     public void Dispose()
     {
-        _testAliveHelper.Dispose();
+        _serverAdapter.ServerDisconnected -= ServerDisconnected;
+        _serverAdapter.ServerConnected -= ServerConnected;
         _serverAdapter.ProfileDtoChanged -= OnProfileDtoChanged;
         _serverAdapter.StopListening();
+        _testAliveHelper.Dispose();
         if (_serverAdapter is IDisposable disposableAdapter)
         {
             disposableAdapter.Dispose();
