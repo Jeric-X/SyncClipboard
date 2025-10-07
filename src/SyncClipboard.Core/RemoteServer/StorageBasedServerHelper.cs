@@ -26,7 +26,19 @@ internal class StorageBasedServerHelper
         _logger = sp.GetRequiredService<ILogger>();
         _trayIcon = sp.GetRequiredService<ITrayIcon>();
 
-        _ = _serverAdapter.InitializeAsync();
+        InitializeAsync();
+    }
+
+    private async void InitializeAsync()
+    {
+        try
+        {
+            await _serverAdapter.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("StorageBasedServerHelper", $"failed to initialize: {ex.Message}");
+        }
     }
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
