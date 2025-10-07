@@ -1,29 +1,18 @@
-using SyncClipboard.Abstract;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Image;
-using SyncClipboard.Core.Exceptions;
-using SyncClipboard.Core.I18n;
-using System.Text.Json;
-using System.Net;
-using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Core.RemoteServer.Adapter;
 
 namespace SyncClipboard.Core.RemoteServer;
 
 public sealed class PollingDrivenServer : IRemoteClipboardServer
 {
-    #region constants
-    private static readonly string ServiceName = Strings.ConnectionDetails;
-    #endregion
-
     private readonly ILogger _logger;
-    private readonly ConfigManager _configManager;
-    private readonly ITrayIcon _trayIcon;
-    private readonly IPollingServerAdapter _serverAdapter;
+    private readonly IStorageBasedServerAdapter _serverAdapter;
 
     // 轮询相关
     private Profile _lastKnownProfile = new UnknownProfile();
@@ -31,13 +20,12 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
     private bool _isPolling = false;
     private CancellationTokenSource? _pollingCancellationTokenSource;
 
-    // TestAlive任务相关
-    private Task? _testAliveTask;
-    private CancellationTokenSource? _testAliveCancellationTokenSource;
-    private readonly object _testAliveLock = new object();
+    // Helpers
+    private readonly TestAliveHelper _testAliveHelper;
+    private readonly StorageBasedServerHelper _storageHelper;
 
     // 配置
-    private SyncConfig _syncConfig;
+    private SyncConfig _syncConfig = new();
 
     private event EventHandler<ProfileChangedEventArgs>? RemoteProfileChangedImpl;
     public event EventHandler<ProfileChangedEventArgs>? RemoteProfileChanged
@@ -67,193 +55,43 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         remove => PollStatusEventImpl -= value;
     }
 
-    public PollingDrivenServer(ILogger logger, ConfigManager configManager, ITrayIcon trayIcon, IPollingServerAdapter serverAdapter)
+    public PollingDrivenServer(IServiceProvider sp, IStorageBasedServerAdapter serverAdapter)
     {
-        _logger = logger;
-        _configManager = configManager;
-        _trayIcon = trayIcon;
+        _logger = sp.GetRequiredService<ILogger>();
         _serverAdapter = serverAdapter;
 
-        _syncConfig = configManager.GetConfig<SyncConfig>();
+        _storageHelper = new StorageBasedServerHelper(sp, serverAdapter);
+        _storageHelper.ExceptionOccurred += () => _lastKnownProfile = new UnknownProfile();
 
-        configManager.ConfigChanged += OnConfigChanged;
-        _ = InitializeAsync();
-
+        _testAliveHelper = new TestAliveHelper(TestConnectionAsync);
+        _testAliveHelper.TestSuccessed += ResumePolling;
         StartTestAliveBackgroudService();
     }
 
-    public void OnAdapterConfigChanged()
+    public void OnSyncConfigChanged(SyncConfig syncConfig)
     {
+        _syncConfig = syncConfig;
         StartTestAliveBackgroudService();
     }
 
-    private void OnConfigChanged()
+    public Task<Profile> GetProfileAsync(CancellationToken cancellationToken = default)
     {
-        var oldConfig = _syncConfig;
-        if (_syncConfig != oldConfig)
-        {
-            _syncConfig = _configManager.GetConfig<SyncConfig>();
-            StartTestAliveBackgroudService();
-        }
+        return _storageHelper.GetProfileAsync(cancellationToken);
     }
 
-    private async Task InitializeAsync(CancellationToken cancellationToken = default)
+    public Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            await _serverAdapter.InitializeAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.Write($"Warning: Failed to initialize server adapter: {ex.Message}");
-        }
+        return _storageHelper.SetProfileAsync(profile, cancellationToken);
     }
 
-    public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
+    public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            await _serverAdapter.TestConnectionAsync(cancellationToken);
-            return true;
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            _logger.Write($"Warning: Connection test failed: {ex.Message}");
-            return false;
-        }
+        return _storageHelper.TestConnectionAsync(cancellationToken);
     }
 
-    public async Task<Profile> GetProfileAsync(CancellationToken cancellationToken = default)
+    public Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var profileDto = await _serverAdapter.GetProfileAsync(cancellationToken);
-            if (profileDto == null)
-            {
-                return await UploadAndReturnBlankProfile(cancellationToken);
-            }
-
-            _trayIcon.SetStatusString(ServiceName, "Running.");
-            return GetProfileBy(profileDto);
-        }
-        catch (Exception ex) when (
-            ex is JsonException ||
-            ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound } ||
-            ex is ArgumentException)
-        {
-            return await UploadAndReturnBlankProfile(cancellationToken);
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            ThrowServerException("Failed to get remote profile", ex);
-            return null!;
-        }
-    }
-
-    private static Profile GetProfileBy(ClipboardProfileDTO profileDTO)
-    {
-        switch (profileDTO.Type)
-        {
-            case ProfileType.Text:
-                return new TextProfile(profileDTO.Clipboard);
-            case ProfileType.File:
-                {
-                    if (ImageHelper.FileIsImage(profileDTO.File))
-                    {
-                        return new ImageProfile(profileDTO);
-                    }
-                    return new FileProfile(profileDTO);
-                }
-            case ProfileType.Image:
-                return new ImageProfile(profileDTO);
-            case ProfileType.Group:
-                return new GroupProfile(profileDTO);
-        }
-
-        return new UnknownProfile();
-    }
-
-    public async Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _serverAdapter.CleanupTempFilesAsync(cancellationToken);
-            await UploadProfileDataAsync(profile, cancellationToken);
-            await _serverAdapter.SetProfileAsync(profile.ToDto(), cancellationToken);
-            _lastKnownProfile = profile;
-
-            _logger.Write($"[PUSH] Profile metadata updated: {JsonSerializer.Serialize(profile.ToDto())}");
-            _trayIcon.SetStatusString(ServiceName, "Running.");
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            ThrowServerException("Failed to set remote profile", ex);
-        }
-    }
-
-    public async Task<Profile> UploadAndReturnBlankProfile(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var blankProfile = new TextProfile("");
-            await SetProfileAsync(blankProfile, cancellationToken);
-            return blankProfile;
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            ThrowServerException("Failed to set blank profile", ex);
-            return null!;
-        }
-    }
-
-    private async Task UploadProfileDataAsync(Profile profile, CancellationToken cancellationToken = default)
-    {
-        if (!profile.HasDataFile)
-        {
-            return;
-        }
-
-        if (profile.RequiresPrepareData)
-        {
-            await profile.PrepareDataAsync(cancellationToken);
-        }
-
-        try
-        {
-            var localDataPath = profile.GetLocalDataPath();
-            if (string.IsNullOrEmpty(localDataPath) || !File.Exists(localDataPath))
-            {
-                throw new FileNotFoundException($"Local data file not found: {localDataPath}");
-            }
-
-            await _serverAdapter.UploadFileAsync(profile.FileName, localDataPath, cancellationToken);
-            _logger.Write($"[PUSH] Upload completed for {profile.FileName}");
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            ThrowServerException("Failed to upload profile data", ex);
-        }
-    }
-
-    public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
-    {
-        if (!profile.HasDataFile)
-        {
-            return;
-        }
-
-        try
-        {
-            var dataPath = profile.GetLocalDataPath();
-            await _serverAdapter.DownloadFileAsync(profile.FileName, dataPath, progress, cancellationToken);
-            await profile.CheckDownloadedData(cancellationToken);
-            _logger.Write($"[PULL] Downloaded {profile.FileName} to {dataPath}");
-            _trayIcon.SetStatusString(ServiceName, "Running.");
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            ThrowServerException("Failed to download profile data", ex);
-        }
+        return _storageHelper.DownloadProfileDataAsync(profile, progress, cancellationToken);
     }
 
     public void StartPolling()
@@ -340,14 +178,10 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
 
     private void StartTestAliveBackgroudService()
     {
-        if (isDisposed) return;
+        if (isDisposed)
+            return;
 
-        StopTestAliveTask();
-        lock (_testAliveLock)
-        {
-            _testAliveCancellationTokenSource = new CancellationTokenSource();
-            _testAliveTask = RunTestAliveLoopAsync(_testAliveCancellationTokenSource.Token);
-        }
+        _testAliveHelper.Restart();
     }
 
     private void ResumePolling()
@@ -369,44 +203,6 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         }
     }
 
-    private async Task RunTestAliveLoopAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var testAliveInterval = TimeSpan.FromSeconds(10);
-
-            while (!cancellationToken.IsCancellationRequested && !isDisposed)
-            {
-                var isAlive = await TestConnectionAsync(cancellationToken);
-                if (isAlive)
-                {
-                    ResumePolling();
-                }
-                else
-                {
-                    _logger.Write("[TEST_ALIVE] Connection test failed");
-                }
-
-                await Task.Delay(testAliveInterval, cancellationToken);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.Write("[TEST_ALIVE] TestAlive task was cancelled");
-        }
-    }
-
-    private void StopTestAliveTask()
-    {
-        lock (_testAliveLock)
-        {
-            _testAliveCancellationTokenSource?.Cancel();
-            _testAliveCancellationTokenSource?.Dispose();
-            _testAliveCancellationTokenSource = null;
-            _testAliveTask = null;
-        }
-    }
-
     private async Task CheckRemoteProfileChanges(CancellationToken cancellationToken = default)
     {
         var currentProfile = await GetProfileAsync(cancellationToken);
@@ -419,39 +215,23 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
             RemoteProfileChangedImpl?.Invoke(this, new ProfileChangedEventArgs
             {
                 NewProfile = currentProfile,
-                OldProfile = oldProfile
             });
 
             _logger.Write($"[POLLING] Remote profile changed detected");
         }
     }
 
-    private void SetLastErrorStatus(string message, Exception? innerException = null)
-    {
-        var statusMessage = $"Server Error: {message}";
-        if (innerException != null)
-        {
-            statusMessage = $"{message}\n{innerException.Message}";
-        }
-        _logger.Write(statusMessage);
-        _trayIcon.SetStatusString(ServiceName, statusMessage);
-    }
-
-    [DoesNotReturn]
-    private void ThrowServerException(string message, Exception? innerException = null)
-    {
-        SetLastErrorStatus(message, innerException);
-
-        _lastKnownProfile = new UnknownProfile();
-
-        throw new RemoteServerException(message, innerException);
-    }
 
     bool isDisposed = false;
     public void Dispose()
     {
         isDisposed = true;
         StopPolling();
-        StopTestAliveTask();
+        _testAliveHelper.TestSuccessed -= ResumePolling;
+        _testAliveHelper.Dispose();
+        if (_serverAdapter is IDisposable disposableAdapter)
+        {
+            disposableAdapter.Dispose();
+        }
     }
 }

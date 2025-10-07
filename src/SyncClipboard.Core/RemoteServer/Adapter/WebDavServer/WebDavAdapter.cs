@@ -5,9 +5,9 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Web;
 using System.Net;
 
-namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
+namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 
-public sealed class WebDavAdapter : IStorageOnlyServerAdapter<WebDavConfig>, IDisposable
+public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedServerAdapter, IDisposable
 {
     #region constants
     private const string RemoteProfilePath = "SyncClipboard.json";

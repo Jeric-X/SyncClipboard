@@ -1,13 +1,18 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using SyncClipboard.Server.Core.Hubs;
 using Microsoft.AspNetCore.StaticFiles;
 using SyncClipboard.Abstract;
 using System.Text.Json;
+using SyncClipboard.Server.Core.Constants;
 
 namespace SyncClipboard.Server.Core.Controller;
 
-public class SyncClipboardController
+
+public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext)
 {
     protected ClipboardProfileDTO? ProfileDtoCache = null;
+    private readonly IHubContext<SyncClipboardHub> _hubContext = hubContext;
 
     private async Task<IResult> PutFile(HttpContext content, string rootPath, string path)
     {
@@ -23,7 +28,7 @@ public class SyncClipboardController
         return Results.Ok();
     }
 
-    private static Task<IResult> GetFile(string path)
+    public virtual Task<IResult> GetFile(string path)
     {
         if (!File.Exists(path))
         {
@@ -73,10 +78,11 @@ public class SyncClipboardController
     {
         ProfileDtoCache = profileDTO;
         await File.WriteAllTextAsync(Path.Combine(rootPath, path), JsonSerializer.Serialize(profileDTO));
+        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDTO);
         return Results.Ok();
     }
 
-    public void Route(WebApplication app)
+    public static void MapRoutes(WebApplication app)
     {
         var rootPath = app.Environment.WebRootPath;
 
@@ -89,46 +95,48 @@ public class SyncClipboardController
         app.MapDelete("/file", () =>
             DeleteFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
 
-        app.MapMethods("/file/{fileName}", ["HEAD", "GET"], async (string fileName) =>
+        app.MapMethods("/file/{fileName}", ["HEAD", "GET"], (string fileName, [FromServices] SyncClipboardController controller) =>
+        {
+            if (InvalidFileName(fileName))
+            {
+                return Task.FromResult(Results.BadRequest());
+            }
+            return controller.GetFile(Path.Combine(rootPath, "file", fileName));
+        }).RequireAuthorization();
+
+        app.MapPut("/file/{fileName}", async (HttpContext content, string fileName, [FromServices] SyncClipboardController controller) =>
         {
             if (InvalidFileName(fileName))
             {
                 return Results.BadRequest();
             }
-            return await GetFile(Path.Combine(rootPath, "file", fileName));
+            return await controller.PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName));
         }).RequireAuthorization();
 
-        app.MapPut("/file/{fileName}", async (HttpContext content, string fileName) =>
+        app.MapGet("/SyncClipboard.json", ([FromServices] SyncClipboardController controller) =>
+            controller.GetSyncProfile(rootPath, "SyncClipboard.json")).RequireAuthorization();
+
+        app.MapPut("/SyncClipboard.json", ([FromBody] ClipboardProfileDTO profileDto, [FromServices] SyncClipboardController controller) =>
+            controller.PutSyncProfile(profileDto, rootPath, "SyncClipboard.json")).RequireAuthorization();
+
+        app.MapHub<SyncClipboardHub>(SignalRConstants.HubPath);//.RequireAuthorization();
+
+        app.MapGet("/{name}", (string name, [FromServices] SyncClipboardController controller) =>
         {
-            if (InvalidFileName(fileName))
+            if (InvalidFileName(name))
             {
-                return Results.BadRequest();
+                return Task.FromResult(Results.BadRequest());
             }
-            return await PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName));
+            return controller.GetFile(Path.Combine(rootPath, name));
         }).RequireAuthorization();
 
-        app.MapGet("/SyncClipboard.json", () =>
-            GetSyncProfile(rootPath, "SyncClipboard.json")).RequireAuthorization();
-
-        app.MapPut("/SyncClipboard.json", ([FromBody] ClipboardProfileDTO profileDto) =>
-            PutSyncProfile(profileDto, rootPath, "SyncClipboard.json")).RequireAuthorization();
-
-        app.MapGet("/{name}", async (string name) =>
+        app.MapPut("/{name}", async (HttpContext content, string name, [FromServices] SyncClipboardController controller) =>
         {
             if (InvalidFileName(name))
             {
                 return Results.BadRequest();
             }
-            return await GetFile(Path.Combine(rootPath, name));
-        }).RequireAuthorization();
-
-        app.MapPut("/{name}", async (HttpContext content, string name) =>
-        {
-            if (InvalidFileName(name))
-            {
-                return Results.BadRequest();
-            }
-            return await PutFile(content, rootPath, Path.Combine(rootPath, name));
+            return await controller.PutFile(content, rootPath, Path.Combine(rootPath, name));
         }).RequireAuthorization();
 
         app.MapGet("/", () =>

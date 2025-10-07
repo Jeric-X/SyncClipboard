@@ -200,7 +200,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                         await handler.Value(ClipboardData, meta, ctk);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ctk.IsCancellationRequested is false)
                 {
                     errortimes += 1;
                     Logger.Write(LOG_TAG, ex.ToString());

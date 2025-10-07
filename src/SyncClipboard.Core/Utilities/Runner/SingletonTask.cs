@@ -28,25 +28,26 @@ public class SingletonTask
 
     public async Task Run(CancelableTask task, CancellationToken? token = null)
     {
+        CancellationTokenSource methodLevelCts;
+        CancellationTokenSource linkedCts;
         lock (_lock)
         {
             _cts.Cancel();
-            _cts.Dispose();
             _cts = new CancellationTokenSource();
+            methodLevelCts = _cts;
             _task = task;
+            linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, token ?? CancellationToken.None);
         }
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, token ?? CancellationToken.None);
-
-        await _semaphore.WaitAsync(cts.Token);
-        using var scopeGuard = new ScopeGuard(() => _semaphore.Release());
 
         try
         {
-            await _task(cts.Token);
+            await _semaphore.WaitAsync(linkedCts.Token);
+            using var scopeGuard = new ScopeGuard(() => _semaphore.Release());
+            await task(linkedCts.Token);
         }
-        catch when (_cts.Token.IsCancellationRequested)
+        catch when (methodLevelCts.Token.IsCancellationRequested)
         {
+            methodLevelCts.Dispose();
         }
     }
 

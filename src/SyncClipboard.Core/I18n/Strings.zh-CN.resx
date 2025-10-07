@@ -828,7 +828,7 @@ Esc：关闭面板</value>
     <value>保存配置失败: {0}</value>
   </data>
   <data name="NoAdapterFound" xml:space="preserve">
-    <value>无法找到配置文件对应的服务端适配实现，请联系开发者</value>
+    <value>无法找到配置文件对应的服务端适配实现，请联系开发者。</value>
   </data>
   <data name="CannotCreateConfigInstance" xml:space="preserve">
     <value>无法创建配置实例，请检查输入参数是否正确。</value>

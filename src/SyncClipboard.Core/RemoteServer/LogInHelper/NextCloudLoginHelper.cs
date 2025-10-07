@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
+﻿using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 
 namespace SyncClipboard.Core.RemoteServer.LogInHelper;
 

@@ -109,6 +109,8 @@ public class ServerService : Service
     protected override void StopSerivce()
     {
         _trayIcon.SetStatusString(SERVICE_NAME, "Stopped.");
-        app?.StopAsync();
+        var oldApp = app;
+        app = null;
+        Task.Run(() => oldApp?.StopAsync());
     }
 }

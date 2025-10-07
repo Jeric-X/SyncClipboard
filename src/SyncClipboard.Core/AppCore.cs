@@ -23,8 +23,9 @@ using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
 using System.Diagnostics;
 using SyncClipboard.Core.RemoteServer;
-using SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
+using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.RemoteServer.LogInHelper;
+using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
 namespace SyncClipboard.Core
 {
@@ -273,6 +274,7 @@ namespace SyncClipboard.Core
             services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
 
             services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
+            services.AddServerAdapter<OfficialConfig, OfficialAdapter>();
             services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
         }
 
