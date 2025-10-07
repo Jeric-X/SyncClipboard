@@ -16,9 +16,9 @@ public class RemoteClipboardServerFactory
     private readonly ITrayIcon _trayIcon;
     private readonly AccountManager _accountManager;
 
-    private PollingDrivenServer? _current;
+    private IRemoteClipboardServer? _current;
     private AccountConfig? _currentAccount;
-    private IStorageOnlyServerAdapter? _currentAdapter;
+    private IServerAdapter? _currentAdapter;
     private SyncConfig _syncConfig;
     private object? _configDetail;
 
@@ -55,7 +55,7 @@ public class RemoteClipboardServerFactory
         {
             _configDetail = config;
             _currentAdapter?.OnConfigChanged(_configDetail, _syncConfig);
-            _current?.OnAdapterConfigChanged();
+            _current?.OnSyncConfigChanged(_syncConfig);
         }
     }
 
@@ -65,6 +65,7 @@ public class RemoteClipboardServerFactory
         if (_currentAdapter is not null && _configDetail is not null)
         {
             _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
+            _current?.OnSyncConfigChanged(_syncConfig);
         }
     }
 
@@ -91,13 +92,26 @@ public class RemoteClipboardServerFactory
         {
             _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
         }
-        _current = new PollingDrivenServer(_logger, _configManager, _trayIcon, _currentAdapter);
+
+        if (_currentAdapter is IEventServerAdapter eventServerAdapter)
+        {
+            _current = new EventDrivenServer(_serviceProvider, eventServerAdapter);
+        }
+        else if (_currentAdapter is IStorageBasedServerAdapter pollingServerAdapter)
+        {
+            _current = new PollingDrivenServer(_serviceProvider, pollingServerAdapter);
+        }
+        else
+        {
+            throw new NotSupportedException("unsupported server type");
+        }
+        _current.OnSyncConfigChanged(_syncConfig);
         CurrentServerChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public IStorageOnlyServerAdapter GetAdapter(string type)
+    public IServerAdapter GetAdapter(string type)
     {
-        var adapter = _serviceProvider.GetKeyedService<IStorageOnlyServerAdapter>(type);
+        var adapter = _serviceProvider.GetKeyedService<IServerAdapter>(type);
         adapter ??= new DefaultStorageAdapter();
         return adapter;
     }

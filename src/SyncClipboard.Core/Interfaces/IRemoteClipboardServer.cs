@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.Interfaces;
 
@@ -11,5 +12,5 @@ public interface IRemoteClipboardServer : IDisposable
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
     event EventHandler<ProfileChangedEventArgs> RemoteProfileChanged;
     event EventHandler<PollStatusEventArgs> PollStatusEvent;
-    void OnAdapterConfigChanged();
+    void OnSyncConfigChanged(SyncConfig syncConfig);
 }

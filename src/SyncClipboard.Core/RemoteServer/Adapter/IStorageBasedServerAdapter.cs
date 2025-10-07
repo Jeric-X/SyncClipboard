@@ -3,10 +3,8 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter;
 
-public interface IPollingServerAdapter
+public interface IStorageBasedServerAdapter : IServerAdapter
 {
-    Task TestConnectionAsync(CancellationToken cancellationToken = default);
-
     Task InitializeAsync(CancellationToken cancellationToken = default);
 
     Task<ClipboardProfileDTO?> GetProfileAsync(CancellationToken cancellationToken = default);

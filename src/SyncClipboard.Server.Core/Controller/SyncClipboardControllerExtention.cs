@@ -1,11 +1,16 @@
-﻿using SyncClipboard.Abstract;
-
-namespace SyncClipboard.Server.Core.Controller;
+﻿namespace SyncClipboard.Server.Core.Controller;
 
 public static class SyncClipboardControllerExtention
 {
-    public static void UseSyncCliboardServer(this WebApplication webApplication)
+    public static IServiceCollection AddSyncClipboardServer(this IServiceCollection services)
     {
-        new SyncClipboardController().Route(webApplication);
+        services.AddSingleton<SyncClipboardController>();
+        services.AddSignalR();
+        return services;
+    }
+
+    public static void UseSyncClipboardServer(this WebApplication app)
+    {
+        SyncClipboardController.MapRoutes(app);
     }
 }

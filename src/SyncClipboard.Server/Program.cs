@@ -39,7 +39,7 @@ public class Program
             builder.Services.AddSingleton<ICredentialChecker, FileCredentialChecker>();
         }
         var app = Web.Configure(builder);
-        app.UseSyncCliboardServer();
+        app.UseSyncClipboardServer();
         app.Run();
     }
 }

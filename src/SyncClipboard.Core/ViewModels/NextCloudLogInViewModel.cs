@@ -6,7 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
+using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Web;
 

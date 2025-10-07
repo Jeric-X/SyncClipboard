@@ -1,6 +1,6 @@
 using SyncClipboard.Core.Attributes;
 
-namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavAdapter;
+namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 
 [AccountConfigType(TYPE_NAME)]
 public record WebDavConfig : IAdapterConfig<WebDavConfig>

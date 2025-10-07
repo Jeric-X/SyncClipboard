@@ -34,11 +34,11 @@ public static class Extentions
 
     public static void AddServerAdapter<TConfig, TAdapter>(this IServiceCollection services)
         where TConfig : IAdapterConfig<TConfig>
-        where TAdapter : class, IStorageOnlyServerAdapter<TConfig>
+        where TAdapter : class, IServerAdapter<TConfig>
     {
         var typeNameProperty = typeof(IAdapterConfig<TConfig>).GetProperty("TypeName", BindingFlags.Static | BindingFlags.Public);
         var key = (string)typeNameProperty!.GetValue(null)!;
-        services.AddKeyedTransient<IStorageOnlyServerAdapter, TAdapter>(key);
+        services.AddKeyedTransient<IServerAdapter, TAdapter>(key);
     }
 
     public static void AddLogInHelper<TConfig, THelper>(this IServiceCollection services)

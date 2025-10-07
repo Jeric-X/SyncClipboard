@@ -8,7 +8,7 @@ namespace SyncClipboard.Core.RemoteServer.Adapter.Default;
 /// 默认的存储适配器实现，所有方法都抛出异常
 /// 用于在没有可用适配器时提供一个安全的默认行为
 /// </summary>
-public sealed class DefaultStorageAdapter : IStorageOnlyServerAdapter
+public sealed class DefaultStorageAdapter : IStorageBasedServerAdapter
 {
     private const string ErrorMessage = "No valid server adapter configured.";
 
