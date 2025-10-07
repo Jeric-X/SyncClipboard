@@ -115,6 +115,7 @@ public partial class HistoryViewModel : ObservableObject
 
             return false;
         });
+        window?.ScrollToTop();
     }
 
     [ObservableProperty]
@@ -122,10 +123,6 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
-    partial void OnSelectedFilterChanged(HistoryFilterType oldValue, HistoryFilterType newValue)
-    {
-        window?.ScrollToTop();
-    }
 
     [ObservableProperty]
     private string searchText = string.Empty;
@@ -218,7 +215,6 @@ public partial class HistoryViewModel : ObservableObject
         var filterCount = FilterOptions.Count;
         var nextIndex = (currentIndex + 1) % filterCount;
         SelectedFilter = (HistoryFilterType)nextIndex;
-        window?.ScrollToTop();
     }
 
     public void NavigateToPreviousFilter()
@@ -227,7 +223,6 @@ public partial class HistoryViewModel : ObservableObject
         var filterCount = FilterOptions.Count;
         var prevIndex = (currentIndex - 1 + filterCount) % filterCount;
         SelectedFilter = (HistoryFilterType)prevIndex;
-        window?.ScrollToTop();
     }
 
     public void NavigateDown()
