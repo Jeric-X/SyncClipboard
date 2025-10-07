@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.RemoteServer.Adapter.Default;
 /// </summary>
 public sealed class DefaultStorageAdapter : IStorageBasedServerAdapter
 {
-    private const string ErrorMessage = "No valid server adapter configured.";
+    private const string ErrorMessage = "No valid server account configured.";
 
     public void OnConfigChanged(object config, SyncConfig syncConfig)
     {
@@ -18,7 +18,7 @@ public sealed class DefaultStorageAdapter : IStorageBasedServerAdapter
 
     public Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        return Task.CompletedTask;
+        throw new NotSupportedException(ErrorMessage);
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)
