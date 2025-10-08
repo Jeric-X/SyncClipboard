@@ -68,22 +68,32 @@
                 </Grid>
             </Border>
         </Grid>
-        <TextBox x:Name="_SearchTextBox"
-                 Grid.Row="1"
-                 Margin="20,8,20,8"
-                 VerticalContentAlignment="Center"
-                 Text="{x:Bind _viewModel.SearchText, Mode=TwoWay}"
-                 PlaceholderText="{x:Bind i18n:Strings.HistorySearchPlaceholder}"
-                 BorderThickness="1"
-                 FontSize="14"
-                 CornerRadius="6"
-                 KeyboardAcceleratorPlacementMode="Hidden"
-                 TextChanged="SearchTextBox_TextChanged">
-            <TextBox.KeyboardAccelerators>
-                <KeyboardAccelerator Key="Home" Modifiers="Control" Invoked="CtrlHome_Invoked" />
-                <KeyboardAccelerator Key="End" Modifiers="Control" Invoked="CtrlEnd_Invoked" />
-            </TextBox.KeyboardAccelerators>
-        </TextBox>
+        <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
+            <TextBox x:Name="_SearchTextBox"
+                     Grid.Column="0"
+                     VerticalContentAlignment="Center"
+                     Text="{x:Bind _viewModel.SearchText, Mode=TwoWay}"
+                     PlaceholderText="{x:Bind i18n:Strings.HistorySearchPlaceholder}"
+                     BorderThickness="1"
+                     FontSize="14"
+                     CornerRadius="6"
+                     KeyboardAcceleratorPlacementMode="Hidden"
+                     TextChanged="SearchTextBox_TextChanged">
+                <TextBox.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="Home" Modifiers="Control" Invoked="CtrlHome_Invoked" />
+                    <KeyboardAccelerator Key="End" Modifiers="Control" Invoked="CtrlEnd_Invoked" />
+                </TextBox.KeyboardAccelerators>
+            </TextBox>
+            <Button Grid.Column="1"
+                    Width="32"
+                    Height="32"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Command="{x:Bind _viewModel.ScrollToTopCommand}"
+                    ToolTipService.ToolTip="{x:Bind i18n:Strings.ScrollToTop}">
+                <FontIcon Glyph="&#xE70E;" />
+            </Button>
+        </Grid>
         <Grid Grid.Row="2">
             <Image x:Name="_InvisualableImage"
                    MaxHeight="201"
@@ -135,12 +145,12 @@
         </ListView>
         <InfoBar x:Name="_InfoBar"
                  Grid.Row="2"
-                 IsOpen="{x:Bind _viewModel.ShowInfoBar, Mode=OneWay}"
-                 Message="{x:Bind _viewModel.InfoBarMessage, Mode=OneWay}"
+                 Width="400"
+                 Margin="0,0,0,100"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Bottom"
-                 Margin="0,0,0,100"
-                 Width="400"
+                 IsOpen="{x:Bind _viewModel.ShowInfoBar, Mode=OneWay}"
+                 Message="{x:Bind _viewModel.InfoBarMessage, Mode=OneWay}"
                  Severity="Warning"
                  IsClosable="True" />
     </Grid>

@@ -101,15 +101,25 @@
                     </Button>
                 </Grid>
             </Border>
-            <TextBox x:Name="_SearchTextBox"
-                     Grid.Row="1"
-                     Margin="20,8,20,8"
-                     VerticalContentAlignment="Center"
-                     Text="{Binding SearchText}"
-                     Watermark="{x:Static i18n:Strings.HistorySearchPlaceholder}"
-                     BorderThickness="1"
-                     FontSize="14"
-                     CornerRadius="6" />
+            <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
+                <TextBox x:Name="_SearchTextBox"
+                         Grid.Column="0"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding SearchText}"
+                         Watermark="{x:Static i18n:Strings.HistorySearchPlaceholder}"
+                         BorderThickness="1"
+                         FontSize="14"
+                         CornerRadius="6" />
+                <Button Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Height="32"
+                        Width="32"
+                        VerticalAlignment="Center"
+                        Command="{Binding ScrollToTopCommand}"
+                        ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
+                    <ui:FontIcon Glyph="&#xE70E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </Button>
+            </Grid>
             <Image x:Name="_InvisualableImage"
                    Grid.Row="2"
                    MaxHeight="800"

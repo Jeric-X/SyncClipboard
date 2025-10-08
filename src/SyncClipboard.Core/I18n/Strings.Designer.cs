@@ -1629,6 +1629,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Scroll to top 的本地化字符串。
+        /// </summary>
+        public static string ScrollToTop {
+            get {
+                return ResourceManager.GetString("ScrollToTop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Select Account 的本地化字符串。
         /// </summary>
         public static string SelectAccount {

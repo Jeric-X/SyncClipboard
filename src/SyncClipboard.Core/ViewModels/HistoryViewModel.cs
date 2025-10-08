@@ -337,7 +337,8 @@ public partial class HistoryViewModel : ObservableObject
         Sys.OpenWithDefaultApp(record.FilePath[0]);
     }
 
-    private void ScrollToTop()
+    [RelayCommand]
+    public void ScrollToTop()
     {
         if (HistoryItems.Any())
         {
