@@ -111,9 +111,9 @@
                          FontSize="14"
                          CornerRadius="6" />
                 <Button Grid.Column="1"
-                        Margin="8,0,0,0"
-                        Height="32"
                         Width="32"
+                        Height="32"
+                        Margin="8,0,0,0"
                         VerticalAlignment="Center"
                         Command="{Binding ScrollToTopCommand}"
                         ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
@@ -140,6 +140,9 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vms:HistoryRecordVM">
                         <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
+                            <Grid.ContextFlyout>
+                                <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />
+                            </Grid.ContextFlyout>
                             <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </Border>
@@ -168,12 +171,12 @@
             </ListBox>
             <ui:InfoBar x:Name="_InfoBar"
                         Grid.Row="2"
-                        IsOpen="{Binding ShowInfoBar}"
-                        Message="{Binding InfoBarMessage}"
+                        Width="400"
+                        Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
-                        Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
-                        Width="400"
+                        IsOpen="{Binding ShowInfoBar}"
+                        Message="{Binding InfoBarMessage}"
                         Severity="Warning"
                         IsClosable="True" />
         </Grid>

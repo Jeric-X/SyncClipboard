@@ -14,6 +14,7 @@ namespace SyncClipboard.Core.Clipboard;
 public class GroupProfile : FileProfile
 {
     private string[]? _files;
+    public string[] Files => _files ?? [];
 
     public override ProfileType Type => ProfileType.Group;
 
@@ -223,14 +224,11 @@ public class GroupProfile : FileProfile
     protected override void SetNotification(INotification notification)
     {
         ArgumentNullException.ThrowIfNull(_files);
-        ArgumentNullException.ThrowIfNull(FullPath);
 
         notification.Title = I18n.Strings.ClipboardFileUpdated;
         notification.Message = ShowcaseText();
-        notification.Buttons = [
-            DefaultButton(),
-            new ActionButton(I18n.Strings.OpenFolder, () => Sys.OpenFolderInFileManager(FullPath[..^4]))
-        ];
+        var actions = ProfileActionBuilder.Build(this);
+        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
     }
 

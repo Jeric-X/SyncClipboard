@@ -4,7 +4,6 @@ using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Image;
 using System.Security.Cryptography;
 using System.Text;
@@ -141,11 +140,8 @@ public class FileProfile : Profile
         ArgumentNullException.ThrowIfNull(FullPath);
         notification.Title = I18n.Strings.ClipboardFileUpdated;
         notification.Message = FileName;
-        notification.Buttons = [
-            DefaultButton(),
-            new ActionButton(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
-            new ActionButton(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
-        ];
+        var actions = ProfileActionBuilder.Build(this);
+        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
     }
 

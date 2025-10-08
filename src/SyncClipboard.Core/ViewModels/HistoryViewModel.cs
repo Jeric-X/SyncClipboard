@@ -376,6 +376,12 @@ public partial class HistoryViewModel : ObservableObject
         };
     }
 
+    public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record, CancellationToken token)
+    {
+        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
+        return ProfileActionBuilder.Build(profile);
+    }
+
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
         foreach (var path in record.FilePath)

@@ -4,7 +4,6 @@ using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -97,11 +96,8 @@ public class ImageProfile : FileProfile
         notification.Title = I18n.Strings.ClipboardImageUpdated;
         notification.Message = FileName;
         notification.Image = new Uri(FullPath);
-        notification.Buttons = [
-            DefaultButton(),
-            new ActionButton(I18n.Strings.OpenFolder, () => Sys.ShowPathInFileManager(FullPath)),
-            new ActionButton(I18n.Strings.Open, () => Sys.OpenWithDefaultApp(FullPath))
-        ];
+        var actions = ProfileActionBuilder.Build(this);
+        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
     }
 

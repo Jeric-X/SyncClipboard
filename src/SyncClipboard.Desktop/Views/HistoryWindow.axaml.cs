@@ -140,6 +140,39 @@ public partial class HistoryWindow : Window, IWindow
         }
     }
 
+    private async void ItemContextFlyout_Opening(object? sender, EventArgs e)
+    {
+        if (sender is not FAMenuFlyout flyout)
+        {
+            return;
+        }
+
+        HistoryRecordVM? record = null;
+        if (flyout.Target is Control placement)
+        {
+            record = placement.DataContext as HistoryRecordVM;
+        }
+
+        if (record is null)
+        {
+            flyout.Items.Clear();
+            return;
+        }
+        _ListBox.SelectedItem = record;
+
+        var actions = await _viewModel.BuildActionsAsync(record, CancellationToken.None);
+        flyout.Items.Clear();
+        foreach (var action in actions)
+        {
+            var item = new FluentAvalonia.UI.Controls.MenuFlyoutItem { Text = action.Text };
+            if (action.Action is not null)
+            {
+                item.Click += (_, __) => action.Action();
+            }
+            flyout.Items.Add(item);
+        }
+    }
+
     private void PasteButtonClicked(object? sender, RoutedEventArgs e)
     {
         var history = ((Button?)sender)?.DataContext;

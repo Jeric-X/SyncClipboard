@@ -283,6 +283,32 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
+    private async void ItemContextFlyout_Opening(object sender, object _)
+    {
+        if (sender is not MenuFlyout flyout)
+        {
+            return;
+        }
+
+        if (_ListView.SelectedValue is not HistoryRecordVM record)
+        {
+            flyout.Items.Clear();
+            return;
+        }
+
+        flyout.Items.Clear();
+        var actions = await _viewModel.BuildActionsAsync(record, CancellationToken.None);
+        foreach (var action in actions)
+        {
+            var item = new MenuFlyoutItem { Text = action.Text };
+            if (action.Action is not null)
+            {
+                item.Click += (_, __) => action.Action();
+            }
+            flyout.Items.Add(item);
+        }
+    }
+
     private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs _)
     {
         _viewModel.SelectedFilter = ((LocaleString<HistoryFilterType>)sender.SelectedItem.DataContext).Key;

@@ -110,6 +110,9 @@
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vms:HistoryRecordVM">
                     <ListViewItem IsTabStop="False">
+                        <ListViewItem.ContextFlyout>
+                            <MenuFlyout Opening="ItemContextFlyout_Opening" />
+                        </ListViewItem.ContextFlyout>
                         <Grid MinHeight="10"
                               PointerPressed="Grid_PointerPressed"
                               ColumnDefinitions="Auto, *, Auto"

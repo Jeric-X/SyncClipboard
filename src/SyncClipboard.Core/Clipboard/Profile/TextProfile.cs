@@ -1,12 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Abstract;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -49,37 +46,14 @@ public class TextProfile : Profile
     {
         notification.Title = I18n.Strings.ClipboardTextUpdated;
         notification.Message = Text;
-        if (Text.Length >= 4 && HasUrl(Text, out var url))
-        {
-            notification.Buttons = [new ActionButton(I18n.Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url)), DefaultButton()];
-        }
-        else
-        {
-            notification.Buttons = [DefaultButton()];
-        }
+        var actions = ProfileActionBuilder.Build(this);
+        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         return new ClipboardMetaInfomation { Text = Text };
-    }
-
-    private static bool HasUrl(string str, out string? url)
-    {
-        url = null;
-        var expression = @"([^a-zA-Z0-9]|^)(?'url'https?://(?'domain'[a-zA-Z0-9.\-_]*)?(?>:(?'port'\d{1,5}))?(/(?'path'[a-zA-Z0-9._\-%]+))*(?:(?>\?(?'query'[a-zA-Z0-9._\-=&%]+))()|(?>#(?'anchor'[a-zA-Z0-9._\-%]+))()){0,2})";
-        var match = Regex.Match(str, expression);
-        if (match.Success)
-        {
-            var matchedUrl = match.Groups["url"].Value;
-            if (Uri.IsWellFormedUriString(matchedUrl, UriKind.Absolute))
-            {
-                url = matchedUrl;
-                return true;
-            }
-        }
-        return false;
     }
 
     public override bool IsAvailableAfterFilter() => Config.GetConfig<SyncConfig>().EnableUploadText;
