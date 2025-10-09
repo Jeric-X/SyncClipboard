@@ -13,7 +13,7 @@ namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 public sealed class OfficialAdapter(
     ILogger logger,
     IAppConfig appConfig,
-    [FromKeyedServices(WebDavConfig.TYPE_NAME)] IServerAdapter webDavAdapter)
+    [FromKeyedServices(WebDavConfig.ConfigTypeName)] IServerAdapter webDavAdapter)
     : IServerAdapter<OfficialConfig>, IEventServerAdapter, IDisposable
 {
     private readonly ILogger _logger = logger;

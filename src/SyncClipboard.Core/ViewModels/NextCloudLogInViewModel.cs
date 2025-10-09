@@ -104,8 +104,8 @@ public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) :
             RemoteURL = $"{tempWebDavCredential.Url.Trim('/')}/{node.FullPath.Trim('/')}",
         };
 
-        var accountId = AccountManager.CreateAccountId(WebDavConfig.TYPE_NAME);
-        AccountManager.SetConfig(accountId, WebDavConfig.TYPE_NAME, webDavConfig);
+        var accountId = AccountManager.CreateAccountId(WebDavConfig.ConfigTypeName);
+        AccountManager.SetConfig(accountId, WebDavConfig.ConfigTypeName, webDavConfig);
 
         _serviceProvider.GetRequiredService<MainViewModel>().NavigateToLastLevel();
     }

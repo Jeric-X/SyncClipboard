@@ -396,7 +396,7 @@ public class DownloadService : Service
         catch (RemoteServerException ex)
         {
             _logger.Write(LOG_TAG, $"Error downloading remote profile: {ex.Message}");
-            _trayIcon.SetStatusString(SERVICE_NAME, "Remote server Exception", true);
+            _trayIcon.SetStatusString(SERVICE_NAME, $"Remote server Exception\n{ex.Message}", true);
             _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
         catch (Exception ex)

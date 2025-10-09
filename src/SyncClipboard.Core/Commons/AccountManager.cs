@@ -245,16 +245,11 @@ public class AccountManager
                 return $"{accountId} - {accountType}";
             }
 
-            var userNameProperty = configType.GetProperties()
-                .FirstOrDefault(p => p.GetCustomAttribute<UserNameAttribute>() != null);
-
-            if (userNameProperty != null)
+            if (config is IAdapterConfig adapterConfig)
             {
-                var userName = userNameProperty.GetValue(config)?.ToString();
-                if (!string.IsNullOrEmpty(userName))
-                {
-                    return $"{userName} - {accountType}";
-                }
+                var identify = adapterConfig.DisplayIdentify;
+                if (!string.IsNullOrWhiteSpace(identify))
+                    return identify;
             }
 
             return $"{accountId} - {accountType}";

@@ -3,7 +3,12 @@ using SyncClipboard.Core.Attributes;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter;
 
-public interface IAdapterConfig<T>
+public interface IAdapterConfig
+{
+    string DisplayIdentify { get; }
+}
+
+public interface IAdapterConfig<T> : IAdapterConfig
 {
     static string TypeName
     {

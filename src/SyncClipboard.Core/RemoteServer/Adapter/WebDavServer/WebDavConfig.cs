@@ -1,11 +1,12 @@
 using SyncClipboard.Core.Attributes;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 
-[AccountConfigType(TYPE_NAME)]
+[AccountConfigType(ConfigTypeName)]
 public record WebDavConfig : IAdapterConfig<WebDavConfig>
 {
-    public const string TYPE_NAME = "WebDAV";
+    public const string ConfigTypeName = "WebDAV";
 
     [PropertyDisplay("ServerAddress", Description = "ServerAddressDescription")]
     public string RemoteURL { get; set; } = string.Empty;
@@ -19,4 +20,6 @@ public record WebDavConfig : IAdapterConfig<WebDavConfig>
 
     [PropertyDisplay("DeleteServerTemporaryFileAutoly", Description = "DeletePreviousFilesDescription")]
     public bool DeletePreviousFilesOnPush { get; set; } = true;
+
+    public string DisplayIdentify => $"{UserName} - {StringHelper.GetHostFromUrl(RemoteURL)} - {ConfigTypeName}";
 }
