@@ -55,6 +55,7 @@ public abstract class Profile
     public virtual bool IsAvailableAfterFilter() => true;
 
     public virtual Task CheckDownloadedData(CancellationToken token) => Task.CompletedTask;
+    public virtual Task<bool> ValidLocalData(bool quick, CancellationToken token) => Task.FromResult(true);
     public virtual bool HasDataFile => false;
     public virtual bool RequiresPrepareData => false;
     public virtual Task PrepareDataAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

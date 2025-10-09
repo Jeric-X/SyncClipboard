@@ -47,6 +47,10 @@ public class GroupProfile : FileProfile
     {
     }
 
+    public GroupProfile(HistoryRecord record) : this(record.FilePath, record.Hash, false)
+    {
+    }
+
     public static async Task<Profile> Create(string[] files, bool contentControl, CancellationToken token)
     {
         if (contentControl)
@@ -277,6 +281,31 @@ public class GroupProfile : FileProfile
         {
             var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
+        }
+    }
+
+    public override async Task<bool> ValidLocalData(bool quick, CancellationToken token)
+    {
+        if (_files is null || _files.Length == 0)
+            return false;
+
+        foreach (var path in _files)
+        {
+            if (!File.Exists(path) && !Directory.Exists(path))
+                return false;
+        }
+
+        if (quick)
+            return true;
+
+        try
+        {
+            var hash = await CaclHashAsync(_files, false, token);
+            return hash == Hash;
+        }
+        catch
+        {
+            return false;
         }
     }
 

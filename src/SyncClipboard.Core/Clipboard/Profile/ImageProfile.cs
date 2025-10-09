@@ -20,6 +20,10 @@ public class ImageProfile : FileProfile
     {
     }
 
+    public ImageProfile(HistoryRecord record) : base(record)
+    {
+    }
+
     public ImageProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
     }

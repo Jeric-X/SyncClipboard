@@ -49,27 +49,16 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         return new UnknownProfile();
     }
 
-    public async Task<Profile> CreateProfileFromHistoryRecord(HistoryRecord historyRecord, CancellationToken ctk)
+    public Task<Profile> CreateProfileFromHistoryRecord(HistoryRecord historyRecord, CancellationToken ctk)
     {
-        switch (historyRecord.Type)
+        return historyRecord.Type switch
         {
-            case ProfileType.Text:
-                return new TextProfile(historyRecord.Text);
-            case ProfileType.File:
-                {
-                    if (ImageHelper.FileIsImage(historyRecord.FilePath[0]))
-                    {
-                        return await ImageProfile.Create(historyRecord.FilePath[0], ctk);
-                    }
-                    return await FileProfile.Create(historyRecord.FilePath[0], ctk);
-                }
-            case ProfileType.Image:
-                return await ImageProfile.Create(historyRecord.FilePath[0], ctk);
-            case ProfileType.Group:
-                return await GroupProfile.Create(historyRecord.FilePath, ctk);
-        }
-
-        return new UnknownProfile();
+            ProfileType.Text => Task.FromResult<Profile>(new TextProfile(historyRecord.Text)),
+            ProfileType.File => Task.FromResult<Profile>(new FileProfile(historyRecord)),
+            ProfileType.Image => Task.FromResult<Profile>(new ImageProfile(historyRecord)),
+            ProfileType.Group => Task.FromResult<Profile>(new GroupProfile(historyRecord)),
+            _ => Task.FromResult<Profile>(new UnknownProfile()),
+        };
     }
 
     public async Task<Profile> CreateProfileFromLocal(CancellationToken ctk)

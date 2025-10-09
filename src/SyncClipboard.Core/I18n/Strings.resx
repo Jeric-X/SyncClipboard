@@ -198,6 +198,9 @@
   <data name="DeleteServerTemporaryFileAutoly" xml:space="preserve">
     <value>Delete server's temporary file automatically</value>
   </data>
+  <data name="DeleteHistory" xml:space="preserve">
+    <value>Delete record</value>
+  </data>
   <data name="ClientGeneral" xml:space="preserve">
     <value>Client General</value>
   </data>

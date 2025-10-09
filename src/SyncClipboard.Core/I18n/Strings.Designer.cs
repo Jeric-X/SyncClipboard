@@ -367,6 +367,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Delete record 的本地化字符串。
+        /// </summary>
+        public static string DeleteHistory {
+            get {
+                return ResourceManager.GetString("DeleteHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Connection Details 的本地化字符串。
         /// </summary>
         public static string ConnectionDetails {

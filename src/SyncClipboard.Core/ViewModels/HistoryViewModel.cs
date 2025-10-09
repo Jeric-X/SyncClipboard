@@ -376,28 +376,36 @@ public partial class HistoryViewModel : ObservableObject
         };
     }
 
-    public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record, CancellationToken token)
+    public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
     {
-        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
+        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), CancellationToken.None);
+        var valid = await profile.ValidLocalData(true, CancellationToken.None);
+
+        if (!valid)
+        {
+            var historyRecord = record.ToHistoryRecord();
+            return
+            [
+                new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(historyRecord); })
+            ];
+        }
+
         return ProfileActionBuilder.Build(profile);
     }
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
-        foreach (var path in record.FilePath)
+        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
+        var valid = await profile.ValidLocalData(true, token);
+        if (!valid)
         {
-            if (!File.Exists(path))
-            {
-                logger.Write("WARNING", $"{I18n.Strings.UnableToCopyByMissingFile}。Path: {path}, Hash: {record.Hash}, Text: {record.Text}");
+            InfoBarMessage = I18n.Strings.UnableToCopyByMissingFile;
+            ShowInfoBar = true;
 
-                InfoBarMessage = I18n.Strings.UnableToCopyByMissingFile;
-                ShowInfoBar = true;
-
-                infoBarCancellationSource?.Cancel();
-                infoBarCancellationSource = new CancellationTokenSource();
-                _ = HideInfoBarAfterDelayAsync(infoBarCancellationSource.Token);
-                return;
-            }
+            infoBarCancellationSource?.Cancel();
+            infoBarCancellationSource = new CancellationTokenSource();
+            _ = HideInfoBarAfterDelayAsync(infoBarCancellationSource.Token);
+            return;
         }
 
         if (paste || !IsTopmost)
@@ -407,7 +415,6 @@ public partial class HistoryViewModel : ObservableObject
             window.Close();
         }
 
-        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
         await profile.SetLocalClipboard(false, token);
         if (paste)
         {

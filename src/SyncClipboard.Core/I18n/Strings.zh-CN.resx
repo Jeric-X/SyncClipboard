@@ -207,6 +207,9 @@ Esc：关闭窗口</value>
   <data name="DeleteServerTemporaryFileAutoly" xml:space="preserve">
     <value>自动删除服务器上的临时文件</value>
   </data>
+  <data name="DeleteHistory" xml:space="preserve">
+    <value>删除记录</value>
+  </data>
   <data name="ClientGeneral" xml:space="preserve">
     <value>客户端通用</value>
   </data>

@@ -160,7 +160,7 @@ public partial class HistoryWindow : Window, IWindow
         }
         _ListBox.SelectedItem = record;
 
-        var actions = await _viewModel.BuildActionsAsync(record, CancellationToken.None);
+        var actions = await _viewModel.BuildActionsAsync(record);
         flyout.Items.Clear();
         foreach (var action in actions)
         {

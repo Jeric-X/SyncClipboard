@@ -297,7 +297,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
 
         flyout.Items.Clear();
-        var actions = await _viewModel.BuildActionsAsync(record, CancellationToken.None);
+        var actions = await _viewModel.BuildActionsAsync(record);
         foreach (var action in actions)
         {
             var item = new MenuFlyoutItem { Text = action.Text };

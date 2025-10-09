@@ -104,6 +104,15 @@ public class FileProfile : Profile
         }
     }
 
+    public FileProfile(HistoryRecord record)
+        : this(
+              record.FilePath.Length > 0 ? record.FilePath[0] : null,
+              record.FilePath.Length > 0 ? Path.GetFileName(record.FilePath[0]) : string.Empty,
+              record.Hash
+          )
+    {
+    }
+
     protected async static Task<string> GetMD5HashFromFile(string fileName, bool checkSize, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
@@ -189,6 +198,28 @@ public class FileProfile : Profile
         if (hash != Hash)
         {
             throw new InvalidDataException(FullPath);
+        }
+    }
+
+    public override async Task<bool> ValidLocalData(bool quick, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(FullPath))
+            return false;
+
+        if (!File.Exists(FullPath))
+            return false;
+
+        if (quick)
+            return true;
+
+        try
+        {
+            var hash = await GetMD5HashFromFile(FullPath, false, token);
+            return hash == Hash;
+        }
+        catch
+        {
+            return false;
         }
     }
 
