@@ -493,7 +493,7 @@ Double click image: View full image</value>
     <value>Download Once Immediately</value>
   </data>
   <data name="ServerDescription" xml:space="preserve">
-    <value>Only one server is needed in entire sync network</value>
+    <value>If you want to sync the clipboard on this machine, please add an account and enable syncing on the "Clipboard Syncing" page</value>
   </data>
   <data name="UseBuiltInServerDescription" xml:space="preserve">
     <value>Connect to built-in server directly without configuration</value>

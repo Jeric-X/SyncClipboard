@@ -502,7 +502,7 @@ Esc：关闭面板</value>
     <value>下载远程到本地</value>
   </data>
   <data name="ServerDescription" xml:space="preserve">
-    <value>整个同步网络只需开启一个服务器</value>
+    <value>如果需要同步本机剪贴板，请在“剪贴板同步”页面添加账号并启用同步功能</value>
   </data>
   <data name="UseBuiltInServerDescription" xml:space="preserve">
     <value>本机服务器开启时，可免配置直接连接</value>
