@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>embedded</DebugType>
+    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

@@ -25,6 +25,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
         _trayIcon = sp.GetRequiredService<ITrayIcon>();
         _testAliveHelper = new TestAliveHelper(TestConnectionAsync);
         _testAliveHelper.TestSuccessed += OnTestAliveSuccessed;
+        _serverHelper.ExceptionOccurred += OnServerHelperExceptionOccurred;
         _testAliveHelper.Restart();
         _serverAdapter.ServerDisconnected += ServerDisconnected;
         _serverAdapter.ServerConnected += ServerConnected;
@@ -128,11 +129,17 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
         }
     }
 
+    private void OnServerHelperExceptionOccurred()
+    {
+        _disconnected = true;
+    }
+
     public void Dispose()
     {
         _serverAdapter.ServerDisconnected -= ServerDisconnected;
         _serverAdapter.ServerConnected -= ServerConnected;
         _serverAdapter.ProfileDtoChanged -= OnProfileDtoChanged;
+        _serverHelper.ExceptionOccurred -= OnServerHelperExceptionOccurred;
         _serverAdapter.StopListening();
         _testAliveHelper.Dispose();
         if (_serverAdapter is IDisposable disposableAdapter)
