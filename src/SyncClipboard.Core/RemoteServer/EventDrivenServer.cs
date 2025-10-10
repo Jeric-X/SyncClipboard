@@ -5,6 +5,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter;
+using SyncClipboard.Core.Utilities.Runner;
 
 namespace SyncClipboard.Core.RemoteServer;
 
@@ -15,6 +16,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
     private readonly IEventServerAdapter _serverAdapter;
     private readonly ITrayIcon _trayIcon;
     private readonly ILogger _logger;
+    private readonly SingletonTask _singletonQueryTask = new SingletonTask();
     private bool _disconnected = true;
 
     public EventDrivenServer(IServiceProvider sp, IEventServerAdapter serverAdapter)
@@ -40,20 +42,41 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
         });
         _disconnected = false;
         _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
+        _ = _singletonQueryTask.Run(QueryOnce);
     }
 
-    private void ServerDisconnected(Exception? ex)
+    private async Task QueryOnce(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await GetProfileAsync(cancellationToken).ConfigureAwait(false);
+            RemoteProfileChangedImpl?.Invoke(this, new ProfileChangedEventArgs
+            {
+                NewProfile = profile
+            });
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            SetErrorStatus("Get remote clipboard failed", ex);
+        }
+    }
+
+    private void SetErrorStatus(string message, Exception? ex = null)
     {
         _disconnected = true;
-        var message = "Disconnected from server";
         _serverHelper.SetErrorStatus(message, ex);
-
         PollStatusEventImpl?.Invoke(this, new PollStatusEventArgs
         {
             Status = PollStatus.StoppedDueToNetworkIssues,
             Message = message,
             Exception = ex
         });
+    }
+
+    private void ServerDisconnected(Exception? ex)
+    {
+        var message = "Disconnected from server";
+        SetErrorStatus(message, ex);
     }
 
     private event EventHandler<ProfileChangedEventArgs>? RemoteProfileChangedImpl;
