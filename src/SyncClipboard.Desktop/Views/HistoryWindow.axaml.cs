@@ -125,6 +125,7 @@ public partial class HistoryWindow : Window, IWindow
 
         _SearchTextBox.Focus();
         _SearchTextBox.SelectAll();
+        _viewModel.OnWindowShown();
     }
 
     void IWindow.Focus()
@@ -195,12 +196,6 @@ public partial class HistoryWindow : Window, IWindow
 
         e.Handled = true;
         _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
-    }
-
-    private void PinButton_Click(object? sender, RoutedEventArgs e)
-    {
-        e.Handled = true;
-        _viewModel.ToggleTopmost();
     }
 
     private void ListBox_DoubleTapped(object? sender, TappedEventArgs e)

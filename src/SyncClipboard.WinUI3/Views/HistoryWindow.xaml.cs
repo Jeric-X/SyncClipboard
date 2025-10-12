@@ -119,6 +119,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         this.Activate();
         this.SetForegroundWindow();
 
+        _viewModel.OnWindowShown();
         _SearchTextBox.Focus(FocusState.Programmatic);
         _SearchTextBox.SelectAll();
 
@@ -191,11 +192,6 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             var _1 = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
         }
-    }
-
-    private void PinButton_Click(object _, RoutedEventArgs _1)
-    {
-        _viewModel.ToggleTopmost();
     }
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
@@ -367,7 +363,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         RectInt32[] rectArray = [
             GetElementRect(_FilterSelectorBar),
-            GetElementRect(_PinButton)
+            GetElementRect(_ButtonArea)
         ];
 
         InputNonClientPointerSource nonClientInputSrc = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);

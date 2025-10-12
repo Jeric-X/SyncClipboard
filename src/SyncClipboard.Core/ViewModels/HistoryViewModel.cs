@@ -167,14 +167,17 @@ public partial class HistoryViewModel : ObservableObject
     public bool IsTopmost
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().IsTopmost;
-        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { IsTopmost = value });
+        set
+        {
+            window?.SetTopmost(IsTopmost);
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { IsTopmost = value });
+        }
     }
 
-    public void ToggleTopmost()
+    public bool ScrollToTopOnReopen
     {
-        IsTopmost = !IsTopmost;
-        window?.SetTopmost(IsTopmost);
-        OnPropertyChanged(nameof(IsTopmost));
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().ScrollToTopOnReopen;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ScrollToTopOnReopen = value });
     }
 
     [RelayCommand]
@@ -257,6 +260,14 @@ public partial class HistoryViewModel : ObservableObject
 
         SelectedIndex = 0;
         window?.ScrollToSelectedItem();
+    }
+
+    public void OnWindowShown()
+    {
+        if (ScrollToTopOnReopen)
+        {
+            ScrollToTop();
+        }
     }
 
     public void NavigateToLast()

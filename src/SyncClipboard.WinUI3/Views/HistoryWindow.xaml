@@ -53,7 +53,7 @@
         <Grid x:Name="_TitleBar" Grid.Row="0">
             <Border HorizontalAlignment="Center">
                 <Grid ColumnDefinitions="*, Auto, Auto">
-                    <Border MaxWidth="{x:Bind _PinButton.ActualWidth}" Background="Red" />
+                    <Border MaxWidth="{x:Bind _ButtonArea.ActualWidth}" Background="Red" />
                     <SelectorBar x:Name="_FilterSelectorBar"
                                  Grid.Column="1"
                                  Padding="0,-4,0,0"
@@ -62,9 +62,18 @@
                                  PointerPressed="FilterSelectorBar_PointerPressed"
                                  AllowFocusOnInteraction="False"
                                  SelectionChanged="SelectorBar_SelectionChanged" />
-                    <Button x:Name="_PinButton" Grid.Column="2" Click="PinButton_Click">
-                        <FontIcon Glyph="{x:Bind vc:ConvertMethod.ToPinIcon(_viewModel.IsTopmost), Mode=OneWay}" />
-                    </Button>
+                    <StackPanel x:Name="_ButtonArea"
+                                Grid.Column="2"
+                                Margin="0,2,0,0"
+                                Orientation="Horizontal"
+                                Spacing="4">
+                        <ToggleButton Style="{StaticResource IconToggleButtonStyle}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
+                            <FontIcon Glyph="&#xE840;" ToolTipService.ToolTip="窗口置顶" />
+                        </ToggleButton>
+                        <ToggleButton ToolTipService.ToolTip="重新打开窗口时，回到顶部" Style="{StaticResource IconToggleButtonStyle}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}">
+                            <FontIcon Glyph="&#xE898;" />
+                        </ToggleButton>
+                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>
@@ -91,7 +100,7 @@
                     VerticalAlignment="Center"
                     Command="{x:Bind _viewModel.ScrollToTopCommand}"
                     ToolTipService.ToolTip="{x:Bind i18n:Strings.ScrollToTop}">
-                <FontIcon Glyph="&#xE70E;" />
+                <FontIcon Glyph="&#xE898;" />
             </Button>
         </Grid>
         <Grid Grid.Row="2">

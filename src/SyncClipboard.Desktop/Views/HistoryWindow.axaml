@@ -80,7 +80,7 @@
         <Grid RowDefinitions="Auto, Auto, *">
             <Border HorizontalAlignment="Center">
                 <Grid ColumnDefinitions="*, Auto, Auto">
-                    <Border Grid.Column="0" Width="{Binding #_PinButton.Bounds.Width}" />
+                    <Border Grid.Column="0" Width="{Binding #_ButtonArea.Bounds.Width}" />
                     <TabStrip Grid.Column="1"
                               HorizontalAlignment="Center"
                               ItemsSource="{Binding FilterOptions}"
@@ -93,12 +93,18 @@
                             </DataTemplate>
                         </TabStrip.ItemTemplate>
                     </TabStrip>
-                    <Button x:Name="_PinButton"
-                            Grid.Column="2"
-                            Margin="0,4,0,0"
-                            Click="PinButton_Click">
-                        <ui:FontIcon Glyph="{Binding IsTopmost, Converter={x:Static vc:FuncConverter.ToPinIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                    </Button>
+                    <StackPanel x:Name="_ButtonArea"
+                                Grid.Column="2"
+                                Margin="0,2,0,0"
+                                Orientation="Horizontal"
+                                Spacing="4">
+                        <ToggleButton Classes="FontIcon" IsChecked="{Binding IsTopmost, Mode=TwoWay}">
+                            <ui:FontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </ToggleButton>
+                        <ToggleButton ToolTip.Tip="每次重新打开窗口时，滚动条回到顶部" Classes="FontIcon" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}">
+                            <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </ToggleButton>
+                    </StackPanel>
                 </Grid>
             </Border>
             <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
@@ -117,7 +123,7 @@
                         VerticalAlignment="Center"
                         Command="{Binding ScrollToTopCommand}"
                         ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
-                    <ui:FontIcon Glyph="&#xE70E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </Button>
             </Grid>
             <Image x:Name="_InvisualableImage"

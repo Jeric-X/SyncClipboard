@@ -29,6 +29,13 @@
             <Style TargetType="FontIconSource">
                 <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
             </Style>
+            <Style x:Key="IconToggleButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+                <Setter Property="Height" Value="24" />
+                <Setter Property="Width" Value="24" />
+                <Setter Property="Padding" Value="0,0,0,0" />
+                <Setter Property="BorderThickness" Value="0,0,0,0" />
+                <Setter Property="Background" Value="Transparent" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

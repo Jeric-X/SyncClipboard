@@ -21,13 +21,6 @@
             <Setter Property="Width" Value="32" />
             <Setter Property="FontSize" Value="20" />
         </Style>
-        <Style Selector="ToggleButton.FontIcon">
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="BorderThickness" Value="0,0,0,0" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
     </UserControl.Styles>
     <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
         <ui:SettingsExpander.IconSource>
@@ -40,7 +33,10 @@
             <ui:SettingsExpanderItem Description="{Binding ServerConfigDescription}">
                 <ui:SettingsExpanderItem.Footer>
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton Classes="FontIcon" IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
+                        <ToggleButton Width="32"
+                                      Height="32"
+                                      Classes="FontIcon"
+                                      IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
                             <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </ToggleButton>
                         <Button Click="SetServerConfig">

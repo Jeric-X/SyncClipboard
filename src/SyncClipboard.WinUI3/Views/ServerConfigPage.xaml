@@ -20,13 +20,6 @@
             <Setter Property="Width" Value="32" />
             <Setter Property="Padding" Value="0,0,0,0" />
         </Style>
-        <Style TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Padding" Value="0,0,0,0" />
-            <Setter Property="BorderThickness" Value="0,0,0,0" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
     </Page.Resources>
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.Server}" Description="{x:Bind i18n:Strings.ServerDescription}" IsExpanded="True">
@@ -37,7 +30,10 @@
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Description="{x:Bind _viewModel.ServerConfigDescription, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton IsChecked="{x:Bind _viewModel.ShowServerPassword, Mode=TwoWay}">
+                        <ToggleButton Width="32"
+                                      Height="32"
+                                      Style="{StaticResource IconToggleButtonStyle}"
+                                      IsChecked="{x:Bind _viewModel.ShowServerPassword, Mode=TwoWay}">
                             <FontIcon Glyph="{x:Bind _viewModel.ShowServerPassword, Mode=OneWay, Converter={StaticResource BoolToPasswordIconConverter}}" />
                         </ToggleButton>
                         <Button Command="{x:Bind SetServerCommand}">
