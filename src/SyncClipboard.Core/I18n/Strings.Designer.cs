@@ -367,15 +367,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Delete record 的本地化字符串。
-        /// </summary>
-        public static string DeleteHistory {
-            get {
-                return ResourceManager.GetString("DeleteHistory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Connection Details 的本地化字符串。
         /// </summary>
         public static string ConnectionDetails {
@@ -491,6 +482,15 @@ namespace SyncClipboard.Core.I18n {
         public static string DeleteAccountConfirmMessage {
             get {
                 return ResourceManager.GetString("DeleteAccountConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Delete record 的本地化字符串。
+        /// </summary>
+        public static string DeleteHistory {
+            get {
+                return ResourceManager.GetString("DeleteHistory", resourceCulture);
             }
         }
         
@@ -1647,6 +1647,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Scroll to top on reopen 的本地化字符串。
+        /// </summary>
+        public static string ScrollToTopOnReopen {
+            get {
+                return ResourceManager.GetString("ScrollToTopOnReopen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Select Account 的本地化字符串。
         /// </summary>
         public static string SelectAccount {
@@ -1719,7 +1728,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Only one server is needed in entire sync network 的本地化字符串。
+        ///   查找类似 If you want to sync the clipboard on this machine, please add an account and enable syncing on the &quot;Clipboard Syncing&quot; page 的本地化字符串。
         /// </summary>
         public static string ServerDescription {
             get {
@@ -2174,6 +2183,15 @@ namespace SyncClipboard.Core.I18n {
         public static string WhiteList {
             get {
                 return ResourceManager.GetString("WhiteList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Window topmost 的本地化字符串。
+        /// </summary>
+        public static string WindowTopmost {
+            get {
+                return ResourceManager.GetString("WindowTopmost", resourceCulture);
             }
         }
     }

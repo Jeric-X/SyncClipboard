@@ -51,31 +51,25 @@
             <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />
         </Grid.Resources>
         <Grid x:Name="_TitleBar" Grid.Row="0">
-            <Border HorizontalAlignment="Center">
-                <Grid ColumnDefinitions="*, Auto, Auto">
-                    <Border MaxWidth="{x:Bind _ButtonArea.ActualWidth}" Background="Red" />
-                    <SelectorBar x:Name="_FilterSelectorBar"
-                                 Grid.Column="1"
-                                 Padding="0,-4,0,0"
-                                 HorizontalAlignment="Center"
-                                 IsTabStop="False"
-                                 PointerPressed="FilterSelectorBar_PointerPressed"
-                                 AllowFocusOnInteraction="False"
-                                 SelectionChanged="SelectorBar_SelectionChanged" />
-                    <StackPanel x:Name="_ButtonArea"
-                                Grid.Column="2"
-                                Margin="0,2,0,0"
-                                Orientation="Horizontal"
-                                Spacing="4">
-                        <ToggleButton Style="{StaticResource IconToggleButtonStyle}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
-                            <FontIcon Glyph="&#xE840;" ToolTipService.ToolTip="窗口置顶" />
-                        </ToggleButton>
-                        <ToggleButton ToolTipService.ToolTip="重新打开窗口时，回到顶部" Style="{StaticResource IconToggleButtonStyle}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}">
-                            <FontIcon Glyph="&#xE898;" />
-                        </ToggleButton>
-                    </StackPanel>
-                </Grid>
-            </Border>
+            <SelectorBar x:Name="_FilterSelectorBar"
+                         Padding="0,-4,0,0"
+                         HorizontalAlignment="Center"
+                         IsTabStop="False"
+                         PointerPressed="FilterSelectorBar_PointerPressed"
+                         AllowFocusOnInteraction="False"
+                         SelectionChanged="SelectorBar_SelectionChanged" />
+            <StackPanel x:Name="_ButtonArea"
+                        Margin="0,2,8,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal"
+                        Spacing="4">
+                <ToggleButton Style="{StaticResource IconToggleButtonStyle}" ToolTipService.ToolTip="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}">
+                    <FontIcon Glyph="&#xE70E;" />
+                </ToggleButton>
+                <ToggleButton Style="{StaticResource IconToggleButtonStyle}" ToolTipService.ToolTip="{x:Bind i18n:Strings.WindowTopmost}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
+                    <FontIcon Glyph="&#xE840;" />
+                </ToggleButton>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
             <TextBox x:Name="_SearchTextBox"
@@ -83,9 +77,6 @@
                      VerticalContentAlignment="Center"
                      Text="{x:Bind _viewModel.SearchText, Mode=TwoWay}"
                      PlaceholderText="{x:Bind i18n:Strings.HistorySearchPlaceholder}"
-                     BorderThickness="1"
-                     FontSize="14"
-                     CornerRadius="6"
                      KeyboardAcceleratorPlacementMode="Hidden"
                      TextChanged="SearchTextBox_TextChanged">
                 <TextBox.KeyboardAccelerators>

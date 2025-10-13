@@ -20,7 +20,7 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <!-- Other app resources here -->
-            <Style TargetType="TextBox">
+            <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
                 <Setter Property="IsSpellCheckEnabled" Value="False"/>
             </Style>
             <Style TargetType="FontIcon">

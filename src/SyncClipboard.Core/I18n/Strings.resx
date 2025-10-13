@@ -735,6 +735,12 @@ Double click image: View full image</value>
   <data name="ScrollToTop" xml:space="preserve">
     <value>Scroll to top</value>
   </data>
+  <data name="WindowTopmost" xml:space="preserve">
+    <value>Window topmost</value>
+  </data>
+  <data name="ScrollToTopOnReopen" xml:space="preserve">
+    <value>Scroll to top on reopen</value>
+  </data>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>You can specify the hotkey to open the history panel in the Hotkey settings</value>
   </data>

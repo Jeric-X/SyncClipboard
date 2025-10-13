@@ -24,15 +24,8 @@ public partial class HistoryWindow : Window, IWindow
         var configManager = App.Current.Services.GetRequiredService<ConfigManager>();
         DataContext = ViewModel;
 
-        if (OperatingSystem.IsLinux() is false)
-        {
-            this.ExtendClientAreaToDecorationsHint = true;
-        }
-
-        if (OperatingSystem.IsWindows())
-        {
-            this.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
-        }
+        this.ExtendClientAreaToDecorationsHint = true;
+        this.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
 
         InitializeComponent();
 
@@ -165,7 +158,7 @@ public partial class HistoryWindow : Window, IWindow
         flyout.Items.Clear();
         foreach (var action in actions)
         {
-            var item = new FluentAvalonia.UI.Controls.MenuFlyoutItem { Text = action.Text };
+            var item = new MenuFlyoutItem { Text = action.Text };
             if (action.Action is not null)
             {
                 item.Click += (_, __) => action.Action();

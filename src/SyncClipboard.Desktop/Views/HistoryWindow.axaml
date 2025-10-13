@@ -32,6 +32,9 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Focusable" Value="False" />
         </Style>
+        <Style Selector="ToggleButton">
+            <Setter Property="Focusable" Value="False" />
+        </Style>
         <Style Selector="ListBoxItem">
             <Setter Property="Focusable" Value="False" />
         </Style>
@@ -78,44 +81,35 @@
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
         <Grid RowDefinitions="Auto, Auto, *">
-            <Border HorizontalAlignment="Center">
-                <Grid ColumnDefinitions="*, Auto, Auto">
-                    <Border Grid.Column="0" Width="{Binding #_ButtonArea.Bounds.Width}" />
-                    <TabStrip Grid.Column="1"
-                              HorizontalAlignment="Center"
-                              ItemsSource="{Binding FilterOptions}"
-                              SelectedItem="{Binding SelectedFilterOption}"
-                              IsTabStop="False"
-                              Focusable="False">
-                        <TabStrip.ItemTemplate>
-                            <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=vms:HistoryFilterType}">
-                                <TextBlock Text="{Binding ShownString}" FontSize="14" />
-                            </DataTemplate>
-                        </TabStrip.ItemTemplate>
-                    </TabStrip>
-                    <StackPanel x:Name="_ButtonArea"
-                                Grid.Column="2"
-                                Margin="0,2,0,0"
-                                Orientation="Horizontal"
-                                Spacing="4">
-                        <ToggleButton Classes="FontIcon" IsChecked="{Binding IsTopmost, Mode=TwoWay}">
-                            <ui:FontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </ToggleButton>
-                        <ToggleButton ToolTip.Tip="每次重新打开窗口时，滚动条回到顶部" Classes="FontIcon" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}">
-                            <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </ToggleButton>
-                    </StackPanel>
-                </Grid>
-            </Border>
+            <TabStrip HorizontalAlignment="Center"
+                      ItemsSource="{Binding FilterOptions}"
+                      SelectedItem="{Binding SelectedFilterOption}"
+                      IsTabStop="False"
+                      Focusable="False">
+                <TabStrip.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=vms:HistoryFilterType}">
+                        <TextBlock Text="{Binding ShownString}" FontSize="14" />
+                    </DataTemplate>
+                </TabStrip.ItemTemplate>
+            </TabStrip>
+            <StackPanel x:Name="_ButtonArea"
+                        Margin="0,2,8,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal"
+                        Spacing="4">
+                <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.ScrollToTopOnReopen}" Classes="FontIcon" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}">
+                    <ui:FontIcon Glyph="&#xE70E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </ToggleButton>
+                <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.WindowTopmost}" Classes="FontIcon" IsChecked="{Binding IsTopmost, Mode=TwoWay}">
+                    <ui:FontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </ToggleButton>
+            </StackPanel>
             <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
                 <TextBox x:Name="_SearchTextBox"
                          Grid.Column="0"
                          VerticalContentAlignment="Center"
                          Text="{Binding SearchText}"
-                         Watermark="{x:Static i18n:Strings.HistorySearchPlaceholder}"
-                         BorderThickness="1"
-                         FontSize="14"
-                         CornerRadius="6" />
+                         Watermark="{x:Static i18n:Strings.HistorySearchPlaceholder}" />
                 <Button Grid.Column="1"
                         Width="32"
                         Height="32"

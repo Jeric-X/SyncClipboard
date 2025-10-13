@@ -744,6 +744,12 @@ Esc：关闭面板</value>
   <data name="ScrollToTop" xml:space="preserve">
     <value>回到顶部</value>
   </data>
+  <data name="WindowTopmost" xml:space="preserve">
+    <value>窗口置顶</value>
+  </data>
+  <data name="ScrollToTopOnReopen" xml:space="preserve">
+    <value>每次重新打开窗口时，滚动条回到顶部</value>
+  </data>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>在快捷键设置中可以指定打开历史记录面板的快捷键</value>
   </data>

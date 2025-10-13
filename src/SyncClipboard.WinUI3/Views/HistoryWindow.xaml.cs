@@ -1,5 +1,6 @@
 using CommunityToolkit.WinUI;
 using Microsoft.UI.Input;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -43,6 +44,7 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(_TitleBar);
+        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Collapsed;
         this.SetTitleBarButtonForegroundColor();
         _TitleBar.Loaded += (_, _) => SetNonClientPointerSource();
 
