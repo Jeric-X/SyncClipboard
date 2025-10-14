@@ -9,17 +9,12 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardHistory}" 
-                            Description="{x:Bind i18n:Strings.HistoryPanelHotkeyDescription}"
-                            IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardHistory}" Description="{x:Bind i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE1D3;" />
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EnableHistory, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}">
-                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
-                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.MaxItemCount}">
                     <NumberBox Minimum="1" Maximum="1000" Value="{x:Bind _viewModel.MaxItemCount, Mode=TwoWay}" />
                 </ui:SettingsCard>

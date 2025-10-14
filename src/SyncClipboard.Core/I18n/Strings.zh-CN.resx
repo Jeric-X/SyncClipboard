@@ -700,7 +700,7 @@ Esc：关闭面板</value>
     <value>历史记录</value>
   </data>
   <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
-    <value>失去焦点时关闭历史记录面板</value>
+    <value>失焦时关闭</value>
   </data>
   <data name="MaxItemCount" xml:space="preserve">
     <value>最大记录条数</value>
@@ -748,7 +748,7 @@ Esc：关闭面板</value>
     <value>窗口置顶</value>
   </data>
   <data name="ScrollToTopOnReopen" xml:space="preserve">
-    <value>每次重新打开窗口时，滚动条回到顶部</value>
+    <value>自动回到顶部</value>
   </data>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>在快捷键设置中可以指定打开历史记录面板的快捷键</value>

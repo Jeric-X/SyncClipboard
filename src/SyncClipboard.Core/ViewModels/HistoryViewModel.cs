@@ -169,7 +169,7 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().IsTopmost;
         set
         {
-            window?.SetTopmost(IsTopmost);
+            window?.SetTopmost(value);
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { IsTopmost = value });
         }
     }
@@ -178,6 +178,12 @@ public partial class HistoryViewModel : ObservableObject
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().ScrollToTopOnReopen;
         set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ScrollToTopOnReopen = value });
+    }
+
+    public bool CloseWhenLostFocus
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().CloseWhenLostFocus;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { CloseWhenLostFocus = value });
     }
 
     [RelayCommand]
@@ -442,7 +448,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        if (!_remainWindowForViewDetail && !IsTopmost && configManager.GetConfig<HistoryConfig>().CloseWhenLostFocus)
+        if (!_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Close();
         }

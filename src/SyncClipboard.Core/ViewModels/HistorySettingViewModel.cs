@@ -14,7 +14,6 @@ public partial class HistorySettingViewModel : ObservableObject
         var config = configManager.GetConfig<HistoryConfig>();
         enableHistory = config.EnableHistory;
         maxItemCount = config.MaxItemCount;
-        closeWhenLostFocus = config.CloseWhenLostFocus;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
     }
@@ -23,7 +22,6 @@ public partial class HistorySettingViewModel : ObservableObject
     {
         EnableHistory = config.EnableHistory;
         MaxItemCount = config.MaxItemCount;
-        CloseWhenLostFocus = config.CloseWhenLostFocus;
         HistoryRetentionMinutes = config.HistoryRetentionMinutes;
     }
 
@@ -33,7 +31,6 @@ public partial class HistorySettingViewModel : ObservableObject
         {
             EnableHistory = EnableHistory,
             MaxItemCount = MaxItemCount,
-            CloseWhenLostFocus = CloseWhenLostFocus,
             HistoryRetentionMinutes = HistoryRetentionMinutes
         };
     }
@@ -46,9 +43,7 @@ public partial class HistorySettingViewModel : ObservableObject
     private uint maxItemCount;
     partial void OnMaxItemCountChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { MaxItemCount = value });
 
-    [ObservableProperty]
-    private bool closeWhenLostFocus;
-    partial void OnCloseWhenLostFocusChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { CloseWhenLostFocus = value });
+
 
     [ObservableProperty]
     private uint historyRetentionMinutes;

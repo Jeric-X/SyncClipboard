@@ -322,7 +322,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Close history panel when lost focus 的本地化字符串。
+        ///   查找类似 Close when losing focus 的本地化字符串。
         /// </summary>
         public static string CloseHistoryWindowWhenLostFocus {
             get {
@@ -1647,7 +1647,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Scroll to top on reopen 的本地化字符串。
+        ///   查找类似 Auto scroll to top 的本地化字符串。
         /// </summary>
         public static string ScrollToTopOnReopen {
             get {

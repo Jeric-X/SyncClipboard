@@ -63,9 +63,15 @@
                         HorizontalAlignment="Right"
                         Orientation="Horizontal"
                         Spacing="4">
-                <ToggleButton Style="{StaticResource IconToggleButtonStyle}" ToolTipService.ToolTip="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}">
-                    <FontIcon Glyph="&#xE70E;" />
-                </ToggleButton>
+                <Button Width="24" Height="24" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE10C;" />
+                    <Button.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
                 <ToggleButton Style="{StaticResource IconToggleButtonStyle}" ToolTipService.ToolTip="{x:Bind i18n:Strings.WindowTopmost}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
                     <FontIcon Glyph="&#xE840;" />
                 </ToggleButton>

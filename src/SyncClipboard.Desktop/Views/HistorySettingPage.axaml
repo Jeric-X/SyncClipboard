@@ -24,11 +24,6 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}">
-                    <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}">
                     <ui:SettingsExpanderItem.Footer>
                         <ui:NumberBox Minimum="1" Maximum="1000" Value="{Binding MaxItemCount, Mode=TwoWay}" />

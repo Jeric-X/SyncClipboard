@@ -97,9 +97,15 @@
                         HorizontalAlignment="Right"
                         Orientation="Horizontal"
                         Spacing="4">
-                <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.ScrollToTopOnReopen}" Classes="FontIcon" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}">
-                    <ui:FontIcon Glyph="&#xE70E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                </ToggleButton>
+                <Button Width="24" Height="24" VerticalAlignment="Center">
+                    <ui:FontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <Button.Flyout>
+                        <ui:FAMenuFlyout>
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
+                        </ui:FAMenuFlyout>
+                    </Button.Flyout>
+                </Button>
                 <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.WindowTopmost}" Classes="FontIcon" IsChecked="{Binding IsTopmost, Mode=TwoWay}">
                     <ui:FontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ToggleButton>

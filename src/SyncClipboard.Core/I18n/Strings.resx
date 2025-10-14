@@ -691,7 +691,7 @@ Double click image: View full image</value>
     <value>History</value>
   </data>
   <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
-    <value>Close history panel when lost focus</value>
+    <value>Close when losing focus</value>
   </data>
   <data name="MaxItemCount" xml:space="preserve">
     <value>Maximum number of records</value>
@@ -739,7 +739,7 @@ Double click image: View full image</value>
     <value>Window topmost</value>
   </data>
   <data name="ScrollToTopOnReopen" xml:space="preserve">
-    <value>Scroll to top on reopen</value>
+    <value>Auto scroll to top</value>
   </data>
   <data name="HistoryPanelHotkeyDescription" xml:space="preserve">
     <value>You can specify the hotkey to open the history panel in the Hotkey settings</value>
