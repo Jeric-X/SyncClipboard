@@ -19,20 +19,37 @@ jobs:
         dotnet-version: |
           8.0.x
 
-    - name: Install dependencies
-      working-directory: ./src
+    - name: Install dotnet workload and dependencies
+      working-directory: ./src/SyncClipboard.Desktop.MacOS
       run: |
         dotnet workload install macos
         dotnet workload restore
         dotnet restore
+    
+    - name: Install dependencies
+      working-directory: ./src
+      run: |
+        dotnet restore SyncClipboard.WinUI3
+        dotnet restore SyncClipboard.Desktop.Default
+        dotnet restore SyncClipboard.Test.WinUI3
+        dotnet restore SyncClipboard.Test.Desktop
 
     # - name: Check code style
     #   working-directory: ./src
     #   run: |
     #     dotnet format --verify-no-changes --no-restore
-
+  
+    - name: Check code style info
+      # continue-on-error: true
+      working-directory: ./src/SyncClipboard.Desktop.MacOS
+      run: |
+        dotnet format --verify-no-changes --severity info --no-restore
+  
     - name: Check code style info
       # continue-on-error: true
       working-directory: ./src
       run: |
-        dotnet format --verify-no-changes --severity info --no-restore
+        dotnet format SyncClipboard.WinUI3 --verify-no-changes --severity info --no-restore
+        dotnet format SyncClipboard.Desktop.Default --verify-no-changes --severity info --no-restore
+        dotnet format SyncClipboard.Test.WinUI3 --verify-no-changes --severity info --no-restore
+        dotnet format SyncClipboard.Test.Desktop --verify-no-changes --severity info --no-restore
