@@ -74,10 +74,10 @@
             "name": "Debug server",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "Debug",
+            "preLaunchTask": "Debug Server",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/SyncClipboard.Server/bin/Debug/net8.0/publish/SyncClipboard.Server.dll",
+                "${workspaceFolder}/SyncClipboard.Server/bin/Debug/net8.0/SyncClipboard.Server.dll",
                 "--contentRoot",
                 "./"
             ],

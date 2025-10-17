@@ -1,53 +1,38 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
+using SyncClipboard.Abstract;
 using Microsoft.AspNetCore.StaticFiles;
 using SyncClipboard.Shared;
 using System.Text.Json;
 using SyncClipboard.Server.Core.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace SyncClipboard.Server.Core.Controller;
 
-
-public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext)
+[ApiController]
+[Authorize]
+public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext, IWebHostEnvironment env, IMemoryCache cache) : ControllerBase
 {
-    protected ClipboardProfileDTO? ProfileDtoCache = null;
     private readonly IHubContext<SyncClipboardHub> _hubContext = hubContext;
+    private readonly IWebHostEnvironment _env = env;
+    private readonly IMemoryCache _cache = cache;
 
-    private async Task<IResult> PutFile(HttpContext content, string rootPath, string path)
+    private static bool InvalidFileName(string name)
     {
-        ProfileDtoCache = null;
-
-        var pathFolder = Path.Combine(rootPath, "file");
-        if (!Directory.Exists(pathFolder))
-        {
-            Directory.CreateDirectory(pathFolder);
-        }
-        using var fs = new FileStream(path, FileMode.Create);
-        await content.Request.Body.CopyToAsync(fs);
-        return Results.Ok();
+        return name.Contains('\\') || name.Contains('/');
     }
 
-    public virtual Task<IResult> GetFile(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return Task.FromResult(Results.NotFound());
-        }
-        new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
-        return Task.FromResult(Results.File(path, contentType));
-    }
-
-    private static IResult ExistOrCreateFolder(string path)
+    private static void EnsureFolder(string path)
     {
         if (!Directory.Exists(path))
         {
             Directory.CreateDirectory(path);
         }
-        return Results.Ok();
     }
 
-    private static IResult DeleteFolder(string path)
+    private static void SafeDeleteFolder(string path)
     {
         if (Directory.Exists(path))
         {
@@ -56,97 +41,141 @@ public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext)
                 Directory.Delete(path, true);
             }
             catch { }
-            return Results.Ok();
         }
-        return Results.NotFound();
     }
 
-    protected virtual async Task<ClipboardProfileDTO> GetSyncProfile(string rootPath, string path)
+    [AcceptVerbs("PROPFIND")]
+    [Route("")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public IActionResult PropfindRoot()
     {
+        return Ok();
+    }
+
+    [AcceptVerbs("PROPFIND", "MKCOL")]
+    [Route("file")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public IActionResult FileFolderEnsure()
+    {
+        var path = Path.Combine(_env.WebRootPath, "file");
+        EnsureFolder(path);
+        return Ok();
+    }
+
+    [HttpDelete("file")]
+    public IActionResult DeleteFileFolder()
+    {
+        var path = Path.Combine(_env.WebRootPath, "file");
+        SafeDeleteFolder(path);
+        return Ok();
+    }
+
+    [HttpHead("file/{fileName}")]
+    [HttpGet("file/{fileName}")]
+    public async Task<IActionResult> GetFileFromFolder(string fileName)
+    {
+        if (InvalidFileName(fileName))
+        {
+            return BadRequest();
+        }
+        var path = Path.Combine(_env.WebRootPath, "file", fileName);
+        return await GetFileInternal(path);
+    }
+
+    [HttpPut("file/{fileName}")]
+    public async Task<IActionResult> PutFileToFolder(string fileName)
+    {
+        if (InvalidFileName(fileName))
+        {
+            return BadRequest();
+        }
+        var folder = Path.Combine(_env.WebRootPath, "file");
+        EnsureFolder(folder);
+        var path = Path.Combine(folder, fileName);
+        using var fs = new FileStream(path, FileMode.Create);
+        await Request.Body.CopyToAsync(fs);
+
+        _cache.Remove("SyncClipboard.json");
+        return Ok();
+    }
+
+    [HttpGet("SyncClipboard.json")]
+    public async Task<ActionResult<ClipboardProfileDTO>> GetSyncProfile()
+    {
+        var path = Path.Combine(_env.WebRootPath, "SyncClipboard.json");
+        var cacheKey = path;
+        if (_cache.TryGetValue(cacheKey, out ClipboardProfileDTO? cached))
+        {
+            return Ok(cached);
+        }
         try
         {
-            ProfileDtoCache ??= JsonSerializer.Deserialize<ClipboardProfileDTO>(await File.ReadAllTextAsync(Path.Combine(rootPath, path)));
-            return ProfileDtoCache ?? new ClipboardProfileDTO();
+            if (!System.IO.File.Exists(path))
+            {
+                return Ok(new ClipboardProfileDTO());
+            }
+            var text = await System.IO.File.ReadAllTextAsync(path);
+            var dto = JsonSerializer.Deserialize<ClipboardProfileDTO>(text) ?? new ClipboardProfileDTO();
+            _cache.Set(cacheKey, dto);
+            return Ok(dto);
         }
-        catch (Exception)
+        catch
         {
-            return new ClipboardProfileDTO();
+            return Ok(new ClipboardProfileDTO());
         }
     }
 
-    protected virtual async Task<IResult> PutSyncProfile(ClipboardProfileDTO profileDTO, string rootPath, string path)
+    [HttpPut("SyncClipboard.json")]
+    public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto)
     {
-        ProfileDtoCache = profileDTO;
-        await File.WriteAllTextAsync(Path.Combine(rootPath, path), JsonSerializer.Serialize(profileDTO));
-        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDTO);
-        return Results.Ok();
+        var path = Path.Combine(_env.WebRootPath, "SyncClipboard.json");
+        var text = JsonSerializer.Serialize(profileDto);
+        await System.IO.File.WriteAllTextAsync(path, text);
+        _cache.Set(path, profileDto);
+        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto);
+        return Ok();
     }
 
-    public static void MapRoutes(WebApplication app)
+    [HttpGet("{name}")]
+    public async Task<IActionResult> GetFileRoot(string name)
     {
-        var rootPath = app.Environment.WebRootPath;
-
-        app.MapMethods("/", ["PROPFIND"], () =>
-            Results.Ok()).ExcludeFromDescription().RequireAuthorization();
-
-        app.MapMethods("/file", ["PROPFIND", "MKCOL"], () =>
-            ExistOrCreateFolder(Path.Combine(rootPath, "file"))).ExcludeFromDescription().RequireAuthorization();
-
-        app.MapDelete("/file", () =>
-            DeleteFolder(Path.Combine(rootPath, "file"))).RequireAuthorization();
-
-        app.MapMethods("/file/{fileName}", ["HEAD", "GET"], (string fileName, [FromServices] SyncClipboardController controller) =>
+        if (InvalidFileName(name))
         {
-            if (InvalidFileName(fileName))
-            {
-                return Task.FromResult(Results.BadRequest());
-            }
-            return controller.GetFile(Path.Combine(rootPath, "file", fileName));
-        }).RequireAuthorization();
-
-        app.MapPut("/file/{fileName}", async (HttpContext content, string fileName, [FromServices] SyncClipboardController controller) =>
-        {
-            if (InvalidFileName(fileName))
-            {
-                return Results.BadRequest();
-            }
-            return await controller.PutFile(content, rootPath, Path.Combine(rootPath, "file", fileName));
-        }).RequireAuthorization();
-
-        app.MapGet("/SyncClipboard.json", ([FromServices] SyncClipboardController controller) =>
-            controller.GetSyncProfile(rootPath, "SyncClipboard.json")).RequireAuthorization();
-
-        app.MapPut("/SyncClipboard.json", ([FromBody] ClipboardProfileDTO profileDto, [FromServices] SyncClipboardController controller) =>
-            controller.PutSyncProfile(profileDto, rootPath, "SyncClipboard.json")).RequireAuthorization();
-
-        app.MapHub<SyncClipboardHub>(SignalRConstants.HubPath);//.RequireAuthorization();
-
-        app.MapGet("/{name}", (string name, [FromServices] SyncClipboardController controller) =>
-        {
-            if (InvalidFileName(name))
-            {
-                return Task.FromResult(Results.BadRequest());
-            }
-            return controller.GetFile(Path.Combine(rootPath, name));
-        }).RequireAuthorization();
-
-        app.MapPut("/{name}", async (HttpContext content, string name, [FromServices] SyncClipboardController controller) =>
-        {
-            if (InvalidFileName(name))
-            {
-                return Results.BadRequest();
-            }
-            return await controller.PutFile(content, rootPath, Path.Combine(rootPath, name));
-        }).RequireAuthorization();
-
-        app.MapGet("/", () =>
-        {
-            return "Server is running.";
-        }).ExcludeFromDescription().RequireAuthorization();
+            return BadRequest();
+        }
+        var path = Path.Combine(_env.WebRootPath, name);
+        return await GetFileInternal(path);
     }
 
-    public static bool InvalidFileName(string name)
+    [HttpPut("{name}")]
+    public async Task<IActionResult> PutFileRoot(string name)
     {
-        return name.Contains('\\') || name.Contains('/');
+        if (InvalidFileName(name))
+        {
+            return BadRequest();
+        }
+        var path = Path.Combine(_env.WebRootPath, name);
+        using var fs = new FileStream(path, FileMode.Create);
+        await Request.Body.CopyToAsync(fs);
+        _cache.Remove(Path.Combine(_env.WebRootPath, "SyncClipboard.json"));
+        return Ok();
+    }
+
+    [HttpGet("")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public IActionResult GetRoot()
+    {
+        return Ok("Server is running.");
+    }
+
+    private async Task<IActionResult> GetFileInternal(string path)
+    {
+        if (!System.IO.File.Exists(path))
+        {
+            return NotFound();
+        }
+        new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
+        var bytes = await System.IO.File.ReadAllBytesAsync(path);
+        return File(bytes, contentType ?? "application/octet-stream");
     }
 }

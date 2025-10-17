@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Shared;
 using SyncClipboard.Server.Core.Controller;
 using SyncClipboard.Server.Core.CredentialChecker;
+using SyncClipboard.Server.Core.Hubs;
 using System.Net;
 using System.Text.Json.Serialization;
 
@@ -20,7 +21,10 @@ public class Web
             .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
         services.AddAuthorizationBuilder().AddDefaultPolicy("DefaultPolicy", policy => policy.RequireAuthenticatedUser());
 
-        services.AddSyncClipboardServer();
+        services.AddControllers()
+            .AddApplicationPart(typeof(SyncClipboardController).Assembly);
+        services.AddMemoryCache();
+        services.AddSignalR();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
@@ -43,6 +47,9 @@ public class Web
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.MapControllers();
+        app.MapHub<SyncClipboardHub>(Constants.SignalRConstants.HubPath);
+
         return app;
     }
 
@@ -89,7 +96,6 @@ public class Web
         }
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);
-        app.UseSyncClipboardServer();
         await app.StartAsync();
         return app;
     }
