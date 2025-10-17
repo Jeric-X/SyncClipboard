@@ -1,12 +1,11 @@
 ﻿using SyncClipboard.Abstract;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Image;
 
 namespace SyncClipboard.Core.Clipboard;
 
-public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelper
+public abstract class ClipboardFactoryBase : IClipboardFactory
 {
     protected abstract ILogger Logger { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
@@ -88,65 +87,5 @@ public abstract class ClipboardFactoryBase : IClipboardFactory, IProfileDtoHelpe
         }
 
         return new UnknownProfile();
-    }
-
-    public async Task<ClipboardProfileDTO> CreateProfileDto(string destFolder)
-    {
-        var token = CancellationToken.None;
-        var meta = await GetMetaInfomation(token);
-        var profile = await CreateProfileFromMeta(meta, token);
-
-        bool doNotUploadWhenCut = AppCore.Current.ConfigManager.GetConfig<SyncConfig>().DoNotUploadWhenCut;
-        bool isCut = (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move;
-        if ((doNotUploadWhenCut && isCut) || !profile.IsAvailableFromLocal())
-        {
-            return new UnknownProfile().ToDto();
-        }
-
-        if (profile is FileProfile fileProfile)
-        {
-            if (fileProfile is GroupProfile groupProfile)
-            {
-                await groupProfile.PrepareTransferFile(token);
-            }
-            var fullPath = fileProfile.FullPath!;
-            if (Path.GetDirectoryName(fullPath) != destFolder)
-            {
-                if (!Directory.Exists(destFolder))
-                {
-                    Directory.CreateDirectory(destFolder);
-                }
-                await Task.Run(() => File.Copy(fullPath, Path.Combine(destFolder, Path.GetFileName(fullPath)), true));
-            }
-        }
-        return profile.ToDto();
-    }
-
-    public async Task SetLocalClipboardWithDto(ClipboardProfileDTO profileDto, string fileFolder)
-    {
-        ArgumentNullException.ThrowIfNull(profileDto);
-        try
-        {
-            var ctk = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-            var profile = GetProfileBy(profileDto);
-            if (profile is FileProfile fileProfile)
-            {
-                fileProfile.FullPath = Path.Combine(fileFolder, fileProfile.FileName);
-                if (profile is GroupProfile groupProfile)
-                {
-                    await groupProfile.ExtractFiles(ctk);
-                }
-            }
-
-            if (!Profile.Same(profile, await CreateProfileFromLocal(ctk)))
-            {
-                await profile.SetLocalClipboard(true, ctk);
-                Logger.Write("Set clipboard with: " + profileDto.ToString().Replace(Environment.NewLine, @"\n"));
-            }
-        }
-        catch (TaskCanceledException)
-        {
-            Logger.Write("Set local clipboard timeout.");
-        }
     }
 }

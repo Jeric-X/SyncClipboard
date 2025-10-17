@@ -12,7 +12,6 @@ public class PlatformServiceProviderDataSource : ServiceProviderDataSourceBase
     {
         Type[] requiredService = [
             typeof(IClipboardFactory),
-            typeof(IProfileDtoHelper),
             typeof(IClipboardChangingListener),
             typeof(IClipboardSetter<TextProfile>),
             typeof(IClipboardSetter<FileProfile>),
