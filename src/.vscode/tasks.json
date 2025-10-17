@@ -62,6 +62,13 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "Debug Server",
+            "command": "dotnet build SyncClipboard.Server/SyncClipboard.Server.csproj -c debug",
+            "type": "shell",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "Build Debug WinUI",
             "command": "msbuild SyncClipboard.WinUI3/SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Debug /p:WindowsAppSDKSelfContained=true /v:m",
             "type": "shell",
