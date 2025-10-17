@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
+﻿using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Security.Cryptography;

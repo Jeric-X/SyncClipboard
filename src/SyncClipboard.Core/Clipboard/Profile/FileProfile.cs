@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
+﻿using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -44,11 +43,6 @@ public class FileProfile : Profile
         }
 
         return new FileProfile(fullPath, hash, contentControl);
-    }
-
-    public static Task<FileProfile> Create(string fullPath, CancellationToken token)
-    {
-        return Create(fullPath, true, token);
     }
 
     protected virtual string GetTempLocalFilePath()

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Abstract;
+﻿using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -69,7 +68,7 @@ public class ImageProfile : FileProfile
         return new ImageProfile(fullPath, hash, contentControl);
     }
 
-    public static new Task<ImageProfile> Create(string fullPath, CancellationToken token)
+    public static Task<ImageProfile> Create(string fullPath, CancellationToken token)
     {
         return Create(fullPath, true, token);
     }

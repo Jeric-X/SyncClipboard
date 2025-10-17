@@ -197,24 +197,6 @@ public class GroupProfile : FileProfile
         }, token).WaitAsync(token);
     }
 
-    public async Task ExtractFiles(CancellationToken token)
-    {
-        ArgumentNullException.ThrowIfNull(FullPath);
-        var extractPath = FullPath[..^4];
-        if (!Directory.Exists(extractPath))
-            Directory.CreateDirectory(extractPath);
-
-        var fileList = new List<string>();
-        using ZipFile zip = ZipFile.Read(FullPath);
-
-        await Task.Run(() => zip.ExtractAll(extractPath, ExtractExistingFileAction.DoNotOverwrite), token).WaitAsync(token);
-        _files = zip.EntryFileNames
-            .Select(file => file.TrimEnd('/'))
-            .Where(file => !file.Contains('/'))
-            .Select(file => Path.Combine(extractPath, file))
-            .ToArray();
-    }
-
     protected override ClipboardMetaInfomation CreateMetaInformation()
     {
         ArgumentNullException.ThrowIfNull(_files);
