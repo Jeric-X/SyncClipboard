@@ -1,6 +1,5 @@
 ﻿using Ionic.Zip;
 using Microsoft.Extensions.DependencyInjection;
-using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
@@ -223,17 +222,6 @@ public class GroupProfile : FileProfile
     {
         ArgumentNullException.ThrowIfNull(_files);
         return new ClipboardMetaInfomation() { Files = _files };
-    }
-
-    protected override void SetNotification(INotification notification)
-    {
-        ArgumentNullException.ThrowIfNull(_files);
-
-        notification.Title = I18n.Strings.ClipboardFileUpdated;
-        notification.Message = ShowcaseText();
-        var actions = ProfileActionBuilder.Build(this);
-        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
-        notification.Show();
     }
 
     public override string ShowcaseText()

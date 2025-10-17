@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
@@ -92,17 +91,6 @@ public class ImageProfile : FileProfile
     private static string GetImageExtention()
     {
         return "png";
-    }
-
-    protected override void SetNotification(INotification notification)
-    {
-        ArgumentNullException.ThrowIfNull(FullPath);
-        notification.Title = I18n.Strings.ClipboardImageUpdated;
-        notification.Message = FileName;
-        notification.Image = new Uri(FullPath);
-        var actions = ProfileActionBuilder.Build(this);
-        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
-        notification.Show();
     }
 
     public override HistoryRecord CreateHistoryRecord()

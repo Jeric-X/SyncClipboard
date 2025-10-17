@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
@@ -142,16 +141,6 @@ public class FileProfile : Profile
             Logger.Write("GetMD5HashFromFile() fail " + ex.Message);
             throw;
         }
-    }
-
-    protected override void SetNotification(INotification notification)
-    {
-        ArgumentNullException.ThrowIfNull(FullPath);
-        notification.Title = I18n.Strings.ClipboardFileUpdated;
-        notification.Message = FileName;
-        var actions = ProfileActionBuilder.Build(this);
-        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
-        notification.Show();
     }
 
     protected bool Oversized()

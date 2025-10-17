@@ -432,7 +432,7 @@ public partial class HistoryViewModel : ObservableObject
             window.Close();
         }
 
-        await profile.SetLocalClipboard(false, token);
+        await profile.SetLocalClipboard(token);
         if (paste)
         {
             keyboard.Paste();

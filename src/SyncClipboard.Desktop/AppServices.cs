@@ -27,9 +27,7 @@ public class AppServices
         services.AddSingleton<MultiSourceClipboardReader>();
         services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();
 
-        services.AddSingleton<ClipboardFactory>();
-        services.AddSingleton<IClipboardFactory>(sp => sp.GetRequiredService<ClipboardFactory>());
-        services.AddSingleton<IProfileDtoHelper>(sp => sp.GetRequiredService<ClipboardFactory>());
+        services.AddSingleton<IClipboardFactory, ClipboardFactory>();
         services.AddSingleton<ClipboardListener>();
         services.AddSingleton<IClipboardChangingListener>(sp => sp.GetRequiredService<ClipboardListener>());
         services.AddSingleton<IClipboardMoniter>(sp => sp.GetRequiredService<ClipboardListener>());

@@ -272,6 +272,7 @@ namespace SyncClipboard.Core
                 }
             ));
             services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
+            services.AddSingleton<ProfileNotificationHelper>();
 
             services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
             services.AddServerAdapter<OfficialConfig, OfficialAdapter>();

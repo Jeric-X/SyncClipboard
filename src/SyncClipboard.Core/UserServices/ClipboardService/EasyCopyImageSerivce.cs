@@ -180,7 +180,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         {
             try
             {
-                await profile.SetLocalClipboard(false, cancellationToken);
+                await profile.SetLocalClipboard(cancellationToken);
                 break;
             }
             catch

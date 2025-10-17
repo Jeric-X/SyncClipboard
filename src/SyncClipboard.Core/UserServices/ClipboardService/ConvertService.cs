@@ -40,7 +40,7 @@ public class ConvertService : ClipboardHander
             var file = metaInfo.Files![0];
             var newPath = await CompatibilityCast(_serviceProvider, file, cancellationToken);
             var profile = await ImageProfile.Create(newPath, cancellationToken);
-            await profile.SetLocalClipboard(false, cancellationToken);
+            await profile.SetLocalClipboard(cancellationToken);
         }
         catch (Exception ex)
         {

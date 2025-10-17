@@ -12,8 +12,7 @@ internal static partial class ProfileActionBuilder
     {
         List<MenuItem> actions =
         [
-            // 通用：复制到本地剪贴板
-            new MenuItem(Strings.Copy, () => { _ = profile.SetLocalClipboard(false, CancellationToken.None); }),
+            new MenuItem(Strings.Copy, () => { _ = profile.SetLocalClipboard(CancellationToken.None); }),
         ];
 
         switch (profile)

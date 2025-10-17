@@ -49,6 +49,7 @@ public class DownloadService : Service
     private readonly UploadService _uploadService;
     private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private readonly HistoryManager _historyManager;
+    private readonly ProfileNotificationHelper _clipboardNotificationHelper;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
@@ -114,7 +115,8 @@ public class DownloadService : Service
         IClipboardMoniter clipboardMoniter,
         IClipboardChangingListener clipboardChangingListener,
         HotkeyManager hotkeyManager,
-        RemoteClipboardServerFactory remoteClipboardServerFactory)
+        RemoteClipboardServerFactory remoteClipboardServerFactory,
+        ProfileNotificationHelper clipboardNotificationHelper)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -134,6 +136,7 @@ public class DownloadService : Service
         _clipboardListener = clipboardChangingListener;
         _remoteClipboardServerFactory = remoteClipboardServerFactory;
         _historyManager = _serviceProvider.GetRequiredService<HistoryManager>();
+        _clipboardNotificationHelper = clipboardNotificationHelper;
 
         _remoteClipboardServerFactory.CurrentServerChanged += OnCurrentServerChanged;
         _hotkeyManager.RegisterCommands(CommandCollection);
@@ -446,9 +449,13 @@ public class DownloadService : Service
 
         if (!await IsLocalProfileObsolete(cancelToken))
         {
-            await remoteProfile.SetLocalClipboard(true, cancelToken, false);
+            await remoteProfile.SetLocalClipboard(cancelToken, false);
             _localProfileCache = remoteProfile;
             _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + remoteProfile.Text);
+            if (_syncConfig.NotifyOnDownloaded)
+            {
+                _clipboardNotificationHelper.Notify(remoteProfile);
+            }
             await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
         }
     }

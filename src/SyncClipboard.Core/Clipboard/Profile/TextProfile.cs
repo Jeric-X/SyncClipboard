@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -40,15 +39,6 @@ public class TextProfile : Profile
         {
             return false;
         }
-    }
-
-    protected override void SetNotification(INotification notification)
-    {
-        notification.Title = I18n.Strings.ClipboardTextUpdated;
-        notification.Message = Text;
-        var actions = ProfileActionBuilder.Build(this);
-        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
-        notification.Show();
     }
 
     protected override ClipboardMetaInfomation CreateMetaInformation()

@@ -1,11 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NativeNotification.Interface;
 using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -36,9 +33,6 @@ public abstract class Profile
     protected static ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
     protected static ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
-    private static INotification SharedNotification => ServiceProvider.GetRequiredKeyedService<INotification>("ProfileNotification");
-    private static bool EnableNotify => Config.GetConfig<SyncConfig>().NotifyOnDownloaded;
-
     private ClipboardMetaInfomation? @metaInfomation;
     public ClipboardMetaInfomation MetaInfomation
     {
@@ -61,24 +55,7 @@ public abstract class Profile
     public virtual Task PrepareDataAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public virtual string GetLocalDataPath() => string.Empty;
 
-    protected virtual void SetNotification(INotification notification)
-    {
-        notification.Title = I18n.Strings.ClipboardUpdated;
-        notification.Message = Text;
-        notification.Show();
-    }
-
-    private static void ResetNotification(INotification notification)
-    {
-        notification.Title = string.Empty;
-        notification.Message = string.Empty;
-        notification.Image = null;
-        notification.Buttons = [];
-        notification.ContentAction = null;
-        notification.Remove();
-    }
-
-    public async Task SetLocalClipboard(bool notify, CancellationToken ctk, bool mutex = true)
+    public async Task SetLocalClipboard(CancellationToken ctk, bool mutex = true)
     {
         if (mutex)
         {
@@ -95,13 +72,6 @@ public abstract class Profile
             else
             {
                 await dispather.RunOnMainThreadAsync(() => ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk));
-            }
-
-            if (notify && EnableNotify)
-            {
-                Logger.Write("System notification has sent.");
-                ResetNotification(SharedNotification);
-                SetNotification(SharedNotification);
             }
         }
         finally
@@ -148,10 +118,5 @@ public abstract class Profile
         str += "FileName" + FileName;
         str += "Text:" + Text;
         return str;
-    }
-
-    protected ActionButton DefaultButton()
-    {
-        return new ActionButton(I18n.Strings.Copy, () => { _ = SetLocalClipboard(false, CancellationToken.None); });
     }
 }

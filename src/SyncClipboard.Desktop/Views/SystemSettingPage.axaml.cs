@@ -66,7 +66,9 @@ public partial class SystemSettingPage : UserControl
     private static void CopyAppDataFolderPath()
     {
         var profile = new TextProfile(Core.Commons.Env.AppDataDirectory);
-        _ = profile.SetLocalClipboard(true, CancellationToken.None);
+        _ = profile.SetLocalClipboard(CancellationToken.None);
+        var helper = App.Current.Services.GetRequiredService<SyncClipboard.Core.Utilities.ProfileNotificationHelper>();
+        helper.Notify(profile);
     }
 
     private static void OpenDataFolderInNautilus()
