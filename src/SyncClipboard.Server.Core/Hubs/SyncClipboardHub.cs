@@ -1,9 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using SyncClipboard.Abstract;
 
 namespace SyncClipboard.Server.Core.Hubs;
 
+public interface ISyncClipboardClient
+{
+    Task RemoteProfileChanged(ClipboardProfileDTO profile);
+}
+
 [Authorize]
-public class SyncClipboardHub : Hub
+public class SyncClipboardHub : Hub<ISyncClipboardClient>
 {
 }
