@@ -34,6 +34,8 @@ public partial class HistoryViewModel : ObservableObject
     private readonly VirtualKeyboard keyboard;
     private readonly ConfigBase runtimeConfig;
     private readonly ILogger logger;
+    private readonly LocalClipboardSetter localClipboardSetter;
+    private readonly ProfileActionBuilder profileActionBuilder;
 
     public HistoryViewModel(
         ConfigManager configManager,
@@ -41,7 +43,9 @@ public partial class HistoryViewModel : ObservableObject
         IClipboardFactory clipboardFactory,
         VirtualKeyboard keyboard,
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
-        ILogger logger)
+        ILogger logger,
+        LocalClipboardSetter localClipboardSetter,
+        ProfileActionBuilder profileActionBuilder)
     {
         this.configManager = configManager;
         this.historyManager = historyManager;
@@ -49,6 +53,8 @@ public partial class HistoryViewModel : ObservableObject
         this.keyboard = keyboard;
         this.runtimeConfig = runtimeConfig;
         this.logger = logger;
+        this.localClipboardSetter = localClipboardSetter;
+        this.profileActionBuilder = profileActionBuilder;
 
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
@@ -407,7 +413,7 @@ public partial class HistoryViewModel : ObservableObject
             ];
         }
 
-        return ProfileActionBuilder.Build(profile);
+        return profileActionBuilder.Build(profile);
     }
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
@@ -432,7 +438,7 @@ public partial class HistoryViewModel : ObservableObject
             window.Close();
         }
 
-        await profile.SetLocalClipboard(token);
+        await localClipboardSetter.Set(profile, token);
         if (paste)
         {
             keyboard.Paste();

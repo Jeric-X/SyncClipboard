@@ -17,9 +17,6 @@ public class GroupProfile : FileProfile
 
     public override ProfileType Type => ProfileType.Group;
 
-    protected override IClipboardSetter<Profile> ClipboardSetter
-        => ServiceProvider.GetRequiredService<IClipboardSetter<GroupProfile>>();
-
     private GroupProfile(IEnumerable<string> files, string hash, bool contentControl)
         : base(GetGroupFilePath(hash), hash)
     {

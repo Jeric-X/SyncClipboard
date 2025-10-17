@@ -85,17 +85,19 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly LocalClipboardSetter _localClipboardSetter;
     private ClipboardAssistConfig _clipboardAssistConfig;
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
     private ITrayIcon TrayIcon => _serviceProvider.GetRequiredService<ITrayIcon>();
 
-    public EasyCopyImageSerivce(IServiceProvider serviceProvider)
+    public EasyCopyImageSerivce(IServiceProvider serviceProvider, LocalClipboardSetter localClipboardSetter)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
+        _localClipboardSetter = localClipboardSetter;
 
         serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
     }
@@ -174,13 +176,13 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         return true;
     }
 
-    private static async Task AdjustClipboard(Profile profile, CancellationToken cancellationToken)
+    private async Task AdjustClipboard(Profile profile, CancellationToken cancellationToken)
     {
         for (int i = 0; i < 3; i++)
         {
             try
             {
-                await profile.SetLocalClipboard(cancellationToken);
+                await _localClipboardSetter.Set(profile, cancellationToken);
                 break;
             }
             catch

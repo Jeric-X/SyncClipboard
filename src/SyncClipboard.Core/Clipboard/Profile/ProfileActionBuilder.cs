@@ -6,13 +6,13 @@ using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Clipboard;
 
-internal static partial class ProfileActionBuilder
+public partial class ProfileActionBuilder(LocalClipboardSetter setter)
 {
-    public static List<MenuItem> Build(Profile profile)
+    public List<MenuItem> Build(Profile profile)
     {
         List<MenuItem> actions =
         [
-            new MenuItem(Strings.Copy, () => { _ = profile.SetLocalClipboard(CancellationToken.None); }),
+            new MenuItem(Strings.Copy, () => { _ = setter.Set(profile, CancellationToken.None); }),
         ];
 
         switch (profile)

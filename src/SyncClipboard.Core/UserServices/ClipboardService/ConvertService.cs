@@ -40,7 +40,7 @@ public class ConvertService : ClipboardHander
             var file = metaInfo.Files![0];
             var newPath = await CompatibilityCast(_serviceProvider, file, cancellationToken);
             var profile = await ImageProfile.Create(newPath, cancellationToken);
-            await profile.SetLocalClipboard(cancellationToken);
+            await _localClipboardSetter.Set(profile, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -54,14 +54,16 @@ public class ConvertService : ClipboardHander
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly LocalClipboardSetter _localClipboardSetter;
 
     private ClipboardAssistConfig _clipboardConfig;
 
-    public ConvertService(IServiceProvider serviceProvider)
+    public ConvertService(IServiceProvider serviceProvider, LocalClipboardSetter localClipboardSetter)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
+        _localClipboardSetter = localClipboardSetter;
 
         _clipboardConfig = _configManager.GetConfig<ClipboardAssistConfig>();
         _configManager.ListenConfig<ClipboardAssistConfig>(config => _clipboardConfig = config);

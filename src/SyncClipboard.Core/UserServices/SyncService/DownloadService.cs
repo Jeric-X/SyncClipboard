@@ -40,6 +40,7 @@ public class DownloadService : Service
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
     private readonly IServiceProvider _serviceProvider;
+    private readonly LocalClipboardSetter _localClipboardSetter;
     private readonly IClipboardChangingListener _clipboardListener;
     private readonly IClipboardMoniter _clipboardMoniter;
     private readonly ITrayIcon _trayIcon;
@@ -108,7 +109,7 @@ public class DownloadService : Service
     #endregion
 
     public DownloadService(
-        IServiceProvider serviceProvider,
+    IServiceProvider serviceProvider,
         IMessenger messenger,
         UploadService uploadService,
         IEventSimulator keyEventSimulator,
@@ -116,7 +117,8 @@ public class DownloadService : Service
         IClipboardChangingListener clipboardChangingListener,
         HotkeyManager hotkeyManager,
         RemoteClipboardServerFactory remoteClipboardServerFactory,
-        ProfileNotificationHelper clipboardNotificationHelper)
+        ProfileNotificationHelper clipboardNotificationHelper,
+        LocalClipboardSetter localClipboardSetter)
     {
         _serviceProvider = serviceProvider;
         _logger = _serviceProvider.GetRequiredService<ILogger>();
@@ -137,6 +139,7 @@ public class DownloadService : Service
         _remoteClipboardServerFactory = remoteClipboardServerFactory;
         _historyManager = _serviceProvider.GetRequiredService<HistoryManager>();
         _clipboardNotificationHelper = clipboardNotificationHelper;
+        _localClipboardSetter = localClipboardSetter;
 
         _remoteClipboardServerFactory.CurrentServerChanged += OnCurrentServerChanged;
         _hotkeyManager.RegisterCommands(CommandCollection);
@@ -449,7 +452,7 @@ public class DownloadService : Service
 
         if (!await IsLocalProfileObsolete(cancelToken))
         {
-            await remoteProfile.SetLocalClipboard(cancelToken, false);
+            await _localClipboardSetter.Set(remoteProfile, cancelToken, false);
             _localProfileCache = remoteProfile;
             _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + remoteProfile.Text);
             if (_syncConfig.NotifyOnDownloaded)

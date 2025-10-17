@@ -8,8 +8,6 @@ public class UnknownProfile : Profile
 {
     public override ProfileType Type => ProfileType.Unknown;
 
-    protected override IClipboardSetter<Profile> ClipboardSetter => throw new NotImplementedException();
-
     protected override bool Same(Profile rhs)
     {
         return rhs is UnknownProfile;

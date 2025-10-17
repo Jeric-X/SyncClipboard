@@ -10,9 +10,6 @@ public class TextProfile : Profile
 {
     public override ProfileType Type => ProfileType.Text;
 
-    protected override IClipboardSetter<Profile> ClipboardSetter
-        => ServiceProvider.GetRequiredService<IClipboardSetter<TextProfile>>();
-
     public TextProfile(string text, bool contentControl = true)
     {
         Text = text;

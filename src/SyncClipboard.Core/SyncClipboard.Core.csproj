@@ -60,6 +60,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Server.Core\SyncClipboard.Server.Core.csproj" />
+    <ProjectReference Include="..\SyncClipboard.Abstract\SyncClipboard.Abstract.csproj" />
   </ItemGroup>
 
   <Target Name="Print Message" BeforeTargets="Build">

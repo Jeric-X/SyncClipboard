@@ -16,9 +16,6 @@ public class FileProfile : Profile
     public virtual string? FullPath { get; set; }
     public virtual string Hash { get; set; }
 
-    protected override IClipboardSetter<Profile> ClipboardSetter
-        => ServiceProvider.GetRequiredService<IClipboardSetter<FileProfile>>();
-
     protected const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
 
     protected FileProfile(string fullPath, string hash, bool contentControl = true)

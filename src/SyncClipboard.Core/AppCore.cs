@@ -26,6 +26,7 @@ using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.RemoteServer.LogInHelper;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
+using SyncClipboard.Core.Clipboard;
 
 namespace SyncClipboard.Core
 {
@@ -277,6 +278,8 @@ namespace SyncClipboard.Core
             services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
             services.AddServerAdapter<OfficialConfig, OfficialAdapter>();
             services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
+            services.AddSingleton<LocalClipboardSetter>();
+            services.AddSingleton<ProfileActionBuilder>();
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)

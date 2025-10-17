@@ -4,7 +4,7 @@ using SyncClipboard.Core.Clipboard;
 
 namespace SyncClipboard.Core.Utilities;
 
-public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")] INotification notification)
+public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")] INotification notification, ProfileActionBuilder profileActionBuilder)
 {
     public void Notify(Profile profile)
     {
@@ -25,7 +25,7 @@ public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")
         }
 
         notification.Message = profile.ShowcaseText();
-        var actions = ProfileActionBuilder.Build(profile);
+        var actions = profileActionBuilder.Build(profile);
         notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
     }

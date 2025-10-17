@@ -21,8 +21,6 @@ public abstract class Profile
     public abstract ProfileType Type { get; }
     public abstract string ShowcaseText();
     public abstract HistoryRecord CreateHistoryRecord();
-
-    protected abstract IClipboardSetter<Profile> ClipboardSetter { get; }
     protected abstract bool Same(Profile rhs);
     protected abstract ClipboardMetaInfomation CreateMetaInformation();
 
@@ -54,34 +52,6 @@ public abstract class Profile
     public virtual bool RequiresPrepareData => false;
     public virtual Task PrepareDataAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public virtual string GetLocalDataPath() => string.Empty;
-
-    public async Task SetLocalClipboard(CancellationToken ctk, bool mutex = true)
-    {
-        if (mutex)
-        {
-            await LocalClipboard.Semaphore.WaitAsync(ctk);
-        }
-
-        try
-        {
-            var dispather = AppCore.Current.Services.GetService<IThreadDispatcher>();
-            if (dispather is null)
-            {
-                await ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk);
-            }
-            else
-            {
-                await dispather.RunOnMainThreadAsync(() => ClipboardSetter.SetLocalClipboard(MetaInfomation, ctk));
-            }
-        }
-        finally
-        {
-            if (mutex)
-            {
-                LocalClipboard.Semaphore.Release();
-            }
-        }
-    }
 
     public string ToJsonString() => JsonSerializer.Serialize(ToDto());
 

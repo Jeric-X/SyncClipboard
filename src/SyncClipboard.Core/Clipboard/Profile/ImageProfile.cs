@@ -9,8 +9,6 @@ namespace SyncClipboard.Core.Clipboard;
 public class ImageProfile : FileProfile
 {
     public override ProfileType Type => ProfileType.Image;
-    protected override IClipboardSetter<Profile> ClipboardSetter
-        => ServiceProvider.GetRequiredService<IClipboardSetter<ImageProfile>>();
 
     private static string ImageTemplateFolder => Path.Combine(LocalTemplateFolder, "temp images");
 

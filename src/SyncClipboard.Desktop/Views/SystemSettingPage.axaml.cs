@@ -66,8 +66,10 @@ public partial class SystemSettingPage : UserControl
     private static void CopyAppDataFolderPath()
     {
         var profile = new TextProfile(Core.Commons.Env.AppDataDirectory);
-        _ = profile.SetLocalClipboard(CancellationToken.None);
-        var helper = App.Current.Services.GetRequiredService<SyncClipboard.Core.Utilities.ProfileNotificationHelper>();
+        var setter = App.Current.Services.GetRequiredService<LocalClipboardSetter>();
+        _ = setter.Set(profile, CancellationToken.None);
+
+        var helper = App.Current.Services.GetRequiredService<ProfileNotificationHelper>();
         helper.Notify(profile);
     }
 
