@@ -452,7 +452,7 @@ public class DownloadService : Service
             }
             else
             {
-                await DownloadFileProfileData(remoteProfile, cancelToken);
+                await DownloadFileProfileData(fileRemoteProfile, cancelToken);
             }
         }
         _downServiceChangingLocal = true;
@@ -471,7 +471,7 @@ public class DownloadService : Service
         }
     }
 
-    private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
+    private async Task DownloadFileProfileData(FileProfile profile, CancellationToken cancelToken)
     {
         _logger.Write($"Downloading: {await profile.GetLogId(cancelToken)}");
         _toastReporter = new ProgressToastReporter(profile.FileName, I18n.Strings.DownloadingFile, _notificationManager);

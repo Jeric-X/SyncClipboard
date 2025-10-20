@@ -4,12 +4,6 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class Profile
 {
-    #region ClipboardProfileDTO Field
-
-    public virtual string FileName { get; set; } = "";
-
-    #endregion
-
     #region abstract
 
     public abstract ProfileType Type { get; }

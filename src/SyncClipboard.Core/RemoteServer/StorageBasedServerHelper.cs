@@ -51,9 +51,9 @@ internal class StorageBasedServerHelper
         try
         {
             var dataPath = await fileProfile.GetOrCreateFileDataPath(cancellationToken);
-            await _serverAdapter.DownloadFileAsync(profile.FileName, dataPath, progress, cancellationToken);
+            await _serverAdapter.DownloadFileAsync(fileProfile.FileName, dataPath, progress, cancellationToken);
             await profile.CheckDownloadedData(cancellationToken);
-            _logger.Write($"[PULL] Downloaded {profile.FileName} to {dataPath}");
+            _logger.Write($"[PULL] Downloaded {fileProfile.FileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -160,8 +160,8 @@ internal class StorageBasedServerHelper
                 throw new FileNotFoundException($"Local data file not found: {localDataPath}");
             }
 
-            await _serverAdapter.UploadFileAsync(profile.FileName, localDataPath, cancellationToken);
-            _logger.Write($"[PUSH] Upload completed for {profile.FileName}");
+            await _serverAdapter.UploadFileAsync(fileProfile.FileName, localDataPath, cancellationToken);
+            _logger.Write($"[PUSH] Upload completed for {fileProfile.FileName}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {

@@ -9,6 +9,7 @@ public class FileProfile : Profile
 {
     protected const int MAX_FILE_SIZE = int.MaxValue;
 
+    public virtual string FileName { get; set; } = "";
     public override ProfileType Type => ProfileType.File;
     public virtual string? FullPath { get; set; }
     protected string? _hash;

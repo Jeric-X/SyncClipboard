@@ -35,5 +35,5 @@ public class TextProfile(string text) : Profile
         }
     }
 
-    public override Task<ClipboardProfileDTO> ToDto(CancellationToken token) => Task.FromResult(new ClipboardProfileDTO(FileName, Text, Type));
+    public override Task<ClipboardProfileDTO> ToDto(CancellationToken token) => Task.FromResult(new ClipboardProfileDTO(string.Empty, Text, Type));
 }
