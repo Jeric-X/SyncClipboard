@@ -182,9 +182,9 @@ public class UploadService : ClipboardHander
         _trayIcon.StopAnimation();
     }
 
-    private bool IsDownloadServiceWorking(Profile profile)
+    private async Task<bool> IsDownloadServiceWorking(Profile profile, CancellationToken token)
     {
-        if (Profile.Same(profile, _profileCache))
+        if (await Profile.Same(profile, _profileCache, token))
         {
             _logger.Write(LOG_TAG, "Same as lasted downloaded profile, won't push.");
             _profileCache = null;
@@ -203,7 +203,7 @@ public class UploadService : ClipboardHander
         try
         {
             var latest = await _clipboardFactory.CreateProfileFromLocal(token);
-            if (Profile.Same(profile, latest))
+            if (await Profile.Same(profile, latest, token))
             {
                 return false;
             }
@@ -215,7 +215,12 @@ public class UploadService : ClipboardHander
         }
     }
 
-    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
+    protected override Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
+    {
+        return UploadProfileClipboard(meta, profile, true, token);
+    }
+
+    protected async Task UploadProfileClipboard(ClipboardMetaInfomation meta, Profile profile, bool contentControl, CancellationToken token)
     {
         _logger.Write(LOG_TAG, "New Push started, meta: " + meta);
 
@@ -224,7 +229,7 @@ public class UploadService : ClipboardHander
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
-            if (profile.ContentControl)
+            if (contentControl)
             {
                 if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
                 {
@@ -241,7 +246,7 @@ public class UploadService : ClipboardHander
                 }
             }
 
-            if (IsDownloadServiceWorking(profile))
+            if (await IsDownloadServiceWorking(profile, token))
             {
                 _logger.Write(LOG_TAG, "Stop Push: Download service is working or profile is same as last downloaded.");
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
@@ -253,7 +258,7 @@ public class UploadService : ClipboardHander
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
-            if (!profile.IsAvailableFromLocal())
+            if (contentControl && !ContentControlHelper.IsContentValid(profile))
             {
                 _logger.Write(LOG_TAG, "Stop Push: Profile is not available from local.");
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
@@ -302,9 +307,9 @@ public class UploadService : ClipboardHander
                 var remoteServer = _remoteClipboardServerFactory.Current;
                 var remoteProfile = await remoteServer.GetProfileAsync(cancelToken) ?? new UnknownProfile();
 
-                if (!Profile.Same(remoteProfile, profile))
+                if (!await Profile.Same(remoteProfile, profile, cancelToken))
                 {
-                    _logger.Write(LOG_TAG, "Start: " + profile.ToJsonString());
+                    _logger.Write(LOG_TAG, "Start: " + await profile.ToDto(cancelToken));
                     await remoteServer.SetProfileAsync(profile, cancelToken);
                 }
                 else
@@ -342,7 +347,7 @@ public class UploadService : ClipboardHander
         {
             var meta = await _clipboardFactory.GetMetaInfomation(token);
             var profile = await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
-            await HandleClipboard(meta, profile, token);
+            await UploadProfileClipboard(meta, profile, contentControl, token);
             if (NotifyOnManualUpload)
             {
                 var notification = _notificationManager.Shared;

@@ -1,5 +1,4 @@
 ﻿using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -7,24 +6,24 @@ public class UnknownProfile : Profile
 {
     public override ProfileType Type => ProfileType.Unknown;
 
-    protected override bool Same(Profile rhs)
+    private const string Text = "Unknown Clipboard";
+
+    public override ValueTask<string> GetLogId(CancellationToken token)
     {
-        return rhs is UnknownProfile;
+        return ValueTask.FromResult(Text);
     }
 
-    protected override ClipboardMetaInfomation CreateMetaInformation()
+    protected override Task<bool> Same(Profile rhs, CancellationToken _)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(rhs is UnknownProfile);
     }
-
-    public override bool IsAvailableFromRemote() => false;
 
     public override string ShowcaseText()
     {
         return "Do not support this type of clipboard";
     }
 
-    public override HistoryRecord CreateHistoryRecord()
+    public override Task<ClipboardProfileDTO> ToDto(CancellationToken token)
     {
         throw new NotImplementedException();
     }

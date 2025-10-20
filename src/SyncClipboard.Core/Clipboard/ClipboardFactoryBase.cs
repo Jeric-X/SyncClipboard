@@ -1,6 +1,9 @@
-﻿using SyncClipboard.Abstract;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Abstract;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Image;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -9,6 +12,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
 {
     protected abstract ILogger Logger { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
+    protected ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
     public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
@@ -25,27 +29,77 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             {
                 if (ImageHelper.FileIsImage(filename))
                 {
-                    return await ImageProfile.Create(filename, contentControl, ctk);
+                    return new ImageProfile(filename);
                 }
-                return await FileProfile.Create(filename, contentControl, ctk);
+                return new FileProfile(filename, null, null);
             }
             else
             {
-                return await GroupProfile.Create(metaInfomation.Files, contentControl, ctk);
+                return await GroupProfile.Create(metaInfomation.Files, contentControl ? Config.GetConfig<FileFilterConfig>() : null);
             }
         }
 
         if (metaInfomation.Text != null)
         {
-            return new TextProfile(metaInfomation.Text, contentControl);
+            return new TextProfile(metaInfomation.Text);
         }
 
         if (metaInfomation.Image != null)
         {
-            return await ImageProfile.Create(metaInfomation.Image, contentControl, ctk);
+            return await CreateImageProfile(metaInfomation.Image, ctk);
         }
 
         return new UnknownProfile();
+    }
+
+    private async Task<ImageProfile> CreateImageProfile(IClipboardImage image, CancellationToken token)
+    {
+        for (int i = 0; ; i++)
+        {
+            try
+            {
+                var tempPath = await Task.Run(() => SaveImageToFile(image)).WaitAsync(token);
+                var imageProfile = new ImageProfile(tempPath, null, null);
+
+                // 如果启用历史记录，移动文件到历史记录文件夹
+                var historyConfig = Config.GetConfig<HistoryConfig>();
+                if (historyConfig.EnableHistory)
+                {
+                    var historyFolder = Path.Combine(Env.HistoryFileFolder, await imageProfile.GetHash(token));
+                    Directory.CreateDirectory(historyFolder);
+
+                    var fileName = Path.GetFileName(tempPath);
+                    var historyPath = Path.Combine(historyFolder, fileName);
+
+                    if (tempPath != historyPath)
+                    {
+                        File.Move(tempPath, historyPath);
+                        imageProfile.FullPath = historyPath;
+                    }
+                }
+
+                return imageProfile;
+            }
+            catch when (!token.IsCancellationRequested)
+            {
+                Logger.Write($"SaveImageToFile wrong time {i + 1}");
+                if (i > 5)
+                    throw;
+            }
+            await Task.Delay(100, token);
+        }
+    }
+
+    private static string SaveImageToFile(IClipboardImage image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        if (!Directory.Exists(Env.ImageTemplateFolder))
+        {
+            Directory.CreateDirectory(Env.ImageTemplateFolder);
+        }
+        var filePath = ImageProfile.CreateNewDataFileName();
+        image.Save(filePath);
+        return filePath;
     }
 
     public Task<Profile> CreateProfileFromHistoryRecord(HistoryRecord historyRecord, CancellationToken ctk)

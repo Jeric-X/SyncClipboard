@@ -1,18 +1,16 @@
 ﻿using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.UserConfigs;
-using System.Security.Cryptography;
 
 namespace SyncClipboard.Core.Clipboard;
 
-public class TextProfile : Profile
+public class TextProfile(string text) : Profile
 {
+    public string Text { get; set; } = text;
+
     public override ProfileType Type => ProfileType.Text;
 
-    public TextProfile(string text, bool contentControl = true)
+    public override ValueTask<string> GetLogId(CancellationToken token)
     {
-        Text = text;
-        ContentControl = contentControl;
+        return ValueTask.FromResult(Text);
     }
 
     public override string ShowcaseText()
@@ -24,36 +22,18 @@ public class TextProfile : Profile
         return Text;
     }
 
-    protected override bool Same(Profile rhs)
+    protected override Task<bool> Same(Profile rhs, CancellationToken _)
     {
         try
         {
             var textprofile = (TextProfile)rhs;
-            return Text == textprofile.Text;
+            return Task.FromResult(Text == textprofile.Text);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    protected override ClipboardMetaInfomation CreateMetaInformation()
-    {
-        return new ClipboardMetaInfomation { Text = Text };
-    }
-
-    public override bool IsAvailableAfterFilter() => Config.GetConfig<SyncConfig>().EnableUploadText;
-
-    public override HistoryRecord CreateHistoryRecord()
-    {
-        byte[] inputBytes = System.Text.Encoding.Unicode.GetBytes(Text);
-        byte[] hashBytes = MD5.HashData(inputBytes);
-        var hash = Convert.ToHexString(hashBytes);
-        return new HistoryRecord
-        {
-            Type = ProfileType.Text,
-            Hash = hash,
-            Text = Text,
-        };
-    }
+    public override Task<ClipboardProfileDTO> ToDto(CancellationToken token) => Task.FromResult(new ClipboardProfileDTO(FileName, Text, Type));
 }

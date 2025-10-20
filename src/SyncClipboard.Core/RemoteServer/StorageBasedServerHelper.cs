@@ -43,14 +43,14 @@ internal class StorageBasedServerHelper
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (!profile.HasDataFile)
+        if (profile is not FileProfile fileProfile)
         {
             return;
         }
 
         try
         {
-            var dataPath = profile.GetLocalDataPath();
+            var dataPath = await fileProfile.GetOrCreateFileDataPath(cancellationToken);
             await _serverAdapter.DownloadFileAsync(profile.FileName, dataPath, progress, cancellationToken);
             await profile.CheckDownloadedData(cancellationToken);
             _logger.Write($"[PULL] Downloaded {profile.FileName} to {dataPath}");
@@ -129,9 +129,9 @@ internal class StorageBasedServerHelper
         {
             await _serverAdapter.CleanupTempFilesAsync(cancellationToken);
             await UploadProfileDataAsync(profile, cancellationToken);
-            await _serverAdapter.SetProfileAsync(profile.ToDto(), cancellationToken);
+            await _serverAdapter.SetProfileAsync(await profile.ToDto(cancellationToken), cancellationToken);
 
-            _logger.Write($"[PUSH] Profile metadata updated: {JsonSerializer.Serialize(profile.ToDto())}");
+            _logger.Write($"[PUSH] Profile metadata updated: {JsonSerializer.Serialize(await profile.ToDto(cancellationToken))}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -142,20 +142,20 @@ internal class StorageBasedServerHelper
 
     private async Task UploadProfileDataAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        if (!profile.HasDataFile)
+        if (profile is not FileProfile fileProfile)
         {
             return;
         }
 
-        if (profile.RequiresPrepareData)
+        if (profile is GroupProfile groupProfile)
         {
-            await profile.PrepareDataAsync(cancellationToken);
+            await groupProfile.PrepareDataWithCache(cancellationToken);
         }
 
+        var localDataPath = fileProfile.FullPath;
         try
         {
-            var localDataPath = profile.GetLocalDataPath();
-            if (string.IsNullOrEmpty(localDataPath) || !File.Exists(localDataPath))
+            if (!File.Exists(localDataPath))
             {
                 throw new FileNotFoundException($"Local data file not found: {localDataPath}");
             }

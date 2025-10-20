@@ -1,8 +1,5 @@
 ﻿using SyncClipboard.Abstract;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Image;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,78 +7,89 @@ namespace SyncClipboard.Core.Clipboard;
 
 public class FileProfile : Profile
 {
-    public override string Text { get => Hash; set => Hash = value; }
+    protected const int MAX_FILE_SIZE = int.MaxValue;
+
     public override ProfileType Type => ProfileType.File;
     public virtual string? FullPath { get; set; }
-    public virtual string Hash { get; set; }
+    protected string? _hash;
+    protected long? _size;
 
     protected const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
 
-    protected FileProfile(string fullPath, string hash, bool contentControl = true)
-        : this(fullPath, Path.GetFileName(fullPath), hash, contentControl)
+    public FileProfile(string? fullPath, string? fileName = null, string? hash = null)
     {
+        if (fullPath is null && fileName is null)
+        {
+            throw new ArgumentNullException(nameof(fullPath), "Either fullPath or fileName must be provided.");
+        }
+
+        if (fullPath is not null)
+        {
+            FileName = Path.GetFileName(fullPath);
+        }
+        else if (fileName is not null)
+        {
+            FileName = fileName;
+        }
+
+        FullPath = fullPath;
+        _hash = hash;
     }
 
     public FileProfile(ClipboardProfileDTO profileDTO) : this(null, profileDTO.File, profileDTO.Clipboard)
     {
     }
 
-    private FileProfile(string? fullPath, string fileName, string hash, bool contentControl = true)
+    public virtual ValueTask<long> GetSize(CancellationToken token)
     {
-        Hash = hash;
-        FullPath = fullPath;
-        FileName = fileName;
-        ContentControl = contentControl;
+        if (_size is null)
+        {
+            if (FullPath is null || !File.Exists(FullPath))
+            {
+                return ValueTask.FromResult(0L);
+            }
+
+            var fileInfo = new FileInfo(FullPath);
+            _size = fileInfo.Length;
+        }
+        return ValueTask.FromResult(_size.Value);
     }
 
-    public static async Task<FileProfile> Create(string fullPath, bool contentControl, CancellationToken token)
+    public virtual async ValueTask<string> GetHash(CancellationToken token)
     {
-        var hash = await GetMD5HashFromFile(fullPath, contentControl, token);
-        if (ImageHelper.FileIsImage(fullPath))
+        if (_hash is null)
         {
-            return await ImageProfile.Create(fullPath, contentControl, token);
+            if (FullPath is null)
+            {
+                return string.Empty;
+            }
+
+            _hash = await GetMD5HashFromFile(FullPath, token); ;
         }
 
-        return new FileProfile(fullPath, hash, contentControl);
+        return _hash;
     }
 
-    protected virtual string GetTempLocalFilePath()
+    public override ValueTask<string> GetLogId(CancellationToken token)
     {
-        var historyConfig = Config.GetConfig<HistoryConfig>();
-        if (historyConfig.EnableHistory)
-        {
-            var historyFolder = Path.Combine(Env.HistoryFileFolder, Hash);
-            Directory.CreateDirectory(historyFolder);
-            return Path.Combine(historyFolder, FileName);
-        }
-        else
-        {
-            return Path.Combine(LocalTemplateFolder, FileName);
-        }
+        return GetHash(token);
     }
 
-    public override bool HasDataFile => true;
-
-    public override string GetLocalDataPath()
-    {
-        if (string.IsNullOrEmpty(FullPath))
-        {
-            FullPath = GetTempLocalFilePath();
-        }
-        return FullPath;
-    }
+    public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);
 
     public override string ShowcaseText()
     {
         return FileName;
     }
 
-    protected override bool Same(Profile rhs)
+    protected override async Task<bool> Same(Profile rhs, CancellationToken token)
     {
         try
         {
-            var md5This = Hash;
-            var md5Other = ((FileProfile)rhs).Hash;
+            var md5ThisTask = GetHash(token);
+            var md5OtherTask = ((FileProfile)rhs).GetHash(token);
+            var md5This = await md5ThisTask;
+            var md5Other = await md5OtherTask;
             if (string.IsNullOrEmpty(md5This) || string.IsNullOrEmpty(md5Other))
             {
                 return false;
@@ -103,79 +111,39 @@ public class FileProfile : Profile
     {
     }
 
-    protected async static Task<string> GetMD5HashFromFile(string fileName, bool checkSize, CancellationToken? cancelToken)
+    protected async static Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
-        if (checkSize && fileInfo.Length > Config.GetConfig<SyncConfig>().MaxFileByte)
+        if (fileInfo.Length > MAX_FILE_SIZE)
         {
             return MD5_FOR_OVERSIZED_FILE;
         }
-        try
+
+        var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        var md5Oper = MD5.Create();
+        var retVal = await md5Oper.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
+        file.Close();
+
+        var sb = new StringBuilder();
+        for (int i = 0; i < retVal.Length; i++)
         {
-            Logger.Write("calc md5 start");
-            var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            var md5Oper = MD5.Create();
-            var retVal = await md5Oper.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
-            file.Close();
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < retVal.Length; i++)
-            {
-                sb.Append(retVal[i].ToString("x2"));
-            }
-            string md5 = sb.ToString();
-            Logger.Write($"md5 {md5}");
-            return md5;
+            sb.Append(retVal[i].ToString("x2"));
         }
-        catch (System.Exception ex)
-        {
-            Logger.Write("GetMD5HashFromFile() fail " + ex.Message);
-            throw;
-        }
-    }
-
-    protected bool Oversized()
-    {
-        return Hash == MD5_FOR_OVERSIZED_FILE;
-    }
-
-    public override bool IsAvailableFromRemote() => !Oversized();
-
-    public override bool IsAvailableAfterFilter() => IsFileAvailableAfterFilter(FullPath!)
-        && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadSingleFile;
-
-    protected static bool IsFileAvailableAfterFilter(string fileName)
-    {
-        var filterConfig = Config.GetConfig<FileFilterConfig>();
-        if (filterConfig.FileFilterMode == "BlackList")
-        {
-            var str = filterConfig.BlackList.Find(str => fileName.EndsWith(str, StringComparison.OrdinalIgnoreCase));
-            if (str is not null)
-            {
-                return false;
-            }
-        }
-        else if (filterConfig.FileFilterMode == "WhiteList")
-        {
-            var str = filterConfig.WhiteList.Find(str => fileName.EndsWith(str, StringComparison.OrdinalIgnoreCase));
-            if (str is null)
-            {
-                return false;
-            }
-        }
-        return true;
+        string md5 = sb.ToString();
+        return md5;
     }
 
     public override async Task CheckDownloadedData(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
+        ArgumentNullException.ThrowIfNull(_hash);
         if (!File.Exists(FullPath))
         {
             throw new FileNotFoundException($"File does not exist: {FullPath}", FullPath);
         }
 
-        var hash = await GetMD5HashFromFile(FullPath, false, token);
-        if (hash != Hash)
+        var hash = await GetMD5HashFromFile(FullPath, token);
+        if (hash != _hash)
         {
             throw new InvalidDataException(FullPath);
         }
@@ -192,31 +160,19 @@ public class FileProfile : Profile
         if (quick)
             return true;
 
+        if (_hash is null)
+        {
+            return true;
+        }
+
         try
         {
-            var hash = await GetMD5HashFromFile(FullPath, false, token);
-            return hash == Hash;
+            var hash = await GetMD5HashFromFile(FullPath, token);
+            return hash == _hash;
         }
         catch
         {
             return false;
         }
-    }
-
-    protected override ClipboardMetaInfomation CreateMetaInformation()
-    {
-        ArgumentNullException.ThrowIfNull(FullPath);
-        return new ClipboardMetaInfomation() { Files = [FullPath], Text = FileName };
-    }
-
-    public override HistoryRecord CreateHistoryRecord()
-    {
-        return new HistoryRecord
-        {
-            Type = ProfileType.File,
-            Text = FullPath ?? FileName,
-            FilePath = [FullPath ?? string.Empty],
-            Hash = Hash
-        };
     }
 }

@@ -45,7 +45,7 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter)
 
             case FileProfile fileProfile:
                 {
-                    var fullPath = fileProfile.GetLocalDataPath();
+                    var fullPath = fileProfile.FullPath!;
                     actions.Add(new MenuItem(Strings.OpenFolder, () => Sys.ShowPathInFileManager(fullPath)));
                     actions.Add(new MenuItem(Strings.Open, () => Sys.OpenWithDefaultApp(fullPath)));
                 }

@@ -208,7 +208,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
                     TrayIcon.SetStatusString(SERVICE_NAME, "Converting Complex image.");
                     localPath = await ConvertService.CompatibilityCast(_serviceProvider, localPath, ctk);
                 }
-                return await ImageProfile.Create(localPath, ctk);
+                return new ImageProfile(localPath);
             }
             catch
             {

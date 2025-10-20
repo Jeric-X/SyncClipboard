@@ -25,7 +25,7 @@ public class HistoryService(HistoryManager historyManager, ConfigManager configM
             return;
         }
 
-        if (profile.Type == ProfileType.Text && string.IsNullOrEmpty(profile.Text))
+        if (profile is TextProfile textProfile && string.IsNullOrEmpty(textProfile.Text))
         {
             return;
         }
@@ -36,6 +36,6 @@ public class HistoryService(HistoryManager historyManager, ConfigManager configM
             return;
         }
 
-        await historyManager.AddHistory(profile.CreateHistoryRecord(), token);
+        await historyManager.AddHistory(await profile.CreateHistoryRecord(token), token);
     }
 }

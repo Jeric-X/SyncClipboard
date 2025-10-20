@@ -207,7 +207,7 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
     {
         var currentProfile = await GetProfileAsync(cancellationToken);
 
-        if (!Profile.Same(_lastKnownProfile, currentProfile))
+        if (!await Profile.Same(_lastKnownProfile, currentProfile, cancellationToken))
         {
             var oldProfile = _lastKnownProfile;
             _lastKnownProfile = currentProfile;

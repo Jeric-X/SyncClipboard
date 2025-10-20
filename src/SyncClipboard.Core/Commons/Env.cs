@@ -26,6 +26,7 @@
         public static readonly string AppDataDbPath = GetOrCreateFolder(FullPath("data"));
         public static readonly string HistoryFileFolder = GetOrCreateFolder(Path.Combine(FullPath("file"), "history"));
         public static string TemplateFileFolder => GetTemplateFileFolder();
+        public static string ImageTemplateFolder => Path.Combine(TemplateFileFolder, "temp images");
         public static readonly string LogFolder = FullPath("log");
         public static readonly string UpdateFolder = GetOrCreateFolder(FullPath("update"));
 

@@ -1,78 +1,50 @@
 ﻿using Ionic.Zip;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Abstract;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
-using SyncClipboard.Core.Utilities.FileCacheManager;
 using System.Text;
 
 namespace SyncClipboard.Core.Clipboard;
 
 public class GroupProfile : FileProfile
 {
+    private readonly FileFilterConfig _fileFilterConfig = new();
     private string[]? _files;
     public string[] Files => _files ?? [];
 
     public override ProfileType Type => ProfileType.Group;
 
-    private GroupProfile(IEnumerable<string> files, string hash, bool contentControl)
-        : base(GetGroupFilePath(hash), hash)
+    private GroupProfile(IEnumerable<string> files, string hash)
+        : base(null, CreateNewDataFileName(), hash)
     {
         _files = [.. files];
-        ContentControl = contentControl;
     }
 
-    private static string GetGroupFilePath(string hash)
+    private GroupProfile(IEnumerable<string> files, FileFilterConfig filterConfig)
+        : base(null, CreateNewDataFileName(), null)
     {
-        var historyConfig = Config.GetConfig<HistoryConfig>();
-        if (historyConfig.EnableHistory)
-        {
-            var historyFolder = Path.Combine(Env.HistoryFileFolder, hash);
-            Directory.CreateDirectory(historyFolder);
-            return Path.Combine(historyFolder, $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip");
-        }
-        else
-        {
-            return Path.Combine(LocalTemplateFolder, $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip");
-        }
+        _files = [.. files];
+        _fileFilterConfig = filterConfig;
+    }
+
+    private static string CreateNewDataFileName()
+    {
+        return $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip";
     }
 
     public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
     }
 
-    public GroupProfile(HistoryRecord record) : this(record.FilePath, record.Hash, false)
+    public GroupProfile(HistoryRecord record) : this(record.FilePath, record.Hash)
     {
     }
 
-    public static async Task<Profile> Create(string[] files, bool contentControl, CancellationToken token)
+    public static Task<Profile> Create(string[] files, FileFilterConfig? filterConfig = null)
     {
-        if (contentControl)
-        {
-            var filterdFiles = files.Where(file => IsFileAvailableAfterFilter(file));
-            if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
-                return await Create(filterdFiles.First(), contentControl, token);
-
-            var hash = await CaclHashAsync(filterdFiles, contentControl, token);
-            return new GroupProfile(filterdFiles, hash, contentControl);
-        }
-        else
-        {
-            var hash = await CaclHashAsync(files, contentControl, token);
-            return new GroupProfile(files, hash, contentControl);
-        }
-    }
-
-    public static async Task<Profile> Create(string[] files, CancellationToken token)
-    {
-        var filterdFiles = files.Where(file => IsFileAvailableAfterFilter(file));
-        if (filterdFiles.Count() == 1 && File.Exists(filterdFiles.First()))
-            return await Create(filterdFiles.First(), true, token);
-
-        var hash = await CaclHashAsync(filterdFiles, true, token);
-        return new GroupProfile(filterdFiles, hash, true);
+        filterConfig ??= new FileFilterConfig();
+        return Task.FromResult<Profile>(new GroupProfile(files, filterConfig));
     }
 
     private static int FileCompare(FileInfo file1, FileInfo file2)
@@ -92,15 +64,34 @@ public class GroupProfile : FileProfile
         );
     }
 
-    private static Task<string> CaclHashAsync(IEnumerable<string> filesEnum, bool contentControl, CancellationToken token)
+    public override async ValueTask<string> GetHash(CancellationToken token)
     {
-        return Task.Run(() => CaclHash(filesEnum, contentControl, token), token).WaitAsync(token);
+        if (_hash is null)
+        {
+            (_hash, _size) = await CaclHashAndSizeAsync(_files ?? [], token);
+        }
+
+        return _hash;
     }
 
-    private static string CaclHash(IEnumerable<string> filesEnum, bool contentControl, CancellationToken token)
+    public override async ValueTask<long> GetSize(CancellationToken token)
+    {
+        if (_size is null)
+        {
+            (_hash, _size) = await CaclHashAndSizeAsync(_files ?? [], token); ;
+        }
+
+        return _size.Value;
+    }
+
+    private Task<(string, long)> CaclHashAndSizeAsync(IEnumerable<string> filesEnum, CancellationToken token)
+    {
+        return Task.Run(() => CaclHashAndSize(filesEnum, token), token).WaitAsync(token);
+    }
+
+    private (string, long) CaclHashAndSize(IEnumerable<string> filesEnum, CancellationToken token)
     {
         var files = filesEnum.ToArray();
-        var maxSize = Config.GetConfig<SyncConfig>().MaxFileByte;
         Array.Sort(files, FileNameCompare);
         long sumSize = 0;
         int hash = 0;
@@ -116,54 +107,32 @@ public class GroupProfile : FileProfile
                 foreach (var subFile in subFiles)
                 {
                     sumSize += subFile.Length;
-                    if (contentControl && sumSize > maxSize)
-                        return MD5_FOR_OVERSIZED_FILE;
+                    if (sumSize > MAX_FILE_SIZE)
+                        return (MD5_FOR_OVERSIZED_FILE, 0);
                     hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
                 }
             }
-            else if (File.Exists(file) && (!contentControl || IsFileAvailableAfterFilter(file)))
+            else if (File.Exists(file) && ContentControlHelper.IsFileAvailableAfterFilter(file, _fileFilterConfig))
             {
                 var fileInfo = new FileInfo(file);
                 sumSize += fileInfo.Length;
                 hash = (hash * -1521134295) + (fileInfo.Name + fileInfo.Length.ToString()).ListHashCode();
             }
 
-            if (contentControl && sumSize > maxSize)
+            if (sumSize > MAX_FILE_SIZE)
             {
-                return MD5_FOR_OVERSIZED_FILE;
+                return (MD5_FOR_OVERSIZED_FILE, 0);
             }
         }
 
-        return hash.ToString();
+        return (hash.ToString(), sumSize);
     }
 
-    public override bool HasDataFile => true;
-    public override bool RequiresPrepareData => true;
-
-    public override async Task PrepareDataAsync(CancellationToken cancellationToken = default)
+    public async Task PrepareTransferFile(string filePath, CancellationToken token)
     {
-        var cacheManager = ServiceProvider.GetRequiredService<LocalFileCacheManager>();
-        var cachedZipPath = await cacheManager.GetCachedFilePathAsync(nameof(GroupProfile), Hash);
-        if (!string.IsNullOrEmpty(cachedZipPath))
+        var hash = await GetHash(token);
+        await Task.Run(() =>
         {
-            FullPath = cachedZipPath;
-            return;
-        }
-
-        await PrepareTransferFile(cancellationToken);
-
-        if (!string.IsNullOrEmpty(FullPath))
-        {
-            await cacheManager.SaveCacheEntryAsync(nameof(GroupProfile), Hash, FullPath);
-        }
-    }
-
-    public Task PrepareTransferFile(CancellationToken token)
-    {
-        return Task.Run(() =>
-        {
-            var filePath = GetTempLocalFilePath();
-
             using ZipFile zip = new ZipFile();
             zip.AlternateEncoding = Encoding.UTF8;
             zip.AlternateEncodingUsage = ZipOption.AsNecessary;
@@ -182,25 +151,17 @@ public class GroupProfile : FileProfile
                 }
             });
 
-            if (ContentControl)
+            foreach (var item in zip.Entries)
             {
-                foreach (var item in zip.Entries)
+                if (!item.IsDirectory && !ContentControlHelper.IsFileAvailableAfterFilter(item.FileName, _fileFilterConfig))
                 {
-                    if (!item.IsDirectory && !IsFileAvailableAfterFilter(item.FileName))
-                    {
-                        zip.RemoveEntry(item.FileName);
-                    }
+                    zip.RemoveEntry(item.FileName);
                 }
             }
+
             zip.Save(filePath);
             FullPath = filePath;
         }, token).WaitAsync(token);
-    }
-
-    protected override ClipboardMetaInfomation CreateMetaInformation()
-    {
-        ArgumentNullException.ThrowIfNull(_files);
-        return new ClipboardMetaInfomation() { Files = _files };
     }
 
     public override string ShowcaseText()
@@ -215,15 +176,10 @@ public class GroupProfile : FileProfile
         return string.Join("\n", _files.Select(file => Path.GetFileName(file)));
     }
 
-    public override bool IsAvailableAfterFilter()
-    {
-        bool hasItem = _files?.FirstOrDefault(name => Directory.Exists(name) || IsFileAvailableAfterFilter(name)) != null;
-        return hasItem && !Oversized() && Config.GetConfig<SyncConfig>().EnableUploadMultiFile;
-    }
-
     public override async Task CheckDownloadedData(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
+        ArgumentNullException.ThrowIfNull(_hash);
 
         if (!File.Exists(FullPath))
         {
@@ -243,10 +199,10 @@ public class GroupProfile : FileProfile
             .Select(file => Path.Combine(extractPath, file))
             .ToArray();
 
-        var hash = await CaclHashAsync(_files, false, token);
-        if (hash != Hash)
+        var (hash, _) = await CaclHashAndSizeAsync(_files, token);
+        if (hash != _hash)
         {
-            var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
+            var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
         }
     }
@@ -265,25 +221,19 @@ public class GroupProfile : FileProfile
         if (quick)
             return true;
 
+        if (_hash is null)
+        {
+            return true;
+        }
+
         try
         {
-            var hash = await CaclHashAsync(_files, false, token);
-            return hash == Hash;
+            var (hash, _) = await CaclHashAndSizeAsync(_files, token);
+            return hash == _hash;
         }
         catch
         {
             return false;
         }
-    }
-
-    public override HistoryRecord CreateHistoryRecord()
-    {
-        return new HistoryRecord
-        {
-            Type = ProfileType.Group,
-            Text = string.Join('\n', _files ?? []),
-            FilePath = _files ?? [],
-            Hash = Hash,
-        };
     }
 }

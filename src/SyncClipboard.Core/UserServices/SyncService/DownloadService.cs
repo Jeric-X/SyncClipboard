@@ -270,9 +270,13 @@ public class DownloadService : Service
         var remoteProfile = e.NewProfile;
         _logger.Write(LOG_TAG, $"Remote profile changed: {remoteProfile}");
 
-        if (NeedUpdate(remoteProfile))
+        try
         {
             await HandleRemoteProfileChange(remoteProfile);
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(LOG_TAG, $"Error handling remote profile change: {ex.Message}");
         }
     }
 
@@ -280,6 +284,11 @@ public class DownloadService : Service
     {
         await _singleDownloadTask.Run(async (token) =>
         {
+            if (!await NeedUpdate(remoteProfile, token))
+            {
+                return;
+            }
+
             await SyncService.remoteProfilemutex.WaitAsync(token);
             using var remoteProfileMutexGuard = new ScopeGuard(() => SyncService.remoteProfilemutex.Release());
 
@@ -337,19 +346,18 @@ public class DownloadService : Service
         StopAndReload();
     }
 
-    private bool NeedUpdate(Profile remoteProfile)
+    private async Task<bool> NeedUpdate(Profile remoteProfile, CancellationToken token)
     {
-        if (!_isQuickDownload && Profile.Same(remoteProfile, _remoteProfileCache))
+        if (!_isQuickDownload && await Profile.Same(remoteProfile, _remoteProfileCache, token))
         {
             return false;
         }
-
-        return remoteProfile.IsAvailableFromRemote();
+        return true;
     }
 
     private async Task<Profile?> GetHistoryProfile(FileProfile remoteProfile, CancellationToken token)
     {
-        var historyRecord = await _historyManager.GetHistoryRecord(remoteProfile.Hash, remoteProfile.Type, token);
+        var historyRecord = await _historyManager.GetHistoryRecord(await remoteProfile.GetHash(token), remoteProfile.Type, token);
         if (historyRecord is null)
             return null;
 
@@ -363,7 +371,7 @@ public class DownloadService : Service
                 return null;
             }
 
-            if (Profile.Same(cachedProfile, remoteProfile))
+            if (await Profile.Same(cachedProfile, remoteProfile, token))
             {
                 return cachedProfile;
             }
@@ -383,7 +391,7 @@ public class DownloadService : Service
         try
         {
             var currentLocalProfile = await _clipboardFactory.CreateProfileFromLocal(token);
-            if (Profile.Same(currentLocalProfile, profile))
+            if (await Profile.Same(currentLocalProfile, profile, token))
             {
                 _logger.Write(LOG_TAG, "Local clipboard is already same as remote profile, skipping download");
             }
@@ -430,7 +438,7 @@ public class DownloadService : Service
 
     private async Task DownloadAndSetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
-        if (Profile.Same(remoteProfile, _remoteProfileCache))
+        if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
         {
             remoteProfile = _remoteProfileCache!;
         }
@@ -454,7 +462,7 @@ public class DownloadService : Service
         {
             await _localClipboardSetter.Set(remoteProfile, cancelToken, false);
             _localProfileCache = remoteProfile;
-            _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + remoteProfile.Text);
+            _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + await remoteProfile.GetLogId(cancelToken));
             if (_syncConfig.NotifyOnDownloaded)
             {
                 _clipboardNotificationHelper.Notify(remoteProfile);
@@ -465,7 +473,7 @@ public class DownloadService : Service
 
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
     {
-        _logger.Write($"Downloading: {profile.Text}");
+        _logger.Write($"Downloading: {await profile.GetLogId(cancelToken)}");
         _toastReporter = new ProgressToastReporter(profile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
 
         var remoteServer = _remoteClipboardServerFactory.Current;
@@ -479,7 +487,7 @@ public class DownloadService : Service
             return false;
         }
         var profile = await _clipboardFactory.CreateProfileFromLocal(token);
-        return !Profile.Same(profile, _localProfileCache);
+        return !await Profile.Same(profile, _localProfileCache, token);
     }
 
     private void QuickDownload() => QuickDownload(false);
