@@ -53,6 +53,7 @@
         <Grid x:Name="_TitleBar" Grid.Row="0">
             <SelectorBar x:Name="_FilterSelectorBar"
                          Padding="0,-4,0,0"
+                         Margin="8,0,8,0"
                          HorizontalAlignment="Center"
                          IsTabStop="False"
                          PointerPressed="FilterSelectorBar_PointerPressed"
@@ -75,7 +76,10 @@
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
-                <Button Width="24" Height="24" VerticalAlignment="Center" Command="{x:Bind _viewModel.CloseCommand}">
+                <Button Width="24"
+                        Height="24"
+                        VerticalAlignment="Center"
+                        Command="{x:Bind _viewModel.CloseCommand}">
                     <FontIcon Glyph="&#xE711;" />
                 </Button>
             </StackPanel>

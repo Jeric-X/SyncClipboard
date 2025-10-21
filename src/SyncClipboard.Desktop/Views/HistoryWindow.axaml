@@ -81,7 +81,8 @@
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
         <Grid RowDefinitions="Auto, Auto, *">
-            <TabStrip HorizontalAlignment="Center"
+            <TabStrip x:Name="_FilterSelectorBar"
+                      HorizontalAlignment="Center"
                       ItemsSource="{Binding FilterOptions}"
                       SelectedItem="{Binding SelectedFilterOption}"
                       IsTabStop="False"
@@ -111,7 +112,10 @@
                 </Button>
                 <OnPlatform>
                     <OnPlatform.Default>
-                        <Button Width="24" Height="24" VerticalAlignment="Center" Command="{Binding CloseCommand}">
+                        <Button Width="24"
+                                Height="24"
+                                VerticalAlignment="Center"
+                                Command="{Binding CloseCommand}">
                             <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                     </OnPlatform.Default>

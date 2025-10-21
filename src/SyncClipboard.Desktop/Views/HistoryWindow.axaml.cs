@@ -28,7 +28,7 @@ public partial class HistoryWindow : Window, IWindow
         this.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
 
         InitializeComponent();
-
+        SetWindowMinSize();
         this.Loaded += async (_, _) =>
         {
             await _viewModel.Init(this);
@@ -50,6 +50,17 @@ public partial class HistoryWindow : Window, IWindow
         };
 
         this.Topmost = _viewModel.IsTopmost;
+    }
+
+    private void SetWindowMinSize()
+    {
+        var infiniteSize = new Avalonia.Size(double.PositiveInfinity, double.PositiveInfinity);
+        _FilterSelectorBar.Measure(infiniteSize);
+        _ButtonArea.Measure(infiniteSize);
+        _SearchTextBox.Measure(infiniteSize);
+
+        MinWidth = _FilterSelectorBar.DesiredSize.Width + _ButtonArea.DesiredSize.Width + 2;
+        MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height;
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

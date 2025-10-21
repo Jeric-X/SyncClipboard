@@ -34,10 +34,12 @@ public sealed partial class HistoryWindow : Window, IWindow
     private bool _windowLoaded = false;
     private readonly MultiTimesEventSimulator _historyItemEvents = new(TimeSpan.FromMilliseconds(300));
     private readonly MultiTimesEventSimulator _imageClickEvents = new(TimeSpan.FromMilliseconds(300));
+    private readonly WindowManager _windowManger;
 
     public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel)
     {
         _viewModel = viewModel;
+        _windowManger = WindowManager.Get(this);
         this.AppWindow.Resize(new SizeInt32(1200, 800));
 
         InitializeComponent();
@@ -114,6 +116,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         if (!_windowLoaded)
         {
+            SetWindowMinSize();
             this.CenterOnScreen();
             _ = _viewModel.Init(this);
         }
@@ -406,5 +409,16 @@ public sealed partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.SetIsAlwaysOnTop(topmost);
+    }
+
+    private void SetWindowMinSize()
+    {
+        var infiniteSize = new Size(double.PositiveInfinity, double.PositiveInfinity);
+        _FilterSelectorBar.Measure(infiniteSize);
+        _ButtonArea.Measure(infiniteSize);
+        _SearchTextBox.Measure(infiniteSize);
+
+        _windowManger.MinWidth = _FilterSelectorBar.DesiredSize.Width + _ButtonArea.DesiredSize.Width * 2;
+        _windowManger.MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height + 20;
     }
 }
