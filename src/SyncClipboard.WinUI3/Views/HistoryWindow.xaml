@@ -63,6 +63,9 @@
                         HorizontalAlignment="Right"
                         Orientation="Horizontal"
                         Spacing="4">
+                <ToggleButton Style="{StaticResource IconToggleButtonStyle}" ToolTipService.ToolTip="{x:Bind i18n:Strings.WindowTopmost}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
+                    <FontIcon Glyph="&#xE840;" />
+                </ToggleButton>
                 <Button Width="24" Height="24" VerticalAlignment="Center">
                     <FontIcon Glyph="&#xE10C;" />
                     <Button.Flyout>
@@ -72,9 +75,9 @@
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
-                <ToggleButton Style="{StaticResource IconToggleButtonStyle}" ToolTipService.ToolTip="{x:Bind i18n:Strings.WindowTopmost}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
-                    <FontIcon Glyph="&#xE840;" />
-                </ToggleButton>
+                <Button Width="24" Height="24" VerticalAlignment="Center" Command="{x:Bind _viewModel.CloseCommand}">
+                    <FontIcon Glyph="&#xE711;" />
+                </Button>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">

@@ -224,6 +224,12 @@ public partial class HistoryViewModel : ObservableObject
         ScrollToBottom();
     }
 
+    [RelayCommand]
+    public void Close()
+    {
+        window?.Close();
+    }
+
     public void NavigateToNextFilter()
     {
         var currentIndex = (int)SelectedFilter;
