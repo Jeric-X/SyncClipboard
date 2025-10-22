@@ -193,7 +193,6 @@ public class GroupProfile : FileProfile
             var entryName = entry.FullName;
             var isDirectory = entryName.EndsWith('/');
             var destPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
-            bool needExtract = true;
 
             if (isDirectory)
             {
