@@ -49,7 +49,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="NativeNotification" />
     <PackageReference Include="SharpHook" />
-    <PackageReference Include="DotNetZip" />
     <PackageReference Include="System.Net.Http.Json" />
     <PackageReference Include="Quartz" />
     <PackageReference Include="Quartz.Extensions.DependencyInjection" />

@@ -1,4 +1,4 @@
-using Ionic.Zip;
+using System.IO.Compression;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Utilities;
 using System.Text;
@@ -94,6 +94,7 @@ public class GroupProfile : FileProfile
                 Array.Sort(subFiles, FileCompare);
                 foreach (var subFile in subFiles)
                 {
+                    token.ThrowIfCancellationRequested();
                     sumSize += subFile.Length;
                     if (sumSize > MAX_FILE_SIZE)
                         return (MD5_FOR_OVERSIZED_FILE, 0);
@@ -118,38 +119,57 @@ public class GroupProfile : FileProfile
 
     public async Task PrepareTransferFile(string filePath, CancellationToken token)
     {
-        var hash = await GetHash(token);
-        await Task.Run(() =>
+        ArgumentNullException.ThrowIfNull(_files);
+
+        await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+        using var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
+
+        foreach (var path in _files)
         {
-            using ZipFile zip = new ZipFile();
-            zip.AlternateEncoding = Encoding.UTF8;
-            zip.AlternateEncodingUsage = ZipOption.AsNecessary;
-
-            ArgumentNullException.ThrowIfNull(_files);
-            _files.ForEach(path =>
+            token.ThrowIfCancellationRequested();
+            if (Directory.Exists(path))
             {
-                token.ThrowIfCancellationRequested();
-                if (Directory.Exists(path))
-                {
-                    zip.AddDirectory(path, Path.GetFileName(path));
-                }
-                else if (File.Exists(path))
-                {
-                    zip.AddItem(path, "");
-                }
-            });
+                var dirName = Path.GetFileName(path);
+                archive.CreateEntry(dirName + "/");
 
-            foreach (var item in zip.Entries)
-            {
-                if (!item.IsDirectory && !FileFilterHelper.IsFileAvailableAfterFilter(item.FileName, _fileFilterConfig))
+                var subDirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+                foreach (var subDir in subDirs)
                 {
-                    zip.RemoveEntry(item.FileName);
+                    token.ThrowIfCancellationRequested();
+                    var relativeDir = Path.GetRelativePath(path, subDir).Replace(Path.DirectorySeparatorChar, '/');
+                    var dirEntryName = string.Join('/', [dirName, relativeDir]) + "/";
+                    if (FileFilterHelper.IsFileAvailableAfterFilter(dirEntryName, _fileFilterConfig))
+                        archive.CreateEntry(dirEntryName);
+                }
+
+                var subFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+                foreach (var subFile in subFiles)
+                {
+                    token.ThrowIfCancellationRequested();
+                    var relativePath = Path.GetRelativePath(path, subFile).Replace(Path.DirectorySeparatorChar, '/');
+                    var entryName = string.Join('/', [dirName, relativePath]);
+                    await AddFileToArchiveAsync(archive, entryName, subFile, token).ConfigureAwait(false);
                 }
             }
+            else if (File.Exists(path))
+            {
+                var entryName = Path.GetFileName(path);
+                await AddFileToArchiveAsync(archive, entryName, path, token).ConfigureAwait(false);
+            }
+        }
 
-            zip.Save(filePath);
-            FullPath = filePath;
-        }, token).WaitAsync(token);
+        FullPath = filePath;
+    }
+
+    private async Task AddFileToArchiveAsync(ZipArchive archive, string entryName, string sourcePath, CancellationToken token)
+    {
+        if (!FileFilterHelper.IsFileAvailableAfterFilter(entryName, _fileFilterConfig))
+            return;
+
+        var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+        await using var entryStream = entry.Open();
+        await using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        await sourceStream.CopyToAsync(entryStream, 81920, token).ConfigureAwait(false);
     }
 
     public override string GetDisplayText()
@@ -164,28 +184,67 @@ public class GroupProfile : FileProfile
         return string.Join("\n", _files.Select(file => Path.GetFileName(file)));
     }
 
-    public override async Task CheckDownloadedData(CancellationToken token)
+    private static async Task<string[]> ExtractArchiveEntriesAsync(ZipArchive archive, string extractPath, CancellationToken token)
     {
-        ArgumentNullException.ThrowIfNull(FullPath);
-        ArgumentNullException.ThrowIfNull(_hash);
-
-        if (!File.Exists(FullPath))
+        var topLevelFiles = new List<string>();
+        foreach (var entry in archive.Entries)
         {
-            throw new FileNotFoundException($"Zip file does not exist: {FullPath}", FullPath);
+            token.ThrowIfCancellationRequested();
+            var entryName = entry.FullName;
+            var isDirectory = entryName.EndsWith('/');
+            var destPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
+            bool needExtract = true;
+
+            if (isDirectory)
+            {
+                if (!Directory.Exists(destPath))
+                {
+                    Directory.CreateDirectory(destPath);
+                }
+            }
+            else if (!File.Exists(destPath))
+            {
+                var destDir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+
+                await using var entryStream = entry.Open();
+                await using var destStream = new FileStream(destPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+                await entryStream.CopyToAsync(destStream, 81920, token).ConfigureAwait(false);
+            }
+
+            var trimmed = entry.FullName.TrimEnd('/');
+            if (!trimmed.Contains('/'))
+            {
+                topLevelFiles.Add(Path.Combine(extractPath, trimmed));
+            }
         }
 
-        var extractPath = FullPath[..^4];
+        return topLevelFiles.ToArray();
+    }
+
+    public override async Task SetTranseferData(string path, CancellationToken token)
+    {
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"Zip file does not exist: {path}", path);
+        }
+
+        if (!path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException($"File is not a zip archive: {path}");
+        }
+
+        ArgumentNullException.ThrowIfNull(_hash);
+
+        var extractPath = path[..^4];
         if (!Directory.Exists(extractPath))
             Directory.CreateDirectory(extractPath);
 
-        using ZipFile zip = ZipFile.Read(FullPath);
-        await Task.Run(() => zip.ExtractAll(extractPath, ExtractExistingFileAction.DoNotOverwrite), token).WaitAsync(token);
-
-        _files = zip.EntryFileNames
-            .Select(file => file.TrimEnd('/'))
-            .Where(file => !file.Contains('/'))
-            .Select(file => Path.Combine(extractPath, file))
-            .ToArray();
+        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
+        var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractPath, token).ConfigureAwait(false);
+        _files = topLevelFiles;
 
         var (hash, _) = await CaclHashAndSizeAsync(_files, token);
         if (hash != _hash)
@@ -193,6 +252,7 @@ public class GroupProfile : FileProfile
             var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
         }
+        FullPath = path;
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)

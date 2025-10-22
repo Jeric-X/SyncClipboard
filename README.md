@@ -319,6 +319,5 @@ PUT /SyncClipboard.json
 [Vanara](https://github.com/dahall/Vanara)  
 [Tmds.DBus](https://github.com/tmds/Tmds.DBus)  
 [SharpHook](https://github.com/TolikPylypchuk/SharpHook)  
-[DotNetZip.Semverd](https://github.com/haf/DotNetZip.Semverd)  
 [Quartz.NET](https://github.com/quartznet/quartznet)  
 [MiSans](https://hyperos.mi.com/font)  

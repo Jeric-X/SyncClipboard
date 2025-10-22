@@ -11,7 +11,6 @@
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.8" />
-    <PackageVersion Include="DotNetZip" Version="1.16.0" />
     <PackageVersion Include="Magick.NET-Q16-x64" Version="13.5.0" />
     <PackageVersion Include="Magick.NET-Q16-x86" Version="13.5.0" />
     <PackageVersion Include="Magick.NET-Q16-arm64" Version="13.5.0" />

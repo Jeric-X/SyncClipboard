@@ -125,20 +125,21 @@ public class FileProfile : Profile
         return md5;
     }
 
-    public virtual async Task CheckDownloadedData(CancellationToken token)
+    public virtual async Task SetTranseferData(string path, CancellationToken token)
     {
-        ArgumentNullException.ThrowIfNull(FullPath);
-        ArgumentNullException.ThrowIfNull(_hash);
-        if (!File.Exists(FullPath))
+        if (!File.Exists(path))
         {
-            throw new FileNotFoundException($"File does not exist: {FullPath}", FullPath);
+            throw new FileNotFoundException($"File does not exist: {path}", path);
         }
 
-        var hash = await GetMD5HashFromFile(FullPath, token);
+        ArgumentNullException.ThrowIfNull(_hash);
+
+        var hash = await GetMD5HashFromFile(path, token);
         if (hash != _hash)
         {
-            throw new InvalidDataException(FullPath);
+            throw new InvalidDataException(path);
         }
+        FullPath = path;
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
