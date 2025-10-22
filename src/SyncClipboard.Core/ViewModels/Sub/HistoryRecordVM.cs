@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.ViewModels.Sub;

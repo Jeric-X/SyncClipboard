@@ -9,7 +9,7 @@ using System.Runtime.Versioning;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
-internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Abstract.Profiles.ImageProfile>
+internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<SyncClipboard.Shared.Profiles.ImageProfile>
 {
     protected override DataObject CreatePackage(ClipboardMetaInfomation metaInfomation)
     {

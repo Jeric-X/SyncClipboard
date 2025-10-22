@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using SyncClipboard.Abstract.Models;
+using SyncClipboard.Shared.Models;
 
-namespace SyncClipboard.Abstract.Utilities;
+namespace SyncClipboard.Shared.Utilities;
 
 public static class FileFilterHelper
 {

@@ -1,6 +1,5 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using System;
 using System.Linq;

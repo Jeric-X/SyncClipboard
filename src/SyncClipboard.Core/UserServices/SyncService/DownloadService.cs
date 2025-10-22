@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SharpHook;
 using SharpHook.Native;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Exceptions;

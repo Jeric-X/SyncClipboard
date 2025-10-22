@@ -1,6 +1,6 @@
-﻿using SyncClipboard.Abstract;
+using SyncClipboard.Shared;
 
-namespace SyncClipboard.Abstract.Profiles;
+namespace SyncClipboard.Shared.Profiles;
 
 public class UnknownProfile : Profile
 {

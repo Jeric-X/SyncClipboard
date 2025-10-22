@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Abstract;
+namespace SyncClipboard.Shared;
 
 public record class ServerPara(
     ushort Port,

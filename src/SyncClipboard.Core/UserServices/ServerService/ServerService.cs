@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;

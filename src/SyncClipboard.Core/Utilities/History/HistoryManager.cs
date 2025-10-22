@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;

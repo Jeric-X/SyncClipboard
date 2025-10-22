@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Abstract;
+namespace SyncClipboard.Shared;
 
 public interface IClipboardImage
 {

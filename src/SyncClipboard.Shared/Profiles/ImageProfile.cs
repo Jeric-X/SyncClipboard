@@ -1,7 +1,7 @@
-﻿using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Models;
+using SyncClipboard.Shared;
+using SyncClipboard.Shared.Models;
 
-namespace SyncClipboard.Abstract.Profiles;
+namespace SyncClipboard.Shared.Profiles;
 
 public class ImageProfile : FileProfile
 {

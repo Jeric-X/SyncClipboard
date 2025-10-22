@@ -1,5 +1,3 @@
-using SyncClipboard.Abstract;
-
 namespace SyncClipboard.Core.Models;
 
 public class HistoryRecord

@@ -1,7 +1,7 @@
-﻿using System.Text.Json.Serialization;
-using SyncClipboard.Abstract.Profiles;
+using System.Text.Json.Serialization;
+using SyncClipboard.Shared.Profiles;
 
-namespace SyncClipboard.Abstract;
+namespace SyncClipboard.Shared;
 
 public record class ClipboardProfileDTO
 {

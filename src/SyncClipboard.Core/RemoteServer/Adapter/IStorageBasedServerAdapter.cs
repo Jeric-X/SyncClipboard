@@ -1,4 +1,3 @@
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter;

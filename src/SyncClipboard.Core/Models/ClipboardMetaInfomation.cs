@@ -1,7 +1,4 @@
-﻿using SyncClipboard.Abstract;
-using SyncClipboard.Core.Utilities;
-
-namespace SyncClipboard.Core.Models;
+﻿namespace SyncClipboard.Core.Models;
 
 public record class ClipboardMetaInfomation
 {

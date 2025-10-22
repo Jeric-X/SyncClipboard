@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SyncClipboard.Abstract\SyncClipboard.Abstract.csproj" />
+    <ProjectReference Include="..\SyncClipboard.Shared\SyncClipboard.Shared.csproj" />
   </ItemGroup>
 
 </Project>

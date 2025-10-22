@@ -1,6 +1,6 @@
-﻿using SyncClipboard.Abstract.Utilities;
+using SyncClipboard.Shared.Utilities;
 
-namespace SyncClipboard.Abstract.Models;
+namespace SyncClipboard.Shared.Models;
 
 public record FileFilterConfig
 {

@@ -1,4 +1,3 @@
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;

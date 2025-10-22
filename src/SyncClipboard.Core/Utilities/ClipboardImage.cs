@@ -1,5 +1,4 @@
 ﻿using ImageMagick;
-using SyncClipboard.Abstract;
 
 namespace SyncClipboard.Core.Utilities;
 

@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Test", "SyncC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Test.WinUI3", "SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj", "{D9DDC695-D4ED-45D0-B4A3-EFB3A094BB51}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Abstract", "SyncClipboard.Abstract\SyncClipboard.Abstract.csproj", "{DEB12046-0106-4C38-A7F1-4B733204C225}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Shared", "SyncClipboard.Shared\SyncClipboard.Shared.csproj", "{DEB12046-0106-4C38-A7F1-4B733204C225}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Desktop", "SyncClipboard.Desktop\SyncClipboard.Desktop.csproj", "{622C4145-540A-44F8-908B-3EAD8F32F3DD}"
 EndProject

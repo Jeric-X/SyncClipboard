@@ -1,4 +1,4 @@
-global using SyncClipboard.Abstract;
-global using SyncClipboard.Abstract.Profiles;
-global using SyncClipboard.Abstract.Models;
-global using SyncClipboard.Abstract.Utilities;
+global using SyncClipboard.Shared;
+global using SyncClipboard.Shared.Profiles;
+global using SyncClipboard.Shared.Models;
+global using SyncClipboard.Shared.Utilities;

@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
 using Microsoft.AspNetCore.StaticFiles;
-using SyncClipboard.Abstract;
+using SyncClipboard.Shared;
 using System.Text.Json;
 using SyncClipboard.Server.Core.Constants;
 

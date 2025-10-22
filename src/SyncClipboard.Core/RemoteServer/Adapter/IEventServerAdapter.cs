@@ -1,5 +1,3 @@
-using SyncClipboard.Abstract;
-
 namespace SyncClipboard.Core.RemoteServer.Adapter;
 
 public interface IEventServerAdapter : IStorageBasedServerAdapter

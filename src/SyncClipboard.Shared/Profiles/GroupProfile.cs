@@ -1,10 +1,9 @@
-﻿using Ionic.Zip;
-using SyncClipboard.Abstract;
-using SyncClipboard.Abstract.Models;
-using SyncClipboard.Abstract.Utilities;
+using Ionic.Zip;
+using SyncClipboard.Shared.Models;
+using SyncClipboard.Shared.Utilities;
 using System.Text;
 
-namespace SyncClipboard.Abstract.Profiles;
+namespace SyncClipboard.Shared.Profiles;
 
 public class GroupProfile : FileProfile
 {

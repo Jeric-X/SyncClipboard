@@ -1,4 +1,3 @@
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 
