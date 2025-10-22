@@ -1,11 +1,10 @@
 ﻿using Ionic.Zip;
 using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
+using SyncClipboard.Abstract.Models;
+using SyncClipboard.Abstract.Utilities;
 using System.Text;
 
-namespace SyncClipboard.Core.Clipboard;
+namespace SyncClipboard.Abstract.Profiles;
 
 public class GroupProfile : FileProfile
 {
@@ -15,17 +14,17 @@ public class GroupProfile : FileProfile
 
     public override ProfileType Type => ProfileType.Group;
 
-    private GroupProfile(IEnumerable<string> files, string hash)
+    public GroupProfile(IEnumerable<string> files, string hash)
         : base(null, CreateNewDataFileName(), hash)
     {
         _files = [.. files];
     }
 
-    private GroupProfile(IEnumerable<string> files, FileFilterConfig filterConfig)
+    public GroupProfile(IEnumerable<string> files, FileFilterConfig? filterConfig = null)
         : base(null, CreateNewDataFileName(), null)
     {
         _files = [.. files];
-        _fileFilterConfig = filterConfig;
+        _fileFilterConfig = filterConfig ?? new();
     }
 
     private static string CreateNewDataFileName()
@@ -35,16 +34,6 @@ public class GroupProfile : FileProfile
 
     public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
-    }
-
-    public GroupProfile(HistoryRecord record) : this(record.FilePath, record.Hash)
-    {
-    }
-
-    public static Task<Profile> Create(string[] files, FileFilterConfig? filterConfig = null)
-    {
-        filterConfig ??= new FileFilterConfig();
-        return Task.FromResult<Profile>(new GroupProfile(files, filterConfig));
     }
 
     private static int FileCompare(FileInfo file1, FileInfo file2)
@@ -112,7 +101,7 @@ public class GroupProfile : FileProfile
                     hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
                 }
             }
-            else if (File.Exists(file) && ContentControlHelper.IsFileAvailableAfterFilter(file, _fileFilterConfig))
+            else if (File.Exists(file) && FileFilterHelper.IsFileAvailableAfterFilter(file, _fileFilterConfig))
             {
                 var fileInfo = new FileInfo(file);
                 sumSize += fileInfo.Length;
@@ -153,7 +142,7 @@ public class GroupProfile : FileProfile
 
             foreach (var item in zip.Entries)
             {
-                if (!item.IsDirectory && !ContentControlHelper.IsFileAvailableAfterFilter(item.FileName, _fileFilterConfig))
+                if (!item.IsDirectory && !FileFilterHelper.IsFileAvailableAfterFilter(item.FileName, _fileFilterConfig))
                 {
                     zip.RemoveEntry(item.FileName);
                 }
@@ -164,7 +153,7 @@ public class GroupProfile : FileProfile
         }, token).WaitAsync(token);
     }
 
-    public override string ShowcaseText()
+    public override string GetDisplayText()
     {
         if (_files is null)
             return string.Empty;
@@ -207,7 +196,7 @@ public class GroupProfile : FileProfile
         }
     }
 
-    public override async Task<bool> ValidLocalData(bool quick, CancellationToken token)
+    public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
         if (_files is null || _files.Length == 0)
             return false;

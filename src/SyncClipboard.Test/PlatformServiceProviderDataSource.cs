@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Abstract;
+﻿using SyncClipboard.Abstract.Profiles;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using System.Reflection;

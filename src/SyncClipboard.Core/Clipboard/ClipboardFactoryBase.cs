@@ -35,7 +35,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             }
             else
             {
-                return await GroupProfile.Create(metaInfomation.Files, contentControl ? Config.GetConfig<FileFilterConfig>() : null);
+                return new GroupProfile(metaInfomation.Files, contentControl ? Config.GetConfig<FileFilterConfig>() : null);
             }
         }
 
@@ -97,21 +97,10 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         {
             Directory.CreateDirectory(Env.ImageTemplateFolder);
         }
-        var filePath = ImageProfile.CreateNewDataFileName();
+        var fileName = $"Image_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.png";
+        var filePath = Path.Combine(Env.ImageTemplateFolder, fileName);
         image.Save(filePath);
         return filePath;
-    }
-
-    public Task<Profile> CreateProfileFromHistoryRecord(HistoryRecord historyRecord, CancellationToken ctk)
-    {
-        return historyRecord.Type switch
-        {
-            ProfileType.Text => Task.FromResult<Profile>(new TextProfile(historyRecord.Text)),
-            ProfileType.File => Task.FromResult<Profile>(new FileProfile(historyRecord)),
-            ProfileType.Image => Task.FromResult<Profile>(new ImageProfile(historyRecord)),
-            ProfileType.Group => Task.FromResult<Profile>(new GroupProfile(historyRecord)),
-            _ => Task.FromResult<Profile>(new UnknownProfile()),
-        };
     }
 
     public async Task<Profile> CreateProfileFromLocal(CancellationToken ctk)

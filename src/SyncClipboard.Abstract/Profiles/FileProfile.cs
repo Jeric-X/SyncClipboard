@@ -1,9 +1,9 @@
 ﻿using SyncClipboard.Abstract;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Abstract.Models;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace SyncClipboard.Core.Clipboard;
+namespace SyncClipboard.Abstract.Profiles;
 
 public class FileProfile : Profile
 {
@@ -78,7 +78,7 @@ public class FileProfile : Profile
 
     public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);
 
-    public override string ShowcaseText()
+    public override string GetDisplayText()
     {
         return FileName;
     }
@@ -103,15 +103,6 @@ public class FileProfile : Profile
         }
     }
 
-    public FileProfile(HistoryRecord record)
-        : this(
-              record.FilePath.Length > 0 ? record.FilePath[0] : null,
-              record.FilePath.Length > 0 ? Path.GetFileName(record.FilePath[0]) : string.Empty,
-              record.Hash
-          )
-    {
-    }
-
     protected async static Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
@@ -134,7 +125,7 @@ public class FileProfile : Profile
         return md5;
     }
 
-    public override async Task CheckDownloadedData(CancellationToken token)
+    public virtual async Task CheckDownloadedData(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(FullPath);
         ArgumentNullException.ThrowIfNull(_hash);
@@ -150,7 +141,7 @@ public class FileProfile : Profile
         }
     }
 
-    public override async Task<bool> ValidLocalData(bool quick, CancellationToken token)
+    public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
         if (string.IsNullOrEmpty(FullPath))
             return false;

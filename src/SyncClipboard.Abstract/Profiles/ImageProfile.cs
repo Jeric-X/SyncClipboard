@@ -1,8 +1,7 @@
 ﻿using SyncClipboard.Abstract;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Models;
+using SyncClipboard.Abstract.Models;
 
-namespace SyncClipboard.Core.Clipboard;
+namespace SyncClipboard.Abstract.Profiles;
 
 public class ImageProfile : FileProfile
 {
@@ -13,17 +12,8 @@ public class ImageProfile : FileProfile
     {
     }
 
-    public ImageProfile(HistoryRecord record) : base(record)
-    {
-    }
-
     public ImageProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
     {
-    }
-
-    public static string CreateNewDataFileName()
-    {
-        return Path.Combine(Env.ImageTemplateFolder, $"Image_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.{GetImageExtention()}");
     }
 
     private static string GetImageExtention()

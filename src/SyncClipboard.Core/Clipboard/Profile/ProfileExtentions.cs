@@ -58,6 +58,18 @@ public static class ProfileExtentions
         };
     }
 
+    public static Profile ToProfile(this HistoryRecord historyRecord)
+    {
+        return historyRecord.Type switch
+        {
+            ProfileType.Text => new TextProfile(historyRecord.Text),
+            ProfileType.File => new FileProfile(historyRecord.FilePath[0], null, historyRecord.Hash),
+            ProfileType.Image => new ImageProfile(historyRecord.FilePath[0], null, historyRecord.Hash),
+            ProfileType.Group => new GroupProfile(historyRecord.FilePath, historyRecord.Hash),
+            _ => new UnknownProfile(),
+        };
+    }
+
     public static async Task<HistoryRecord> CreateHistoryRecord(this Profile profile, CancellationToken token)
     {
         switch (profile)

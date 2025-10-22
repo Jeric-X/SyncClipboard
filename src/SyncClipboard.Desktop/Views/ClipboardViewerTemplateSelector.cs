@@ -1,7 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Metadata;
-using SyncClipboard.Abstract;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.Collections.Generic;

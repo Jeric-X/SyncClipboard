@@ -2,6 +2,7 @@
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Abstract;
+using SyncClipboard.Abstract.Profiles;
 using SyncClipboard.Core.Models;
 using System;
 using System.Linq;

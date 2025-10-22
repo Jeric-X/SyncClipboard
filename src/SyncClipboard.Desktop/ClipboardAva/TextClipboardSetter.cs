@@ -1,5 +1,4 @@
 ﻿using Avalonia.Input;
-using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using System;
 using System.Runtime.Versioning;

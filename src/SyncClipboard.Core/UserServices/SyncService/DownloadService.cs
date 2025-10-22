@@ -363,8 +363,8 @@ public class DownloadService : Service
 
         try
         {
-            var cachedProfile = await _clipboardFactory.CreateProfileFromHistoryRecord(historyRecord, token);
-            var valid = await cachedProfile.ValidLocalData(false, token);
+            var cachedProfile = historyRecord.ToProfile();
+            var valid = await cachedProfile.IsLocalDataValid(false, token);
             if (!valid)
             {
                 await _historyManager.DeleteHistory(historyRecord, token);

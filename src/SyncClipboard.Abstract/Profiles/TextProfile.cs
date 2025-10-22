@@ -1,6 +1,6 @@
 ﻿using SyncClipboard.Abstract;
 
-namespace SyncClipboard.Core.Clipboard;
+namespace SyncClipboard.Abstract.Profiles;
 
 public class TextProfile(string text) : Profile
 {
@@ -13,7 +13,7 @@ public class TextProfile(string text) : Profile
         return ValueTask.FromResult(Text);
     }
 
-    public override string ShowcaseText()
+    public override string GetDisplayText()
     {
         if (Text.Length > 500)
         {
@@ -36,4 +36,9 @@ public class TextProfile(string text) : Profile
     }
 
     public override Task<ClipboardProfileDTO> ToDto(CancellationToken token) => Task.FromResult(new ClipboardProfileDTO(string.Empty, Text, Type));
+
+    public override Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
+    {
+        return Task.FromResult(true);
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using SyncClipboard.Abstract.Profiles;
 
 namespace SyncClipboard.Abstract;
 

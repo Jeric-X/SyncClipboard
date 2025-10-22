@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Utilities;
+﻿namespace SyncClipboard.Abstract.Utilities;
 
 public static class IEnumerableExtention
 {

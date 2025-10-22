@@ -407,8 +407,8 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
     {
-        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), CancellationToken.None);
-        var valid = await profile.ValidLocalData(true, CancellationToken.None);
+        var profile = record.ToHistoryRecord().ToProfile();
+        var valid = await profile.IsLocalDataValid(true, CancellationToken.None);
 
         if (!valid)
         {
@@ -424,8 +424,8 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
-        var profile = await clipboardFactory.CreateProfileFromHistoryRecord(record.ToHistoryRecord(), token);
-        var valid = await profile.ValidLocalData(true, token);
+        var profile = record.ToHistoryRecord().ToProfile();
+        var valid = await profile.IsLocalDataValid(true, token);
         if (!valid)
         {
             InfoBarMessage = I18n.Strings.UnableToCopyByMissingFile;

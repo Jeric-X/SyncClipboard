@@ -1,6 +1,6 @@
 ﻿using SyncClipboard.Abstract;
 
-namespace SyncClipboard.Core.Clipboard;
+namespace SyncClipboard.Abstract.Profiles;
 
 public class UnknownProfile : Profile
 {
@@ -18,7 +18,7 @@ public class UnknownProfile : Profile
         return Task.FromResult(rhs is UnknownProfile);
     }
 
-    public override string ShowcaseText()
+    public override string GetDisplayText()
     {
         return "Do not support this type of clipboard";
     }
@@ -26,5 +26,10 @@ public class UnknownProfile : Profile
     public override Task<ClipboardProfileDTO> ToDto(CancellationToken token)
     {
         throw new NotImplementedException();
+    }
+
+    public override Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
+    {
+        return Task.FromResult(false);
     }
 }

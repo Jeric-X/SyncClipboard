@@ -52,7 +52,7 @@ internal class StorageBasedServerHelper
         {
             var dataPath = await fileProfile.GetOrCreateFileDataPath(cancellationToken);
             await _serverAdapter.DownloadFileAsync(fileProfile.FileName, dataPath, progress, cancellationToken);
-            await profile.CheckDownloadedData(cancellationToken);
+            await fileProfile.CheckDownloadedData(cancellationToken);
             _logger.Write($"[PULL] Downloaded {fileProfile.FileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }

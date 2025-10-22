@@ -8,5 +8,4 @@ public interface IClipboardFactory
     Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk);
     Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, bool contentControl, CancellationToken ctk);
     Task<Profile> CreateProfileFromLocal(CancellationToken ctk);
-    Task<Profile> CreateProfileFromHistoryRecord(HistoryRecord historyRecord, CancellationToken ctk);
 }

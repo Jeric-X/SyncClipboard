@@ -24,7 +24,7 @@ public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")
             notification.Image = new Uri(imageProfile.FullPath);
         }
 
-        notification.Message = profile.ShowcaseText();
+        notification.Message = profile.GetDisplayText();
         var actions = profileActionBuilder.Build(profile);
         notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
