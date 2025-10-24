@@ -107,6 +107,8 @@
                         <ui:FAMenuFlyout>
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="显示同步状态" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="仅显示本地" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -159,19 +161,31 @@
                 </ListBox.ItemsPanel>
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vms:HistoryRecordVM">
-                        <Grid MinHeight="10" ColumnDefinitions="Auto, *, Auto" Background="Transparent">
+                        <Grid MinHeight="10"
+                              ColumnDefinitions="Auto, Auto, *, Auto"
+                              Background="Transparent"
+                              Opacity="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToOpacity}}">
                             <Grid.ContextFlyout>
                                 <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />
                             </Grid.ContextFlyout>
-                            <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
+                            <!--  Left color bar to indicate sync status  -->
+                            <Border Grid.Column="0"
+                                    Width="1"
+                                    Background="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToBrush}}"
+                                    ToolTip.Tip="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToText}}"
+                                    IsVisible="{Binding #_HistoryWindow.ViewModel.ShowSyncState}" />
+                            <Border Grid.Column="1"
+                                    Height="40"
+                                    VerticalAlignment="Top"
+                                    Margin="2,0,0,0">
                                 <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </Border>
-                            <ContentControl Grid.Column="1"
+                            <ContentControl Grid.Column="2"
                                             Padding="8,8,0,8"
                                             VerticalAlignment="Center"
                                             FontSize="12"
                                             Content="{Binding .}" />
-                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
+                            <StackPanel Grid.Column="3" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Click="CopyButtonClicked">
                                     <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>

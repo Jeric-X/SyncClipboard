@@ -3,6 +3,9 @@ using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.Models;
 using System;
 using System.Linq;
+using Microsoft.UI.Xaml.Media;
+using Windows.UI;
+using SyncClipboard.Core.I18n;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
 
@@ -66,5 +69,26 @@ internal static class ConvertMethod
     public static string ToPinIcon(bool input)
     {
         return input ? "\uE841" : "\uE840";
+    }
+
+    public static SolidColorBrush SyncStateToBrush(SyncStatus state)
+    {
+        return state switch
+        {
+            SyncStatus.Disconnected => new SolidColorBrush(Colors.Orange),
+            SyncStatus.Synced => new SolidColorBrush(Colors.ForestGreen),
+            SyncStatus.SyncError => new SolidColorBrush(Colors.DarkRed),
+            _ => new SolidColorBrush(Colors.Transparent),
+        };
+    }
+
+    public static string SyncStateToText(SyncStatus state)
+    {
+        return I18nHelper.GetString(state);
+    }
+
+    public static double SyncStateToOpacity(SyncStatus state)
+    {
+        return state == SyncStatus.ServerOnly ? 0.5 : 1.0;
     }
 }

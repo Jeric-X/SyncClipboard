@@ -19,6 +19,13 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private bool stared = record.Stared;
     [ObservableProperty]
     private bool pinned = record.Pinned;
+    // Sync state used by UI to indicate server/local sync status
+    [ObservableProperty]
+#if DEBUG
+    private SyncStatus syncState = GetRandomSyncStatus();
+#else
+    private SyncStatus syncState = SyncStatus.Synced;
+#endif
 
     public HistoryRecord ToHistoryRecord()
     {
@@ -42,7 +49,28 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
         Timestamp = record.Timestamp;
         Stared = record.Stared;
         Pinned = record.Pinned;
+        // For testing: randomize SyncState when update is called so UI can show different states
+#if DEBUG
+        try
+        {
+            SyncState = GetRandomSyncStatus();
+        }
+        catch
+        {
+            SyncState = SyncStatus.Synced;
+        }
+#endif
     }
+
+#if DEBUG
+    private static SyncStatus GetRandomSyncStatus()
+    {
+        var values = (SyncStatus[])Enum.GetValues(typeof(SyncStatus));
+        // Use Guid-based seed for better distribution across quick successive creations
+        var rnd = new Random(Guid.NewGuid().GetHashCode());
+        return values[rnd.Next(values.Length)];
+    }
+#endif
 
     public override bool Equals(object? obj)
     {

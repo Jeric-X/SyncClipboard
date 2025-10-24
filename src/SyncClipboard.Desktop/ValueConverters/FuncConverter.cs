@@ -1,4 +1,6 @@
 ﻿using Avalonia.Data.Converters;
+using Avalonia.Media;
+using SyncClipboard.Core.I18n;
 using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Core.Models;
@@ -87,5 +89,26 @@ public class FuncConverter
             // 计算距离底部20%的位置作为Margin的Bottom值
             var bottomMargin = listBoxHeight * 0.2;
             return new Thickness(0, 0, 0, bottomMargin);
+        });
+
+    public static FuncValueConverter<SyncStatus, IBrush> SyncStateToBrush { get; } =
+        new FuncValueConverter<SyncStatus, IBrush>(state =>
+        {
+            return state switch
+            {
+                SyncStatus.Disconnected => Brushes.Orange,
+                SyncStatus.SyncError => Brushes.DarkRed,
+                SyncStatus.Synced => Brushes.ForestGreen,
+                _ => Brushes.Transparent,
+            };
+        });
+
+    public static FuncValueConverter<SyncStatus, string> SyncStateToText { get; } =
+        new FuncValueConverter<SyncStatus, string>(I18nHelper.GetString);
+
+    public static FuncValueConverter<SyncStatus, double> SyncStateToOpacity { get; } =
+        new FuncValueConverter<SyncStatus, double>(state =>
+        {
+            return state == SyncStatus.ServerOnly ? 0.5 : 1.0;
         });
 }

@@ -73,6 +73,8 @@
                         <MenuFlyout Placement="Bottom">
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="显示同步状态" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="仅显示本地" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -128,19 +130,29 @@
                         </ListViewItem.ContextFlyout>
                         <Grid MinHeight="10"
                               PointerPressed="Grid_PointerPressed"
-                              ColumnDefinitions="Auto, *, Auto"
-                              Background="Transparent">
-                            <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
+                              ColumnDefinitions="Auto, Auto, *, Auto"
+                              Background="Transparent"
+                              Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState)}">
+                            <!--  Left color bar to indicate sync status  -->
+                            <Border Grid.Column="0"
+                                    Width="1"
+                                    Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState)}"
+                                    ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}"
+                                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_HistoryWindow.DataContext.ShowSyncState)}" />
+                            <Border Grid.Column="1"
+                                    Height="40"
+                                    VerticalAlignment="Top"
+                                    Margin="2,0,0,0">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>
-                            <ContentControl Grid.Column="1"
+                            <ContentControl Grid.Column="2"
                                             Padding="8,8,0,8"
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Center"
                                             FontSize="12"
                                             Content="{x:Bind}"
                                             ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
-                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
+                            <StackPanel Grid.Column="3" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Click="CopyButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="&#xE8C8;" />
                                 </Button>

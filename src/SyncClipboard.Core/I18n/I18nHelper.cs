@@ -33,4 +33,15 @@ public class I18nHelper
         CultureInfo.CurrentUICulture = newCulture;
         CultureInfo.DefaultThreadCurrentUICulture = newCulture;
     }
+
+    public static string GetString(SyncStatus status)
+    {
+        return status switch
+        {
+            SyncStatus.Synced => "已同步",
+            SyncStatus.LocalOnly => "仅本地：可上传",
+            SyncStatus.ServerOnly => "仅服务器：可下载",
+            _ => "状态未知",
+        };
+    }
 }

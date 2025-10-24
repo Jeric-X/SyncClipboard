@@ -91,6 +91,9 @@ public partial class HistoryViewModel : ObservableObject
             // 如果类型不匹配，直接返回false
             if (!typeMatches) return false;
 
+            // 如果只显示本地选项被勾选，则过滤掉仅服务器的记录
+            if (OnlyShowLocal && record.SyncState == SyncStatus.ServerOnly) return false;
+
             // 如果没有搜索文本，返回类型匹配结果
             if (string.IsNullOrEmpty(SearchText)) return true;
 
@@ -189,6 +192,31 @@ public partial class HistoryViewModel : ObservableObject
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().CloseWhenLostFocus;
         set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { CloseWhenLostFocus = value });
+    }
+
+    public bool ShowSyncState
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().ShowSyncState;
+        set
+        {
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ShowSyncState = value });
+            OnPropertyChanged(nameof(ShowSyncState));
+        }
+    }
+
+    [ObservableProperty]
+    private bool serverConnected = true;
+
+    public bool OnlyShowLocal
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().OnlyShowLocal;
+        set
+        {
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowLocal = value });
+            // Re-apply filter so UI reflects the change immediately
+            ApplyFilter();
+            OnPropertyChanged(nameof(OnlyShowLocal));
+        }
     }
 
     [RelayCommand]
