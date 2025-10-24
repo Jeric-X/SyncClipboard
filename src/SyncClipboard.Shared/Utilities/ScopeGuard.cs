@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Utilities;
+﻿namespace SyncClipboard.Shared.Utilities;
 
 public sealed class ScopeGuard(Action action) : IDisposable
 {

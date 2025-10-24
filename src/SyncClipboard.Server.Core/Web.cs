@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using SyncClipboard.Shared;
-using SyncClipboard.Server.Core.Controller;
+using SyncClipboard.Server.Core.Controllers;
 using SyncClipboard.Server.Core.CredentialChecker;
 using SyncClipboard.Server.Core.Hubs;
 using System.Net;
 using System.Text.Json.Serialization;
+using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Server.Core.Utilities.History;
+using SyncClipboard.Server.Core.Utilities;
 
 namespace SyncClipboard.Server.Core;
 
@@ -26,6 +28,9 @@ public class Web
         services.AddMemoryCache();
         services.AddSignalR();
 
+        services.AddDbContext<HistoryDbContext>();
+        services.AddScoped<HistoryService>();
+
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
@@ -38,6 +43,8 @@ public class Web
         });
 
         var app = builder.Build();
+
+        MigrationHelper.EnsureDBMigrations(app.Services, app.Lifetime);
 
         if (app.Environment.IsDevelopment() || useSwagger)
         {

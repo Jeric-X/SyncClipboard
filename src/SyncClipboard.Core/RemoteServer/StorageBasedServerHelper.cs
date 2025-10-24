@@ -91,7 +91,7 @@ internal class StorageBasedServerHelper
             }
 
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
-            return GetProfileBy(profileDto);
+            return ClipboardProfileDTO.CreateProfile(profileDto);
         }
         catch (Exception ex) when (
             ex is JsonException ||
@@ -180,28 +180,5 @@ internal class StorageBasedServerHelper
             _logger.Write($"Warning: Connection test failed: {ex.Message}");
             return false;
         }
-    }
-
-    public static Profile GetProfileBy(ClipboardProfileDTO profileDTO)
-    {
-        switch (profileDTO.Type)
-        {
-            case ProfileType.Text:
-                return new TextProfile(profileDTO.Clipboard);
-            case ProfileType.File:
-                {
-                    if (ImageHelper.FileIsImage(profileDTO.File))
-                    {
-                        return new ImageProfile(profileDTO);
-                    }
-                    return new FileProfile(profileDTO);
-                }
-            case ProfileType.Image:
-                return new ImageProfile(profileDTO);
-            case ProfileType.Group:
-                return new GroupProfile(profileDTO);
-        }
-
-        return new UnknownProfile();
     }
 }

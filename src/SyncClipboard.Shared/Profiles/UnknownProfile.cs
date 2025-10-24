@@ -1,12 +1,10 @@
-using SyncClipboard.Shared;
-
 namespace SyncClipboard.Shared.Profiles;
 
 public class UnknownProfile : Profile
 {
     public override ProfileType Type => ProfileType.Unknown;
 
-    private const string Text = "Unknown Clipboard";
+    public override string Text { get; } = "Unknown Clipboard";
 
     public override ValueTask<string> GetLogId(CancellationToken token)
     {
@@ -31,5 +29,15 @@ public class UnknownProfile : Profile
     public override Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
         return Task.FromResult(false);
+    }
+
+    public override ValueTask<string> GetHash(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override ValueTask<long> GetSize(CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 }

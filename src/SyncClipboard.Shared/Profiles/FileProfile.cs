@@ -1,5 +1,3 @@
-using SyncClipboard.Shared;
-using SyncClipboard.Shared.Models;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -12,6 +10,9 @@ public class FileProfile : Profile
     public virtual string FileName { get; set; } = "";
     public override ProfileType Type => ProfileType.File;
     public virtual string? FullPath { get; set; }
+
+    public override string Text => FileName;
+
     protected string? _hash;
     protected long? _size;
 
@@ -41,7 +42,7 @@ public class FileProfile : Profile
     {
     }
 
-    public virtual ValueTask<long> GetSize(CancellationToken token)
+    public override ValueTask<long> GetSize(CancellationToken token)
     {
         if (_size is null)
         {
@@ -56,7 +57,7 @@ public class FileProfile : Profile
         return ValueTask.FromResult(_size.Value);
     }
 
-    public virtual async ValueTask<string> GetHash(CancellationToken token)
+    public override async ValueTask<string> GetHash(CancellationToken token)
     {
         if (_hash is null)
         {
@@ -140,6 +141,7 @@ public class FileProfile : Profile
             throw new InvalidDataException(path);
         }
         FullPath = path;
+        FileName = Path.GetFileName(path);
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)

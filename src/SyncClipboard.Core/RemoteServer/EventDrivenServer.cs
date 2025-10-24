@@ -108,7 +108,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
 
     private void OnProfileDtoChanged(ClipboardProfileDTO? newProfileDto)
     {
-        var newProfile = newProfileDto != null ? StorageBasedServerHelper.GetProfileBy(newProfileDto) : new UnknownProfile();
+        var newProfile = newProfileDto != null ? ClipboardProfileDTO.CreateProfile(newProfileDto) : new UnknownProfile();
         RemoteProfileChangedImpl?.Invoke(this, new ProfileChangedEventArgs
         {
             NewProfile = newProfile,

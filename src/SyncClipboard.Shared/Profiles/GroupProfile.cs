@@ -10,13 +10,15 @@ public class GroupProfile : FileProfile
     private readonly FileFilterConfig _fileFilterConfig = new();
     private string[]? _files;
     public string[] Files => _files ?? [];
+    public override string Text => string.Join('\n', Files.Select(Path.GetFileName));
 
     public override ProfileType Type => ProfileType.Group;
 
-    public GroupProfile(IEnumerable<string> files, string hash)
+    public GroupProfile(IEnumerable<string> files, string hash, string? dataPath = null)
         : base(null, CreateNewDataFileName(), hash)
     {
         _files = [.. files];
+        FullPath = dataPath;
     }
 
     public GroupProfile(IEnumerable<string> files, FileFilterConfig? filterConfig = null)
@@ -252,6 +254,7 @@ public class GroupProfile : FileProfile
             throw new InvalidDataException(errorMsg);
         }
         FullPath = path;
+        FileName = Path.GetFileName(path);
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)

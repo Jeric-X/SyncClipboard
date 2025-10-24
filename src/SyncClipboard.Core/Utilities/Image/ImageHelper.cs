@@ -4,21 +4,11 @@ namespace SyncClipboard.Core.Utilities.Image
 {
     public static class ImageHelper
     {
-        public static readonly string[] ImageExtensions = [".jpg", ".jpeg", ".gif", ".bmp", ".png"];
         public static readonly string[] ExImageExtensions = [".heic", ".heif", ".webp", ".avif"];
 
         public static bool FileIsImage(string filename)
         {
-            string extension = System.IO.Path.GetExtension(filename);
-            foreach (var imageExtension in ImageExtensions)
-            {
-                if (imageExtension.Equals(extension, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return ImageTool.FileIsImage(filename);
         }
 
         public static bool IsComplexImage(string filename)

@@ -1,24 +1,23 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
-using SyncClipboard.Abstract;
 using Microsoft.AspNetCore.StaticFiles;
-using SyncClipboard.Shared;
 using System.Text.Json;
 using SyncClipboard.Server.Core.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
+using SyncClipboard.Server.Core.Services.History;
 
-namespace SyncClipboard.Server.Core.Controller;
+namespace SyncClipboard.Server.Core.Controllers;
 
 [ApiController]
 [Authorize]
-public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext, IWebHostEnvironment env, IMemoryCache cache) : ControllerBase
+public class SyncClipboardController(
+    IHubContext<SyncClipboardHub> _hubContext,
+    IWebHostEnvironment _env,
+    IMemoryCache _cache,
+    HistoryService _historyService) : ControllerBase
 {
-    private readonly IHubContext<SyncClipboardHub> _hubContext = hubContext;
-    private readonly IWebHostEnvironment _env = env;
-    private readonly IMemoryCache _cache = cache;
-
     private static bool InvalidFileName(string name)
     {
         return name.Contains('\\') || name.Contains('/');
@@ -72,13 +71,13 @@ public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext, I
 
     [HttpHead("file/{fileName}")]
     [HttpGet("file/{fileName}")]
-    public async Task<IActionResult> GetFileFromFolder(string fileName)
+    public async Task<IActionResult> GetFileFromFolder(string fileName, CancellationToken token)
     {
         if (InvalidFileName(fileName))
         {
             return BadRequest();
         }
-        var path = Path.Combine(_env.WebRootPath, "file", fileName);
+        var path = await _historyService.GetRecentTransferFile(HistoryService.HARD_CODED_USER_ID, fileName, token);
         return await GetFileInternal(path);
     }
 
@@ -126,13 +125,39 @@ public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext, I
     }
 
     [HttpPut("SyncClipboard.json")]
-    public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto)
+    public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto, CancellationToken token)
     {
         var path = Path.Combine(_env.WebRootPath, "SyncClipboard.json");
-        var text = JsonSerializer.Serialize(profileDto);
-        await System.IO.File.WriteAllTextAsync(path, text);
         _cache.Set(path, profileDto);
-        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto);
+        var text = JsonSerializer.Serialize(profileDto);
+        var profile = ClipboardProfileDTO.CreateProfile(profileDto);
+        if (profile is FileProfile fileProfile)
+        {
+            var dataPath = Path.Combine(_env.WebRootPath, "file", fileProfile.FileName);
+            if (!System.IO.File.Exists(dataPath))
+            {
+                return BadRequest("Data file not found on server.");
+            }
+            var historyPath = Path.Combine(await _historyService.GetProfileDataFolder(profile, token), fileProfile.FileName);
+            System.IO.File.Move(dataPath, historyPath, true);
+
+            try
+            {
+                await fileProfile.SetTranseferData(historyPath, token);
+            }
+            catch when (!token.IsCancellationRequested)
+            {
+                return BadRequest("Data file is invalid.");
+            }
+        }
+
+        List<Task> tasks = [
+            _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token),
+            System.IO.File.WriteAllTextAsync(path, text, token),
+            _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto, token)
+        ];
+
+        await Task.WhenAll(tasks);
         return Ok();
     }
 
@@ -168,9 +193,9 @@ public class SyncClipboardController(IHubContext<SyncClipboardHub> hubContext, I
         return Ok("Server is running.");
     }
 
-    private async Task<IActionResult> GetFileInternal(string path)
+    private async Task<IActionResult> GetFileInternal(string? path)
     {
-        if (!System.IO.File.Exists(path))
+        if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
         {
             return NotFound();
         }
