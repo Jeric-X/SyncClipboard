@@ -97,7 +97,7 @@ public class FuncConverter
             return state switch
             {
                 SyncStatus.Disconnected => Brushes.Orange,
-                SyncStatus.SyncError => Brushes.DarkRed,
+                SyncStatus.SyncError => Brushes.IndianRed,
                 SyncStatus.Synced => Brushes.ForestGreen,
                 _ => Brushes.Transparent,
             };

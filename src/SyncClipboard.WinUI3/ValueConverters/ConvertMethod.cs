@@ -1,11 +1,11 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.UI;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using System;
 using System.Linq;
-using Microsoft.UI.Xaml.Media;
-using Windows.UI;
-using SyncClipboard.Core.I18n;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
 
@@ -77,7 +77,7 @@ internal static class ConvertMethod
         {
             SyncStatus.Disconnected => new SolidColorBrush(Colors.Orange),
             SyncStatus.Synced => new SolidColorBrush(Colors.ForestGreen),
-            SyncStatus.SyncError => new SolidColorBrush(Colors.DarkRed),
+            SyncStatus.SyncError => new SolidColorBrush(Colors.IndianRed),
             _ => new SolidColorBrush(Colors.Transparent),
         };
     }

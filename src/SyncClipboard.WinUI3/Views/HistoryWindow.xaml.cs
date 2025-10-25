@@ -1,8 +1,10 @@
 using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Converters;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.Commons;
@@ -420,5 +422,22 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         _windowManger.MinWidth = _FilterSelectorBar.DesiredSize.Width + _ButtonArea.DesiredSize.Width * 2;
         _windowManger.MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height + 20;
+    }
+
+    private static readonly BoolToVisibilityConverter boolToVisibilityConverter = new();
+    private void StatusBorderLoaded(object sender, RoutedEventArgs _)
+    {
+        var border = sender as Border;
+        if (border == null) return;
+
+        var visualbilityBinding = new Binding
+        {
+            Source = _viewModel,
+            Path = new PropertyPath(nameof(HistoryViewModel.ShowSyncState)),
+            Converter = boolToVisibilityConverter,
+            Mode = BindingMode.OneWay
+        };
+
+        border.SetBinding(UIElement.VisibilityProperty, visualbilityBinding);
     }
 }

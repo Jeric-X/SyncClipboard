@@ -52,8 +52,8 @@
         </Grid.Resources>
         <Grid x:Name="_TitleBar" Grid.Row="0">
             <SelectorBar x:Name="_FilterSelectorBar"
-                         Padding="0,-4,0,0"
                          Margin="8,0,8,0"
+                         Padding="0,-4,0,0"
                          HorizontalAlignment="Center"
                          IsTabStop="False"
                          PointerPressed="FilterSelectorBar_PointerPressed"
@@ -136,13 +136,13 @@
                             <!--  Left color bar to indicate sync status  -->
                             <Border Grid.Column="0"
                                     Width="1"
+                                    Margin="0,0,4,0"
                                     Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState)}"
-                                    ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}"
-                                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_HistoryWindow.DataContext.ShowSyncState)}" />
+                                    Loaded="StatusBorderLoaded"
+                                    ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}" />
                             <Border Grid.Column="1"
                                     Height="40"
-                                    VerticalAlignment="Top"
-                                    Margin="2,0,0,0">
+                                    VerticalAlignment="Top">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>
                             <ContentControl Grid.Column="2"
