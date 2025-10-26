@@ -5,7 +5,7 @@ on:
 
 jobs:
   check:
-    runs-on: macos-14  # For a list of available runner types, refer to
+    runs-on: macos-15  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     steps:
@@ -17,45 +17,16 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          8.0.x
+          9.0.x
 
-    - name: Install dotnet workload and dependencies
-      working-directory: ./src/SyncClipboard.Desktop.MacOS
+    - name: Install dependencies
+      working-directory: ./src
       run: |
         dotnet workload install macos
         dotnet workload restore
         dotnet restore
-    
-    - name: Install dependencies
-      working-directory: ./src
-      run: |
-        dotnet restore SyncClipboard.WinUI3
-        dotnet restore SyncClipboard.Desktop.Default
-        dotnet restore SyncClipboard.Test.WinUI3
-        dotnet restore SyncClipboard.Test.Desktop
 
-    # - name: Check code style
-    #   working-directory: ./src
-    #   run: |
-    #     dotnet format --verify-no-changes --no-restore
-  
     - name: Check code style info
-      # continue-on-error: true
-      working-directory: ./src/SyncClipboard.Desktop.MacOS
+      working-directory: ./src
       run: |
         dotnet format --verify-no-changes --severity info --no-restore
-  
-    - name: Check code style info
-      # continue-on-error: true
-      working-directory: ./src
-      run: |
-        dotnet format SyncClipboard.Core --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Desktop --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Desktop.Default --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Server --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Server.Core --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Shared --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Test --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Test.WinUI3 --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.Test.Desktop --verify-no-changes --severity info --no-restore
-        dotnet format SyncClipboard.WinUI3 --verify-no-changes --severity info --no-restore
