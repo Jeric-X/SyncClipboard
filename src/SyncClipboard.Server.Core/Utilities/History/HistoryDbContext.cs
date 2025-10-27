@@ -8,6 +8,12 @@ public class HistoryDbContext : DbContext
 {
     private readonly string _dbPath;
 
+    public HistoryDbContext()
+    {
+        // Default constructor for design-time services like migrations
+        _dbPath = "history.db";
+    }
+
     public HistoryDbContext(DbContextOptions<HistoryDbContext> options, IWebHostEnvironment env) : base(options)
     {
         var webRoot = string.IsNullOrEmpty(env.WebRootPath) ? env.ContentRootPath : env.WebRootPath;

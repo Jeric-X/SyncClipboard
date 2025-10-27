@@ -4,12 +4,10 @@ namespace SyncClipboard.Server.Core.Utilities;
 
 public static class MigrationHelper
 {
-    public static void ApplyMigrations(IServiceProvider services)
+    public static void ApplyMigrations(IServiceProvider services, ILogger logger)
     {
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HistoryDbContext>();
-        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-        var logger = loggerFactory.CreateLogger("MigrationHelper");
 
         var clearLock = Environment.GetEnvironmentVariable("CLEAR_SQLITE_LOCK");
         if (!string.IsNullOrEmpty(clearLock) && clearLock.Equals("true", StringComparison.OrdinalIgnoreCase) && db.Database.IsSqlite())
@@ -24,9 +22,16 @@ public static class MigrationHelper
                 logger.LogError(ex, "Failed to clear __EFMigrationsLock");
             }
         }
-
-        db.Database.Migrate();
-        logger.LogInformation("Database migrations applied successfully.");
+        var pendingMigrations = db.Database.GetPendingMigrations();
+        if (pendingMigrations.Any())
+        {
+            db.Database.Migrate();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
+        else
+        {
+            logger.LogInformation("Database is up to date. No migrations were applied.");
+        }
     }
 
     public static void EnsureDBMigrations(IServiceProvider services, IHostApplicationLifetime lifetime)
@@ -39,36 +44,45 @@ public static class MigrationHelper
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger("MigrationHelper");
 
+        var bgTask = StartLogHeartbeatAsync(logger, cts.Token);
+
+        try
+        {
+            ApplyMigrations(services, logger);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Failed to apply database migrations");
+            Environment.Exit(1);
+        }
+        finally
+        {
+            cts.Cancel();
+        }
+    }
+
+    private static Task StartLogHeartbeatAsync(ILogger logger, CancellationToken token)
+    {
         var bgTask = Task.Run(async () =>
         {
-            while (!cts.Token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
-                logger.LogInformation("minrating");
+                logger.LogInformation("Migrating");
                 try
                 {
-                    await Task.Delay(2000, cts.Token);
+                    await Task.Delay(2000, token);
                 }
                 catch (TaskCanceledException)
                 {
                     break;
                 }
             }
-        }, cts.Token);
+        }, token);
 
         bgTask.ContinueWith(t =>
         {
             logger?.LogError(t.Exception, "Heartbeat task faulted");
         }, TaskContinuationOptions.OnlyOnFaulted);
-
-        try
-        {
-            ApplyMigrations(services);
-            cts.Cancel();
-        }
-        catch (Exception ex)
-        {
-            logger?.LogError(ex, "Failed to apply migrations");
-            Environment.Exit(1);
-        }
+        return bgTask;
     }
 }
