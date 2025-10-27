@@ -31,4 +31,13 @@ public class HistoryDbContext : DbContext
             options.UseSqlite($"Data Source={_dbPath}");
         }
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<HistoryRecordEntity>()
+            .HasIndex(e => new { e.UserId, e.CreateTime, e.ID })
+            .HasDatabaseName("IX_History_User_CreateTime_ID");
+
+        base.OnModelCreating(modelBuilder);
+    }
 }

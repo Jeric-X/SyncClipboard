@@ -35,6 +35,11 @@ namespace SyncClipboard.Server.Core.Migrations
                 {
                     table.PrimaryKey("PK_HistoryRecords", x => x.ID);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_History_User_CreateTime_ID",
+                table: "HistoryRecords",
+                columns: new[] { "UserId", "CreateTime", "ID" });
         }
 
         /// <inheritdoc />

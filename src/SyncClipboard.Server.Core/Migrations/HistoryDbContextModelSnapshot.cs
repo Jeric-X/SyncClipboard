@@ -69,6 +69,9 @@ namespace SyncClipboard.Server.Core.Migrations
 
                     b.HasKey("ID");
 
+                    b.HasIndex("UserId", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_CreateTime_ID");
+
                     b.ToTable("HistoryRecords");
                 });
 #pragma warning restore 612, 618

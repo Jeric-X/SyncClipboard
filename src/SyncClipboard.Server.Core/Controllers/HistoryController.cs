@@ -33,10 +33,16 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
     // GET api/history
     // Return all types
+    // Query parameters:
+    //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1)
     {
-        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None);
+        if (page < 1) return BadRequest("page must be >= 1");
+
+        const int PAGE_SIZE = 50;
+
+        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None, page, PAGE_SIZE);
         return Ok(list);
     }
 

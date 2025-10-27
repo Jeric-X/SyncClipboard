@@ -42,14 +42,29 @@ public class HistoryService
     //     }
     // }
 
-    public async Task<List<HistoryRecordDto>> GetListAsync(string userId, ProfileType type, CancellationToken token = default)
+    public async Task<List<HistoryRecordDto>> GetListAsync(string userId, ProfileType type, int page = 1, int pageSize = 50, CancellationToken token = default)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+
+        // Enforce maximum page size of 50
+        const int MAX_PAGE_SIZE = 50;
+        if (pageSize > MAX_PAGE_SIZE) pageSize = MAX_PAGE_SIZE;
+
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
-        var list = await _dbContext.HistoryRecords
+        var query = _dbContext.HistoryRecords
             .Where(r => r.UserId == userId && (type == ProfileType.None || r.Type == type))
+            // stable ordering: CreateTime then ID
             .OrderByDescending(r => r.CreateTime)
+            .ThenBy(r => r.ID);
+
+        var skip = (long)(page - 1) * pageSize;
+
+        var list = await query
+            .Skip((int)skip)
+            .Take(pageSize)
             .ToListAsync(token);
 
         return list.Select(HistoryRecordDto.FromEntity).ToList();
@@ -218,6 +233,11 @@ public class HistoryService
 
     public async Task<string> GetProfileDataFolder(Profile profile, CancellationToken token = default)
     {
-        return Path.Combine(HistoryDataFolder, await profile.GetProfileId(token));
+        var dirPath = Path.Combine(HistoryDataFolder, await profile.GetProfileId(token));
+        if (!Directory.Exists(dirPath))
+        {
+            Directory.CreateDirectory(dirPath);
+        }
+        return dirPath;
     }
 }

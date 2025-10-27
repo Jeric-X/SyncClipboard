@@ -139,10 +139,10 @@ public class SyncClipboardController(
                 return BadRequest("Data file not found on server.");
             }
             var historyPath = Path.Combine(await _historyService.GetProfileDataFolder(profile, token), fileProfile.FileName);
-            System.IO.File.Move(dataPath, historyPath, true);
 
             try
             {
+                System.IO.File.Move(dataPath, historyPath, true);
                 await fileProfile.SetTranseferData(historyPath, token);
             }
             catch when (!token.IsCancellationRequested)

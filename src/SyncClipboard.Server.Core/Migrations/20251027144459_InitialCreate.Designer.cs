@@ -11,7 +11,7 @@ using SyncClipboard.Server.Core.Utilities.History;
 namespace SyncClipboard.Server.Core.Migrations
 {
     [DbContext(typeof(HistoryDbContext))]
-    [Migration("20251027092842_InitialCreate")]
+    [Migration("20251027144459_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -71,6 +71,9 @@ namespace SyncClipboard.Server.Core.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("ID");
+
+                    b.HasIndex("UserId", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_CreateTime_ID");
 
                     b.ToTable("HistoryRecords");
                 });
