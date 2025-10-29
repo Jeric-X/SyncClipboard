@@ -56,7 +56,6 @@ public class HistoryService
 
         var query = _dbContext.HistoryRecords
             .Where(r => r.UserId == userId && (type == ProfileType.None || r.Type == type))
-            // stable ordering: CreateTime then ID
             .OrderByDescending(r => r.CreateTime)
             .ThenBy(r => r.ID);
 
