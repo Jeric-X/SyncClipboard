@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SyncClipboard.Server.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,13 +22,16 @@ namespace SyncClipboard.Server.Core.Migrations
                     Text = table.Column<string>(type: "TEXT", nullable: false),
                     Size = table.Column<long>(type: "INTEGER", nullable: false),
                     TransferDataFile = table.Column<string>(type: "TEXT", nullable: false),
-                    FilePathJson = table.Column<string>(type: "TEXT", nullable: false),
+                    TransferDataSha256 = table.Column<string>(type: "TEXT", nullable: false),
+                    TransferDataMd5 = table.Column<string>(type: "TEXT", nullable: false),
+                    FilePaths = table.Column<string>(type: "TEXT", nullable: false),
                     Hash = table.Column<string>(type: "TEXT", nullable: false),
                     CreateTime = table.Column<DateTime>(type: "TEXT", nullable: false),
                     LastAccessed = table.Column<DateTime>(type: "TEXT", nullable: false),
                     LastModified = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Stared = table.Column<bool>(type: "INTEGER", nullable: false),
                     Pinned = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Tags = table.Column<string>(type: "TEXT", nullable: false),
                     ExtraData = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
