@@ -39,7 +39,7 @@ namespace SyncClipboard.Server.Core.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_History_User_CreateTime_ID",
                 table: "HistoryRecords",
-                columns: new[] { "UserId", "CreateTime", "ID" });
+                columns: ["UserId", "CreateTime", "ID"]);
         }
 
         /// <inheritdoc />

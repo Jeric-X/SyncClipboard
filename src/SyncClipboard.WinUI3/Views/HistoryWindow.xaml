@@ -130,29 +130,20 @@
                         </ListViewItem.ContextFlyout>
                         <Grid MinHeight="10"
                               PointerPressed="Grid_PointerPressed"
-                              ColumnDefinitions="Auto, Auto, *, Auto"
+                              ColumnDefinitions="Auto, *, Auto, Auto"
                               Background="Transparent"
                               Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState)}">
-                            <!--  Left color bar to indicate sync status  -->
-                            <Border Grid.Column="0"
-                                    Width="1"
-                                    Margin="0,0,4,0"
-                                    Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState)}"
-                                    Loaded="StatusBorderLoaded"
-                                    ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}" />
-                            <Border Grid.Column="1"
-                                    Height="40"
-                                    VerticalAlignment="Top">
+                            <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>
-                            <ContentControl Grid.Column="2"
+                            <ContentControl Grid.Column="1"
                                             Padding="8,8,0,8"
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Center"
                                             FontSize="12"
                                             Content="{x:Bind}"
                                             ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
-                            <StackPanel Grid.Column="3" Margin="5,0,0,0" Orientation="Horizontal">
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Click="CopyButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="&#xE8C8;" />
                                 </Button>
@@ -166,6 +157,12 @@
                                     <FontIcon Glyph="&#xE74D;" FontSize="12" />
                                 </Button>
                             </StackPanel>
+                            <Border Grid.Column="3"
+                                    Width="2"
+                                    Margin="4,0,4,0"
+                                    Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState)}"
+                                    Loaded="StatusBorderLoaded"
+                                    ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}" />
                         </Grid>
                     </ListViewItem>
                 </DataTemplate>

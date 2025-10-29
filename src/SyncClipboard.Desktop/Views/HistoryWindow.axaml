@@ -162,31 +162,24 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vms:HistoryRecordVM">
                         <Grid MinHeight="10"
-                              ColumnDefinitions="Auto, Auto, *, Auto"
+                              ColumnDefinitions="Auto, *, Auto, Auto"
                               Background="Transparent"
                               Opacity="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToOpacity}}">
                             <Grid.ContextFlyout>
                                 <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />
                             </Grid.ContextFlyout>
-                            <!--  Left color bar to indicate sync status  -->
                             <Border Grid.Column="0"
-                                    Width="1"
-                                    Margin="0,0,4,0"
-                                    Background="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToBrush}}"
-                                    ToolTip.Tip="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToText}}"
-                                    IsVisible="{Binding #_HistoryWindow.ViewModel.ShowSyncState}" />
-                            <Border Grid.Column="1"
                                     Height="40"
                                     Margin="0,0,0,0"
                                     VerticalAlignment="Top">
                                 <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </Border>
-                            <ContentControl Grid.Column="2"
+                            <ContentControl Grid.Column="1"
                                             Padding="8,8,0,8"
                                             VerticalAlignment="Center"
                                             FontSize="12"
                                             Content="{Binding .}" />
-                            <StackPanel Grid.Column="3" Margin="5,0,0,0" Orientation="Horizontal">
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Click="CopyButtonClicked">
                                     <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
@@ -200,6 +193,12 @@
                                     <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
                             </StackPanel>
+                            <Border Grid.Column="3"
+                                    Width="2"
+                                    Margin="4,0,4,0"
+                                    Background="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToBrush}}"
+                                    ToolTip.Tip="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToText}}"
+                                    IsVisible="{Binding #_HistoryWindow.ViewModel.ShowSyncState}" />
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
