@@ -99,15 +99,26 @@
                     <KeyboardAccelerator Key="End" Modifiers="Control" Invoked="CtrlEnd_Invoked" />
                 </TextBox.KeyboardAccelerators>
             </TextBox>
-            <Button Grid.Column="1"
-                    Width="32"
-                    Height="32"
-                    Margin="8,0,0,0"
-                    VerticalAlignment="Center"
-                    Command="{x:Bind _viewModel.ScrollToTopCommand}"
-                    ToolTipService.ToolTip="{x:Bind i18n:Strings.ScrollToTop}">
-                <FontIcon Glyph="&#xE898;" />
-            </Button>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                <Button Width="32"
+                        Height="32"
+                        Command="{x:Bind _viewModel.RefreshCommand}"
+                        ToolTipService.ToolTip="刷新">
+                    <Grid>
+                        <FontIcon Glyph="&#xE72C;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(_viewModel.IsLoadingMore), Mode=OneWay}" />
+                        <ProgressRing Width="16"
+                                      Height="16"
+                                      IsActive="{x:Bind _viewModel.IsLoadingMore, Mode=OneWay}"
+                                      Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsLoadingMore), Mode=OneWay}" />
+                    </Grid>
+                </Button>
+                <Button Width="32"
+                        Height="32"
+                        Command="{x:Bind _viewModel.ScrollToTopCommand}"
+                        ToolTipService.ToolTip="{x:Bind i18n:Strings.ScrollToTop}">
+                    <FontIcon Glyph="&#xE898;" />
+                </Button>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="2">
             <Image x:Name="_InvisualableImage"

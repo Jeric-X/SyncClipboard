@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -28,6 +29,7 @@ public partial class HistoryWindow : Window, IWindow
         this.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
 
         InitializeComponent();
+        InitializeScrollWatcher();
         SetWindowMinSize();
         this.Loaded += async (_, _) =>
         {
@@ -143,6 +145,45 @@ public partial class HistoryWindow : Window, IWindow
         {
             _ListBox.ScrollIntoView(_ListBox.SelectedItem);
         }
+    }
+
+    private void InitializeScrollWatcher()
+    {
+        if (_ListBox.GetValue(ListBox.ScrollProperty) is ScrollViewer existing)
+        {
+            AttachScrollViewerWatcher(existing);
+            return;
+        }
+
+        void handler(object? s, AvaloniaPropertyChangedEventArgs e)
+        {
+            try
+            {
+                if (e.Property != ListBox.ScrollProperty) return;
+                if (e.NewValue is not ScrollViewer sv) return;
+
+                _ListBox.PropertyChanged -= handler;
+                AttachScrollViewerWatcher(sv);
+            }
+            catch { }
+        }
+
+        _ListBox.PropertyChanged += handler;
+    }
+
+    private void AttachScrollViewerWatcher(ScrollViewer scroll)
+    {
+        scroll.PropertyChanged += async (_, e) =>
+        {
+            if (e.Property != ScrollViewer.OffsetProperty) return;
+            if (e.NewValue is not Avalonia.Vector offset) return;
+
+            var offsetY = offset.Y;
+            var viewport = scroll.Viewport.Height;
+            var extent = scroll.Extent.Height;
+
+            await ViewModel.NotifyScrollPositionAsync(offsetY, viewport, extent);
+        };
     }
 
     private async void ItemContextFlyout_Opening(object? sender, EventArgs e)

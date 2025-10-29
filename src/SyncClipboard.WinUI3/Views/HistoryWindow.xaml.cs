@@ -17,6 +17,7 @@ using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.Win32;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Graphics;
@@ -94,6 +95,8 @@ public sealed partial class HistoryWindow : Window, IWindow
         InitializeSelectorBar();
 
         _ListView.SizeChanged += OnListViewSizeChanged;
+
+        InitializeScrollWatcher();
 
         this.SetTopmost(_viewModel.IsTopmost);
     }
@@ -342,6 +345,66 @@ public sealed partial class HistoryWindow : Window, IWindow
                 UpdateSelectorBarSelection();
             }
         };
+    }
+
+    private void InitializeScrollWatcher()
+    {
+        if (_ListView.IsLoaded)
+        {
+            var sv = FindDescendant<ScrollViewer>(_ListView);
+            if (sv != null)
+            {
+                AttachScrollViewerWatcher(sv);
+                return;
+            }
+        }
+
+        void onLoaded(object s, RoutedEventArgs e)
+        {
+            _ListView.Loaded -= onLoaded;
+            var sv = FindDescendant<ScrollViewer>(_ListView);
+            if (sv != null)
+            {
+                AttachScrollViewerWatcher(sv);
+            }
+        }
+
+        _ListView.Loaded += onLoaded;
+    }
+
+    private void AttachScrollViewerWatcher(ScrollViewer scroll)
+    {
+        scroll.ViewChanged += async (s, args) =>
+        {
+            var verticalOffset = scroll.VerticalOffset;
+            var viewport = scroll.ViewportHeight;
+            var extent = scroll.ExtentHeight;
+
+            await _viewModel.NotifyScrollPositionAsync(verticalOffset, viewport, extent);
+        };
+    }
+
+    private static T? FindDescendant<T>(DependencyObject start) where T : DependencyObject
+    {
+        if (start == null) return null;
+
+        var queue = new Queue<DependencyObject>();
+        queue.Enqueue(start);
+
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            var count = VisualTreeHelper.GetChildrenCount(node);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(node, i);
+                if (child is T t)
+                    return t;
+                queue.Enqueue(child);
+            }
+        }
+
+        return null;
     }
 
     private void UpdateSelectorBarSelection()

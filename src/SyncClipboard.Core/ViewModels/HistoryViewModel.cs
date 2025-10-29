@@ -257,6 +257,91 @@ public partial class HistoryViewModel : ObservableObject
         window?.Close();
     }
 
+    private int _isTriggeringLoadMore = 0;
+    public async Task NotifyScrollPositionAsync(double offsetY, double viewportHeight, double extentHeight)
+    {
+        try
+        {
+            if (IsEnd) return;
+            if (extentHeight <= 0) return;
+
+            if (offsetY + viewportHeight < 0.8 * extentHeight) return;
+
+            if (IsLoadingMore) return;
+
+            // 避免并发触发
+            if (Interlocked.CompareExchange(ref _isTriggeringLoadMore, 1, 0) != 0) return;
+            try
+            {
+                await LoadMore();
+            }
+            catch { }
+            finally
+            {
+                Interlocked.Exchange(ref _isTriggeringLoadMore, 0);
+            }
+        }
+        catch { }
+    }
+
+    // 由外层保证此函数不会并发调用
+    public async Task LoadMore()
+    {
+        IsLoadingMore = true;
+        try
+        {
+            await Task.Delay(4000);
+
+            // 临时测试用：随机生成 20 条记录并追加到列表尾部
+            var rnd = new Random(Guid.NewGuid().GetHashCode());
+            for (int i = 0; i < 20; i++)
+            {
+                var isImage = rnd.NextDouble() < 0.2;
+                var record = new HistoryRecord
+                {
+                    ID = 0,
+                    Type = isImage ? ProfileType.Image : ProfileType.Text,
+                    Text = isImage ? string.Empty : $"测试内容 {DateTime.UtcNow:HHmmss}_{Guid.NewGuid():N}",
+                    FilePath = isImage ? ["/tmp/test-image.png"] : [],
+                    Timestamp = DateTime.UtcNow,
+                    Hash = Guid.NewGuid().ToString()
+                };
+
+                allHistoryItems.Add(new HistoryRecordVM(record));
+            }
+
+            // 在测试场景中，加载一次后标记为末尾，避免无限加载。
+            IsEnd = true;
+        }
+        finally
+        {
+            IsLoadingMore = false;
+        }
+    }
+
+    [ObservableProperty]
+    private bool isLoadingMore = false;
+
+    [ObservableProperty]
+    private bool isEnd = false;
+
+    [RelayCommand]
+    public async Task Refresh()
+    {
+        IsEnd = false;
+        IsLoadingMore = true;
+        try
+        {
+            var records = await historyManager.GetHistory();
+            allHistoryItems.Clear();
+            allHistoryItems.AddRange(records.Select(x => new HistoryRecordVM(x)));
+        }
+        finally
+        {
+            IsLoadingMore = false;
+        }
+    }
+
     public void NavigateToNextFilter()
     {
         var currentIndex = (int)SelectedFilter;
@@ -415,8 +500,7 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        var records = await historyManager.GetHistory();
-        allHistoryItems.AddRange(records.Select(x => new HistoryRecordVM(x)));
+        await Refresh();
 
         historyManager.HistoryAdded += record => allHistoryItems.Insert(0, new HistoryRecordVM(record));
         historyManager.HistoryRemoved += record => allHistoryItems.Remove(new HistoryRecordVM(record));
