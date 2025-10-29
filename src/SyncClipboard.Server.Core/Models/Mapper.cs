@@ -4,6 +4,7 @@ public static class Mapper
 {
     public static async Task<HistoryRecordEntity> ToHistoryEntity(this Profile profile, string userId, CancellationToken token)
     {
+        var now = DateTime.UtcNow;
         var entity = new HistoryRecordEntity
         {
             UserId = userId,
@@ -11,9 +12,9 @@ public static class Mapper
             Hash = await profile.GetHash(token).ConfigureAwait(false),
             Type = profile.Type,
             Text = profile.Text,
-            CreateTime = DateTime.UtcNow,
-            LastAccessed = DateTime.UtcNow,
-            LastModified = DateTime.UtcNow,
+            CreateTime = now,
+            LastAccessed = now,
+            LastModified = now,
             Stared = false,
             Pinned = false,
             TransferDataFile = string.Empty,
@@ -25,7 +26,7 @@ public static class Mapper
             entity.TransferDataFile = fp.FullPath ?? string.Empty;
             if (profile is GroupProfile gp)
             {
-                entity.FilePath = gp.Files;
+                entity.FilePaths = gp.Files;
             }
         }
 
@@ -39,7 +40,7 @@ public static class Mapper
             ProfileType.Text => new TextProfile(entity.Text),
             ProfileType.File => new FileProfile(entity.TransferDataFile, null, entity.Hash),
             ProfileType.Image => new ImageProfile(entity.TransferDataFile, null, entity.Hash),
-            ProfileType.Group => new GroupProfile(entity.FilePath, entity.Hash, entity.TransferDataFile),
+            ProfileType.Group => new GroupProfile(entity.FilePaths, entity.Hash, entity.TransferDataFile),
             _ => new UnknownProfile(),
         };
     }

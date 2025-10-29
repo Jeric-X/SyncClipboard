@@ -7,6 +7,7 @@ public class HistoryRecordDto
     public ProfileType Type { get; set; } = ProfileType.None;
     public DateTime CreateTime { get; set; } = DateTime.UtcNow;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
+    public DateTime LastAccessed { get; set; } = DateTime.UtcNow;
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public long Size { get; set; }
@@ -20,6 +21,7 @@ public class HistoryRecordDto
             Type = e.Type,
             CreateTime = e.CreateTime,
             LastModified = e.LastModified,
+            LastAccessed = e.LastAccessed,
             Stared = e.Stared,
             Pinned = e.Pinned,
             Size = e.Size

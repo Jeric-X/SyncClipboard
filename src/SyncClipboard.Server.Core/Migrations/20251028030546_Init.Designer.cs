@@ -11,8 +11,8 @@ using SyncClipboard.Server.Core.Utilities.History;
 namespace SyncClipboard.Server.Core.Migrations
 {
     [DbContext(typeof(HistoryDbContext))]
-    [Migration("20251027144459_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251028030546_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,7 +32,7 @@ namespace SyncClipboard.Server.Core.Migrations
                     b.Property<string>("ExtraData")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("FilePathJson")
+                    b.PrimitiveCollection<string>("FilePaths")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -55,11 +55,23 @@ namespace SyncClipboard.Server.Core.Migrations
                     b.Property<bool>("Stared")
                         .HasColumnType("INTEGER");
 
+                    b.PrimitiveCollection<string>("Tags")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TransferDataFile")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TransferDataMd5")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TransferDataSha256")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
