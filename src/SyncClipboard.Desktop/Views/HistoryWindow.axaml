@@ -132,15 +132,28 @@
                          VerticalContentAlignment="Center"
                          Text="{Binding SearchText}"
                          Watermark="{x:Static i18n:Strings.HistorySearchPlaceholder}" />
-                <Button Grid.Column="1"
-                        Width="32"
-                        Height="32"
-                        Margin="8,0,0,0"
-                        VerticalAlignment="Center"
-                        Command="{Binding ScrollToTopCommand}"
-                        ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
-                    <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Width="32"
+                            Height="32"
+                            Command="{Binding RefreshCommand}"
+                            ToolTip.Tip="刷新">
+                        <Grid>
+                            <ui:FontIcon Glyph="&#xE72C;" FontFamily="{StaticResource SymbolThemeFontFamily}" IsVisible="{Binding !IsLoadingMore}" />
+                            <ui:ProgressRing Width="16"
+                                             Height="16"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"
+                                             IsActive="{Binding IsLoadingMore}"
+                                             IsVisible="{Binding IsLoadingMore}" />
+                        </Grid>
+                    </Button>
+                    <Button Width="32"
+                            Height="32"
+                            Command="{Binding ScrollToTopCommand}"
+                            ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
+                        <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
+                </StackPanel>
             </Grid>
             <Image x:Name="_InvisualableImage"
                    Grid.Row="2"

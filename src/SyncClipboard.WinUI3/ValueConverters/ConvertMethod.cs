@@ -16,6 +16,11 @@ internal static class ConvertMethod
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public static Visibility BoolToVisibilityNegate(bool value)
+    {
+        return value ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     public static bool BoolNegate(bool value)
     {
         return !value;
