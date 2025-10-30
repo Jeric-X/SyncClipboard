@@ -42,22 +42,25 @@ public class HistoryService
     //     }
     // }
 
-    public async Task<List<HistoryRecordDto>> GetListAsync(string userId, ProfileType type, int page = 1, int pageSize = 50, CancellationToken token = default)
+    public async Task<List<HistoryRecordDto>> GetListAsync(string userId, ProfileType type, int page, int pageSize, DateTime? before = null, CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
-
-        // Enforce maximum page size of 50
-        const int MAX_PAGE_SIZE = 50;
-        if (pageSize > MAX_PAGE_SIZE) pageSize = MAX_PAGE_SIZE;
 
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
         var query = _dbContext.HistoryRecords
-            .Where(r => r.UserId == userId && (type == ProfileType.None || r.Type == type))
-            .OrderByDescending(r => r.CreateTime)
-            .ThenBy(r => r.ID);
+            .Where(r => r.UserId == userId && (type == ProfileType.None || r.Type == type));
+
+        if (before.HasValue)
+        {
+            var beforeUtc = before.Value.ToUniversalTime();
+            query = query.Where(r => r.CreateTime < beforeUtc);
+        }
+
+        query = query.OrderByDescending(r => r.CreateTime)
+                     .ThenByDescending(r => r.ID);
 
         var skip = (long)(page - 1) * pageSize;
 
