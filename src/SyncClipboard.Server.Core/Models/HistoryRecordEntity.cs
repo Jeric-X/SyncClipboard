@@ -22,6 +22,7 @@ public class HistoryRecordEntity
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
+    public string From { get; set; } = string.Empty;
     public string[] Tags { get; set; } = [];
     public string? ExtraData { get; set; }
 }
