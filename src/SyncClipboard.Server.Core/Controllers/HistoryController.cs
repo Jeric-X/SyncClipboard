@@ -35,14 +35,29 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // Return all types
     // Query parameters:
     //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
+    //   before: Unix timestamp in milliseconds (UTC). Only records with CreateTime < before will be returned.
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] long? before = null)
     {
-        if (page < 1) return BadRequest("page must be >= 1");
+        if (page < 1)
+            return BadRequest("page must be >= 1");
 
         const int PAGE_SIZE = 50;
 
-        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None, page, PAGE_SIZE);
+        DateTime? beforeDt = null;
+        if (before.HasValue)
+        {
+            try
+            {
+                beforeDt = DateTimeOffset.FromUnixTimeMilliseconds(before.Value).UtcDateTime;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return BadRequest("before must be a valid Unix timestamp in milliseconds");
+            }
+        }
+
+        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None, page, PAGE_SIZE, beforeDt);
         return Ok(list);
     }
 
