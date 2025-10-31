@@ -42,7 +42,15 @@ public class HistoryService
     //     }
     // }
 
-    public async Task<List<HistoryRecordDto>> GetListAsync(string userId, ProfileType type, int page, int pageSize, DateTime? before = null, CancellationToken token = default)
+    public async Task<List<HistoryRecordDto>> GetListAsync(
+        string userId,
+        ProfileType type,
+        int page,
+        int pageSize,
+        DateTime? before = null,
+        DateTime? after = null,
+        string? cursorProfileId = null,
+        CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
@@ -56,11 +64,27 @@ public class HistoryService
         if (before.HasValue)
         {
             var beforeUtc = before.Value.ToUniversalTime();
-            query = query.Where(r => r.CreateTime < beforeUtc);
+            query = query.Where(r => r.CreateTime <= beforeUtc);
+        }
+
+        if (after.HasValue)
+        {
+            var afterUtc = after.Value.ToUniversalTime();
+            query = query.Where(r => r.CreateTime >= afterUtc);
         }
 
         query = query.OrderByDescending(r => r.CreateTime)
                      .ThenByDescending(r => r.ID);
+
+        if (!string.IsNullOrEmpty(cursorProfileId) && Profile.ParseProfileId(cursorProfileId, out var cursorType, out var cursorHash))
+        {
+            int position = query
+                .Select((r, idx) => new { r.Hash, r.Type, Index = idx })
+                .Where(r => r.Hash == cursorHash && r.Type == cursorType)
+                .Select(x => x.Index)
+                .FirstOrDefault(-1);
+            query = query.Skip(position + 1);
+        }
 
         var skip = (long)(page - 1) * pageSize;
 

@@ -36,8 +36,10 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // Query parameters:
     //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     //   before: Unix timestamp in milliseconds (UTC). Only records with CreateTime < before will be returned.
+    //   after:  Unix timestamp in milliseconds (UTC). Only records with CreateTime > after will be returned.
+    //   cursorProfileId: optional string cursor representing a profile id.
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] long? before = null)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] long? before = null, [FromQuery] long? after = null, [FromQuery] string? cursorProfileId = null)
     {
         if (page < 1)
             return BadRequest("page must be >= 1");
@@ -57,7 +59,25 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             }
         }
 
-        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None, page, PAGE_SIZE, beforeDt);
+        DateTime? afterDt = null;
+        if (after.HasValue)
+        {
+            try
+            {
+                afterDt = DateTimeOffset.FromUnixTimeMilliseconds(after.Value).UtcDateTime;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return BadRequest("after must be a valid Unix timestamp in milliseconds");
+            }
+        }
+
+        if (beforeDt.HasValue && afterDt.HasValue && afterDt.Value >= beforeDt.Value)
+        {
+            return BadRequest("after must be less than before");
+        }
+
+        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None, page, PAGE_SIZE, beforeDt, afterDt, cursorProfileId);
         return Ok(list);
     }
 
