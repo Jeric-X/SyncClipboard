@@ -11,11 +11,11 @@
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.8" />
-    <PackageVersion Include="Magick.NET-Q16-x64" Version="13.5.0" />
-    <PackageVersion Include="Magick.NET-Q16-x86" Version="13.5.0" />
-    <PackageVersion Include="Magick.NET-Q16-arm64" Version="13.5.0" />
-    <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="13.5.0" />
-    <PackageVersion Include="Magick.NET.SystemDrawing" Version="7.2.1" />
+    <PackageVersion Include="Magick.NET-Q16-x64" Version="14.9.1" />
+    <PackageVersion Include="Magick.NET-Q16-x86" Version="14.9.1" />
+    <PackageVersion Include="Magick.NET-Q16-arm64" Version="14.9.1" />
+    <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="14.9.1" />
+    <PackageVersion Include="Magick.NET.SystemDrawing" Version="8.0.12" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="ObservableCollections" Version="3.3.4" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
