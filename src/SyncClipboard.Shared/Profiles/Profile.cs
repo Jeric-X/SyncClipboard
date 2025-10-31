@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SyncClipboard.Shared.Profiles;
 
 public abstract class Profile
@@ -15,6 +17,27 @@ public abstract class Profile
     public async Task<string> GetProfileId(CancellationToken token)
     {
         return $"{Type}-{await GetHash(token)}";
+    }
+
+    public static bool ParseProfileId(string profileId, out ProfileType type, [NotNullWhen(true)]out string? hash)
+    {
+        var parts = profileId.Split('-', 2);
+        if (parts.Length != 2)
+        {
+            type = ProfileType.None;
+            hash = null;
+            return false;
+        }
+
+        if (!Enum.TryParse(parts[0], out type))
+        {
+            type = ProfileType.None;
+            hash = null;
+            return false;
+        }
+
+        hash = parts[1];
+        return true;
     }
 
     public static Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken token)
