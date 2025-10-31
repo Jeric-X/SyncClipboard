@@ -11,6 +11,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -57,19 +58,6 @@ public partial class HistoryViewModel : ObservableObject
 
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
-
-        // 设置初始过滤器
-        ApplyFilter();
-    }
-
-    partial void OnSelectedFilterChanged(HistoryFilterType value)
-    {
-        ApplyFilter();
-        OnPropertyChanged(nameof(SelectedFilterOption));
-    }
-
-    partial void OnSearchTextChanged(string value)
-    {
         ApplyFilter();
     }
 
@@ -77,51 +65,9 @@ public partial class HistoryViewModel : ObservableObject
     {
         viewController.AttachFilter(record =>
         {
-            // 首先应用类型过滤
-            var typeMatches = SelectedFilter switch
-            {
-                HistoryFilterType.All => true,
-                HistoryFilterType.Text => record.Type == ProfileType.Text,
-                HistoryFilterType.Image => record.Type == ProfileType.Image,
-                HistoryFilterType.File => record.Type == ProfileType.File || record.Type == ProfileType.Group,
-                HistoryFilterType.Starred => record.Stared,
-                _ => true
-            };
-
-            // 如果类型不匹配，直接返回false
-            if (!typeMatches) return false;
-
-            // 如果只显示本地选项被勾选，则过滤掉仅服务器的记录
-            if (OnlyShowLocal && record.SyncState == SyncStatus.ServerOnly) return false;
-
-            // 如果没有搜索文本，返回类型匹配结果
-            if (string.IsNullOrEmpty(SearchText)) return true;
-
-            // 应用搜索文本过滤
-            var searchText = SearchText;
-
-            // 搜索文本内容
-            if (!string.IsNullOrEmpty(record.Text) &&
-                record.Text.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            // 搜索文件名
-            if (record.FilePath?.Length > 0)
-            {
-                foreach (var filePath in record.FilePath)
-                {
-                    var fileName = Path.GetFileName(filePath);
-                    if (!string.IsNullOrEmpty(fileName) &&
-                        fileName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            if (OnlyShowLocal && record.SyncState == SyncStatus.ServerOnly)
+                return false;
+            return true;
         });
         window?.ScrollToTop();
     }
@@ -131,9 +77,19 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
+    partial void OnSelectedFilterChanged(HistoryFilterType value)
+    {
+        _ = Refresh();
+        OnPropertyChanged(nameof(SelectedFilterOption));
+    }
+
 
     [ObservableProperty]
     private string searchText = string.Empty;
+    partial void OnSearchTextChanged(string value)
+    {
+        _ = Refresh();
+    }
 
     public LocaleString<HistoryFilterType> SelectedFilterOption
     {
@@ -159,6 +115,12 @@ public partial class HistoryViewModel : ObservableObject
     public INotifyCollectionChangedSynchronizedViewList<HistoryRecordVM> HistoryItems { get; }
     private readonly ISynchronizedView<HistoryRecordVM, HistoryRecordVM> viewController;
     private readonly ObservableList<HistoryRecordVM> allHistoryItems = [];
+
+    private const int InitialPageSize = 20;
+    private const int MorePageSize = 20;
+    private string? _cursorProfileId = null;
+    private DateTime? _cursorProfileTime = null;
+    private readonly SingletonTask _loader = new SingletonTask();
 
     public int Width
     {
@@ -258,14 +220,31 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     private int _isTriggeringLoadMore = 0;
+    private double _lastOffsetY = 0;
+    private double _lastViewportHeight = 0;
+    private double _lastExtentHeight = 0;
+
+    public void SetScollViewMetrics(double offsetY, double viewportHeight, double extentHeight)
+    {
+        _lastOffsetY = offsetY;
+        _lastViewportHeight = viewportHeight;
+        _lastExtentHeight = extentHeight;
+    }
+
+    private bool IsScrollViewerEnabled()
+    {
+        return _lastViewportHeight > 0 && _lastExtentHeight > _lastViewportHeight + 0.1;
+    }
+
     public async Task NotifyScrollPositionAsync(double offsetY, double viewportHeight, double extentHeight)
     {
         try
         {
+            SetScollViewMetrics(offsetY, viewportHeight, extentHeight);
             if (IsEnd) return;
             if (extentHeight <= 0) return;
 
-            if (offsetY + viewportHeight < 0.8 * extentHeight) return;
+            if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight) return;
 
             if (IsLoadingMore) return;
 
@@ -273,7 +252,7 @@ public partial class HistoryViewModel : ObservableObject
             if (Interlocked.CompareExchange(ref _isTriggeringLoadMore, 1, 0) != 0) return;
             try
             {
-                await LoadMore();
+                await RunLoadTask(MorePageSize);
             }
             catch { }
             finally
@@ -284,39 +263,33 @@ public partial class HistoryViewModel : ObservableObject
         catch { }
     }
 
-    // 由外层保证此函数不会并发调用
-    public async Task LoadMore()
+    private async Task RunLoadTask(int size)
     {
         IsLoadingMore = true;
-        try
-        {
-            await Task.Delay(4000);
+        using var guard = new ScopeGuard(() => IsLoadingMore = false);
+        if (IsEnd) return;
+        if (window is null) return;
 
-            // 临时测试用：随机生成 20 条记录并追加到列表尾部
-            var rnd = new Random(Guid.NewGuid().GetHashCode());
-            for (int i = 0; i < 20; i++)
+        await _loader.Run(async ct =>
+        {
+            try
             {
-                var isImage = rnd.NextDouble() < 0.2;
-                var record = new HistoryRecord
+                await DoLoadPageAsync(size, ct);
+                while (!IsEnd && ct.IsCancellationRequested == false && _lastExtentHeight <= _lastViewportHeight)
                 {
-                    ID = 0,
-                    Type = isImage ? ProfileType.Image : ProfileType.Text,
-                    Text = isImage ? string.Empty : $"测试内容 {DateTime.UtcNow:HHmmss}_{Guid.NewGuid():N}",
-                    FilePath = isImage ? ["/tmp/test-image.png"] : [],
-                    Timestamp = DateTime.UtcNow,
-                    Hash = Guid.NewGuid().ToString()
-                };
-
-                allHistoryItems.Add(new HistoryRecordVM(record));
+                    await DoLoadPageAsync(size, ct);
+                    if (window.GetScrollViewMetrics(out var offsetY, out var viewportHeight, out var extentHeight))
+                    {
+                        SetScollViewMetrics(offsetY, viewportHeight, extentHeight);
+                    }
+                    await Task.Delay(10, ct);
+                }
             }
-
-            // 在测试场景中，加载一次后标记为末尾，避免无限加载。
-            IsEnd = true;
-        }
-        finally
-        {
-            IsLoadingMore = false;
-        }
+            catch (Exception ex)
+            {
+                logger.Write("Failed to load more history:", ex.Message);
+            }
+        });
     }
 
     [ObservableProperty]
@@ -326,20 +299,46 @@ public partial class HistoryViewModel : ObservableObject
     private bool isEnd = false;
 
     [RelayCommand]
-    public async Task Refresh()
+    public Task Refresh()
     {
         IsEnd = false;
-        IsLoadingMore = true;
-        try
+        allHistoryItems.Clear();
+        _cursorProfileId = null;
+        _cursorProfileTime = null;
+        _lastViewportHeight = 0;
+        _lastExtentHeight = 0;
+        window?.ScrollToTop();
+        return RunLoadTask(InitialPageSize);
+    }
+
+    private (ProfileTypeFilter types, bool? started, string? searchText) BuildQueryParameters()
+    {
+        bool? started = null;
+        string? searchText = string.IsNullOrEmpty(SearchText) ? null : SearchText;
+
+        ProfileTypeFilter types;
+        switch (SelectedFilter)
         {
-            var records = await historyManager.GetHistory();
-            allHistoryItems.Clear();
-            allHistoryItems.AddRange(records.Select(x => new HistoryRecordVM(x)));
+            case HistoryFilterType.Text:
+                types = ProfileTypeFilter.Text;
+                break;
+            case HistoryFilterType.Image:
+                types = ProfileTypeFilter.Image;
+                break;
+            case HistoryFilterType.File:
+                types = ProfileTypeFilter.File | ProfileTypeFilter.Group;
+                break;
+            case HistoryFilterType.Starred:
+                types = ProfileTypeFilter.All;
+                started = true;
+                break;
+            case HistoryFilterType.All:
+            default:
+                types = ProfileTypeFilter.All;
+                break;
         }
-        finally
-        {
-            IsLoadingMore = false;
-        }
+
+        return (types, started, searchText);
     }
 
     public void NavigateToNextFilter()
@@ -514,6 +513,41 @@ public partial class HistoryViewModel : ObservableObject
             }
             oldRecord.Update(newRecord);
         };
+    }
+
+    private async Task DoLoadPageAsync(int size, CancellationToken token)
+    {
+        var (types, started, searchText) = BuildQueryParameters();
+        List<HistoryRecord>? records = null;
+
+        records = await historyManager.GetHistoryAsync(
+            types,
+            started,
+            _cursorProfileTime,
+            _cursorProfileId,
+            size,
+            string.IsNullOrEmpty(searchText) ? null : searchText,
+            token);
+
+        if (records == null || records.Count == 0)
+        {
+            IsEnd = true;
+            return;
+        }
+        var vms = records.Select(x => new HistoryRecordVM(x)).ToList();
+        allHistoryItems.AddRange(vms);
+
+        var last = vms.LastOrDefault();
+        if (last != null)
+        {
+            _cursorProfileId = $"{last.Type}-{last.Hash}";
+            _cursorProfileTime = last.Timestamp;
+        }
+
+        if (records.Count < size)
+        {
+            IsEnd = true;
+        }
     }
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)

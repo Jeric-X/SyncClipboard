@@ -173,17 +173,34 @@ public partial class HistoryWindow : Window, IWindow
 
     private void AttachScrollViewerWatcher(ScrollViewer scroll)
     {
+        _scrollViewer = scroll;
         scroll.PropertyChanged += async (_, e) =>
         {
-            if (e.Property != ScrollViewer.OffsetProperty) return;
-            if (e.NewValue is not Avalonia.Vector offset) return;
+            if (e.Property != ScrollViewer.OffsetProperty && e.Property != ScrollViewer.ViewportProperty && e.Property != ScrollViewer.ExtentProperty)
+                return;
 
-            var offsetY = offset.Y;
+            var offsetY = scroll.Offset.Y;
             var viewport = scroll.Viewport.Height;
             var extent = scroll.Extent.Height;
 
             await ViewModel.NotifyScrollPositionAsync(offsetY, viewport, extent);
         };
+    }
+
+    private ScrollViewer? _scrollViewer = null;
+
+    public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
+    {
+        offsetY = 0; viewportHeight = 0; extentHeight = 0;
+        if (_scrollViewer != null)
+        {
+            var offset = _scrollViewer.Offset;
+            offsetY = offset.Y;
+            viewportHeight = _scrollViewer.Viewport.Height;
+            extentHeight = _scrollViewer.Extent.Height;
+            return true;
+        }
+        return false;
     }
 
     private async void ItemContextFlyout_Opening(object? sender, EventArgs e)
@@ -303,10 +320,7 @@ public partial class HistoryWindow : Window, IWindow
 
     public void ScrollToTop()
     {
-        if (_ListBox.ItemCount != 0)
-        {
-            _ListBox.ScrollIntoView(0);
-        }
+        _scrollViewer?.ScrollToHome();
     }
 
     public void SetTopmost(bool topmost)

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Interfaces;
 using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.Utilities.History;
@@ -108,11 +108,9 @@ public class HistoryManager
 
         if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
         {
-            entity.Timestamp = record.Timestamp;
             entity.FilePath = record.FilePath;
             await _dbContext.SaveChangesAsync(token);
-            HistoryRemoved?.Invoke(entity);
-            HistoryAdded?.Invoke(entity);
+            HistoryUpdated?.Invoke(entity);
             return;
         }
 
@@ -156,7 +154,6 @@ public class HistoryManager
         {
             entity.Stared = record.Stared;
             entity.Pinned = record.Pinned;
-            entity.Timestamp = record.Timestamp;
             entity.Text = record.Text;
             entity.FilePath = record.FilePath;
             await _dbContext.SaveChangesAsync(token);
@@ -279,5 +276,64 @@ public class HistoryManager
             _dbContext.Database.Migrate();
         }
         _dbContext.Database.EnsureCreated();
+    }
+
+    public async Task<List<HistoryRecord>> GetHistoryAsync(
+        ProfileTypeFilter typeFilter,
+        bool? started = null,
+        DateTime? before = null,
+        string? cursorProfileId = null,
+        int size = int.MaxValue,
+        string? searchText = null,
+        CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var query = _dbContext.HistoryRecords.AsQueryable();
+
+        if (typeFilter != ProfileTypeFilter.All)
+        {
+            var includedTypes = Enum.GetValues(typeof(ProfileType))
+                .Cast<ProfileType>()
+                .Where(t => (typeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
+                .ToList();
+
+            if (includedTypes.Count == 0)
+            {
+                return [];
+            }
+
+            query = query.Where(r => includedTypes.Contains(r.Type));
+        }
+
+        if (before.HasValue)
+        {
+            var beforeUtc = before.Value;
+            query = query.Where(r => r.Timestamp <= beforeUtc);
+        }
+        if (started.HasValue)
+        {
+            query = query.Where(r => r.Stared == started.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchText))
+        {
+            query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
+        }
+
+        query = query.OrderByDescending(r => r.Timestamp).ThenByDescending(r => r.ID);
+
+        if (!string.IsNullOrEmpty(cursorProfileId) && Profile.ParseProfileId(cursorProfileId, out var cursorType, out var cursorHash))
+        {
+            int position = query
+                .AsEnumerable()
+                .Select((r, idx) => new { r.Hash, r.Type, Index = idx })
+                .Where(r => r.Hash == cursorHash && r.Type == cursorType)
+                .Select(x => x.Index)
+                .FirstOrDefault(-1);
+            query = query.Skip(position + 1);
+        }
+        return await query.Take(size).ToListAsync(token);
     }
 }

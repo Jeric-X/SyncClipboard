@@ -19,7 +19,7 @@ public abstract class Profile
         return $"{Type}-{await GetHash(token)}";
     }
 
-    public static bool ParseProfileId(string profileId, out ProfileType type, [NotNullWhen(true)]out string? hash)
+    public static bool ParseProfileId(string profileId, out ProfileType type, [NotNullWhen(true)] out string? hash)
     {
         var parts = profileId.Split('-', 2);
         if (parts.Length != 2)
