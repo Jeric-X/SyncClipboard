@@ -1,4 +1,3 @@
-using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Converters;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
@@ -38,6 +37,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly MultiTimesEventSimulator _historyItemEvents = new(TimeSpan.FromMilliseconds(300));
     private readonly MultiTimesEventSimulator _imageClickEvents = new(TimeSpan.FromMilliseconds(300));
     private readonly WindowManager _windowManger;
+    private ScrollViewer? _scrollViewer = null;
 
     public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel)
     {
@@ -283,10 +283,7 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public void ScrollToTop()
     {
-        if (_ListView.Items.Count != 0)
-        {
-            _ListView.SmoothScrollIntoViewWithIndexAsync(0);
-        }
+        _scrollViewer?.ScrollToVerticalOffset(0);
     }
 
     private async void ItemContextFlyout_Opening(object sender, object _)
@@ -374,14 +371,45 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void AttachScrollViewerWatcher(ScrollViewer scroll)
     {
-        scroll.ViewChanged += async (s, args) =>
+        _scrollViewer = scroll;
+
+        async void NotifyScrollViewerChange()
         {
             var verticalOffset = scroll.VerticalOffset;
             var viewport = scroll.ViewportHeight;
             var extent = scroll.ExtentHeight;
 
             await _viewModel.NotifyScrollPositionAsync(verticalOffset, viewport, extent);
-        };
+        }
+
+        scroll.RegisterPropertyChangedCallback(ScrollViewer.VerticalOffsetProperty, (s, dp) =>
+        {
+            NotifyScrollViewerChange();
+        });
+
+        scroll.RegisterPropertyChangedCallback(ScrollViewer.ViewportHeightProperty, (s, dp) =>
+        {
+            NotifyScrollViewerChange();
+        });
+
+        scroll.RegisterPropertyChangedCallback(ScrollViewer.ExtentHeightProperty, (s, dp) =>
+        {
+            NotifyScrollViewerChange();
+        });
+    }
+
+    public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
+    {
+        offsetY = 0; viewportHeight = 0; extentHeight = 0;
+
+        if (_scrollViewer != null)
+        {
+            offsetY = _scrollViewer.VerticalOffset;
+            viewportHeight = _scrollViewer.ViewportHeight;
+            extentHeight = _scrollViewer.ExtentHeight;
+            return true;
+        }
+        return false;
     }
 
     private static T? FindDescendant<T>(DependencyObject start) where T : DependencyObject
