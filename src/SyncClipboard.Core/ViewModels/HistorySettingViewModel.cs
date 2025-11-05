@@ -13,6 +13,7 @@ public partial class HistorySettingViewModel : ObservableObject
         _configManager = configManager;
         var config = configManager.GetConfig<HistoryConfig>();
         enableHistory = config.EnableHistory;
+        enableSyncHistory = config.EnableSyncHistory;
         maxItemCount = config.MaxItemCount;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
@@ -21,6 +22,7 @@ public partial class HistorySettingViewModel : ObservableObject
     private void OnHistoryConfigChanged(HistoryConfig config)
     {
         EnableHistory = config.EnableHistory;
+        EnableSyncHistory = config.EnableSyncHistory;
         MaxItemCount = config.MaxItemCount;
         HistoryRetentionMinutes = config.HistoryRetentionMinutes;
     }
@@ -30,6 +32,7 @@ public partial class HistorySettingViewModel : ObservableObject
         return new HistoryConfig
         {
             EnableHistory = EnableHistory,
+            EnableSyncHistory = EnableSyncHistory,
             MaxItemCount = MaxItemCount,
             HistoryRetentionMinutes = HistoryRetentionMinutes
         };
@@ -40,10 +43,12 @@ public partial class HistorySettingViewModel : ObservableObject
     partial void OnEnableHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableHistory = value });
 
     [ObservableProperty]
+    private bool enableSyncHistory;
+    partial void OnEnableSyncHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
+
+    [ObservableProperty]
     private uint maxItemCount;
     partial void OnMaxItemCountChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { MaxItemCount = value });
-
-
 
     [ObservableProperty]
     private uint historyRetentionMinutes;

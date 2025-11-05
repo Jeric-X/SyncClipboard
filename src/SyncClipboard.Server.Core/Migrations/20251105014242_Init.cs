@@ -31,8 +31,11 @@ namespace SyncClipboard.Server.Core.Migrations
                     LastModified = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Stared = table.Column<bool>(type: "INTEGER", nullable: false),
                     Pinned = table.Column<bool>(type: "INTEGER", nullable: false),
+                    From = table.Column<string>(type: "TEXT", nullable: false),
                     Tags = table.Column<string>(type: "TEXT", nullable: false),
-                    ExtraData = table.Column<string>(type: "TEXT", nullable: true)
+                    ExtraData = table.Column<string>(type: "TEXT", nullable: true),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -43,6 +46,16 @@ namespace SyncClipboard.Server.Core.Migrations
                 name: "IX_History_User_CreateTime_ID",
                 table: "HistoryRecords",
                 columns: ["UserId", "CreateTime", "ID"]);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_History_User_Stared_CreateTime_ID",
+                table: "HistoryRecords",
+                columns: ["UserId", "Stared", "CreateTime", "ID"]);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_History_User_Stared_Type_CreateTime_ID",
+                table: "HistoryRecords",
+                columns: ["UserId", "Stared", "Type", "CreateTime", "ID"]);
         }
 
         /// <inheritdoc />

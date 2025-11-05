@@ -27,14 +27,33 @@ namespace SyncClipboard.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("From")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Hash")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsLocalFileReady")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Pinned")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("Stared")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SyncStatus")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Text")
@@ -45,6 +64,9 @@ namespace SyncClipboard.Core.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Version")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("ID");

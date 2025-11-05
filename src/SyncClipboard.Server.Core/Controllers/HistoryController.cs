@@ -32,14 +32,23 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // }
 
     // GET api/history
-    // Return all types
+    // Return list with optional filters
     // Query parameters:
     //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     //   before: Unix timestamp in milliseconds (UTC). Only records with CreateTime < before will be returned.
     //   after:  Unix timestamp in milliseconds (UTC). Only records with CreateTime > after will be returned.
     //   cursorProfileId: optional string cursor representing a profile id.
+    //   types: ProfileTypeFilter flag enum (default All). Example: types=Text,Image
+    //   q: optional search text (matches Text field, case-insensitive)
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] long? before = null, [FromQuery] long? after = null, [FromQuery] string? cursorProfileId = null)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] long? before = null,
+        [FromQuery] long? after = null,
+        [FromQuery] string? cursorProfileId = null,
+        [FromQuery] ProfileTypeFilter types = ProfileTypeFilter.All,
+        [FromQuery(Name = "q")] string? searchText = null,
+        [FromQuery] bool? starred = null)
     {
         if (page < 1)
             return BadRequest("page must be >= 1");
@@ -77,7 +86,16 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest("after must be less than before");
         }
 
-        var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, ProfileType.None, page, PAGE_SIZE, beforeDt, afterDt, cursorProfileId);
+        var list = await _historyService.GetListAsync(
+            HARD_CODED_USER_ID,
+            page,
+            PAGE_SIZE,
+            beforeDt,
+            afterDt,
+            cursorProfileId,
+            types,
+            searchText,
+            starred);
         return Ok(list);
     }
 

@@ -4,10 +4,11 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.Utilities.Runner;
+using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Core.RemoteServer;
 
-public sealed class EventDrivenServer : IRemoteClipboardServer
+public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServer
 {
     private readonly StorageBasedServerHelper _serverHelper;
     private readonly TestAliveHelper _testAliveHelper;
@@ -167,5 +168,14 @@ public sealed class EventDrivenServer : IRemoteClipboardServer
         {
             disposableAdapter.Dispose();
         }
+    }
+
+    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, string? cursorProfileId = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
+    {
+        if (_serverAdapter is not IHistorySyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.GetHistoryAsync(page, before, after, cursorProfileId, types, searchText, starred);
     }
 }

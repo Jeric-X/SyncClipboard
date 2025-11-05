@@ -25,4 +25,6 @@ public class HistoryRecordEntity
     public string From { get; set; } = string.Empty;
     public string[] Tags { get; set; } = [];
     public string? ExtraData { get; set; }
+    public int Version { get; set; } = 0;
+    public bool IsDeleted { get; set; } = false;
 }

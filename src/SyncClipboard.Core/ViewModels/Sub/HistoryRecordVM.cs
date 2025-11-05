@@ -19,13 +19,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private bool stared = record.Stared;
     [ObservableProperty]
     private bool pinned = record.Pinned;
-    // Sync state used by UI to indicate server/local sync status
     [ObservableProperty]
-#if DEBUG
-    private SyncStatus syncState = GetRandomSyncStatus();
-#else
-    private SyncStatus syncState = SyncStatus.Synced;
-#endif
+    private SyncStatus syncState = record.IsLocalFileReady ? SyncStatus.Synced : SyncStatus.ServerOnly;
 
     public HistoryRecord ToHistoryRecord()
     {
@@ -38,7 +33,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
             Hash = Hash,
             Timestamp = Timestamp,
             Stared = Stared,
-            Pinned = Pinned
+            Pinned = Pinned,
+            IsLocalFileReady = SyncState != SyncStatus.ServerOnly
         };
     }
 
@@ -49,17 +45,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
         Timestamp = record.Timestamp;
         Stared = record.Stared;
         Pinned = record.Pinned;
-        // For testing: randomize SyncState when update is called so UI can show different states
-#if DEBUG
-        try
-        {
-            SyncState = GetRandomSyncStatus();
-        }
-        catch
-        {
-            SyncState = SyncStatus.Synced;
-        }
-#endif
+        // Sync with the new VM's state (which reflects IsLocalFileReady of source record)
+        SyncState = record.SyncState;
     }
 
 #if DEBUG
