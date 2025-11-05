@@ -7,7 +7,7 @@ public class ImageProfile : FileProfile
 {
     public override ProfileType Type => ProfileType.Image;
 
-    public ImageProfile(string fullPath, string? fileName = null, string? hash = null)
+    public ImageProfile(string? fullPath, string? fileName = null, string? hash = null)
         : base(fullPath, fileName, hash)
     {
     }

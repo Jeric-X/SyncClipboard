@@ -77,8 +77,16 @@ public class SyncClipboardController(
         {
             return BadRequest();
         }
-        var path = await _historyService.GetRecentTransferFile(HistoryService.HARD_CODED_USER_ID, fileName, token);
-        return await GetFileInternal(path);
+
+        try
+        {
+            var path = await _historyService.GetRecentTransferFile(HistoryService.HARD_CODED_USER_ID, fileName, token);
+            return await GetFileInternal(path);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("file/{fileName}")]

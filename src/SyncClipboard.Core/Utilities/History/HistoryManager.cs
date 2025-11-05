@@ -3,6 +3,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Server.Core.Models;
 using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.Utilities.History;
@@ -33,7 +34,7 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        if (await SetRecordsMaxCount(_dbContext, config.MaxItemCount) != 0)
+        if (!config.EnableSyncHistory && await SetRecordsMaxCount(_dbContext, config.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
         }
@@ -45,6 +46,16 @@ public class HistoryManager
         if (maxCount == 0)
         {
             maxCount = 1;
+        }
+
+        uint remoteCount = 0;
+        var remoteRecords = _dbContext.HistoryRecords.Where(r => r.IsDeleted || !r.IsLocalFileReady).ToList();
+        remoteCount += (uint)remoteRecords.Count;
+
+        foreach (var record in remoteRecords)
+        {
+            await DeleteHistoryInternal(_dbContext, record, token);
+            remoteCount++;
         }
 
         var records = _dbContext.HistoryRecords;
@@ -63,7 +74,7 @@ public class HistoryManager
                 await DeleteHistoryInternal(_dbContext, record, token);
             }
 
-            return count - maxCount;
+            return count - maxCount + remoteCount;
         }
         return 0;
     }
@@ -114,11 +125,14 @@ public class HistoryManager
             return;
         }
 
-        await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
-
-        if (_historyConfig.MaxItemCount <= _dbContext.HistoryRecords.Count())
+        if (!_historyConfig.EnableSyncHistory)
         {
-            return;
+            await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
+
+            if (_historyConfig.MaxItemCount <= _dbContext.HistoryRecords.Count())
+            {
+                return;
+            }
         }
 
         await _dbContext.HistoryRecords.AddAsync(record, token);
@@ -158,7 +172,10 @@ public class HistoryManager
             entity.FilePath = record.FilePath;
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
-            await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount, token);
+            if (!_historyConfig.EnableSyncHistory)
+            {
+                await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount, token);
+            }
         }
     }
 
@@ -170,11 +187,65 @@ public class HistoryManager
         await DeleteHistoryInternal(_dbContext, record, token);
     }
 
+    public async Task<List<HistoryRecordDto>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
+    {
+        var needUpdateToServer = new List<HistoryRecordDto>();
+        if (remoteRecords.Any() == false)
+            return needUpdateToServer;
+
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        bool changed = false;
+
+        foreach (var dto in remoteRecords)
+        {
+            var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == dto.Type && r.Hash == dto.Hash);
+            if (entity == null)
+            {
+                var newRecord = dto.ToHistoryRecord();
+                await _dbContext.HistoryRecords.AddAsync(newRecord, token);
+                changed = true;
+                HistoryAdded?.Invoke(newRecord);
+            }
+            else
+            {
+                if (entity.ShouldUpdateFromRemote(dto))
+                {
+                    entity.ApplyFromRemote(dto);
+                    changed = true;
+                    if (entity.IsDeleted)
+                    {
+                        HistoryRemoved?.Invoke(entity);
+                    }
+                    else
+                    {
+                        HistoryUpdated?.Invoke(entity);
+                    }
+                }
+                else if (entity.IsLocalNewerThanRemote(dto))
+                {
+                    entity.SyncStatus = HistorySyncStatus.NeedSync;
+                    changed = true;
+                    HistoryUpdated?.Invoke(entity);
+                    needUpdateToServer.Add(entity.ToHistoryRecordDto());
+                }
+            }
+        }
+
+        if (changed)
+        {
+            await _dbContext.SaveChangesAsync(token);
+        }
+        return needUpdateToServer;
+    }
+
     public async Task CleanupExpiredHistory(CancellationToken token = default)
     {
         try
         {
-            if (!_historyConfig.EnableHistory || _historyConfig.HistoryRetentionMinutes == 0)
+            // When syncing history with server, local time-based cleanup is disabled
+            if (!_historyConfig.EnableHistory || _historyConfig.EnableSyncHistory || _historyConfig.HistoryRetentionMinutes == 0)
             {
                 return;
             }
@@ -290,7 +361,7 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = _dbContext.HistoryRecords.AsQueryable();
+        var query = _dbContext.HistoryRecords.Where(r => r.IsDeleted == false);
 
         if (typeFilter != ProfileTypeFilter.All)
         {

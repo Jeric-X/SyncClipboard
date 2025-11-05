@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace SyncClipboard.Server.Core.Models;
 
 public class HistoryRecordDto
 {
     public string Hash { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public ProfileType Type { get; set; } = ProfileType.None;
     public DateTime CreateTime { get; set; } = DateTime.UtcNow;
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
@@ -11,6 +14,8 @@ public class HistoryRecordDto
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public long Size { get; set; }
+    public int Version { get; set; } = 0;
+    public bool IsDeleted { get; set; } = false;
 
     public static HistoryRecordDto FromEntity(HistoryRecordEntity e)
     {
@@ -24,7 +29,9 @@ public class HistoryRecordDto
             LastAccessed = e.LastAccessed,
             Stared = e.Stared,
             Pinned = e.Pinned,
-            Size = e.Size
+            Size = e.Size,
+            Version = e.Version,
+            IsDeleted = e.IsDeleted
         };
     }
 
@@ -39,7 +46,9 @@ public class HistoryRecordDto
             LastAccessed = this.LastModified,
             Stared = this.Stared,
             Pinned = this.Pinned,
-            Size = this.Size
+            Size = this.Size,
+            Version = this.Version,
+            IsDeleted = this.IsDeleted
         };
     }
 }

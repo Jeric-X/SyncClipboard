@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,11 +9,13 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
+using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -28,37 +31,87 @@ public partial class HistoryViewModel : ObservableObject
 
     private CancellationTokenSource? infoBarCancellationSource;
 
-    private readonly ConfigManager configManager;
     private readonly HistoryManager historyManager;
-    private readonly IClipboardFactory clipboardFactory;
     private readonly VirtualKeyboard keyboard;
     private readonly ConfigBase runtimeConfig;
+    private readonly ConfigManager _configManager;
     private readonly ILogger logger;
     private readonly LocalClipboardSetter localClipboardSetter;
     private readonly ProfileActionBuilder profileActionBuilder;
+    private readonly RemoteClipboardServerFactory remoteServerFactory;
+    private IHistorySyncServer? historySyncServer;
+
+    private bool _enableSyncHistory;
+
+    private readonly ThreadSafeDeque<DateTime?> _remoteFetchQueue = new();
+    private readonly SemaphoreSlim _remoteWorkerSemaphore = new(1, 1);
+    private CancellationTokenSource _remoteQueueCts = new();
+    private readonly ConcurrentQueue<string> _serverUpdateQueue = new();
+    private readonly ConcurrentDictionary<string, HistoryRecordDto> _serverUpdateMap = new();
+    private int _serverUpdateWorkerRunning = 0;
+    private readonly CancellationTokenSource _serverUpdateCts = new();
 
     public HistoryViewModel(
-        ConfigManager configManager,
         HistoryManager historyManager,
-        IClipboardFactory clipboardFactory,
         VirtualKeyboard keyboard,
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
+        ConfigManager configManager,
         ILogger logger,
         LocalClipboardSetter localClipboardSetter,
-        ProfileActionBuilder profileActionBuilder)
+        ProfileActionBuilder profileActionBuilder,
+        RemoteClipboardServerFactory remoteServerFactory)
     {
-        this.configManager = configManager;
         this.historyManager = historyManager;
-        this.clipboardFactory = clipboardFactory;
         this.keyboard = keyboard;
         this.runtimeConfig = runtimeConfig;
+        this._configManager = configManager;
         this.logger = logger;
         this.localClipboardSetter = localClipboardSetter;
         this.profileActionBuilder = profileActionBuilder;
+        this.remoteServerFactory = remoteServerFactory;
+
+        var currentServer = remoteServerFactory.Current;
+        _enableSyncHistory = configManager.GetConfig<HistoryConfig>().EnableSyncHistory;
+        historySyncServer = _enableSyncHistory ? currentServer as IHistorySyncServer : null;
+
+        _configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
 
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
         ApplyFilter();
+    }
+
+    private void OnHistoryConfigChanged(HistoryConfig cfg)
+    {
+        var newEnable = cfg.EnableSyncHistory;
+        if (newEnable == _enableSyncHistory)
+            return;
+
+        _enableSyncHistory = newEnable;
+        if (_enableSyncHistory)
+        {
+            historySyncServer = remoteServerFactory.Current as IHistorySyncServer;
+            _ = Refresh();
+        }
+        else
+        {
+            historySyncServer = null;
+            CancelFetchTask();
+            _isRemoteEnd = true;
+        }
+    }
+
+    private readonly object _remoteQueueCtsLock = new();
+    private void CancelFetchTask()
+    {
+        _remoteFetchQueue.Clear();
+        lock (_remoteQueueCtsLock)
+        {
+            var oldCts = _remoteQueueCts;
+            _remoteQueueCts = new CancellationTokenSource();
+            oldCts.Cancel();
+            oldCts.Dispose();
+        }
     }
 
     private void ApplyFilter()
@@ -118,8 +171,10 @@ public partial class HistoryViewModel : ObservableObject
 
     private const int InitialPageSize = 20;
     private const int MorePageSize = 20;
-    private string? _cursorProfileId = null;
-    private DateTime? _cursorProfileTime = null;
+    private string? _localIdCursor = null;
+    private DateTime? _localTimeCursor = null;
+    private DateTime? _remoteTimeCursor = null;
+    private string? _remoteIdCursor = null;
     private readonly SingletonTask _loader = new SingletonTask();
 
     public int Width
@@ -175,8 +230,6 @@ public partial class HistoryViewModel : ObservableObject
         set
         {
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowLocal = value });
-            // Re-apply filter so UI reflects the change immediately
-            ApplyFilter();
             OnPropertyChanged(nameof(OnlyShowLocal));
         }
     }
@@ -219,12 +272,12 @@ public partial class HistoryViewModel : ObservableObject
         window?.Close();
     }
 
-    private int _isTriggeringLoadMore = 0;
+    private int _isLoadTaskRunning = 0;
     private double _lastOffsetY = 0;
     private double _lastViewportHeight = 0;
     private double _lastExtentHeight = 0;
 
-    public void SetScollViewMetrics(double offsetY, double viewportHeight, double extentHeight)
+    public void SetScrollViewMetrics(double offsetY, double viewportHeight, double extentHeight)
     {
         _lastOffsetY = offsetY;
         _lastViewportHeight = viewportHeight;
@@ -238,37 +291,22 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task NotifyScrollPositionAsync(double offsetY, double viewportHeight, double extentHeight)
     {
-        try
-        {
-            SetScollViewMetrics(offsetY, viewportHeight, extentHeight);
-            if (IsEnd) return;
-            if (extentHeight <= 0) return;
+        SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
+        if (IsEnd) return;
+        if (extentHeight <= 0) return;
 
-            if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight) return;
+        if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight) return;
 
-            if (IsLoadingMore) return;
+        if (_isLoadTaskRunning != 0) return;
 
-            // 避免并发触发
-            if (Interlocked.CompareExchange(ref _isTriggeringLoadMore, 1, 0) != 0) return;
-            try
-            {
-                await RunLoadTask(MorePageSize);
-            }
-            catch { }
-            finally
-            {
-                Interlocked.Exchange(ref _isTriggeringLoadMore, 0);
-            }
-        }
-        catch { }
+        await RunLoadTask(MorePageSize);
     }
 
     private async Task RunLoadTask(int size)
     {
-        IsLoadingMore = true;
-        using var guard = new ScopeGuard(() => IsLoadingMore = false);
-        if (IsEnd) return;
         if (window is null) return;
+        if (Interlocked.CompareExchange(ref _isLoadTaskRunning, 1, 0) != 0) return;
+        using var scopeGuard = new ScopeGuard(() => Interlocked.Exchange(ref _isLoadTaskRunning, 0));
 
         await _loader.Run(async ct =>
         {
@@ -280,7 +318,7 @@ public partial class HistoryViewModel : ObservableObject
                     await DoLoadPageAsync(size, ct);
                     if (window.GetScrollViewMetrics(out var offsetY, out var viewportHeight, out var extentHeight))
                     {
-                        SetScollViewMetrics(offsetY, viewportHeight, extentHeight);
+                        SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
                     }
                     await Task.Delay(10, ct);
                 }
@@ -292,28 +330,43 @@ public partial class HistoryViewModel : ObservableObject
         });
     }
 
-    [ObservableProperty]
-    private bool isLoadingMore = false;
+
+    public bool IsLoading => IsLoadingLocal || IsLoadingRemote;
 
     [ObservableProperty]
-    private bool isEnd = false;
+    [NotifyPropertyChangedFor(nameof(IsLoading))]
+    private bool isLoadingLocal = false;
+
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLoading))]
+    private bool isLoadingRemote = false;
+
+    private bool _localIsEnd = false;
+    private bool _isRemoteEnd = false;
+    private bool IsEnd => _localIsEnd && _isRemoteEnd;
 
     [RelayCommand]
     public Task Refresh()
     {
-        IsEnd = false;
+        CancelFetchTask();
+        _localIsEnd = false;
+        _isRemoteEnd = false;
+
         allHistoryItems.Clear();
-        _cursorProfileId = null;
-        _cursorProfileTime = null;
+        _localIdCursor = null;
+        _localTimeCursor = null;
+        _remoteTimeCursor = null;
+        _remoteIdCursor = null;
         _lastViewportHeight = 0;
         _lastExtentHeight = 0;
         window?.ScrollToTop();
         return RunLoadTask(InitialPageSize);
     }
 
-    private (ProfileTypeFilter types, bool? started, string? searchText) BuildQueryParameters()
+    private (ProfileTypeFilter types, bool? starred, string? searchText) BuildQueryParameters()
     {
-        bool? started = null;
+        bool? starred = null;
         string? searchText = string.IsNullOrEmpty(SearchText) ? null : SearchText;
 
         ProfileTypeFilter types;
@@ -330,7 +383,7 @@ public partial class HistoryViewModel : ObservableObject
                 break;
             case HistoryFilterType.Starred:
                 types = ProfileTypeFilter.All;
-                started = true;
+                starred = true;
                 break;
             case HistoryFilterType.All:
             default:
@@ -338,7 +391,7 @@ public partial class HistoryViewModel : ObservableObject
                 break;
         }
 
-        return (types, started, searchText);
+        return (types, starred, searchText);
     }
 
     public void NavigateToNextFilter()
@@ -501,57 +554,324 @@ public partial class HistoryViewModel : ObservableObject
         this.window = window;
         await Refresh();
 
-        historyManager.HistoryAdded += record => allHistoryItems.Insert(0, new HistoryRecordVM(record));
+        historyManager.HistoryAdded += RecordUpdated;
+        historyManager.HistoryUpdated += RecordUpdated;
         historyManager.HistoryRemoved += record => allHistoryItems.Remove(new HistoryRecordVM(record));
-        historyManager.HistoryUpdated += record =>
+
+        remoteServerFactory.CurrentServerChanged += (sender, e) => OnRemoteServerChanged();
+    }
+
+    private void RecordUpdated(HistoryRecord record)
+    {
+        var newRecord = new HistoryRecordVM(record);
+        var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
+        if (!IsMatchCurrentUiFilter(newRecord))
         {
-            var newRecord = new HistoryRecordVM(record);
-            var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
-            if (oldRecord == null)
+            if (oldRecord != null)
             {
-                return;
+                allHistoryItems.Remove(oldRecord);
             }
-            oldRecord.Update(newRecord);
+            return;
+        }
+
+        if (oldRecord == null)
+        {
+            InsertHistoryInOrder(record);
+            return;
+        }
+        oldRecord.Update(newRecord);
+    }
+
+    private bool IsMatchCurrentUiFilter(HistoryRecordVM vm)
+    {
+        bool typeMatch = SelectedFilter switch
+        {
+            HistoryFilterType.All => true,
+            HistoryFilterType.Text => vm.Type == ProfileType.Text,
+            HistoryFilterType.Image => vm.Type == ProfileType.Image,
+            HistoryFilterType.File => vm.Type == ProfileType.File || vm.Type == ProfileType.Group,
+            HistoryFilterType.Starred => vm.Stared,
+            _ => true
         };
+
+        if (!typeMatch)
+            return false;
+
+        if (!string.IsNullOrEmpty(SearchText))
+        {
+            if (!vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // 对有序队列实行二分查找
+    private void InsertHistoryInOrder(HistoryRecord record)
+    {
+        var vm = new HistoryRecordVM(record);
+        if (allHistoryItems.Count == 0)
+        {
+            allHistoryItems.Insert(0, vm);
+            return;
+        }
+
+        int low = 0, high = allHistoryItems.Count;
+        var t = vm.Timestamp;
+        while (low < high)
+        {
+            int mid = (low + high) >> 1;
+            var midT = allHistoryItems[mid].Timestamp;
+            if (midT <= t)
+            {
+                high = mid;
+            }
+            else
+            {
+                low = mid + 1;
+            }
+        }
+        allHistoryItems.Insert(low, vm);
+    }
+
+    private void OnRemoteServerChanged()
+    {
+        var currentServer = remoteServerFactory.Current;
+        historySyncServer = _enableSyncHistory ? currentServer as IHistorySyncServer : null;
+        _ = Refresh();
+
+        if (historySyncServer != null)
+        {
+            logger.Write("[HISTORY_VIEW_MODEL] Remote server changed, historySyncServer is now available");
+        }
+        else
+        {
+            logger.Write("[HISTORY_VIEW_MODEL] Remote server changed, historySyncServer is not available");
+        }
+    }
+
+    private async Task LoadRemotePage()
+    {
+        if (historySyncServer == null)
+        {
+            _isRemoteEnd = true;
+            return;
+        }
+
+        _remoteFetchQueue.EnqueueTail(null);
+        try
+        {
+            await ProcessRemoteQueueAsync(waitAllTasks: true);
+        }
+        catch { }
     }
 
     private async Task DoLoadPageAsync(int size, CancellationToken token)
     {
         var (types, started, searchText) = BuildQueryParameters();
-        List<HistoryRecord>? records = null;
 
-        records = await historyManager.GetHistoryAsync(
+        if (_localIsEnd)
+        {
+            await LoadRemotePage();
+            return;
+        }
+
+        IsLoadingLocal = true;
+        var records = await historyManager.GetHistoryAsync(
             types,
             started,
-            _cursorProfileTime,
-            _cursorProfileId,
+            _localTimeCursor,
+            _localIdCursor,
             size,
             string.IsNullOrEmpty(searchText) ? null : searchText,
             token);
 
-        if (records == null || records.Count == 0)
+        _localIsEnd = records == null || records.Count == 0;
+        if (_localIsEnd)
         {
-            IsEnd = true;
+            IsLoadingLocal = false;
+            await LoadRemotePage();
             return;
         }
-        var vms = records.Select(x => new HistoryRecordVM(x)).ToList();
+
+        var vms = records!.Select(x => new HistoryRecordVM(x)).ToList();
         allHistoryItems.AddRange(vms);
 
         var last = vms.LastOrDefault();
         if (last != null)
         {
-            _cursorProfileId = $"{last.Type}-{last.Hash}";
-            _cursorProfileTime = last.Timestamp;
+            _localIdCursor = $"{last.Type}-{last.Hash}";
+            _remoteFetchQueue.EnqueueTail(last.Timestamp);
+            _ = ProcessRemoteQueueAsync();
+            _localTimeCursor = last.Timestamp;
         }
 
-        if (records.Count < size)
+        _localIsEnd = vms.Count < size;
+        IsLoadingLocal = false;
+    }
+
+    private static long ToUnixMilliseconds(DateTime time)
+    {
+        var utc = DateTime.SpecifyKind(time, DateTimeKind.Utc);
+        return new DateTimeOffset(utc).ToUnixTimeMilliseconds();
+    }
+
+    private async Task<bool> FetchAndSyncRemotePageAsync(long? after, int page, CancellationToken ct)
+    {
+        if (historySyncServer == null)
+            return false;
+
+        long? before = _remoteTimeCursor.HasValue ? ToUnixMilliseconds(_remoteTimeCursor.Value) : null;
+        if (after.HasValue && before.HasValue && after.Value >= before.Value)
         {
-            IsEnd = true;
+            before = null;
         }
+
+        var (types, starred, searchText) = BuildQueryParameters();
+        var list = await historySyncServer.GetHistoryAsync(
+            page: page,
+            before: before,
+            after: after,
+            cursorProfileId: _remoteIdCursor,
+            types: types,
+            searchText: string.IsNullOrEmpty(searchText) ? null : searchText,
+            starred: starred);
+
+        if (list.Any() == false)
+        {
+            if (after is null)
+            {
+                _isRemoteEnd = true;
+            }
+            return false;
+        }
+
+        var needUpload = await historyManager.SyncRemoteHistoryAsync(list, ct);
+        foreach (var dto in needUpload)
+        {
+            var pid = $"{dto.Type}-{dto.Hash}";
+            _serverUpdateMap[pid] = dto;
+            _serverUpdateQueue.Enqueue(pid);
+        }
+        _ = ProcessServerUpdateQueueAsync();
+
+        var lastRemote = list.Last();
+        _remoteTimeCursor = lastRemote.CreateTime;
+        _remoteIdCursor = $"{lastRemote.Type}-{lastRemote.Hash}";
+        return true;
+    }
+
+    private async Task ProcessRemoteQueueAsync(bool waitAllTasks = false)
+    {
+        if (historySyncServer == null || _isRemoteEnd)
+        {
+            _isRemoteEnd = true;
+            return;
+        }
+
+        var ct = _remoteQueueCts.Token;
+        if (waitAllTasks)
+        {
+            await _remoteWorkerSemaphore.WaitAsync(ct);
+        }
+        else if (!_remoteWorkerSemaphore.Wait(0))
+        {
+            return;
+        }
+
+        IsLoadingRemote = true;
+        int errorCount = 0;
+        try
+        {
+            while (errorCount <= 5 && !ct.IsCancellationRequested && _remoteFetchQueue.TryDequeue(out var afterDate))
+            {
+                try
+                {
+                    var after = afterDate.HasValue ? ToUnixMilliseconds(afterDate.Value) : (long?)null;
+                    var maxPage = after is null ? 1 : int.MaxValue;
+                    for (int page = 1; page <= maxPage && !ct.IsCancellationRequested; page++)
+                    {
+                        var success = await FetchAndSyncRemotePageAsync(after, page, ct);
+                        errorCount = 0;
+                        if (!success)
+                        {
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex) when (ct.IsCancellationRequested == false)
+                {
+                    logger.Write("[HISTORY_VIEW_MODEL] Remote fetch failed:", ex.Message);
+                    errorCount++;
+                    _remoteFetchQueue.EnqueueHead(afterDate);
+                }
+            }
+        }
+        finally
+        {
+            IsLoadingRemote = false;
+            _remoteWorkerSemaphore.Release();
+            if (errorCount == 0 && !_remoteFetchQueue.IsEmpty && !ct.IsCancellationRequested)
+            {
+                await ProcessRemoteQueueAsync(waitAllTasks);
+            }
+        }
+    }
+
+    private async Task ProcessServerUpdateQueueAsync()
+    {
+        if (Interlocked.CompareExchange(ref _serverUpdateWorkerRunning, 1, 0) != 0)
+            return;
+        try
+        {
+            int errorCount = 0;
+            var ct = _serverUpdateCts.Token;
+            while (errorCount <= 5 && !ct.IsCancellationRequested && _serverUpdateQueue.TryDequeue(out var pid))
+            {
+                try
+                {
+                    if (_serverUpdateMap.TryGetValue(pid, out var latestDto))
+                    {
+                        // TODO: once upload API is available, invoke it here with latestDto
+                        logger.Write("[HISTORY_VIEW_MODEL] Uploading to server:", pid);
+                        await Task.Yield();
+                        _serverUpdateMap.TryRemove(pid, out _);
+                        errorCount = 0;
+                    }
+                }
+                catch (Exception ex) when (ct.IsCancellationRequested == false)
+                {
+                    logger.Write("[HISTORY_VIEW_MODEL] Server update failed, re-enqueue:", ex.Message);
+                    errorCount++;
+                    _serverUpdateQueue.Enqueue(pid);
+                }
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _serverUpdateWorkerRunning, 0);
+        }
+    }
+
+    private void DownloadRemoteProfile(HistoryRecordVM _)
+    {
+        // todo: implement download logic
+        logger.Write("[HISTORY_VIEW_MODEL] Downloading remote profile is not implemented yet.");
     }
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
     {
+        if (record.SyncState == SyncStatus.ServerOnly)
+        {
+            return
+            [
+                new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(record.ToHistoryRecord()); }),
+                new MenuItem(I18n.Strings.Download, () => DownloadRemoteProfile(record))
+            ];
+        }
+
         var profile = record.ToHistoryRecord().ToProfile();
         var valid = await profile.IsLocalDataValid(true, CancellationToken.None);
 

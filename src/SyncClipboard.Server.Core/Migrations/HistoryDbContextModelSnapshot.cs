@@ -41,6 +41,9 @@ namespace SyncClipboard.Server.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("LastAccessed")
                         .HasColumnType("TEXT");
 
@@ -83,10 +86,19 @@ namespace SyncClipboard.Server.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("ID");
 
                     b.HasIndex("UserId", "CreateTime", "ID")
                         .HasDatabaseName("IX_History_User_CreateTime_ID");
+
+                    b.HasIndex("UserId", "Stared", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_Stared_CreateTime_ID");
+
+                    b.HasIndex("UserId", "Stared", "Type", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_Stared_Type_CreateTime_ID");
 
                     b.ToTable("HistoryRecords");
                 });

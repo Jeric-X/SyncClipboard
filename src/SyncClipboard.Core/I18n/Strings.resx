@@ -702,6 +702,12 @@ Double click image: View full image</value>
   <data name="HistoryRetentionMinutes" xml:space="preserve">
     <value>History retention time (minutes)</value>
   </data>
+  <data name="EnableSyncHistory" xml:space="preserve">
+    <value>Enable Sync History</value>
+  </data>
+  <data name="EnableSyncHistoryDescription" xml:space="preserve">
+    <value>When enabled, automatic deletion (maximum count and retention time) will be disabled locally and follow the server configuration.</value>
+  </data>
   <data name="HistoryDescription" xml:space="preserve">
     <value>History records will become invalid when users manually delete files</value>
   </data>

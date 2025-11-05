@@ -4,15 +4,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SyncClipboard.Server.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History;
 
 #nullable disable
 
-namespace SyncClipboard.Server.Core.Migrations
+namespace SyncClipboard.Core.Migrations
 {
     [DbContext(typeof(HistoryDbContext))]
-    [Migration("20251028030546_Init")]
-    partial class Init
+    [Migration("20251105014218_Add_SyncStatus_LastModified_Version_IsDeleted_IsLocalFileReady_Size_From")]
+    partial class Add_SyncStatus_LastModified_Version_IsDeleted_IsLocalFileReady_Size_From
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,19 +20,17 @@ namespace SyncClipboard.Server.Core.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
 
-            modelBuilder.Entity("SyncClipboard.Server.Core.Models.HistoryRecordEntity", b =>
+            modelBuilder.Entity("SyncClipboard.Core.Models.HistoryRecord", b =>
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CreateTime")
+                    b.PrimitiveCollection<string>("FilePath")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ExtraData")
-                        .HasColumnType("TEXT");
-
-                    b.PrimitiveCollection<string>("FilePaths")
+                    b.Property<string>("From")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -40,8 +38,11 @@ namespace SyncClipboard.Server.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("LastAccessed")
-                        .HasColumnType("TEXT");
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsLocalFileReady")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("TEXT");
@@ -55,37 +56,23 @@ namespace SyncClipboard.Server.Core.Migrations
                     b.Property<bool>("Stared")
                         .HasColumnType("INTEGER");
 
-                    b.PrimitiveCollection<string>("Tags")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TransferDataFile")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TransferDataMd5")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TransferDataSha256")
-                        .IsRequired()
+                    b.Property<DateTime>("Timestamp")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Type")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("ID");
-
-                    b.HasIndex("UserId", "CreateTime", "ID")
-                        .HasDatabaseName("IX_History_User_CreateTime_ID");
 
                     b.ToTable("HistoryRecords");
                 });

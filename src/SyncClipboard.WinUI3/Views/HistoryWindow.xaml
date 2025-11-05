@@ -73,8 +73,8 @@
                         <MenuFlyout Placement="Bottom">
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
-                            <ToggleMenuFlyoutItem Text="显示同步状态" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
-                            <ToggleMenuFlyoutItem Text="仅显示本地" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="showSyncStatus" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="only show local" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -105,11 +105,11 @@
                         Command="{x:Bind _viewModel.RefreshCommand}"
                         ToolTipService.ToolTip="刷新">
                     <Grid>
-                        <FontIcon Glyph="&#xE72C;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(_viewModel.IsLoadingMore), Mode=OneWay}" />
+                        <FontIcon Glyph="&#xE72C;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(_viewModel.IsLoading), Mode=OneWay}" />
                         <ProgressRing Width="16"
                                       Height="16"
-                                      IsActive="{x:Bind _viewModel.IsLoadingMore, Mode=OneWay}"
-                                      Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsLoadingMore), Mode=OneWay}" />
+                                      IsActive="{x:Bind _viewModel.IsLoading, Mode=OneWay}"
+                                      Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsLoading), Mode=OneWay}" />
                     </Grid>
                 </Button>
                 <Button Width="32"

@@ -8,6 +8,6 @@ public enum ProfileTypeFilter
     File = 1 << ProfileType.File,
     Image = 1 << ProfileType.Image,
     Group = 1 << ProfileType.Group,
-    Unknown = 1 << ProfileType.Unknown,
-    All = Text | File | Image | Group | Unknown
+    Files = File | Group,
+    All = Text | File | Image | Group
 }

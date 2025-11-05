@@ -59,12 +59,13 @@ public static class ProfileExtentions
 
     public static Profile ToProfile(this HistoryRecord historyRecord)
     {
+        bool ready = historyRecord.IsLocalFileReady;
         return historyRecord.Type switch
         {
             ProfileType.Text => new TextProfile(historyRecord.Text),
-            ProfileType.File => new FileProfile(historyRecord.FilePath[0], null, historyRecord.Hash),
-            ProfileType.Image => new ImageProfile(historyRecord.FilePath[0], null, historyRecord.Hash),
-            ProfileType.Group => new GroupProfile(historyRecord.FilePath, historyRecord.Hash),
+            ProfileType.File => new FileProfile(ready ? historyRecord.FilePath[0] : null, historyRecord.Text, historyRecord.Hash),
+            ProfileType.Image => new ImageProfile(ready ? historyRecord.FilePath[0] : null, historyRecord.Text, historyRecord.Hash),
+            ProfileType.Group => ready ? new GroupProfile(historyRecord.FilePath, historyRecord.Hash) : new GroupProfile(historyRecord.Hash),
             _ => new UnknownProfile(),
         };
     }
@@ -81,6 +82,7 @@ public static class ProfileExtentions
                         Text = ip.FileName,
                         FilePath = ip.FullPath is null ? [] : [ip.FullPath],
                         Hash = await ip.GetHash(token),
+                        Size = await ip.GetSize(token),
                     };
                 }
 
@@ -92,6 +94,7 @@ public static class ProfileExtentions
                         Text = string.Join('\n', gp.Files ?? []),
                         FilePath = gp.Files ?? [],
                         Hash = await gp.GetHash(token),
+                        Size = await gp.GetSize(token),
                     };
                 }
 
@@ -103,6 +106,7 @@ public static class ProfileExtentions
                         Text = fp.FullPath ?? fp.FileName,
                         FilePath = [fp.FullPath ?? string.Empty],
                         Hash = await fp.GetHash(token),
+                        Size = await fp.GetSize(token),
                     };
                 }
 
@@ -116,6 +120,7 @@ public static class ProfileExtentions
                         Type = ProfileType.Text,
                         Hash = hash,
                         Text = tp.Text,
+                        Size = await tp.GetSize(token),
                     };
                 }
 

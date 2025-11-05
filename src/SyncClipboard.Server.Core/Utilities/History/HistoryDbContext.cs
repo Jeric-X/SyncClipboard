@@ -38,6 +38,16 @@ public class HistoryDbContext : DbContext
             .HasIndex(e => new { e.UserId, e.CreateTime, e.ID })
             .HasDatabaseName("IX_History_User_CreateTime_ID");
 
+        // Optimize favorite (starred) queries combined with time-range and paging
+        modelBuilder.Entity<HistoryRecordEntity>()
+            .HasIndex(e => new { e.UserId, e.Stared, e.CreateTime, e.ID })
+            .HasDatabaseName("IX_History_User_Stared_CreateTime_ID");
+
+        // Further optimize when filtering by both starred and type
+        modelBuilder.Entity<HistoryRecordEntity>()
+            .HasIndex(e => new { e.UserId, e.Stared, e.Type, e.CreateTime, e.ID })
+            .HasDatabaseName("IX_History_User_Stared_Type_CreateTime_ID");
+
         base.OnModelCreating(modelBuilder);
     }
 }

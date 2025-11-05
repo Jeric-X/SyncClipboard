@@ -14,9 +14,7 @@
         <vm:HistorySettingViewModel />
     </Design.DataContext>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardHistory}" 
-                            Description="{x:Static i18n:Strings.HistoryPanelHotkeyDescription}"
-                            IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardHistory}" Description="{x:Static i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
@@ -24,14 +22,25 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="i18n:Strings.EnableSyncHistory" Description="i18n:Strings.EnableSyncHistoryDescription">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="1" Maximum="1000" Value="{Binding MaxItemCount, Mode=TwoWay}" />
+                        <ui:NumberBox Minimum="1"
+                                      Maximum="1000"
+                                      Value="{Binding MaxItemCount, Mode=TwoWay}"
+                                      IsEnabled="{Binding !EnableSyncHistory}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HistoryRetentionMinutes}" Description="{x:Static i18n:Strings.HistoryRetentionDescription}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="525600" Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}" />
+                        <ui:NumberBox Minimum="0"
+                                      Maximum="525600"
+                                      Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
+                                      IsEnabled="{Binding !EnableSyncHistory}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.HistoryDescription}" />

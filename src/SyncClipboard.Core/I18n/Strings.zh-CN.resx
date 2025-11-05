@@ -711,6 +711,12 @@ Esc：关闭面板</value>
   <data name="HistoryRetentionMinutes" xml:space="preserve">
     <value>历史记录保存时长(分钟)</value>
   </data>
+  <data name="EnableSyncHistory" xml:space="preserve">
+    <value>启用同步历史记录</value>
+  </data>
+  <data name="EnableSyncHistoryDescription" xml:space="preserve">
+    <value>启用后，本地的自动删除条件（最大条数、保留时长）将失效，自动删除将遵循服务器配置。</value>
+  </data>
   <data name="HistoryDescription" xml:space="preserve">
     <value>当用户手动删除文件时，历史记录也会失效</value>
   </data>

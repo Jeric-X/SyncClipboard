@@ -28,6 +28,11 @@ public class GroupProfile : FileProfile
         _fileFilterConfig = filterConfig ?? new();
     }
 
+    public GroupProfile(string hash)
+        : base(null, CreateNewDataFileName(), hash)
+    {
+    }
+
     private static string CreateNewDataFileName()
     {
         return $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip";

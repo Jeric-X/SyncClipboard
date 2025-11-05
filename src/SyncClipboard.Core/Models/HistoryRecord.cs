@@ -10,6 +10,13 @@ public class HistoryRecord
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
+    public HistorySyncStatus SyncStatus { get; set; } = HistorySyncStatus.LocalOnly;
+    public DateTime LastModified { get; set; } = DateTime.UtcNow;
+    public int Version { get; set; } = 0;
+    public bool IsDeleted { get; set; } = false;
+    public bool IsLocalFileReady { get; set; } = true;
+    public long Size { get; set; } = 0;
+    public string From { get; set; } = string.Empty;
 
     public override bool Equals(object? obj)
     {

@@ -44,12 +44,14 @@ public class HistoryService
 
     public async Task<List<HistoryRecordDto>> GetListAsync(
         string userId,
-        ProfileType type,
         int page,
         int pageSize,
         DateTime? before = null,
         DateTime? after = null,
         string? cursorProfileId = null,
+        ProfileTypeFilter types = ProfileTypeFilter.All,
+        string? searchText = null,
+        bool? starred = null,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -59,18 +61,45 @@ public class HistoryService
         using var guard = new ScopeGuard(() => _sem.Release());
 
         var query = _dbContext.HistoryRecords
-            .Where(r => r.UserId == userId && (type == ProfileType.None || r.Type == type));
-
-        if (before.HasValue)
-        {
-            var beforeUtc = before.Value.ToUniversalTime();
-            query = query.Where(r => r.CreateTime <= beforeUtc);
-        }
+            .Where(r => r.UserId == userId);
 
         if (after.HasValue)
         {
             var afterUtc = after.Value.ToUniversalTime();
             query = query.Where(r => r.CreateTime >= afterUtc);
+        }
+
+        if (before.HasValue)
+        {
+            var beforeUtc = before.Value.ToUniversalTime();
+            query = query.Where(r => r.CreateTime < beforeUtc);
+        }
+
+        if (types != ProfileTypeFilter.All)
+        {
+            var includedTypes = Enum.GetValues(typeof(ProfileType))
+                .Cast<ProfileType>()
+                .Where(t => (types & (ProfileTypeFilter)(1 << (int)t)) != 0)
+                .ToList();
+
+            if (includedTypes.Count == 0)
+            {
+                return [];
+            }
+
+            query = query.Where(r => includedTypes.Contains(r.Type));
+        }
+
+        if (!string.IsNullOrEmpty(searchText))
+        {
+            query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
+        }
+
+        // Filter by starred if provided
+        if (starred.HasValue)
+        {
+            var flag = starred.Value;
+            query = query.Where(r => r.Stared == flag);
         }
 
         query = query.OrderByDescending(r => r.CreateTime)
@@ -79,6 +108,7 @@ public class HistoryService
         if (!string.IsNullOrEmpty(cursorProfileId) && Profile.ParseProfileId(cursorProfileId, out var cursorType, out var cursorHash))
         {
             int position = query
+                .AsEnumerable()
                 .Select((r, idx) => new { r.Hash, r.Type, Index = idx })
                 .Where(r => r.Hash == cursorHash && r.Type == cursorType)
                 .Select(x => x.Index)
@@ -243,10 +273,12 @@ public class HistoryService
             return null;
         }
 
-        var existing = await _dbContext.HistoryRecords
-            .Where(r => r.UserId == userId && Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(r.TransferDataFile))
+        var existing = _dbContext.HistoryRecords
+            .Where(r => r.UserId == userId && r.Type != ProfileType.Text)
             .OrderByDescending(r => r.LastAccessed)
-            .FirstOrDefaultAsync(token);
+            .AsEnumerable()
+            .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(r.TransferDataFile))
+            .FirstOrDefault();
 
         return existing?.TransferDataFile;
     }
