@@ -19,6 +19,8 @@ public class HistoryManager
     private HistoryDbContext _dbContext;
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
 
+    // 移除对 HistorySyncer 的直接依赖，改用事件让外部订阅以避免循环依赖
+
     public HistoryManager(ConfigManager configManager, ILogger logger)
     {
         _logger = logger;
@@ -170,13 +172,53 @@ public class HistoryManager
             entity.Pinned = record.Pinned;
             entity.Text = record.Text;
             entity.FilePath = record.FilePath;
+            entity.IsLocalFileReady = record.IsLocalFileReady;
+            entity.LastModified = DateTime.UtcNow;
+            entity.Version += 1;
+            if (entity.SyncStatus != HistorySyncStatus.LocalOnly)
+            {
+                entity.SyncStatus = HistorySyncStatus.NeedSync;
+            }
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
             if (!_historyConfig.EnableSyncHistory)
             {
                 await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount, token);
             }
+
+            // 同步触发改由 HistorySyncer 订阅 HistoryUpdated 事件来完成，避免循环依赖
         }
+    }
+
+    /// <summary>
+    /// 持久化一次从服务器回写或同步成功后的本地记录，不修改版本号和时间戳（这些已由同步逻辑确定）。
+    /// 保留传入的 SyncStatus（通常为 Synced）。
+    /// </summary>
+    public async Task PersistServerSyncedAsync(HistoryRecord record, CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        if (entity is null)
+        {
+            // 如果本地不存在，直接添加（用于服务器回写新增场景）
+            await _dbContext.HistoryRecords.AddAsync(record, token);
+            await _dbContext.SaveChangesAsync(token);
+            HistoryAdded?.Invoke(record);
+            return;
+        }
+
+        // 同步服务器返回的并发字段与状态
+        entity.Stared = record.Stared;
+        entity.Pinned = record.Pinned;
+        entity.IsDeleted = record.IsDeleted;
+        entity.Version = record.Version;
+        entity.LastModified = record.LastModified;
+        entity.SyncStatus = record.SyncStatus; // 期望为 Synced
+
+        await _dbContext.SaveChangesAsync(token);
+        HistoryUpdated?.Invoke(entity);
     }
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)
@@ -184,7 +226,34 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        await DeleteHistoryInternal(_dbContext, record, token);
+        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        if (entity is null)
+        {
+            return;
+        }
+
+        // Soft delete: 标记 IsDeleted 而不是物理删除；交由容量/过期清理逻辑后续清理。
+        entity.IsDeleted = true;
+        entity.LastModified = DateTime.UtcNow;
+        entity.Version += 1;
+
+        if (_historyConfig.EnableSyncHistory)
+        {
+            // 开启同步：需要向服务器同步删除，标记 NeedSync（LocalOnly 保持不变）
+            if (entity.SyncStatus != HistorySyncStatus.LocalOnly)
+            {
+                entity.SyncStatus = HistorySyncStatus.NeedSync;
+            }
+        }
+        else
+        {
+            // 未开启同步：保持 SyncStatus，不再标记 NeedSync
+            // 可选：如果原来是 Synced 改为 LocalOnly；此处暂不更改保留原状态
+        }
+
+        await _dbContext.SaveChangesAsync(token);
+        // 触发 Removed 事件供 UI 移除，并供同步器监听做删除同步（记录仍保留在数据库中）
+        HistoryRemoved?.Invoke(entity);
     }
 
     public async Task<List<HistoryRecordDto>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)

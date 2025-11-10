@@ -155,11 +155,47 @@
                                             Content="{x:Bind}"
                                             ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
                             <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
-                                <Button Click="CopyButtonClicked" IsTabStop="False">
+                                <Border Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasError), Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ErrorMessage, Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE783;" />
+                                </Border>
+                                <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE8C8;" />
                                 </Button>
-                                <Button Click="PasteButtonClicked" IsTabStop="False">
+                                <Button Click="PasteButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE77F;" FontSize="12" />
+                                </Button>
+                                <Button Click="DownloadButtonClicked"
+                                        IsTabStop="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE896;" />
+                                </Button>
+                                <ProgressRing Width="16"
+                                              Height="16"
+                                              IsIndeterminate="False"
+                                              Value="{x:Bind DownloadProgress, Mode=OneWay}"
+                                              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}" />
+                                <Button Click="CancelDownloadButtonClicked"
+                                        IsTabStop="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE711;" />
+                                </Button>
+                                <!-- Upload button -->
+                                <Button Click="UploadButtonClicked"
+                                        IsTabStop="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadButton), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE898;" />
+                                </Button>
+                                <!-- Upload progress ring -->
+                                <ProgressRing Width="16"
+                                              Height="16"
+                                              IsIndeterminate="False"
+                                              Value="{x:Bind UploadProgress, Mode=OneWay}"
+                                              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}" />
+                                <!-- Cancel upload button -->
+                                <Button Click="CancelUploadButtonClicked"
+                                        IsTabStop="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE711;" />
                                 </Button>
                                 <Button Click="StarButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="{x:Bind vc:ConvertMethod.ToStarIcon(Stared), Mode=OneWay}" FontSize="12" />

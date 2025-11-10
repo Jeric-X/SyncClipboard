@@ -15,6 +15,7 @@ using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
+using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -40,6 +41,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly ProfileActionBuilder profileActionBuilder;
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private IHistorySyncServer? historySyncServer;
+    // private readonly HistorySyncer _historySyncer; // 移除在 VM 中的同步职责
 
     private bool _enableSyncHistory;
 
@@ -50,6 +52,9 @@ public partial class HistoryViewModel : ObservableObject
     private readonly ConcurrentDictionary<string, HistoryRecordDto> _serverUpdateMap = new();
     private int _serverUpdateWorkerRunning = 0;
     private readonly CancellationTokenSource _serverUpdateCts = new();
+    // Per-item download cancellation tokens, key: profileId (Type-Hash)
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _downloadCts = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _uploadCts = new();
 
     public HistoryViewModel(
         HistoryManager historyManager,
@@ -349,6 +354,7 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public Task Refresh()
     {
+        CancelAllDownloads();
         CancelFetchTask();
         _localIsEnd = false;
         _isRemoteEnd = false;
@@ -581,6 +587,8 @@ public partial class HistoryViewModel : ObservableObject
         }
         oldRecord.Update(newRecord);
     }
+
+    // 单条记录同步逻辑已迁移到 HistoryManager 内部，VM 只关心 UI 更新
 
     private bool IsMatchCurrentUiFilter(HistoryRecordVM vm)
     {
@@ -855,10 +863,95 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    private void DownloadRemoteProfile(HistoryRecordVM _)
+    [RelayCommand]
+    private async Task DownloadRemoteProfile(HistoryRecordVM vm)
     {
-        // todo: implement download logic
-        logger.Write("[HISTORY_VIEW_MODEL] Downloading remote profile is not implemented yet.");
+        try
+        {
+            vm.HasError = false;
+            vm.ErrorMessage = string.Empty;
+
+            if (historySyncServer is null)
+            {
+                logger.Write("[HISTORY_VIEW_MODEL] History sync server not available.");
+                return;
+            }
+
+            var record = vm.ToHistoryRecord();
+            var profile = record.ToProfile();
+
+            if (profile is not FileProfile fileProfile)
+            {
+                return;
+            }
+
+            var profileId = $"{record.Type}-{record.Hash}";
+            var cts = new CancellationTokenSource();
+            if (!_downloadCts.TryAdd(profileId, cts))
+            {
+                cts.Dispose();
+                return;
+            }
+            var token = cts.Token;
+            var localDataPath = await fileProfile.GetOrCreateFileDataPath(token);
+
+            vm.IsDownloading = true;
+            IProgress<HttpDownloadProgress>? progress = new Progress<HttpDownloadProgress>(p =>
+            {
+                ulong total = 0;
+                if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
+                {
+                    total = p.TotalBytesToReceive.Value;
+                }
+                else if (vm.Size > 0)
+                {
+                    total = (ulong)vm.Size;
+                }
+
+                if (total > 0)
+                {
+                    var value = Math.Clamp((double)p.BytesReceived / total * 100, 0.0, 100.0);
+                    vm.DownloadProgress = value;
+                }
+            });
+
+            await historySyncServer.DownloadHistoryDataAsync(profileId, localDataPath, progress, token);
+            await fileProfile.SetTranseferData(localDataPath, token);
+
+            if (profile is GroupProfile gp)
+            {
+                record.FilePath = gp.Files;
+            }
+            else if (!string.IsNullOrEmpty(fileProfile.FullPath))
+            {
+                record.FilePath = [fileProfile.FullPath];
+            }
+            record.IsLocalFileReady = true;
+
+            await historyManager.UpdateHistory(record, CancellationToken.None);
+            vm.IsLocalFileReady = true;
+            vm.SyncState = SyncStatus.Synced;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            logger.Write("[HISTORY_VIEW_MODEL] Download remote profile failed:", ex.Message);
+            vm.HasError = true;
+            vm.ErrorMessage = ex.Message;
+            vm.SyncState = SyncStatus.SyncError;
+        }
+        finally
+        {
+            vm.IsDownloading = false;
+            vm.DownloadProgress = 0;
+            var pid = $"{vm.Type}-{vm.Hash}";
+            if (_downloadCts.TryRemove(pid, out var cts))
+            {
+                cts.Dispose();
+            }
+        }
     }
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
@@ -868,7 +961,16 @@ public partial class HistoryViewModel : ObservableObject
             return
             [
                 new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(record.ToHistoryRecord()); }),
-                new MenuItem(I18n.Strings.Download, () => DownloadRemoteProfile(record))
+                new MenuItem(I18n.Strings.Download, () => _ = DownloadRemoteProfile(record))
+            ];
+        }
+
+        if (record.SyncState == SyncStatus.LocalOnly && historySyncServer != null)
+        {
+            return
+            [
+                new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(record.ToHistoryRecord()); }),
+                new MenuItem(I18n.Strings.Uploaded, () => _ = UploadLocalHistoryAsync(record))
             ];
         }
 
@@ -885,6 +987,132 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         return profileActionBuilder.Build(profile);
+    }
+
+    [RelayCommand]
+    private async Task UploadLocalHistoryAsync(HistoryRecordVM vm)
+    {
+        if (historySyncServer == null)
+        {
+            return;
+        }
+        try
+        {
+            var record = vm.ToHistoryRecord();
+            var dto = new HistoryRecordUpdateDto
+            {
+                Stared = record.Stared,
+                Pinned = record.Pinned,
+                Version = record.Version == 0 ? 1 : record.Version,
+                LastModified = DateTimeOffset.UtcNow,
+                IsDelete = record.IsDeleted
+            };
+            var createTime = new DateTimeOffset(record.Timestamp.ToUniversalTime(), TimeSpan.Zero);
+            var profile = record.ToProfile();
+            string? transferFilePath = null;
+            if (profile is FileProfile fileProfile)
+            {
+                if (profile is GroupProfile groupProfile)
+                {
+                    await groupProfile.PrepareDataWithCache(CancellationToken.None);
+                    transferFilePath = groupProfile.FullPath;
+                }
+                else
+                {
+                    transferFilePath = fileProfile.FullPath;
+                }
+                if (string.IsNullOrWhiteSpace(transferFilePath) || !File.Exists(transferFilePath))
+                {
+                    transferFilePath = null;
+                }
+            }
+
+            var pid = $"{record.Type}-{record.Hash}";
+            var cts = new CancellationTokenSource();
+            if (!_uploadCts.TryAdd(pid, cts))
+            {
+                cts.Dispose();
+                return;
+            }
+            var token = cts.Token;
+            vm.IsUploading = true;
+            vm.UploadProgress = 0;
+            IProgress<HttpDownloadProgress>? progress = new Progress<HttpDownloadProgress>(p =>
+            {
+                try
+                {
+                    ulong total = 0;
+                    if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
+                    {
+                        total = p.TotalBytesToReceive.Value;
+                    }
+                    else if (!string.IsNullOrEmpty(transferFilePath) && File.Exists(transferFilePath))
+                    {
+                        var fi = new FileInfo(transferFilePath);
+                        total = (ulong)fi.Length;
+                    }
+                    double percent = total > 0 ? Math.Clamp((double)p.BytesReceived / total * 100, 0, 100)
+                                               : Math.Clamp((double)p.BytesReceived / 1000000.0, 0, 100);
+                    vm.UploadProgress = percent;
+                }
+                catch { }
+            });
+
+            await historySyncServer.UploadHistoryAsync(record.Type, record.Hash, dto, createTime, transferFilePath, progress, token);
+            vm.SyncState = SyncStatus.Synced;
+        }
+        catch (OperationCanceledException)
+        {
+            vm.SyncState = SyncStatus.LocalOnly; // 用户取消回到原状态
+        }
+        catch (RemoteHistoryConflictException ex)
+        {
+            // 发生冲突时，优先使用服务器返回的并发字段修正本地记录并持久化
+            logger.Write("[HISTORY_VIEW_MODEL] Upload conflict:", ex.Message);
+            try
+            {
+                var record = vm.ToHistoryRecord();
+                if (ex.Server != null)
+                {
+                    record.ApplyFromServerUpdateDto(ex.Server);
+                }
+                await historyManager.PersistServerSyncedAsync(record, CancellationToken.None);
+
+                // 同步 UI
+                vm.Stared = record.Stared;
+                vm.Pinned = record.Pinned;
+                vm.SyncState = SyncStatus.Synced;
+            }
+            catch (Exception e)
+            {
+                logger.Write("[HISTORY_VIEW_MODEL] Apply server dto on conflict failed:", e.Message);
+                vm.SyncState = SyncStatus.SyncError;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Write("[HISTORY_VIEW_MODEL] Upload failed:", ex.Message);
+            vm.SyncState = SyncStatus.SyncError;
+        }
+        finally
+        {
+            vm.IsUploading = false;
+            var pid = $"{vm.Type}-{vm.Hash}";
+            if (_uploadCts.TryRemove(pid, out var cts))
+            {
+                cts.Dispose();
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void CancelUpload(HistoryRecordVM vm)
+    {
+        var pid = $"{vm.Type}-{vm.Hash}";
+        if (_uploadCts.TryGetValue(pid, out var cts))
+        {
+            try { cts.Cancel(); } catch { }
+        }
     }
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
@@ -955,5 +1183,24 @@ public partial class HistoryViewModel : ObservableObject
         {
             // 任务被取消，这是预期的行为
         }
+    }
+
+    [RelayCommand]
+    private void CancelDownload(HistoryRecordVM vm)
+    {
+        var pid = $"{vm.Type}-{vm.Hash}";
+        if (_downloadCts.TryGetValue(pid, out var cts))
+        {
+            cts.Cancel();
+        }
+    }
+
+    private void CancelAllDownloads()
+    {
+        foreach (var kv in _downloadCts)
+        {
+            try { kv.Value.Cancel(); } catch { }
+        }
+        _downloadCts.Clear();
     }
 }

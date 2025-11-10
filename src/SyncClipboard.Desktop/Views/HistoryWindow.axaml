@@ -192,13 +192,50 @@
                                             VerticalAlignment="Center"
                                             FontSize="12"
                                             Content="{Binding .}" />
-                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
-                                <Button Click="CopyButtonClicked">
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal" Spacing="2">
+                                <ui:FontIcon Glyph="&#xE783;"
+                                             FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                             ToolTip.Tip="{Binding ErrorMessage}"
+                                             IsVisible="{Binding HasError}" />
+                                <Button Click="CopyButtonClicked" IsVisible="{Binding IsLocalFileReady}">
                                     <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
-                                <Button Click="PasteButtonClicked">
+                                <Button Click="PasteButtonClicked" IsVisible="{Binding IsLocalFileReady}">
                                     <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
+                                <!-- Download / Upload cluster (left side grouping) -->
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <!-- Download button -->
+                                    <Button Command="{Binding #_HistoryWindow.ViewModel.DownloadRemoteProfileCommand}" CommandParameter="{Binding .}" IsVisible="{Binding ShowDownloadButton}">
+                                        <ui:FontIcon Glyph="&#xE896;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    </Button>
+                                    <!-- Download progress ring -->
+                                    <ui:ProgressRing Width="16"
+                                                     Height="16"
+                                                     IsVisible="{Binding ShowDownloadProgress}"
+                                                     IsIndeterminate="False"
+                                                     IsActive="True"
+                                                     Value="{Binding DownloadProgress}" />
+                                    <!-- Cancel download button -->
+                                    <Button Command="{Binding #_HistoryWindow.ViewModel.CancelDownloadCommand}" CommandParameter="{Binding .}" IsVisible="{Binding ShowDownloadProgress}">
+                                        <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    </Button>
+                                    <!-- Upload button -->
+                                    <Button Command="{Binding #_HistoryWindow.ViewModel.UploadLocalHistoryCommand}" CommandParameter="{Binding .}" IsVisible="{Binding ShowUploadButton}">
+                                        <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    </Button>
+                                    <!-- Upload progress ring -->
+                                    <ui:ProgressRing Width="16"
+                                                     Height="16"
+                                                     IsVisible="{Binding ShowUploadProgress}"
+                                                     IsIndeterminate="False"
+                                                     IsActive="{Binding IsUploading}"
+                                                     Value="{Binding UploadProgress}" />
+                                    <!-- Cancel upload button -->
+                                    <Button Command="{Binding #_HistoryWindow.ViewModel.CancelUploadCommand}" CommandParameter="{Binding .}" IsVisible="{Binding ShowUploadProgress}">
+                                        <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    </Button>
+                                </StackPanel>
                                 <Button Command="{Binding #_HistoryWindow.ViewModel.ChangeStarStatusCommand}" CommandParameter="{Binding .}">
                                     <ui:FontIcon Glyph="{Binding Stared, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>

@@ -76,5 +76,19 @@ public static class MapperExtensions
             IsDeleted = entity.IsDeleted
         };
     }
+
+    /// <summary>
+    /// 将服务器返回的 HistoryRecordUpdateDto 的并发相关字段应用到本地实体上。
+    /// 仅覆盖 Stared/Pinned/IsDeleted/LastModified/Version，并将 SyncStatus 置为 Synced。
+    /// </summary>
+    public static void ApplyFromServerUpdateDto(this HistoryRecord entity, HistoryRecordUpdateDto server)
+    {
+        if (server.Stared.HasValue) entity.Stared = server.Stared.Value;
+        if (server.Pinned.HasValue) entity.Pinned = server.Pinned.Value;
+        if (server.IsDelete.HasValue && server.IsDelete.Value) entity.IsDeleted = true;
+        if (server.LastModified.HasValue) entity.LastModified = server.LastModified.Value.UtcDateTime;
+        if (server.Version.HasValue) entity.Version = server.Version.Value;
+        entity.SyncStatus = HistorySyncStatus.Synced;
+    }
 }
 
