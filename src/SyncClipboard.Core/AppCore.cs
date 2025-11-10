@@ -253,7 +253,9 @@ namespace SyncClipboard.Core
             services.AddSingleton<IEventSimulator, EventSimulator>();
             services.AddTransient<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
+            services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
+            services.AddSingleton<HistorySyncer>();
 
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<LocalFileCacheManager>();

@@ -41,7 +41,6 @@ public class Web
         {
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
-
         var app = builder.Build();
 
         MigrationHelper.EnsureDBMigrations(app.Services, app.Lifetime);

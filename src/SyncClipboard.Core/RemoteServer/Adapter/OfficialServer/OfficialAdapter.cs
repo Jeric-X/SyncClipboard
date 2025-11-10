@@ -9,6 +9,9 @@ using SyncClipboard.Server.Core.Models;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using SyncClipboard.Core.Utilities.Web;
+using System.Net.Http.Json;
+using System.Net;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
@@ -192,6 +195,164 @@ public sealed class OfficialAdapter(
         catch (Exception ex)
         {
             _logger.Write($"[OFFICIAL_ADAPTER] Failed to get history: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history/{type}/{hash}");
+            using var response = await _httpClient.PatchAsJsonAsync(url, dto, cancellationToken);
+            var serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return; // 成功不再返回 payload
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                throw new SyncClipboard.Core.Exceptions.RemoteHistoryConflictException($"History update conflict {type}/{hash}", serverDto);
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                throw new SyncClipboard.Core.Exceptions.RemoteHistoryNotFoundException($"History record not found {type}/{hash}");
+            }
+
+            response.EnsureSuccessStatusCode();
+            return; // unreachable
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to update history {type}/{hash}: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task UploadHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, DateTimeOffset createTime, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history/{type}/{hash}");
+
+            using var form = new MultipartFormDataContent();
+            if (dto.Stared.HasValue) form.Add(new StringContent(dto.Stared.Value ? "true" : "false"), "stared");
+            else form.Add(new StringContent("false"), "stared");
+            if (dto.Pinned.HasValue) form.Add(new StringContent(dto.Pinned.Value ? "true" : "false"), "pinned");
+            else form.Add(new StringContent("false"), "pinned");
+            if (dto.IsDelete.HasValue) form.Add(new StringContent(dto.IsDelete.Value ? "true" : "false"), "isDelete");
+            else form.Add(new StringContent("false"), "isDelete");
+            form.Add(new StringContent((dto.Version ?? 1).ToString()), "version");
+            var lm = dto.LastModified ?? DateTimeOffset.UtcNow;
+            form.Add(new StringContent(lm.ToString("o")), "lastModified");
+            form.Add(new StringContent(createTime.ToString("o")), "createTime");
+
+            // 可选文件
+            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+            {
+                var stream = File.OpenRead(filePath);
+                HttpContent fileContent;
+                if (progress is null)
+                {
+                    fileContent = new StreamContent(stream);
+                }
+                else
+                {
+                    fileContent = new ProgressableStreamContent(stream, progress, cancellationToken);
+                }
+                // 让服务器决定内容类型，或默认 application/octet-stream
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                var safeName = Path.GetFileName(filePath);
+                form.Add(fileContent, "file", safeName);
+            }
+
+            using var response = await _httpClient.PutAsync(url, form, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                HistoryRecordUpdateDto? serverDto = null;
+                try
+                {
+                    serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
+                }
+                catch { /* ignore parse errors, fall back to null */ }
+                throw new SyncClipboard.Core.Exceptions.RemoteHistoryConflictException($"History already exists {type}/{hash}", serverDto);
+            }
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to upload history {type}/{hash}: {ex.Message}");
+            throw;
+        }
+    }
+
+    private sealed class ProgressableStreamContent(Stream stream, IProgress<HttpDownloadProgress> progress, CancellationToken ct) : HttpContent
+    {
+        private const int DefaultBufferSize = 81920; // 80KB .NET default
+        private readonly Stream _stream = stream;
+        private readonly IProgress<HttpDownloadProgress> _progress = progress;
+        private readonly CancellationToken _ct = ct;
+
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        {
+            var buffer = new byte[DefaultBufferSize];
+            long totalBytesRead = 0;
+            int bytesRead;
+            while ((bytesRead = await _stream.ReadAsync(buffer, _ct)) > 0)
+            {
+                await stream.WriteAsync(buffer.AsMemory(0, bytesRead), _ct);
+                totalBytesRead += bytesRead;
+                _progress.Report(new HttpDownloadProgress
+                {
+                    BytesReceived = (ulong)totalBytesRead,
+                    TotalBytesToReceive = null
+                });
+            }
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            if (_stream.CanSeek)
+            {
+                length = _stream.Length;
+                return true;
+            }
+            length = -1;
+            return false;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                _stream.Dispose();
+            }
+        }
+    }
+
+    public async Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history/{HttpUtility.UrlEncode(profileId)}/data");
+            if (progress is null)
+            {
+                await _httpClient.GetFile(url.ToString(), localPath, cancellationToken);
+            }
+            else
+            {
+                await _httpClient.GetFile(url.ToString(), localPath, progress, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to download history data for {profileId}: {ex.Message}");
             throw;
         }
     }

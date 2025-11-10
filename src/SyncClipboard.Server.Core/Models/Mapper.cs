@@ -44,5 +44,17 @@ public static class Mapper
             _ => new UnknownProfile(),
         };
     }
+
+    public static HistoryRecordUpdateDto ToUpdateDto(this HistoryRecordDto s)
+    {
+        return new HistoryRecordUpdateDto
+        {
+            Stared = s.Stared,
+            Pinned = s.Pinned,
+            IsDelete = s.IsDeleted,
+            Version = s.Version,
+            LastModified = new DateTimeOffset(s.LastModified.ToUniversalTime(), TimeSpan.Zero)
+        };
+    }
 }
 

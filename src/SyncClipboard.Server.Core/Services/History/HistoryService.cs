@@ -42,6 +42,59 @@ public class HistoryService
     //     }
     // }
 
+    public async Task<(bool? Updated, HistoryRecordDto? Server)> UpdateWithConcurrencyAsync(
+        string userId,
+        ProfileType type,
+        string hash,
+        HistoryRecordUpdateDto dto,
+        CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var existing = await Query(userId, type, hash, token);
+        if (existing is null)
+        {
+            return (null, null); // not found
+        }
+
+        dto.Version ??= existing.Version + 1;
+        dto.LastModified ??= DateTimeOffset.UtcNow;
+        // 并发检测：使用 ShouldUpdate 综合判断（5分钟阈值内用版本，超出用时间戳）
+        // 将可空的客户端值回退为已有值以满足非可空签名
+        var shouldUpdate = HistoryHelper.ShouldUpdate(
+            oldVersion: existing.Version,
+            newVersion: dto.Version.Value,
+            oldLastModified: AsUtcOffset(existing.LastModified),
+            newLastModified: dto.LastModified.Value);
+
+        if (!shouldUpdate)
+        {
+            return (false, HistoryRecordDto.FromEntity(existing));
+        }
+
+        // 部分字段更新
+        if (dto.Stared.HasValue) existing.Stared = dto.Stared.Value;
+        if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
+        if (dto.IsDelete.HasValue) existing.IsDeleted = dto.IsDelete.Value;
+
+        existing.LastModified = dto.LastModified.Value.UtcDateTime;
+        existing.Version = dto.Version.Value;
+
+        await _dbContext.SaveChangesAsync(token);
+        return (true, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private static DateTimeOffset AsUtcOffset(DateTime dt)
+    {
+        if (dt.Kind == DateTimeKind.Utc)
+        {
+            return new DateTimeOffset(dt);
+        }
+        // Treat non-UTC as UTC-equivalent by converting to UTC first
+        return new DateTimeOffset(dt.ToUniversalTime(), TimeSpan.Zero);
+    }
+
     public async Task<List<HistoryRecordDto>> GetListAsync(
         string userId,
         int page,
@@ -283,6 +336,31 @@ public class HistoryService
         return existing?.TransferDataFile;
     }
 
+    public async Task<string?> GetTransferDataFileByProfileId(string userId, string profileId, CancellationToken token = default)
+    {
+        if (!Profile.ParseProfileId(profileId, out var type, out var hash) || string.IsNullOrEmpty(hash))
+        {
+            return null;
+        }
+
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var entity = await Query(userId, type, hash, token);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var path = entity.TransferDataFile;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
+        return path;
+    }
+
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)
     {
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(
@@ -297,5 +375,96 @@ public class HistoryService
             Directory.CreateDirectory(dirPath);
         }
         return dirPath;
+    }
+
+    /// <summary>
+    /// 如果记录不存在则创建一个最简记录，存在则返回 false。
+    /// </summary>
+    public async Task<(bool Created, HistoryRecordDto? Server)> CreateIfNotExistsAsync(
+        string userId,
+        ProfileType type,
+        string hash,
+        HistoryRecordUpdateDto dto,
+        IFormFile? transferFile,
+        DateTimeOffset? createTime,
+        CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+        var existing = await Query(userId, type, hash, token);
+
+        var now = DateTime.UtcNow;
+
+        if (existing is not null)
+        {
+            // 如果客户端传入了 createTime，则把现有的 CreateTime 更新为两者中较早的时间
+            if (createTime.HasValue)
+            {
+                var incomingCreateUtc = createTime.Value.UtcDateTime;
+                if (incomingCreateUtc < existing.CreateTime)
+                {
+                    existing.CreateTime = incomingCreateUtc;
+                }
+            }
+
+            // 对其它可更新字段，根据 version/lastModified 判断是否应当更新
+            dto.Version ??= existing.Version + 1;
+            dto.LastModified ??= DateTimeOffset.UtcNow;
+
+            var shouldUpdate = HistoryHelper.ShouldUpdate(
+                oldVersion: existing.Version,
+                newVersion: dto.Version.Value,
+                oldLastModified: AsUtcOffset(existing.LastModified),
+                newLastModified: dto.LastModified.Value);
+
+            if (shouldUpdate)
+            {
+                if (dto.Stared.HasValue) existing.Stared = dto.Stared.Value;
+                if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
+                if (dto.IsDelete.HasValue) existing.IsDeleted = dto.IsDelete.Value;
+
+                existing.LastModified = dto.LastModified.Value.UtcDateTime;
+                existing.Version = dto.Version.Value;
+            }
+
+            await _dbContext.SaveChangesAsync(token);
+            return (false, HistoryRecordDto.FromEntity(existing));
+        }
+
+        // 创建新条目，CreateTime 使用客户端传入的值（若有），否则使用当前时间
+        var entity = new HistoryRecordEntity
+        {
+            UserId = userId,
+            Type = type,
+            Hash = hash,
+            Text = string.Empty,
+            Size = 0,
+            CreateTime = createTime?.UtcDateTime ?? now,
+            LastAccessed = now,
+            LastModified = dto.LastModified?.UtcDateTime ?? now,
+            Stared = dto.Stared ?? false,
+            Pinned = dto.Pinned ?? false,
+            Version = dto.Version ?? 1,
+            IsDeleted = dto.IsDelete ?? false,
+        };
+
+        // 保存文件（如果有）
+        if (transferFile != null && transferFile.Length > 0)
+        {
+            var safeFileName = Path.GetFileName(transferFile.FileName);
+            var folder = Path.Combine(HistoryDataFolder, $"{type}-{hash}");
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            var filePath = Path.Combine(folder, safeFileName);
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await transferFile.CopyToAsync(fs, token);
+            }
+            entity.TransferDataFile = filePath;
+            entity.Size = new FileInfo(filePath).Length;
+        }
+
+        await _dbContext.HistoryRecords.AddAsync(entity, token);
+        await _dbContext.SaveChangesAsync(token);
+        return (true, HistoryRecordDto.FromEntity(entity));
     }
 }

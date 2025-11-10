@@ -169,6 +169,24 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
+    private void DownloadButtonClicked(object sender, RoutedEventArgs _)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecordVM record)
+        {
+            _viewModel.DownloadRemoteProfileCommand.Execute(record);
+        }
+    }
+
+    private void CancelDownloadButtonClicked(object sender, RoutedEventArgs _)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecordVM record)
+        {
+            _viewModel.CancelDownloadCommand.Execute(record);
+        }
+    }
+
     private void DeleteButtonClicked(object sender, RoutedEventArgs _)
     {
         var history = ((Button?)sender)?.DataContext;
@@ -192,6 +210,24 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (history is HistoryRecordVM record)
         {
             _viewModel.ChangeStarStatus(record);
+        }
+    }
+
+    private void UploadButtonClicked(object sender, RoutedEventArgs _)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecordVM record)
+        {
+            _viewModel.UploadLocalHistoryCommand.Execute(record);
+        }
+    }
+
+    private void CancelUploadButtonClicked(object sender, RoutedEventArgs _)
+    {
+        var history = ((Button?)sender)?.DataContext;
+        if (history is HistoryRecordVM record)
+        {
+            _viewModel.CancelUploadCommand.Execute(record);
         }
     }
 

@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services.History;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/history")]
 [Authorize]
 public class HistoryController(HistoryService historyService) : ControllerBase
 {
@@ -22,6 +23,28 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     //     if (rec == null) return NotFound();
     //     return Ok(rec);
     // }
+
+    // GET api/history/{profileId}/data
+    // Returns the transfer data associated with a specific history profile.
+    [HttpGet("{profileId}/data")]
+    public async Task<IActionResult> GetTransferData(string profileId, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+        {
+            return BadRequest("profileId is required");
+        }
+
+        var path = await _historyService.GetTransferDataFileByProfileId(HARD_CODED_USER_ID, profileId, token);
+        if (string.IsNullOrEmpty(path))
+        {
+            return NotFound();
+        }
+
+        new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
+        var stream = System.IO.File.OpenRead(path);
+        var fileName = System.IO.Path.GetFileName(path);
+        return File(stream, contentType ?? "application/octet-stream", fileName);
+    }
 
     // GET api/history/{type}
     // [HttpGet("{type}")]
@@ -99,31 +122,6 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         return Ok(list);
     }
 
-    // PUT api/history/{type}/{hash}
-    // Query parameter: fileName (optional)
-    // Body is optional binary data stream to be stored/associated with the history record.
-    // [HttpPut("{type}/{hash}")]
-    // public async Task<IActionResult> Put(ProfileType type, string hash, [FromQuery] string? fileName)
-    // {
-    //     // Use provided hash from path
-
-    //     // validate fileName if provided
-    //     if (!string.IsNullOrEmpty(fileName) && IsInvalidFileName(fileName))
-    //     {
-    //         return BadRequest("file name contains invalid characters");
-    //     }
-
-    //     // Pass the raw request body stream to service for optional data storage
-    //     Stream? dataStream = null;
-    //     if (Request.Body != null && Request.ContentLength > 0)
-    //     {
-    //         dataStream = Request.Body;
-    //     }
-
-    //     await _historyService.SetWithDataAsync(HARD_CODED_USER_ID, hash, type, dataStream, fileName);
-    //     return Ok();
-    // }
-
     private static bool IsInvalidFileName(string fileName)
     {
         // Reject path traversal
@@ -149,15 +147,77 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         return false;
     }
 
+    /// <summary>
+    /// PUT api/history/{type}/{hash}
+    /// 使用 multipart/form-data 提交；支持可选的 TransferFile 文件。
+    /// 其余元数据字段（stared/pinned/isDelete/version/lastModified/createTime）为必填。
+    /// 若不存在则创建；若已存在则返回 409 冲突并携带服务器快照。
+    /// </summary>
+    [HttpPut("{type}/{hash}")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Put(
+        ProfileType type,
+        string hash,
+        [FromForm] bool stared,
+        [FromForm] bool pinned,
+        [FromForm] bool isDelete,
+        [FromForm] int version,
+        [FromForm] DateTimeOffset lastModified,
+        [FromForm] DateTimeOffset createTime,
+        IFormFile? file,
+        CancellationToken token)
+    {
+        // file 可为空；其余必填字段若缺失，模型绑定会使 ModelState 失败
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var dto = new HistoryRecordUpdateDto
+        {
+            Stared = stared,
+            Pinned = pinned,
+            IsDelete = isDelete,
+            Version = version,
+            LastModified = lastModified
+        };
+
+        var (created, server) = await _historyService.CreateIfNotExistsAsync(
+            HARD_CODED_USER_ID, type, hash, dto, file, createTime, token);
+        if (created)
+        {
+            return CreatedAtAction(nameof(GetTransferData), new { profileId = $"{type}-{hash}" }, null);
+        }
+
+        // 已存在：冲突，返回当前服务器端快照用于客户端决策
+        return Conflict(server?.ToUpdateDto());
+    }
+
     // PATCH api/history/{type}/{hash}
-    // Update metadata fields for a history record.
-    // [HttpPatch("{type}/{hash}")]
-    // public async Task<IActionResult> Update(ProfileType type, string hash, [FromBody] HistoryRecordUpdateDto dto)
-    // {
-    //     if (dto == null) return BadRequest();
+    // 根据时间戳和version综合判断是否更新
+    [HttpPatch("{type}/{hash}")]
+    public async Task<IActionResult> Update(ProfileType type, string hash, [FromBody] HistoryRecordUpdateDto dto, CancellationToken token)
+    {
+        if (dto is null)
+        {
+            return BadRequest();
+        }
 
-    //     var success = await _historyService.UpdateAsync(HARD_CODED_USER_ID, hash, type, dto);
+        var (updated, server) = await _historyService.UpdateWithConcurrencyAsync(
+            HARD_CODED_USER_ID, type, hash, dto, token);
 
-    //     return success ? NoContent() : NotFound();
-    // }
+        if (updated is null)
+        {
+            return NotFound();
+        }
+
+        var payload = server?.ToUpdateDto();
+
+        if (updated.Value)
+        {
+            return Ok(); // 成功时不返回 payload
+        }
+
+        return Conflict(payload);
+    }
 }

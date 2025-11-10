@@ -178,4 +178,31 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         }
         return syncServer.GetHistoryAsync(page, before, after, cursorProfileId, types, searchText, starred);
     }
+
+    public Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        if (_serverAdapter is not IHistorySyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.DownloadHistoryDataAsync(profileId, localPath, progress, cancellationToken);
+    }
+
+    public Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
+    {
+        if (_serverAdapter is not IHistorySyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.UpdateHistoryAsync(type, hash, dto, cancellationToken);
+    }
+
+    public Task UploadHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, DateTimeOffset createTime, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        if (_serverAdapter is not IHistorySyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.UploadHistoryAsync(type, hash, dto, createTime, filePath, progress, cancellationToken);
+    }
 }

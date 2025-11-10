@@ -525,6 +525,9 @@ Esc：关闭面板</value>
   <data name="Download" xml:space="preserve">
     <value>下载</value>
   </data>
+  <data name="Upload" xml:space="preserve">
+    <value>上传</value>
+  </data>
   <data name="CheckUpdateForBetaChannel" xml:space="preserve">
     <value>更新到预览版</value>
   </data>

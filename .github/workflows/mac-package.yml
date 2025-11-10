@@ -46,7 +46,7 @@ jobs:
       - name: Select Xcode Version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 26.*
+          xcode-version: '26.0'
 
       # - name
           #  dotnet publish SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj -r osx-x64 -c Release

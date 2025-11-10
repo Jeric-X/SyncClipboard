@@ -516,6 +516,9 @@ Double click image: View full image</value>
   <data name="Download" xml:space="preserve">
     <value>Download</value>
   </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
   <data name="CheckUpdateForBetaChannel" xml:space="preserve">
     <value>Check for Updates for Beta Channel</value>
   </data>
