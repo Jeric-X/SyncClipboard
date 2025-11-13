@@ -32,8 +32,8 @@
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
-      - [使用Sync Clipboard Tauri](#使用sync-clipboard-tauri)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
+      - [使用Sync Clipboard Tauri](#使用sync-clipboard-tauri)
       - [使用Autox.js](#使用autoxjs)
       - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
@@ -226,12 +226,6 @@ paru -Sy syncclipboard-desktop
 - 自动上传短信验证码，参考这个帖子中的视频教程 https://github.com/Jeric-X/SyncClipboard/discussions/60
 
 ### Android
-#### 使用[Sync Clipboard Tauri](https://github.com/bling-yshs/sync-clipboard-tauri)
-
-这是一个使用 Tauri 和 Vue 构建的安卓客户端应用，作为本项目的配套安卓应用。
-
-使用步骤以及系统要求请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-tauri)
-
 #### 使用[HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
 导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`， `url`不要以斜线分隔符`/`结尾。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
@@ -243,6 +237,12 @@ paru -Sy syncclipboard-desktop
 ![](docs/image/android3.jpg)
 
 </details>
+
+#### 使用[Sync Clipboard Tauri](https://github.com/bling-yshs/sync-clipboard-tauri)
+
+这是一个使用 Tauri 和 Vue 构建的适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
+
+功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-tauri)
 
 #### 使用[Autox.js](https://github.com/kkevsekk1/AutoX)
 
