@@ -5,7 +5,7 @@ namespace SyncClipboard.Shared.Profiles;
 
 public class FileProfile : Profile
 {
-    protected const int MAX_FILE_SIZE = int.MaxValue;
+    protected const long MAX_FILE_SIZE = int.MaxValue;
 
     public virtual string FileName { get; set; } = "";
     public override ProfileType Type => ProfileType.File;
@@ -16,7 +16,7 @@ public class FileProfile : Profile
     protected string? _hash;
     protected long? _size;
 
-    protected const string MD5_FOR_OVERSIZED_FILE = "MD5_FOR_OVERSIZED_FILE";
+    protected const string HASH_FOR_OVERSIZED_FILE = "HASH_FOR_OVERSIZED_FILE";
 
     public FileProfile(string? fullPath, string? fileName = null, string? hash = null)
     {
@@ -66,7 +66,7 @@ public class FileProfile : Profile
                 return string.Empty;
             }
 
-            _hash = await GetMD5HashFromFile(FullPath, token); ;
+            _hash = await GetSHA256HashFromFile(FullPath, token); ;
         }
 
         return _hash;
@@ -88,15 +88,15 @@ public class FileProfile : Profile
     {
         try
         {
-            var md5ThisTask = GetHash(token);
-            var md5OtherTask = ((FileProfile)rhs).GetHash(token);
-            var md5This = await md5ThisTask;
-            var md5Other = await md5OtherTask;
-            if (string.IsNullOrEmpty(md5This) || string.IsNullOrEmpty(md5Other))
+            var hashThisTask = GetHash(token);
+            var hashOtherTask = ((FileProfile)rhs).GetHash(token);
+            var hashThis = await hashThisTask;
+            var hashOther = await hashOtherTask;
+            if (string.IsNullOrEmpty(hashThis) || string.IsNullOrEmpty(hashOther))
             {
                 return false;
             }
-            return md5This == md5Other;
+            return hashThis == hashOther;
         }
         catch
         {
@@ -104,26 +104,25 @@ public class FileProfile : Profile
         }
     }
 
-    protected async static Task<string> GetMD5HashFromFile(string fileName, CancellationToken? cancelToken)
+    protected async static Task<string> GetSHA256HashFromFile(string fileName, CancellationToken? cancelToken)
     {
         var fileInfo = new FileInfo(fileName);
         if (fileInfo.Length > MAX_FILE_SIZE)
         {
-            return MD5_FOR_OVERSIZED_FILE;
+            return HASH_FOR_OVERSIZED_FILE;
         }
 
-        var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var md5Oper = MD5.Create();
-        var retVal = await md5Oper.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
-        file.Close();
+        await using var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var sha256 = SHA256.Create();
+        var retVal = await sha256.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
 
-        var sb = new StringBuilder();
+        var sb = new StringBuilder(retVal.Length * 2);
         for (int i = 0; i < retVal.Length; i++)
         {
             sb.Append(retVal[i].ToString("x2"));
         }
-        string md5 = sb.ToString();
-        return md5;
+        string sha256Hex = sb.ToString();
+        return sha256Hex;
     }
 
     public virtual async Task SetTranseferData(string path, CancellationToken token)
@@ -135,7 +134,7 @@ public class FileProfile : Profile
 
         ArgumentNullException.ThrowIfNull(_hash);
 
-        var hash = await GetMD5HashFromFile(path, token);
+        var hash = await GetSHA256HashFromFile(path, token);
         if (hash != _hash)
         {
             throw new InvalidDataException(path);
@@ -162,7 +161,7 @@ public class FileProfile : Profile
 
         try
         {
-            var hash = await GetMD5HashFromFile(FullPath, token);
+            var hash = await GetSHA256HashFromFile(FullPath, token);
             return hash == _hash;
         }
         catch

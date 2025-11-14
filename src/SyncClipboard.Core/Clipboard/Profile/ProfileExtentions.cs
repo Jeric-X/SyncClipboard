@@ -70,62 +70,22 @@ public static class ProfileExtentions
         };
     }
 
-    public static async Task<HistoryRecord> CreateHistoryRecord(this Profile profile, CancellationToken token)
+    public static async Task<HistoryRecord> ToHistoryRecord(this Profile profile, CancellationToken token)
     {
-        switch (profile)
+        var record = new HistoryRecord
         {
-            case ImageProfile ip:
-                {
-                    return new HistoryRecord
-                    {
-                        Type = ProfileType.Image,
-                        Text = ip.FileName,
-                        FilePath = ip.FullPath is null ? [] : [ip.FullPath],
-                        Hash = await ip.GetHash(token),
-                        Size = await ip.GetSize(token),
-                    };
-                }
-
-            case GroupProfile gp:
-                {
-                    return new HistoryRecord
-                    {
-                        Type = ProfileType.Group,
-                        Text = string.Join('\n', gp.Files ?? []),
-                        FilePath = gp.Files ?? [],
-                        Hash = await gp.GetHash(token),
-                        Size = await gp.GetSize(token),
-                    };
-                }
-
-            case FileProfile fp:
-                {
-                    return new HistoryRecord
-                    {
-                        Type = ProfileType.File,
-                        Text = fp.FullPath ?? fp.FileName,
-                        FilePath = [fp.FullPath ?? string.Empty],
-                        Hash = await fp.GetHash(token),
-                        Size = await fp.GetSize(token),
-                    };
-                }
-
-            case TextProfile tp:
-                {
-                    byte[] inputBytes = System.Text.Encoding.Unicode.GetBytes(tp.Text);
-                    byte[] hashBytes = System.Security.Cryptography.MD5.HashData(inputBytes);
-                    var hash = Convert.ToHexString(hashBytes);
-                    return new HistoryRecord
-                    {
-                        Type = ProfileType.Text,
-                        Hash = hash,
-                        Text = tp.Text,
-                        Size = await tp.GetSize(token),
-                    };
-                }
-
-            default:
-                throw new NotImplementedException();
-        }
+            Text = profile.Text,
+            Type = profile.Type,
+            Size = await profile.GetSize(token),
+            Hash = await profile.GetHash(token),
+            FilePath = profile switch
+            {
+                ImageProfile ip when ip.FullPath is not null => [ip.FullPath],
+                FileProfile fp when fp.FullPath is not null => [fp.FullPath],
+                GroupProfile gp when gp.Files is not null => gp.Files,
+                _ => [],
+            }
+        };
+        return record;
     }
 }
