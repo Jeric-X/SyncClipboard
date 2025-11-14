@@ -35,6 +35,6 @@ public class HistoryService(HistoryManager historyManager, ConfigManager configM
             return;
         }
 
-        await historyManager.AddHistory(await profile.CreateHistoryRecord(token), token);
+        await historyManager.AddHistory(await profile.ToHistoryRecord(token), token);
     }
 }
