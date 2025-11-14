@@ -2,11 +2,14 @@ using System.IO.Compression;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Utilities;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace SyncClipboard.Shared.Profiles;
 
 public class GroupProfile : FileProfile
 {
+    private static readonly SemaphoreSlim ConcurrencyComputeLimiter = new(Math.Max(1, Environment.ProcessorCount));
+    private static readonly Encoding EntryEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private readonly FileFilterConfig _fileFilterConfig = new();
     private string[]? _files;
     public string[] Files => _files ?? [];
@@ -42,23 +45,6 @@ public class GroupProfile : FileProfile
     {
     }
 
-    private static int FileCompare(FileInfo file1, FileInfo file2)
-    {
-        if (file1.Length == file2.Length)
-        {
-            return Comparer<int>.Default.Compare(file1.Name.ListHashCode(), file2.Name.ListHashCode());
-        }
-        return Comparer<long>.Default.Compare(file1.Length, file2.Length);
-    }
-
-    private static int FileNameCompare(string file1, string file2)
-    {
-        return Comparer<int>.Default.Compare(
-            Path.GetFileName(file1).ListHashCode(),
-            Path.GetFileName(file2).ListHashCode()
-        );
-    }
-
     public override async ValueTask<string> GetHash(CancellationToken token)
     {
         if (_hash is null)
@@ -81,47 +67,172 @@ public class GroupProfile : FileProfile
 
     private Task<(string, long)> CaclHashAndSizeAsync(IEnumerable<string> filesEnum, CancellationToken token)
     {
+        // 内部有许多操作使用的是同步API，放在线程池中执行
         return Task.Run(() => CaclHashAndSize(filesEnum, token), token).WaitAsync(token);
     }
 
-    private (string, long) CaclHashAndSize(IEnumerable<string> filesEnum, CancellationToken token)
+    /// <summary>
+    /// 哈希算法说明：
+    /// 1) 编码：所有字符串均使用UTF-8编码。
+    /// 2) 获取Entry: 取inputFiles自身以及所有子目录/文件作为候选条目，每个entry以inputFiles的父目录作为
+    ///    根取相对路径作为EntryName。
+    /// 3) 排序：对所有entry排序，排序方法为：按EntryName的UTF-8编码后的byte数组升序排序。
+    /// 4) 哈希：按照格式构造每个entry的哈希输入字符串，UTF-8编码后按序拼接成完整的哈希输入byte数组，
+    ///    使用sha256计算得到的输出值即为当前GroupProfile实例的hash。
+    ///    每个Entry的哈希输入字符串格式：
+    ///      - 目录：{entryName}   (entryName以 '/' 结尾)
+    ///      - 文件：{entryName}|{length}|{sha256(content)}
+    /// 5) 由于每个文件都需要独立计算hash，可以考虑并发处理以提升性能。
+    /// </summary>
+    private async Task<(string, long)> CaclHashAndSize(IEnumerable<string> inputFiles, CancellationToken token)
     {
-        var files = filesEnum.ToArray();
-        Array.Sort(files, FileNameCompare);
-        long sumSize = 0;
-        int hash = 0;
-        foreach (var file in files)
-        {
-            token.ThrowIfCancellationRequested();
-            if (Directory.Exists(file))
-            {
-                var directoryInfo = new DirectoryInfo(file);
-                hash = (hash * -1521134295) + directoryInfo.Name.ListHashCode();
-                var subFiles = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
-                Array.Sort(subFiles, FileCompare);
-                foreach (var subFile in subFiles)
-                {
-                    token.ThrowIfCancellationRequested();
-                    sumSize += subFile.Length;
-                    if (sumSize > MAX_FILE_SIZE)
-                        return (MD5_FOR_OVERSIZED_FILE, 0);
-                    hash = (hash * -1521134295) + (subFile.Name + subFile.Length.ToString()).ListHashCode();
-                }
-            }
-            else if (File.Exists(file) && FileFilterHelper.IsFileAvailableAfterFilter(file, _fileFilterConfig))
-            {
-                var fileInfo = new FileInfo(file);
-                sumSize += fileInfo.Length;
-                hash = (hash * -1521134295) + (fileInfo.Name + fileInfo.Length.ToString()).ListHashCode();
-            }
+        long totalSize = 0;
+        var entries = new List<GroupEntry>();
 
-            if (sumSize > MAX_FILE_SIZE)
-            {
-                return (MD5_FOR_OVERSIZED_FILE, 0);
-            }
+        if (!inputFiles.Any())
+        {
+            var emptyHash = SHA256.HashData(EntryEncoding.GetBytes(string.Empty));
+            return (BytesToHex(emptyHash), 0);
         }
 
-        return (hash.ToString(), sumSize);
+        var firstPath = inputFiles.First();
+        var rootPath = ResolveRootPath(firstPath);
+
+        var details = inputFiles.Select(path => new { IsDir = Directory.Exists(path), path });
+        var dirs = details.Where(d => d.IsDir).Select(d => d.path).ToArray();
+        var files = details.Where(d => !d.IsDir).Select(d => d.path).ToArray();
+
+        SearchDirEntries(dirs, rootPath, ref totalSize, entries, token);
+        AddEntries(files, rootPath, ref totalSize, entries, token);
+
+        var orderedEntries = entries
+            .Select(e => new { Entry = e, Key = EntryEncoding.GetBytes(e.EntryName) })
+            .OrderBy(k => k.Key, ByteArrayComparer.Instance);
+
+        using var incremental = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        foreach (var entry in orderedEntries)
+        {
+            token.ThrowIfCancellationRequested();
+
+            var line = await entry.Entry.ToEntryStringAsync().ConfigureAwait(false);
+            var bytes = EntryEncoding.GetBytes(line);
+            incremental.AppendData(bytes);
+        }
+
+        var finalBytes = incremental.GetHashAndReset();
+        return (BytesToHex(finalBytes), totalSize);
+    }
+
+    private void SearchDirEntries(IEnumerable<string> dirs, string root, ref long totalSize, List<GroupEntry> entries, CancellationToken token)
+    {
+        foreach (var dir in dirs)
+        {
+            token.ThrowIfCancellationRequested();
+
+            AddEntry(dir, root, ref totalSize, entries, token);
+
+            var allDirectories = Directory.GetDirectories(dir, "*", SearchOption.AllDirectories);
+            AddEntries(allDirectories, root, ref totalSize, entries, token);
+
+            var allFiles = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+            AddEntries(allFiles, root, ref totalSize, entries, token);
+        }
+    }
+
+    private static string ResolveRootPath(string firstPath)
+    {
+        if (!string.IsNullOrEmpty(firstPath))
+        {
+            var basePath = Directory.Exists(firstPath) ? Path.TrimEndingDirectorySeparator(firstPath) : firstPath;
+            var parent = Path.GetDirectoryName(basePath);
+            // 当处于文件系统根（如 Linux 的 "/"）时，父目录可能为 null，退回到路径根
+            return parent ?? Path.GetPathRoot(basePath) ?? "/";
+        }
+        else
+        {
+            return Path.GetPathRoot(Directory.GetCurrentDirectory()) ?? "/";
+        }
+    }
+
+    private void AddEntries(IEnumerable<string> paths, string root, ref long totalSize, List<GroupEntry> entries, CancellationToken token)
+    {
+        foreach (var path in paths)
+        {
+            AddEntry(path, root, ref totalSize, entries, token);
+        }
+    }
+
+    private void AddEntry(string path, string root, ref long totalSize, List<GroupEntry> entries, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+
+        bool isDir = Directory.Exists(path);
+        bool isFile = !isDir && File.Exists(path);
+        if (!isDir && !isFile)
+            return;
+
+        var entryName = BuildRelativeEntryName(root, path, isDirectory: isDir);
+        if (string.IsNullOrEmpty(entryName))
+            return;
+
+        if (!FileFilterHelper.IsFileAvailableAfterFilter(entryName, _fileFilterConfig))
+            return;
+
+        if (isDir)
+        {
+            entries.Add(new GroupEntry(entryName, isDirectory: true, length: 0, hashTask: null));
+        }
+        else
+        {
+            var fileInfo = new FileInfo(path);
+            totalSize += fileInfo.Length;
+            var hashTask = ComputeFileContentHashAsync(path, token);
+            entries.Add(new GroupEntry(entryName, isDirectory: false, length: fileInfo.Length, hashTask: hashTask));
+        }
+    }
+
+    private static string BuildRelativeEntryName(string rootPath, string fullPath, bool isDirectory)
+    {
+        var rel = Path.GetRelativePath(rootPath, fullPath);
+        if (string.IsNullOrEmpty(rel) || rel == ".")
+            return string.Empty;
+
+        var normalized = rel
+            .Replace(Path.DirectorySeparatorChar, '/')
+            .Replace(Path.AltDirectorySeparatorChar, '/')
+            .Trim('/');
+
+        if (string.IsNullOrEmpty(normalized))
+            return string.Empty;
+
+        if (isDirectory)
+            return normalized + "/";
+
+        return normalized;
+    }
+
+    private static async Task<string> ComputeFileContentHashAsync(string filePath, CancellationToken token)
+    {
+        await ConcurrencyComputeLimiter.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            using var sha256 = SHA256.Create();
+            await using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.SequentialScan | FileOptions.Asynchronous);
+            var hashBytes = await sha256.ComputeHashAsync(fs, token).ConfigureAwait(false);
+            return BytesToHex(hashBytes);
+        }
+        finally
+        {
+            ConcurrencyComputeLimiter.Release();
+        }
+    }
+
+    private static string BytesToHex(ReadOnlySpan<byte> bytes)
+    {
+        var sb = new StringBuilder(bytes.Length * 2);
+        foreach (var b in bytes)
+            sb.Append(b.ToString("x2"));
+        return sb.ToString();
     }
 
     public async Task PrepareTransferFile(string filePath, CancellationToken token)
