@@ -2,6 +2,8 @@
 
 [中文](../README.md) | English
 
+**SyncClipboard is a cross-platform clipboard synchronization tool** that allows you to seamlessly share clipboard content across multiple devices. It supports synchronizing text, images, and files, and provides clipboard history management features. Whether you're using Windows, macOS, Linux, iOS, or Android, you can easily keep your clipboard content in sync.
+
 <details>
 <summary>Contents</summary>
 

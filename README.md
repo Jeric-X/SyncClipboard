@@ -3,6 +3,8 @@
 
 中文 | [English](docs/README_EN.md)  
 
+**SyncClipboard 是一个跨平台的剪贴板同步工具**，让你可以在多个设备之间无缝共享剪贴板内容。它支持同步文字、图片和文件，并提供剪贴板历史记录管理功能。无论你使用 Windows、macOS、Linux、iOS 还是 Android，都可以轻松保持剪贴板内容同步。
+
 <details>
 <summary>目录</summary>
 
