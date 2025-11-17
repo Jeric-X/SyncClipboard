@@ -1,16 +1,23 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.ViewModels;
 
 public partial class HistorySettingViewModel : ObservableObject
 {
     private readonly ConfigManager _configManager;
+    private readonly HistoryManager _historyManager;
+    private readonly IMainWindowDialog _dialog;
 
-    public HistorySettingViewModel(ConfigManager configManager)
+    public HistorySettingViewModel(ConfigManager configManager, HistoryManager historyManager, IMainWindowDialog dialog)
     {
         _configManager = configManager;
+        _historyManager = historyManager;
+        _dialog = dialog;
         var config = configManager.GetConfig<HistoryConfig>();
         enableHistory = config.EnableHistory;
         enableSyncHistory = config.EnableSyncHistory;
@@ -53,4 +60,12 @@ public partial class HistorySettingViewModel : ObservableObject
     [ObservableProperty]
     private uint historyRetentionMinutes;
     partial void OnHistoryRetentionMinutesChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { HistoryRetentionMinutes = value });
+
+    [RelayCommand]
+    private async Task ClearLocalHistoryAsync()
+    {
+        var confirmed = await _dialog.ShowConfirmationAsync(I18n.Strings.ClearLocalHistory, I18n.Strings.ClearLocalHistoryConfirmMessage);
+        if (!confirmed) return;
+        await _historyManager.ClearAllLocalAsync();
+    }
 }

@@ -114,7 +114,7 @@ public class HistoryManager
         }
     }
 
-    public async Task AddHistory(HistoryRecord record, CancellationToken token)
+    public async Task AddLocalHistory(HistoryRecord record, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -122,6 +122,9 @@ public class HistoryManager
         if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
         {
             entity.FilePath = record.FilePath;
+            entity.IsLocalFileReady = true;
+            entity.IsDeleted = false;
+            entity.LastModified = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
             return;
@@ -475,5 +478,39 @@ public class HistoryManager
             query = query.Skip(position + 1);
         }
         return await query.Take(size).ToListAsync(token);
+    }
+
+    public async Task ClearAllLocalAsync(CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var all = _dbContext.HistoryRecords.ToList();
+        foreach (var record in all)
+        {
+            try
+            {
+                await DeleteHistoryInternal(_dbContext, record, token);
+            }
+            catch (Exception ex)
+            {
+                _logger.Write("HistoryManager", $"Failed to delete history record {record.Type}-{record.Hash}: {ex.Message}");
+            }
+        }
+
+        try
+        {
+            if (Directory.Exists(Env.HistoryFileFolder))
+            {
+                foreach (var dir in Directory.GetDirectories(Env.HistoryFileFolder))
+                {
+                    try { Directory.Delete(dir, true); } catch { }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("HistoryManager", $"Failed to cleanup history folders: {ex.Message}");
+        }
     }
 }

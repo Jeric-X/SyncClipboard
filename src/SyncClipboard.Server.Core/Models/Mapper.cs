@@ -49,11 +49,11 @@ public static class Mapper
     {
         return new HistoryRecordUpdateDto
         {
-            Stared = s.Stared,
+            Starred = s.Starred,
             Pinned = s.Pinned,
             IsDelete = s.IsDeleted,
             Version = s.Version,
-            LastModified = new DateTimeOffset(s.LastModified.ToUniversalTime(), TimeSpan.Zero)
+            LastModified = s.LastModified.ToUniversalTime()
         };
     }
 }

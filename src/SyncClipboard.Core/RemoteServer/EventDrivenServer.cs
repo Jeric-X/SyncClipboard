@@ -197,12 +197,12 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         return syncServer.UpdateHistoryAsync(type, hash, dto, cancellationToken);
     }
 
-    public Task UploadHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, DateTimeOffset createTime, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task UploadHistoryAsync(HistoryRecordDto dto, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IHistorySyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
-        return syncServer.UploadHistoryAsync(type, hash, dto, createTime, filePath, progress, cancellationToken);
+        return syncServer.UploadHistoryAsync(dto, filePath, progress, cancellationToken);
     }
 }

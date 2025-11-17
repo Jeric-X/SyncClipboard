@@ -471,6 +471,12 @@ Esc：关闭面板</value>
 双击项目：复制到剪贴板
 双击图片：查看完整图片</value>
   </data>
+  <data name="ClearLocalHistory" xml:space="preserve">
+    <value>清空本地历史记录</value>
+  </data>
+  <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
+    <value>这将永久删除此设备上本地的所有历史记录和缓存文件，是否继续？</value>
+  </data>
   <data name="SwitchOnBuiltInServer" xml:space="preserve">
     <value>内置服务器已开启</value>
   </data>

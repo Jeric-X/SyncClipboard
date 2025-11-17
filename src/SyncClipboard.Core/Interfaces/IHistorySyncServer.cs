@@ -40,10 +40,7 @@ public interface IHistorySyncServer
     /// createTime: 原始创建时间（记录的 Timestamp）
     /// filePath: 可选的本地传输文件路径（若需要）。
     Task UploadHistoryAsync(
-        ProfileType type,
-        string hash,
-        HistoryRecordUpdateDto dto,
-        DateTimeOffset createTime,
+        HistoryRecordDto dto,
         string? filePath = null,
         IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default);

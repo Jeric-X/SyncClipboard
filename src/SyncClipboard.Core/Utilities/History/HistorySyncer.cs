@@ -75,7 +75,7 @@ public class HistorySyncer
         {
             var dto = new HistoryRecordUpdateDto
             {
-                Stared = record.Stared,
+                Starred = record.Stared,
                 Pinned = record.Pinned,
                 IsDelete = record.IsDeleted ? true : null,
                 Version = record.Version,
