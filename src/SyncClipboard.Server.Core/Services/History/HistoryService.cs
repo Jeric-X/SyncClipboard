@@ -467,4 +467,42 @@ public class HistoryService
         await _dbContext.SaveChangesAsync(token);
         return (true, HistoryRecordDto.FromEntity(entity));
     }
+
+    /// <summary>
+    /// 删除指定用户的全部历史记录以及相关的传输数据文件与目录。
+    /// 返回删除的记录数量。
+    /// </summary>
+    public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var records = await _dbContext.HistoryRecords
+            .Where(r => r.UserId == userId)
+            .ToListAsync(token);
+
+        _dbContext.HistoryRecords.RemoveRange(records);
+        var count = records.Count;
+        await _dbContext.SaveChangesAsync(token);
+
+        foreach (var rec in records)
+        {
+            if (!string.IsNullOrEmpty(rec.TransferDataFile))
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(rec.TransferDataFile);
+                    if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                    {
+                        Directory.Delete(dir, true);
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        return count;
+    }
 }

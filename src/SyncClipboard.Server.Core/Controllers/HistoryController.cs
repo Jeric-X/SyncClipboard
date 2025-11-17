@@ -220,4 +220,13 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
         return Conflict(payload);
     }
+
+    // DELETE api/history/clear
+    // 清除当前用户的所有历史记录及其相关数据文件。
+    [HttpDelete("clear")]
+    public async Task<IActionResult> ClearAll(CancellationToken token)
+    {
+        var deleted = await _historyService.ClearAllAsync(HARD_CODED_USER_ID, token);
+        return Ok(new { deleted });
+    }
 }

@@ -305,12 +305,19 @@ public class GroupProfile : FileProfile
     private static async Task<string[]> ExtractArchiveEntriesAsync(ZipArchive archive, string extractPath, CancellationToken token)
     {
         var topLevelFiles = new List<string>();
+        extractPath = Path.GetFullPath(extractPath + Path.DirectorySeparatorChar);
+        var comparision = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         foreach (var entry in archive.Entries)
         {
             token.ThrowIfCancellationRequested();
             var entryName = entry.FullName;
             var isDirectory = entryName.EndsWith('/');
-            var destPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
+            var rawDestPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
+            var destPath = Path.GetFullPath(rawDestPath);
+            if (!destPath.StartsWith(extractPath, comparision))
+            {
+                throw new InvalidOperationException($"Transfer data is invalid with entry: {entryName}");
+            }
 
             if (isDirectory)
             {
