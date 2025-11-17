@@ -43,6 +43,11 @@
                                       IsEnabled="{Binding !EnableSyncHistory}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <Button Content="{x:Static i18n:Strings.ClearLocalHistory}" Command="{Binding ClearLocalHistoryCommand}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.HistoryDescription}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>

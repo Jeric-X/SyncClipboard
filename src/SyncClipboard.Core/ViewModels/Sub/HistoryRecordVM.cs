@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.Models;
 
@@ -21,6 +23,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     [ObservableProperty]
     private bool pinned = record.Pinned;
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
+    [NotifyPropertyChangedFor(nameof(ShowUploadProgress))]
     private SyncStatus syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
         record.IsLocalFileReady ? SyncStatus.Synced : SyncStatus.ServerOnly;
 
@@ -30,7 +34,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private bool isDownloading = false;
 
     [ObservableProperty]
-    private double downloadProgress = 0; // 0.0 - 1.0 (currently unused in UI, ring is indeterminate)
+    private double downloadProgress = 0; // 0.0 - 100.0 百分比
 
     // 上传相关属性
     [ObservableProperty]
@@ -118,5 +122,55 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     public static bool operator !=(HistoryRecordVM? left, HistoryRecordVM? right)
     {
         return !(left == right);
+    }
+
+    private static double ComputePercent(HttpDownloadProgress p, ulong? fallbackTotal)
+    {
+        try
+        {
+            ulong total = 0;
+            if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
+            {
+                total = p.TotalBytesToReceive.Value;
+            }
+            else if (fallbackTotal.HasValue && fallbackTotal.Value > 0)
+            {
+                total = fallbackTotal.Value;
+            }
+
+            return total > 0
+                ? Math.Clamp((double)p.BytesReceived / total * 100.0, 0.0, 100.0)
+                : Math.Clamp((double)p.BytesReceived / 1000000.0, 0.0, 100.0);
+        }
+        catch
+        {
+            return 0.0;
+        }
+    }
+
+    public IProgress<HttpDownloadProgress> CreateDownloadProgress()
+    {
+        return new Progress<HttpDownloadProgress>(p =>
+        {
+            DownloadProgress = ComputePercent(p, (ulong)Size);
+        });
+    }
+
+    public IProgress<HttpDownloadProgress> CreateUploadProgress(string? transferFilePath)
+    {
+        ulong? fallbackTotal = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(transferFilePath) && File.Exists(transferFilePath))
+            {
+                var fi = new FileInfo(transferFilePath);
+                fallbackTotal = (ulong)fi.Length;
+            }
+        }
+        catch { }
+        return new Progress<HttpDownloadProgress>(p =>
+        {
+            UploadProgress = ComputePercent(p, fallbackTotal);
+        });
     }
 }

@@ -148,48 +148,32 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     }
 
     /// <summary>
-    /// PUT api/history/{type}/{hash}
-    /// 使用 multipart/form-data 提交；支持可选的 TransferFile 文件。
-    /// 其余元数据字段（stared/pinned/isDelete/version/lastModified/createTime）为必填。
-    /// 若不存在则创建；若已存在则返回 409 冲突并携带服务器快照。
+    /// PUT api/history
+    /// 使用 multipart/form-data 提交；支持可选的 file (传输数据文件)。
+    /// 其余元数据字段通过 HistoryRecordDto 传入（包含 Hash, Type, Starred, Pinned, IsDeleted, Version, LastModified, CreateTime）。
+    /// 若不存在则创建；若已存在则返回 409 并携带服务器快照用于客户端决策。
     /// </summary>
-    [HttpPut("{type}/{hash}")]
+    [HttpPut]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Put(
-        ProfileType type,
-        string hash,
-        [FromForm] bool stared,
-        [FromForm] bool pinned,
-        [FromForm] bool isDelete,
-        [FromForm] int version,
-        [FromForm] DateTimeOffset lastModified,
-        [FromForm] DateTimeOffset createTime,
+        [FromForm] HistoryRecordDto dto,
         IFormFile? file,
         CancellationToken token)
     {
-        // file 可为空；其余必填字段若缺失，模型绑定会使 ModelState 失败
         if (!ModelState.IsValid)
         {
             return ValidationProblem(ModelState);
         }
 
-        var dto = new HistoryRecordUpdateDto
-        {
-            Stared = stared,
-            Pinned = pinned,
-            IsDelete = isDelete,
-            Version = version,
-            LastModified = lastModified
-        };
+        if (string.IsNullOrWhiteSpace(dto.Hash)) return BadRequest("Hash is required");
+        if (dto.Type == ProfileType.None) return BadRequest("Type is required");
 
         var (created, server) = await _historyService.CreateIfNotExistsAsync(
-            HARD_CODED_USER_ID, type, hash, dto, file, createTime, token);
+            HARD_CODED_USER_ID, dto, file, token);
         if (created)
         {
-            return CreatedAtAction(nameof(GetTransferData), new { profileId = $"{type}-{hash}" }, null);
+            return CreatedAtAction(nameof(GetTransferData), new { profileId = $"{dto.Type}-{dto.Hash}" }, null);
         }
-
-        // 已存在：冲突，返回当前服务器端快照用于客户端决策
         return Conflict(server?.ToUpdateDto());
     }
 

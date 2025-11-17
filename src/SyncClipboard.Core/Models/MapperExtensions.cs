@@ -1,4 +1,5 @@
 using SyncClipboard.Server.Core.Models;
+using System.Globalization;
 
 namespace SyncClipboard.Core.Models;
 
@@ -14,11 +15,11 @@ public static class MapperExtensions
             Type = dto.Type,
             FilePath = [],
             Hash = dto.Hash,
-            Timestamp = dto.CreateTime,
-            Stared = dto.Stared,
+            Timestamp = dto.CreateTime.UtcDateTime,
+            Stared = dto.Starred,
             Pinned = dto.Pinned,
             SyncStatus = HistorySyncStatus.Synced,
-            LastModified = dto.LastModified,
+            LastModified = dto.LastModified.UtcDateTime,
             Version = dto.Version,
             IsDeleted = dto.IsDeleted,
             IsLocalFileReady = dto.Type == ProfileType.Text,
@@ -29,10 +30,10 @@ public static class MapperExtensions
     public static void ApplyFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
         entity.Text = dto.Text;
-        entity.Stared = dto.Stared;
+        entity.Stared = dto.Starred;
         entity.Pinned = dto.Pinned;
-        entity.Timestamp = dto.CreateTime;
-        entity.LastModified = dto.LastModified;
+        entity.Timestamp = dto.CreateTime.UtcDateTime;
+        entity.LastModified = dto.LastModified.UtcDateTime;
         entity.Version = dto.Version;
         entity.IsDeleted = dto.IsDeleted;
         entity.Size = dto.Size;
@@ -41,20 +42,20 @@ public static class MapperExtensions
 
     public static bool ShouldUpdateFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
-        var timeDiff = (dto.LastModified - entity.LastModified).Duration();
+        var timeDiff = (dto.LastModified.UtcDateTime - entity.LastModified).Duration();
         if (timeDiff > RemoteDecisionThreshold)
         {
-            return dto.LastModified > entity.LastModified;
+            return dto.LastModified.UtcDateTime > entity.LastModified;
         }
         return dto.Version > entity.Version;
     }
 
     public static bool IsLocalNewerThanRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
-        var timeDiff = (dto.LastModified - entity.LastModified).Duration();
+        var timeDiff = (dto.LastModified.UtcDateTime - entity.LastModified).Duration();
         if (timeDiff > RemoteDecisionThreshold)
         {
-            return entity.LastModified > dto.LastModified;
+            return entity.LastModified > dto.LastModified.UtcDateTime;
         }
         return entity.Version > dto.Version;
     }
@@ -69,7 +70,7 @@ public static class MapperExtensions
             CreateTime = entity.Timestamp,
             LastModified = entity.LastModified,
             LastAccessed = entity.LastModified,
-            Stared = entity.Stared,
+            Starred = entity.Stared,
             Pinned = entity.Pinned,
             Size = entity.Size,
             Version = entity.Version,
@@ -83,12 +84,26 @@ public static class MapperExtensions
     /// </summary>
     public static void ApplyFromServerUpdateDto(this HistoryRecord entity, HistoryRecordUpdateDto server)
     {
-        if (server.Stared.HasValue) entity.Stared = server.Stared.Value;
+        if (server.Starred.HasValue) entity.Stared = server.Starred.Value;
         if (server.Pinned.HasValue) entity.Pinned = server.Pinned.Value;
         if (server.IsDelete.HasValue && server.IsDelete.Value) entity.IsDeleted = true;
         if (server.LastModified.HasValue) entity.LastModified = server.LastModified.Value.UtcDateTime;
         if (server.Version.HasValue) entity.Version = server.Version.Value;
         entity.SyncStatus = HistorySyncStatus.Synced;
+    }
+
+    public static void AddHistoryRecord(this MultipartFormDataContent form, HistoryRecordDto dto)
+    {
+        form.Add(new StringContent(dto.Hash), "Hash");
+        form.Add(new StringContent(((int)dto.Type).ToString(CultureInfo.InvariantCulture)), "Type");
+        form.Add(new StringContent(dto.CreateTime.ToString("o", CultureInfo.InvariantCulture)), "CreateTime");
+        form.Add(new StringContent(dto.LastModified.ToString("o", CultureInfo.InvariantCulture)), "LastModified");
+        form.Add(new StringContent(dto.Starred ? "true" : "false"), "Starred");
+        form.Add(new StringContent(dto.Pinned ? "true" : "false"), "Pinned");
+        form.Add(new StringContent(dto.Version.ToString(CultureInfo.InvariantCulture)), "Version");
+        form.Add(new StringContent(dto.IsDeleted ? "true" : "false"), "IsDeleted");
+        form.Add(new StringContent(dto.Text), "Text");
+        form.Add(new StringContent(dto.Size.ToString(CultureInfo.InvariantCulture)), "Size");
     }
 }
 

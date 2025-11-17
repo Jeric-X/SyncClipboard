@@ -12,6 +12,7 @@ using System.Web;
 using SyncClipboard.Core.Utilities.Web;
 using System.Net.Http.Json;
 using System.Net;
+using SyncClipboard.Core.Exceptions;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
@@ -230,23 +231,14 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task UploadHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, DateTimeOffset createTime, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task UploadHistoryAsync(HistoryRecordDto dto, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var url = new Uri(_httpClient.BaseAddress!, $"api/history/{type}/{hash}");
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history");
 
             using var form = new MultipartFormDataContent();
-            if (dto.Stared.HasValue) form.Add(new StringContent(dto.Stared.Value ? "true" : "false"), "stared");
-            else form.Add(new StringContent("false"), "stared");
-            if (dto.Pinned.HasValue) form.Add(new StringContent(dto.Pinned.Value ? "true" : "false"), "pinned");
-            else form.Add(new StringContent("false"), "pinned");
-            if (dto.IsDelete.HasValue) form.Add(new StringContent(dto.IsDelete.Value ? "true" : "false"), "isDelete");
-            else form.Add(new StringContent("false"), "isDelete");
-            form.Add(new StringContent((dto.Version ?? 1).ToString()), "version");
-            var lm = dto.LastModified ?? DateTimeOffset.UtcNow;
-            form.Add(new StringContent(lm.ToString("o")), "lastModified");
-            form.Add(new StringContent(createTime.ToString("o")), "createTime");
+            form.AddHistoryRecord(dto);
 
             // 可选文件
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
@@ -280,13 +272,13 @@ public sealed class OfficialAdapter(
                     serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
                 }
                 catch { /* ignore parse errors, fall back to null */ }
-                throw new SyncClipboard.Core.Exceptions.RemoteHistoryConflictException($"History already exists {type}/{hash}", serverDto);
+                throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
             }
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
-            _logger.Write($"[OFFICIAL_ADAPTER] Failed to upload history {type}/{hash}: {ex.Message}");
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to upload history {dto.Type}/{dto.Hash}: {ex.Message}");
             throw;
         }
     }

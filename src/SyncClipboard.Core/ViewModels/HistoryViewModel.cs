@@ -766,7 +766,7 @@ public partial class HistoryViewModel : ObservableObject
         _ = ProcessServerUpdateQueueAsync();
 
         var lastRemote = list.Last();
-        _remoteTimeCursor = lastRemote.CreateTime;
+        _remoteTimeCursor = lastRemote.CreateTime.UtcDateTime;
         _remoteIdCursor = $"{lastRemote.Type}-{lastRemote.Hash}";
         return true;
     }
@@ -896,24 +896,7 @@ public partial class HistoryViewModel : ObservableObject
             var localDataPath = await fileProfile.GetOrCreateFileDataPath(token);
 
             vm.IsDownloading = true;
-            IProgress<HttpDownloadProgress>? progress = new Progress<HttpDownloadProgress>(p =>
-            {
-                ulong total = 0;
-                if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
-                {
-                    total = p.TotalBytesToReceive.Value;
-                }
-                else if (vm.Size > 0)
-                {
-                    total = (ulong)vm.Size;
-                }
-
-                if (total > 0)
-                {
-                    var value = Math.Clamp((double)p.BytesReceived / total * 100, 0.0, 100.0);
-                    vm.DownloadProgress = value;
-                }
-            });
+            IProgress<HttpDownloadProgress>? progress = vm.CreateDownloadProgress();
 
             await historySyncServer.DownloadHistoryDataAsync(profileId, localDataPath, progress, token);
             await fileProfile.SetTranseferData(localDataPath, token);
@@ -999,15 +982,6 @@ public partial class HistoryViewModel : ObservableObject
         try
         {
             var record = vm.ToHistoryRecord();
-            var dto = new HistoryRecordUpdateDto
-            {
-                Stared = record.Stared,
-                Pinned = record.Pinned,
-                Version = record.Version == 0 ? 1 : record.Version,
-                LastModified = DateTimeOffset.UtcNow,
-                IsDelete = record.IsDeleted
-            };
-            var createTime = new DateTimeOffset(record.Timestamp.ToUniversalTime(), TimeSpan.Zero);
             var profile = record.ToProfile();
             string? transferFilePath = null;
             if (profile is FileProfile fileProfile)
@@ -1034,31 +1008,11 @@ public partial class HistoryViewModel : ObservableObject
                 cts.Dispose();
                 return;
             }
-            var token = cts.Token;
             vm.IsUploading = true;
             vm.UploadProgress = 0;
-            IProgress<HttpDownloadProgress>? progress = new Progress<HttpDownloadProgress>(p =>
-            {
-                try
-                {
-                    ulong total = 0;
-                    if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
-                    {
-                        total = p.TotalBytesToReceive.Value;
-                    }
-                    else if (!string.IsNullOrEmpty(transferFilePath) && File.Exists(transferFilePath))
-                    {
-                        var fi = new FileInfo(transferFilePath);
-                        total = (ulong)fi.Length;
-                    }
-                    double percent = total > 0 ? Math.Clamp((double)p.BytesReceived / total * 100, 0, 100)
-                                               : Math.Clamp((double)p.BytesReceived / 1000000.0, 0, 100);
-                    vm.UploadProgress = percent;
-                }
-                catch { }
-            });
+            IProgress<HttpDownloadProgress>? progress = vm.CreateUploadProgress(transferFilePath);
 
-            await historySyncServer.UploadHistoryAsync(record.Type, record.Hash, dto, createTime, transferFilePath, progress, token);
+            await historySyncServer.UploadHistoryAsync(record.ToHistoryRecordDto(), transferFilePath, progress, cts.Token);
             vm.SyncState = SyncStatus.Synced;
         }
         catch (OperationCanceledException)

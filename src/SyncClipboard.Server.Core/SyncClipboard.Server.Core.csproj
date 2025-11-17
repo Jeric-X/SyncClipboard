@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>embedded</DebugType>
     <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>

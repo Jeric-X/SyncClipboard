@@ -74,7 +74,7 @@ public class HistoryService
         }
 
         // 部分字段更新
-        if (dto.Stared.HasValue) existing.Stared = dto.Stared.Value;
+        if (dto.Starred.HasValue) existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
         if (dto.IsDelete.HasValue) existing.IsDeleted = dto.IsDelete.Value;
 
@@ -378,81 +378,61 @@ public class HistoryService
     }
 
     /// <summary>
-    /// 如果记录不存在则创建一个最简记录，存在则返回 false。
+    /// 如果记录不存在则创建，存在则根据并发规则尝试更新。返回是否创建以及服务器端快照。
     /// </summary>
     public async Task<(bool Created, HistoryRecordDto? Server)> CreateIfNotExistsAsync(
         string userId,
-        ProfileType type,
-        string hash,
-        HistoryRecordUpdateDto dto,
+        HistoryRecordDto incoming,
         IFormFile? transferFile,
-        DateTimeOffset? createTime,
         CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
-        var existing = await Query(userId, type, hash, token);
 
+        var existing = await Query(userId, incoming.Type, incoming.Hash, token);
         var now = DateTime.UtcNow;
 
         if (existing is not null)
         {
-            // 如果客户端传入了 createTime，则把现有的 CreateTime 更新为两者中较早的时间
-            if (createTime.HasValue)
-            {
-                var incomingCreateUtc = createTime.Value.UtcDateTime;
-                if (incomingCreateUtc < existing.CreateTime)
-                {
-                    existing.CreateTime = incomingCreateUtc;
-                }
-            }
-
-            // 对其它可更新字段，根据 version/lastModified 判断是否应当更新
-            dto.Version ??= existing.Version + 1;
-            dto.LastModified ??= DateTimeOffset.UtcNow;
-
             var shouldUpdate = HistoryHelper.ShouldUpdate(
                 oldVersion: existing.Version,
-                newVersion: dto.Version.Value,
+                newVersion: incoming.Version,
                 oldLastModified: AsUtcOffset(existing.LastModified),
-                newLastModified: dto.LastModified.Value);
+                newLastModified: incoming.LastModified);
 
             if (shouldUpdate)
             {
-                if (dto.Stared.HasValue) existing.Stared = dto.Stared.Value;
-                if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
-                if (dto.IsDelete.HasValue) existing.IsDeleted = dto.IsDelete.Value;
-
-                existing.LastModified = dto.LastModified.Value.UtcDateTime;
-                existing.Version = dto.Version.Value;
+                existing.Stared = incoming.Starred;
+                existing.Pinned = incoming.Pinned;
+                existing.IsDeleted = incoming.IsDeleted;
+                existing.LastModified = incoming.LastModified.UtcDateTime;
+                existing.Version = incoming.Version;
             }
 
             await _dbContext.SaveChangesAsync(token);
             return (false, HistoryRecordDto.FromEntity(existing));
         }
 
-        // 创建新条目，CreateTime 使用客户端传入的值（若有），否则使用当前时间
         var entity = new HistoryRecordEntity
         {
             UserId = userId,
-            Type = type,
-            Hash = hash,
-            Text = string.Empty,
+            Type = incoming.Type,
+            Hash = incoming.Hash,
+            Text = incoming.Text,
             Size = 0,
-            CreateTime = createTime?.UtcDateTime ?? now,
+            CreateTime = incoming.CreateTime.UtcDateTime,
             LastAccessed = now,
-            LastModified = dto.LastModified?.UtcDateTime ?? now,
-            Stared = dto.Stared ?? false,
-            Pinned = dto.Pinned ?? false,
-            Version = dto.Version ?? 1,
-            IsDeleted = dto.IsDelete ?? false,
+            LastModified = (incoming.LastModified == default ? DateTimeOffset.UtcNow : incoming.LastModified).UtcDateTime,
+            Stared = incoming.Starred,
+            Pinned = incoming.Pinned,
+            Version = incoming.Version,
+            IsDeleted = incoming.IsDeleted,
         };
 
-        // 保存文件（如果有）
         if (transferFile != null && transferFile.Length > 0)
         {
             var safeFileName = Path.GetFileName(transferFile.FileName);
-            var folder = Path.Combine(HistoryDataFolder, $"{type}-{hash}");
+            var folder = Path.Combine(HistoryDataFolder, $"{incoming.Type}-{incoming.Hash}");
             if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             var filePath = Path.Combine(folder, safeFileName);
             using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))

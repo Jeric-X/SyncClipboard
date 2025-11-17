@@ -257,6 +257,24 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("Clear", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Clear All Local History 的本地化字符串。
+        /// </summary>
+        public static string ClearLocalHistory {
+            get {
+                return ResourceManager.GetString("ClearLocalHistory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 This will permanently delete ALL local history records and cached files on this device. Continue? 的本地化字符串。
+        /// </summary>
+        public static string ClearLocalHistoryConfirmMessage {
+            get {
+                return ResourceManager.GetString("ClearLocalHistoryConfirmMessage", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Client General 的本地化字符串。

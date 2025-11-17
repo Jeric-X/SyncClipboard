@@ -462,6 +462,12 @@ Esc: Close panel</value>
 Double click item: Copy to clipboard
 Double click image: View full image</value>
   </data>
+  <data name="ClearLocalHistory" xml:space="preserve">
+    <value>Clear All Local History</value>
+  </data>
+  <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
+    <value>This will permanently delete ALL local history records and cached files on this device. Continue?</value>
+  </data>
   <data name="SwitchOnBuiltInServer" xml:space="preserve">
     <value>Switch On Built-In Server</value>
   </data>
