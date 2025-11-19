@@ -70,17 +70,38 @@ public class ImageProfile : FileProfile
         return await base.GetHash(token);
     }
 
-    public override async Task PreparePersistent(CancellationToken token)
+    private async Task WriteRawImageBytesToFile(bool exception, CancellationToken token)
     {
-        if (FullPath is not null && File.Exists(FullPath))
+        var rawBytes = await GetRawImageBytes(token);
+        if (rawBytes is null)
         {
+            if (exception)
+                throw new InvalidOperationException("No image data available to prepare persistent storage.");
             return;
         }
-        var rawBytes = await GetRawImageBytes(token) ?? throw new InvalidOperationException("No image data available to prepare persistent storage.");
         var dir = await CreateWorkingDirectory(token);
         var filePath = Path.Combine(dir, FileName);
         await File.WriteAllBytesAsync(filePath, rawBytes, token);
         FullPath = filePath;
+    }
+
+    public override Task PreparePersistent(CancellationToken token)
+    {
+        if (FullPath is not null && File.Exists(FullPath))
+        {
+            return Task.CompletedTask;
+        }
+        return WriteRawImageBytesToFile(true, token);
+    }
+
+    public override async Task<string?> PrepareTransferData(CancellationToken token)
+    {
+        if (FullPath is null || File.Exists(FullPath) is false)
+        {
+            await WriteRawImageBytesToFile(false, token);
+        }
+
+        return await base.PrepareTransferData(token);
     }
 
     public override Task PrepareClipboard(CancellationToken token)

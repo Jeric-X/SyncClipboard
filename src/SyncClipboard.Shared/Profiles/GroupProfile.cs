@@ -3,14 +3,20 @@ using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Utilities;
 using System.Text;
 using System.Security.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Shared.Profiles;
 
-public class GroupProfile : FileProfile
+public class GroupProfile : Profile
 {
     private static readonly SemaphoreSlim ConcurrencyComputeLimiter = new(Math.Max(1, Environment.ProcessorCount));
     private static readonly Encoding EntryEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private readonly FileFilterConfig _fileFilterConfig = new();
+    public override bool HasTransferData => true;
+    public string TransferDataName { get; set; } = string.Empty;
+    public override string? TransferDataPath { get; protected set; }
+    private string? _hash;
+    private long? _size;
     private string[]? _files;
     public string[] Files => _files ?? [];
     public override string Text => string.Join('\n', Files.Select(Path.GetFileName));
@@ -18,22 +24,24 @@ public class GroupProfile : FileProfile
     public override ProfileType Type => ProfileType.Group;
 
     public GroupProfile(IEnumerable<string> files, string hash, string? dataPath = null)
-        : base(null, CreateNewDataFileName(), hash)
     {
+        TransferDataName = CreateNewDataFileName();
         _files = [.. files];
-        FullPath = dataPath;
+        _hash = hash;
+        TransferDataPath = dataPath;
     }
 
     public GroupProfile(IEnumerable<string> files, FileFilterConfig? filterConfig = null)
-        : base(null, CreateNewDataFileName(), null)
     {
+        TransferDataName = CreateNewDataFileName();
         _files = [.. files];
         _fileFilterConfig = filterConfig ?? new();
     }
 
     public GroupProfile(string hash)
-        : base(null, CreateNewDataFileName(), hash)
     {
+        TransferDataName = CreateNewDataFileName();
+        _hash = hash;
     }
 
     private static string CreateNewDataFileName()
@@ -41,8 +49,10 @@ public class GroupProfile : FileProfile
         return $"File_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.zip";
     }
 
-    public GroupProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
+    public GroupProfile(ClipboardProfileDTO profileDTO)
     {
+        TransferDataName = string.IsNullOrEmpty(profileDTO.File) ? CreateNewDataFileName() : profileDTO.File;
+        _hash = profileDTO.Clipboard;
     }
 
     public override async ValueTask<string> GetHash(CancellationToken token)
@@ -235,9 +245,10 @@ public class GroupProfile : FileProfile
         return sb.ToString();
     }
 
-    public async Task PrepareTransferFile(string filePath, CancellationToken token)
+    public override async Task<string?> PrepareTransferData(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(_files);
+        var filePath = Path.Combine(TransferDataName, await CreateWorkingDirectory(token));
 
         await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
@@ -276,7 +287,8 @@ public class GroupProfile : FileProfile
             }
         }
 
-        FullPath = filePath;
+        TransferDataPath = filePath;
+        return filePath;
     }
 
     private async Task AddFileToArchiveAsync(ZipArchive archive, string entryName, string sourcePath, CancellationToken token)
@@ -288,6 +300,41 @@ public class GroupProfile : FileProfile
         await using var entryStream = entry.Open();
         await using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         await sourceStream.CopyToAsync(entryStream, 81920, token).ConfigureAwait(false);
+    }
+
+    public override ValueTask<string> GetLogId(CancellationToken token)
+    {
+        return GetHash(token);
+    }
+
+    public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token)
+    {
+        return new ClipboardProfileDTO(TransferDataName, await GetHash(token), Type);
+    }
+
+    protected override async Task<bool> Same(Profile rhs, CancellationToken token)
+    {
+        if (rhs is not GroupProfile other)
+        {
+            return false;
+        }
+
+        try
+        {
+            var hashThisTask = GetHash(token);
+            var hashOtherTask = other.GetHash(token);
+            var hashThis = await hashThisTask;
+            var hashOther = await hashOtherTask;
+            if (string.IsNullOrEmpty(hashThis) || string.IsNullOrEmpty(hashOther))
+            {
+                return false;
+            }
+            return string.Equals(hashThis, hashOther, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public override string GetDisplayText()
@@ -347,7 +394,7 @@ public class GroupProfile : FileProfile
         return topLevelFiles.ToArray();
     }
 
-    public override async Task SetTranseferData(string path, CancellationToken token)
+    public override async Task SetTranseferData(string path, bool verify, CancellationToken token)
     {
         if (!File.Exists(path))
         {
@@ -357,6 +404,13 @@ public class GroupProfile : FileProfile
         if (!path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidDataException($"File is not a zip archive: {path}");
+        }
+
+        if (!verify)
+        {
+            TransferDataPath = path;
+            TransferDataName = Path.GetFileName(path);
+            return;
         }
 
         ArgumentNullException.ThrowIfNull(_hash);
@@ -376,8 +430,8 @@ public class GroupProfile : FileProfile
             var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
         }
-        FullPath = path;
-        FileName = Path.GetFileName(path);
+        TransferDataPath = path;
+        TransferDataName = Path.GetFileName(path);
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
@@ -408,5 +462,16 @@ public class GroupProfile : FileProfile
         {
             return false;
         }
+    }
+
+    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    {
+        if (TransferDataPath is null && _hash is not null && TransferDataName is not null)
+        {
+            dataPath = Path.Combine(CreateWorkingDirectory(_hash), TransferDataName);
+            return true;
+        }
+        dataPath = null;
+        return false;
     }
 }

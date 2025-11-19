@@ -880,7 +880,7 @@ public partial class HistoryViewModel : ObservableObject
             var record = vm.ToHistoryRecord();
             var profile = record.ToProfile();
 
-            if (profile is not FileProfile fileProfile)
+            if (profile.NeedsTransferData(out var localDataPath) is false)
             {
                 return;
             }
@@ -893,22 +893,14 @@ public partial class HistoryViewModel : ObservableObject
                 return;
             }
             var token = cts.Token;
-            var localDataPath = await fileProfile.GetOrCreateFileDataPath(token);
 
             vm.IsDownloading = true;
             IProgress<HttpDownloadProgress>? progress = vm.CreateDownloadProgress();
 
             await historySyncServer.DownloadHistoryDataAsync(profileId, localDataPath, progress, token);
-            await fileProfile.SetTranseferData(localDataPath, token);
+            await profile.SetTranseferData(localDataPath, true, token);
 
-            if (profile is GroupProfile gp)
-            {
-                record.FilePath = gp.Files;
-            }
-            else if (!string.IsNullOrEmpty(fileProfile.FullPath))
-            {
-                record.FilePath = [fileProfile.FullPath];
-            }
+            record.SetFilePath(profile);
             record.IsLocalFileReady = true;
 
             await historyManager.UpdateHistory(record, CancellationToken.None);
@@ -983,23 +975,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             var record = vm.ToHistoryRecord();
             var profile = record.ToProfile();
-            string? transferFilePath = null;
-            if (profile is FileProfile fileProfile)
-            {
-                if (profile is GroupProfile groupProfile)
-                {
-                    await groupProfile.PrepareDataWithCache(CancellationToken.None);
-                    transferFilePath = groupProfile.FullPath;
-                }
-                else
-                {
-                    transferFilePath = fileProfile.FullPath;
-                }
-                if (string.IsNullOrWhiteSpace(transferFilePath) || !File.Exists(transferFilePath))
-                {
-                    transferFilePath = null;
-                }
-            }
+            string? transferFilePath = await profile.PrepareDataWithCache(CancellationToken.None);
 
             var pid = $"{record.Type}-{record.Hash}";
             var cts = new CancellationTokenSource();

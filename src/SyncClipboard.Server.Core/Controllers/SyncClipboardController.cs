@@ -139,19 +139,19 @@ public class SyncClipboardController(
         _cache.Set(path, profileDto);
         var text = JsonSerializer.Serialize(profileDto);
         var profile = ClipboardProfileDTO.CreateProfile(profileDto);
-        if (profile is FileProfile fileProfile)
+        if (profile.NeedsTransferData(out var dataPath))
         {
-            var dataPath = Path.Combine(_env.WebRootPath, "file", fileProfile.FileName);
-            if (!System.IO.File.Exists(dataPath))
+            var fileName = Path.GetFileName(dataPath);
+            var previousDataPath = Path.Combine(_env.WebRootPath, "file", fileName);
+            if (!System.IO.File.Exists(previousDataPath))
             {
                 return BadRequest("Data file not found on server.");
             }
-            var historyPath = Path.Combine(await _historyService.GetProfileDataFolder(profile, token), fileProfile.FileName);
 
             try
             {
-                System.IO.File.Move(dataPath, historyPath, true);
-                await fileProfile.SetTranseferData(historyPath, token);
+                System.IO.File.Move(previousDataPath, dataPath, true);
+                await profile.SetTranseferData(dataPath, true, token);
             }
             catch when (!token.IsCancellationRequested)
             {

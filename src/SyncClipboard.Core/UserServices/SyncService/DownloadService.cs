@@ -354,7 +354,7 @@ public class DownloadService : Service
         return true;
     }
 
-    private async Task<Profile?> GetHistoryProfile(FileProfile remoteProfile, CancellationToken token)
+    private async Task<Profile?> GetHistoryProfile(Profile remoteProfile, CancellationToken token)
     {
         var historyRecord = await _historyManager.GetHistoryRecord(await remoteProfile.GetHash(token), remoteProfile.Type, token);
         if (historyRecord is null)
@@ -441,9 +441,9 @@ public class DownloadService : Service
         {
             remoteProfile = _remoteProfileCache!;
         }
-        else if (remoteProfile is FileProfile fileRemoteProfile)
+        else
         {
-            var cachedProfile = await GetHistoryProfile(fileRemoteProfile, cancelToken);
+            var cachedProfile = await GetHistoryProfile(remoteProfile, cancelToken);
             if (cachedProfile is not null)
             {
                 remoteProfile = cachedProfile;
@@ -451,7 +451,7 @@ public class DownloadService : Service
             }
             else
             {
-                await DownloadFileProfileData(fileRemoteProfile, cancelToken);
+                await DownloadFileProfileData(remoteProfile, cancelToken);
             }
         }
         _downServiceChangingLocal = true;
@@ -470,10 +470,10 @@ public class DownloadService : Service
         }
     }
 
-    private async Task DownloadFileProfileData(FileProfile profile, CancellationToken cancelToken)
+    private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
     {
         _logger.Write($"Downloading: {await profile.GetLogId(cancelToken)}");
-        _toastReporter = new ProgressToastReporter(profile.FileName, I18n.Strings.DownloadingFile, _notificationManager);
+        _toastReporter = new ProgressToastReporter(profile.Text, I18n.Strings.DownloadingFile, _notificationManager);
 
         var remoteServer = _remoteClipboardServerFactory.Current;
         await remoteServer.DownloadProfileDataAsync(profile, _toastReporter, cancelToken);

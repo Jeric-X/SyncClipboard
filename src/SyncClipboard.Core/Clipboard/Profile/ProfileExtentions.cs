@@ -1,57 +1,37 @@
-using SyncClipboard.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 
 namespace SyncClipboard.Core.Clipboard;
 
 public static class ProfileExtentions
 {
-    public static async Task<string> GetOrCreateFileDataPath(this FileProfile profile, CancellationToken token)
-    {
-        var historyConfig = AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<HistoryConfig>();
-        if (historyConfig.EnableHistory)
-        {
-            var historyFolder = Path.Combine(Env.HistoryFileFolder, await profile.GetHash(token));
-            if (!Directory.Exists(historyFolder))
-            {
-                Directory.CreateDirectory(historyFolder);
-            }
-            return Path.Combine(historyFolder, profile.FileName);
-        }
-        else
-        {
-            return Path.Combine(Env.TemplateFileFolder, profile.FileName);
-        }
-    }
-
-    public static async Task PrepareDataWithCache(this GroupProfile profile, CancellationToken token)
+    public static async Task<string?> PrepareDataWithCache(this Profile profile, CancellationToken token)
     {
         var cacheManager = AppCore.Current.Services.GetRequiredService<LocalFileCacheManager>();
-        var cachedZipPath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token));
-        if (!string.IsNullOrEmpty(cachedZipPath))
+        var cachedFilePath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token));
+        if (!string.IsNullOrEmpty(cachedFilePath))
         {
-            profile.FullPath = cachedZipPath;
-            return;
+            await profile.SetTranseferData(cachedFilePath, false, token);
+            return cachedFilePath;
         }
 
-        var newDatePath = await profile.GetOrCreateFileDataPath(token);
-        await profile.PrepareTransferFile(newDatePath, token);
+        var path = await profile.PrepareTransferData(token);
 
-        if (File.Exists(profile.FullPath))
+        if (File.Exists(path))
         {
-            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), profile.FullPath);
+            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), path);
         }
+        return path;
     }
 
     public static ClipboardMetaInfomation GetMetaInfomation(this Profile profile)
     {
         return profile switch
         {
-            ImageProfile ip => new() { Files = ip.FullPath is null ? [] : [ip.FullPath], Text = ip.FileName, OriginalType = ClipboardMetaInfomation.ImageType },
+            ImageProfile ip => new() { Files = ip.FullPath is null ? [] : [ip.FullPath], Text = ip.Text, OriginalType = ClipboardMetaInfomation.ImageType },
             GroupProfile gp => new() { Files = gp.Files },
-            FileProfile fp => new() { Files = fp.FullPath is null ? [] : [fp.FullPath], Text = fp.FileName },
+            FileProfile fp => new() { Files = fp.FullPath is null ? [] : [fp.FullPath], Text = fp.Text },
             TextProfile tp => new() { Text = tp.Text },
             _ => new ClipboardMetaInfomation(),
         };
@@ -70,6 +50,17 @@ public static class ProfileExtentions
         };
     }
 
+    public static void SetFilePath(this HistoryRecord record, Profile profile)
+    {
+        record.FilePath = profile switch
+        {
+            ImageProfile ip when ip.FullPath is not null => [ip.FullPath],
+            FileProfile fp when fp.FullPath is not null => [fp.FullPath],
+            GroupProfile gp when gp.Files is not null => gp.Files,
+            _ => [],
+        };
+    }
+
     public static async Task<HistoryRecord> ToHistoryRecord(this Profile profile, CancellationToken token)
     {
         await profile.PreparePersistent(token);
@@ -79,14 +70,8 @@ public static class ProfileExtentions
             Type = profile.Type,
             Size = await profile.GetSize(token),
             Hash = await profile.GetHash(token),
-            FilePath = profile switch
-            {
-                ImageProfile ip when ip.FullPath is not null => [ip.FullPath],
-                FileProfile fp when fp.FullPath is not null => [fp.FullPath],
-                GroupProfile gp when gp.Files is not null => gp.Files,
-                _ => [],
-            }
         };
+        record.SetFilePath(profile);
         return record;
     }
 }

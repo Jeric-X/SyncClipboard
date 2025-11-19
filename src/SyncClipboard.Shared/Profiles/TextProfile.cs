@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using SyncClipboard.Shared.Utilities;
 
@@ -61,5 +61,11 @@ public class TextProfile(string text) : Profile
     {
         _size ??= Text.Length;
         return ValueTask.FromResult(_size.Value);
+    }
+
+    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    {
+        dataPath = null;
+        return false;
     }
 }

@@ -14,7 +14,12 @@ public abstract class Profile
     public abstract ValueTask<string> GetHash(CancellationToken token);
     public virtual Task PreparePersistent(CancellationToken token) => Task.CompletedTask;
     public virtual Task PrepareClipboard(CancellationToken token) => Task.CompletedTask;
-    public virtual Task PrepareSerialize() => Task.CompletedTask;
+
+    public virtual bool HasTransferData => false;
+    public virtual string? TransferDataPath { get; protected set; } = null;
+    public virtual Task<string?> PrepareTransferData(CancellationToken token) => Task.FromResult<string?>(null);
+    public virtual Task SetTranseferData(string path, bool verify, CancellationToken token) => Task.CompletedTask;
+    public abstract bool NeedsTransferData([NotNullWhen(true)] out string? dataPath);
 
     protected abstract Task<bool> Same(Profile rhs, CancellationToken token);
 
@@ -90,7 +95,18 @@ public abstract class Profile
     {
         var provider = _profileWorkingDirProvider ?? throw new InvalidOperationException("Profile working directory provider is not set.");
         var dirName = $"{Type}_{await GetHash(token)}";
-        var allProfileDir = await provider.GetWorkingDir(token);
+        var allProfileDir = provider.GetWorkingDir();
+        var profileDir = Path.Combine(allProfileDir, dirName);
+        if (!Directory.Exists(profileDir))
+            Directory.CreateDirectory(profileDir);
+        return profileDir;
+    }
+
+    protected string CreateWorkingDirectory(string hash)
+    {
+        var provider = _profileWorkingDirProvider ?? throw new InvalidOperationException("Profile working directory provider is not set.");
+        var dirName = $"{Type}_{hash}";
+        var allProfileDir = provider.GetWorkingDir();
         var profileDir = Path.Combine(allProfileDir, dirName);
         if (!Directory.Exists(profileDir))
             Directory.CreateDirectory(profileDir);

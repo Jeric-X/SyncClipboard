@@ -2,8 +2,8 @@ namespace SyncClipboard.Server.Core.Services;
 
 public class ServerProfileEnvProvider(IWebHostEnvironment env) : IProfileEnv
 {
-    public Task<string> GetWorkingDir(CancellationToken token)
+    public string GetWorkingDir()
     {
-        return Task.FromResult(Path.Combine(env.WebRootPath, "history"));
+        return Path.Combine(env.WebRootPath, "history");
     }
 }
