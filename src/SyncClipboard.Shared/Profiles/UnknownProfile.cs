@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SyncClipboard.Shared.Profiles;
 
 public class UnknownProfile : Profile
@@ -39,5 +41,11 @@ public class UnknownProfile : Profile
     public override ValueTask<long> GetSize(CancellationToken token)
     {
         throw new NotImplementedException();
+    }
+
+    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    {
+        dataPath = null;
+        return false;
     }
 }

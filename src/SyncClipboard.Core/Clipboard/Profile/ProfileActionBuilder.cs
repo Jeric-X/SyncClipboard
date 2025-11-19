@@ -31,10 +31,6 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter)
                     {
                         folder = Path.GetDirectoryName(groupProfile.Files[0]);
                     }
-                    if (string.IsNullOrEmpty(folder) && !string.IsNullOrEmpty(groupProfile.FullPath))
-                    {
-                        folder = Path.GetDirectoryName(groupProfile.FullPath);
-                    }
                     if (!string.IsNullOrEmpty(folder))
                     {
                         var openFolder = folder!;

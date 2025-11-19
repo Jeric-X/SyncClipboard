@@ -1,5 +1,4 @@
-using System.Security.Cryptography;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared.Profiles;
@@ -11,6 +10,8 @@ public class FileProfile : Profile
     public virtual string FileName { get; set; } = "";
     public override ProfileType Type => ProfileType.File;
     public virtual string? FullPath { get; set; }
+    public override string? TransferDataPath => FullPath;
+    public override bool HasTransferData => true;
 
     public override string Text => FileName;
 
@@ -119,11 +120,28 @@ public class FileProfile : Profile
         return sha256Hex;
     }
 
-    public virtual async Task SetTranseferData(string path, CancellationToken token)
+    public override Task<string?> PrepareTransferData(CancellationToken token)
+    {
+        if (FullPath is not null && File.Exists(FullPath))
+        {
+            return Task.FromResult<string?>(FullPath);
+        }
+
+        throw new FileNotFoundException("File not found for transfer", FullPath);
+    }
+
+    public override async Task SetTranseferData(string path, bool verify, CancellationToken token)
     {
         if (!File.Exists(path))
         {
             throw new FileNotFoundException($"File does not exist: {path}", path);
+        }
+
+        if (!verify)
+        {
+            FullPath = path;
+            FileName = Path.GetFileName(path);
+            return;
         }
 
         ArgumentNullException.ThrowIfNull(_hash);
@@ -162,5 +180,16 @@ public class FileProfile : Profile
         {
             return false;
         }
+    }
+
+    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    {
+        if (FullPath is null && _hash is not null && FileName is not null)
+        {
+            dataPath = Path.Combine(CreateWorkingDirectory(_hash), FileName);
+            return true;
+        }
+        dataPath = null;
+        return false;
     }
 }

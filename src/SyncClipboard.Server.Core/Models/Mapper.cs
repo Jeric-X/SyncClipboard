@@ -21,13 +21,14 @@ public static class Mapper
             ExtraData = null
         };
 
-        if (profile is FileProfile fp)
+        if (profile.HasTransferData)
         {
-            entity.TransferDataFile = fp.FullPath ?? string.Empty;
-            if (profile is GroupProfile gp)
-            {
-                entity.FilePaths = gp.Files;
-            }
+            entity.TransferDataFile = profile.TransferDataPath ?? string.Empty;
+        }
+
+        if (profile is GroupProfile gp)
+        {
+            entity.FilePaths = gp.Files;
         }
 
         return entity;

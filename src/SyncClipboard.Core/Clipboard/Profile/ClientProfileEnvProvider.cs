@@ -5,16 +5,16 @@ namespace SyncClipboard.Core.Clipboard;
 
 public class ClientProfileEnvProvider(ConfigManager config) : IProfileEnv
 {
-    public Task<string> GetWorkingDir(CancellationToken token)
+    public string GetWorkingDir()
     {
         var historyConfig = config.GetConfig<HistoryConfig>();
         if (historyConfig.EnableHistory)
         {
-            return Task.FromResult(Env.HistoryFileFolder);
+            return Env.HistoryFileFolder;
         }
         else
         {
-            return Task.FromResult(Env.TemplateFileFolder);
+            return Env.TemplateFileFolder;
         }
     }
 }

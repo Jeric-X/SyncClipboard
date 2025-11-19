@@ -4,7 +4,6 @@ using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.RemoteServer.Adapter;
-using SyncClipboard.Core.Utilities.Image;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
@@ -42,17 +41,17 @@ internal class StorageBasedServerHelper
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (profile is not FileProfile fileProfile)
+        if (profile.NeedsTransferData(out var dataPath) is false)
         {
             return;
         }
 
         try
         {
-            var dataPath = await fileProfile.GetOrCreateFileDataPath(cancellationToken);
-            await _serverAdapter.DownloadFileAsync(fileProfile.FileName, dataPath, progress, cancellationToken);
-            await fileProfile.SetTranseferData(dataPath, cancellationToken);
-            _logger.Write($"[PULL] Downloaded {fileProfile.FileName} to {dataPath}");
+            var fileName = Path.GetFileName(dataPath);
+            await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
+            await profile.SetTranseferData(dataPath, true, cancellationToken);
+            _logger.Write($"[PULL] Downloaded {fileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -141,17 +140,12 @@ internal class StorageBasedServerHelper
 
     private async Task UploadProfileDataAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        if (profile is not FileProfile fileProfile)
+        var localDataPath = await profile.PrepareDataWithCache(cancellationToken);
+        if (localDataPath is null)
         {
             return;
         }
 
-        if (profile is GroupProfile groupProfile)
-        {
-            await groupProfile.PrepareDataWithCache(cancellationToken);
-        }
-
-        var localDataPath = fileProfile.FullPath;
         try
         {
             if (!File.Exists(localDataPath))
@@ -159,8 +153,9 @@ internal class StorageBasedServerHelper
                 throw new FileNotFoundException($"Local data file not found: {localDataPath}");
             }
 
-            await _serverAdapter.UploadFileAsync(fileProfile.FileName, localDataPath, cancellationToken);
-            _logger.Write($"[PUSH] Upload completed for {fileProfile.FileName}");
+            var fileName = Path.GetFileName(localDataPath);
+            await _serverAdapter.UploadFileAsync(fileName, localDataPath, cancellationToken);
+            _logger.Write($"[PUSH] Upload completed for {fileName}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
