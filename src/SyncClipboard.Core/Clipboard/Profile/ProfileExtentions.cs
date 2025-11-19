@@ -29,7 +29,7 @@ public static class ProfileExtentions
     public static async Task PrepareDataWithCache(this GroupProfile profile, CancellationToken token)
     {
         var cacheManager = AppCore.Current.Services.GetRequiredService<LocalFileCacheManager>();
-        var cachedZipPath = await cacheManager.GetCachedFilePathAsync(nameof(GroupProfile), await profile.GetHash(token));
+        var cachedZipPath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token));
         if (!string.IsNullOrEmpty(cachedZipPath))
         {
             profile.FullPath = cachedZipPath;
@@ -41,7 +41,7 @@ public static class ProfileExtentions
 
         if (File.Exists(profile.FullPath))
         {
-            await cacheManager.SaveCacheEntryAsync(nameof(GroupProfile), await profile.GetHash(token), profile.FullPath);
+            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), profile.FullPath);
         }
     }
 
@@ -72,6 +72,7 @@ public static class ProfileExtentions
 
     public static async Task<HistoryRecord> ToHistoryRecord(this Profile profile, CancellationToken token)
     {
+        await profile.PreparePersistent(token);
         var record = new HistoryRecord
         {
             Text = profile.Text,

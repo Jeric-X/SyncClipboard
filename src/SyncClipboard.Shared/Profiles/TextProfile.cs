@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared.Profiles;
 
@@ -50,9 +51,7 @@ public class TextProfile(string text) : Profile
         if (_hash is null)
         {
             byte[] inputBytes = Encoding.Unicode.GetBytes(Text);
-            using var ms = new MemoryStream(inputBytes);
-            var hashBytes = await SHA256.HashDataAsync(ms, token);
-            _hash = Convert.ToHexString(hashBytes);
+            _hash = await Utility.CalculateSHA256(inputBytes, token);
         }
 
         return _hash;

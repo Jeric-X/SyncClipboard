@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared.Profiles;
 
@@ -96,7 +97,7 @@ public class FileProfile : Profile
             {
                 return false;
             }
-            return hashThis == hashOther;
+            return string.Equals(hashThis, hashOther, StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
@@ -106,6 +107,7 @@ public class FileProfile : Profile
 
     protected async static Task<string> GetSHA256HashFromFile(string fileName, CancellationToken? cancelToken)
     {
+        cancelToken ??= CancellationToken.None;
         var fileInfo = new FileInfo(fileName);
         if (fileInfo.Length > MAX_FILE_SIZE)
         {
@@ -113,15 +115,7 @@ public class FileProfile : Profile
         }
 
         await using var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        using var sha256 = SHA256.Create();
-        var retVal = await sha256.ComputeHashAsync(file, cancelToken ?? CancellationToken.None);
-
-        var sb = new StringBuilder(retVal.Length * 2);
-        for (int i = 0; i < retVal.Length; i++)
-        {
-            sb.Append(retVal[i].ToString("x2"));
-        }
-        string sha256Hex = sb.ToString();
+        var sha256Hex = await Utility.CalculateSHA256(file, cancelToken.Value);
         return sha256Hex;
     }
 

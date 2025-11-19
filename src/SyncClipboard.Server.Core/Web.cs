@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Server.Core.Utilities;
+using SyncClipboard.Server.Core.Services;
 
 namespace SyncClipboard.Server.Core;
 
@@ -35,6 +36,8 @@ public class Web
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        services.AddServerProfileEnvProvider();
+
         // This is minimal api project, but Swagger use Microsoft.AspNetCore.Mvc.JsonOptions to show enum as string.
         // The real working converter is written in dto definition in form of attribute. 
         services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
@@ -45,6 +48,7 @@ public class Web
 
         MigrationHelper.EnsureDBMigrations(app.Services, app.Lifetime);
 
+        app.UseServerProfileEnvProvider();
         if (app.Environment.IsDevelopment() || useSwagger)
         {
             app.UseSwagger();
