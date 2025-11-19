@@ -12,6 +12,10 @@ public abstract class Profile
     public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
     public abstract ValueTask<long> GetSize(CancellationToken token);
     public abstract ValueTask<string> GetHash(CancellationToken token);
+    public virtual Task PreparePersistent(CancellationToken token) => Task.CompletedTask;
+    public virtual Task PrepareClipboard(CancellationToken token) => Task.CompletedTask;
+    public virtual Task PrepareSerialize() => Task.CompletedTask;
+
     protected abstract Task<bool> Same(Profile rhs, CancellationToken token);
 
     public async Task<string> GetProfileId(CancellationToken token)
@@ -73,5 +77,23 @@ public abstract class Profile
     public override int GetHashCode()
     {
         throw new NotImplementedException();
+    }
+
+    private static IProfileEnv? _profileWorkingDirProvider = null;
+
+    public static void SetGlobalProfileEnvProvider(IProfileEnv provider)
+    {
+        _profileWorkingDirProvider = provider;
+    }
+
+    protected async Task<string> CreateWorkingDirectory(CancellationToken token)
+    {
+        var provider = _profileWorkingDirProvider ?? throw new InvalidOperationException("Profile working directory provider is not set.");
+        var dirName = $"{Type}_{await GetHash(token)}";
+        var allProfileDir = await provider.GetWorkingDir(token);
+        var profileDir = Path.Combine(allProfileDir, dirName);
+        if (!Directory.Exists(profileDir))
+            Directory.CreateDirectory(profileDir);
+        return profileDir;
     }
 }

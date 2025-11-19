@@ -44,6 +44,37 @@ public class ClipboardImage : IClipboardImage
         }
     }
 
+    public Task<byte[]> SaveToBytes(CancellationToken token)
+    {
+        return Task.Run(async () =>
+        {
+            var hash = _imageBytes.ListHashCode();
+
+            lock (Cache)
+            {
+                if (hash == CacheHash && Cache.Length > 0)
+                {
+                    return Cache.ToArray();
+                }
+            }
+
+            using MagickImage magickImage = new(_imageBytes);
+            using var ms = new MemoryStream();
+            await magickImage.WriteAsync(ms, MagickFormat.Png, token);
+            var result = ms.ToArray();
+
+            lock (Cache)
+            {
+                CacheHash = hash;
+                Cache.SetLength(0);
+                Cache.Seek(0, SeekOrigin.Begin);
+                Cache.WriteAsync(result, 0, result.Length, token);
+                Cache.Seek(0, SeekOrigin.Begin);
+            }
+            return result;
+        }, token).WaitAsync(token);
+    }
+
     private static bool UseCache(int hash, string path)
     {
         lock (Cache)
