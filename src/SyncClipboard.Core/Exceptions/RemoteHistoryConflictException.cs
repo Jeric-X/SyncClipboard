@@ -1,6 +1,8 @@
+using SyncClipboard.Server.Core.Models;
+
 namespace SyncClipboard.Core.Exceptions;
 
-public class RemoteHistoryConflictException(string message, SyncClipboard.Server.Core.Models.HistoryRecordUpdateDto? server = null) : RemoteServerException(message)
+public class RemoteHistoryConflictException(string message, HistoryRecordUpdateDto? server = null) : RemoteServerException(message)
 {
-    public SyncClipboard.Server.Core.Models.HistoryRecordUpdateDto? Server { get; } = server;
+    public HistoryRecordUpdateDto? ServerRecord { get; } = server;
 }

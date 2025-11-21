@@ -101,7 +101,6 @@ public class HistoryService
         int pageSize,
         DateTime? before = null,
         DateTime? after = null,
-        string? cursorProfileId = null,
         ProfileTypeFilter types = ProfileTypeFilter.All,
         string? searchText = null,
         bool? starred = null,
@@ -157,17 +156,6 @@ public class HistoryService
 
         query = query.OrderByDescending(r => r.CreateTime)
                      .ThenByDescending(r => r.ID);
-
-        if (!string.IsNullOrEmpty(cursorProfileId) && Profile.ParseProfileId(cursorProfileId, out var cursorType, out var cursorHash))
-        {
-            int position = query
-                .AsEnumerable()
-                .Select((r, idx) => new { r.Hash, r.Type, Index = idx })
-                .Where(r => r.Hash == cursorHash && r.Type == cursorType)
-                .Select(x => x.Index)
-                .FirstOrDefault(-1);
-            query = query.Skip(position + 1);
-        }
 
         var skip = (long)(page - 1) * pageSize;
 
