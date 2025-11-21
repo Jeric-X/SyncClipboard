@@ -85,7 +85,7 @@ public abstract class Profile
         throw new NotImplementedException();
     }
 
-    public static IProfileEnv? ProfileEnv { get; private set;}
+    public static IProfileEnv? ProfileEnv { get; private set; }
 
     public static void SetGlobalProfileEnvProvider(IProfileEnv provider)
     {

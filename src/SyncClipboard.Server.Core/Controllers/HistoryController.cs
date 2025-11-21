@@ -59,8 +59,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // Query parameters:
     //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     //   before: Unix timestamp in milliseconds (UTC). Only records with CreateTime < before will be returned.
-    //   after:  Unix timestamp in milliseconds (UTC). Only records with CreateTime > after will be returned.
-    //   cursorProfileId: optional string cursor representing a profile id.
+    //   after:  Unix timestamp in milliseconds (UTC). Only records with CreateTime >= after will be returned.
     //   types: ProfileTypeFilter flag enum (default All). Example: types=Text,Image
     //   q: optional search text (matches Text field, case-insensitive)
     [HttpGet]
@@ -68,7 +67,6 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] long? before = null,
         [FromQuery] long? after = null,
-        [FromQuery] string? cursorProfileId = null,
         [FromQuery] ProfileTypeFilter types = ProfileTypeFilter.All,
         [FromQuery(Name = "q")] string? searchText = null,
         [FromQuery] bool? starred = null)
@@ -115,7 +113,6 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             PAGE_SIZE,
             beforeDt,
             afterDt,
-            cursorProfileId,
             types,
             searchText,
             starred);

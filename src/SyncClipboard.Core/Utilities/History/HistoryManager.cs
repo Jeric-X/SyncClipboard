@@ -259,11 +259,11 @@ public class HistoryManager
         HistoryRemoved?.Invoke(entity);
     }
 
-    public async Task<List<HistoryRecordDto>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
+    public async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
     {
-        var needUpdateToServer = new List<HistoryRecordDto>();
+        List<HistoryRecord> updatedRecords = [];
         if (remoteRecords.Any() == false)
-            return needUpdateToServer;
+            return updatedRecords;
 
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -278,6 +278,7 @@ public class HistoryManager
                 var newRecord = dto.ToHistoryRecord();
                 await _dbContext.HistoryRecords.AddAsync(newRecord, token);
                 changed = true;
+                updatedRecords.Add(newRecord);
                 HistoryAdded?.Invoke(newRecord);
             }
             else
@@ -286,13 +287,14 @@ public class HistoryManager
                 {
                     entity.ApplyFromRemote(dto);
                     changed = true;
+                    updatedRecords.Add(entity);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 else if (entity.IsLocalNewerThanRemote(dto))
                 {
                     entity.SyncStatus = HistorySyncStatus.NeedSync;
                     changed = true;
-                    needUpdateToServer.Add(entity.ToHistoryRecordDto());
+                    updatedRecords.Add(entity);
                     if (!entity.IsDeleted)
                     {
                         TriggleUpdateOrDeleteEvent(entity);
@@ -305,7 +307,7 @@ public class HistoryManager
         {
             await _dbContext.SaveChangesAsync(token);
         }
-        return needUpdateToServer;
+        return updatedRecords;
     }
 
     private void TriggleUpdateOrDeleteEvent(HistoryRecord record)
@@ -433,8 +435,7 @@ public class HistoryManager
         ProfileTypeFilter typeFilter,
         bool? started = null,
         DateTime? before = null,
-        string? cursorProfileId = null,
-        int size = int.MaxValue,
+        int minSize = int.MaxValue,
         string? searchText = null,
         CancellationToken token = default)
     {
@@ -475,17 +476,32 @@ public class HistoryManager
 
         query = query.OrderByDescending(r => r.Timestamp).ThenByDescending(r => r.ID);
 
-        if (!string.IsNullOrEmpty(cursorProfileId) && Profile.ParseProfileId(cursorProfileId, out var cursorType, out var cursorHash))
+        // 先取minSize条记录
+        var initialRecords = await query.Take(minSize).ToListAsync(token);
+
+        // 如果记录数量少于minSize，说明已经取完所有记录
+        if (initialRecords.Count < minSize)
         {
-            int position = query
-                .AsEnumerable()
-                .Select((r, idx) => new { r.Hash, r.Type, Index = idx })
-                .Where(r => r.Hash == cursorHash && r.Type == cursorType)
-                .Select(x => x.Index)
-                .FirstOrDefault(-1);
-            query = query.Skip(position + 1);
+            return initialRecords;
         }
-        return await query.Take(size).ToListAsync(token);
+
+        // 获取最后一条记录的时间戳和ID
+        var lastRecord = initialRecords[^1];
+        var lastTimestamp = lastRecord.Timestamp;
+        var lastId = lastRecord.ID;
+
+        // 查询是否还有其他记录具有相同的时间戳但ID更小（即在排序后位于更后面）
+        var additionalRecords = await query
+            .Where(r => r.Timestamp == lastTimestamp && r.ID < lastId)
+            .ToListAsync(token);
+
+        // 合并结果
+        if (additionalRecords.Count > 0)
+        {
+            initialRecords.AddRange(additionalRecords);
+        }
+
+        return initialRecords;
     }
 
     public async Task ClearAllLocalAsync(CancellationToken token = default)

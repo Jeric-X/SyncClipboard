@@ -6,17 +6,16 @@ using SyncClipboard.Core.Exceptions;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-/// <summary>
-/// 负责将本地需要同步的历史记录推送到服务器，并处理冲突回写。
-/// </summary>
 public class HistorySyncer
 {
     private readonly HistoryManager _historyManager;
     private readonly RemoteClipboardServerFactory _remoteServerFactory;
     private readonly ILogger _logger;
-    private const string BasePath = "api/history"; // Used only when adapter exposes raw HTTP; otherwise we rely on IHistorySyncServer
 
-    public HistorySyncer(HistoryManager historyManager, RemoteClipboardServerFactory remoteServerFactory, ILogger logger)
+    public HistorySyncer(
+        HistoryManager historyManager,
+        RemoteClipboardServerFactory remoteServerFactory,
+        ILogger logger)
     {
         _historyManager = historyManager;
         _remoteServerFactory = remoteServerFactory;
@@ -25,6 +24,64 @@ public class HistorySyncer
         // 订阅 HistoryManager 的事件：更新与删除（软删除）均可能需要同步
         _historyManager.HistoryUpdated += OnHistoryUpdated;
         _historyManager.HistoryRemoved += OnHistoryRemoved;
+    }
+
+    public async Task<List<HistoryRecord>> SyncRangeAsync(
+        DateTime? before,
+        DateTime? after,
+        ProfileTypeFilter types = ProfileTypeFilter.All,
+        string? searchText = null,
+        bool? starred = null,
+        CancellationToken token = default)
+    {
+        if (_remoteServerFactory.Current is not IHistorySyncServer remoteServer)
+        {
+            return [];
+        }
+
+        var remoteRecords = await FetchRemoteRangeAsync(
+            remoteServer,
+            before,
+            after,
+            types,
+            searchText,
+            starred,
+            pageLimit: int.MaxValue,
+            token);
+
+        var updatedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
+        await PushLocalRangeAsync(before, after, types, searchText, starred, token);
+        return updatedRecords;
+    }
+
+    public async Task<List<HistoryRecord>> SyncRangeAsync(
+        DateTime? before,
+        ProfileTypeFilter types = ProfileTypeFilter.All,
+        string? searchText = null,
+        bool? starred = null,
+        int pageLimit = int.MaxValue,
+        CancellationToken token = default)
+    {
+        if (_remoteServerFactory.Current is not IHistorySyncServer remoteServer)
+        {
+            return [];
+        }
+
+        var remoteRecords = await FetchRemoteRangeAsync(
+            remoteServer,
+            before,
+            after: null,
+            types,
+            searchText,
+            starred,
+            pageLimit,
+            token);
+
+        var updatedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        await DetectOrphanDataAsync(before, after: null, remoteRecords, types, searchText, starred, token);
+        await PushLocalRangeAsync(before, after: null, types, searchText, starred, token);
+        return updatedRecords;
     }
 
     /// <summary>
@@ -47,15 +104,13 @@ public class HistorySyncer
         var needSync = records.Where(r => r.SyncStatus == HistorySyncStatus.NeedSync).ToList();
         if (needSync.Count == 0)
         {
-            return; // 没有需要同步的
+            return;
         }
 
         foreach (var record in needSync)
         {
             await SyncOneAsync(record, token);
         }
-
-        // 每条记录在 SyncOneAsync 内已即时持久化，这里无需再次保存。
     }
 
     /// <summary>
@@ -83,26 +138,22 @@ public class HistorySyncer
                 LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero)
             };
             await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
-            // 成功：不再返回payload，直接标记为 Synced 并持久化
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
         catch (RemoteHistoryConflictException ex)
         {
-            // 409 冲突：使用服务器返回的记录覆盖本地
-            if (ex.Server != null)
+            if (ex.ServerRecord != null)
             {
-                record.ApplyFromServerUpdateDto(ex.Server);
+                record.ApplyFromServerUpdateDto(ex.ServerRecord);
                 await _historyManager.PersistServerSyncedAsync(record, token);
             }
             _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
         }
         catch (RemoteHistoryNotFoundException)
         {
-            // 404: 标记为仅本地
             record.SyncStatus = HistorySyncStatus.LocalOnly;
             await _historyManager.PersistServerSyncedAsync(record, token);
-            _logger.Write("HistorySyncer", $"服务器不存在记录，标记为 LocalOnly[{record.Hash}]");
         }
         catch (Exception ex)
         {
@@ -111,7 +162,158 @@ public class HistorySyncer
         }
     }
 
-    // 旧的 ApplyServerUpdate 已被统一的扩展方法替代
+    /// <summary>
+    /// 从服务器拉取指定时间范围内的所有历史记录（分页获取）
+    /// </summary>
+    private async Task<List<HistoryRecordDto>> FetchRemoteRangeAsync(
+        IHistorySyncServer remoteServer,
+        DateTime? before,
+        DateTime? after,
+        ProfileTypeFilter types,
+        string? searchText,
+        bool? starred,
+        int pageLimit,
+        CancellationToken token)
+    {
+        var allRecords = new List<HistoryRecordDto>();
+        var page = 1;
+
+        long? beforeMs = before.HasValue ? ToUnixMilliseconds(before.Value) : null;
+        long? afterMs = after.HasValue ? ToUnixMilliseconds(after.Value) : null;
+
+        try
+        {
+            while (page <= pageLimit && !token.IsCancellationRequested)
+            {
+                var pageRecords = await remoteServer.GetHistoryAsync(
+                    page: page,
+                    before: beforeMs,
+                    after: afterMs,
+                    types: types,
+                    searchText: searchText,
+                    starred: starred);
+
+                if (!pageRecords.Any())
+                {
+                    break;
+                }
+
+                allRecords.AddRange(pageRecords);
+                page++;
+
+                // 如果返回少于一页的数据，说明已到末尾
+                if (pageRecords.Count() < 50) // 假设页大小为50
+                {
+                    break;
+                }
+            }
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            _logger.Write("HistorySyncer", $"从服务器拉取范围数据失败: {ex.Message}");
+        }
+
+        return allRecords;
+    }
+
+    /// <summary>
+    /// 检测并处理孤儿数据：本地标记为 Synced/ServerOnly 但服务器不存在的记录
+    /// </summary>
+    private async Task DetectOrphanDataAsync(
+        DateTime? before,
+        DateTime? after,
+        List<HistoryRecordDto> remoteRecords,
+        ProfileTypeFilter types,
+        string? searchText,
+        bool? starred,
+        CancellationToken token)
+    {
+        try
+        {
+            // 获取本地该范围内标记为 Synced 或 ServerOnly 的记录
+            var localRecords = await _historyManager.GetHistoryAsync(
+                types,
+                starred,
+                before,
+                int.MaxValue,
+                searchText,
+                token);
+
+            var localSyncedOrServerOnly = localRecords
+                .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false
+                           && (!after.HasValue || r.Timestamp >= after.Value))
+                .ToList();
+
+            // 构建服务器记录的标识集合
+            var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
+
+            // 找出孤儿数据：本地认为已同步但服务器不存在
+            foreach (var localRecord in localSyncedOrServerOnly)
+            {
+                var localId = $"{localRecord.Type}-{localRecord.Hash}";
+                if (!remoteIds.Contains(localId))
+                {
+                    // 孤儿数据：服务器已删除，修改为 LocalOnly
+                    _logger.Write("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
+                    localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
+                    await _historyManager.PersistServerSyncedAsync(localRecord, token);
+                }
+            }
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            _logger.Write("HistorySyncer", $"孤儿数据检测失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 推送本地范围内需要同步的记录到服务器
+    /// </summary>
+    private async Task PushLocalRangeAsync(
+        DateTime? before,
+        DateTime? after,
+        ProfileTypeFilter types,
+        string? searchText,
+        bool? starred,
+        CancellationToken token)
+    {
+        try
+        {
+            var localRecords = await _historyManager.GetHistoryAsync(
+                types,
+                starred,
+                before,
+                int.MaxValue,
+                searchText,
+                token);
+
+            var needSync = localRecords
+                .Where(r => r.SyncStatus == HistorySyncStatus.NeedSync
+                           && (!after.HasValue || r.Timestamp >= after.Value))
+                .ToList();
+
+            foreach (var record in needSync)
+            {
+                if (token.IsCancellationRequested)
+                    break;
+
+                await SyncOneAsync(record, token);
+            }
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            _logger.Write("HistorySyncer", $"推送本地范围数据失败: {ex.Message}");
+        }
+    }
+
+    private static long ToUnixMilliseconds(DateTime time)
+    {
+        if (time.Kind == DateTimeKind.Unspecified)
+        {
+            time = DateTime.SpecifyKind(time, DateTimeKind.Utc);
+        }
+        return new DateTimeOffset(time).ToUnixTimeMilliseconds();
+    }
 
     private async void OnHistoryUpdated(HistoryRecord record)
     {

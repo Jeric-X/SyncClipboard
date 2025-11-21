@@ -160,7 +160,7 @@ public sealed class OfficialAdapter(
         DisconnectSignalR();
     }
 
-    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, string? cursorProfileId = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
+    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
     {
         try
         {
@@ -173,8 +173,6 @@ public sealed class OfficialAdapter(
                 queryParams.Add($"before={before.Value}");
             if (after.HasValue)
                 queryParams.Add($"after={after.Value}");
-            if (!string.IsNullOrWhiteSpace(cursorProfileId))
-                queryParams.Add($"cursorProfileId={HttpUtility.UrlEncode(cursorProfileId)}");
             if (types != ProfileTypeFilter.All)
                 queryParams.Add($"types={(int)types}");
             if (!string.IsNullOrWhiteSpace(searchText))
@@ -214,11 +212,11 @@ public sealed class OfficialAdapter(
             }
             if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
-                throw new SyncClipboard.Core.Exceptions.RemoteHistoryConflictException($"History update conflict {type}/{hash}", serverDto);
+                throw new RemoteHistoryConflictException($"History update conflict {type}/{hash}", serverDto);
             }
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                throw new SyncClipboard.Core.Exceptions.RemoteHistoryNotFoundException($"History record not found {type}/{hash}");
+                throw new RemoteHistoryNotFoundException($"History record not found {type}/{hash}");
             }
 
             response.EnsureSuccessStatusCode();

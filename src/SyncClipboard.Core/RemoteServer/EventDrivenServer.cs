@@ -170,13 +170,13 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         }
     }
 
-    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, string? cursorProfileId = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
+    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
     {
         if (_serverAdapter is not IHistorySyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
-        return syncServer.GetHistoryAsync(page, before, after, cursorProfileId, types, searchText, starred);
+        return syncServer.GetHistoryAsync(page, before, after, types, searchText, starred);
     }
 
     public Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
