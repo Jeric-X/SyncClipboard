@@ -22,7 +22,12 @@ public abstract class Profile
 
     public async Task<string> GetProfileId(CancellationToken token)
     {
-        return $"{Type}-{await GetHash(token)}";
+        return GetProfileId(Type, await GetHash(token));
+    }
+
+    public static string GetProfileId(ProfileType type, string hash)
+    {
+        return $"{type}-{hash}";
     }
 
     public static bool ParseProfileId(string profileId, out ProfileType type, [NotNullWhen(true)] out string? hash)
@@ -80,11 +85,11 @@ public abstract class Profile
         throw new NotImplementedException();
     }
 
-    private static IProfileEnv? _profileWorkingDirProvider = null;
+    public static IProfileEnv? ProfileEnv { get; private set;}
 
     public static void SetGlobalProfileEnvProvider(IProfileEnv provider)
     {
-        _profileWorkingDirProvider = provider;
+        ProfileEnv = provider;
     }
 
     protected async Task<string> GetWorkingDirectory(CancellationToken token)
@@ -97,9 +102,9 @@ public abstract class Profile
         return GetWorkingDirectory(Type, hash);
     }
 
-    protected static string GetWorkingDirectory(ProfileType type, string hash)
+    public static string GetWorkingDirectory(ProfileType type, string hash)
     {
-        var provider = _profileWorkingDirProvider ?? throw new InvalidOperationException("Profile working directory provider is not set.");
+        var provider = ProfileEnv ?? throw new InvalidOperationException("Profile working directory provider is not set.");
         var dirName = $"{type}_{hash}";
         var allProfileDir = provider.GetWorkingDir();
         var profileDir = Path.Combine(allProfileDir, dirName);
@@ -128,7 +133,7 @@ public abstract class Profile
     }
 
     [return: NotNullIfNotNull(nameof(persistentPath))]
-    protected static string? GetFullPath(string workingDir, string? persistentPath)
+    public static string? GetFullPath(string workingDir, string? persistentPath)
     {
         if (persistentPath is null)
         {

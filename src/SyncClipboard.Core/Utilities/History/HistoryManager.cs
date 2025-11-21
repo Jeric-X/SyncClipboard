@@ -286,21 +286,17 @@ public class HistoryManager
                 {
                     entity.ApplyFromRemote(dto);
                     changed = true;
-                    if (entity.IsDeleted)
-                    {
-                        HistoryRemoved?.Invoke(entity);
-                    }
-                    else
-                    {
-                        HistoryUpdated?.Invoke(entity);
-                    }
+                    TriggleUpdateOrDeleteEvent(entity);
                 }
                 else if (entity.IsLocalNewerThanRemote(dto))
                 {
                     entity.SyncStatus = HistorySyncStatus.NeedSync;
                     changed = true;
-                    HistoryUpdated?.Invoke(entity);
                     needUpdateToServer.Add(entity.ToHistoryRecordDto());
+                    if (!entity.IsDeleted)
+                    {
+                        TriggleUpdateOrDeleteEvent(entity);
+                    }
                 }
             }
         }
@@ -310,6 +306,18 @@ public class HistoryManager
             await _dbContext.SaveChangesAsync(token);
         }
         return needUpdateToServer;
+    }
+
+    private void TriggleUpdateOrDeleteEvent(HistoryRecord record)
+    {
+        if (record.IsDeleted)
+        {
+            HistoryRemoved?.Invoke(record);
+        }
+        else
+        {
+            HistoryUpdated?.Invoke(record);
+        }
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)

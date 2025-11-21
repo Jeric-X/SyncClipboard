@@ -13,7 +13,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private string text = record.Text;
     public ProfileType Type { get; set; } = record.Type;
     [ObservableProperty]
-    private string[] filePath = record.FilePath;
+    private string[] filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
     public string Hash { get; set; } = record.Hash;
     public long Size { get; set; } = record.Size;
     [ObservableProperty]
@@ -81,7 +81,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     public void Update(HistoryRecordVM record)
     {
         Text = record.Text;
-        FilePath = record.FilePath;
+        FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         Size = record.Size;
         Timestamp = record.Timestamp;
         Stared = record.Stared;
@@ -102,7 +102,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
             return false;
         }
 
-        return Hash == other.Hash;
+        return string.Equals(Hash, other.Hash, StringComparison.OrdinalIgnoreCase);
     }
 
     public override int GetHashCode()
@@ -122,6 +122,23 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     public static bool operator !=(HistoryRecordVM? left, HistoryRecordVM? right)
     {
         return !(left == right);
+    }
+
+    private static string[] RestoreFilePath(string[]? persistentPaths, ProfileType type, string hash)
+    {
+        if (persistentPaths is null || persistentPaths.Length == 0)
+        {
+            return [];
+        }
+
+        var workingDir = Profile.GetWorkingDirectory(type, hash);
+        var restoredPaths = new string[persistentPaths.Length];
+        for (int i = 0; i < persistentPaths.Length; i++)
+        {
+            restoredPaths[i] = Profile.GetFullPath(workingDir, persistentPaths[i]);
+        }
+
+        return restoredPaths;
     }
 
     private static double ComputePercent(HttpDownloadProgress p, ulong? fallbackTotal)

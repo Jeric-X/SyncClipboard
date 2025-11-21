@@ -558,16 +558,16 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        await Refresh();
-
-        historyManager.HistoryAdded += RecordUpdated;
-        historyManager.HistoryUpdated += RecordUpdated;
+        historyManager.HistoryAdded += record => RecordUpdated(record, false);
+        historyManager.HistoryUpdated += record => RecordUpdated(record, true);
         historyManager.HistoryRemoved += record => allHistoryItems.Remove(new HistoryRecordVM(record));
+
+        await Refresh();
 
         remoteServerFactory.CurrentServerChanged += (sender, e) => OnRemoteServerChanged();
     }
 
-    private void RecordUpdated(HistoryRecord record)
+    private void RecordUpdated(HistoryRecord record, bool onlyUpdate)
     {
         var newRecord = new HistoryRecordVM(record);
         var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
@@ -580,12 +580,17 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        if (oldRecord == null)
+        if (oldRecord != null)
         {
-            InsertHistoryInOrder(record);
+            oldRecord.Update(newRecord);
             return;
         }
-        oldRecord.Update(newRecord);
+
+        if (onlyUpdate)
+        {
+            return;
+        }
+        InsertHistoryInOrder(record);
     }
 
     // 单条记录同步逻辑已迁移到 HistoryManager 内部，VM 只关心 UI 更新
@@ -649,15 +654,6 @@ public partial class HistoryViewModel : ObservableObject
         var currentServer = remoteServerFactory.Current;
         historySyncServer = _enableSyncHistory ? currentServer as IHistorySyncServer : null;
         _ = Refresh();
-
-        if (historySyncServer != null)
-        {
-            logger.Write("[HISTORY_VIEW_MODEL] Remote server changed, historySyncServer is now available");
-        }
-        else
-        {
-            logger.Write("[HISTORY_VIEW_MODEL] Remote server changed, historySyncServer is not available");
-        }
     }
 
     private async Task LoadRemotePage()

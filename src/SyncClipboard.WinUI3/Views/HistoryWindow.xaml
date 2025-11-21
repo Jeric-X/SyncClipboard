@@ -158,12 +158,6 @@
                                 <Border Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasError), Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ErrorMessage, Mode=OneWay}">
                                     <FontIcon Glyph="&#xE783;" />
                                 </Border>
-                                <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE8C8;" />
-                                </Button>
-                                <Button Click="PasteButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE77F;" FontSize="12" />
-                                </Button>
                                 <Button Click="DownloadButtonClicked"
                                         IsTabStop="False"
                                         Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
@@ -196,6 +190,12 @@
                                         IsTabStop="False"
                                         Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE711;" />
+                                </Button>
+                                <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE8C8;" />
+                                </Button>
+                                <Button Click="PasteButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE77F;" FontSize="12" />
                                 </Button>
                                 <Button Click="StarButtonClicked" IsTabStop="False">
                                     <FontIcon Glyph="{x:Bind vc:ConvertMethod.ToStarIcon(Stared), Mode=OneWay}" FontSize="12" />
