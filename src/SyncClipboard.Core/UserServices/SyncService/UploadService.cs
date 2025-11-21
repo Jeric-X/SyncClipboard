@@ -333,7 +333,7 @@ public class UploadService : ClipboardHander
 
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
         }
-        var status = profile.GetDisplayText();
+        var status = profile.ShortDisplayText;
         _notificationManager.ShowText(I18n.Strings.FailedToUpload + status, errMessage);
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
         _logger.Write(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
@@ -351,7 +351,7 @@ public class UploadService : ClipboardHander
             {
                 var notification = _notificationManager.Shared;
                 notification.Title = I18n.Strings.Uploaded;
-                notification.Message = profile.GetDisplayText();
+                notification.Message = profile.ShortDisplayText;
                 notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
             }
         }

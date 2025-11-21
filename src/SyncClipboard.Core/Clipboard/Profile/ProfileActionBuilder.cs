@@ -8,44 +8,33 @@ namespace SyncClipboard.Core.Clipboard;
 
 public partial class ProfileActionBuilder(LocalClipboardSetter setter)
 {
-    public List<MenuItem> Build(Profile profile)
+    public async Task<List<MenuItem>> Build(Profile profile, CancellationToken token)
     {
         List<MenuItem> actions =
         [
             new MenuItem(Strings.Copy, () => { _ = setter.Set(profile, CancellationToken.None); }),
         ];
 
-        switch (profile)
+        var localInfo = await profile.Localize(token);
+
+        if (HasUrl(localInfo.Text, out var url) && url is not null)
         {
-            case TextProfile textProfile:
-                if (HasUrl(textProfile.Text, out var url) && url is not null)
-                {
-                    actions.Add(new MenuItem(Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url)));
-                }
-                break;
+            actions.Add(new MenuItem(Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url)));
+        }
 
-            case GroupProfile groupProfile:
-                {
-                    string? folder = null;
-                    if (groupProfile.Files.Length > 0)
-                    {
-                        folder = Path.GetDirectoryName(groupProfile.Files[0]);
-                    }
-                    if (!string.IsNullOrEmpty(folder))
-                    {
-                        var openFolder = folder!;
-                        actions.Add(new MenuItem(Strings.OpenFolder, () => Sys.OpenFolderInFileManager(openFolder)));
-                    }
-                }
-                break;
+        if (localInfo.FilePaths.Length > 0)
+        {
+            string? folder = Path.GetDirectoryName(localInfo.FilePaths[0]);
+            if (!string.IsNullOrEmpty(folder))
+            {
+                actions.Add(new MenuItem(Strings.OpenFolder, () => Sys.OpenFolderInFileManager(folder)));
+            }
 
-            case FileProfile fileProfile:
-                {
-                    var fullPath = fileProfile.FullPath!;
-                    actions.Add(new MenuItem(Strings.OpenFolder, () => Sys.ShowPathInFileManager(fullPath)));
-                    actions.Add(new MenuItem(Strings.Open, () => Sys.OpenWithDefaultApp(fullPath)));
-                }
-                break;
+            if (localInfo.FilePaths.Length == 1)
+            {
+                var fullPath = localInfo.FilePaths[0];
+                actions.Add(new MenuItem(Strings.Open, () => Sys.OpenWithDefaultApp(fullPath)));
+            }
         }
 
         return actions;

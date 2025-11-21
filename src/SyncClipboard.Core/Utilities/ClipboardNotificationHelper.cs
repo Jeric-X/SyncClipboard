@@ -6,7 +6,7 @@ namespace SyncClipboard.Core.Utilities;
 
 public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")] INotification notification, ProfileActionBuilder profileActionBuilder)
 {
-    public void Notify(Profile profile)
+    public async void Notify(Profile profile, CancellationToken token = default)
     {
         ResetNotification(notification);
 
@@ -24,8 +24,8 @@ public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")
             notification.Image = new Uri(imageProfile.FullPath);
         }
 
-        notification.Message = profile.GetDisplayText();
-        var actions = profileActionBuilder.Build(profile);
+        notification.Message = profile.ShortDisplayText;
+        var actions = await profileActionBuilder.Build(profile, token);
         notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.Show();
     }

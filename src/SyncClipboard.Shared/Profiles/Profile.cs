@@ -1,27 +1,24 @@
 using System.Diagnostics.CodeAnalysis;
+using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Shared.Profiles;
 
 public abstract class Profile
 {
     public abstract ProfileType Type { get; }
-    public abstract string Text { get; }
-    public abstract string GetDisplayText();
-    public abstract ValueTask<string> GetLogId(CancellationToken token);
+    public abstract string DisplayText { get; }
+    public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
     public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
     public abstract ValueTask<long> GetSize(CancellationToken token);
     public abstract ValueTask<string> GetHash(CancellationToken token);
-    public virtual Task PreparePersistent(CancellationToken token) => Task.CompletedTask;
-    public virtual Task PrepareClipboard(CancellationToken token) => Task.CompletedTask;
+    public abstract Task<ProfilePersistentInfo> Persistentize(CancellationToken token);
+    public abstract Task<ProfileLocalInfo> Localize(CancellationToken token);
 
-    public virtual bool HasTransferData => false;
-    public virtual string? TransferDataPath { get; protected set; } = null;
-    public virtual Task<string?> PrepareTransferData(CancellationToken token) => Task.FromResult<string?>(null);
-    public virtual Task SetTranseferData(string path, bool verify, CancellationToken token) => Task.CompletedTask;
+    public abstract bool HasTransferData { get; }
+    public abstract Task<string?> PrepareTransferData(CancellationToken token);
+    public abstract Task SetTranseferData(string path, bool verify, CancellationToken token);
     public abstract bool NeedsTransferData([NotNullWhen(true)] out string? dataPath);
-
-    protected abstract Task<bool> Same(Profile rhs, CancellationToken token);
 
     public async Task<string> GetProfileId(CancellationToken token)
     {
@@ -49,29 +46,28 @@ public abstract class Profile
         return true;
     }
 
-    public static Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken token)
+    public static async Task<bool> Same(Profile? lhs, Profile? rhs, CancellationToken token)
     {
         if (ReferenceEquals(lhs, rhs))
         {
-            return Task.FromResult(true);
+            return true;
         }
-
         if (lhs is null)
         {
-            return Task.FromResult(rhs is null);
+            return rhs is null;
         }
-
         if (rhs is null)
         {
-            return Task.FromResult(false);
+            return false;
         }
-
         if (lhs.GetType() != rhs.GetType())
         {
-            return Task.FromResult(false);
+            return false;
         }
 
-        return lhs.Same(rhs, token);
+        var lHash = await lhs.GetHash(token);
+        var rHash = await rhs.GetHash(token);
+        return string.Equals(lHash, rHash, StringComparison.OrdinalIgnoreCase);
     }
 
     public override bool Equals(object? obj)
@@ -91,10 +87,20 @@ public abstract class Profile
         _profileWorkingDirProvider = provider;
     }
 
-    protected async Task<string> CreateWorkingDirectory(CancellationToken token)
+    protected async Task<string> GetWorkingDirectory(CancellationToken token)
+    {
+        return GetWorkingDirectory(await GetHash(token));
+    }
+
+    protected string GetWorkingDirectory(string hash)
+    {
+        return GetWorkingDirectory(Type, hash);
+    }
+
+    protected static string GetWorkingDirectory(ProfileType type, string hash)
     {
         var provider = _profileWorkingDirProvider ?? throw new InvalidOperationException("Profile working directory provider is not set.");
-        var dirName = $"{Type}_{await GetHash(token)}";
+        var dirName = $"{type}_{hash}";
         var allProfileDir = provider.GetWorkingDir();
         var profileDir = Path.Combine(allProfileDir, dirName);
         if (!Directory.Exists(profileDir))
@@ -102,14 +108,56 @@ public abstract class Profile
         return profileDir;
     }
 
-    protected string CreateWorkingDirectory(string hash)
+    [return: NotNullIfNotNull(nameof(fullPath))]
+    protected static string? GetPersistentPath(string workingDir, string? fullPath)
     {
-        var provider = _profileWorkingDirProvider ?? throw new InvalidOperationException("Profile working directory provider is not set.");
-        var dirName = $"{Type}_{hash}";
-        var allProfileDir = provider.GetWorkingDir();
-        var profileDir = Path.Combine(allProfileDir, dirName);
-        if (!Directory.Exists(profileDir))
-            Directory.CreateDirectory(profileDir);
-        return profileDir;
+        if (fullPath is null)
+        {
+            return null;
+        }
+
+        var relativePath = Path.GetRelativePath(workingDir, fullPath);
+
+        // 如果相对路径以..开头，说明fullPath不在workingDir的子目录中，返回完整路径
+        if (relativePath.StartsWith(".."))
+        {
+            return fullPath;
+        }
+
+        return relativePath;
+    }
+
+    [return: NotNullIfNotNull(nameof(persistentPath))]
+    protected static string? GetFullPath(string workingDir, string? persistentPath)
+    {
+        if (persistentPath is null)
+        {
+            return null;
+        }
+
+        if (Path.IsPathRooted(persistentPath))
+        {
+            return persistentPath;
+        }
+        return Path.Combine(workingDir, persistentPath);
+    }
+
+    public static Profile Create(ProfilePersistentInfo persistentEntity)
+    {
+        var workingDir = GetWorkingDirectory(persistentEntity.Type, persistentEntity.Hash);
+        var entity = persistentEntity with
+        {
+            TransferDataFile = GetFullPath(workingDir, persistentEntity.TransferDataFile),
+            FilePaths = persistentEntity.FilePaths.Select(path => GetFullPath(workingDir, path)).ToArray(),
+        };
+
+        return persistentEntity.Type switch
+        {
+            ProfileType.Text => new TextProfile(entity),
+            ProfileType.File => new FileProfile(entity),
+            ProfileType.Image => new ImageProfile(entity),
+            ProfileType.Group => new GroupProfile(entity),
+            _ => throw new NotSupportedException($"Unsupported profile type from Persistent: {entity.Type}"),
+        };
     }
 }

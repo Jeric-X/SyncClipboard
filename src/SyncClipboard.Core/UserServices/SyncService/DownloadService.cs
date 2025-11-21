@@ -461,10 +461,10 @@ public class DownloadService : Service
         {
             await _localClipboardSetter.Set(remoteProfile, cancelToken, false);
             _localProfileCache = remoteProfile;
-            _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + await remoteProfile.GetLogId(cancelToken));
+            _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + remoteProfile.ShortDisplayText);
             if (_syncConfig.NotifyOnDownloaded)
             {
-                _clipboardNotificationHelper.Notify(remoteProfile);
+                _clipboardNotificationHelper.Notify(remoteProfile, cancelToken);
             }
             await Task.Delay(TimeSpan.FromMilliseconds(50), cancelToken);   // 设置本地剪贴板可能有延迟，延迟发送事件
         }
@@ -472,8 +472,8 @@ public class DownloadService : Service
 
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
     {
-        _logger.Write($"Downloading: {await profile.GetLogId(cancelToken)}");
-        _toastReporter = new ProgressToastReporter(profile.Text, I18n.Strings.DownloadingFile, _notificationManager);
+        _logger.Write($"Downloading: {profile.ShortDisplayText}");
+        _toastReporter = new ProgressToastReporter(profile.ShortDisplayText, I18n.Strings.DownloadingFile, _notificationManager);
 
         var remoteServer = _remoteClipboardServerFactory.Current;
         await remoteServer.DownloadProfileDataAsync(profile, _toastReporter, cancelToken);

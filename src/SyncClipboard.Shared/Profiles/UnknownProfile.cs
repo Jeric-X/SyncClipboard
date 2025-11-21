@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Shared.Profiles;
 
@@ -6,22 +7,11 @@ public class UnknownProfile : Profile
 {
     public override ProfileType Type => ProfileType.Unknown;
 
-    public override string Text { get; } = "Unknown Clipboard";
+    public override bool HasTransferData => false;
 
-    public override ValueTask<string> GetLogId(CancellationToken token)
-    {
-        return ValueTask.FromResult(Text);
-    }
+    public override string ShortDisplayText => "Do not support this type of clipboard";
 
-    protected override Task<bool> Same(Profile rhs, CancellationToken _)
-    {
-        return Task.FromResult(rhs is UnknownProfile);
-    }
-
-    public override string GetDisplayText()
-    {
-        return "Do not support this type of clipboard";
-    }
+    public override string DisplayText => "Do not support this type of clipboard";
 
     public override Task<ClipboardProfileDTO> ToDto(CancellationToken token)
     {
@@ -35,7 +25,7 @@ public class UnknownProfile : Profile
 
     public override ValueTask<string> GetHash(CancellationToken token)
     {
-        throw new NotImplementedException();
+        return ValueTask.FromResult("UNKNOWN_PROFILE_HASH");
     }
 
     public override ValueTask<long> GetSize(CancellationToken token)
@@ -47,5 +37,25 @@ public class UnknownProfile : Profile
     {
         dataPath = null;
         return false;
+    }
+
+    public override Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task<ProfileLocalInfo> Localize(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task<string?> PrepareTransferData(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task SetTranseferData(string path, bool verify, CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 }

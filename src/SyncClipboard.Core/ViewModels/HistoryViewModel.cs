@@ -900,7 +900,7 @@ public partial class HistoryViewModel : ObservableObject
             await historySyncServer.DownloadHistoryDataAsync(profileId, localDataPath, progress, token);
             await profile.SetTranseferData(localDataPath, true, token);
 
-            record.SetFilePath(profile);
+            record.SetFilePath(await profile.Persistentize(token));
             record.IsLocalFileReady = true;
 
             await historyManager.UpdateHistory(record, CancellationToken.None);
@@ -961,7 +961,7 @@ public partial class HistoryViewModel : ObservableObject
             ];
         }
 
-        return profileActionBuilder.Build(profile);
+        return await profileActionBuilder.Build(profile, CancellationToken.None);
     }
 
     [RelayCommand]
