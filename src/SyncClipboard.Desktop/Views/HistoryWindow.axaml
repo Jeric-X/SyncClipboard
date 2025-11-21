@@ -197,12 +197,6 @@
                                              FontFamily="{StaticResource SymbolThemeFontFamily}"
                                              ToolTip.Tip="{Binding ErrorMessage}"
                                              IsVisible="{Binding HasError}" />
-                                <Button Click="CopyButtonClicked" IsVisible="{Binding IsLocalFileReady}">
-                                    <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                </Button>
-                                <Button Click="PasteButtonClicked" IsVisible="{Binding IsLocalFileReady}">
-                                    <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                </Button>
                                 <!-- Download / Upload cluster (left side grouping) -->
                                 <StackPanel Orientation="Horizontal" Spacing="2">
                                     <!-- Download button -->
@@ -236,6 +230,12 @@
                                         <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                     </Button>
                                 </StackPanel>
+                                <Button Click="CopyButtonClicked" IsVisible="{Binding IsLocalFileReady}">
+                                    <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                                <Button Click="PasteButtonClicked" IsVisible="{Binding IsLocalFileReady}">
+                                    <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
                                 <Button Command="{Binding #_HistoryWindow.ViewModel.ChangeStarStatusCommand}" CommandParameter="{Binding .}">
                                     <ui:FontIcon Glyph="{Binding Stared, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>

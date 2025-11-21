@@ -2,6 +2,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Exceptions;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -86,7 +87,7 @@ public class HistorySyncer
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
-        catch (SyncClipboard.Core.Exceptions.RemoteHistoryConflictException ex)
+        catch (RemoteHistoryConflictException ex)
         {
             // 409 冲突：使用服务器返回的记录覆盖本地
             if (ex.Server != null)
@@ -96,7 +97,7 @@ public class HistorySyncer
             }
             _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
         }
-        catch (SyncClipboard.Core.Exceptions.RemoteHistoryNotFoundException)
+        catch (RemoteHistoryNotFoundException)
         {
             // 404: 标记为仅本地
             record.SyncStatus = HistorySyncStatus.LocalOnly;
