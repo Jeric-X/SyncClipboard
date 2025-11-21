@@ -1,3 +1,4 @@
+using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared.Profiles;
@@ -8,6 +9,10 @@ public class ImageProfile : FileProfile
 
     private IClipboardImage? _clipboardImage;
     private byte[]? _rawImageBytes;
+
+    public ImageProfile(ProfilePersistentInfo entity) : base(entity)
+    {
+    }
 
     public ImageProfile(string? fullPath, string? fileName = null, string? hash = null)
         : base(fullPath, fileName, hash)
@@ -79,13 +84,13 @@ public class ImageProfile : FileProfile
                 throw new InvalidOperationException("No image data available to prepare persistent storage.");
             return;
         }
-        var dir = await CreateWorkingDirectory(token);
+        var dir = await GetWorkingDirectory(token);
         var filePath = Path.Combine(dir, FileName);
         await File.WriteAllBytesAsync(filePath, rawBytes, token);
         FullPath = filePath;
     }
 
-    public override Task PreparePersistent(CancellationToken token)
+    private Task PreparePersistent(CancellationToken token)
     {
         if (FullPath is not null && File.Exists(FullPath))
         {
@@ -104,13 +109,28 @@ public class ImageProfile : FileProfile
         return await base.PrepareTransferData(token);
     }
 
-    public override Task PrepareClipboard(CancellationToken token)
-    {
-        return PreparePersistent(token);
-    }
-
     private static string CreateImageFileName()
     {
-        return $"Image_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{Path.GetRandomFileName()}.png";
+        return $"Image_{Utility.CreateTimeBasedFileName()}.png";
+    }
+
+    public override async Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    {
+        if (FullPath is null)
+        {
+            await PreparePersistent(token);
+        }
+
+        return await base.Persistentize(token);
+    }
+
+    public override async Task<ProfileLocalInfo> Localize(CancellationToken token)
+    {
+        if (FullPath is null)
+        {
+            await PreparePersistent(token);
+        }
+
+        return await base.Localize(token);
     }
 }

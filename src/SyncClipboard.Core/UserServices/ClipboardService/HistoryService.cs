@@ -24,7 +24,7 @@ public class HistoryService(HistoryManager historyManager, ConfigManager configM
             return;
         }
 
-        if (profile is TextProfile textProfile && string.IsNullOrEmpty(textProfile.Text))
+        if (profile is TextProfile textProfile && string.IsNullOrEmpty(textProfile.DisplayText))
         {
             return;
         }

@@ -25,53 +25,43 @@ public static class ProfileExtentions
         return path;
     }
 
-    public static ClipboardMetaInfomation GetMetaInfomation(this Profile profile)
+    public static ClipboardMetaInfomation GetMetaInfomation(this ProfileLocalInfo info)
     {
-        return profile switch
+        return new ClipboardMetaInfomation
         {
-            ImageProfile ip => new() { Files = ip.FullPath is null ? [] : [ip.FullPath], Text = ip.Text, OriginalType = ClipboardMetaInfomation.ImageType },
-            GroupProfile gp => new() { Files = gp.Files },
-            FileProfile fp => new() { Files = fp.FullPath is null ? [] : [fp.FullPath], Text = fp.Text },
-            TextProfile tp => new() { Text = tp.Text },
-            _ => new ClipboardMetaInfomation(),
+            Files = info.FilePaths,
+            Text = info.Text,
         };
     }
 
     public static Profile ToProfile(this HistoryRecord historyRecord)
     {
-        bool ready = historyRecord.IsLocalFileReady;
-        return historyRecord.Type switch
+        return Profile.Create(new ProfilePersistentInfo
         {
-            ProfileType.Text => new TextProfile(historyRecord.Text),
-            ProfileType.File => new FileProfile(ready ? historyRecord.FilePath[0] : null, historyRecord.Text, historyRecord.Hash),
-            ProfileType.Image => new ImageProfile(ready ? historyRecord.FilePath[0] : null, historyRecord.Text, historyRecord.Hash),
-            ProfileType.Group => ready ? new GroupProfile(historyRecord.FilePath, historyRecord.Hash) : new GroupProfile(historyRecord.Hash),
-            _ => new UnknownProfile(),
-        };
+            Text = historyRecord.Text,
+            Type = historyRecord.Type,
+            Size = historyRecord.Size,
+            Hash = historyRecord.Hash,
+            FilePaths = historyRecord.FilePath,
+        });
     }
 
-    public static void SetFilePath(this HistoryRecord record, Profile profile)
+    public static void SetFilePath(this HistoryRecord record, ProfilePersistentInfo profileEntity)
     {
-        record.FilePath = profile switch
-        {
-            ImageProfile ip when ip.FullPath is not null => [ip.FullPath],
-            FileProfile fp when fp.FullPath is not null => [fp.FullPath],
-            GroupProfile gp when gp.Files is not null => gp.Files,
-            _ => [],
-        };
+        record.FilePath = profileEntity.FilePaths;
     }
 
     public static async Task<HistoryRecord> ToHistoryRecord(this Profile profile, CancellationToken token)
     {
-        await profile.PreparePersistent(token);
+        var profileEntity = await profile.Persistentize(token);
         var record = new HistoryRecord
         {
-            Text = profile.Text,
-            Type = profile.Type,
-            Size = await profile.GetSize(token),
-            Hash = await profile.GetHash(token),
+            Text = profileEntity.Text,
+            Type = profileEntity.Type,
+            Size = profileEntity.Size,
+            Hash = profileEntity.Hash,
         };
-        record.SetFilePath(profile);
+        record.SetFilePath(profileEntity);
         return record;
     }
 }

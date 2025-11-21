@@ -19,8 +19,8 @@ public class LocalClipboardSetter(IServiceProvider serviceProvider, IThreadDispa
 
         try
         {
-            await profile.PrepareClipboard(ctk);
-            await dispather.RunOnMainThreadAsync(() => setter.SetLocalClipboard(profile.GetMetaInfomation(), ctk));
+            var localInfo = await profile.Localize(ctk);
+            await dispather.RunOnMainThreadAsync(() => setter.SetLocalClipboard(localInfo.GetMetaInfomation(), ctk));
         }
         finally
         {
