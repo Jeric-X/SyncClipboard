@@ -29,12 +29,12 @@
         <ItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="mk:Key">
                 <ToggleButton VerticalAlignment="Stretch"
-                              BorderThickness="2"
-                              BorderBrush="{ThemeResource KeybordButtonBorderColor}"
                               Background="{ThemeResource KeybordButtonBackgoundColor}"
-                              Loaded="ToggleButton_Loaded"
+                              BorderBrush="{ThemeResource KeybordButtonBorderColor}"
+                              BorderThickness="2"
+                              Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}"
                               IsHitTestVisible="False"
-                              Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}" />
+                              Loaded="ToggleButton_Loaded" />
             </DataTemplate>
         </ItemsRepeater.ItemTemplate>
     </ItemsRepeater>

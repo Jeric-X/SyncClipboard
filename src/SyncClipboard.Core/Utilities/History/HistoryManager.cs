@@ -261,53 +261,48 @@ public class HistoryManager
 
     public async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
     {
-        List<HistoryRecord> updatedRecords = [];
+        List<HistoryRecord> addedRecords = [];
         if (remoteRecords.Any() == false)
-            return updatedRecords;
+            return addedRecords;
 
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-
-        bool changed = false;
 
         foreach (var dto in remoteRecords)
         {
             var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == dto.Type && r.Hash == dto.Hash);
             if (entity == null)
             {
-                var newRecord = dto.ToHistoryRecord();
-                await _dbContext.HistoryRecords.AddAsync(newRecord, token);
-                changed = true;
-                updatedRecords.Add(newRecord);
-                HistoryAdded?.Invoke(newRecord);
+                if (dto.IsDeleted == false)
+                {
+                    var newRecord = dto.ToHistoryRecord();
+                    await _dbContext.HistoryRecords.AddAsync(newRecord, token);
+                    HistoryAdded?.Invoke(newRecord);
+                    addedRecords.Add(newRecord);
+                }
             }
             else
             {
                 if (entity.ShouldUpdateFromRemote(dto))
                 {
-                    entity.ApplyFromRemote(dto);
-                    changed = true;
-                    updatedRecords.Add(entity);
-                    TriggleUpdateOrDeleteEvent(entity);
+                    entity.ApplyChangesFromRemote(dto);
+                    entity.SyncStatus = HistorySyncStatus.Synced;
                 }
                 else if (entity.IsLocalNewerThanRemote(dto))
                 {
                     entity.SyncStatus = HistorySyncStatus.NeedSync;
-                    changed = true;
-                    updatedRecords.Add(entity);
-                    if (!entity.IsDeleted)
-                    {
-                        TriggleUpdateOrDeleteEvent(entity);
-                    }
                 }
+                else
+                {
+                    entity.SyncStatus = HistorySyncStatus.Synced;
+                }
+                entity.ApplyBasicFromRemote(dto);
+                TriggleUpdateOrDeleteEvent(entity);
             }
         }
 
-        if (changed)
-        {
-            await _dbContext.SaveChangesAsync(token);
-        }
-        return updatedRecords;
+        await _dbContext.SaveChangesAsync(token);
+        return addedRecords;
     }
 
     private void TriggleUpdateOrDeleteEvent(HistoryRecord record)
@@ -462,7 +457,7 @@ public class HistoryManager
         if (before.HasValue)
         {
             var beforeUtc = before.Value;
-            query = query.Where(r => r.Timestamp <= beforeUtc);
+            query = query.Where(r => r.Timestamp < beforeUtc);
         }
         if (started.HasValue)
         {
