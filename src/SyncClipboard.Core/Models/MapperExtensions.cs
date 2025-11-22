@@ -27,17 +27,20 @@ public static class MapperExtensions
         };
     }
 
-    public static void ApplyFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
+    public static void ApplyChangesFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
-        entity.Text = dto.Text;
         entity.Stared = dto.Starred;
         entity.Pinned = dto.Pinned;
-        entity.Timestamp = dto.CreateTime.UtcDateTime;
-        entity.LastModified = dto.LastModified.UtcDateTime;
         entity.Version = dto.Version;
         entity.IsDeleted = dto.IsDeleted;
+    }
+
+    public static void ApplyBasicFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
+    {
+        entity.Text = dto.Text;
+        entity.Timestamp = dto.CreateTime.UtcDateTime;
+        entity.LastModified = dto.LastModified.UtcDateTime;
         entity.Size = dto.Size;
-        entity.SyncStatus = HistorySyncStatus.Synced;
     }
 
     public static bool ShouldUpdateFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
@@ -104,6 +107,47 @@ public static class MapperExtensions
         form.Add(new StringContent(dto.IsDeleted ? "true" : "false"), "IsDeleted");
         form.Add(new StringContent(dto.Text), "Text");
         form.Add(new StringContent(dto.Size.ToString(CultureInfo.InvariantCulture)), "Size");
+    }
+
+    
+    public static ClipboardMetaInfomation GetMetaInfomation(this ProfileLocalInfo info)
+    {
+        return new ClipboardMetaInfomation
+        {
+            Files = info.FilePaths,
+            Text = info.Text,
+        };
+    }
+
+    public static Profile ToProfile(this HistoryRecord historyRecord)
+    {
+        return Profile.Create(new ProfilePersistentInfo
+        {
+            Text = historyRecord.Text,
+            Type = historyRecord.Type,
+            Size = historyRecord.Size,
+            Hash = historyRecord.Hash,
+            FilePaths = historyRecord.FilePath,
+        });
+    }
+
+    public static void SetFilePath(this HistoryRecord record, ProfilePersistentInfo profileEntity)
+    {
+        record.FilePath = profileEntity.FilePaths;
+    }
+
+    public static async Task<HistoryRecord> ToHistoryRecord(this Profile profile, CancellationToken token)
+    {
+        var profileEntity = await profile.Persistentize(token);
+        var record = new HistoryRecord
+        {
+            Text = profileEntity.Text,
+            Type = profileEntity.Type,
+            Size = profileEntity.Size,
+            Hash = profileEntity.Hash,
+        };
+        record.SetFilePath(profileEntity);
+        return record;
     }
 }
 

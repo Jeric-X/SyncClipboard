@@ -90,13 +90,22 @@ public class ImageProfile : FileProfile
         FullPath = filePath;
     }
 
-    private Task PreparePersistent(CancellationToken token)
+    private readonly SemaphoreSlim _persistentLock = new(1, 1);
+    private async Task PreparePersistent(CancellationToken token)
     {
-        if (FullPath is not null && File.Exists(FullPath))
+        await _persistentLock.WaitAsync(token);
+        try
         {
-            return Task.CompletedTask;
+            if (FullPath is not null && File.Exists(FullPath))
+            {
+                return;
+            }
+            await WriteRawImageBytesToFile(true, token);
         }
-        return WriteRawImageBytesToFile(true, token);
+        finally
+        {
+            _persistentLock.Release();
+        }
     }
 
     public override async Task<string?> PrepareTransferData(CancellationToken token)

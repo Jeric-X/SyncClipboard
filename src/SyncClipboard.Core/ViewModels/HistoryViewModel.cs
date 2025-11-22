@@ -763,22 +763,22 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task ProcessSingleRemoteSyncAsync(HistorySyncInfo queryInfo, CancellationToken ct)
     {
-        List<HistoryRecord> remoteRecords;
+        List<HistoryRecord> addedRecords;
         if (_isLocalEnd)
         {
-            remoteRecords = await historySyncer.SyncRangeAsync(
+            addedRecords = await historySyncer.SyncRangeAsync(
                 queryInfo.BeforeDate,
                 queryInfo.Types,
                 string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
                 queryInfo.Starred,
                 1,
                 ct);
-            _isRemoteEnd = remoteRecords.Count == 0;
-            _timeCursor = remoteRecords.LastOrDefault()?.Timestamp ?? _timeCursor;
+            _isRemoteEnd = addedRecords.Count == 0;
+            _timeCursor = addedRecords.LastOrDefault()?.Timestamp ?? _timeCursor;
         }
         else
         {
-            remoteRecords = await historySyncer.SyncRangeAsync(
+            addedRecords = await historySyncer.SyncRangeAsync(
                 queryInfo.BeforeDate,
                 queryInfo.AfterDate,
                 queryInfo.Types,
@@ -786,7 +786,7 @@ public partial class HistoryViewModel : ObservableObject
                 queryInfo.Starred,
                 ct);
         }
-        remoteRecords.ForEach(record =>
+        addedRecords.ForEach(record =>
         {
             RecordUpdated(record, false);
         });

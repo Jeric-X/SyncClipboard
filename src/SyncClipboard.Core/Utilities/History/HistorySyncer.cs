@@ -49,10 +49,10 @@ public class HistorySyncer
             pageLimit: int.MaxValue,
             token);
 
-        var updatedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
-        return updatedRecords;
+        return addedRecords;
     }
 
     public async Task<List<HistoryRecord>> SyncRangeAsync(
@@ -78,10 +78,10 @@ public class HistorySyncer
             pageLimit,
             token);
 
-        var updatedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         await DetectOrphanDataAsync(before, after: null, remoteRecords, types, searchText, starred, token);
         await PushLocalRangeAsync(before, after: null, types, searchText, starred, token);
-        return updatedRecords;
+        return addedRecords;
     }
 
     /// <summary>

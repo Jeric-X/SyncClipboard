@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
