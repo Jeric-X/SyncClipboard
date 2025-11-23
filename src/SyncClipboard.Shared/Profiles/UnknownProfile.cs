@@ -58,4 +58,9 @@ public class UnknownProfile : Profile
     {
         throw new NotImplementedException();
     }
+
+    public override Task SetAndMoveTransferData(string path, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -91,18 +91,26 @@ public class FileProfile : Profile
 
     public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);
 
-    protected async static Task<string> GetSHA256HashFromFile(string fileName, CancellationToken? cancelToken)
+    protected async static Task<string> CombineHash(string fileName, string contentHash, CancellationToken token)
+    {
+        var combinedString = $"{fileName}|{contentHash.ToUpperInvariant()}";
+        var hash = await Utility.CalculateSHA256(combinedString, token);
+        return hash;
+    }
+
+    protected async static Task<string> GetSHA256HashFromFile(string filePath, CancellationToken? cancelToken)
     {
         cancelToken ??= CancellationToken.None;
-        var fileInfo = new FileInfo(fileName);
+        var fileInfo = new FileInfo(filePath);
         if (fileInfo.Length > MAX_FILE_SIZE)
         {
             return HASH_FOR_OVERSIZED_FILE;
         }
 
-        await using var file = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var sha256Hex = await Utility.CalculateSHA256(file, cancelToken.Value);
-        return sha256Hex;
+        var contentSha256Hex = await Utility.CalculateFileSHA256(filePath, cancelToken.Value);
+        var fileName = Path.GetFileName(filePath);
+        var hash = await CombineHash(fileName, contentSha256Hex, cancelToken.Value);
+        return hash;
     }
 
     public override Task<string?> PrepareTransferData(CancellationToken token)
@@ -129,16 +137,36 @@ public class FileProfile : Profile
             return;
         }
 
-        ArgumentNullException.ThrowIfNull(_hash);
-
         var hash = await GetSHA256HashFromFile(path, token);
         if (_hash is not null && hash != _hash)
         {
-            throw new InvalidDataException(path);
+            throw new InvalidDataException("Hash mismatch for the provided file.");
         }
         _hash = hash;
         FullPath = path;
         FileName = Path.GetFileName(path);
+    }
+
+    public override async Task SetAndMoveTransferData(string path, CancellationToken token)
+    {
+        if (File.Exists(FullPath))
+        {
+            return;
+        }
+
+        await SetTranseferData(path, true, token);
+
+        var workingDir = GetWorkingDirectory(_hash!);
+        var persistentPath = GetPersistentPath(workingDir, path);
+
+        if (Path.IsPathRooted(persistentPath!) is false)
+        {
+            return;
+        }
+
+        var targetPath = Path.Combine(workingDir, FileName);
+        File.Move(path, targetPath, true);
+        FullPath = targetPath;
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
@@ -170,9 +198,9 @@ public class FileProfile : Profile
 
     public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
     {
-        if (FullPath is null && _hash is not null && FileName is not null)
+        if (FullPath is null && FileName is not null)
         {
-            dataPath = Path.Combine(GetWorkingDirectory(_hash), FileName);
+            dataPath = Path.Combine(GetWorkingDirectory(_hash ?? string.Empty), FileName);
             return true;
         }
         dataPath = null;

@@ -14,6 +14,6 @@ public sealed class GroupEntry(string entryName, bool isDirectory, long length, 
             return EntryName;
 
         var contentHash = HashTask is null ? string.Empty : await HashTask.ConfigureAwait(false);
-        return $"{EntryName}|{Length}|{contentHash}";
+        return $"{EntryName}|{Length}|{contentHash.ToUpperInvariant()}";
     }
 }

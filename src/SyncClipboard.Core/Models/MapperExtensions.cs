@@ -109,7 +109,6 @@ public static class MapperExtensions
         form.Add(new StringContent(dto.Size.ToString(CultureInfo.InvariantCulture)), "Size");
     }
 
-    
     public static ClipboardMetaInfomation GetMetaInfomation(this ProfileLocalInfo info)
     {
         return new ClipboardMetaInfomation

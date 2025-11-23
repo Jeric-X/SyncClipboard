@@ -161,9 +161,10 @@ public class TextProfile : Profile
             return false;
         }
 
-        if (_hash is not null && File.Exists(_transferDataPath) is false)
+        if (File.Exists(_transferDataPath) is false)
         {
-            dataPath = $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+            var fileName = $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+            dataPath = Path.Combine(GetWorkingDirectory(_hash ?? string.Empty), fileName);
             return true;
         }
         return false;
@@ -212,11 +213,6 @@ public class TextProfile : Profile
 
     public override async Task SetTranseferData(string path, bool verify, CancellationToken token)
     {
-        if (!_hasTransferData)
-        {
-            throw new InvalidOperationException("SetTranseferData should only be called when HasTransferData is true.");
-        }
-
         if (verify && File.Exists(path))
         {
             var fileHash = await Utility.CalculateFileSHA256(path, token);
@@ -229,6 +225,30 @@ public class TextProfile : Profile
         }
 
         _transferDataPath = path;
+    }
+
+    public override async Task SetAndMoveTransferData(string path, CancellationToken token)
+    {
+        if (File.Exists(_transferDataPath))
+        {
+            return;
+        }
+
+        await SetTranseferData(path, true, token);
+
+        var workingDir = GetWorkingDirectory(_hash!);
+        var persistentPath = GetPersistentPath(workingDir, path);
+
+        if (Path.IsPathRooted(persistentPath!) is false)
+        {
+            return;
+        }
+
+        var fileName = Path.GetFileName(path);
+
+        var targetPath = Path.Combine(workingDir, fileName);
+        File.Move(path, targetPath, true);
+        _transferDataPath = targetPath;
     }
 
     public override async Task<ProfileLocalInfo> Localize(CancellationToken token)
