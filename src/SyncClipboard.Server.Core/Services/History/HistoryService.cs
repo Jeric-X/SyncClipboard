@@ -8,19 +8,19 @@ namespace SyncClipboard.Server.Core.Services.History;
 public class HistoryService
 {
     public const string HARD_CODED_USER_ID = "default_user";
-    public string HistoryDataFolder => Path.Combine(_env.WebRootPath, "history");
 
     private readonly HistoryDbContext _dbContext;
-    private readonly IWebHostEnvironment _env;
+    private readonly string _persistentDir;
+
     // When using SQLite provider we need a process-wide semaphore to avoid concurrent write issues.
     private static readonly SemaphoreSlim _processSem = new(1, 1);
     // Per-instance semaphore used when not using SQLite
     private readonly SemaphoreSlim _sem;
 
-    public HistoryService(HistoryDbContext dbContext, IWebHostEnvironment env)
+    public HistoryService(HistoryDbContext dbContext, IProfileEnv profileEnv)
     {
         _dbContext = dbContext;
-        _env = env;
+        _persistentDir = profileEnv.GetPersistentDir();
         _sem = _dbContext.Database.IsSqlite() ? _processSem : new SemaphoreSlim(1, 1);
     }
 
@@ -299,7 +299,7 @@ public class HistoryService
             return;
         }
 
-        var entity = await profile.ToHistoryEntity(userId, token);
+        var entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
     }
@@ -318,8 +318,8 @@ public class HistoryService
             .Where(r => r.UserId == userId && r.Type != ProfileType.Text)
             .OrderByDescending(r => r.LastAccessed)
             .AsEnumerable()
-            .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(Profile.GetFullPath(r.Type, r.Hash, r.TransferDataFile)))
-            .Select(r => Profile.GetFullPath(r.Type, r.Hash, r.TransferDataFile))
+            .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(Profile.GetFullPath(_persistentDir, r.Type, r.Hash, r.TransferDataFile)))
+            .Select(r => Profile.GetFullPath(_persistentDir, r.Type, r.Hash, r.TransferDataFile))
             .FirstOrDefault();
 
         return existing;
@@ -354,16 +354,6 @@ public class HistoryService
     {
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(
             r => r.UserId == userId && r.Hash == hash && r.Type == type, token);
-    }
-
-    public async Task<string> GetProfileDataFolder(Profile profile, CancellationToken token = default)
-    {
-        var dirPath = Path.Combine(HistoryDataFolder, await profile.GetProfileId(token));
-        if (!Directory.Exists(dirPath))
-        {
-            Directory.CreateDirectory(dirPath);
-        }
-        return dirPath;
     }
 
     /// <summary>
@@ -421,7 +411,7 @@ public class HistoryService
         if (transferFile != null && transferFile.Length > 0)
         {
             var safeFileName = Path.GetFileName(transferFile.FileName);
-            var folder = Path.Combine(HistoryDataFolder, $"{incoming.Type}-{incoming.Hash}");
+            var folder = Profile.GetWorkingDir(_persistentDir, incoming.Type, incoming.Hash);
             if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             var filePath = Path.Combine(folder, safeFileName);
             using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))

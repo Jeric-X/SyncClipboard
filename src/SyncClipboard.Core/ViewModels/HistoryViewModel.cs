@@ -41,6 +41,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly ProfileActionBuilder profileActionBuilder;
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private readonly HistorySyncer historySyncer;
+    private readonly IProfileEnv profileEnv;
     private IHistorySyncServer? historySyncServer;
 
     private bool _enableSyncHistory;
@@ -61,6 +62,7 @@ public partial class HistoryViewModel : ObservableObject
         LocalClipboardSetter localClipboardSetter,
         ProfileActionBuilder profileActionBuilder,
         RemoteClipboardServerFactory remoteServerFactory,
+        IProfileEnv profileEnv,
         HistorySyncer historySyncer)
     {
         this.historyManager = historyManager;
@@ -71,6 +73,7 @@ public partial class HistoryViewModel : ObservableObject
         this.localClipboardSetter = localClipboardSetter;
         this.profileActionBuilder = profileActionBuilder;
         this.remoteServerFactory = remoteServerFactory;
+        this.profileEnv = profileEnv;
         this.historySyncer = historySyncer;
 
         var currentServer = remoteServerFactory.Current;
@@ -808,7 +811,8 @@ public partial class HistoryViewModel : ObservableObject
             var record = vm.ToHistoryRecord();
             var profile = record.ToProfile();
 
-            if (profile.NeedsTransferData(out var localDataPath) is false)
+            var persistentDir = profileEnv.GetPersistentDir();
+            if (profile.NeedsTransferData(persistentDir, out var localDataPath) is false)
             {
                 return;
             }
@@ -827,7 +831,8 @@ public partial class HistoryViewModel : ObservableObject
             await historySyncServer.DownloadHistoryDataAsync(profileId, localDataPath, progress, cts.Token);
             await profile.SetTranseferData(localDataPath, true, cts.Token);
 
-            record.SetFilePath(await profile.Persistentize(cts.Token));
+            var persistentInfo = await profile.Persist(persistentDir, cts.Token);
+            record.FilePath = persistentInfo.FilePaths;
             record.IsLocalFileReady = true;
 
             await historyManager.UpdateHistory(record, cts.Token);

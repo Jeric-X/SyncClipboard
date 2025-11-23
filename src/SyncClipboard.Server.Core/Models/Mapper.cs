@@ -2,9 +2,9 @@ namespace SyncClipboard.Server.Core.Models;
 
 public static class Mapper
 {
-    public static async Task<HistoryRecordEntity> ToHistoryEntity(this Profile profile, string userId, CancellationToken token)
+    public static async Task<HistoryRecordEntity> ToHistoryEntity(this Profile profile, string persistentDir, string userId, CancellationToken token)
     {
-        var profileEntity = await profile.Persistentize(token).ConfigureAwait(false);
+        var profileEntity = await profile.Persist(persistentDir, token).ConfigureAwait(false);
         var now = DateTime.UtcNow;
         var entity = new HistoryRecordEntity
         {
@@ -26,19 +26,19 @@ public static class Mapper
         return entity;
     }
 
-    public static Profile ToProfile(this HistoryRecordEntity entity)
-    {
-        var persistentEntity = new ProfilePersistentInfo
-        {
-            Type = entity.Type,
-            Text = entity.Text,
-            Size = entity.Size,
-            Hash = entity.Hash,
-            TransferDataFile = entity.TransferDataFile,
-            FilePaths = entity.FilePaths,
-        };
-        return Profile.Create(persistentEntity);
-    }
+    //public static Profile ToProfile(this HistoryRecordEntity entity)
+    //{
+    //    var persistentEntity = new ProfilePersistentInfo
+    //    {
+    //        Type = entity.Type,
+    //        Text = entity.Text,
+    //        Size = entity.Size,
+    //        Hash = entity.Hash,
+    //        TransferDataFile = entity.TransferDataFile,
+    //        FilePaths = entity.FilePaths,
+    //    };
+    //    return Profile.Create(persistentEntity);
+    //}
 
     public static HistoryRecordUpdateDto ToUpdateDto(this HistoryRecordDto s)
     {

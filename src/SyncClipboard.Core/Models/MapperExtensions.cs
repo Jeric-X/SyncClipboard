@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Server.Core.Models;
 using System.Globalization;
 
@@ -120,7 +122,8 @@ public static class MapperExtensions
 
     public static Profile ToProfile(this HistoryRecord historyRecord)
     {
-        return Profile.Create(new ProfilePersistentInfo
+        var profileEnv = AppCore.Current.Services.GetRequiredService<IProfileEnv>();
+        return Profile.Create(profileEnv.GetHistoryPersistentDir(), new ProfilePersistentInfo
         {
             Text = historyRecord.Text,
             Type = historyRecord.Type,
@@ -128,25 +131,6 @@ public static class MapperExtensions
             Hash = historyRecord.Hash,
             FilePaths = historyRecord.FilePath,
         });
-    }
-
-    public static void SetFilePath(this HistoryRecord record, ProfilePersistentInfo profileEntity)
-    {
-        record.FilePath = profileEntity.FilePaths;
-    }
-
-    public static async Task<HistoryRecord> ToHistoryRecord(this Profile profile, CancellationToken token)
-    {
-        var profileEntity = await profile.Persistentize(token);
-        var record = new HistoryRecord
-        {
-            Text = profileEntity.Text,
-            Type = profileEntity.Type,
-            Size = profileEntity.Size,
-            Hash = profileEntity.Hash,
-        };
-        record.SetFilePath(profileEntity);
-        return record;
     }
 }
 

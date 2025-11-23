@@ -113,7 +113,7 @@ public class FileProfile : Profile
         return hash;
     }
 
-    public override Task<string?> PrepareTransferData(CancellationToken token)
+    public override Task<string?> PrepareTransferData(string _, CancellationToken token)
     {
         if (FullPath is not null && File.Exists(FullPath))
         {
@@ -147,7 +147,7 @@ public class FileProfile : Profile
         FileName = Path.GetFileName(path);
     }
 
-    public override async Task SetAndMoveTransferData(string path, CancellationToken token)
+    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         if (File.Exists(FullPath))
         {
@@ -156,7 +156,7 @@ public class FileProfile : Profile
 
         await SetTranseferData(path, true, token);
 
-        var workingDir = GetWorkingDirectory(_hash!);
+        var workingDir = GetWorkingDir(persistentDir, Type, _hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -196,26 +196,25 @@ public class FileProfile : Profile
         }
     }
 
-    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
     {
         if (FullPath is null && FileName is not null)
         {
-            dataPath = Path.Combine(GetWorkingDirectory(_hash ?? string.Empty), FileName);
+            dataPath = Path.Combine(GetWorkingDir(persistentDir, Type, _hash ?? string.Empty), FileName);
             return true;
         }
         dataPath = null;
         return false;
     }
 
-    public override async Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         if (FullPath is null)
         {
-            throw new Exception("Cannot persistentize a FileProfile with no data.");
+            throw new Exception("Cannot persist a FileProfile with no data.");
         }
 
-        var workingDir = await GetWorkingDirectory(token);
-        var path = GetPersistentPath(workingDir, FullPath);
+        var path = GetPersistentPath(persistentDir, FullPath);
         return new ProfilePersistentInfo
         {
             Type = Type,
@@ -227,7 +226,7 @@ public class FileProfile : Profile
         };
     }
 
-    public override Task<ProfileLocalInfo> Localize(CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
     {
         if (FullPath is null)
         {

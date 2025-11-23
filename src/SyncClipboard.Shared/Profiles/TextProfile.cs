@@ -153,7 +153,7 @@ public class TextProfile : Profile
         return _size;
     }
 
-    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
     {
         dataPath = null;
         if (HasTransferData is false)
@@ -164,17 +164,17 @@ public class TextProfile : Profile
         if (File.Exists(_transferDataPath) is false)
         {
             var fileName = $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
-            dataPath = Path.Combine(GetWorkingDirectory(_hash ?? string.Empty), fileName);
+            dataPath = Path.Combine(GetWorkingDir(persistentDir, _hash ?? string.Empty), fileName);
             return true;
         }
         return false;
     }
 
-    private async Task WriteFullTextToFile(CancellationToken token)
+    private async Task WriteFullTextToFile(string persistentDir, CancellationToken token)
     {
-        var workingDir = await GetWorkingDirectory(token);
         if (HasTransferData && File.Exists(_transferDataPath) is false && _fullText is not null)
         {
+            var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
             var path = Path.Combine(workingDir, $"{Type}_{Utility.CreateTimeBasedFileName()}.txt");
             await File.WriteAllTextAsync(path, _fullText, Encoding.UTF8, token);
             _transferDataPath = path;
@@ -182,27 +182,27 @@ public class TextProfile : Profile
         }
     }
 
-    public override async Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
-        await WriteFullTextToFile(token);
+        await WriteFullTextToFile(persistentDir, token);
         return new ProfilePersistentInfo
         {
             Type = Type,
             Text = _text,
             Size = await GetSize(token),
             Hash = await GetHash(token),
-            TransferDataFile = GetPersistentPath(await GetWorkingDirectory(token), _transferDataPath),
+            TransferDataFile = GetPersistentPath(GetWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataPath),
         };
     }
 
-    public override async Task<string?> PrepareTransferData(CancellationToken token)
+    public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         if (HasTransferData is false)
         {
             return null;
         }
 
-        await WriteFullTextToFile(token);
+        await WriteFullTextToFile(persistentDir, token);
         if (_transferDataPath is null)
         {
             throw new Exception($"Can not prepare transfer data for {_text}");
@@ -227,7 +227,7 @@ public class TextProfile : Profile
         _transferDataPath = path;
     }
 
-    public override async Task SetAndMoveTransferData(string path, CancellationToken token)
+    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         if (File.Exists(_transferDataPath))
         {
@@ -236,7 +236,7 @@ public class TextProfile : Profile
 
         await SetTranseferData(path, true, token);
 
-        var workingDir = GetWorkingDirectory(_hash!);
+        var workingDir = GetWorkingDir(persistentDir, Type, _hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -251,7 +251,7 @@ public class TextProfile : Profile
         _transferDataPath = targetPath;
     }
 
-    public override async Task<ProfileLocalInfo> Localize(CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string _, CancellationToken token)
     {
         if (HasTransferData is false)
         {

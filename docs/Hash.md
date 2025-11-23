@@ -43,17 +43,17 @@ Hash = SHA256(UTF8(CombinedString))
 - 取 EntryName 的 UTF-8 编码后的byte数组，以字典序升序排序
 
 #### 4.3 Entry 的 Hash 输入字符串格式
-- 目录：`{entryName}\0` (entryName 以 '/' 结尾)
-- 文件：`{entryName}|{length}|{contentHash}\0`
+- 目录：`D|{entryName}\0`
+- 文件：`F|{entryName}|{length}|{contentHash}\0`
 
 其中：
 - `{entryName}`：相对路径名
 - `{length}`：文件字节长度
 - `{contentHash}`：文件内容的 SHA256 哈希值（大写十六进制）
-- 每条entry的hash输入字符串以`\0`结尾
+- 每条 entry 的 hash 输入字符串以`\0`结尾
 
 #### 4.4 哈希计算
-- 将所有 entry 按序合并成一个字符串，UTF8编码后计算SHA256
+- 将所有 entry 按序拼接成一个字符串，UTF8 编码后计算 SHA256
 
 ### 示例
 

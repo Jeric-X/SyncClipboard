@@ -48,7 +48,6 @@ public class Web
 
         MigrationHelper.EnsureDBMigrations(app.Services, app.Lifetime);
 
-        app.UseServerProfileEnvProvider();
         if (app.Environment.IsDevelopment() || useSwagger)
         {
             app.UseSwagger();

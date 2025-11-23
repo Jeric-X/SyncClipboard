@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Clipboard;
 
-public partial class ProfileActionBuilder(LocalClipboardSetter setter)
+public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileEnv profileEnv)
 {
     public async Task<List<MenuItem>> Build(Profile profile, CancellationToken token)
     {
@@ -15,7 +15,7 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter)
             new MenuItem(Strings.Copy, () => { _ = setter.Set(profile, CancellationToken.None); }),
         ];
 
-        var localInfo = await profile.Localize(token);
+        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
 
         if (HasUrl(localInfo.Text, out var url) && url is not null)
         {

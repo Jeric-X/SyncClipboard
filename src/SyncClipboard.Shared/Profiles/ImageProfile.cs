@@ -77,7 +77,7 @@ public class ImageProfile : FileProfile
         return await base.GetHash(token);
     }
 
-    private async Task WriteRawImageBytesToFile(bool exception, CancellationToken token)
+    private async Task WriteRawImageBytesToFile(string persistentDir, bool exception, CancellationToken token)
     {
         var rawBytes = await GetRawImageBytes(token);
         if (rawBytes is null)
@@ -86,14 +86,13 @@ public class ImageProfile : FileProfile
                 throw new InvalidOperationException("No image data available to prepare persistent storage.");
             return;
         }
-        var dir = await GetWorkingDirectory(token);
-        var filePath = Path.Combine(dir, FileName);
+        var filePath = Path.Combine(persistentDir, FileName);
         await File.WriteAllBytesAsync(filePath, rawBytes, token);
         FullPath = filePath;
     }
 
     private readonly SemaphoreSlim _persistentLock = new(1, 1);
-    private async Task PreparePersistent(CancellationToken token)
+    private async Task PreparePersistent(string persistentDir, CancellationToken token)
     {
         await _persistentLock.WaitAsync(token);
         try
@@ -102,7 +101,7 @@ public class ImageProfile : FileProfile
             {
                 return;
             }
-            await WriteRawImageBytesToFile(true, token);
+            await WriteRawImageBytesToFile(persistentDir, true, token);
         }
         finally
         {
@@ -110,14 +109,14 @@ public class ImageProfile : FileProfile
         }
     }
 
-    public override async Task<string?> PrepareTransferData(CancellationToken token)
+    public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         if (FullPath is null || File.Exists(FullPath) is false)
         {
-            await WriteRawImageBytesToFile(false, token);
+            await WriteRawImageBytesToFile(persistentDir, false, token);
         }
 
-        return await base.PrepareTransferData(token);
+        return await base.PrepareTransferData(persistentDir, token);
     }
 
     private static string CreateImageFileName()
@@ -125,23 +124,23 @@ public class ImageProfile : FileProfile
         return $"Image_{Utility.CreateTimeBasedFileName()}.png";
     }
 
-    public override async Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         if (FullPath is null)
         {
-            await PreparePersistent(token);
+            await PreparePersistent(persistentDir, token);
         }
 
-        return await base.Persistentize(token);
+        return await base.Persist(persistentDir, token);
     }
 
-    public override async Task<ProfileLocalInfo> Localize(CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string persistentDir, CancellationToken token)
     {
         if (FullPath is null)
         {
-            await PreparePersistent(token);
+            await PreparePersistent(persistentDir, token);
         }
 
-        return await base.Localize(token);
+        return await base.Localize(persistentDir, token);
     }
 }

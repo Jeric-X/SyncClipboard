@@ -12,14 +12,14 @@ public abstract class Profile
     public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
     public abstract ValueTask<long> GetSize(CancellationToken token);
     public abstract ValueTask<string> GetHash(CancellationToken token);
-    public abstract Task<ProfilePersistentInfo> Persistentize(CancellationToken token);
-    public abstract Task<ProfileLocalInfo> Localize(CancellationToken token);
+    public abstract Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token);
+    public abstract Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token);
 
     public abstract bool HasTransferData { get; }
-    public abstract Task<string?> PrepareTransferData(CancellationToken token);
+    public abstract Task<string?> PrepareTransferData(string persistentDir, CancellationToken token);
     public abstract Task SetTranseferData(string path, bool verify, CancellationToken token);
-    public abstract Task SetAndMoveTransferData(string path, CancellationToken token);
-    public abstract bool NeedsTransferData([NotNullWhen(true)] out string? dataPath);
+    public abstract Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token);
+    public abstract bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath);
 
     public async Task<string> GetProfileId(CancellationToken token)
     {
@@ -86,29 +86,15 @@ public abstract class Profile
         throw new NotImplementedException();
     }
 
-    public static IProfileEnv? ProfileEnv { get; private set; }
-
-    public static void SetGlobalProfileEnvProvider(IProfileEnv provider)
+    protected string GetWorkingDir(string persistentDir, string hash)
     {
-        ProfileEnv = provider;
+        return GetWorkingDir(persistentDir, Type, hash);
     }
 
-    protected async Task<string> GetWorkingDirectory(CancellationToken token)
+    public static string GetWorkingDir(string persistentDir, ProfileType type, string hash)
     {
-        return GetWorkingDirectory(await GetHash(token));
-    }
-
-    protected string GetWorkingDirectory(string hash)
-    {
-        return GetWorkingDirectory(Type, hash);
-    }
-
-    public static string GetWorkingDirectory(ProfileType type, string hash)
-    {
-        var provider = ProfileEnv ?? throw new InvalidOperationException("Profile working directory provider is not set.");
         var dirName = $"{type}_{hash}";
-        var allProfileDir = provider.GetWorkingDir();
-        var profileDir = Path.Combine(allProfileDir, dirName);
+        var profileDir = Path.Combine(persistentDir, dirName);
         if (!Directory.Exists(profileDir))
             Directory.CreateDirectory(profileDir);
         return profileDir;
@@ -150,25 +136,15 @@ public abstract class Profile
 
 
     [return: NotNullIfNotNull(nameof(persistentPath))]
-    public static string? GetFullPath(ProfileType type, string hash, string? persistentPath)
+    public static string? GetFullPath(string persistentDir, ProfileType type, string hash, string? persistentPath)
     {
-        if (persistentPath is null)
-        {
-            return null;
-        }
-
-        if (Path.IsPathRooted(persistentPath))
-        {
-            return persistentPath;
-        }
-
-        var workingDir = GetWorkingDirectory(type, hash);
-        return Path.Combine(workingDir, persistentPath);
+        var workingDir = GetWorkingDir(persistentDir, type, hash);
+        return GetFullPath(workingDir, persistentPath);
     }
 
-    public static Profile Create(ProfilePersistentInfo persistentEntity)
+    public static Profile Create(string persistentDir, ProfilePersistentInfo persistentEntity)
     {
-        var workingDir = GetWorkingDirectory(persistentEntity.Type, persistentEntity.Hash);
+        var workingDir = GetWorkingDir(persistentDir, persistentEntity.Type, persistentEntity.Hash);
         var entity = persistentEntity with
         {
             TransferDataFile = GetFullPath(workingDir, persistentEntity.TransferDataFile),

@@ -3,7 +3,7 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
-public class LocalClipboardSetter(IServiceProvider serviceProvider, IThreadDispatcher dispather)
+public class LocalClipboardSetter(IServiceProvider serviceProvider, IThreadDispatcher dispather, IProfileEnv profileEnv)
 {
     public async Task Set(Profile profile, CancellationToken ctk, bool mutex = true)
     {
@@ -20,7 +20,7 @@ public class LocalClipboardSetter(IServiceProvider serviceProvider, IThreadDispa
 
         try
         {
-            var localInfo = await profile.Localize(ctk);
+            var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), ctk);
             await dispather.RunOnMainThreadAsync(() => setter.SetLocalClipboard(localInfo.GetMetaInfomation(), ctk));
         }
         finally

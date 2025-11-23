@@ -16,6 +16,7 @@ public class SyncClipboardController(
     IHubContext<SyncClipboardHub> _hubContext,
     IWebHostEnvironment _env,
     IMemoryCache _cache,
+    IProfileEnv _profileEnv,
     HistoryService _historyService) : ControllerBase
 {
     private static bool InvalidFileName(string name)
@@ -150,7 +151,7 @@ public class SyncClipboardController(
 
             try
             {
-                await profile.SetAndMoveTransferData(previousDataPath, token);
+                await profile.SetAndMoveTransferData(_profileEnv.GetPersistentDir(), previousDataPath, token);
             }
             catch when (!token.IsCancellationRequested)
             {
