@@ -318,10 +318,11 @@ public class HistoryService
             .Where(r => r.UserId == userId && r.Type != ProfileType.Text)
             .OrderByDescending(r => r.LastAccessed)
             .AsEnumerable()
-            .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(r.TransferDataFile))
+            .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(Profile.GetFullPath(r.Type, r.Hash, r.TransferDataFile)))
+            .Select(r => Profile.GetFullPath(r.Type, r.Hash, r.TransferDataFile))
             .FirstOrDefault();
 
-        return existing?.TransferDataFile;
+        return existing;
     }
 
     public async Task<string?> GetTransferDataFileByProfileId(string userId, string profileId, CancellationToken token = default)

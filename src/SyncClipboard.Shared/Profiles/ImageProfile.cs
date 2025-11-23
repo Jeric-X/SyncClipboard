@@ -69,7 +69,9 @@ public class ImageProfile : FileProfile
         var rawBytes = await GetRawImageBytes(token);
         if (rawBytes is not null)
         {
-            _hash = await Utility.CalculateSHA256(rawBytes, token);
+            var contentHash = await Utility.CalculateSHA256(rawBytes, token);
+            _hash = await CombineHash(FileName, contentHash, token);
+            return _hash;
         }
 
         return await base.GetHash(token);

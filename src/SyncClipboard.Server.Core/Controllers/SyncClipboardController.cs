@@ -139,9 +139,9 @@ public class SyncClipboardController(
         _cache.Set(path, profileDto);
         var text = JsonSerializer.Serialize(profileDto);
         var profile = ClipboardProfileDTO.CreateProfile(profileDto);
-        if (profile.NeedsTransferData(out var dataPath))
+        if (string.IsNullOrEmpty(profileDto.File) is false)
         {
-            var fileName = Path.GetFileName(dataPath);
+            var fileName = Path.GetFileName(profileDto.File);
             var previousDataPath = Path.Combine(_env.WebRootPath, "file", fileName);
             if (!System.IO.File.Exists(previousDataPath))
             {
@@ -150,8 +150,7 @@ public class SyncClipboardController(
 
             try
             {
-                System.IO.File.Move(previousDataPath, dataPath, true);
-                await profile.SetTranseferData(dataPath, true, token);
+                await profile.SetAndMoveTransferData(previousDataPath, token);
             }
             catch when (!token.IsCancellationRequested)
             {

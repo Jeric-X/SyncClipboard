@@ -305,6 +305,8 @@ PUT /SyncClipboard.json
 }
 ```
 
+Hash计算方法可以参考[docs/Hash.md](docs/Hash.md)
+
 ## 项目依赖
 [NativeNotification](https://github.com/Jeric-X/NativeNotification)  
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  

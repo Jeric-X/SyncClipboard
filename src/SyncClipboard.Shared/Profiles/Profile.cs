@@ -18,6 +18,7 @@ public abstract class Profile
     public abstract bool HasTransferData { get; }
     public abstract Task<string?> PrepareTransferData(CancellationToken token);
     public abstract Task SetTranseferData(string path, bool verify, CancellationToken token);
+    public abstract Task SetAndMoveTransferData(string path, CancellationToken token);
     public abstract bool NeedsTransferData([NotNullWhen(true)] out string? dataPath);
 
     public async Task<string> GetProfileId(CancellationToken token)
@@ -144,6 +145,24 @@ public abstract class Profile
         {
             return persistentPath;
         }
+        return Path.Combine(workingDir, persistentPath);
+    }
+
+
+    [return: NotNullIfNotNull(nameof(persistentPath))]
+    public static string? GetFullPath(ProfileType type, string hash, string? persistentPath)
+    {
+        if (persistentPath is null)
+        {
+            return null;
+        }
+
+        if (Path.IsPathRooted(persistentPath))
+        {
+            return persistentPath;
+        }
+
+        var workingDir = GetWorkingDirectory(type, hash);
         return Path.Combine(workingDir, persistentPath);
     }
 

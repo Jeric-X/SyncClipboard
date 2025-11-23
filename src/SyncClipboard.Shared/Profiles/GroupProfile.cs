@@ -411,6 +411,33 @@ public class GroupProfile : Profile
         _transferDataName = Path.GetFileName(path);
     }
 
+    public override async Task SetAndMoveTransferData(string path, CancellationToken token)
+    {
+        if (File.Exists(_transferDataPath))
+        {
+            return;
+        }
+
+        await SetTranseferData(path, true, token);
+
+        var workingDir = GetWorkingDirectory(_hash!);
+        var persistentPath = GetPersistentPath(workingDir, path);
+
+        if (Path.IsPathRooted(persistentPath!) is false)
+        {
+            return;
+        }
+
+        var targetPath = Path.Combine(workingDir, _transferDataName!);
+        File.Move(path, targetPath, true);
+        try
+        {
+            Directory.Delete(path[..^4], true);
+        }
+        catch { }
+        _transferDataPath = targetPath;
+    }
+
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
         if (_files is null || _files.Length == 0)
@@ -446,7 +473,7 @@ public class GroupProfile : Profile
         if (_transferDataPath is null && _hash is not null)
         {
             var fileName = _transferDataName ?? CreateNewDataFileName();
-            dataPath = Path.Combine(GetWorkingDirectory(_hash), fileName);
+            dataPath = Path.Combine(GetWorkingDirectory(_hash ?? string.Empty), fileName);
             return true;
         }
         dataPath = null;
