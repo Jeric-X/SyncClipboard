@@ -34,7 +34,7 @@ public class GroupProfile : Profile
     public GroupProfile(IEnumerable<string> files, string hash, string? dataPath = null)
     {
         _files = [.. files];
-        _hash = hash;
+        _hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
     }
 
@@ -42,11 +42,6 @@ public class GroupProfile : Profile
     {
         _files = [.. files];
         _fileFilterConfig = filterConfig ?? new();
-    }
-
-    public GroupProfile(string hash)
-    {
-        _hash = hash;
     }
 
     private static string CreateNewDataFileName()
@@ -406,11 +401,12 @@ public class GroupProfile : Profile
         _files = topLevelFiles;
 
         var (hash, _) = await CaclHashAndSizeAsync(_files, token);
-        if (hash != _hash)
+        if (_hash is not null && hash != _hash)
         {
             var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
         }
+        _hash = hash;
         _transferDataPath = path;
         _transferDataName = Path.GetFileName(path);
     }

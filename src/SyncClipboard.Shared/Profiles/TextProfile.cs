@@ -114,13 +114,19 @@ public class TextProfile : Profile
             return _hash;
         }
 
-        if (HasTransferData && File.Exists(_transferDataPath))
+        if (HasTransferData)
         {
-            _hash = await Utility.CalculateFileSHA256(_transferDataPath, token);
-            return _hash;
+            if (File.Exists(_transferDataPath))
+            {
+                _hash = await Utility.CalculateFileSHA256(_transferDataPath, token);
+                return _hash;
+            }
+            throw new Exception("Text profile data is not ready.");
         }
 
-        return string.Empty;
+        _hash = await Utility.CalculateSHA256(_text, token);
+
+        return _hash;
     }
 
     public override async ValueTask<long> GetSize(CancellationToken token)
