@@ -308,7 +308,7 @@ public class UploadService : ClipboardHander
 
                 if (!await Profile.Same(remoteProfile, profile, cancelToken))
                 {
-                    _logger.Write(LOG_TAG, "Start: " + await profile.ToDto(cancelToken));
+                    _logger.Write(LOG_TAG, "Start: " + profile.DisplayText);
                     await remoteServer.SetProfileAsync(profile, cancelToken);
                 }
                 else
