@@ -32,7 +32,7 @@ public class FileProfile : Profile
             FullPath = entity.TransferDataFile;
         }
         FileName = entity.Text;
-        _hash = entity.Hash;
+        _hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
     }
 
     public FileProfile(string? fullPath, string? fileName = null, string? hash = null)
@@ -52,7 +52,7 @@ public class FileProfile : Profile
         }
 
         FullPath = fullPath;
-        _hash = hash;
+        _hash = string.IsNullOrEmpty(hash) ? null : hash;
     }
 
     public FileProfile(ClipboardProfileDTO profileDTO) : this(null, profileDTO.File, profileDTO.Clipboard)
@@ -132,10 +132,11 @@ public class FileProfile : Profile
         ArgumentNullException.ThrowIfNull(_hash);
 
         var hash = await GetSHA256HashFromFile(path, token);
-        if (hash != _hash)
+        if (_hash is not null && hash != _hash)
         {
             throw new InvalidDataException(path);
         }
+        _hash = hash;
         FullPath = path;
         FileName = Path.GetFileName(path);
     }
