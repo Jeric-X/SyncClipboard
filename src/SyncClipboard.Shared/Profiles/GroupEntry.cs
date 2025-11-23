@@ -11,9 +11,9 @@ public sealed class GroupEntry(string entryName, bool isDirectory, long length, 
     public async Task<string> ToEntryStringAsync()
     {
         if (IsDirectory)
-            return $"{EntryName}\0";
+            return $"D|{EntryName}\0";
 
         var contentHash = HashTask is null ? string.Empty : await HashTask.ConfigureAwait(false);
-        return $"{EntryName}|{Length}|{contentHash.ToUpperInvariant()}\0";
+        return $"F|{EntryName}|{Length}|{contentHash.ToUpperInvariant()}\0";
     }
 }

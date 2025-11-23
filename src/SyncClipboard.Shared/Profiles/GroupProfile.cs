@@ -245,11 +245,11 @@ public class GroupProfile : Profile
         return sb.ToString();
     }
 
-    public override async Task<string?> PrepareTransferData(CancellationToken token)
+    public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(_files);
         var fileName = _transferDataName ?? CreateNewDataFileName();
-        var filePath = Path.Combine(await GetWorkingDirectory(token), fileName);
+        var filePath = Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), fileName);
 
         await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
@@ -370,7 +370,25 @@ public class GroupProfile : Profile
         return topLevelFiles.ToArray();
     }
 
-    public override async Task SetTranseferData(string path, bool verify, CancellationToken token)
+    private async Task ExtractAndVerifyTransferData(string extractDir, string path, CancellationToken token)
+    {
+        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
+        var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractDir, token).ConfigureAwait(false);
+        _files = topLevelFiles;
+
+        var (hash, _) = await CaclHashAndSizeAsync(_files, token);
+        if (_hash is not null && hash != _hash)
+        {
+            var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
+            throw new InvalidDataException(errorMsg);
+        }
+        _hash = hash;
+        _transferDataPath = path;
+        _transferDataName = Path.GetFileName(path);
+    }
+
+    public override Task SetTranseferData(string path, bool verify, CancellationToken token)
     {
         if (!File.Exists(path))
         {
@@ -386,32 +404,16 @@ public class GroupProfile : Profile
         {
             _transferDataPath = path;
             _transferDataName = Path.GetFileName(path);
-            return;
+            return Task.CompletedTask;
         }
 
-        ArgumentNullException.ThrowIfNull(_hash);
-
-        var extractPath = path[..^4];
-        if (!Directory.Exists(extractPath))
-            Directory.CreateDirectory(extractPath);
-
-        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
-        using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
-        var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractPath, token).ConfigureAwait(false);
-        _files = topLevelFiles;
-
-        var (hash, _) = await CaclHashAndSizeAsync(_files, token);
-        if (_hash is not null && hash != _hash)
-        {
-            var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
-            throw new InvalidDataException(errorMsg);
-        }
-        _hash = hash;
-        _transferDataPath = path;
-        _transferDataName = Path.GetFileName(path);
+        var extractDir = path[..^4];
+        if (!Directory.Exists(extractDir))
+            Directory.CreateDirectory(extractDir);
+        return ExtractAndVerifyTransferData(extractDir, path, token);
     }
 
-    public override async Task SetAndMoveTransferData(string path, CancellationToken token)
+    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         if (File.Exists(_transferDataPath))
         {
@@ -420,7 +422,7 @@ public class GroupProfile : Profile
 
         await SetTranseferData(path, true, token);
 
-        var workingDir = GetWorkingDirectory(_hash!);
+        var workingDir = GetWorkingDir(persistentDir, Type, _hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -468,26 +470,26 @@ public class GroupProfile : Profile
         }
     }
 
-    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
     {
         if (_transferDataPath is null && _hash is not null)
         {
             var fileName = _transferDataName ?? CreateNewDataFileName();
-            dataPath = Path.Combine(GetWorkingDirectory(_hash ?? string.Empty), fileName);
+            dataPath = Path.Combine(GetWorkingDir(persistentDir, _hash ?? string.Empty), fileName);
             return true;
         }
         dataPath = null;
         return false;
     }
 
-    public override async Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         if (_files is null && _transferDataPath is null)
         {
             throw new InvalidOperationException("No local data available to prepare persistent storage.");
         }
 
-        var workingDir = await GetWorkingDirectory(token);
+        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
 
         var relativeFiles = _files?
                             .Select(f => f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
@@ -509,11 +511,11 @@ public class GroupProfile : Profile
         };
     }
 
-    public override async Task<ProfileLocalInfo> Localize(CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
     {
         if (_files is null && _transferDataPath is not null)
         {
-            await SetTranseferData(_transferDataPath, true, token);
+            await SetAndMoveTransferData(localDir, _transferDataPath, token);
         }
         ArgumentNullException.ThrowIfNull(_files);
 

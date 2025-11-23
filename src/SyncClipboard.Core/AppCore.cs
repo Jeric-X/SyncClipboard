@@ -109,7 +109,6 @@ namespace SyncClipboard.Core
             RegisterForSystemHotkey(mainWindow);
 
             ProxyManager.Init(configManager);
-            Profile.SetGlobalProfileEnvProvider(Services.GetRequiredService<ClientProfileEnvProvider>());
 
             ServiceManager = Services.GetRequiredService<ServiceManager>();
             ServiceManager.StartUpAllService();
@@ -283,7 +282,7 @@ namespace SyncClipboard.Core
             services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
             services.AddSingleton<LocalClipboardSetter>();
             services.AddSingleton<ProfileActionBuilder>();
-            services.AddSingleton<ClientProfileEnvProvider>();
+            services.AddSingleton<IProfileEnv, ClientProfileEnvProvider>();
         }
 
         public static void ConfigurateViewModels(IServiceCollection services)

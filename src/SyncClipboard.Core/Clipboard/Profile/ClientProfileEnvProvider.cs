@@ -5,7 +5,7 @@ namespace SyncClipboard.Core.Clipboard;
 
 public class ClientProfileEnvProvider(ConfigManager config) : IProfileEnv
 {
-    public string GetWorkingDir()
+    public string GetPersistentDir()
     {
         var historyConfig = config.GetConfig<HistoryConfig>();
         if (historyConfig.EnableHistory)
@@ -16,5 +16,10 @@ public class ClientProfileEnvProvider(ConfigManager config) : IProfileEnv
         {
             return Env.TemplateFileFolder;
         }
+    }
+
+    public string GetHistoryPersistentDir()
+    {
+        return Env.HistoryFileFolder;
     }
 }

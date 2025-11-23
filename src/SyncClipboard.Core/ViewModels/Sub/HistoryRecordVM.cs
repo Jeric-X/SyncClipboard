@@ -1,7 +1,9 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Models;
 using System;
 using System.IO;
-using CommunityToolkit.Mvvm.ComponentModel;
-using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.ViewModels.Sub;
 
@@ -126,12 +128,13 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
 
     private static string[] RestoreFilePath(string[]? persistentPaths, ProfileType type, string hash)
     {
+        var profileEnv = AppCore.Current.Services.GetRequiredService<IProfileEnv>();
         if (persistentPaths is null || persistentPaths.Length == 0)
         {
             return [];
         }
 
-        var workingDir = Profile.GetWorkingDirectory(type, hash);
+        var workingDir = Profile.GetWorkingDir(profileEnv.GetHistoryPersistentDir(), type, hash);
         var restoredPaths = new string[persistentPaths.Length];
         for (int i = 0; i < persistentPaths.Length; i++)
         {

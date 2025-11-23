@@ -15,7 +15,8 @@ public static class ProfileExtentions
             return cachedFilePath;
         }
 
-        var path = await profile.PrepareTransferData(token);
+        var profileEnv = AppCore.Current.Services.GetRequiredService<IProfileEnv>();
+        var path = await profile.PrepareTransferData(profileEnv.GetPersistentDir(), token);
 
         if (File.Exists(path))
         {

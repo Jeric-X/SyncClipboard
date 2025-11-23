@@ -4,6 +4,7 @@ using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.RemoteServer.Adapter;
+using SyncClipboard.Shared.Profiles;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
@@ -15,6 +16,7 @@ internal class StorageBasedServerHelper
     private readonly IStorageBasedServerAdapter _serverAdapter;
     private readonly ILogger _logger;
     private readonly ITrayIcon _trayIcon;
+    private readonly IProfileEnv _profileEnv;
 
     public event Action? ExceptionOccurred;
 
@@ -23,6 +25,7 @@ internal class StorageBasedServerHelper
         _serverAdapter = serverAdapter;
         _logger = sp.GetRequiredService<ILogger>();
         _trayIcon = sp.GetRequiredService<ITrayIcon>();
+        _profileEnv = sp.GetRequiredService<IProfileEnv>();
 
         InitializeAsync();
     }
@@ -41,7 +44,8 @@ internal class StorageBasedServerHelper
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (profile.NeedsTransferData(out var dataPath) is false)
+        var persistentDir = _profileEnv.GetPersistentDir();
+        if (profile.NeedsTransferData(persistentDir, out var dataPath) is false)
         {
             return;
         }
@@ -50,7 +54,7 @@ internal class StorageBasedServerHelper
         {
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
-            await profile.SetAndMoveTransferData(dataPath, cancellationToken);
+            await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
             _logger.Write($"[PULL] Downloaded {fileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }

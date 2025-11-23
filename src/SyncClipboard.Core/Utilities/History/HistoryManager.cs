@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Shared.Profiles;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -17,13 +20,15 @@ public class HistoryManager
     private HistoryConfig _historyConfig = new();
     private readonly ILogger _logger;
     private HistoryDbContext _dbContext;
+    private readonly IProfileEnv _profileEnv;
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
 
     // 移除对 HistorySyncer 的直接依赖，改用事件让外部订阅以避免循环依赖
 
-    public HistoryManager(ConfigManager configManager, ILogger logger)
+    public HistoryManager(ConfigManager configManager, ILogger logger, IProfileEnv profileEnv)
     {
         _logger = logger;
+        _profileEnv = profileEnv;
         InitDatabaseContext();
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
         LoadConfig(_historyConfig);
@@ -114,8 +119,9 @@ public class HistoryManager
         }
     }
 
-    public async Task AddLocalHistory(HistoryRecord record, CancellationToken token)
+    public async Task AddLocalProfile(Profile profile, CancellationToken token)
     {
+        var record = await ToHistoryRecord(profile, token);
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
@@ -531,5 +537,19 @@ public class HistoryManager
         {
             _logger.Write("HistoryManager", $"Failed to cleanup history folders: {ex.Message}");
         }
+    }
+
+    private async Task<HistoryRecord> ToHistoryRecord(Profile profile, CancellationToken token)
+    {
+        var profileEntity = await profile.Persist(_profileEnv.GetPersistentDir(), token);
+        var record = new HistoryRecord
+        {
+            Text = profileEntity.Text,
+            Type = profileEntity.Type,
+            Size = profileEntity.Size,
+            Hash = profileEntity.Hash,
+            FilePath = profileEntity.FilePaths
+        };
+        return record;
     }
 }

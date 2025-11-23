@@ -35,6 +35,6 @@ public class HistoryService(HistoryManager historyManager, ConfigManager configM
             return;
         }
 
-        await historyManager.AddLocalHistory(await profile.ToHistoryRecord(token), token);
+        await historyManager.AddLocalProfile(profile, token);
     }
 }

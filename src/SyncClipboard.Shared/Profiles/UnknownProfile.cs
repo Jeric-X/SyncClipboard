@@ -33,23 +33,23 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override bool NeedsTransferData([NotNullWhen(true)] out string? dataPath)
+    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
     {
         dataPath = null;
         return false;
     }
 
-    public override Task<ProfilePersistentInfo> Persistentize(CancellationToken token)
+    public override Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }
 
-    public override Task<ProfileLocalInfo> Localize(CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }
 
-    public override Task<string?> PrepareTransferData(CancellationToken token)
+    public override Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }
@@ -59,7 +59,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task SetAndMoveTransferData(string path, CancellationToken token)
+    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         throw new NotImplementedException();
     }
