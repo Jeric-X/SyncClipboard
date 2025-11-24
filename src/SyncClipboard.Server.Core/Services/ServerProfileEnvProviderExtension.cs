@@ -4,7 +4,8 @@ public static class ServerProfileEnvProviderExtension
 {
     public static IServiceCollection AddServerProfileEnvProvider(this IServiceCollection services)
     {
-        services.AddSingleton<IProfileEnv, ServerProfileEnvProvider>();
+        services.AddSingleton<ServerEnvProvider>();
+        services.AddSingleton<IProfileEnv>(sp => sp.GetRequiredService<ServerEnvProvider>());
         return services;
     }
 }

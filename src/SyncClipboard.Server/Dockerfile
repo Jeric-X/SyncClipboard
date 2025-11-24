@@ -14,4 +14,4 @@ RUN dotnet restore "./SyncClipboard.Server/SyncClipboard.Server.csproj" \
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SyncClipboard.Server.dll", "--contentRoot", "./"]
+ENTRYPOINT ["dotnet", "SyncClipboard.Server.dll", "--contentRoot", "/app/data"]

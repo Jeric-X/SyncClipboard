@@ -64,12 +64,7 @@ public class Web
 
     public static async Task<WebApplication> StartAsync(ServerPara serverConfig)
     {
-        var builder = WebApplication.CreateBuilder(
-            new WebApplicationOptions
-            {
-                WebRootPath = Path.Combine(serverConfig.Path, "server"),
-            }
-        );
+        var builder = WebApplication.CreateBuilder();
 
         if (serverConfig.EnableCustomConfigurationFile)
         {

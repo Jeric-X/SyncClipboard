@@ -1,14 +1,24 @@
 namespace SyncClipboard.Server.Core.Services;
 
-public class ServerProfileEnvProvider(IWebHostEnvironment env) : IProfileEnv
+public class ServerEnvProvider(IWebHostEnvironment env) : IProfileEnv
 {
     public string GetHistoryPersistentDir()
     {
-        return Path.Combine(env.WebRootPath, "history");
+        return Path.Combine(GetDataRootPath(), "history");
     }
 
     public string GetPersistentDir()
     {
-        return Path.Combine(env.WebRootPath, "history");
+        return Path.Combine(GetDataRootPath(), "history");
+    }
+
+    public string GetDataRootPath()
+    {
+        return Path.Combine(env.ContentRootPath, "server");
+    }
+
+    public string GetDbDir()
+    {
+        return Path.Combine(GetDataRootPath(), "data");
     }
 }

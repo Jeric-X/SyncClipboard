@@ -1,6 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Server.Core.Services;
 
 namespace SyncClipboard.Server.Core.Utilities.History;
 
@@ -14,11 +15,13 @@ public class HistoryDbContext : DbContext
         _dbPath = "history.db";
     }
 
-    public HistoryDbContext(DbContextOptions<HistoryDbContext> options, IWebHostEnvironment env) : base(options)
+    public HistoryDbContext(DbContextOptions<HistoryDbContext> options, ServerEnvProvider serverEnv) : base(options)
     {
-        var webRoot = string.IsNullOrEmpty(env.WebRootPath) ? env.ContentRootPath : env.WebRootPath;
-        var dataFolder = Path.Combine(webRoot, "data");
-        if (!Directory.Exists(dataFolder)) Directory.CreateDirectory(dataFolder);
+        var dataFolder = serverEnv.GetDbDir();
+        if (!Directory.Exists(dataFolder))
+        {
+            Directory.CreateDirectory(dataFolder);
+        }
         _dbPath = Path.Combine(dataFolder, "history.db");
     }
 
