@@ -118,11 +118,12 @@ docker run -d \
   -p 5033:5033 \
   -e SYNCCLIPBOARD_USERNAME=your_username \
   -e SYNCCLIPBOARD_PASSWORD=your_password \
+  -v /data/syncclipboard-server:/app/data \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 
 # docker compose
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml >> docker-compose.yml
 docker compose up -d
 ```
 To configure HTTPS, map the `appsettings.json` and certificate files manually. The path for `appsettings.json` inside the container is `/app/appsettings.json`.

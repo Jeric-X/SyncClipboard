@@ -7,6 +7,7 @@ using SyncClipboard.Server.Core.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Server.Core.Services;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -14,9 +15,8 @@ namespace SyncClipboard.Server.Core.Controllers;
 [Authorize]
 public class SyncClipboardController(
     IHubContext<SyncClipboardHub> _hubContext,
-    IWebHostEnvironment _env,
     IMemoryCache _cache,
-    IProfileEnv _profileEnv,
+    ServerEnvProvider _serverEnv,
     HistoryService _historyService) : ControllerBase
 {
     private static bool InvalidFileName(string name)
@@ -57,7 +57,7 @@ public class SyncClipboardController(
     [ApiExplorerSettings(IgnoreApi = true)]
     public IActionResult FileFolderEnsure()
     {
-        var path = Path.Combine(_env.WebRootPath, "file");
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
         EnsureFolder(path);
         return Ok();
     }
@@ -65,7 +65,7 @@ public class SyncClipboardController(
     [HttpDelete("file")]
     public IActionResult DeleteFileFolder()
     {
-        var path = Path.Combine(_env.WebRootPath, "file");
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
         SafeDeleteFolder(path);
         return Ok();
     }
@@ -97,7 +97,7 @@ public class SyncClipboardController(
         {
             return BadRequest();
         }
-        var folder = Path.Combine(_env.WebRootPath, "file");
+        var folder = Path.Combine(_serverEnv.GetDataRootPath(), "file");
         EnsureFolder(folder);
         var path = Path.Combine(folder, fileName);
         using var fs = new FileStream(path, FileMode.Create);
@@ -110,7 +110,7 @@ public class SyncClipboardController(
     [HttpGet("SyncClipboard.json")]
     public async Task<ActionResult<ClipboardProfileDTO>> GetSyncProfile()
     {
-        var path = Path.Combine(_env.WebRootPath, "SyncClipboard.json");
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
         var cacheKey = path;
         if (_cache.TryGetValue(cacheKey, out ClipboardProfileDTO? cached))
         {
@@ -136,14 +136,14 @@ public class SyncClipboardController(
     [HttpPut("SyncClipboard.json")]
     public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto, CancellationToken token)
     {
-        var path = Path.Combine(_env.WebRootPath, "SyncClipboard.json");
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
         _cache.Set(path, profileDto);
         var text = JsonSerializer.Serialize(profileDto);
         var profile = ClipboardProfileDTO.CreateProfile(profileDto);
         if (string.IsNullOrEmpty(profileDto.File) is false)
         {
             var fileName = Path.GetFileName(profileDto.File);
-            var previousDataPath = Path.Combine(_env.WebRootPath, "file", fileName);
+            var previousDataPath = Path.Combine(_serverEnv.GetDataRootPath(), "file", fileName);
             if (!System.IO.File.Exists(previousDataPath))
             {
                 return BadRequest("Data file not found on server.");
@@ -151,7 +151,7 @@ public class SyncClipboardController(
 
             try
             {
-                await profile.SetAndMoveTransferData(_profileEnv.GetPersistentDir(), previousDataPath, token);
+                await profile.SetAndMoveTransferData(_serverEnv.GetPersistentDir(), previousDataPath, token);
             }
             catch when (!token.IsCancellationRequested)
             {
@@ -166,31 +166,6 @@ public class SyncClipboardController(
         ];
 
         await Task.WhenAll(tasks);
-        return Ok();
-    }
-
-    [HttpGet("{name}")]
-    public async Task<IActionResult> GetFileRoot(string name)
-    {
-        if (InvalidFileName(name))
-        {
-            return BadRequest();
-        }
-        var path = Path.Combine(_env.WebRootPath, name);
-        return await GetFileInternal(path);
-    }
-
-    [HttpPut("{name}")]
-    public async Task<IActionResult> PutFileRoot(string name)
-    {
-        if (InvalidFileName(name))
-        {
-            return BadRequest();
-        }
-        var path = Path.Combine(_env.WebRootPath, name);
-        using var fs = new FileStream(path, FileMode.Create);
-        await Request.Body.CopyToAsync(fs);
-        _cache.Remove(Path.Combine(_env.WebRootPath, "SyncClipboard.json"));
         return Ok();
     }
 

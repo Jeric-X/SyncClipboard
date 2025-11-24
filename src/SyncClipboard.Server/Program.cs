@@ -11,6 +11,7 @@ public class Program
 
     public static void Main(string[] args)
     {
+        Console.WriteLine("Starting SyncClipboard Server...");
         var reloadOnChangeEnvStr = Environment.GetEnvironmentVariable(ENV_VAR_RELOAD_ON_CHANGE);
         if (string.IsNullOrEmpty(reloadOnChangeEnvStr))
         {
@@ -20,10 +21,11 @@ public class Program
         var builder = WebApplication.CreateBuilder(
             new WebApplicationOptions
             {
-                Args = args,
-                WebRootPath = "server"
+                Args = args
             }
         );
+
+        EnsureAppSettingsExists(builder.Environment.ContentRootPath);
 
         var envUsername = Environment.GetEnvironmentVariable(ENV_VAR_USERNAME);
         var envPassword = Environment.GetEnvironmentVariable(ENV_VAR_PASSWORD);
@@ -39,5 +41,33 @@ public class Program
         }
         var app = Web.Configure(builder);
         app.Run();
+    }
+
+    private static void EnsureAppSettingsExists(string contentRootPath)
+    {
+        var targetAppSettingsPath = Path.Combine(contentRootPath, "appsettings.json");
+
+        if (!File.Exists(targetAppSettingsPath))
+        {
+            var programDirectory = AppContext.BaseDirectory;
+            var defaultAppSettingsPath = Path.Combine(programDirectory, "appsettings.json");
+
+            if (!File.Exists(defaultAppSettingsPath))
+            {
+                Console.WriteLine($"Error: default appsettings.json not found at {defaultAppSettingsPath}");
+                throw new FileNotFoundException("Error: default appsettings.json not found", defaultAppSettingsPath);
+            }
+
+            try
+            {
+                File.Copy(defaultAppSettingsPath, targetAppSettingsPath);
+                Console.WriteLine($"Copied default appsettings.json to {targetAppSettingsPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to copy appsettings.json: {ex.Message}");
+                throw;
+            }
+        }
     }
 }

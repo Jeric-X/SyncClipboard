@@ -120,11 +120,12 @@ docker run -d \
   -p 5033:5033 \
   -e SYNCCLIPBOARD_USERNAME=your_username \
   -e SYNCCLIPBOARD_PASSWORD=your_password \
+  -v /data/syncclipboard-server:/app/data \
   --restart unless-stopped \
   jericx/syncclipboard-server:latest
 
 # docker compose
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml >> docker-compose.yml
 docker compose up -d
 ```
 如需配置HTTPS，请自行映射`appsettings.json`和证书文件，`appsettings.json`的容器内路径为`/app/appsettings.json`
