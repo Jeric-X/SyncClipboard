@@ -20,7 +20,7 @@ public static class Utility
 
     public static async Task<string> CalculateFileSHA256(string path, CancellationToken token)
     {
-        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 81920, FileOptions.SequentialScan | FileOptions.Asynchronous);
         var hashBytes = await SHA256.HashDataAsync(file, token);
         return Convert.ToHexString(hashBytes);
     }

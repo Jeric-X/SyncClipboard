@@ -9,6 +9,7 @@ public class ImageProfile : FileProfile
 
     private IClipboardImage? _clipboardImage;
     private byte[]? _rawImageBytes;
+    private readonly SemaphoreSlim _rawImageLock = new(1, 1);
 
     public ImageProfile(ProfilePersistentInfo entity) : base(entity)
     {
@@ -35,46 +36,40 @@ public class ImageProfile : FileProfile
             return _rawImageBytes;
         }
 
-        if (_clipboardImage is not null)
+        await _rawImageLock.WaitAsync(token);
+        try
         {
-            _rawImageBytes = await _clipboardImage.SaveToBytes(token);
-            _clipboardImage = null;
+            if (_rawImageBytes is not null)
+            {
+                return _rawImageBytes;
+            }
+
+            if (_clipboardImage is not null)
+            {
+                _rawImageBytes = await _clipboardImage.SaveToBytes(token);
+                _clipboardImage = null;
+            }
+            return _rawImageBytes;
         }
-        return _rawImageBytes;
+        finally
+        {
+            _rawImageLock.Release();
+        }
     }
 
-    public override async ValueTask<long> GetSize(CancellationToken token)
+    public override async Task ReComputeHashAndSize(CancellationToken token)
     {
-        if (_size is not null)
-        {
-            return _size.Value;
-        }
-
         var rawBytes = await GetRawImageBytes(token);
         if (rawBytes is not null)
         {
-            _size = rawBytes.Length;
-        }
-
-        return await base.GetSize(token);
-    }
-
-    public override async ValueTask<string> GetHash(CancellationToken token)
-    {
-        if (_hash is not null)
-        {
-            return _hash;
-        }
-
-        var rawBytes = await GetRawImageBytes(token);
-        if (rawBytes is not null)
-        {
+            Size = rawBytes.Length;
             var contentHash = await Utility.CalculateSHA256(rawBytes, token);
-            _hash = await CombineHash(FileName, contentHash, token);
-            return _hash;
+            Hash = await CombineHash(FileName, contentHash, token);
         }
-
-        return await base.GetHash(token);
+        else
+        {
+            await base.ReComputeHashAndSize(token);
+        }
     }
 
     private async Task WriteRawImageBytesToFile(string persistentDir, bool exception, CancellationToken token)

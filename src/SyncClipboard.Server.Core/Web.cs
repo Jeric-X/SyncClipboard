@@ -64,7 +64,12 @@ public class Web
 
     public static async Task<WebApplication> StartAsync(ServerPara serverConfig)
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(
+            new WebApplicationOptions
+            {
+                ContentRootPath = serverConfig.Path,
+            }
+        );
 
         if (serverConfig.EnableCustomConfigurationFile)
         {

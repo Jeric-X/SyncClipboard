@@ -16,8 +16,6 @@ public class GroupProfile : Profile
     public override bool HasTransferData => true;
     private string? _transferDataName = null;
     private string? _transferDataPath;
-    private string? _hash;
-    private long? _size;
     private string[]? _files;
     public string[] Files => _files ?? [];
 
@@ -34,7 +32,7 @@ public class GroupProfile : Profile
     public GroupProfile(IEnumerable<string> files, string hash, string? dataPath = null)
     {
         _files = [.. files];
-        _hash = string.IsNullOrEmpty(hash) ? null : hash;
+        Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
     }
 
@@ -52,33 +50,12 @@ public class GroupProfile : Profile
     public GroupProfile(ClipboardProfileDTO profileDTO)
     {
         _transferDataName = profileDTO.File;
-        _hash = profileDTO.Clipboard;
+        Hash = profileDTO.Clipboard;
     }
 
-    public override async ValueTask<string> GetHash(CancellationToken token)
+    public override async Task ReComputeHashAndSize(CancellationToken token)
     {
-        if (_hash is null)
-        {
-            (_hash, _size) = await CaclHashAndSizeAsync(_files ?? [], token);
-        }
-
-        return _hash;
-    }
-
-    public override async ValueTask<long> GetSize(CancellationToken token)
-    {
-        if (_size is null)
-        {
-            (_hash, _size) = await CaclHashAndSizeAsync(_files ?? [], token); ;
-        }
-
-        return _size.Value;
-    }
-
-    private Task<(string, long)> CaclHashAndSizeAsync(IEnumerable<string> filesEnum, CancellationToken token)
-    {
-        // 内部有许多操作使用的是同步API，放在线程池中执行
-        return Task.Run(() => CaclHashAndSize(filesEnum, token), token).WaitAsync(token);
+        (Hash, Size) = await Task.Run(() => CaclHashAndSize(_files ?? [], token), token).WaitAsync(token);
     }
 
     /// <summary>
@@ -102,7 +79,7 @@ public class GroupProfile : Profile
         if (!inputFiles.Any())
         {
             var emptyHash = SHA256.HashData(EntryEncoding.GetBytes(string.Empty));
-            return (BytesToHex(emptyHash), 0);
+            return (Convert.ToHexString(emptyHash), 0);
         }
 
         var firstPath = inputFiles.First();
@@ -130,7 +107,7 @@ public class GroupProfile : Profile
         }
 
         var finalBytes = incremental.GetHashAndReset();
-        return (BytesToHex(finalBytes), totalSize);
+        return (Convert.ToHexString(finalBytes), totalSize);
     }
 
     private void SearchDirEntries(IEnumerable<string> dirs, string root, ref long totalSize, List<GroupEntry> entries, CancellationToken token)
@@ -226,23 +203,12 @@ public class GroupProfile : Profile
         await ConcurrencyComputeLimiter.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            using var sha256 = SHA256.Create();
-            await using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.SequentialScan | FileOptions.Asynchronous);
-            var hashBytes = await sha256.ComputeHashAsync(fs, token).ConfigureAwait(false);
-            return BytesToHex(hashBytes);
+            return await Utility.CalculateFileSHA256(filePath, token);
         }
         finally
         {
             ConcurrencyComputeLimiter.Release();
         }
-    }
-
-    private static string BytesToHex(ReadOnlySpan<byte> bytes)
-    {
-        var sb = new StringBuilder(bytes.Length * 2);
-        foreach (var b in bytes)
-            sb.Append(b.ToString("x2"));
-        return sb.ToString();
     }
 
     public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
@@ -377,13 +343,14 @@ public class GroupProfile : Profile
         var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractDir, token).ConfigureAwait(false);
         _files = topLevelFiles;
 
-        var (hash, _) = await CaclHashAndSizeAsync(_files, token);
-        if (_hash is not null && hash != _hash)
+        var (hash, size) = await Task.Run(() => CaclHashAndSize(_files, token), token).WaitAsync(token);
+        if (Hash is not null && hash != Hash)
         {
-            var errorMsg = $"Group data hash mismatch. Expected: {_hash}, Actual: {hash}";
+            var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
         }
-        _hash = hash;
+        Hash = hash;
+        Size = size;
         _transferDataPath = path;
         _transferDataName = Path.GetFileName(path);
     }
@@ -422,7 +389,7 @@ public class GroupProfile : Profile
 
         await SetTranseferData(path, true, token);
 
-        var workingDir = GetWorkingDir(persistentDir, Type, _hash!);
+        var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -434,7 +401,7 @@ public class GroupProfile : Profile
         File.Move(path, targetPath, true);
         try
         {
-            Directory.Delete(path[..^4], true);
+            Directory.Move(path[..^4], targetPath[..^4]);
         }
         catch { }
         _transferDataPath = targetPath;
@@ -454,15 +421,15 @@ public class GroupProfile : Profile
         if (quick)
             return true;
 
-        if (_hash is null)
+        if (Hash is null)
         {
             return true;
         }
 
         try
         {
-            var (hash, _) = await CaclHashAndSizeAsync(_files, token);
-            return string.Equals(hash, _hash, StringComparison.OrdinalIgnoreCase);
+            var (hash, _) = await Task.Run(() => CaclHashAndSize(_files, token), token).WaitAsync(token);
+            return string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
@@ -472,10 +439,10 @@ public class GroupProfile : Profile
 
     public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
     {
-        if (_transferDataPath is null && _hash is not null)
+        if (_transferDataPath is null && Hash is not null)
         {
             var fileName = _transferDataName ?? CreateNewDataFileName();
-            dataPath = Path.Combine(GetWorkingDir(persistentDir, _hash ?? string.Empty), fileName);
+            dataPath = Path.Combine(GetWorkingDir(persistentDir, Hash ?? string.Empty), fileName);
             return true;
         }
         dataPath = null;

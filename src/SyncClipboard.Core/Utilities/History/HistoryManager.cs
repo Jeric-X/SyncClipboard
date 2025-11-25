@@ -97,7 +97,7 @@ public class HistoryManager
 
     private async Task DeleteHistoryInternal(HistoryDbContext _dbContext, HistoryRecord record, CancellationToken token = default)
     {
-        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        var entity = await Query(record.Type, record.Hash, token);
         if (entity != null)
         {
             var tempFolderPath = GetTempFolderPath(entity);
@@ -122,6 +122,7 @@ public class HistoryManager
     public async Task AddLocalProfile(Profile profile, CancellationToken token)
     {
         var record = await ToHistoryRecord(profile, token);
+        record.Hash = record.Hash.ToUpperInvariant();
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
@@ -166,7 +167,8 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        return _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == type && r.Hash == hash);
+        hash = hash.ToUpperInvariant();
+        return await Query(type, hash, token);
     }
 
     public async Task UpdateHistory(HistoryRecord record, CancellationToken token = default)
@@ -174,7 +176,7 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        var entity = await Query(record.Type, record.Hash, token);
         if (entity != null)
         {
             entity.Stared = record.Stared;
@@ -208,10 +210,11 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        var entity = await Query(record.Type, record.Hash, token);
         if (entity is null)
         {
             // 如果本地不存在，直接添加（用于服务器回写新增场景）
+            record.Hash = record.Hash.ToUpperInvariant();
             await _dbContext.HistoryRecords.AddAsync(record, token);
             await _dbContext.SaveChangesAsync(token);
             HistoryAdded?.Invoke(record);
@@ -235,7 +238,7 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash);
+        var entity = await Query(record.Type, record.Hash, token);
         if (entity is null)
         {
             return;
@@ -276,7 +279,7 @@ public class HistoryManager
 
         foreach (var dto in remoteRecords)
         {
-            var entity = _dbContext.HistoryRecords.FirstOrDefault(r => r.Type == dto.Type && r.Hash == dto.Hash);
+            var entity = await Query(dto.Type, dto.Hash, token);
             if (entity == null)
             {
                 if (dto.IsDeleted == false)
@@ -551,5 +554,13 @@ public class HistoryManager
             FilePath = profileEntity.FilePaths
         };
         return record;
+    }
+
+    private Task<HistoryRecord?> Query(ProfileType type, string hash, CancellationToken token)
+    {
+#pragma warning disable CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
+        return _dbContext.HistoryRecords.FirstOrDefaultAsync(
+            r => r.Hash == hash.ToUpperInvariant() && r.Type == type, token);
+#pragma warning restore CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
     }
 }
