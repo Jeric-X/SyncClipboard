@@ -16,9 +16,6 @@ public class FileProfile : Profile
     public virtual string? FullPath { get; set; }
     public override bool HasTransferData => true;
 
-    protected string? _hash;
-    protected long? _size;
-
     protected const string HASH_FOR_OVERSIZED_FILE = "HASH_FOR_OVERSIZED_FILE";
 
     public FileProfile(ProfilePersistentInfo entity)
@@ -32,7 +29,7 @@ public class FileProfile : Profile
             FullPath = entity.TransferDataFile;
         }
         FileName = entity.Text;
-        _hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
+        Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
     }
 
     public FileProfile(string? fullPath, string? fileName = null, string? hash = null)
@@ -52,41 +49,26 @@ public class FileProfile : Profile
         }
 
         FullPath = fullPath;
-        _hash = string.IsNullOrEmpty(hash) ? null : hash;
+        Hash = string.IsNullOrEmpty(hash) ? null : hash;
     }
 
     public FileProfile(ClipboardProfileDTO profileDTO) : this(null, profileDTO.File, profileDTO.Clipboard)
     {
     }
 
-    public override ValueTask<long> GetSize(CancellationToken token)
+    public override async Task ReComputeHashAndSize(CancellationToken token)
     {
-        if (_size is null)
+        if (FullPath is null || !File.Exists(FullPath))
         {
-            if (FullPath is null || !File.Exists(FullPath))
-            {
-                return ValueTask.FromResult(0L);
-            }
-
+            Hash = string.Empty;
+            Size = 0L;
+        }
+        else
+        {
             var fileInfo = new FileInfo(FullPath);
-            _size = fileInfo.Length;
+            Size = fileInfo.Length;
+            Hash = await GetSHA256HashFromFile(FullPath, token);
         }
-        return ValueTask.FromResult(_size.Value);
-    }
-
-    public override async ValueTask<string> GetHash(CancellationToken token)
-    {
-        if (_hash is null)
-        {
-            if (FullPath is null)
-            {
-                return string.Empty;
-            }
-
-            _hash = await GetSHA256HashFromFile(FullPath, token); ;
-        }
-
-        return _hash;
     }
 
     public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);
@@ -138,11 +120,11 @@ public class FileProfile : Profile
         }
 
         var hash = await GetSHA256HashFromFile(path, token);
-        if (_hash is not null && hash != _hash)
+        if (Hash is not null && hash != Hash)
         {
             throw new InvalidDataException("Hash mismatch for the provided file.");
         }
-        _hash = hash;
+        Hash = hash;
         FullPath = path;
         FileName = Path.GetFileName(path);
     }
@@ -156,7 +138,7 @@ public class FileProfile : Profile
 
         await SetTranseferData(path, true, token);
 
-        var workingDir = GetWorkingDir(persistentDir, Type, _hash!);
+        var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -180,7 +162,7 @@ public class FileProfile : Profile
         if (quick)
             return true;
 
-        if (_hash is null)
+        if (Hash is null)
         {
             return true;
         }
@@ -188,7 +170,7 @@ public class FileProfile : Profile
         try
         {
             var hash = await GetSHA256HashFromFile(FullPath, token);
-            return hash == _hash;
+            return hash == Hash;
         }
         catch
         {
@@ -200,7 +182,7 @@ public class FileProfile : Profile
     {
         if (FullPath is null && FileName is not null)
         {
-            dataPath = Path.Combine(GetWorkingDir(persistentDir, Type, _hash ?? string.Empty), FileName);
+            dataPath = Path.Combine(GetWorkingDir(persistentDir, Type, Hash ?? string.Empty), FileName);
             return true;
         }
         dataPath = null;

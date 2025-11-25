@@ -64,13 +64,15 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     //   q: optional search text (matches Text field, case-insensitive)
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] int page = 1,
+        [FromQuery] int? page,
         [FromQuery] long? before = null,
         [FromQuery] long? after = null,
-        [FromQuery] ProfileTypeFilter types = ProfileTypeFilter.All,
+        [FromQuery] ProfileTypeFilter? types = ProfileTypeFilter.All,
         [FromQuery(Name = "q")] string? searchText = null,
         [FromQuery] bool? starred = null)
     {
+        page ??= 1;
+        types ??= ProfileTypeFilter.All;
         if (page < 1)
             return BadRequest("page must be >= 1");
 
@@ -109,11 +111,11 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
         var list = await _historyService.GetListAsync(
             HARD_CODED_USER_ID,
-            page,
+            page.Value,
             PAGE_SIZE,
             beforeDt,
             afterDt,
-            types,
+            types.Value,
             searchText,
             starred);
         return Ok(list);

@@ -16,7 +16,7 @@ public static class MapperExtensions
             Text = dto.Text,
             Type = dto.Type,
             FilePath = [],
-            Hash = dto.Hash,
+            Hash = dto.Hash.ToUpperInvariant(),
             Timestamp = dto.CreateTime.UtcDateTime,
             Stared = dto.Starred,
             Pinned = dto.Pinned,

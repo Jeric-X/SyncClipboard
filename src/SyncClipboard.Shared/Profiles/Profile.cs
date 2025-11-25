@@ -5,13 +5,64 @@ namespace SyncClipboard.Shared.Profiles;
 
 public abstract class Profile
 {
+    protected string? Hash;
+    protected long? Size;
+    protected readonly SemaphoreSlim _hashInitLock = new(1, 1);
+
     public abstract ProfileType Type { get; }
     public abstract string DisplayText { get; }
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
     public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
-    public abstract ValueTask<long> GetSize(CancellationToken token);
-    public abstract ValueTask<string> GetHash(CancellationToken token);
+    public abstract Task ReComputeHashAndSize(CancellationToken token);
+
+    public async ValueTask<long> GetSize(CancellationToken token)
+    {
+        if (Size is not null)
+        {
+            return Size.Value;
+        }
+
+        await _hashInitLock.WaitAsync(token);
+        try
+        {
+            if (Size is not null)
+            {
+                return Size.Value;
+            }
+
+            await ReComputeHashAndSize(token);
+            return Size!.Value;
+        }
+        finally
+        {
+            _hashInitLock.Release();
+        }
+    }
+
+    public async ValueTask<string> GetHash(CancellationToken token)
+    {
+        if (Hash is not null)
+        {
+            return Hash;
+        }
+
+        await _hashInitLock.WaitAsync(token);
+        try
+        {
+            if (Hash is not null)
+            {
+                return Hash;
+            }
+
+            await ReComputeHashAndSize(token);
+            return Hash!;
+        }
+        finally
+        {
+            _hashInitLock.Release();
+        }
+    }
     public abstract Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token);
     public abstract Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token);
 

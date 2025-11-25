@@ -17,6 +17,7 @@ using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Server.Core.Models;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -857,22 +858,21 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
     {
+        var actions = new List<MenuItem>();
+        var isDiagnoseMode = _configManager.GetConfig<ProgramConfig>().DiagnoseMode;
+        if (isDiagnoseMode)
+        {
+            actions.Add(new MenuItem($"Hash: {record.Hash}", null));
+        }
+
         if (record.SyncState == SyncStatus.ServerOnly)
         {
-            return
-            [
-                new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(record.ToHistoryRecord()); }),
-                new MenuItem(I18n.Strings.Download, () => _ = DownloadRemoteProfile(record))
-            ];
+            actions.Add(new MenuItem(I18n.Strings.Download, () => _ = DownloadRemoteProfile(record)));
         }
 
         if (record.SyncState == SyncStatus.LocalOnly && historySyncServer != null)
         {
-            return
-            [
-                new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(record.ToHistoryRecord()); }),
-                new MenuItem(I18n.Strings.Uploaded, () => _ = UploadLocalHistoryAsync(record))
-            ];
+            actions.Add(new MenuItem(I18n.Strings.Uploaded, () => _ = UploadLocalHistoryAsync(record)));
         }
 
         var profile = record.ToHistoryRecord().ToProfile();
@@ -881,13 +881,14 @@ public partial class HistoryViewModel : ObservableObject
         if (!valid)
         {
             var historyRecord = record.ToHistoryRecord();
-            return
-            [
-                new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(historyRecord); })
-            ];
+            actions.Add(new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(historyRecord); }));
         }
-
-        return await profileActionBuilder.Build(profile, CancellationToken.None);
+        else
+        {
+            var menuItems = await profileActionBuilder.Build(profile, CancellationToken.None);
+            actions.AddRange(menuItems);
+        }
+        return actions;
     }
 
     [RelayCommand]
@@ -921,7 +922,8 @@ public partial class HistoryViewModel : ObservableObject
         {
             await HandleUploadConflictAsync(vm, ex);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
         {
             vm.SyncState = SyncStatus.SyncError;
             vm.ErrorMessage = ex.Message;

@@ -52,6 +52,7 @@ public class HistoryService
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
+        hash = hash.ToUpperInvariant();
         var existing = await Query(userId, type, hash, token);
         if (existing is null)
         {
@@ -352,8 +353,10 @@ public class HistoryService
 
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)
     {
+#pragma warning disable CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(
-            r => r.UserId == userId && r.Hash == hash && r.Type == type, token);
+            r => r.UserId == userId && r.Hash == hash.ToUpperInvariant() && r.Type == type, token);
+#pragma warning restore CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
     }
 
     /// <summary>
@@ -396,7 +399,7 @@ public class HistoryService
         {
             UserId = userId,
             Type = incoming.Type,
-            Hash = incoming.Hash,
+            Hash = incoming.Hash.ToUpperInvariant(),
             Text = incoming.Text,
             Size = 0,
             CreateTime = incoming.CreateTime.UtcDateTime,

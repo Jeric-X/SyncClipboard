@@ -23,14 +23,11 @@ public class UnknownProfile : Profile
         return Task.FromResult(false);
     }
 
-    public override ValueTask<string> GetHash(CancellationToken token)
+    public override Task ReComputeHashAndSize(CancellationToken token)
     {
-        return ValueTask.FromResult("UNKNOWN_PROFILE_HASH");
-    }
-
-    public override ValueTask<long> GetSize(CancellationToken token)
-    {
-        throw new NotImplementedException();
+        Hash = "UNKNOWN_PROFILE_HASH";
+        Size = 0;
+        return Task.CompletedTask;
     }
 
     public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)

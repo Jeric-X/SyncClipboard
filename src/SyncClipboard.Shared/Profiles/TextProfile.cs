@@ -13,8 +13,6 @@ public class TextProfile : Profile
     public override string DisplayText => _text;
     public override string ShortDisplayText => GetShortDisplayText();
     public override bool HasTransferData => _hasTransferData;
-    private string? _hash = null;
-    private long _size;
     private readonly bool _hasTransferData = false;
     private string? _transferDataPath;
     private readonly string _text;
@@ -22,8 +20,8 @@ public class TextProfile : Profile
 
     public TextProfile(string text)
     {
-        _size = text.Length;
-        if (_size > TRANSFER_DATA_THRESHOLD)
+        Size = text.Length;
+        if (Size > TRANSFER_DATA_THRESHOLD)
         {
             _fullText = text;
             _text = text[0..TRANSFER_DATA_THRESHOLD];
@@ -40,8 +38,8 @@ public class TextProfile : Profile
         _text = entity.Text;
         _hasTransferData = !string.IsNullOrEmpty(entity.TransferDataFile);
         _transferDataPath = _hasTransferData ? entity.TransferDataFile : null;
-        _size = entity.Size;
-        _hash = entity.Hash;
+        Size = entity.Size;
+        Hash = entity.Hash;
     }
 
     public string GetShortDisplayText()
@@ -101,56 +99,29 @@ public class TextProfile : Profile
         }
     }
 
-    public override async ValueTask<string> GetHash(CancellationToken token)
+    public override async Task ReComputeHashAndSize(CancellationToken token)
     {
-        if (_hash is not null)
-        {
-            return _hash;
-        }
-
         if (_fullText is not null)
         {
-            _hash = await Utility.CalculateSHA256(_fullText, token);
-            return _hash;
+            Size = _fullText.Length;
+            Hash = await Utility.CalculateSHA256(_fullText, token);
+            return;
         }
 
         if (HasTransferData)
         {
             if (File.Exists(_transferDataPath))
             {
-                _hash = await Utility.CalculateFileSHA256(_transferDataPath, token);
-                return _hash;
+                var fullText = await File.ReadAllTextAsync(_transferDataPath, Encoding.UTF8, token);
+                Size = fullText.Length;
+                Hash = await Utility.CalculateFileSHA256(_transferDataPath, token);
+                return;
             }
             throw new Exception("Text profile data is not ready.");
         }
 
-        _hash = await Utility.CalculateSHA256(_text, token);
-
-        return _hash;
-    }
-
-    public override async ValueTask<long> GetSize(CancellationToken token)
-    {
-        if (_size != 0)
-        {
-            return _size;
-        }
-
-        if (_fullText is not null)
-        {
-            _size = _fullText.Length;
-            return _size;
-        }
-
-        if (HasTransferData && File.Exists(_transferDataPath))
-        {
-            var fullText = await File.ReadAllTextAsync(_transferDataPath, Encoding.UTF8, token);
-            _size = fullText.Length;
-            return _size;
-        }
-
-        _size = _text.Length;
-        return _size;
+        Size = _text.Length;
+        Hash = await Utility.CalculateSHA256(_text, token);
     }
 
     public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
@@ -164,7 +135,7 @@ public class TextProfile : Profile
         if (File.Exists(_transferDataPath) is false)
         {
             var fileName = $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
-            dataPath = Path.Combine(GetWorkingDir(persistentDir, _hash ?? string.Empty), fileName);
+            dataPath = Path.Combine(GetWorkingDir(persistentDir, Hash ?? string.Empty), fileName);
             return true;
         }
         return false;
@@ -236,7 +207,7 @@ public class TextProfile : Profile
 
         await SetTranseferData(path, true, token);
 
-        var workingDir = GetWorkingDir(persistentDir, Type, _hash!);
+        var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
