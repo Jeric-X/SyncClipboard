@@ -152,15 +152,16 @@ public class SyncClipboardController(
             try
             {
                 await profile.SetAndMoveTransferData(_serverEnv.GetPersistentDir(), previousDataPath, token);
-                await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
-                await System.IO.File.WriteAllTextAsync(path, text, token);
-                await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto, token);
             }
             catch when (!token.IsCancellationRequested)
             {
                 return BadRequest("Data file is invalid.");
             }
         }
+
+        await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
+        await System.IO.File.WriteAllTextAsync(path, text, token);
+        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto, token);
 
         return Ok();
     }
