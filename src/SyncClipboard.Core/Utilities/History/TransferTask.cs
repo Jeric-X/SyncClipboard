@@ -27,6 +27,7 @@ public class TransferTask
     public double Progress { get; set; }
     public bool IsImmediateTask { get; set; }
     public Progress<HttpDownloadProgress> ProgressReporter { get; }
+    public IProgress<HttpDownloadProgress>? ExternalProgressReporter { get; set; }
     public long? TotalBytes { get; set; }
     public long? TransferredBytes { get; set; }
     public string? ErrorMessage { get; set; }
@@ -67,5 +68,7 @@ public class TransferTask
 
         TotalBytes = (long?)p.TotalBytesToReceive;
         TransferredBytes = (long)p.BytesReceived;
+
+        ExternalProgressReporter?.Report(p);
     }
 }

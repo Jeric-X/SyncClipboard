@@ -152,6 +152,33 @@ public class HistoryManager
         HistoryAdded?.Invoke(record);
     }
 
+    public async Task AddRemoteProfile(Profile profile, CancellationToken token)
+    {
+        var record = await ToRemoteHistoryRecord(profile, token);
+        record.Hash = record.Hash.ToUpperInvariant();
+        if (string.IsNullOrEmpty(record.Hash))
+            return;
+
+        record.IsLocalFileReady = false;
+        record.SyncStatus = HistorySyncStatus.Synced;
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
+        {
+            entity.IsDeleted = false;
+            entity.LastModified = DateTime.UtcNow;
+            entity.SyncStatus = HistorySyncStatus.Synced;
+            await _dbContext.SaveChangesAsync(token);
+            HistoryUpdated?.Invoke(entity);
+            return;
+        }
+
+        await _dbContext.HistoryRecords.AddAsync(record, token);
+        await _dbContext.SaveChangesAsync(token);
+        HistoryAdded?.Invoke(record);
+    }
+
     public async Task<List<HistoryRecord>> GetHistory()
     {
         await _dbSemaphore.WaitAsync();
@@ -560,6 +587,18 @@ public class HistoryManager
             Size = profileEntity.Size,
             Hash = profileEntity.Hash,
             FilePath = profileEntity.FilePaths
+        };
+        return record;
+    }
+
+    public static async Task<HistoryRecord> ToRemoteHistoryRecord(Profile profile, CancellationToken token)
+    {
+        var record = new HistoryRecord
+        {
+            Text = profile.DisplayText,
+            Type = profile.Type,
+            Size = await profile.GetSize(token),
+            Hash = await profile.GetHash(token),
         };
         return record;
     }

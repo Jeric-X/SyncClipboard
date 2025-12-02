@@ -7,4 +7,6 @@ public interface IEventServerAdapter : IStorageBasedServerAdapter
     event Action<ClipboardProfileDTO>? ProfileDtoChanged;
     event Action<Exception?> ServerDisconnected;
     event Action ServerConnected;
+
+    Task SetCurrentProfile(ProfileType type, string hash, CancellationToken cancellationToken = default);
 }

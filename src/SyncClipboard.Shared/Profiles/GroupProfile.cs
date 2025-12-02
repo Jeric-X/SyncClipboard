@@ -53,9 +53,18 @@ public class GroupProfile : Profile
         Hash = profileDTO.Clipboard;
     }
 
-    public override async Task ReComputeHashAndSize(CancellationToken token)
+    protected override async Task ComputeHash(CancellationToken token)
     {
-        (Hash, Size) = await Task.Run(() => CaclHashAndSize(_files ?? [], token), token).WaitAsync(token);
+        var (hash, size) = await Task.Run(() => CaclHashAndSize(_files ?? [], token), token).WaitAsync(token);
+        Hash = hash;
+        Size ??= size;
+    }
+
+    protected override async Task ComputeSize(CancellationToken token)
+    {
+        var (hash, size) = await Task.Run(() => CaclHashAndSize(_files ?? [], token), token).WaitAsync(token);
+        Size = size;
+        Hash ??= hash;
     }
 
     /// <summary>
@@ -213,6 +222,11 @@ public class GroupProfile : Profile
 
     public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
+        if (File.Exists(_transferDataPath))
+        {
+            return _transferDataPath;
+        }
+
         ArgumentNullException.ThrowIfNull(_files);
         var fileName = _transferDataName ?? CreateNewDataFileName();
         var filePath = Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), fileName);

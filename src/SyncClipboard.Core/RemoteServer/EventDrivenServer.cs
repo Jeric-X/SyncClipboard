@@ -5,6 +5,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.RemoteServer;
 
@@ -15,6 +16,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
     private readonly IEventServerAdapter _serverAdapter;
     private readonly ITrayIcon _trayIcon;
     private readonly ILogger _logger;
+    private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly SingletonTask _singletonQueryTask = new SingletonTask();
     private bool _disconnected = true;
 
@@ -24,6 +26,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _serverAdapter = serverAdapter;
         _logger = sp.GetRequiredService<ILogger>();
         _trayIcon = sp.GetRequiredService<ITrayIcon>();
+        _historyTransferQueue = sp.GetRequiredService<HistoryTransferQueue>();
         _testAliveHelper = new TestAliveHelper(TestConnectionAsync);
         _testAliveHelper.TestSuccessed += OnTestAliveSuccessed;
         _serverHelper.ExceptionOccurred += OnServerHelperExceptionOccurred;
@@ -120,7 +123,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        return _serverHelper.DownloadProfileDataAsync(profile, progress, cancellationToken);
+        return _historyTransferQueue.Download(profile, progress, cancellationToken);
     }
 
     public Task<Profile> GetProfileAsync(CancellationToken cancellationToken = default)
@@ -133,9 +136,11 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _testAliveHelper.Restart();
     }
 
-    public Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
+    public async Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        return _serverHelper.SetProfileAsync(profile, cancellationToken);
+        await _historyTransferQueue.Upload(profile, null, cancellationToken);
+        var hash = await profile.GetHash(cancellationToken);
+        await _serverAdapter.SetCurrentProfile(profile.Type, hash, cancellationToken);
     }
 
     public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)

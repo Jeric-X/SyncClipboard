@@ -451,6 +451,7 @@ public class DownloadService : Service
             }
             else
             {
+                await _historyManager.AddRemoteProfile(remoteProfile, cancelToken);
                 await DownloadFileProfileData(remoteProfile, cancelToken);
             }
         }

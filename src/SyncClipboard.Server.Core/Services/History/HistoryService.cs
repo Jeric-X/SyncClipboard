@@ -342,13 +342,8 @@ public class HistoryService
             return null;
         }
 
-        var path = entity.TransferDataFile;
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-        {
-            return null;
-        }
-
-        return path;
+        var profile = entity.ToProfile(_persistentDir);
+        return await profile.PrepareTransferData(_persistentDir, token);
     }
 
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)
@@ -357,6 +352,22 @@ public class HistoryService
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(
             r => r.UserId == userId && r.Hash == hash.ToUpperInvariant() && r.Type == type, token);
 #pragma warning restore CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
+    }
+
+    public async Task<Profile?> GetProfileAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var entity = await Query(userId, type, hash, token);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.LastAccessed = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(token);
+        return entity.ToProfile(_persistentDir);
     }
 
     /// <summary>

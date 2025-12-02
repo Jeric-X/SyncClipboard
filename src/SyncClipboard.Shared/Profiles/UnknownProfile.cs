@@ -23,9 +23,14 @@ public class UnknownProfile : Profile
         return Task.FromResult(false);
     }
 
-    public override Task ReComputeHashAndSize(CancellationToken token)
+    protected override Task ComputeHash(CancellationToken token)
     {
         Hash = "UNKNOWN_PROFILE_HASH";
+        return Task.CompletedTask;
+    }
+
+    protected override Task ComputeSize(CancellationToken token)
+    {
         Size = 0;
         return Task.CompletedTask;
     }

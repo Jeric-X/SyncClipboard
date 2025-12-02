@@ -62,14 +62,14 @@ public class HistoryTransferQueue : IDisposable
         return await EnqueueTask(TransferType.Upload, profile, ct);
     }
 
-    public Task Download(Profile profile, CancellationToken ct = default)
+    public Task Download(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken ct = default)
     {
-        return ExecuteImmediateTask(TransferType.Download, profile, ct);
+        return ExecuteImmediateTask(TransferType.Download, profile, progress, ct);
     }
 
-    public Task Upload(Profile profile, CancellationToken ct = default)
+    public Task Upload(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken ct = default)
     {
-        return ExecuteImmediateTask(TransferType.Upload, profile, ct);
+        return ExecuteImmediateTask(TransferType.Upload, profile, progress, ct);
     }
 
     private bool GetRunningTask(string taskId, [NotNullWhen(true)] out TransferTask? task)
@@ -95,7 +95,7 @@ public class HistoryTransferQueue : IDisposable
         return false;
     }
 
-    private async Task ExecuteImmediateTask(TransferType type, Profile profile, CancellationToken ct)
+    private async Task ExecuteImmediateTask(TransferType type, Profile profile, IProgress<HttpDownloadProgress>? progress, CancellationToken ct)
     {
         var profileId = await profile.GetProfileId(ct);
         var taskId = TransferTask.GetTaskId(type, profileId);
@@ -103,6 +103,10 @@ public class HistoryTransferQueue : IDisposable
         if (GetRunningTask(taskId, out var runningTask))
         {
             runningTask.IsImmediateTask = true;
+            if (progress != null)
+            {
+                runningTask.ExternalProgressReporter = progress;
+            }
             await runningTask.CompletionSource.Task.WaitAsync(ct);
             return;
         }
@@ -115,7 +119,8 @@ public class HistoryTransferQueue : IDisposable
             CreatedTime = DateTime.Now,
             CancellationSource = new CancellationTokenSource(),
             Status = TransferTaskStatus.Pending,
-            IsImmediateTask = true
+            IsImmediateTask = true,
+            ExternalProgressReporter = progress
         };
 
         _activeTasks.AddOrUpdate(task.TaskId, task, (_, _) => task);

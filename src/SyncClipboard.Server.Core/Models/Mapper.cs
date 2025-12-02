@@ -26,19 +26,19 @@ public static class Mapper
         return entity;
     }
 
-    //public static Profile ToProfile(this HistoryRecordEntity entity)
-    //{
-    //    var persistentEntity = new ProfilePersistentInfo
-    //    {
-    //        Type = entity.Type,
-    //        Text = entity.Text,
-    //        Size = entity.Size,
-    //        Hash = entity.Hash,
-    //        TransferDataFile = entity.TransferDataFile,
-    //        FilePaths = entity.FilePaths,
-    //    };
-    //    return Profile.Create(persistentEntity);
-    //}
+    public static Profile ToProfile(this HistoryRecordEntity entity, string persistentDir)
+    {
+        var persistentInfo = new ProfilePersistentInfo
+        {
+            Type = entity.Type,
+            Text = entity.Text,
+            Size = entity.Size,
+            Hash = entity.Hash,
+            TransferDataFile = entity.TransferDataFile,
+            FilePaths = entity.FilePaths
+        };
+        return Profile.Create(persistentDir, persistentInfo);
+    }
 
     public static HistoryRecordUpdateDto ToUpdateDto(this HistoryRecordDto s)
     {

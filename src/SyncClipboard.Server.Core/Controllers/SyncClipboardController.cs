@@ -136,9 +136,7 @@ public class SyncClipboardController(
     [HttpPut("SyncClipboard.json")]
     public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto, CancellationToken token)
     {
-        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
-        _cache.Set(path, profileDto);
-        var text = JsonSerializer.Serialize(profileDto);
+        var persistentDir = _serverEnv.GetPersistentDir();
         var profile = ClipboardProfileDTO.CreateProfile(profileDto);
         if (string.IsNullOrEmpty(profileDto.File) is false)
         {
@@ -151,7 +149,7 @@ public class SyncClipboardController(
 
             try
             {
-                await profile.SetAndMoveTransferData(_serverEnv.GetPersistentDir(), previousDataPath, token);
+                await profile.SetAndMoveTransferData(persistentDir, previousDataPath, token);
             }
             catch when (!token.IsCancellationRequested)
             {
@@ -160,8 +158,27 @@ public class SyncClipboardController(
         }
 
         await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
-        await System.IO.File.WriteAllTextAsync(path, text, token);
-        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto, token);
+        await SaveAndNotifyCurrentProfile(profileDto, token);
+
+        return Ok();
+    }
+
+    [HttpPut("api/current")]
+    public async Task<IActionResult> SetCurrent([FromQuery] ProfileType type, [FromQuery] string hash, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            return BadRequest("Hash cannot be empty");
+        }
+
+        var profile = await _historyService.GetProfileAsync(HistoryService.HARD_CODED_USER_ID, type, hash, token);
+        if (profile == null)
+        {
+            return NotFound("Profile not found in history");
+        }
+
+        var profileDto = await profile.ToDto(token);
+        await SaveAndNotifyCurrentProfile(profileDto, token);
 
         return Ok();
     }
@@ -171,6 +188,15 @@ public class SyncClipboardController(
     public IActionResult GetRoot()
     {
         return Ok("Server is running.");
+    }
+
+    private async Task SaveAndNotifyCurrentProfile(ClipboardProfileDTO profileDto, CancellationToken token)
+    {
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
+        _cache.Set(path, profileDto);
+        var text = JsonSerializer.Serialize(profileDto);
+        await System.IO.File.WriteAllTextAsync(path, text, token);
+        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto, token);
     }
 
     private async Task<IActionResult> GetFileInternal(string? path)

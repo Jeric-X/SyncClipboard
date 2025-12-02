@@ -14,7 +14,8 @@ public abstract class Profile
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
     public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
-    public abstract Task ReComputeHashAndSize(CancellationToken token);
+    protected abstract Task ComputeHash(CancellationToken token);
+    protected abstract Task ComputeSize(CancellationToken token);
 
     public async ValueTask<long> GetSize(CancellationToken token)
     {
@@ -31,8 +32,8 @@ public abstract class Profile
                 return Size.Value;
             }
 
-            await ReComputeHashAndSize(token);
-            return Size!.Value;
+            await ComputeSize(token);
+            return Size ?? 0;
         }
         finally
         {
@@ -55,8 +56,8 @@ public abstract class Profile
                 return Hash;
             }
 
-            await ReComputeHashAndSize(token);
-            return Hash!;
+            await ComputeHash(token);
+            return Hash ?? string.Empty;
         }
         finally
         {

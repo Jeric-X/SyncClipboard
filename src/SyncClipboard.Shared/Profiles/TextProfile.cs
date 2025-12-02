@@ -99,12 +99,31 @@ public class TextProfile : Profile
         }
     }
 
-    public override async Task ReComputeHashAndSize(CancellationToken token)
+    protected override async Task ComputeHash(CancellationToken token)
+    {
+        if (_fullText is not null)
+        {
+            Hash = await Utility.CalculateSHA256(_fullText, token);
+            return;
+        }
+
+        if (HasTransferData)
+        {
+            if (File.Exists(_transferDataPath))
+            {
+                Hash = await Utility.CalculateFileSHA256(_transferDataPath, token);
+            }
+            return;
+        }
+
+        Hash = await Utility.CalculateSHA256(_text, token);
+    }
+
+    protected override async Task ComputeSize(CancellationToken token)
     {
         if (_fullText is not null)
         {
             Size = _fullText.Length;
-            Hash = await Utility.CalculateSHA256(_fullText, token);
             return;
         }
 
@@ -114,14 +133,11 @@ public class TextProfile : Profile
             {
                 var fullText = await File.ReadAllTextAsync(_transferDataPath, Encoding.UTF8, token);
                 Size = fullText.Length;
-                Hash = await Utility.CalculateFileSHA256(_transferDataPath, token);
-                return;
             }
-            throw new Exception("Text profile data is not ready.");
+            return;
         }
 
         Size = _text.Length;
-        Hash = await Utility.CalculateSHA256(_text, token);
     }
 
     public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)

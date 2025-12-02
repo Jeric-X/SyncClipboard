@@ -57,18 +57,30 @@ public class ImageProfile : FileProfile
         }
     }
 
-    public override async Task ReComputeHashAndSize(CancellationToken token)
+    protected override async Task ComputeHash(CancellationToken token)
     {
         var rawBytes = await GetRawImageBytes(token);
         if (rawBytes is not null)
         {
-            Size = rawBytes.Length;
             var contentHash = await Utility.CalculateSHA256(rawBytes, token);
             Hash = await CombineHash(FileName, contentHash, token);
         }
         else
         {
-            await base.ReComputeHashAndSize(token);
+            await base.ComputeHash(token);
+        }
+    }
+
+    protected override async Task ComputeSize(CancellationToken token)
+    {
+        var rawBytes = await GetRawImageBytes(token);
+        if (rawBytes is not null)
+        {
+            Size = rawBytes.Length;
+        }
+        else
+        {
+            await base.ComputeSize(token);
         }
     }
 

@@ -56,19 +56,25 @@ public class FileProfile : Profile
     {
     }
 
-    public override async Task ReComputeHashAndSize(CancellationToken token)
+    protected override async Task ComputeHash(CancellationToken token)
     {
         if (FullPath is null || !File.Exists(FullPath))
         {
-            Hash = string.Empty;
-            Size = 0L;
+            return;
         }
-        else
+        Hash = await GetSHA256HashFromFile(FullPath, token);
+    }
+
+    protected override Task ComputeSize(CancellationToken token)
+    {
+        if (FullPath is null || !File.Exists(FullPath))
         {
-            var fileInfo = new FileInfo(FullPath);
-            Size = fileInfo.Length;
-            Hash = await GetSHA256HashFromFile(FullPath, token);
+            return Task.CompletedTask;
         }
+
+        var fileInfo = new FileInfo(FullPath);
+        Size = fileInfo.Length;
+        return Task.CompletedTask;
     }
 
     public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);

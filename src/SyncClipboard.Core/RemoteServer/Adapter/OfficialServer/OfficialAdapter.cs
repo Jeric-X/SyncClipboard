@@ -347,6 +347,27 @@ public sealed class OfficialAdapter(
         }
     }
 
+    public async Task SetCurrentProfile(ProfileType type, string hash, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = new Uri(_httpClient.BaseAddress!, $"api/current?type={type}&hash={HttpUtility.UrlEncode(hash)}");
+            using var response = await _httpClient.PutAsync(url, null, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new RemoteHistoryNotFoundException($"Profile not found in history: {type}/{hash}");
+            }
+
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to set current profile from history {type}/{hash}: {ex.Message}");
+            throw;
+        }
+    }
+
     private void ReCreateHttpClient()
     {
         lock (_httpClientLock)
