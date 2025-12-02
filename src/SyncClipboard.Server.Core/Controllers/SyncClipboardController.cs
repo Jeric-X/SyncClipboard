@@ -163,7 +163,7 @@ public class SyncClipboardController(
         return Ok();
     }
 
-    [HttpPut("api/current")]
+    [HttpPatch("api/current")]
     public async Task<IActionResult> SetCurrent([FromQuery] ProfileType type, [FromQuery] string hash, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(hash))

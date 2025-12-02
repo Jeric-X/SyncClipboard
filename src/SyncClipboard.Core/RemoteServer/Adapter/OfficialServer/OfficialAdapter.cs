@@ -352,7 +352,7 @@ public sealed class OfficialAdapter(
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/current?type={type}&hash={HttpUtility.UrlEncode(hash)}");
-            using var response = await _httpClient.PutAsync(url, null, cancellationToken);
+            using var response = await _httpClient.PatchAsync(url, null, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
