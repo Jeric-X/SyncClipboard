@@ -256,6 +256,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
             services.AddSingleton<HistorySyncer>();
+            services.AddSingleton<HistoryTransferQueue>();
 
             services.AddSingleton<IHttp, Http>();
             services.AddSingleton<LocalFileCacheManager>();

@@ -196,7 +196,8 @@ public class FileProfile : Profile
             throw new Exception("Cannot persist a FileProfile with no data.");
         }
 
-        var path = GetPersistentPath(persistentDir, FullPath);
+        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var path = GetPersistentPath(workingDir, FullPath);
         return new ProfilePersistentInfo
         {
             Type = Type,

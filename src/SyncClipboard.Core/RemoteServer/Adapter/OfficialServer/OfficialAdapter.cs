@@ -262,7 +262,7 @@ public sealed class OfficialAdapter(
             {
                 return;
             }
-            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            if (response.StatusCode == HttpStatusCode.Conflict)
             {
                 HistoryRecordUpdateDto? serverDto = null;
                 try

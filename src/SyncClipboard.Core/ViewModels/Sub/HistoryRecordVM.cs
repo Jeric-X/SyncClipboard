@@ -1,9 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
-using System;
-using System.IO;
+using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.ViewModels.Sub;
 
@@ -38,6 +36,9 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     [ObservableProperty]
     private double downloadProgress = 0; // 0.0 - 100.0 百分比
 
+    [ObservableProperty]
+    private bool isDownloadPending = false;
+
     // 上传相关属性
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
@@ -46,6 +47,9 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
 
     [ObservableProperty]
     private double uploadProgress = 0; // 0.0 - 100.0 百分比
+
+    [ObservableProperty]
+    private bool isUploadPending = false;
 
     public bool ShowUploadButton => SyncState == SyncStatus.LocalOnly && !IsUploading;
     public bool ShowUploadProgress => SyncState == SyncStatus.LocalOnly && IsUploading;
@@ -62,6 +66,118 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private bool isLocalFileReady = record.IsLocalFileReady;
     public bool ShowDownloadButton => !IsLocalFileReady && !IsDownloading;
     public bool ShowDownloadProgress => !IsLocalFileReady && IsDownloading;
+
+    private Progress<HttpDownloadProgress>? downloadProgressReporter = null;
+    private Progress<HttpDownloadProgress>? uploadProgressReporter = null;
+
+    internal void UnsubscribeDownloadProgress()
+    {
+        if (downloadProgressReporter != null)
+        {
+            downloadProgressReporter.ProgressChanged -= OnDownloadProgressChanged;
+            downloadProgressReporter = null;
+        }
+    }
+
+    internal void UnsubscribeUploadProgress()
+    {
+        if (uploadProgressReporter != null)
+        {
+            uploadProgressReporter.ProgressChanged -= OnUploadProgressChanged;
+            uploadProgressReporter = null;
+        }
+    }
+
+    internal void SubscribeDownloadProgress(Progress<HttpDownloadProgress> progress)
+    {
+        downloadProgressReporter = progress;
+        downloadProgressReporter.ProgressChanged += OnDownloadProgressChanged;
+    }
+
+    internal void SubscribeUploadProgress(Progress<HttpDownloadProgress> progress)
+    {
+        uploadProgressReporter = progress;
+        uploadProgressReporter.ProgressChanged += OnUploadProgressChanged;
+    }
+
+    private void OnDownloadProgressChanged(object? sender, HttpDownloadProgress p)
+    {
+        double progressValue;
+        if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
+        {
+            progressValue = (double)p.BytesReceived / p.TotalBytesToReceive.Value * 100.0;
+        }
+        else
+        {
+            progressValue = 0;
+        }
+        DownloadProgress = progressValue;
+    }
+
+    private void OnUploadProgressChanged(object? sender, HttpDownloadProgress p)
+    {
+        double progressValue;
+        if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
+        {
+            progressValue = (double)p.BytesReceived / p.TotalBytesToReceive.Value * 100.0;
+        }
+        else
+        {
+            progressValue = 0;
+        }
+        UploadProgress = progressValue;
+    }
+
+    internal void UpdateFromTask(TransferTask task)
+    {
+        if (task.Type == TransferType.Download)
+        {
+            UnsubscribeDownloadProgress();
+        }
+        else if (task.Type == TransferType.Upload)
+        {
+            UnsubscribeUploadProgress();
+        }
+
+        var isPending = task.Status == TransferTaskStatus.Pending ||
+                        task.Status == TransferTaskStatus.WaitForRetry;
+        var isWorking = task.Status == TransferTaskStatus.Running || isPending;
+        if (task.Type == TransferType.Download)
+        {
+            IsDownloading = isWorking;
+            DownloadProgress = task.Progress;
+            IsDownloadPending = isPending;
+        }
+        else
+        {
+            IsUploading = isWorking;
+            UploadProgress = task.Progress;
+            IsUploadPending = isPending;
+        }
+
+        HasError = false;
+        if (task.Status == TransferTaskStatus.Failed || task.Status == TransferTaskStatus.WaitForRetry)
+        {
+            HasError = true;
+            ErrorMessage = task.ErrorMessage ?? string.Empty;
+        }
+        else if (task.Status == TransferTaskStatus.Completed)
+        {
+            SyncState = SyncStatus.Synced;
+        }
+
+        if (task.Status == TransferTaskStatus.Running)
+        {
+            if (task.Type == TransferType.Download)
+            {
+                SubscribeDownloadProgress(task.ProgressReporter);
+            }
+            else
+            {
+                SubscribeUploadProgress(task.ProgressReporter);
+            }
+        }
+    }
 
     public HistoryRecord ToHistoryRecord()
     {
@@ -142,55 +258,5 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
         }
 
         return restoredPaths;
-    }
-
-    private static double ComputePercent(HttpDownloadProgress p, ulong? fallbackTotal)
-    {
-        try
-        {
-            ulong total = 0;
-            if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
-            {
-                total = p.TotalBytesToReceive.Value;
-            }
-            else if (fallbackTotal.HasValue && fallbackTotal.Value > 0)
-            {
-                total = fallbackTotal.Value;
-            }
-
-            return total > 0
-                ? Math.Clamp((double)p.BytesReceived / total * 100.0, 0.0, 100.0)
-                : Math.Clamp((double)p.BytesReceived / 1000000.0, 0.0, 100.0);
-        }
-        catch
-        {
-            return 0.0;
-        }
-    }
-
-    public IProgress<HttpDownloadProgress> CreateDownloadProgress()
-    {
-        return new Progress<HttpDownloadProgress>(p =>
-        {
-            DownloadProgress = ComputePercent(p, (ulong)Size);
-        });
-    }
-
-    public IProgress<HttpDownloadProgress> CreateUploadProgress(string? transferFilePath)
-    {
-        ulong? fallbackTotal = null;
-        try
-        {
-            if (!string.IsNullOrEmpty(transferFilePath) && File.Exists(transferFilePath))
-            {
-                var fi = new FileInfo(transferFilePath);
-                fallbackTotal = (ulong)fi.Length;
-            }
-        }
-        catch { }
-        return new Progress<HttpDownloadProgress>(p =>
-        {
-            UploadProgress = ComputePercent(p, fallbackTotal);
-        });
     }
 }

@@ -207,7 +207,7 @@
                                     <ui:ProgressRing Width="16"
                                                      Height="16"
                                                      IsVisible="{Binding ShowDownloadProgress}"
-                                                     IsIndeterminate="False"
+                                                     IsIndeterminate="{Binding IsDownloadPending}"
                                                      IsActive="True"
                                                      Value="{Binding DownloadProgress}" />
                                     <!-- Cancel download button -->
@@ -222,7 +222,7 @@
                                     <ui:ProgressRing Width="16"
                                                      Height="16"
                                                      IsVisible="{Binding ShowUploadProgress}"
-                                                     IsIndeterminate="False"
+                                                     IsIndeterminate="{Binding IsUploadPending}"
                                                      IsActive="{Binding IsUploading}"
                                                      Value="{Binding UploadProgress}" />
                                     <!-- Cancel upload button -->

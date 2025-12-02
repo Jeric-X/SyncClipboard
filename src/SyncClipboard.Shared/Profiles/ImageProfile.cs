@@ -81,7 +81,8 @@ public class ImageProfile : FileProfile
                 throw new InvalidOperationException("No image data available to prepare persistent storage.");
             return;
         }
-        var filePath = Path.Combine(persistentDir, FileName);
+        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var filePath = Path.Combine(workingDir, FileName);
         await File.WriteAllBytesAsync(filePath, rawBytes, token);
         FullPath = filePath;
     }

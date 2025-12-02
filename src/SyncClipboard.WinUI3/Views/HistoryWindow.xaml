@@ -165,7 +165,7 @@
                                 </Button>
                                 <ProgressRing Width="16"
                                               Height="16"
-                                              IsIndeterminate="False"
+                                              IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
                                               Value="{x:Bind DownloadProgress, Mode=OneWay}"
                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}" />
                                 <Button Click="CancelDownloadButtonClicked"
@@ -182,7 +182,7 @@
                                 <!-- Upload progress ring -->
                                 <ProgressRing Width="16"
                                               Height="16"
-                                              IsIndeterminate="False"
+                                              IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
                                               Value="{x:Bind UploadProgress, Mode=OneWay}"
                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}" />
                                 <!-- Cancel upload button -->

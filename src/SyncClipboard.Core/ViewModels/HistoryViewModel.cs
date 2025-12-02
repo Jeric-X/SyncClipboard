@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,9 +14,6 @@ using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
-using SyncClipboard.Core.Exceptions;
-using SyncClipboard.Server.Core.Models;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -51,8 +47,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly SemaphoreSlim _remoteWorkerSemaphore = new(1, 1);
     private CancellationTokenSource _remoteQueueCts = new();
 
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _downloadCts = new();
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _uploadCts = new();
+    private readonly HistoryTransferQueue _transferQueue;
 
     public HistoryViewModel(
         HistoryManager historyManager,
@@ -64,7 +59,8 @@ public partial class HistoryViewModel : ObservableObject
         ProfileActionBuilder profileActionBuilder,
         RemoteClipboardServerFactory remoteServerFactory,
         IProfileEnv profileEnv,
-        HistorySyncer historySyncer)
+        HistorySyncer historySyncer,
+        HistoryTransferQueue transferQueue)
     {
         this.historyManager = historyManager;
         this.keyboard = keyboard;
@@ -76,6 +72,9 @@ public partial class HistoryViewModel : ObservableObject
         this.remoteServerFactory = remoteServerFactory;
         this.profileEnv = profileEnv;
         this.historySyncer = historySyncer;
+        this._transferQueue = transferQueue;
+
+        _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
         var currentServer = remoteServerFactory.Current;
         _enableSyncHistory = configManager.GetConfig<HistoryConfig>().EnableSyncHistory;
@@ -103,7 +102,7 @@ public partial class HistoryViewModel : ObservableObject
         else
         {
             historySyncServer = null;
-            CancelServerOperations();
+            CancelFetchTask();
         }
     }
 
@@ -247,14 +246,14 @@ public partial class HistoryViewModel : ObservableObject
     public Task ChangeStarStatus(HistoryRecordVM record)
     {
         record.Stared = !record.Stared;
-        return historyManager.UpdateHistory(record.ToHistoryRecord());
+        return historyManager.UpdateHistoryProperty(record.ToHistoryRecord());
     }
 
     [RelayCommand]
     public Task ChangePinStatus(HistoryRecordVM record)
     {
         record.Pinned = !record.Pinned;
-        return historyManager.UpdateHistory(record.ToHistoryRecord());
+        return historyManager.UpdateHistoryProperty(record.ToHistoryRecord());
     }
 
     [RelayCommand]
@@ -352,7 +351,7 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public Task Refresh()
     {
-        CancelServerOperations();
+        CancelFetchTask();
         _isLocalEnd = false;
         _isRemoteEnd = false;
 
@@ -613,13 +612,26 @@ public partial class HistoryViewModel : ObservableObject
         return true;
     }
 
+    private void InitVMTransferStatus(HistoryRecordVM vm)
+    {
+        var profileId = Profile.GetProfileId(vm.Type, vm.Hash);
+        var task = _transferQueue.GetTask(profileId);
+
+        if (task != null)
+        {
+            vm.UpdateFromTask(task);
+        }
+    }
+
     // 对有序队列实行二分查找
     private void InsertHistoryInOrder(HistoryRecord record)
     {
         var vm = new HistoryRecordVM(record);
+
         if (allHistoryItems.Count == 0)
         {
             allHistoryItems.Insert(0, vm);
+            InitVMTransferStatus(vm);
             return;
         }
 
@@ -639,6 +651,7 @@ public partial class HistoryViewModel : ObservableObject
             }
         }
         allHistoryItems.Insert(low, vm);
+        InitVMTransferStatus(vm);
     }
 
     private void OnRemoteServerChanged()
@@ -701,6 +714,10 @@ public partial class HistoryViewModel : ObservableObject
 
         var vms = records.Select(x => new HistoryRecordVM(x)).ToList();
         allHistoryItems.AddRange(vms);
+        foreach (var vm in vms)
+        {
+            InitVMTransferStatus(vm);
+        }
 
         var last = vms.LastOrDefault()!;
 
@@ -804,56 +821,16 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        try
+        var record = vm.ToHistoryRecord();
+        var profile = record.ToProfile();
+        var persistentDir = profileEnv.GetPersistentDir();
+
+        if (profile.NeedsTransferData(persistentDir, out var _) is false)
         {
-            vm.HasError = false;
-            vm.ErrorMessage = string.Empty;
-
-            var record = vm.ToHistoryRecord();
-            var profile = record.ToProfile();
-
-            var persistentDir = profileEnv.GetPersistentDir();
-            if (profile.NeedsTransferData(persistentDir, out var localDataPath) is false)
-            {
-                return;
-            }
-
-            var profileId = Profile.GetProfileId(record.Type, record.Hash);
-            var cts = new CancellationTokenSource();
-            if (!_downloadCts.TryAdd(profileId, cts))
-            {
-                cts.Dispose();
-                return;
-            }
-
-            vm.IsDownloading = true;
-            IProgress<HttpDownloadProgress>? progress = vm.CreateDownloadProgress();
-
-            await historySyncServer.DownloadHistoryDataAsync(profileId, localDataPath, progress, cts.Token);
-            await profile.SetTranseferData(localDataPath, true, cts.Token);
-
-            var persistentInfo = await profile.Persist(persistentDir, cts.Token);
-            record.FilePath = persistentInfo.FilePaths;
-            record.IsLocalFileReady = true;
-
-            await historyManager.UpdateHistory(record, cts.Token);
+            return;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.Write("[HISTORY_VIEW_MODEL] Download remote profile failed:", ex.Message);
-            vm.HasError = true;
-            vm.ErrorMessage = ex.Message;
-            vm.SyncState = SyncStatus.SyncError;
-        }
-        finally
-        {
-            vm.IsDownloading = false;
-            vm.DownloadProgress = 0;
-            if (_downloadCts.TryRemove(Profile.GetProfileId(vm.Type, vm.Hash), out var cts))
-            {
-                cts.Dispose();
-            }
-        }
+
+        _ = await _transferQueue.EnqueueDownload(profile, CancellationToken.None);
     }
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
@@ -898,73 +875,18 @@ public partial class HistoryViewModel : ObservableObject
         {
             return;
         }
-        try
-        {
-            var record = vm.ToHistoryRecord();
-            var profile = record.ToProfile();
-            string? transferFilePath = await profile.PrepareDataWithCache(CancellationToken.None);
 
-            var pid = $"{record.Type}-{record.Hash}";
-            var cts = new CancellationTokenSource();
-            if (!_uploadCts.TryAdd(pid, cts))
-            {
-                cts.Dispose();
-                return;
-            }
-            vm.IsUploading = true;
-            vm.UploadProgress = 0;
-            IProgress<HttpDownloadProgress>? progress = vm.CreateUploadProgress(transferFilePath);
+        var record = vm.ToHistoryRecord();
+        var profile = record.ToProfile();
 
-            await historySyncServer.UploadHistoryAsync(record.ToHistoryRecordDto(), transferFilePath, progress, cts.Token);
-            vm.SyncState = SyncStatus.Synced;
-        }
-        catch (RemoteHistoryConflictException ex)
-        {
-            await HandleUploadConflictAsync(vm, ex);
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            vm.SyncState = SyncStatus.SyncError;
-            vm.ErrorMessage = ex.Message;
-        }
-        finally
-        {
-            vm.IsUploading = false;
-            var pid = $"{vm.Type}-{vm.Hash}";
-            if (_uploadCts.TryRemove(pid, out var cts))
-            {
-                cts.Dispose();
-            }
-        }
+        _ = await _transferQueue.EnqueueUpload(profile, CancellationToken.None);
     }
 
     [RelayCommand]
     private void CancelUpload(HistoryRecordVM vm)
     {
-        var pid = $"{vm.Type}-{vm.Hash}";
-        if (_uploadCts.TryGetValue(pid, out var cts))
-        {
-            try { cts.Cancel(); } catch { }
-        }
-    }
-
-    private async Task HandleUploadConflictAsync(HistoryRecordVM vm, RemoteHistoryConflictException ex)
-    {
-        try
-        {
-            var record = vm.ToHistoryRecord();
-            if (ex.ServerRecord != null)
-            {
-                record.ApplyFromServerUpdateDto(ex.ServerRecord);
-            }
-            await historyManager.PersistServerSyncedAsync(record, CancellationToken.None);
-        }
-        catch (Exception e)
-        {
-            vm.ErrorMessage = e.Message;
-            vm.SyncState = SyncStatus.SyncError;
-        }
+        var profileId = Profile.GetProfileId(vm.Type, vm.Hash);
+        _transferQueue.CancelUpload(profileId);
     }
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
@@ -1040,31 +962,16 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     private void CancelDownload(HistoryRecordVM vm)
     {
-        var pid = $"{vm.Type}-{vm.Hash}";
-        if (_downloadCts.TryGetValue(pid, out var cts))
-        {
-            cts.Cancel();
-        }
+        var profileId = Profile.GetProfileId(vm.Type, vm.Hash);
+        _transferQueue.CancelDownload(profileId);
     }
 
-    private void CancelServerOperations()
+    private void OnTransferTaskStatusChanged(object? sender, TransferTask task)
     {
-        // 取消所有下载
-        foreach (var kv in _downloadCts)
-        {
-            try { kv.Value.Cancel(); } catch { }
-        }
-        _downloadCts.Clear();
+        var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
+        if (vm == null) return;
 
-        // 取消所有上传
-        foreach (var kv in _uploadCts)
-        {
-            try { kv.Value.Cancel(); } catch { }
-        }
-        _uploadCts.Clear();
-
-        // 取消远程同步
-        CancelFetchTask();
+        vm.UpdateFromTask(task);
     }
 
     internal class HistorySyncInfo

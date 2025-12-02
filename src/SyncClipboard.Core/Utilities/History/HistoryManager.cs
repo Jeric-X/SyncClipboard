@@ -171,7 +171,17 @@ public class HistoryManager
         return await Query(type, hash, token);
     }
 
-    public async Task UpdateHistory(HistoryRecord record, CancellationToken token = default)
+    public async Task<HistoryRecord> GetOrCreateHistoryRecord(Profile profile, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var entity = await Query(profile.Type, await profile.GetHash(token), token);
+        entity ??= await ToHistoryRecord(profile, token);
+        return entity;
+    }
+
+    public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -185,7 +195,7 @@ public class HistoryManager
             entity.FilePath = record.FilePath;
             entity.IsLocalFileReady = record.IsLocalFileReady;
             entity.LastModified = DateTime.UtcNow;
-            entity.Version += 1;
+            entity.Version++;
             if (entity.SyncStatus != HistorySyncStatus.LocalOnly)
             {
                 entity.SyncStatus = HistorySyncStatus.NeedSync;
@@ -196,8 +206,6 @@ public class HistoryManager
             {
                 await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount, token);
             }
-
-            // 同步触发改由 HistorySyncer 订阅 HistoryUpdated 事件来完成，避免循环依赖
         }
     }
 
@@ -542,7 +550,7 @@ public class HistoryManager
         }
     }
 
-    private async Task<HistoryRecord> ToHistoryRecord(Profile profile, CancellationToken token)
+    public async Task<HistoryRecord> ToHistoryRecord(Profile profile, CancellationToken token)
     {
         var profileEntity = await profile.Persist(_profileEnv.GetPersistentDir(), token);
         var record = new HistoryRecord
