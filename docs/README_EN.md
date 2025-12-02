@@ -51,6 +51,11 @@
   - Download the original file and copy it after copying a image in web browser. This is helpful for copying an animated image in browser. Web sites always prevent downloads from non-browser, so this feature isn't always usable.
   - Copy the transcoded temporary image file (jpg or gif) after copying a modern image file type (heic, webp, etc.).
 
+
+> [!WARNING]  
+> The clipboard history feature is in its early stages. Please be prepared for the possibility of losing all information. Do not rely solely on this tool to save important information.
+>
+
 ## Server
 ### Standalone Server
 [SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Run with:

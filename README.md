@@ -55,6 +55,11 @@
   - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器拷贝动态图的问题（大多网站有认证，适用范围有限，支持bilibili动态图片）
   - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪贴板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
 
+
+> [!WARNING]  
+> 剪贴板历史记录功能处于早期阶段，请做好丢失全部信息的准备，重要信息不要仅依赖本工具保存
+>
+
 ## 服务器
 ### 独立服务器
 [SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 8.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
@@ -304,6 +309,8 @@ PUT /SyncClipboard.json
     "File": "filename"
 }
 ```
+
+Hash计算方法可以参考[docs/Hash.md](docs/Hash.md)
 
 ## 项目依赖
 [NativeNotification](https://github.com/Jeric-X/NativeNotification)  
