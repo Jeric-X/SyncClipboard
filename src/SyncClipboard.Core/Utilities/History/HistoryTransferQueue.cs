@@ -292,13 +292,6 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    public void Stop()
-    {
-        _globalCts?.Cancel();
-        _processingTask?.Wait(TimeSpan.FromSeconds(5));
-        _logger.Write("传输队列已停止");
-    }
-
     ~HistoryTransferQueue()
     {
         Dispose();
@@ -307,7 +300,6 @@ public class HistoryTransferQueue : IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        Stop();
         _globalCts?.Dispose();
         _workerSemaphore?.Dispose();
         _startSemaphore?.Dispose();

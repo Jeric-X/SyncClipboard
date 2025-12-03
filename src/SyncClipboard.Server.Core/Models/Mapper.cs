@@ -34,7 +34,7 @@ public static class Mapper
             Text = entity.Text,
             Size = entity.Size,
             Hash = entity.Hash,
-            TransferDataFile = entity.TransferDataFile,
+            TransferDataFile = string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataFile,
             FilePaths = entity.FilePaths
         };
         return Profile.Create(persistentDir, persistentInfo);

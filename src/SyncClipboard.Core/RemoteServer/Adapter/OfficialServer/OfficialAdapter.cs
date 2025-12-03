@@ -272,7 +272,7 @@ public sealed class OfficialAdapter(
                 catch { /* ignore parse errors, fall back to null */ }
                 throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
             }
-            response.EnsureSuccessStatusCode();
+            throw new RemoteServerException(await response.Content.ReadAsStringAsync(cancellationToken));
         }
         catch (Exception ex)
         {
