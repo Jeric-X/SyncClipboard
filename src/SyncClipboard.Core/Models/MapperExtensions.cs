@@ -97,18 +97,21 @@ public static class MapperExtensions
         entity.SyncStatus = HistorySyncStatus.Synced;
     }
 
-    public static void AddHistoryRecord(this MultipartFormDataContent form, HistoryRecordDto dto)
+    public static Dictionary<string, string> ToQueryParams(this HistoryRecordDto dto)
     {
-        form.Add(new StringContent(dto.Hash), "Hash");
-        form.Add(new StringContent(((int)dto.Type).ToString(CultureInfo.InvariantCulture)), "Type");
-        form.Add(new StringContent(dto.CreateTime.ToString("o", CultureInfo.InvariantCulture)), "CreateTime");
-        form.Add(new StringContent(dto.LastModified.ToString("o", CultureInfo.InvariantCulture)), "LastModified");
-        form.Add(new StringContent(dto.Starred ? "true" : "false"), "Starred");
-        form.Add(new StringContent(dto.Pinned ? "true" : "false"), "Pinned");
-        form.Add(new StringContent(dto.Version.ToString(CultureInfo.InvariantCulture)), "Version");
-        form.Add(new StringContent(dto.IsDeleted ? "true" : "false"), "IsDeleted");
-        form.Add(new StringContent(dto.Text), "Text");
-        form.Add(new StringContent(dto.Size.ToString(CultureInfo.InvariantCulture)), "Size");
+        return new Dictionary<string, string>
+        {
+            ["hash"] = dto.Hash,
+            ["type"] = ((int)dto.Type).ToString(CultureInfo.InvariantCulture),
+            ["createTime"] = dto.CreateTime.ToString("o", CultureInfo.InvariantCulture),
+            ["lastModified"] = dto.LastModified.ToString("o", CultureInfo.InvariantCulture),
+            ["starred"] = dto.Starred.ToString(),
+            ["pinned"] = dto.Pinned.ToString(),
+            ["version"] = dto.Version.ToString(CultureInfo.InvariantCulture),
+            ["isDeleted"] = dto.IsDeleted.ToString(),
+            ["text"] = dto.Text,
+            ["size"] = dto.Size.ToString(CultureInfo.InvariantCulture)
+        };
     }
 
     public static ClipboardMetaInfomation GetMetaInfomation(this ProfileLocalInfo info)

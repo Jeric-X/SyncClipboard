@@ -15,14 +15,29 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // TODO: replace this hardcoded user id with actual user identification from authentication/claims
     private const string HARD_CODED_USER_ID = HistoryService.HARD_CODED_USER_ID;
 
-    // GET api/history/{type}/{hash}
-    // [HttpGet("{type}/{hash}")]
-    // public async Task<IActionResult> Get(ProfileType type, string hash)
-    // {
-    //     var rec = await _historyService.GetAsync(HARD_CODED_USER_ID, hash, type);
-    //     if (rec == null) return NotFound();
-    //     return Ok(rec);
-    // }
+    // GET api/history/{profileId}
+    // Returns the metadata of a specific history record by profileId (format: "Type-Hash")
+    [HttpGet("{profileId}")]
+    public async Task<IActionResult> Get(string profileId, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+        {
+            return BadRequest("profileId is required");
+        }
+
+        if (!Profile.ParseProfileId(profileId, out var type, out var hash) || string.IsNullOrEmpty(hash))
+        {
+            return BadRequest("Invalid profileId format. Expected format: 'Type-Hash'");
+        }
+
+        var rec = await _historyService.GetByTypeAndHashAsync(HARD_CODED_USER_ID, type, hash, token);
+        if (rec == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(rec);
+    }
 
     // GET api/history/{profileId}/data
     // Returns the transfer data associated with a specific history profile.
@@ -42,7 +57,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
         new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
         var stream = System.IO.File.OpenRead(path);
-        var fileName = System.IO.Path.GetFileName(path);
+        var fileName = Path.GetFileName(path);
         return File(stream, contentType ?? "application/octet-stream", fileName);
     }
 
@@ -148,32 +163,68 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
     /// <summary>
     /// PUT api/history
-    /// 使用 multipart/form-data 提交；支持可选的 file (传输数据文件)。
-    /// 其余元数据字段通过 HistoryRecordDto 传入（包含 Hash, Type, Starred, Pinned, IsDeleted, Version, LastModified, CreateTime）。
+    /// 使用 query 参数传递元数据，使用 body 传递文件数据（application/octet-stream）。
+    /// Query 参数：Hash, Type, CreateTime, LastModified, Starred, Pinned, Version, IsDeleted, Text, Size
     /// 若不存在则创建；若已存在则返回 409 并携带服务器快照用于客户端决策。
     /// </summary>
     [HttpPut]
-    [Consumes("multipart/form-data")]
     public async Task<IActionResult> Put(
-        [FromForm] HistoryRecordDto dto,
-        IFormFile? file,
-        CancellationToken token)
+        [FromQuery] string hash,
+        [FromQuery] ProfileType type,
+        [FromQuery] DateTimeOffset? createTime,
+        [FromQuery] DateTimeOffset? lastModified,
+        [FromQuery] bool starred = false,
+        [FromQuery] bool pinned = false,
+        [FromQuery] int version = 0,
+        [FromQuery] bool isDeleted = false,
+        [FromQuery] string? text = null,
+        [FromQuery] long size = 0,
+        CancellationToken token = default)
     {
-        if (!ModelState.IsValid)
+        if (string.IsNullOrWhiteSpace(hash)) return BadRequest("Hash is required");
+        if (type == ProfileType.None) return BadRequest("Type is required");
+
+        var dto = new HistoryRecordDto
         {
-            return ValidationProblem(ModelState);
+            Hash = hash,
+            Type = type,
+            CreateTime = createTime ?? DateTimeOffset.UtcNow,
+            LastModified = lastModified ?? DateTimeOffset.UtcNow,
+            Starred = starred,
+            Pinned = pinned,
+            Version = version,
+            IsDeleted = isDeleted,
+            Text = text ?? string.Empty,
+            Size = size
+        };
+
+        // 从 body 读取文件流
+        Stream? fileStream = null;
+        if (Request.ContentLength.HasValue && Request.ContentLength.Value > 0)
+        {
+            fileStream = Request.Body;
         }
 
-        if (string.IsNullOrWhiteSpace(dto.Hash)) return BadRequest("Hash is required");
-        if (dto.Type == ProfileType.None) return BadRequest("Type is required");
-
-        var (created, server) = await _historyService.CreateIfNotExistsAsync(
-            HARD_CODED_USER_ID, dto, file, token);
-        if (created)
+        var result = await _historyService.CreateIfNotExistsAsync(
+            HARD_CODED_USER_ID, dto, fileStream, token);
+        if (result.Created)
         {
             return CreatedAtAction(nameof(GetTransferData), new { profileId = $"{dto.Type}-{dto.Hash}" }, null);
         }
-        return Conflict(server?.ToUpdateDto());
+        // 将 HistoryRecordDto 转换为 HistoryRecordUpdateDto
+        HistoryRecordUpdateDto? updateDto = null;
+        if (result.Server != null)
+        {
+            updateDto = new HistoryRecordUpdateDto
+            {
+                Starred = result.Server.Starred,
+                Pinned = result.Server.Pinned,
+                LastModified = result.Server.LastModified,
+                Version = result.Server.Version,
+                IsDelete = result.Server.IsDeleted
+            };
+        }
+        return Conflict(updateDto);
     }
 
     // PATCH api/history/{type}/{hash}

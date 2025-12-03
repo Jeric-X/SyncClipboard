@@ -354,6 +354,22 @@ public class HistoryService
 #pragma warning restore CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
     }
 
+    public async Task<HistoryRecordDto?> GetByTypeAndHashAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var entity = await Query(userId, type, hash, token);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.LastAccessed = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(token);
+        return HistoryRecordDto.FromEntity(entity);
+    }
+
     public async Task<Profile?> GetProfileAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
@@ -376,7 +392,7 @@ public class HistoryService
     public async Task<(bool Created, HistoryRecordDto? Server)> CreateIfNotExistsAsync(
         string userId,
         HistoryRecordDto incoming,
-        IFormFile? transferFile,
+        Stream? transferFileStream,
         CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
@@ -422,18 +438,22 @@ public class HistoryService
             IsDeleted = incoming.IsDeleted,
         };
 
-        if (transferFile != null && transferFile.Length > 0)
+        var profile = entity.ToProfile(_persistentDir);
+
+        if (transferFileStream != null)
         {
-            var safeFileName = Path.GetFileName(transferFile.FileName);
-            var folder = Profile.GetWorkingDir(_persistentDir, incoming.Type, incoming.Hash);
-            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-            var filePath = Path.Combine(folder, safeFileName);
+            if (!profile.NeedsTransferData(_persistentDir, out var filePath))
+            {
+                throw new InvalidOperationException("Profile does not support transfer data.");
+            }
+
             using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await transferFile.CopyToAsync(fs, token);
+                await transferFileStream.CopyToAsync(fs, token);
             }
-            entity.TransferDataFile = filePath;
-            entity.Size = new FileInfo(filePath).Length;
+
+            await profile.SetTranseferData(filePath, verify: true, token);
+            entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
         }
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);

@@ -9,6 +9,14 @@ namespace SyncClipboard.Core.Interfaces;
 public interface IHistorySyncServer
 {
     /// <summary>
+    /// Gets a specific history record by profileId (format: "Type-Hash").
+    /// </summary>
+    /// <param name="profileId">The profile identifier in format "Type-Hash".</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The history record DTO if found, null otherwise.</returns>
+    Task<HistoryRecordDto?> GetHistoryByProfileIdAsync(string profileId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the history records with optional pagination and time-based filtering.
     /// </summary>
     /// <param name="page">Page index starting from 1 (default 1). Page size is fixed to 50 (max 50).</param>

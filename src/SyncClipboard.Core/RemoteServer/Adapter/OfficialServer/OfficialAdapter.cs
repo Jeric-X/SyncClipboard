@@ -198,6 +198,30 @@ public sealed class OfficialAdapter(
         }
     }
 
+    public async Task<HistoryRecordDto?> GetHistoryByProfileIdAsync(string profileId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history/{HttpUtility.UrlEncode(profileId)}");
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            var dto = await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken);
+            return dto;
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to get history by profileId {profileId}: {ex.Message}");
+            throw;
+        }
+    }
+
     public async Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
         try
@@ -233,31 +257,31 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var url = new Uri(_httpClient.BaseAddress!, $"api/history");
+            var queryParams = dto.ToQueryParams();
 
-            using var form = new MultipartFormDataContent();
-            form.AddHistoryRecord(dto);
+            var queryString = string.Join("&", queryParams.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history?{queryString}");
 
-            // 可选文件
+            HttpContent content;
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             {
                 var stream = File.OpenRead(filePath);
-                HttpContent fileContent;
                 if (progress is null)
                 {
-                    fileContent = new StreamContent(stream);
+                    content = new StreamContent(stream);
                 }
                 else
                 {
-                    fileContent = new ProgressableStreamContent(stream, progress, cancellationToken);
+                    content = new ProgressableStreamContent(stream, progress, cancellationToken);
                 }
-                // 让服务器决定内容类型，或默认 application/octet-stream
-                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-                var safeName = Path.GetFileName(filePath);
-                form.Add(fileContent, "file", safeName);
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+            }
+            else
+            {
+                content = new ByteArrayContent([]);
             }
 
-            using var response = await _httpClient.PutAsync(url, form, cancellationToken);
+            using var response = await _httpClient.PutAsync(url, content, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return;

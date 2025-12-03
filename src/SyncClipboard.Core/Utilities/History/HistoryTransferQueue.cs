@@ -487,9 +487,21 @@ public class HistoryTransferQueue : IDisposable
         }
 
         var profile = task.Profile;
+        var record = await _historyManager.GetOrCreateHistoryRecord(profile, ct);
+
+        // 先检查服务器上是否已存在该记录
+        var existingRecord = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct);
+        if (existingRecord != null)
+        {
+            // 服务器已存在，直接标记为成功
+            record.SyncStatus = HistorySyncStatus.Synced;
+            await _historyManager.PersistServerSyncedAsync(record, ct);
+            return;
+        }
+
+        // 服务器不存在，执行上传
         string? transferFilePath = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
 
-        var record = await _historyManager.GetOrCreateHistoryRecord(profile, ct);
         var recordDto = record.ToHistoryRecordDto();
 
         try
