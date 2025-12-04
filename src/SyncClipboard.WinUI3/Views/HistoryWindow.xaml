@@ -155,12 +155,15 @@
                                             Content="{x:Bind}"
                                             ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
                             <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
-                                <Border Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasError), Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ErrorMessage, Mode=OneWay}">
+                                <Button Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasError), Mode=OneWay}">
+                                    <Button.Flyout>
+                                        <Flyout>
+                                            <TextBlock Text="{x:Bind ErrorMessage, Mode=OneWay}" />
+                                        </Flyout>
+                                    </Button.Flyout>
                                     <FontIcon Glyph="&#xE783;" />
-                                </Border>
-                                <Button Click="DownloadButtonClicked"
-                                        IsTabStop="False"
-                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
+                                </Button>
+                                <Button Click="DownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE896;" />
                                 </Button>
                                 <ProgressRing Width="16"
@@ -168,27 +171,21 @@
                                               IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
                                               Value="{x:Bind DownloadProgress, Mode=OneWay}"
                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}" />
-                                <Button Click="CancelDownloadButtonClicked"
-                                        IsTabStop="False"
-                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}">
+                                <Button Click="CancelDownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE711;" />
                                 </Button>
-                                <!-- Upload button -->
-                                <Button Click="UploadButtonClicked"
-                                        IsTabStop="False"
-                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadButton), Mode=OneWay}">
+                                <!--  Upload button  -->
+                                <Button Click="UploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadButton), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE898;" />
                                 </Button>
-                                <!-- Upload progress ring -->
+                                <!--  Upload progress ring  -->
                                 <ProgressRing Width="16"
                                               Height="16"
                                               IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
                                               Value="{x:Bind UploadProgress, Mode=OneWay}"
                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}" />
-                                <!-- Cancel upload button -->
-                                <Button Click="CancelUploadButtonClicked"
-                                        IsTabStop="False"
-                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}">
+                                <!--  Cancel upload button  -->
+                                <Button Click="CancelUploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE711;" />
                                 </Button>
                                 <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">

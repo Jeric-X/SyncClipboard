@@ -34,6 +34,10 @@ public class GroupProfile : Profile
         _files = [.. files];
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
+        if (_transferDataPath is not null)
+        {
+            _transferDataName = Path.GetFileName(_transferDataPath);
+        }
     }
 
     public GroupProfile(IEnumerable<string> files, FileFilterConfig? filterConfig = null)

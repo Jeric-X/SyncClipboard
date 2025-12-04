@@ -7,7 +7,7 @@ namespace SyncClipboard.Shared.Profiles;
 
 public class TextProfile : Profile
 {
-    private const int TRANSFER_DATA_THRESHOLD = 102400;
+    private const int TRANSFER_DATA_THRESHOLD = 10240;
 
     public override ProfileType Type => ProfileType.Text;
     public override string DisplayText => _text;

@@ -268,7 +268,7 @@ public sealed class OfficialAdapter(
                 var stream = File.OpenRead(filePath);
                 if (progress is null)
                 {
-                    content = new StreamContent(stream);
+                content = new StreamContent(stream);
                 }
                 else
                 {
@@ -296,7 +296,7 @@ public sealed class OfficialAdapter(
                 catch { /* ignore parse errors, fall back to null */ }
                 throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
             }
-            throw new RemoteServerException(await response.Content.ReadAsStringAsync(cancellationToken));
+            response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
@@ -305,12 +305,24 @@ public sealed class OfficialAdapter(
         }
     }
 
-    private sealed class ProgressableStreamContent(Stream stream, IProgress<HttpDownloadProgress> progress, CancellationToken ct) : HttpContent
+    private sealed class ProgressableStreamContent : HttpContent
     {
         private const int DefaultBufferSize = 81920; // 80KB .NET default
-        private readonly Stream _stream = stream;
-        private readonly IProgress<HttpDownloadProgress> _progress = progress;
-        private readonly CancellationToken _ct = ct;
+        private readonly Stream _stream;
+        private readonly IProgress<HttpDownloadProgress> _progress;
+        private readonly CancellationToken _ct;
+        private readonly long? _totalLength;
+
+        public ProgressableStreamContent(Stream stream, IProgress<HttpDownloadProgress> progress, CancellationToken ct)
+        {
+            _stream = stream;
+            _progress = progress;
+            _ct = ct;
+            if (stream.CanSeek)
+            {
+                _totalLength = stream.Length;
+            }
+        }
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
@@ -324,16 +336,16 @@ public sealed class OfficialAdapter(
                 _progress.Report(new HttpDownloadProgress
                 {
                     BytesReceived = (ulong)totalBytesRead,
-                    TotalBytesToReceive = null
+                    TotalBytesToReceive = (ulong?)_totalLength
                 });
             }
         }
 
         protected override bool TryComputeLength(out long length)
         {
-            if (_stream.CanSeek)
+            if (_totalLength is not null)
             {
-                length = _stream.Length;
+                length = _totalLength.Value;
                 return true;
             }
             length = -1;
