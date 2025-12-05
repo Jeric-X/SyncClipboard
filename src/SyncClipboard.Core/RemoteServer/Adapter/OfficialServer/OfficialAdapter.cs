@@ -258,19 +258,20 @@ public sealed class OfficialAdapter(
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history");
-            using var content = new MultipartFormDataContent();
-
-            // 添加元数据字段
-            content.Add(new StringContent(dto.Hash), "hash");
-            content.Add(new StringContent(((int)dto.Type).ToString()), "type");
-            content.Add(new StringContent(dto.CreateTime.ToString("o")), "createTime");
-            content.Add(new StringContent(dto.LastModified.ToString("o")), "lastModified");
-            content.Add(new StringContent(dto.Starred.ToString()), "starred");
-            content.Add(new StringContent(dto.Pinned.ToString()), "pinned");
-            content.Add(new StringContent(dto.Version.ToString()), "version");
-            content.Add(new StringContent(dto.IsDeleted.ToString()), "isDeleted");
-            content.Add(new StringContent(dto.Text), "text");
-            content.Add(new StringContent(dto.Size.ToString()), "size");
+            using var content = new MultipartFormDataContent
+            {
+                // 添加元数据字段
+                { new StringContent(dto.Hash), "hash" },
+                { new StringContent(dto.Type.ToString()), "type" },
+                { new StringContent(dto.CreateTime.ToString("o")), "createTime" },
+                { new StringContent(dto.LastModified.ToString("o")), "lastModified" },
+                { new StringContent(dto.Starred.ToString()), "starred" },
+                { new StringContent(dto.Pinned.ToString()), "pinned" },
+                { new StringContent(dto.Version.ToString()), "version" },
+                { new StringContent(dto.IsDeleted.ToString()), "isDeleted" },
+                { new StringContent(dto.Text), "text" },
+                { new StringContent(dto.Size.ToString()), "size" }
+            };
 
             // 添加文件字段（如果提供）
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))

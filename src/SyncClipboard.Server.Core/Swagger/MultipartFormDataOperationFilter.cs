@@ -45,7 +45,7 @@ public class MultipartFormDataOperationFilter : IOperationFilter
                 ["isDeleted"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["text"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
                 ["size"] = context.SchemaGenerator.GenerateSchema(typeof(long), context.SchemaRepository),
-                ["data"] =  new OpenApiSchema
+                ["data"] = new OpenApiSchema
                 {
                     Type = "string",
                     Format = "binary",

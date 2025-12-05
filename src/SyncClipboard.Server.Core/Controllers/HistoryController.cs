@@ -218,10 +218,12 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         if (!metadata.TryGetValue("hash", out var hash) || string.IsNullOrWhiteSpace(hash))
             throw new ArgumentException("Hash is required");
 
-        if (!metadata.TryGetValue("type", out var typeStr) || !int.TryParse(typeStr, out var typeInt))
+        if (!metadata.TryGetValue("type", out var typeStr)
+            || string.IsNullOrWhiteSpace(typeStr)
+            || !Enum.TryParse<ProfileType>(typeStr, true, out var type))
+        {
             throw new ArgumentException("Type is required");
-
-        var type = (ProfileType)typeInt;
+        }
         if (type == ProfileType.None)
             throw new ArgumentException("Type is required");
 
