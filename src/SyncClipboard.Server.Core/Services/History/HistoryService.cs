@@ -387,9 +387,9 @@ public class HistoryService
     }
 
     /// <summary>
-    /// 如果记录不存在则创建，存在则根据并发规则尝试更新。返回是否创建以及服务器端快照。
+    /// 如果记录不存在则创建，存在则根据并发规则尝试更新。返回服务器端快照。
     /// </summary>
-    public async Task<(bool Created, HistoryRecordDto? Server)> CreateIfNotExistsAsync(
+    public async Task<HistoryRecordDto> AddRecordDto(
         string userId,
         HistoryRecordDto incoming,
         Stream? transferFileStream,
@@ -419,7 +419,7 @@ public class HistoryService
             }
 
             await _dbContext.SaveChangesAsync(token);
-            return (false, HistoryRecordDto.FromEntity(existing));
+            return HistoryRecordDto.FromEntity(existing);
         }
 
         var entity = new HistoryRecordEntity
@@ -458,7 +458,7 @@ public class HistoryService
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
-        return (true, HistoryRecordDto.FromEntity(entity));
+        return HistoryRecordDto.FromEntity(entity);
     }
 
     /// <summary>

@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Net.Http.Headers;
+using SyncClipboard.Server.Core.Attributes;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services.History;
 
@@ -162,29 +165,97 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     }
 
     /// <summary>
-    /// PUT api/history
-    /// 使用 query 参数传递元数据，使用 body 传递文件数据（application/octet-stream）。
-    /// Query 参数：Hash, Type, CreateTime, LastModified, Starred, Pinned, Version, IsDeleted, Text, Size
-    /// 若不存在则创建；若已存在则返回 409 并携带服务器快照用于客户端决策。
+    /// POST api/history
+    /// 使用 multipart/form-data 流式传输文件和元数据。
+    /// Form 字段：hash, type, createTime, lastModified, starred, pinned, version, isDeleted, text, size, data
+    /// data 字段为可选的二进制文件数据。
     /// </summary>
-    [HttpPut]
-    public async Task<IActionResult> Put(
-        [FromQuery] string hash,
-        [FromQuery] ProfileType type,
-        [FromQuery] DateTimeOffset? createTime,
-        [FromQuery] DateTimeOffset? lastModified,
-        [FromQuery] bool starred = false,
-        [FromQuery] bool pinned = false,
-        [FromQuery] int version = 0,
-        [FromQuery] bool isDeleted = false,
-        [FromQuery] string? text = null,
-        [FromQuery] long size = 0,
-        CancellationToken token = default)
+    [HttpPost]
+    [Consumes("multipart/form-data")]
+    [RequestFormLimits(ValueLengthLimit = int.MaxValue, MultipartBodyLengthLimit = long.MaxValue)]
+    [DisableFormValueModelBinding]
+    public async Task<IActionResult> Put(CancellationToken token = default)
     {
-        if (string.IsNullOrWhiteSpace(hash)) return BadRequest("Hash is required");
-        if (type == ProfileType.None) return BadRequest("Type is required");
+        var boundary = HeaderUtilities.RemoveQuotes(MediaTypeHeaderValue.Parse(Request.ContentType).Boundary).Value;
+        if (string.IsNullOrEmpty(boundary))
+        {
+            return BadRequest("Invalid or missing multipart/form-data boundary");
+        }
 
-        var dto = new HistoryRecordDto
+        try
+        {
+            var reader = new MultipartReader(boundary, Request.Body, 10 * 1024);
+            var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Stream? fileStream = null;
+            MultipartSection? section;
+            while ((section = await reader.ReadNextSectionAsync(token)) != null)
+            {
+                var (hasData, dataStream) = await TryHandleSectionAsync(section, metadata, token);
+                if (hasData)
+                {
+                    fileStream = dataStream;
+                    break; // 文件流必须是最后一个部分
+                }
+            }
+
+            var dto = ParseHistoryRecord(metadata);
+
+            var serverDto = await _historyService.AddRecordDto(HARD_CODED_USER_ID, dto, fileStream, token);
+            return Ok(serverDto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex) when (token.IsCancellationRequested == false)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    private static HistoryRecordDto ParseHistoryRecord(Dictionary<string, string> metadata)
+    {
+        if (!metadata.TryGetValue("hash", out var hash) || string.IsNullOrWhiteSpace(hash))
+            throw new ArgumentException("Hash is required");
+
+        if (!metadata.TryGetValue("type", out var typeStr) || !int.TryParse(typeStr, out var typeInt))
+            throw new ArgumentException("Type is required");
+
+        var type = (ProfileType)typeInt;
+        if (type == ProfileType.None)
+            throw new ArgumentException("Type is required");
+
+        DateTimeOffset? createTime = null;
+        if (metadata.TryGetValue("createTime", out var ctStr) && !string.IsNullOrWhiteSpace(ctStr))
+        {
+            DateTimeOffset.TryParse(ctStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var ct);
+            createTime = ct;
+        }
+
+        DateTimeOffset? lastModified = null;
+        if (metadata.TryGetValue("lastModified", out var lmStr) && !string.IsNullOrWhiteSpace(lmStr))
+        {
+            DateTimeOffset.TryParse(lmStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var lm);
+            lastModified = lm;
+        }
+
+        bool starred = metadata.TryGetValue("starred", out var starStr) && bool.TryParse(starStr, out var star) && star;
+
+        bool pinned = metadata.TryGetValue("pinned", out var pinStr) && bool.TryParse(pinStr, out var pin) && pin;
+
+        int version = 0;
+        if (metadata.TryGetValue("version", out var verStr) && int.TryParse(verStr, out var ver))
+            version = ver;
+
+        bool isDeleted = metadata.TryGetValue("isDeleted", out var delStr) && bool.TryParse(delStr, out var del) && del;
+
+        string text = metadata.TryGetValue("text", out var textStr) ? textStr : string.Empty;
+
+        long size = 0;
+        if (metadata.TryGetValue("size", out var sizeStr) && long.TryParse(sizeStr, out var sz))
+            size = sz;
+
+        return new HistoryRecordDto
         {
             Hash = hash,
             Type = type,
@@ -194,37 +265,35 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             Pinned = pinned,
             Version = version,
             IsDeleted = isDeleted,
-            Text = text ?? string.Empty,
+            Text = text,
             Size = size
         };
+    }
 
-        // 从 body 读取文件流
-        Stream? fileStream = null;
-        if (Request.ContentLength.HasValue && Request.ContentLength.Value > 0)
+    private static async Task<(bool HasData, Stream? DataStream)> TryHandleSectionAsync(
+        MultipartSection section,
+        Dictionary<string, string> metadata,
+        CancellationToken token)
+    {
+        var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(
+            section.ContentDisposition, out var contentDisposition);
+
+        if (!hasContentDispositionHeader || contentDisposition?.Name == null)
+            return (false, null);
+
+        var fieldName = contentDisposition.Name.HasValue ? contentDisposition.Name.Value.Trim('"') : null;
+        if (string.IsNullOrEmpty(fieldName))
+            return (false, null);
+
+        if (fieldName == "data")
         {
-            fileStream = Request.Body;
+            return (true, section.Body);
         }
 
-        var result = await _historyService.CreateIfNotExistsAsync(
-            HARD_CODED_USER_ID, dto, fileStream, token);
-        if (result.Created)
-        {
-            return CreatedAtAction(nameof(GetTransferData), new { profileId = $"{dto.Type}-{dto.Hash}" }, null);
-        }
-        // 将 HistoryRecordDto 转换为 HistoryRecordUpdateDto
-        HistoryRecordUpdateDto? updateDto = null;
-        if (result.Server != null)
-        {
-            updateDto = new HistoryRecordUpdateDto
-            {
-                Starred = result.Server.Starred,
-                Pinned = result.Server.Pinned,
-                LastModified = result.Server.LastModified,
-                Version = result.Server.Version,
-                IsDelete = result.Server.IsDeleted
-            };
-        }
-        return Conflict(updateDto);
+        using var streamReader = new StreamReader(section.Body);
+        var value = await streamReader.ReadToEndAsync(token);
+        metadata[fieldName] = value;
+        return (false, null);
     }
 
     // PATCH api/history/{type}/{hash}

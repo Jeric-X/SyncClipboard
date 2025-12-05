@@ -257,31 +257,39 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var queryParams = dto.ToQueryParams();
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history");
+            using var content = new MultipartFormDataContent();
 
-            var queryString = string.Join("&", queryParams.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
-            var url = new Uri(_httpClient.BaseAddress!, $"api/history?{queryString}");
+            // 添加元数据字段
+            content.Add(new StringContent(dto.Hash), "hash");
+            content.Add(new StringContent(((int)dto.Type).ToString()), "type");
+            content.Add(new StringContent(dto.CreateTime.ToString("o")), "createTime");
+            content.Add(new StringContent(dto.LastModified.ToString("o")), "lastModified");
+            content.Add(new StringContent(dto.Starred.ToString()), "starred");
+            content.Add(new StringContent(dto.Pinned.ToString()), "pinned");
+            content.Add(new StringContent(dto.Version.ToString()), "version");
+            content.Add(new StringContent(dto.IsDeleted.ToString()), "isDeleted");
+            content.Add(new StringContent(dto.Text), "text");
+            content.Add(new StringContent(dto.Size.ToString()), "size");
 
-            HttpContent content;
+            // 添加文件字段（如果提供）
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             {
                 var stream = File.OpenRead(filePath);
+                HttpContent fileContent;
                 if (progress is null)
                 {
-                content = new StreamContent(stream);
+                    fileContent = new StreamContent(stream);
                 }
                 else
                 {
-                    content = new ProgressableStreamContent(stream, progress, cancellationToken);
+                    fileContent = new ProgressableStreamContent(stream, progress, cancellationToken);
                 }
-                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-            }
-            else
-            {
-                content = new ByteArrayContent([]);
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                content.Add(fileContent, "data", Path.GetFileName(filePath));
             }
 
-            using var response = await _httpClient.PutAsync(url, content, cancellationToken);
+            using var response = await _httpClient.PostAsync(url, content, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return;
@@ -296,7 +304,8 @@ public sealed class OfficialAdapter(
                 catch { /* ignore parse errors, fall back to null */ }
                 throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
             }
-            response.EnsureSuccessStatusCode();
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new RemoteServerException($"Code {response.StatusCode}: {response.ReasonPhrase}. Response body: {responseBody}");
         }
         catch (Exception ex)
         {

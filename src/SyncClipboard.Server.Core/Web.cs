@@ -9,6 +9,7 @@ using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Server.Core.Utilities;
 using SyncClipboard.Server.Core.Services;
+using SyncClipboard.Server.Core.Swagger;
 
 namespace SyncClipboard.Server.Core;
 
@@ -34,7 +35,10 @@ public class Web
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
+        services.AddSwaggerGen(options =>
+        {
+            options.OperationFilter<MultipartFormDataOperationFilter>();
+        });
 
         services.AddServerProfileEnvProvider();
 

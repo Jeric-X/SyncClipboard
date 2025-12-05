@@ -97,23 +97,6 @@ public static class MapperExtensions
         entity.SyncStatus = HistorySyncStatus.Synced;
     }
 
-    public static Dictionary<string, string> ToQueryParams(this HistoryRecordDto dto)
-    {
-        return new Dictionary<string, string>
-        {
-            ["hash"] = dto.Hash,
-            ["type"] = ((int)dto.Type).ToString(CultureInfo.InvariantCulture),
-            ["createTime"] = dto.CreateTime.ToString("o", CultureInfo.InvariantCulture),
-            ["lastModified"] = dto.LastModified.ToString("o", CultureInfo.InvariantCulture),
-            ["starred"] = dto.Starred.ToString(),
-            ["pinned"] = dto.Pinned.ToString(),
-            ["version"] = dto.Version.ToString(CultureInfo.InvariantCulture),
-            ["isDeleted"] = dto.IsDeleted.ToString(),
-            ["text"] = dto.Text,
-            ["size"] = dto.Size.ToString(CultureInfo.InvariantCulture)
-        };
-    }
-
     public static ClipboardMetaInfomation GetMetaInfomation(this ProfileLocalInfo info)
     {
         return new ClipboardMetaInfomation
