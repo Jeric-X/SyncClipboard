@@ -58,6 +58,7 @@ public class FileProfile : Profile
 
     public FileProfile(ProfileDto dto) : this(null, dto.DataName, dto.Hash)
     {
+        Size = dto.Size;
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -91,7 +92,8 @@ public class FileProfile : Profile
             Hash = await GetHash(token),
             Text = FileName,
             HasData = true,
-            DataName = FileName
+            DataName = FileName,
+            Size = await GetSize(token)
         };
     }
 

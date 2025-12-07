@@ -76,7 +76,7 @@ internal class StorageBasedServerHelper
     }
 
     [DoesNotReturn]
-    private void ThrowServerException(string message, Exception? innerException = null)
+    public void ThrowServerException(string message, Exception? innerException = null)
     {
         SetErrorStatus(message, innerException);
         ExceptionOccurred?.Invoke();

@@ -8,6 +8,10 @@ namespace SyncClipboard.Core.ViewModels.Sub;
 
 public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
 {
+    private HistoryRecordVM() : this(new HistoryRecord())
+    {
+    }
+
     private readonly int id = record.ID;
     private readonly IThreadDispatcher _threadDispatcher = AppCore.Current.Services.GetRequiredService<IThreadDispatcher>();
 
@@ -266,5 +270,35 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
         }
 
         return restoredPaths;
+    }
+
+    /// <summary>
+    /// 创建当前对象的深拷贝
+    /// </summary>
+    public HistoryRecordVM DeepCopy()
+    {
+        var copy = new HistoryRecordVM
+        {
+            Text = this.Text,
+            Type = this.Type,
+            FilePath = this.FilePath,
+            Hash = this.Hash,
+            Size = this.Size,
+            Timestamp = this.Timestamp,
+            Stared = this.Stared,
+            Pinned = this.Pinned,
+            SyncState = this.SyncState,
+            IsDownloading = this.IsDownloading,
+            DownloadProgress = this.DownloadProgress,
+            IsDownloadPending = this.IsDownloadPending,
+            IsUploading = this.IsUploading,
+            UploadProgress = this.UploadProgress,
+            IsUploadPending = this.IsUploadPending,
+            HasError = this.HasError,
+            ErrorMessage = this.ErrorMessage,
+            IsLocalFileReady = this.IsLocalFileReady
+        };
+
+        return copy;
     }
 }

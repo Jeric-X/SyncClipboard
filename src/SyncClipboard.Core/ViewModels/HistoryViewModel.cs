@@ -124,13 +124,20 @@ public partial class HistoryViewModel : ObservableObject
 
     private void ApplyFilter()
     {
-        viewController.AttachFilter(record =>
-        {
-            if (OnlyShowLocal && record.SyncState == SyncStatus.ServerOnly)
-                return false;
-            return true;
-        });
+        viewController.AttachFilter(IsMatchUiFilter);
         window?.ScrollToTop();
+    }
+
+    private bool IsMatchUiFilter(HistoryRecordVM record)
+    {
+        if (OnlyShowLocal && record.SyncState == SyncStatus.ServerOnly)
+            return false;
+
+        if (SelectedFilter == HistoryFilterType.Transferring)
+        {
+            return record.IsDownloading || record.IsUploading;
+        }
+        return true;
     }
 
     [ObservableProperty]
@@ -170,7 +177,8 @@ public partial class HistoryViewModel : ObservableObject
             new(HistoryFilterType.Text, I18n.Strings.HistoryFilterText),
             new(HistoryFilterType.Image, I18n.Strings.HistoryFilterImage),
             new(HistoryFilterType.File, I18n.Strings.HistoryFilterFile),
-            new(HistoryFilterType.Starred, I18n.Strings.HistoryFilterStarred)
+            new(HistoryFilterType.Starred, I18n.Strings.HistoryFilterStarred),
+            new(HistoryFilterType.Transferring, I18n.Strings.HistoryFilterTransferring)
         ];
 
     public INotifyCollectionChangedSynchronizedViewList<HistoryRecordVM> HistoryItems { get; }
@@ -387,6 +395,9 @@ public partial class HistoryViewModel : ObservableObject
                 types = ProfileTypeFilter.All;
                 starred = true;
                 break;
+            case HistoryFilterType.Transferring:
+                types = ProfileTypeFilter.All;
+                break;
             case HistoryFilterType.All:
             default:
                 types = ProfileTypeFilter.All;
@@ -565,12 +576,12 @@ public partial class HistoryViewModel : ObservableObject
 
     private void OnHistoryAdded(HistoryRecord record)
     {
-        _threadDispatcher.RunOnMainThreadAsync(() => RecordUpdated(record, false));
+        _threadDispatcher.RunOnMainThreadAsync(() => RecordEntityUpdated(record, false));
     }
 
     private void OnHistoryUpdated(HistoryRecord record)
     {
-        _threadDispatcher.RunOnMainThreadAsync(() => RecordUpdated(record, true));
+        _threadDispatcher.RunOnMainThreadAsync(() => RecordEntityUpdated(record, true));
     }
 
     private void OnHistoryRemoved(HistoryRecord record)
@@ -583,21 +594,33 @@ public partial class HistoryViewModel : ObservableObject
         _threadDispatcher.RunOnMainThreadAsync(() => OnRemoteServerChanged());
     }
 
-    private void RecordUpdated(HistoryRecord record, bool onlyUpdate)
+    private void RecordEntityUpdated(HistoryRecord newRecord, bool onlyUpdate)
     {
-        var newRecord = new HistoryRecordVM(record);
+        var newRecordVM = new HistoryRecordVM(newRecord);
+        InitVMTransferStatus(newRecordVM);
+        RecordUpdated(newRecordVM, onlyUpdate);
+    }
+
+    private void RecordUpdated(HistoryRecordVM newRecord, bool onlyUpdate)
+    {
         var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
-        if (!IsMatchCurrentUiFilter(newRecord))
-        {
-            if (oldRecord != null)
-            {
-                allHistoryItems.Remove(oldRecord);
-            }
-            return;
-        }
+        bool isMatchDbFilter = IsMatchDbFilter(newRecord);
 
         if (oldRecord != null)
         {
+            if (!isMatchDbFilter)
+            {
+                allHistoryItems.Remove(oldRecord);
+                return;
+            }
+            bool isShownInUI = IsMatchUiFilter(newRecord);
+            bool oldisShownInUI = IsMatchUiFilter(oldRecord);
+            if (oldisShownInUI  != isShownInUI)
+            {
+                allHistoryItems.Remove(oldRecord);
+                InsertHistoryInOrder(newRecord);
+                return;
+            }
             oldRecord.Update(newRecord);
             return;
         }
@@ -606,12 +629,12 @@ public partial class HistoryViewModel : ObservableObject
         {
             return;
         }
-        InsertHistoryInOrder(record);
+        InsertHistoryInOrder(newRecord);
     }
 
-    private bool IsMatchCurrentUiFilter(HistoryRecordVM vm)
+    private bool IsMatchDbFilter(HistoryRecordVM vm)
     {
-        bool typeMatch = SelectedFilter switch
+        bool filterMatch = SelectedFilter switch
         {
             HistoryFilterType.All => true,
             HistoryFilterType.Text => vm.Type == ProfileType.Text,
@@ -621,7 +644,7 @@ public partial class HistoryViewModel : ObservableObject
             _ => true
         };
 
-        if (!typeMatch)
+        if (!filterMatch)
             return false;
 
         if (!string.IsNullOrEmpty(SearchText))
@@ -647,14 +670,11 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     // 对有序队列实行二分查找
-    private void InsertHistoryInOrder(HistoryRecord record)
+    private void InsertHistoryInOrder(HistoryRecordVM vm)
     {
-        var vm = new HistoryRecordVM(record);
-
         if (allHistoryItems.Count == 0)
         {
             allHistoryItems.Insert(0, vm);
-            InitVMTransferStatus(vm);
             return;
         }
 
@@ -674,7 +694,6 @@ public partial class HistoryViewModel : ObservableObject
             }
         }
         allHistoryItems.Insert(low, vm);
-        InitVMTransferStatus(vm);
     }
 
     private void OnRemoteServerChanged()
@@ -735,13 +754,13 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        var vms = records.Select(x => new HistoryRecordVM(x)).ToList();
-        allHistoryItems.AddRange(vms);
-        foreach (var vm in vms)
+        var vms = records.Select(x =>
         {
+            var vm = new HistoryRecordVM(x);
             InitVMTransferStatus(vm);
-        }
-
+            return vm;
+        }).ToArray();
+        allHistoryItems.AddRange(vms);
         var last = vms.LastOrDefault()!;
 
         var queryInfo = new HistorySyncInfo
@@ -756,7 +775,7 @@ public partial class HistoryViewModel : ObservableObject
         _ = ProcessRemoteQueueAsync(waitAllTasks: false);
 
         _timeCursor = last.Timestamp;
-        _isLocalEnd = vms.Count < size;
+        _isLocalEnd = vms.Length < size;
     }
 
     private async Task ProcessRemoteQueueAsync(bool waitAllTasks = false)
@@ -832,7 +851,7 @@ public partial class HistoryViewModel : ObservableObject
         }
         addedRecords.ForEach(record =>
         {
-            RecordUpdated(record, false);
+            RecordEntityUpdated(record, false);
         });
     }
 
@@ -994,7 +1013,12 @@ public partial class HistoryViewModel : ObservableObject
         var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
         if (vm == null) return;
 
-        _threadDispatcher.RunOnMainThreadAsync(() => vm.UpdateFromTask(task));
+        var newVm = vm.DeepCopy();
+        _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            newVm.UpdateFromTask(task);
+            RecordUpdated(newVm, true);
+        });
     }
 
     internal class HistorySyncInfo

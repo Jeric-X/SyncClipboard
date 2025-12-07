@@ -753,6 +753,9 @@ Esc：关闭面板</value>
   <data name="HistoryFilterStarred" xml:space="preserve">
     <value>收藏</value>
   </data>
+  <data name="HistoryFilterTransferring" xml:space="preserve">
+    <value>传输中</value>
+  </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
     <value>搜索文字或文件名...</value>
   </data>

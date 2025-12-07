@@ -64,6 +64,7 @@ public class GroupProfile : Profile
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToArray();
         _transferDataName = dto.DataName;
         Hash = dto.Hash;
+        Size = dto.Size;
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -314,7 +315,8 @@ public class GroupProfile : Profile
             Hash = await GetHash(token),
             Text = DisplayText,
             HasData = true,
-            DataName = _transferDataName
+            DataName = _transferDataName,
+            Size = await GetSize(token)
         };
     }
 

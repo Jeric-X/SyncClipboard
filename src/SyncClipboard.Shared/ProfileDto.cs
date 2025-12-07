@@ -9,4 +9,5 @@ public record class ProfileDto
     public string Text { get; set; } = string.Empty;
     public bool HasData { get; set; } = false;
     public string? DataName { get; set; }
+    public long Size { get; set; } = 0;
 }

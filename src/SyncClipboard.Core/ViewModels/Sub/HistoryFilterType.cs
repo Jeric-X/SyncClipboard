@@ -6,5 +6,6 @@ public enum HistoryFilterType
     Text,
     Image,
     File,
-    Starred
+    Starred,
+    Transferring
 }

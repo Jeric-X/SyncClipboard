@@ -49,6 +49,7 @@ public class TextProfile : Profile
         Hash = dto.Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
+        Size = dto.Size;
     }
 
     public string GetShortDisplayText()
@@ -86,7 +87,8 @@ public class TextProfile : Profile
             Hash = await GetHash(token),
             Text = _text,
             HasData = _hasTransferData,
-            DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null
+            DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null,
+            Size = await GetSize(token)
         };
     }
 

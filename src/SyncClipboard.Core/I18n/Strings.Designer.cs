@@ -990,6 +990,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Transferring 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterTransferring {
+            get {
+                return ResourceManager.GetString("HistoryFilterTransferring", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Text 的本地化字符串。
         /// </summary>
         public static string HistoryFilterText {

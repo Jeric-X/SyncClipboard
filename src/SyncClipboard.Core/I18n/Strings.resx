@@ -744,6 +744,9 @@ Double click image: View full image</value>
   <data name="HistoryFilterStarred" xml:space="preserve">
     <value>Starred</value>
   </data>
+  <data name="HistoryFilterTransferring" xml:space="preserve">
+    <value>Transferring</value>
+  </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
     <value>Search text or filename...</value>
   </data>

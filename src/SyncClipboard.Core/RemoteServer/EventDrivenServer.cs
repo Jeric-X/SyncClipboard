@@ -6,6 +6,7 @@ using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Shared;
 
 namespace SyncClipboard.Core.RemoteServer;
 
@@ -126,9 +127,22 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         return _historyTransferQueue.Download(profile, progress, cancellationToken);
     }
 
-    public Task<Profile> GetProfileAsync(CancellationToken cancellationToken = default)
+    public async Task<Profile> GetProfileAsync(CancellationToken cancellationToken = default)
     {
-        return _serverHelper.GetProfileAsync(cancellationToken);
+        try
+        {
+            var profileDto = await _serverAdapter.GetCurrentProfileAsync(cancellationToken);
+            if (profileDto is not null)
+            {
+                return Profile.Create(profileDto);
+            }
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _serverHelper.ThrowServerException("Failed to get remote profile", ex);
+        }
+        _serverHelper.ThrowServerException("Failed to get remote profile");
+        return null;
     }
 
     public void OnSyncConfigChanged(SyncConfig syncConfig)

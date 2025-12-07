@@ -14,6 +14,7 @@ using SyncClipboard.Core.Utilities.Web;
 using System.Net.Http.Json;
 using System.Net;
 using SyncClipboard.Core.Exceptions;
+using SyncClipboard.Shared;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
@@ -411,6 +412,28 @@ public sealed class OfficialAdapter(
         catch (Exception ex)
         {
             _logger.Write($"[OFFICIAL_ADAPTER] Failed to set current profile from history {type}/{hash}: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task<ProfileDto?> GetCurrentProfileAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = new Uri(_httpClient.BaseAddress!, "api/current");
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<ProfileDto>(cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to get current profile: {ex.Message}");
             throw;
         }
     }

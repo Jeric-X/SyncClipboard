@@ -9,4 +9,5 @@ public interface IEventServerAdapter : IStorageBasedServerAdapter
     event Action ServerConnected;
 
     Task SetCurrentProfile(ProfileType type, string hash, CancellationToken cancellationToken = default);
+    Task<ProfileDto?> GetCurrentProfileAsync(CancellationToken cancellationToken = default);
 }

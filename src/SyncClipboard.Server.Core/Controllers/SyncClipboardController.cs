@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text.Json;
-using SyncClipboard.Server.Core.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using SyncClipboard.Server.Core.Services.History;
@@ -182,6 +181,38 @@ public class SyncClipboardController(
         return Ok();
     }
 
+    [HttpGet("api/current")]
+    public async Task<ActionResult<ProfileDto>> GetCurrent(CancellationToken token)
+    {
+        var profilePath = Path.Combine(_serverEnv.GetDataRootPath(), "current.json");
+        var cacheKey = profilePath;
+
+        if (_cache.TryGetValue(cacheKey, out ProfileDto? cachedProfile))
+        {
+            return Ok(cachedProfile);
+        }
+
+        if (!System.IO.File.Exists(profilePath))
+        {
+            var dto = new ProfileDto();
+            _cache.Set(cacheKey, dto);
+            return Ok(dto);
+        }
+
+        try
+        {
+            var text = await System.IO.File.ReadAllTextAsync(profilePath, token);
+            cachedProfile = JsonSerializer.Deserialize<ProfileDto>(text) ?? new ProfileDto();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return BadRequest($"Failed to read current profile: {ex.Message}");
+        }
+
+        _cache.Set(cacheKey, cachedProfile);
+        return Ok(cachedProfile);
+    }
+
     [HttpGet("")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public IActionResult GetRoot()
@@ -192,12 +223,19 @@ public class SyncClipboardController(
     private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)
     {
         var clipboardProfileDto = await profile.ToDto(token);
-        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
-        _cache.Set(path, clipboardProfileDto);
-        var text = JsonSerializer.Serialize(clipboardProfileDto);
-        await System.IO.File.WriteAllTextAsync(path, text, token);
+        var dataRoot = _serverEnv.GetDataRootPath();
+
+        var clipboardPath = Path.Combine(dataRoot, "SyncClipboard.json");
+        _cache.Set(clipboardPath, clipboardProfileDto);
+        var clipboardText = JsonSerializer.Serialize(clipboardProfileDto);
+        await System.IO.File.WriteAllTextAsync(clipboardPath, clipboardText, token);
 
         var profileDto = await profile.ToProfileDto(token);
+        var profilePath = Path.Combine(dataRoot, "current.json");
+        _cache.Set(profilePath, profileDto);
+        var profileText = JsonSerializer.Serialize(profileDto);
+        await System.IO.File.WriteAllTextAsync(profilePath, profileText, token);
+
         await _hubContext.Clients.All.RemoteProfileChanged(profileDto);
     }
 
