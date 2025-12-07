@@ -48,6 +48,7 @@ public partial class HistoryViewModel : ObservableObject
     private CancellationTokenSource _remoteQueueCts = new();
 
     private readonly HistoryTransferQueue _transferQueue;
+    private readonly IThreadDispatcher _threadDispatcher;
 
     public HistoryViewModel(
         HistoryManager historyManager,
@@ -60,7 +61,8 @@ public partial class HistoryViewModel : ObservableObject
         RemoteClipboardServerFactory remoteServerFactory,
         IProfileEnv profileEnv,
         HistorySyncer historySyncer,
-        HistoryTransferQueue transferQueue)
+        HistoryTransferQueue transferQueue,
+        IThreadDispatcher threadDispatcher)
     {
         this.historyManager = historyManager;
         this.keyboard = keyboard;
@@ -73,6 +75,7 @@ public partial class HistoryViewModel : ObservableObject
         this.profileEnv = profileEnv;
         this.historySyncer = historySyncer;
         this._transferQueue = transferQueue;
+        this._threadDispatcher = threadDispatcher;
 
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
@@ -551,13 +554,33 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        historyManager.HistoryAdded += record => RecordUpdated(record, false);
-        historyManager.HistoryUpdated += record => RecordUpdated(record, true);
-        historyManager.HistoryRemoved += record => allHistoryItems.Remove(new HistoryRecordVM(record));
+        historyManager.HistoryAdded += OnHistoryAdded;
+        historyManager.HistoryUpdated += OnHistoryUpdated;
+        historyManager.HistoryRemoved += OnHistoryRemoved;
 
         await Refresh();
 
-        remoteServerFactory.CurrentServerChanged += (sender, e) => OnRemoteServerChanged();
+        remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
+    }
+
+    private void OnHistoryAdded(HistoryRecord record)
+    {
+        _threadDispatcher.RunOnMainThreadAsync(() => RecordUpdated(record, false));
+    }
+
+    private void OnHistoryUpdated(HistoryRecord record)
+    {
+        _threadDispatcher.RunOnMainThreadAsync(() => RecordUpdated(record, true));
+    }
+
+    private void OnHistoryRemoved(HistoryRecord record)
+    {
+        _threadDispatcher.RunOnMainThreadAsync(() => allHistoryItems.Remove(new HistoryRecordVM(record)));
+    }
+
+    private void OnCurrentServerChanged(object? sender, EventArgs e)
+    {
+        _threadDispatcher.RunOnMainThreadAsync(() => OnRemoteServerChanged());
     }
 
     private void RecordUpdated(HistoryRecord record, bool onlyUpdate)
@@ -615,7 +638,7 @@ public partial class HistoryViewModel : ObservableObject
     private void InitVMTransferStatus(HistoryRecordVM vm)
     {
         var profileId = Profile.GetProfileId(vm.Type, vm.Hash);
-        var task = _transferQueue.GetTask(profileId);
+        var task = _transferQueue.GetTaskByProfileId(profileId);
 
         if (task != null)
         {
@@ -830,7 +853,7 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        _ = await _transferQueue.EnqueueDownload(profile, CancellationToken.None);
+        _ = await _transferQueue.EnqueueDownload(profile, forceResume: true, ct: CancellationToken.None);
     }
 
     public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
@@ -879,7 +902,7 @@ public partial class HistoryViewModel : ObservableObject
         var record = vm.ToHistoryRecord();
         var profile = record.ToProfile();
 
-        _ = await _transferQueue.EnqueueUpload(profile, CancellationToken.None);
+        _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: CancellationToken.None);
     }
 
     [RelayCommand]
@@ -971,7 +994,7 @@ public partial class HistoryViewModel : ObservableObject
         var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
         if (vm == null) return;
 
-        vm.UpdateFromTask(task);
+        _threadDispatcher.RunOnMainThreadAsync(() => vm.UpdateFromTask(task));
     }
 
     internal class HistorySyncInfo

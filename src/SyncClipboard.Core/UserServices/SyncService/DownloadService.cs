@@ -453,6 +453,7 @@ public class DownloadService : Service
             {
                 await _historyManager.AddRemoteProfile(remoteProfile, cancelToken);
                 await DownloadFileProfileData(remoteProfile, cancelToken);
+                await _historyManager.AddLocalProfile(remoteProfile, cancelToken);
             }
         }
         _downServiceChangingLocal = true;

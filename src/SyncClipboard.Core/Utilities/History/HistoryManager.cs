@@ -128,6 +128,10 @@ public class HistoryManager
 
         if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
         {
+            if (string.IsNullOrEmpty(entity.Text) && !string.IsNullOrEmpty(record.Text))
+            {
+                entity.Text = record.Text;
+            }
             entity.FilePath = record.FilePath;
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
@@ -605,9 +609,6 @@ public class HistoryManager
 
     private Task<HistoryRecord?> Query(ProfileType type, string hash, CancellationToken token)
     {
-#pragma warning disable CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
-        return _dbContext.HistoryRecords.FirstOrDefaultAsync(
-            r => r.Hash == hash.ToUpperInvariant() && r.Type == type, token);
-#pragma warning restore CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
+        return _dbContext.HistoryRecords.FirstOrDefaultAsync(r => EF.Functions.Like(r.Hash, hash) && r.Type == type, token);
     }
 }

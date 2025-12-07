@@ -52,14 +52,14 @@ public class HistoryTransferQueue : IDisposable
         _configManager.ListenConfig<HistoryConfig>(OnSyncHistoryChanged);
     }
 
-    public async Task<TransferTask> EnqueueDownload(Profile profile, CancellationToken ct = default)
+    public async Task<TransferTask> EnqueueDownload(Profile profile, bool forceResume = false, CancellationToken ct = default)
     {
-        return await EnqueueTask(TransferType.Download, profile, ct);
+        return await EnqueueTask(TransferType.Download, profile, forceResume, ct);
     }
 
-    public async Task<TransferTask> EnqueueUpload(Profile profile, CancellationToken ct = default)
+    public async Task<TransferTask> EnqueueUpload(Profile profile, bool forceResume = false, CancellationToken ct = default)
     {
-        return await EnqueueTask(TransferType.Upload, profile, ct);
+        return await EnqueueTask(TransferType.Upload, profile, forceResume, ct);
     }
 
     public Task Download(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken ct = default)
@@ -132,8 +132,14 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    private async Task<TransferTask> EnqueueTask(TransferType type, Profile profile, CancellationToken ct)
+    private async Task<TransferTask> EnqueueTask(TransferType type, Profile profile, bool forceResume = false, CancellationToken ct = default)
     {
+        // 如果需要强制恢复且队列已停止，则恢复队列
+        if (forceResume && _isQueueStopped)
+        {
+            ResumeQueue();
+        }
+
         var profileId = await profile.GetProfileId(ct);
         var taskId = TransferTask.GetTaskId(type, profileId);
 
@@ -168,10 +174,21 @@ public class HistoryTransferQueue : IDisposable
         return task;
     }
 
-    public TransferTask? GetTask(string taskId)
+    public TransferTask? GetTaskByProfileId(string profileId)
     {
-        _activeTasks.TryGetValue(taskId, out var task);
-        return task;
+        var downloadTaskId = TransferTask.GetTaskId(TransferType.Download, profileId);
+        if (_activeTasks.TryGetValue(downloadTaskId, out var downloadTask))
+        {
+            return downloadTask;
+        }
+
+        var uploadTaskId = TransferTask.GetTaskId(TransferType.Upload, profileId);
+        if (_activeTasks.TryGetValue(uploadTaskId, out var uploadTask))
+        {
+            return uploadTask;
+        }
+
+        return null;
     }
 
     public bool CancelDownload(string profileId)

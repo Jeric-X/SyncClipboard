@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
 
@@ -8,6 +9,7 @@ namespace SyncClipboard.Core.ViewModels.Sub;
 public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
 {
     private readonly int id = record.ID;
+    private readonly IThreadDispatcher _threadDispatcher = AppCore.Current.Services.GetRequiredService<IThreadDispatcher>();
 
     [ObservableProperty]
     private string text = record.Text;
@@ -24,7 +26,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     private bool pinned = record.Pinned;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
-    [NotifyPropertyChangedFor(nameof(ShowUploadProgress))]
+    [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
     private SyncStatus syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
         record.IsLocalFileReady ? SyncStatus.Synced : SyncStatus.ServerOnly;
 
@@ -51,8 +53,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     [ObservableProperty]
     private bool isUploadPending = false;
 
-    public bool ShowUploadButton => SyncState == SyncStatus.LocalOnly && !IsUploading;
-    public bool ShowUploadProgress => SyncState == SyncStatus.LocalOnly && IsUploading;
+    public bool ShowUploadButton => SyncState == SyncStatus.LocalOnly && IsLocalFileReady && !IsUploading;
+    public bool ShowUploadProgress => IsUploading;
 
     [ObservableProperty]
     private bool hasError = false;
@@ -62,10 +64,10 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
-    [NotifyPropertyChangedFor(nameof(ShowDownloadProgress))]
+    [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
     private bool isLocalFileReady = record.IsLocalFileReady;
-    public bool ShowDownloadButton => !IsLocalFileReady && !IsDownloading;
-    public bool ShowDownloadProgress => !IsLocalFileReady && IsDownloading;
+    public bool ShowDownloadButton => !IsLocalFileReady && SyncState != SyncStatus.LocalOnly && !IsDownloading;
+    public bool ShowDownloadProgress => IsDownloading;
 
     private Progress<HttpDownloadProgress>? downloadProgressReporter = null;
     private Progress<HttpDownloadProgress>? uploadProgressReporter = null;
@@ -102,30 +104,36 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
 
     private void OnDownloadProgressChanged(object? sender, HttpDownloadProgress p)
     {
-        double progressValue;
+        double progressValue = 0;
         if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
         {
             progressValue = (double)p.BytesReceived / p.TotalBytesToReceive.Value * 100.0;
         }
-        else
+        _threadDispatcher.RunOnMainThreadAsync(() =>
         {
-            progressValue = 0;
-        }
-        DownloadProgress = progressValue;
+            if (progressValue != 0)
+            {
+                DownloadProgress = progressValue;
+                IsUploadPending = false;
+            }
+        });
     }
 
     private void OnUploadProgressChanged(object? sender, HttpDownloadProgress p)
     {
-        double progressValue;
+        double progressValue = 0;
         if (p.TotalBytesToReceive.HasValue && p.TotalBytesToReceive.Value > 0)
         {
             progressValue = (double)p.BytesReceived / p.TotalBytesToReceive.Value * 100.0;
         }
-        else
+        _threadDispatcher.RunOnMainThreadAsync(() =>
         {
-            progressValue = 0;
-        }
-        UploadProgress = progressValue;
+            if (progressValue != 0)
+            {
+                UploadProgress = progressValue;
+                IsUploadPending = false;
+            }
+        });
     }
 
     internal void UpdateFromTask(TransferTask task)
@@ -146,13 +154,11 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
         {
             IsDownloading = isWorking;
             DownloadProgress = task.Progress;
-            IsDownloadPending = isPending;
         }
         else
         {
             IsUploading = isWorking;
             UploadProgress = task.Progress;
-            IsUploadPending = isPending;
         }
 
         HasError = false;

@@ -31,7 +31,7 @@
                 <Setter Property="FontSize" Value="12" />
             </Style>
             <DataTemplate x:Key="normalTemplate" x:DataType="vms:HistoryRecordVM">
-                <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+                <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text), Mode=OneWay}" />
             </DataTemplate>
             <DataTemplate x:Key="imageTemplate" x:DataType="vms:HistoryRecordVM">
                 <StackPanel Orientation="Vertical" Spacing="5">
@@ -45,7 +45,7 @@
                             <BitmapImage UriSource="{x:Bind FilePath[0]}" />
                         </Image.Source>
                     </Image>
-                    <TextBlock HorizontalAlignment="Left" Text="{x:Bind vc:ConvertMethod.LimitLines(Text)}" />
+                    <TextBlock HorizontalAlignment="Left" Text="{x:Bind vc:ConvertMethod.LimitLines(Text), Mode=OneWay}" />
                 </StackPanel>
             </DataTemplate>
             <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />
@@ -143,7 +143,7 @@
                               PointerPressed="Grid_PointerPressed"
                               ColumnDefinitions="Auto, *, Auto, Auto"
                               Background="Transparent"
-                              Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState)}">
+                              Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState), Mode=OneWay}">
                             <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>
@@ -166,27 +166,28 @@
                                 <Button Click="DownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE896;" />
                                 </Button>
-                                <ProgressRing Width="16"
-                                              Height="16"
-                                              IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
-                                              Value="{x:Bind DownloadProgress, Mode=OneWay}"
-                                              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}" />
-                                <Button Click="CancelDownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE711;" />
+                                <Button Click="CancelDownloadButtonClicked"
+                                        IsTabStop="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}"
+                                        ToolTipService.ToolTip="Cancel Download">
+                                    <ProgressRing Width="16"
+                                                  Height="16"
+                                                  IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
+                                                  Value="{x:Bind DownloadProgress, Mode=OneWay}" />
                                 </Button>
                                 <!--  Upload button  -->
                                 <Button Click="UploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadButton), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE898;" />
                                 </Button>
-                                <!--  Upload progress ring  -->
-                                <ProgressRing Width="16"
-                                              Height="16"
-                                              IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
-                                              Value="{x:Bind UploadProgress, Mode=OneWay}"
-                                              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}" />
-                                <!--  Cancel upload button  -->
-                                <Button Click="CancelUploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE711;" />
+                                <!--  Cancel upload button with progress ring  -->
+                                <Button Click="CancelUploadButtonClicked"
+                                        IsTabStop="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}"
+                                        ToolTipService.ToolTip="Cancel Upload">
+                                    <ProgressRing Width="16"
+                                                  Height="16"
+                                                  IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
+                                                  Value="{x:Bind UploadProgress, Mode=OneWay}" />
                                 </Button>
                                 <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE8C8;" />
@@ -204,7 +205,7 @@
                             <Border Grid.Column="3"
                                     Width="2"
                                     Margin="4,0,4,0"
-                                    Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState)}"
+                                    Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState), Mode=OneWay}"
                                     Loaded="StatusBorderLoaded"
                                     ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}" />
                         </Grid>

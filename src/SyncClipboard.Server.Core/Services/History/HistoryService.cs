@@ -348,10 +348,8 @@ public class HistoryService
 
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)
     {
-#pragma warning disable CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(
-            r => r.UserId == userId && r.Hash == hash.ToUpperInvariant() && r.Type == type, token);
-#pragma warning restore CA1862 // 使用 "StringComparison" 方法重载来执行不区分大小写的字符串比较
+            r => r.UserId == userId && EF.Functions.Like(r.Hash, hash) && r.Type == type, token);
     }
 
     public async Task<HistoryRecordDto?> GetByTypeAndHashAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
