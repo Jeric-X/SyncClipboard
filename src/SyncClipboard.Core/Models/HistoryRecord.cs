@@ -6,7 +6,7 @@ public class HistoryRecord
     public string Text { get; set; } = string.Empty;
     public ProfileType Type { get; set; } = ProfileType.None;
     public string[] FilePath { get; set; } = [];
-    public string Hash { get; set; } = Guid.NewGuid().ToString();
+    public string Hash { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public bool Stared { get; set; }
     public bool Pinned { get; set; }

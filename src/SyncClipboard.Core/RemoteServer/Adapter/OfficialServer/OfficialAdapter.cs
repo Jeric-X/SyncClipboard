@@ -6,6 +6,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Server.Core.Constants;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Server.Core.Hubs;
 using System.Text;
 using System.Text.Json;
 using System.Web;
@@ -31,7 +32,7 @@ public sealed class OfficialAdapter(
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
 
-    public event Action<ClipboardProfileDTO>? ProfileDtoChanged;
+    public event Action<ProfileDto>? ProfileDtoChanged;
     public event Action<Exception?>? ServerDisconnected;
     public event Action? ServerConnected;
 
@@ -70,7 +71,7 @@ public sealed class OfficialAdapter(
                 .Build();
         }
 
-        _hubConnection.On<ClipboardProfileDTO>(SignalRConstants.RemoteProfileChangedMethod, profile =>
+        _hubConnection.On<ProfileDto>(nameof(ISyncClipboardClient.RemoteProfileChanged), profile =>
         {
             ProfileDtoChanged?.Invoke(profile);
         });

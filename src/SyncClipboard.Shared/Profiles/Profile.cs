@@ -14,6 +14,7 @@ public abstract class Profile
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
     public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
+    public abstract Task<ProfileDto> ToProfileDto(CancellationToken token);
     protected abstract Task ComputeHash(CancellationToken token);
     protected abstract Task ComputeSize(CancellationToken token);
 
@@ -210,6 +211,18 @@ public abstract class Profile
             ProfileType.Image => new ImageProfile(entity),
             ProfileType.Group => new GroupProfile(entity),
             _ => throw new NotSupportedException($"Unsupported profile type from Persistent: {entity.Type}"),
+        };
+    }
+
+    public static Profile Create(ProfileDto dto)
+    {
+        return dto.Type switch
+        {
+            ProfileType.Text => new TextProfile(dto),
+            ProfileType.File => new FileProfile(dto),
+            ProfileType.Image => new ImageProfile(dto),
+            ProfileType.Group => new GroupProfile(dto),
+            _ => throw new NotSupportedException($"Unsupported profile type from ProfileDto: {dto.Type}"),
         };
     }
 }

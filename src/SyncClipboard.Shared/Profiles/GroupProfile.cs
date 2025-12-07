@@ -20,6 +20,7 @@ public class GroupProfile : Profile
     public string[] Files => _files ?? [];
 
     public override ProfileType Type => ProfileType.Group;
+    private string[]? _fileNames;
     public override string DisplayText => GetDisplayText();
 
     public override string ShortDisplayText => GetDisplayText(true);
@@ -55,6 +56,14 @@ public class GroupProfile : Profile
     {
         _transferDataName = profileDTO.File;
         Hash = profileDTO.Clipboard;
+    }
+
+    public GroupProfile(ProfileDto dto)
+    {
+        _fileNames = dto.Text.Split(["\r\n", "\r", "\n"],
+            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToArray();
+        _transferDataName = dto.DataName;
+        Hash = dto.Hash;
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -297,16 +306,31 @@ public class GroupProfile : Profile
         return new ClipboardProfileDTO(_transferDataName, await GetHash(token), Type);
     }
 
+    public override async Task<ProfileDto> ToProfileDto(CancellationToken token)
+    {
+        return new ProfileDto
+        {
+            Type = Type,
+            Hash = await GetHash(token),
+            Text = DisplayText,
+            HasData = true,
+            DataName = _transferDataName
+        };
+    }
+
     public string GetDisplayText(bool shortStr = false)
     {
-        if (_files is null)
+        if (_fileNames?.Length != 0 && _files is not null)
+            _fileNames = _files.Select(file => Path.GetFileName(file)).ToArray();
+
+        if (_fileNames is null)
             return string.Empty;
 
-        if (shortStr && _files.Length > 5)
+        if (shortStr && _fileNames.Length > 5)
         {
-            return string.Join("\n", _files.Take(5).Select(file => Path.GetFileName(file))) + "\n...";
+            return string.Join("\n", _fileNames.Take(5)) + "\n...";
         }
-        return string.Join("\n", _files.Select(file => Path.GetFileName(file)));
+        return string.Join("\n", _fileNames);
     }
 
     private static async Task<string[]> ExtractArchiveEntriesAsync(ZipArchive archive, string extractPath, CancellationToken token)

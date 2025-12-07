@@ -56,6 +56,10 @@ public class FileProfile : Profile
     {
     }
 
+    public FileProfile(ProfileDto dto) : this(null, dto.DataName, dto.Hash)
+    {
+    }
+
     protected override async Task ComputeHash(CancellationToken token)
     {
         if (FullPath is null || !File.Exists(FullPath))
@@ -78,6 +82,18 @@ public class FileProfile : Profile
     }
 
     public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);
+
+    public override async Task<ProfileDto> ToProfileDto(CancellationToken token)
+    {
+        return new ProfileDto
+        {
+            Type = Type,
+            Hash = await GetHash(token),
+            Text = FileName,
+            HasData = true,
+            DataName = FileName
+        };
+    }
 
     protected async static Task<string> CombineHash(string fileName, string contentHash, CancellationToken token)
     {

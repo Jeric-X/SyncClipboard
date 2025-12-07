@@ -153,11 +153,13 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
         if (task.Type == TransferType.Download)
         {
             IsDownloading = isWorking;
+            IsDownloadPending = isWorking;
             DownloadProgress = task.Progress;
         }
         else
         {
             IsUploading = isWorking;
+            IsUploadPending = isWorking;
             UploadProgress = task.Progress;
         }
 

@@ -5,7 +5,7 @@ namespace SyncClipboard.Server.Core.Hubs;
 
 public interface ISyncClipboardClient
 {
-    Task RemoteProfileChanged(ClipboardProfileDTO profile);
+    Task RemoteProfileChanged(ProfileDto profile);
 }
 
 [Authorize]

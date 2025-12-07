@@ -14,7 +14,7 @@ namespace SyncClipboard.Server.Core.Controllers;
 [ApiController]
 [Authorize]
 public class SyncClipboardController(
-    IHubContext<SyncClipboardHub> _hubContext,
+    IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext,
     IMemoryCache _cache,
     ServerEnvProvider _serverEnv,
     HistoryService _historyService) : ControllerBase
@@ -158,7 +158,7 @@ public class SyncClipboardController(
         }
 
         await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
-        await SaveAndNotifyCurrentProfile(profileDto, token);
+        await SaveAndNotifyCurrentProfile(profile, token);
 
         return Ok();
     }
@@ -177,8 +177,7 @@ public class SyncClipboardController(
             return NotFound("Profile not found in history");
         }
 
-        var profileDto = await profile.ToDto(token);
-        await SaveAndNotifyCurrentProfile(profileDto, token);
+        await SaveAndNotifyCurrentProfile(profile, token);
 
         return Ok();
     }
@@ -190,13 +189,16 @@ public class SyncClipboardController(
         return Ok("Server is running.");
     }
 
-    private async Task SaveAndNotifyCurrentProfile(ClipboardProfileDTO profileDto, CancellationToken token)
+    private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)
     {
+        var clipboardProfileDto = await profile.ToDto(token);
         var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
-        _cache.Set(path, profileDto);
-        var text = JsonSerializer.Serialize(profileDto);
+        _cache.Set(path, clipboardProfileDto);
+        var text = JsonSerializer.Serialize(clipboardProfileDto);
         await System.IO.File.WriteAllTextAsync(path, text, token);
-        await _hubContext.Clients.All.SendAsync(SignalRConstants.RemoteProfileChangedMethod, profileDto, token);
+
+        var profileDto = await profile.ToProfileDto(token);
+        await _hubContext.Clients.All.RemoteProfileChanged(profileDto);
     }
 
     private async Task<IActionResult> GetFileInternal(string? path)

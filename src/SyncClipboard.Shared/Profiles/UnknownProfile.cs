@@ -18,6 +18,11 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
+    public override Task<ProfileDto> ToProfileDto(CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
     public override Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
         return Task.FromResult(false);

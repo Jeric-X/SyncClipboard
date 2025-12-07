@@ -110,9 +110,9 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         remove => PollStatusEventImpl -= value;
     }
 
-    private void OnProfileDtoChanged(ClipboardProfileDTO? newProfileDto)
+    private void OnProfileDtoChanged(ProfileDto newProfileDto)
     {
-        var newProfile = newProfileDto != null ? ClipboardProfileDTO.CreateProfile(newProfileDto) : new UnknownProfile();
+        var newProfile = Profile.Create(newProfileDto);
         RemoteProfileChangedImpl?.Invoke(this, new ProfileChangedEventArgs
         {
             NewProfile = newProfile,

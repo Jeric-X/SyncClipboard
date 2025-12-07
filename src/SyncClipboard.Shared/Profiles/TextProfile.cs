@@ -15,6 +15,7 @@ public class TextProfile : Profile
     public override bool HasTransferData => _hasTransferData;
     private readonly bool _hasTransferData = false;
     private string? _transferDataPath;
+    private string? _transferDataName;
     private readonly string _text;
     private string? _fullText;
 
@@ -42,6 +43,14 @@ public class TextProfile : Profile
         Hash = entity.Hash;
     }
 
+    public TextProfile(ProfileDto dto)
+    {
+        _text = dto.Text;
+        Hash = dto.Hash;
+        _hasTransferData = dto.HasData;
+        _transferDataName = dto.DataName;
+    }
+
     public string GetShortDisplayText()
     {
         if (_text.Length > 500)
@@ -67,6 +76,18 @@ public class TextProfile : Profile
             throw new Exception("Text profile data is not ready.");
         }
         return new ClipboardProfileDTO(string.Empty, _text, Type);
+    }
+
+    public override async Task<ProfileDto> ToProfileDto(CancellationToken token)
+    {
+        return new ProfileDto
+        {
+            Type = Type,
+            Hash = await GetHash(token),
+            Text = _text,
+            HasData = _hasTransferData,
+            DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null
+        };
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
@@ -150,7 +171,8 @@ public class TextProfile : Profile
 
         if (File.Exists(_transferDataPath) is false)
         {
-            var fileName = $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+            _transferDataName ??= Utility.CreateTimeBasedFileName();
+            var fileName = $"{Type}_{_transferDataName}.txt";
             dataPath = Path.Combine(GetWorkingDir(persistentDir, Hash ?? string.Empty), fileName);
             return true;
         }
@@ -162,9 +184,11 @@ public class TextProfile : Profile
         if (HasTransferData && File.Exists(_transferDataPath) is false && _fullText is not null)
         {
             var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
-            var path = Path.Combine(workingDir, $"{Type}_{Utility.CreateTimeBasedFileName()}.txt");
+            var dataName = _transferDataName ?? Utility.CreateTimeBasedFileName();
+            var path = Path.Combine(workingDir, $"{Type}_{dataName}.txt");
             await File.WriteAllTextAsync(path, _fullText, Encoding.UTF8, token);
             _transferDataPath = path;
+            _transferDataName = dataName;
             _fullText = null;
         }
     }
@@ -212,6 +236,7 @@ public class TextProfile : Profile
         }
 
         _transferDataPath = path;
+        _transferDataName = Path.GetFileName(path);
     }
 
     public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
@@ -236,6 +261,7 @@ public class TextProfile : Profile
         var targetPath = Path.Combine(workingDir, fileName);
         File.Move(path, targetPath, true);
         _transferDataPath = targetPath;
+        _transferDataName = Path.GetFileName(targetPath);
     }
 
     public override async Task<ProfileLocalInfo> Localize(string _, CancellationToken token)

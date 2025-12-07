@@ -24,6 +24,10 @@ public class ImageProfile : FileProfile
     {
     }
 
+    public ImageProfile(ProfileDto dto) : base(dto)
+    {
+    }
+
     public ImageProfile(IClipboardImage clipboardImage) : base(null, CreateImageFileName())
     {
         _clipboardImage = clipboardImage;
