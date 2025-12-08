@@ -429,7 +429,7 @@ public sealed class OfficialAdapter(
             }
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<ProfileDto>(cancellationToken: cancellationToken);
+            return await response.Content.ReadFromJsonAsync<ProfileDto>(JsonSerializerOptions.Web, cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {

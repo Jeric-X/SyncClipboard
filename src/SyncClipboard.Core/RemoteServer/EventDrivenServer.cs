@@ -6,7 +6,6 @@ using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Core.Utilities.History;
-using SyncClipboard.Shared;
 
 namespace SyncClipboard.Core.RemoteServer;
 

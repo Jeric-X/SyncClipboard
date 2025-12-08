@@ -615,7 +615,7 @@ public partial class HistoryViewModel : ObservableObject
             }
             bool isShownInUI = IsMatchUiFilter(newRecord);
             bool oldisShownInUI = IsMatchUiFilter(oldRecord);
-            if (oldisShownInUI  != isShownInUI)
+            if (oldisShownInUI != isShownInUI)
             {
                 allHistoryItems.Remove(oldRecord);
                 InsertHistoryInOrder(newRecord);

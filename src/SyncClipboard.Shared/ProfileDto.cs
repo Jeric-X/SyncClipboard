@@ -1,10 +1,12 @@
 using SyncClipboard.Shared.Profiles;
+using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Shared;
 
 public record class ProfileDto
 {
-    public ProfileType Type { get; set; } = ProfileType.Unknown;
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ProfileType Type { get; set; } = ProfileType.Text;
     public string Hash { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public bool HasData { get; set; } = false;
