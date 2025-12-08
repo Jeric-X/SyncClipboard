@@ -14,7 +14,6 @@ using SyncClipboard.Core.Utilities.Web;
 using System.Net.Http.Json;
 using System.Net;
 using SyncClipboard.Core.Exceptions;
-using SyncClipboard.Shared;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
@@ -34,6 +33,7 @@ public sealed class OfficialAdapter(
     private HttpClient _httpClient = new HttpClient();
 
     public event Action<ProfileDto>? ProfileDtoChanged;
+    public event Action<HistoryRecordDto>? HistoryChanged;
     public event Action<Exception?>? ServerDisconnected;
     public event Action? ServerConnected;
 
@@ -76,6 +76,12 @@ public sealed class OfficialAdapter(
         {
             ProfileDtoChanged?.Invoke(profile);
         });
+
+        _hubConnection.On<HistoryRecordDto>(nameof(ISyncClipboardClient.RemoteHistoryChanged), historyRecord =>
+        {
+            HistoryChanged?.Invoke(historyRecord);
+        });
+
         StartSignalRConnectiron(_hubConnection);
     }
 

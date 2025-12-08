@@ -268,7 +268,7 @@ public class HistoryManager
         entity.SyncStatus = record.SyncStatus; // 期望为 Synced
 
         await _dbContext.SaveChangesAsync(token);
-        HistoryUpdated?.Invoke(entity);
+        TriggleUpdateOrDeleteEvent(entity);
     }
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)

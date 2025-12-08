@@ -14,6 +14,7 @@ public class HistoryRecordDto
     public bool Starred { get; set; }
     public bool Pinned { get; set; }
     public long Size { get; set; }
+    public bool HasData { get; set; }
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;
 
@@ -30,6 +31,7 @@ public class HistoryRecordDto
             Starred = e.Stared,
             Pinned = e.Pinned,
             Size = e.Size,
+            HasData = e.FilePaths.Length > 0 || string.IsNullOrEmpty(e.TransferDataFile) is false,
             Version = e.Version,
             IsDeleted = e.IsDeleted
         };

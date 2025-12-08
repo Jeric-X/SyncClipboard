@@ -27,36 +27,8 @@ public class HistorySyncer
     }
 
     public async Task<List<HistoryRecord>> SyncRangeAsync(
-        DateTime? before,
-        DateTime? after,
-        ProfileTypeFilter types = ProfileTypeFilter.All,
-        string? searchText = null,
-        bool? starred = null,
-        CancellationToken token = default)
-    {
-        if (_remoteServerFactory.Current is not IHistorySyncServer remoteServer)
-        {
-            return [];
-        }
-
-        var remoteRecords = await FetchRemoteRangeAsync(
-            remoteServer,
-            before,
-            after,
-            types,
-            searchText,
-            starred,
-            pageLimit: int.MaxValue,
-            token);
-
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
-        await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
-        await PushLocalRangeAsync(before, after, types, searchText, starred, token);
-        return addedRecords;
-    }
-
-    public async Task<List<HistoryRecord>> SyncRangeAsync(
-        DateTime? before,
+        DateTime? before = null,
+        DateTime? after = null,
         ProfileTypeFilter types = ProfileTypeFilter.All,
         string? searchText = null,
         bool? starred = null,
@@ -71,7 +43,7 @@ public class HistorySyncer
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
             before,
-            after: null,
+            after,
             types,
             searchText,
             starred,
@@ -79,9 +51,21 @@ public class HistorySyncer
             token);
 
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
-        await DetectOrphanDataAsync(before, after: null, remoteRecords, types, searchText, starred, token);
-        await PushLocalRangeAsync(before, after: null, types, searchText, starred, token);
+        await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
+        await PushLocalRangeAsync(before, after, types, searchText, starred, token);
         return addedRecords;
+    }
+
+    public async Task SyncAllAsync(CancellationToken token = default)
+    {
+        // 使用 SyncRangeAsync 同步所有记录（before=null，after=null 表示不限时间范围）
+        await SyncRangeAsync(
+            before: null,
+            after: null,
+            types: ProfileTypeFilter.All,
+            searchText: null,
+            starred: null,
+            token: token);
     }
 
     /// <summary>
@@ -251,13 +235,19 @@ public class HistorySyncer
             foreach (var localRecord in localSyncedOrServerOnly)
             {
                 var localId = $"{localRecord.Type}-{localRecord.Hash}";
-                if (!remoteIds.Contains(localId))
+                if (remoteIds.Contains(localId))
                 {
-                    // 孤儿数据：服务器已删除，修改为 LocalOnly
-                    _logger.Write("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
-                    localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
-                    await _historyManager.PersistServerSyncedAsync(localRecord, token);
+                    continue;
                 }
+                if (localRecord.IsLocalFileReady is false)
+                {
+                    await _historyManager.DeleteHistory(localRecord, token);
+                    continue;
+                }
+                // 孤儿数据：服务器已删除，修改为 LocalOnly
+                _logger.Write("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
+                localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
+                await _historyManager.PersistServerSyncedAsync(localRecord, token);
             }
         }
         catch (Exception ex) when (!token.IsCancellationRequested)

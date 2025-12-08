@@ -20,6 +20,8 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
     private readonly SingletonTask _singletonQueryTask = new SingletonTask();
     private bool _disconnected = true;
 
+    public event Action<HistoryRecordDto>? HistoryChanged;
+
     public EventDrivenServer(IServiceProvider sp, IEventServerAdapter serverAdapter)
     {
         _serverHelper = new StorageBasedServerHelper(sp, serverAdapter);
@@ -33,6 +35,11 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _testAliveHelper.Restart();
         _serverAdapter.ServerDisconnected += ServerDisconnected;
         _serverAdapter.ServerConnected += ServerConnected;
+
+        if (_serverAdapter is IHistorySyncServer historySyncServer)
+        {
+            historySyncServer.HistoryChanged += OnHistoryChanged;
+        }
     }
 
     private void ServerConnected()
@@ -120,6 +127,11 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _logger.Write($"[EVENT] Remote profile changed detected");
     }
 
+    private void OnHistoryChanged(HistoryRecordDto historyRecordDto)
+    {
+        _logger.Write($"[EVENT] Remote history changed: {historyRecordDto.Type}/{historyRecordDto.Hash}");
+        HistoryChanged?.Invoke(historyRecordDto);
+    }
 
     public Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
@@ -179,6 +191,10 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _serverAdapter.ServerDisconnected -= ServerDisconnected;
         _serverAdapter.ServerConnected -= ServerConnected;
         _serverAdapter.ProfileDtoChanged -= OnProfileDtoChanged;
+        if (_serverAdapter is IHistorySyncServer historySyncServer)
+        {
+            historySyncServer.HistoryChanged -= OnHistoryChanged;
+        }
         _serverHelper.ExceptionOccurred -= OnServerHelperExceptionOccurred;
         _serverAdapter.StopListening();
         _testAliveHelper.Dispose();

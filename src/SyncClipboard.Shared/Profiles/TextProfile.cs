@@ -37,7 +37,7 @@ public class TextProfile : Profile
     public TextProfile(ProfilePersistentInfo entity)
     {
         _text = entity.Text;
-        _hasTransferData = !string.IsNullOrEmpty(entity.TransferDataFile) || entity.Size > TRANSFER_DATA_THRESHOLD;
+        _hasTransferData = !string.IsNullOrEmpty(entity.TransferDataFile) || entity.Size > _text.Length;
         _transferDataPath = _hasTransferData ? entity.TransferDataFile : null;
         Size = entity.Size;
         Hash = entity.Hash;

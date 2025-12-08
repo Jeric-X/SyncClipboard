@@ -24,7 +24,7 @@ public static class MapperExtensions
             LastModified = dto.LastModified.UtcDateTime,
             Version = dto.Version,
             IsDeleted = dto.IsDeleted,
-            IsLocalFileReady = dto.Type == ProfileType.Text,
+            IsLocalFileReady = !dto.HasData,
             Size = dto.Size
         };
     }
@@ -79,7 +79,8 @@ public static class MapperExtensions
             Pinned = entity.Pinned,
             Size = entity.Size,
             Version = entity.Version,
-            IsDeleted = entity.IsDeleted
+            IsDeleted = entity.IsDeleted,
+            HasData = !entity.IsLocalFileReady || entity.FilePath.Length > 0
         };
     }
 

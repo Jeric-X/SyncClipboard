@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Utilities;
+using Microsoft.AspNetCore.SignalR;
+using SyncClipboard.Server.Core.Hubs;
 
 namespace SyncClipboard.Server.Core.Services.History;
 
@@ -11,17 +13,19 @@ public class HistoryService
 
     private readonly HistoryDbContext _dbContext;
     private readonly string _persistentDir;
+    private readonly IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext;
 
     // When using SQLite provider we need a process-wide semaphore to avoid concurrent write issues.
     private static readonly SemaphoreSlim _processSem = new(1, 1);
     // Per-instance semaphore used when not using SQLite
     private readonly SemaphoreSlim _sem;
 
-    public HistoryService(HistoryDbContext dbContext, IProfileEnv profileEnv)
+    public HistoryService(HistoryDbContext dbContext, IProfileEnv profileEnv, IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext)
     {
         _dbContext = dbContext;
         _persistentDir = profileEnv.GetPersistentDir();
         _sem = _dbContext.Database.IsSqlite() ? _processSem : new SemaphoreSlim(1, 1);
+        _hubContext = hubContext;
     }
 
     // public async Task<HistoryRecordDto?> GetAsync(string userId, string hash, ProfileType type, CancellationToken token = default)
@@ -83,7 +87,24 @@ public class HistoryService
         existing.Version = dto.Version.Value;
 
         await _dbContext.SaveChangesAsync(token);
+
+        // Notify clients of profile change
+        await NotifyProfileChangeAsync(existing);
+
         return (true, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private async Task NotifyProfileChangeAsync(HistoryRecordEntity entity)
+    {
+        if (_hubContext is null)
+            return;
+
+        try
+        {
+            var historyRecordDto = HistoryRecordDto.FromEntity(entity);
+            await _hubContext.Clients.All.RemoteHistoryChanged(historyRecordDto);
+        }
+        catch { }
     }
 
     private static DateTimeOffset AsUtcOffset(DateTime dt)
@@ -168,122 +189,6 @@ public class HistoryService
         return list.Select(HistoryRecordDto.FromEntity).ToList();
     }
 
-    // public async Task SetAsync(string userId, HistoryRecordEntity record, CancellationToken token = default)
-    // {
-    //     await _sem.WaitAsync(token);
-    //     try
-    //     {
-    //         var existing = await _dbContext.HistoryRecords.FirstOrDefaultAsync(r => r.UserId == userId && r.Hash == record.Hash && r.Type == record.Type, token);
-    //         if (existing != null)
-    //         {
-    //             // Update fields
-    //             existing.Text = record.Text;
-    //             existing.FilePathJson = record.FilePathJson;
-    //             existing.CreateTime = record.CreateTime;
-    //             existing.Stared = record.Stared;
-    //             existing.Pinned = record.Pinned;
-    //             existing.Size = record.Size;
-    //             existing.LastAccessed = DateTime.UtcNow;
-    //         }
-    //         else
-    //         {
-    //             record.UserId = userId;
-    //             record.LastAccessed = DateTime.UtcNow;
-    //             await _dbContext.HistoryRecords.AddAsync(record, token);
-    //         }
-
-    //         await _dbContext.SaveChangesAsync(token);
-    //     }
-    //     finally
-    //     {
-    //         _sem.Release();
-    //     }
-    // }
-
-    // public async Task SetWithDataAsync(string userId, string hash, ProfileType type, Stream? data, string? fileName = null, CancellationToken token = default)
-    // {
-    //     await _sem.WaitAsync(token);
-    //     try
-    //     {
-    //         var existing = await _dbContext.HistoryRecords.FirstOrDefaultAsync(r => r.UserId == userId && r.Hash == hash && r.Type == type, token);
-
-    //         if (existing != null)
-    //         {
-    //             // existing record: only update LastAccessed and return. Do not accept/overwrite data in this flow.
-    //             existing.LastAccessed = DateTime.UtcNow;
-    //             await _dbContext.SaveChangesAsync(token);
-    //             return;
-    //         }
-    //         else
-    //         {
-    //             var record = new HistoryRecordEntity
-    //             {
-    //                 UserId = userId,
-    //                 Hash = hash,
-    //                 Type = type,
-    //                 Text = string.Empty,
-    //                 Stared = false,
-    //                 Pinned = false,
-    //                 // Mime left null unless set by other flows
-    //                 CreateTime = DateTime.UtcNow,
-    //                 LastAccessed = DateTime.UtcNow
-    //             };
-
-    //             await _dbContext.HistoryRecords.AddAsync(record, token);
-    //             existing = record;
-    //         }
-
-    //         // Handle data stream: store under WebRootPath/data/files/{userId}/{hash}/{fileName}
-    //         if (data != null)
-    //         {
-    //             var webRoot = string.IsNullOrEmpty(_env.WebRootPath) ? _env.ContentRootPath : _env.WebRootPath;
-    //             var baseFolder = Path.Combine(webRoot, "data", "files", userId, hash);
-    //             if (!Directory.Exists(baseFolder)) Directory.CreateDirectory(baseFolder);
-
-    //             var safeFileName = string.IsNullOrEmpty(fileName) ? "data.bin" : fileName;
-    //             var filePath = Path.Combine(baseFolder, safeFileName);
-
-    //             // Write stream to file
-    //             using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-    //             {
-    //                 await data.CopyToAsync(fs, token);
-    //             }
-
-    //             // update metadata
-    //             existing.FilePath = [filePath];
-    //             existing.Size = new FileInfo(filePath).Length;
-    //         }
-
-    //         await _dbContext.SaveChangesAsync(token);
-    //     }
-    //     finally
-    //     {
-    //         _sem.Release();
-    //     }
-    // }
-
-    // public async Task<bool> UpdateAsync(string userId, string hash, ProfileType type, HistoryRecordUpdateDto dto, CancellationToken token = default)
-    // {
-    //     await _sem.WaitAsync(token);
-    //     try
-    //     {
-    //         var existing = await _dbContext.HistoryRecords.FirstOrDefaultAsync(r => r.UserId == userId && r.Hash == hash && r.Type == type, token);
-    //         if (existing == null) return false;
-
-    //         if (dto.Text is not null) existing.Text = dto.Text;
-    //         if (dto.Stared.HasValue) existing.Stared = dto.Stared.Value;
-    //         if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
-
-    //         existing.LastAccessed = DateTime.UtcNow;
-    //         await _dbContext.SaveChangesAsync(token);
-    //         return true;
-    //     }
-    //     finally
-    //     {
-    //         _sem.Release();
-    //     }
-    // }
-
     public async Task AddProfile(string userId, Profile profile, CancellationToken token)
     {
         await _sem.WaitAsync(token);
@@ -303,6 +208,7 @@ public class HistoryService
         var entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
+        await NotifyProfileChangeAsync(entity);
     }
 
     public async Task<string?> GetRecentTransferFile(string userId, string fileName, CancellationToken token = default)
@@ -365,6 +271,7 @@ public class HistoryService
 
         entity.LastAccessed = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(token);
+        await NotifyProfileChangeAsync(entity);
         return HistoryRecordDto.FromEntity(entity);
     }
 
@@ -379,8 +286,6 @@ public class HistoryService
             return null;
         }
 
-        entity.LastAccessed = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync(token);
         return entity.ToProfile(_persistentDir);
     }
 
@@ -414,9 +319,11 @@ public class HistoryService
                 existing.IsDeleted = incoming.IsDeleted;
                 existing.LastModified = incoming.LastModified.UtcDateTime;
                 existing.Version = incoming.Version;
+
+                await _dbContext.SaveChangesAsync(token);
+                await NotifyProfileChangeAsync(existing);
             }
 
-            await _dbContext.SaveChangesAsync(token);
             return HistoryRecordDto.FromEntity(existing);
         }
 
@@ -456,6 +363,10 @@ public class HistoryService
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
+
+        // Notify clients of new profile
+        await NotifyProfileChangeAsync(entity);
+
         return HistoryRecordDto.FromEntity(entity);
     }
 

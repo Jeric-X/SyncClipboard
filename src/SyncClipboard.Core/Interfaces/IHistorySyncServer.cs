@@ -9,6 +9,11 @@ namespace SyncClipboard.Core.Interfaces;
 public interface IHistorySyncServer
 {
     /// <summary>
+    /// Event triggered when a history record changes on the server.
+    /// </summary>
+    event Action<HistoryRecordDto>? HistoryChanged;
+
+    /// <summary>
     /// Gets a specific history record by profileId (format: "Type-Hash").
     /// </summary>
     /// <param name="profileId">The profile identifier in format "Type-Hash".</param>

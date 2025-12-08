@@ -257,6 +257,8 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         if (metadata.TryGetValue("size", out var sizeStr) && long.TryParse(sizeStr, out var sz))
             size = sz;
 
+        bool hasData = metadata.TryGetValue("hasData", out var hasDataStr) && bool.TryParse(hasDataStr, out var hasDataVal) && hasDataVal;
+
         return new HistoryRecordDto
         {
             Hash = hash,
@@ -268,7 +270,8 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             Version = version,
             IsDeleted = isDeleted,
             Text = text,
-            Size = size
+            Size = size,
+            HasData = hasData
         };
     }
 

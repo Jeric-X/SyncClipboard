@@ -137,6 +137,11 @@ public partial class HistoryViewModel : ObservableObject
         {
             return record.IsDownloading || record.IsUploading;
         }
+
+        if (SelectedFilter == HistoryFilterType.Starred)
+        {
+            return record.Stared;
+        }
         return true;
     }
 
@@ -565,8 +570,8 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        historyManager.HistoryAdded += OnHistoryAdded;
-        historyManager.HistoryUpdated += OnHistoryUpdated;
+        historyManager.HistoryAdded += RecordEntityUpdated;
+        historyManager.HistoryUpdated += RecordEntityUpdated;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
         await Refresh();
@@ -574,14 +579,14 @@ public partial class HistoryViewModel : ObservableObject
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
     }
 
-    private void OnHistoryAdded(HistoryRecord record)
+    private void RecordEntityUpdated(HistoryRecord record)
     {
-        _threadDispatcher.RunOnMainThreadAsync(() => RecordEntityUpdated(record, false));
-    }
-
-    private void OnHistoryUpdated(HistoryRecord record)
-    {
-        _threadDispatcher.RunOnMainThreadAsync(() => RecordEntityUpdated(record, true));
+        var newRecordVM = new HistoryRecordVM(record);
+        _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            InitVMTransferStatus(newRecordVM);
+            RecordUpdated(newRecordVM, false);
+        });
     }
 
     private void OnHistoryRemoved(HistoryRecord record)
@@ -593,14 +598,6 @@ public partial class HistoryViewModel : ObservableObject
     {
         _threadDispatcher.RunOnMainThreadAsync(() => OnRemoteServerChanged());
     }
-
-    private void RecordEntityUpdated(HistoryRecord newRecord, bool onlyUpdate)
-    {
-        var newRecordVM = new HistoryRecordVM(newRecord);
-        InitVMTransferStatus(newRecordVM);
-        RecordUpdated(newRecordVM, onlyUpdate);
-    }
-
     private void RecordUpdated(HistoryRecordVM newRecord, bool onlyUpdate)
     {
         var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
@@ -640,7 +637,6 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.Text => vm.Type == ProfileType.Text,
             HistoryFilterType.Image => vm.Type == ProfileType.Image,
             HistoryFilterType.File => vm.Type == ProfileType.File || vm.Type == ProfileType.Group,
-            HistoryFilterType.Starred => vm.Stared,
             _ => true
         };
 
@@ -830,29 +826,27 @@ public partial class HistoryViewModel : ObservableObject
         if (_isLocalEnd)
         {
             addedRecords = await historySyncer.SyncRangeAsync(
-                queryInfo.BeforeDate,
-                queryInfo.Types,
-                string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
-                queryInfo.Starred,
-                1,
-                ct);
+                before: queryInfo.BeforeDate,
+                after: null,
+                types: queryInfo.Types,
+                searchText: string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
+                starred: queryInfo.Starred,
+                pageLimit: 1,
+                token: ct);
             _isRemoteEnd = addedRecords.Count == 0;
             _timeCursor = addedRecords.LastOrDefault()?.Timestamp ?? _timeCursor;
         }
         else
         {
             addedRecords = await historySyncer.SyncRangeAsync(
-                queryInfo.BeforeDate,
-                queryInfo.AfterDate,
-                queryInfo.Types,
-                string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
-                queryInfo.Starred,
-                ct);
+                before: queryInfo.BeforeDate,
+                after: queryInfo.AfterDate,
+                types: queryInfo.Types,
+                searchText: string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
+                starred: queryInfo.Starred,
+                token: ct);
         }
-        addedRecords.ForEach(record =>
-        {
-            RecordEntityUpdated(record, false);
-        });
+        addedRecords.ForEach(RecordEntityUpdated);
     }
 
     [RelayCommand]
