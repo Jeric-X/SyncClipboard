@@ -194,7 +194,7 @@ public class SyncClipboardController(
 
         if (!System.IO.File.Exists(profilePath))
         {
-            var dto = new ProfileDto();
+            var dto = await new TextProfile(string.Empty).ToProfileDto(token);
             _cache.Set(cacheKey, dto);
             return Ok(dto);
         }

@@ -884,16 +884,6 @@ public partial class HistoryViewModel : ObservableObject
             actions.Add(new MenuItem($"Hash: {record.Hash}", null));
         }
 
-        if (record.SyncState == SyncStatus.ServerOnly)
-        {
-            actions.Add(new MenuItem(I18n.Strings.Download, () => _ = DownloadRemoteProfile(record)));
-        }
-
-        if (record.SyncState == SyncStatus.LocalOnly && historySyncServer != null)
-        {
-            actions.Add(new MenuItem(I18n.Strings.Uploaded, () => _ = UploadLocalHistoryAsync(record)));
-        }
-
         var profile = record.ToHistoryRecord().ToProfile();
         var valid = await profile.IsLocalDataValid(true, CancellationToken.None);
 
