@@ -48,6 +48,7 @@ public class HistorySyncer
             searchText,
             starred,
             pageLimit,
+            null,
             token);
 
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
@@ -56,16 +57,26 @@ public class HistorySyncer
         return addedRecords;
     }
 
-    public async Task SyncAllAsync(CancellationToken token = default)
+    public async Task SyncAllAsync(DateTime? modifiedAfter, CancellationToken token = default)
     {
-        // 使用 SyncRangeAsync 同步所有记录（before=null，after=null 表示不限时间范围）
-        await SyncRangeAsync(
-            before: null,
-            after: null,
-            types: ProfileTypeFilter.All,
-            searchText: null,
-            starred: null,
-            token: token);
+        if (_remoteServerFactory.Current is not IHistorySyncServer remoteServer)
+        {
+            return;
+        }
+
+        var remoteRecords = await FetchRemoteRangeAsync(
+            remoteServer,
+            null,
+            null,
+            ProfileTypeFilter.All,
+            null,
+            null,
+            int.MaxValue,
+            modifiedAfter,
+            token);
+
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
     }
 
     /// <summary>
@@ -147,7 +158,7 @@ public class HistorySyncer
     }
 
     /// <summary>
-    /// 从服务器拉取指定时间范围内的所有历史记录（分页获取）
+    /// 从服务器拉取指定时间范围内的所有历史记录(分页获取)
     /// </summary>
     private async Task<List<HistoryRecordDto>> FetchRemoteRangeAsync(
         IHistorySyncServer remoteServer,
@@ -157,6 +168,7 @@ public class HistorySyncer
         string? searchText,
         bool? starred,
         int pageLimit,
+        DateTime? modifiedAfter,
         CancellationToken token)
     {
         var allRecords = new List<HistoryRecordDto>();
@@ -164,6 +176,7 @@ public class HistorySyncer
 
         long? beforeMs = before.HasValue ? ToUnixMilliseconds(before.Value) : null;
         long? afterMs = after.HasValue ? ToUnixMilliseconds(after.Value) : null;
+        long? modifiedAfterMs = modifiedAfter.HasValue ? ToUnixMilliseconds(modifiedAfter.Value) : null;
 
         try
         {
@@ -173,6 +186,7 @@ public class HistorySyncer
                     page: page,
                     before: beforeMs,
                     after: afterMs,
+                    modifiedAfter: modifiedAfterMs,
                     types: types,
                     searchText: searchText,
                     starred: starred);

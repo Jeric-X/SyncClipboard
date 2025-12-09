@@ -126,6 +126,7 @@ public class HistoryService
         ProfileTypeFilter types = ProfileTypeFilter.All,
         string? searchText = null,
         bool? starred = null,
+        DateTime? modifiedAfter = null,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -174,6 +175,13 @@ public class HistoryService
         {
             var flag = starred.Value;
             query = query.Where(r => r.Stared == flag);
+        }
+
+        // Filter by modifiedAfter if provided
+        if (modifiedAfter.HasValue)
+        {
+            var modifiedAfterUtc = modifiedAfter.Value.ToUniversalTime();
+            query = query.Where(r => r.LastModified >= modifiedAfterUtc);
         }
 
         query = query.OrderByDescending(r => r.CreateTime)

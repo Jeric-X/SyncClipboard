@@ -168,7 +168,25 @@ public sealed class OfficialAdapter(
         DisconnectSignalR();
     }
 
-    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
+    public async Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = $"{_officialConfig.RemoteURL.TrimEnd('/')}/api/time";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<DateTimeOffset>(JsonSerializerOptions.Web, cancellationToken);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to get server time: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
     {
         try
         {
@@ -181,6 +199,8 @@ public sealed class OfficialAdapter(
                 queryParams.Add($"before={before.Value}");
             if (after.HasValue)
                 queryParams.Add($"after={after.Value}");
+            if (modifiedAfter.HasValue)
+                queryParams.Add($"modifiedAfter={modifiedAfter.Value}");
             if (types != ProfileTypeFilter.All)
                 queryParams.Add($"types={(int)types}");
             if (!string.IsNullOrWhiteSpace(searchText))
@@ -236,17 +256,17 @@ public sealed class OfficialAdapter(
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history/{type}/{hash}");
             using var response = await _httpClient.PatchAsJsonAsync(url, dto, cancellationToken);
-            var serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
                 return; // 成功不再返回 payload
             }
-            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            if (response.StatusCode == HttpStatusCode.Conflict)
             {
+                var serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
                 throw new RemoteHistoryConflictException($"History update conflict {type}/{hash}", serverDto);
             }
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 throw new RemoteHistoryNotFoundException($"History record not found {type}/{hash}");
             }

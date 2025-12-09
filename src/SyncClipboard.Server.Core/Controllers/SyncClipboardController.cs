@@ -220,6 +220,12 @@ public class SyncClipboardController(
         return Ok("Server is running.");
     }
 
+    [HttpGet("api/time")]
+    public DateTimeOffset GetServerTime()
+    {
+        return DateTimeOffset.Now;
+    }
+
     private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)
     {
         var clipboardProfileDto = await profile.ToDto(token);

@@ -78,6 +78,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     //   before: Unix timestamp in milliseconds (UTC). Only records with CreateTime < before will be returned.
     //   after:  Unix timestamp in milliseconds (UTC). Only records with CreateTime >= after will be returned.
+    //   modifiedAfter: Unix timestamp in milliseconds (UTC). Only records with LastModified >= modifiedAfter will be returned.
     //   types: ProfileTypeFilter flag enum (default All). Example: types=Text,Image
     //   q: optional search text (matches Text field, case-insensitive)
     [HttpGet]
@@ -85,6 +86,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         [FromQuery] int? page,
         [FromQuery] long? before = null,
         [FromQuery] long? after = null,
+        [FromQuery] long? modifiedAfter = null,
         [FromQuery] ProfileTypeFilter? types = ProfileTypeFilter.All,
         [FromQuery(Name = "q")] string? searchText = null,
         [FromQuery] bool? starred = null)
@@ -127,6 +129,19 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest("after must be less than before");
         }
 
+        DateTime? modifiedAfterDt = null;
+        if (modifiedAfter.HasValue)
+        {
+            try
+            {
+                modifiedAfterDt = DateTimeOffset.FromUnixTimeMilliseconds(modifiedAfter.Value).UtcDateTime;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return BadRequest("modifiedAfter must be a valid Unix timestamp in milliseconds");
+            }
+        }
+
         var list = await _historyService.GetListAsync(
             HARD_CODED_USER_ID,
             page.Value,
@@ -135,7 +150,8 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             afterDt,
             types.Value,
             searchText,
-            starred);
+            starred,
+            modifiedAfterDt);
         return Ok(list);
     }
 

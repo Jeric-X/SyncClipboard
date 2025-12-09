@@ -27,10 +27,11 @@ public interface IHistorySyncServer
     /// <param name="page">Page index starting from 1 (default 1). Page size is fixed to 50 (max 50).</param>
     /// <param name="before">Unix timestamp in milliseconds (UTC). Only records with CreateTime &lt; before will be returned.</param>
     /// <param name="after">Unix timestamp in milliseconds (UTC). Only records with CreateTime &gt; after will be returned.</param>
+    /// <param name="modifiedAfter">Unix timestamp in milliseconds (UTC). Only records with LastModified &gt;= modifiedAfter will be returned.</param>
     /// <param name="types">Profile types filter (flags). Default All.</param>
     /// <param name="searchText">Optional search text to match text content.</param>
     /// <returns>A collection of history records matching the filter criteria.</returns>
-    Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null);
+    Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null);
 
     /// <summary>
     /// Download transfer data file for a history record specified by profileId (Type-Hash) to localPath.
@@ -56,4 +57,11 @@ public interface IHistorySyncServer
         string? filePath = null,
         IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取服务器当前时间
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>服务器当前时间</returns>
+    Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default);
 }

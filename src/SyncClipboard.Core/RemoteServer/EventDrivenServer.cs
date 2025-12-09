@@ -213,13 +213,13 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         return syncServer.GetHistoryByProfileIdAsync(profileId, cancellationToken);
     }
 
-    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
+    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
     {
         if (_serverAdapter is not IHistorySyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
-        return syncServer.GetHistoryAsync(page, before, after, types, searchText, starred);
+        return syncServer.GetHistoryAsync(page, before, after, modifiedAfter, types, searchText, starred);
     }
 
     public Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
@@ -247,5 +247,14 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
         return syncServer.UploadHistoryAsync(dto, filePath, progress, cancellationToken);
+    }
+
+    public Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default)
+    {
+        if (_serverAdapter is not IHistorySyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.GetServerTimeAsync(cancellationToken);
     }
 }
