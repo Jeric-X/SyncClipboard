@@ -238,9 +238,8 @@ public class HistorySyncer
                 token);
 
             var localSyncedOrServerOnly = localRecords
-                .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false
-                           && (!after.HasValue || r.Timestamp >= after.Value))
-                .ToList();
+                .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false)
+                .Where(r => !after.HasValue || r.Timestamp >= after.Value);
 
             // 构建服务器记录的标识集合
             var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
@@ -336,12 +335,10 @@ public class HistorySyncer
 
     private async void OnHistoryRemoved(HistoryRecord record)
     {
-        // 软删除场景：如果启用了同步且该记录不是 LocalOnly，则需要推送删除
         try
         {
-            if (record.IsDeleted && record.SyncStatus != HistorySyncStatus.LocalOnly)
+            if (record.IsDeleted && record.SyncStatus == HistorySyncStatus.NeedSync)
             {
-                // 删除同步也走 UpdateHistory（设置 IsDelete=true）逻辑
                 await SyncOneAsync(record, CancellationToken.None);
             }
         }

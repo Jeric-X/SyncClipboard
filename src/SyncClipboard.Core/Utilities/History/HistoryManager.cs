@@ -543,6 +543,11 @@ public class HistoryManager
             initialRecords.AddRange(additionalRecords);
         }
 
+        initialRecords.ForEach(r =>
+        {
+            r.Timestamp = DateTime.SpecifyKind(r.Timestamp, DateTimeKind.Utc);
+        });
+
         return initialRecords;
     }
 
