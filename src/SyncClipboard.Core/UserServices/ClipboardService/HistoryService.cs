@@ -104,7 +104,7 @@ public class HistoryService : ClipboardHander
         {
             TriggerSyncTask();
         }
-        if (e.Status == PollStatus.StoppedDueToNetworkIssues)
+        if (e.Status == PollStatus.StoppedDueToNetworkIssues && _enableSyncHistory)
         {
             trayIcon.SetStatusString(SERVICE_NAME, $"History synchronization failed. Last sync time: {_lastSyncTime?.LocalDateTime:g}", error: true);
             _syncingTask.Cancel();

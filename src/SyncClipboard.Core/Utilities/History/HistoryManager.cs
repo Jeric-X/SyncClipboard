@@ -86,13 +86,15 @@ public class HistoryManager
         return 0;
     }
 
-    public static string? GetTempFolderPath(HistoryRecord record)
+    public string? GetRecordWorkingDir(HistoryRecord record)
     {
-        if (string.IsNullOrEmpty(record.Hash) || (record.Type != ProfileType.File && record.Type != ProfileType.Image && record.Type != ProfileType.Group))
+        if (string.IsNullOrEmpty(record.Hash))
             return null;
 
-        var tempFolder = Path.Combine(Env.HistoryFileFolder, record.Hash);
-        return Directory.Exists(tempFolder) ? tempFolder : null;
+        var persistentDir = _profileEnv.GetPersistentDir();
+        var workingDir = Profile.GetWorkingDir(persistentDir, record.Type, record.Hash);
+
+        return workingDir;
     }
 
     private async Task DeleteHistoryInternal(HistoryDbContext _dbContext, HistoryRecord record, CancellationToken token = default)
@@ -100,16 +102,16 @@ public class HistoryManager
         var entity = await Query(record.Type, record.Hash, token);
         if (entity != null)
         {
-            var tempFolderPath = GetTempFolderPath(entity);
-            if (!string.IsNullOrEmpty(tempFolderPath) && Directory.Exists(tempFolderPath))
+            var workingDir = GetRecordWorkingDir(entity);
+            if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
             {
                 try
                 {
-                    Directory.Delete(tempFolderPath, true);
+                    Directory.Delete(workingDir, true);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Write("HistoryManager", $"Failed to delete temp folder {tempFolderPath}: {ex.Message}");
+                    _logger.Write("HistoryManager", $"Failed to delete temp folder {workingDir}: {ex.Message}");
                 }
             }
 
@@ -556,7 +558,7 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var all = _dbContext.HistoryRecords.ToList();
+        var all = await _dbContext.HistoryRecords.ToListAsync(token);
         foreach (var record in all)
         {
             try
