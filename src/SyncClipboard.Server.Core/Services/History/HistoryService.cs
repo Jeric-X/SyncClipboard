@@ -341,7 +341,7 @@ public class HistoryService
             Type = incoming.Type,
             Hash = incoming.Hash.ToUpperInvariant(),
             Text = incoming.Text,
-            Size = 0,
+            Size = incoming.Size,
             CreateTime = incoming.CreateTime.UtcDateTime,
             LastAccessed = now,
             LastModified = (incoming.LastModified == default ? DateTimeOffset.UtcNow : incoming.LastModified).UtcDateTime,
@@ -355,11 +355,8 @@ public class HistoryService
 
         if (transferFileStream != null)
         {
-            if (!profile.NeedsTransferData(_persistentDir, out var filePath))
-            {
-                throw new InvalidOperationException("Profile does not support transfer data.");
-            }
-
+            var filePath = await profile.NeedsTransferData(_persistentDir, token)
+                ?? throw new InvalidOperationException("Profile does not support transfer data.");
             using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 await transferFileStream.CopyToAsync(fs, token);

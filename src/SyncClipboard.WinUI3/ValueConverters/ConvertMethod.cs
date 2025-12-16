@@ -4,8 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
-using System;
-using System.Linq;
+using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
 
@@ -40,18 +39,12 @@ internal static class ConvertMethod
 
     public static string LimitLines(string input)
     {
-        const int MAX_LINES = 10;
         if (input is null)
         {
             return string.Empty;
         }
-        var lines = input.Split(["\r\n", "\r", "\n"], StringSplitOptions.None).Take(11).ToArray();
-        if (lines.Length == MAX_LINES + 1)
-        {
-            lines[MAX_LINES] = "...";
-        }
-        input = string.Join(Environment.NewLine, lines);
-        return input;
+
+        return Converter.LimitUIText(input);
     }
 
     public static string ProfileTypeToFontIcon(ProfileType type)

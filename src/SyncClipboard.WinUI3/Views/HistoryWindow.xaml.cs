@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -17,6 +18,7 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.Win32;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Graphics;
@@ -272,6 +274,53 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             _ListView.ScrollIntoView(_ListView.SelectedItem);
         }
+    }
+
+    private void Image_Loaded(object sender, RoutedEventArgs _)
+    {
+        if (sender is not Image image)
+        {
+            return;
+        }
+
+        if (image.DataContext is not HistoryRecordVM record)
+        {
+            return;
+        }
+
+        // 订阅 PropertyChanged 事件以监听 IsLocalFileReady 变化
+        void OnPropertyChanged(object? s, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(HistoryRecordVM.IsLocalFileReady))
+            {
+                return;
+            }
+
+            if (record.IsLocalFileReady && record.FilePath.Length > 0)
+            {
+                BitmapImage bi = new BitmapImage
+                {
+                    CreateOptions = BitmapCreateOptions.IgnoreImageCache,
+                    UriSource = new Uri(record.FilePath[0])
+                };
+                image.Source = bi;
+            }
+            else
+            {
+                image.Source = null;
+            }
+        }
+
+        record.PropertyChanged += OnPropertyChanged;
+
+        // 当 Image 卸载时取消订阅
+        void OnUnloaded(object s, RoutedEventArgs e)
+        {
+            record.PropertyChanged -= OnPropertyChanged;
+            image.Unloaded -= OnUnloaded;
+        }
+
+        image.Unloaded += OnUnloaded;
     }
 
     private void Image_ImageOpened(object sender, RoutedEventArgs _)

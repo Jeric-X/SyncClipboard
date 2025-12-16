@@ -283,22 +283,48 @@ public partial class HistoryWindow : Window, IWindow
 
     private void Image_Loaded(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Image image)
+        if (sender is not Image image || image.DataContext is not HistoryRecordVM record)
         {
             return;
         }
 
-        if (image.Source is null)
+        void OnPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            image.PropertyChanged += (sender, e) =>
+            if (e.PropertyName != nameof(HistoryRecordVM.IsLocalFileReady))
             {
-                if (e.Property.Name == "Source" && e.NewValue != null)
-                {
-                    SetImageVisual(image);
-                }
-            };
+                return;
+            }
+
+            if (record.IsLocalFileReady && record.FilePath.Length > 0)
+            {
+                AsyncImageLoader.ImageLoader.SetSource(image, record.FilePath[0]);
+            }
+            else
+            {
+                AsyncImageLoader.ImageLoader.SetSource(image, null);
+            }
         }
-        else
+        record.PropertyChanged += OnPropertyChanged;
+
+        void ImageProperChanged(object? s, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property != Image.SourceProperty && e.NewValue != null)
+            {
+                return;
+            }
+            SetImageVisual(image);
+        }
+        image.PropertyChanged += ImageProperChanged;
+
+        void OnUnloaded(object? s, RoutedEventArgs e)
+        {
+            record.PropertyChanged -= OnPropertyChanged;
+            image.Unloaded -= OnUnloaded;
+            image.PropertyChanged -= ImageProperChanged;
+        }
+        image.Unloaded += OnUnloaded;
+
+        if (image.Source is not null)
         {
             SetImageVisual(image);
         }
@@ -307,7 +333,7 @@ public partial class HistoryWindow : Window, IWindow
     private void SetImageVisual(Image image)
     {
         _InvisualableImage.Source = image.Source;
-        _InvisualableImage.Measure(new Avalonia.Size(double.PositiveInfinity, double.PositiveInfinity));
+        _InvisualableImage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         _InvisualableImage.Source = null;
         var desiredSize = _InvisualableImage.DesiredSize;
 

@@ -241,6 +241,20 @@ public class HistoryManager
         }
     }
 
+    public async Task UpdateHistoryLocalInfo(HistoryRecord record, CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var entity = await Query(record.Type, record.Hash, token);
+        if (entity != null)
+        {
+            entity.IsLocalFileReady = record.IsLocalFileReady;
+            entity.FilePath = record.FilePath;
+            await _dbContext.SaveChangesAsync(token);
+            HistoryUpdated?.Invoke(entity);
+        }
+    }
+
     /// <summary>
     /// 持久化一次从服务器回写或同步成功后的本地记录，不修改版本号和时间戳（这些已由同步逻辑确定）。
     /// 保留传入的 SyncStatus（通常为 Synced）。

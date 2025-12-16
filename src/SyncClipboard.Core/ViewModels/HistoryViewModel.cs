@@ -859,10 +859,11 @@ public partial class HistoryViewModel : ObservableObject
 
         var record = vm.ToHistoryRecord();
         var profile = record.ToProfile();
-        var persistentDir = profileEnv.GetPersistentDir();
 
-        if (profile.NeedsTransferData(persistentDir, out var _) is false)
+        if (await profile.IsLocalDataValid(false, CancellationToken.None))
         {
+            record.IsLocalFileReady = true;
+            await historyManager.UpdateHistoryLocalInfo(record);
             return;
         }
 
@@ -884,6 +885,8 @@ public partial class HistoryViewModel : ObservableObject
         if (!valid)
         {
             var historyRecord = record.ToHistoryRecord();
+            historyRecord.IsLocalFileReady = false;
+            await historyManager.UpdateHistoryLocalInfo(historyRecord);
             actions.Add(new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(historyRecord); }));
         }
         else
@@ -904,6 +907,14 @@ public partial class HistoryViewModel : ObservableObject
 
         var record = vm.ToHistoryRecord();
         var profile = record.ToProfile();
+        var valid = await profile.IsLocalDataValid(false, CancellationToken.None);
+        if (!valid)
+        {
+            ShowWindowToastInfo("Local file is missing or changed, this record will be removed.");
+            record.IsLocalFileReady = false;
+            await historyManager.UpdateHistoryLocalInfo(record);
+            return;
+        }
 
         _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: CancellationToken.None);
     }
@@ -917,16 +928,15 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
-        var profile = record.ToHistoryRecord().ToProfile();
+        var historyRecord = record.ToHistoryRecord();
+        var profile = historyRecord.ToProfile();
         var valid = await profile.IsLocalDataValid(true, token);
         if (!valid)
         {
-            InfoBarMessage = I18n.Strings.UnableToCopyByMissingFile;
-            ShowInfoBar = true;
+            historyRecord.IsLocalFileReady = false;
+            await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
 
-            infoBarCancellationSource?.Cancel();
-            infoBarCancellationSource = new CancellationTokenSource();
-            _ = HideInfoBarAfterDelayAsync(infoBarCancellationSource.Token);
+            ShowWindowToastInfo(I18n.Strings.UnableToCopyByMissingFile);
             return;
         }
 
@@ -969,6 +979,16 @@ public partial class HistoryViewModel : ObservableObject
         ViewImage(record);
     }
 
+    private void ShowWindowToastInfo(string message)
+    {
+        InfoBarMessage = message;
+        ShowInfoBar = true;
+
+        infoBarCancellationSource?.Cancel();
+        infoBarCancellationSource = new CancellationTokenSource();
+        _ = HideInfoBarAfterDelayAsync(infoBarCancellationSource.Token);
+    }
+
     private async Task HideInfoBarAfterDelayAsync(CancellationToken cancellationToken)
     {
         try
@@ -994,12 +1014,12 @@ public partial class HistoryViewModel : ObservableObject
 
     private void OnTransferTaskStatusChanged(object? sender, TransferTask task)
     {
-        var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
-        if (vm == null) return;
-
-        var newVm = vm.DeepCopy();
         _threadDispatcher.RunOnMainThreadAsync(() =>
         {
+            var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
+            if (vm == null) return;
+
+            var newVm = vm.DeepCopy();
             newVm.UpdateFromTask(task);
             RecordUpdated(newVm, true);
         });

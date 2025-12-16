@@ -116,7 +116,7 @@ public class TextProfile : Profile
             var sha256Hex = await Utility.CalculateSHA256(file, token);
             return string.Equals(hash, sha256Hex, StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch when (token.IsCancellationRequested is false)
         {
             return false;
         }
@@ -163,22 +163,28 @@ public class TextProfile : Profile
         Size = _text.Length;
     }
 
-    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
+    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
     {
-        dataPath = null;
-        if (HasTransferData is false)
+        if (await IsLocalDataValid(false, token))
         {
-            return false;
+            return null;
         }
 
-        if (File.Exists(_transferDataPath) is false)
+        if (_transferDataPath is not null && File.Exists(_transferDataPath))
         {
-            _transferDataName ??= Utility.CreateTimeBasedFileName();
-            var fileName = $"{Type}_{_transferDataName}.txt";
-            dataPath = Path.Combine(GetWorkingDir(persistentDir, Hash ?? string.Empty), fileName);
-            return true;
+            try
+            {
+                await SetTranseferData(_transferDataPath, true, token);
+                return null;
+            }
+            catch when (token.IsCancellationRequested is false)
+            { }
         }
-        return false;
+
+        _transferDataName ??= Utility.CreateTimeBasedFileName();
+        var fileName = $"{Type}_{_transferDataName}.txt";
+        var dataPath = Path.Combine(GetWorkingDir(persistentDir, await GetHash(token)), fileName);
+        return dataPath;
     }
 
     private async Task WriteFullTextToFile(string persistentDir, CancellationToken token)

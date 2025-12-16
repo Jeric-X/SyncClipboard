@@ -196,21 +196,25 @@ public class FileProfile : Profile
             var hash = await GetSHA256HashFromFile(FullPath, token);
             return hash == Hash;
         }
-        catch
+        catch when (token.IsCancellationRequested is false)
         {
             return false;
         }
     }
 
-    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
+    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
     {
-        if (FullPath is null && FileName is not null)
+        if (await IsLocalDataValid(false, token))
         {
-            dataPath = Path.Combine(GetWorkingDir(persistentDir, Type, Hash ?? string.Empty), FileName);
-            return true;
+            return null;
         }
-        dataPath = null;
-        return false;
+
+        if (FullPath is null)
+        {
+            return Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), FileName);
+        }
+
+        return FullPath;
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)

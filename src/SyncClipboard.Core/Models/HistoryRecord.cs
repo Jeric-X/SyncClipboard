@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace SyncClipboard.Core.Models;
 
 public class HistoryRecord
@@ -7,11 +9,27 @@ public class HistoryRecord
     public ProfileType Type { get; set; } = ProfileType.None;
     public string[] FilePath { get; set; } = [];
     public string Hash { get; set; } = string.Empty;
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    public DateTime timestamp = DateTime.UtcNow;
+    [BackingField(nameof(timestamp))]
+    public DateTime Timestamp
+    {
+        get => DateTimePropertyHelper.GetDateTimeProperty(ref timestamp);
+        set => DateTimePropertyHelper.SetDateTimeProperty(value, ref timestamp);
+    }
+
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public HistorySyncStatus SyncStatus { get; set; } = HistorySyncStatus.LocalOnly;
-    public DateTime LastModified { get; set; } = DateTime.UtcNow;
+
+    public DateTime lastModified = DateTime.UtcNow;
+    [BackingField(nameof(lastModified))]
+    public DateTime LastModified
+    {
+        get => DateTimePropertyHelper.GetDateTimeProperty(ref lastModified);
+        set => DateTimePropertyHelper.SetDateTimeProperty(value, ref lastModified);
+    }
+
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;
     public bool IsLocalFileReady { get; set; } = true;

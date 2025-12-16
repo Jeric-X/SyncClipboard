@@ -72,7 +72,7 @@ public abstract class Profile
     public abstract Task<string?> PrepareTransferData(string persistentDir, CancellationToken token);
     public abstract Task SetTranseferData(string path, bool verify, CancellationToken token);
     public abstract Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token);
-    public abstract bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath);
+    public abstract Task<string?> NeedsTransferData(string persistentDir, CancellationToken token);
 
     public async Task<string> GetProfileId(CancellationToken token)
     {

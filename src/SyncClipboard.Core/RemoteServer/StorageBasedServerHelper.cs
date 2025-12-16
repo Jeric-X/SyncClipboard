@@ -45,7 +45,8 @@ internal class StorageBasedServerHelper
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var persistentDir = _profileEnv.GetPersistentDir();
-        if (profile.NeedsTransferData(persistentDir, out var dataPath) is false)
+        var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
+        if (dataPath is null)
         {
             return;
         }

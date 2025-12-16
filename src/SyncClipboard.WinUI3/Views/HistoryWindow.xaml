@@ -38,6 +38,7 @@
                     <Image MaxHeight="200"
                            HorizontalAlignment="Left"
                            Stretch="None"
+                           Loaded="Image_Loaded"
                            ImageOpened="Image_ImageOpened"
                            PointerPressed="Image_PointerPressed"
                            Visibility="Collapsed">

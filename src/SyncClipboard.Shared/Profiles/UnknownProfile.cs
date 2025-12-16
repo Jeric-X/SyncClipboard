@@ -40,10 +40,9 @@ public class UnknownProfile : Profile
         return Task.CompletedTask;
     }
 
-    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
+    public override Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
     {
-        dataPath = null;
-        return false;
+        return Task.FromResult<string?>(null);
     }
 
     public override Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)

@@ -481,16 +481,25 @@ public class GroupProfile : Profile
         }
     }
 
-    public override bool NeedsTransferData(string persistentDir, [NotNullWhen(true)] out string? dataPath)
+    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
     {
-        if (_transferDataPath is null && Hash is not null)
+        if (await IsLocalDataValid(false, token))
         {
-            var fileName = _transferDataName ?? CreateNewDataFileName();
-            dataPath = Path.Combine(GetWorkingDir(persistentDir, Hash ?? string.Empty), fileName);
-            return true;
+            return null;
         }
-        dataPath = null;
-        return false;
+
+        if (_transferDataPath is not null && File.Exists(_transferDataPath))
+        {
+            try
+            {
+                await SetTranseferData(_transferDataPath, true, token);
+                return null;
+            }
+            catch when (token.IsCancellationRequested is false)
+            { }
+        }
+
+        return Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataName ?? CreateNewDataFileName());
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)

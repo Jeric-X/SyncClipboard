@@ -383,6 +383,17 @@ public class HistoryTransferQueue : IDisposable
             }
 
             await _workerSemaphore.WaitAsync(token);
+            if (task.Status == TransferTaskStatus.WaitForRetry)
+            {
+                var now = DateTime.Now;
+                var restartTime = task.CompletedTime + TimeSpan.FromSeconds(3);
+                if (now < restartTime)
+                {
+                    TimeSpan time = restartTime - now ?? TimeSpan.Zero;
+                    await Task.Delay(time, token);
+                }
+            }
+
 
             var worker = Task.Run(async () =>
             {
@@ -419,16 +430,15 @@ public class HistoryTransferQueue : IDisposable
         }
         catch (Exception ex)
         {
-            task.Status = TransferTaskStatus.Failed;
             task.ErrorMessage = ex.Message;
             task.FailureCount++;
-            NotifyStatusChanged(task);
 
             var currentFailures = Interlocked.Increment(ref _consecutiveFailures);
             _logger.Write($"任务 {task.TaskId} 失败 (连续失败: {currentFailures}/5): {ex.Message}");
 
             if (currentFailures >= 5)
             {
+                task.Status = TransferTaskStatus.Failed;
                 _isQueueStopped = true;
                 MarkAllQueuedTasksAsFailed();
                 _logger.Write("队列因连续失败5次已停止");
@@ -439,11 +449,12 @@ public class HistoryTransferQueue : IDisposable
             }
             else
             {
+                task.Status = TransferTaskStatus.WaitForRetry;
+                task.StartedTime = null;
+                task.CompletedTime = DateTime.Now;
                 lock (_queueLock)
                 {
                     _pendingTasks.Enqueue(task);
-                    task.Status = TransferTaskStatus.WaitForRetry;
-                    task.StartedTime = null;
                 }
                 NotifyStatusChanged(task);
 
@@ -486,7 +497,8 @@ public class HistoryTransferQueue : IDisposable
         var profile = task.Profile;
         var persistentDir = _profileEnv.GetPersistentDir();
 
-        if (profile.NeedsTransferData(persistentDir, out var localDataPath) is false)
+        var localDataPath = await profile.NeedsTransferData(persistentDir, ct);
+        if (localDataPath is null)
         {
             return;
         }

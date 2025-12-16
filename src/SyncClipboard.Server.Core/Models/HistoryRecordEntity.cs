@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+using SyncClipboard.Shared.Models;
 
 namespace SyncClipboard.Server.Core.Models;
 
@@ -17,9 +19,26 @@ public class HistoryRecordEntity
     public string TransferDataMd5 { get; set; } = string.Empty;
     public string[] FilePaths { get; set; } = [];
     public string Hash { get; set; } = Guid.NewGuid().ToString();
-    public DateTime CreateTime { get; set; } = DateTime.UtcNow;
-    public DateTime LastAccessed { get; set; } = DateTime.UtcNow;
-    public DateTime LastModified { get; set; } = DateTime.UtcNow;
+    public DateTime createTime = DateTime.UtcNow;
+    public DateTime lastAccessed = DateTime.UtcNow;
+    public DateTime lastModified = DateTime.UtcNow;
+    public DateTime CreateTime
+    {
+        get => DateTimePropertyHelper.GetDateTimeProperty(ref createTime);
+        set => DateTimePropertyHelper.SetDateTimeProperty(value, ref createTime);
+    }
+    [BackingField(nameof(lastAccessed))]
+    public DateTime LastAccessed
+    {
+        get => DateTimePropertyHelper.GetDateTimeProperty(ref lastAccessed);
+        set => DateTimePropertyHelper.SetDateTimeProperty(value, ref lastAccessed);
+    }
+    [BackingField(nameof(lastModified))]
+    public DateTime LastModified
+    {
+        get => DateTimePropertyHelper.GetDateTimeProperty(ref lastModified);
+        set => DateTimePropertyHelper.SetDateTimeProperty(value, ref lastModified);
+    }
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public string From { get; set; } = string.Empty;
