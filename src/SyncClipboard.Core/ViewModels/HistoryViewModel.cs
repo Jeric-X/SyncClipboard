@@ -585,7 +585,7 @@ public partial class HistoryViewModel : ObservableObject
         _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             InitVMTransferStatus(newRecordVM);
-            RecordUpdated(newRecordVM, false);
+            RecordUpdated(newRecordVM);
         });
     }
 
@@ -598,7 +598,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         _threadDispatcher.RunOnMainThreadAsync(() => OnRemoteServerChanged());
     }
-    private void RecordUpdated(HistoryRecordVM newRecord, bool onlyUpdate)
+    private void RecordUpdated(HistoryRecordVM newRecord)
     {
         var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
         bool isMatchDbFilter = IsMatchDbFilter(newRecord);
@@ -622,7 +622,7 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        if (onlyUpdate || !isMatchDbFilter)
+        if (!isMatchDbFilter)
         {
             return;
         }
@@ -1019,9 +1019,14 @@ public partial class HistoryViewModel : ObservableObject
             var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
             if (vm == null) return;
 
-            var newVm = vm.DeepCopy();
-            newVm.UpdateFromTask(task);
-            RecordUpdated(newVm, true);
+            var wasShownInUI = IsMatchUiFilter(vm);
+            vm.UpdateFromTask(task);
+            var isShownInUI = IsMatchUiFilter(vm);
+            if (wasShownInUI != isShownInUI)
+            {
+                allHistoryItems.Remove(vm);
+                InsertHistoryInOrder(vm);
+            }
         });
     }
 
