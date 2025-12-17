@@ -1024,7 +1024,11 @@ public partial class HistoryViewModel : ObservableObject
             var isShownInUI = IsMatchUiFilter(vm);
             if (wasShownInUI != isShownInUI)
             {
-                allHistoryItems.Remove(vm);
+                try
+                {
+                    allHistoryItems.Remove(vm);
+                }
+                catch { }
                 InsertHistoryInOrder(vm);
             }
         });
