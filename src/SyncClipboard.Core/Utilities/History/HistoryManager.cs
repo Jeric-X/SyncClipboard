@@ -103,17 +103,20 @@ public class HistoryManager
         if (entity != null)
         {
             var workingDir = GetRecordWorkingDir(entity);
-            if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
+            await Task.Run(() =>
             {
-                try
+                if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
                 {
-                    Directory.Delete(workingDir, true);
+                    try
+                    {
+                        Directory.Delete(workingDir, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Write("HistoryManager", $"Failed to delete temp folder {workingDir}: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.Write("HistoryManager", $"Failed to delete temp folder {workingDir}: {ex.Message}");
-                }
-            }
+            }, token);
 
             _dbContext.HistoryRecords.Remove(entity);
             await _dbContext.SaveChangesAsync(token);
@@ -569,7 +572,7 @@ public class HistoryManager
 
     public async Task ClearAllLocalAsync(CancellationToken token = default)
     {
-        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
         var all = await _dbContext.HistoryRecords.ToListAsync(token);
@@ -585,20 +588,23 @@ public class HistoryManager
             }
         }
 
-        try
+        await Task.Run(() =>
         {
-            if (Directory.Exists(Env.HistoryFileFolder))
+            try
             {
-                foreach (var dir in Directory.GetDirectories(Env.HistoryFileFolder))
+                if (Directory.Exists(Env.HistoryFileFolder))
                 {
-                    try { Directory.Delete(dir, true); } catch { }
+                    foreach (var dir in Directory.GetDirectories(Env.HistoryFileFolder))
+                    {
+                        try { Directory.Delete(dir, true); } catch { }
+                    }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.Write("HistoryManager", $"Failed to cleanup history folders: {ex.Message}");
-        }
+            catch (Exception ex)
+            {
+                _logger.Write("HistoryManager", $"Failed to cleanup history folders: {ex.Message}");
+            }
+        }, token);
     }
 
     public async Task<HistoryRecord> ToHistoryRecord(Profile profile, CancellationToken token)

@@ -64,7 +64,7 @@ public partial class HistorySettingViewModel : ObservableObject
     [RelayCommand]
     private async Task ClearLocalHistoryAsync()
     {
-        var confirmed = await _dialog.ShowConfirmationAsync(I18n.Strings.ClearLocalHistory, I18n.Strings.ClearLocalHistoryConfirmMessage);
+        var confirmed = await _dialog.ShowConfirmationAsync(I18n.Strings.ClearLocalHistory, I18n.Strings.ClearLocalHistoryConfirmMessage).ConfigureAwait(false);
         if (!confirmed) return;
         await _historyManager.ClearAllLocalAsync();
     }
