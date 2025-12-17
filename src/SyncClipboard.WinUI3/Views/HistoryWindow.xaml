@@ -41,12 +41,10 @@
                            Loaded="Image_Loaded"
                            ImageOpened="Image_ImageOpened"
                            PointerPressed="Image_PointerPressed"
+                           Source="{x:Bind vc:ConvertMethod.PreviewImage(FilePath, IsLocalFileReady), Mode=OneWay}"
                            Visibility="Collapsed">
-                        <Image.Source>
-                            <BitmapImage UriSource="{x:Bind FilePath[0]}" />
-                        </Image.Source>
                     </Image>
-                    <TextBlock HorizontalAlignment="Left" Text="{x:Bind vc:ConvertMethod.LimitLines(Text), Mode=OneWay}" />
+                    <TextBlock HorizontalAlignment="Left" Text="{x:Bind Text, Mode=OneWay}" />
                 </StackPanel>
             </DataTemplate>
             <local:ClipboardViewerTemplateSelector x:Key="clipboardTemplateSelector" Normal="{StaticResource normalTemplate}" Image="{StaticResource imageTemplate}" />

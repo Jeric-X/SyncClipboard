@@ -622,7 +622,7 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        if (onlyUpdate)
+        if (onlyUpdate || !isMatchDbFilter)
         {
             return;
         }

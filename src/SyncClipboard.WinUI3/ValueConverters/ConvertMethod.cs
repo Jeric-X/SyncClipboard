@@ -2,9 +2,11 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
+using System;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
 
@@ -88,5 +90,15 @@ internal static class ConvertMethod
     public static double SyncStateToOpacity(SyncStatus state)
     {
         return state == SyncStatus.ServerOnly ? 0.5 : 1.0;
+    }
+
+    public static BitmapImage? PreviewImage(string[] filePaths, bool show)
+    {
+        if (!show || filePaths.Length == 0)
+        {
+            return null;
+        }
+
+        return new BitmapImage(new Uri(filePaths[0]));
     }
 }

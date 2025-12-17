@@ -569,7 +569,7 @@ public class HistoryManager
 
     public async Task ClearAllLocalAsync(CancellationToken token = default)
     {
-        await _dbSemaphore.WaitAsync(token);
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
         var all = await _dbContext.HistoryRecords.ToListAsync(token);
