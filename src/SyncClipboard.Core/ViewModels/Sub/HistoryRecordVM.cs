@@ -118,7 +118,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
             if (progressValue != 0)
             {
                 DownloadProgress = progressValue;
-                IsUploadPending = false;
+                IsDownloadPending = false;
             }
         });
     }

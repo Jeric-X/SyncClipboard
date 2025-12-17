@@ -202,7 +202,6 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        hash = hash.ToUpperInvariant();
         return await Query(type, hash, token);
     }
 

@@ -357,7 +357,7 @@ public class DownloadService : Service
     private async Task<Profile?> GetHistoryProfile(Profile remoteProfile, CancellationToken token)
     {
         var historyRecord = await _historyManager.GetHistoryRecord(await remoteProfile.GetHash(token), remoteProfile.Type, token);
-        if (historyRecord is null)
+        if (historyRecord is null || historyRecord.IsDeleted || !historyRecord.IsLocalFileReady)
             return null;
 
         try
@@ -366,7 +366,8 @@ public class DownloadService : Service
             var valid = await cachedProfile.IsLocalDataValid(false, token);
             if (!valid)
             {
-                await _historyManager.DeleteHistory(historyRecord, token);
+                historyRecord.IsLocalFileReady = false;
+                await _historyManager.UpdateHistoryLocalInfo(historyRecord, token);
                 return null;
             }
 
