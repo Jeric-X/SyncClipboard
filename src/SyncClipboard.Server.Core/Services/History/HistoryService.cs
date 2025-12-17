@@ -277,13 +277,10 @@ public class HistoryService
             return null;
         }
 
-        entity.LastAccessed = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync(token);
-        await NotifyProfileChangeAsync(entity);
         return HistoryRecordDto.FromEntity(entity);
     }
 
-    public async Task<Profile?> GetProfileAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
+    public async Task<Profile?> GetAndResumeProfileAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
@@ -293,6 +290,13 @@ public class HistoryService
         {
             return null;
         }
+
+        entity.LastModified = DateTime.UtcNow;
+        entity.LastAccessed = DateTime.UtcNow;
+        entity.Version++;
+        entity.IsDeleted = false;
+        await _dbContext.SaveChangesAsync(token);
+        await NotifyProfileChangeAsync(entity);
 
         return entity.ToProfile(_persistentDir);
     }

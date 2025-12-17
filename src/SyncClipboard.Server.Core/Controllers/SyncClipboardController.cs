@@ -170,7 +170,7 @@ public class SyncClipboardController(
             return BadRequest("Hash cannot be empty");
         }
 
-        var profile = await _historyService.GetProfileAsync(HistoryService.HARD_CODED_USER_ID, type, hash, token);
+        var profile = await _historyService.GetAndResumeProfileAsync(HistoryService.HARD_CODED_USER_ID, type, hash, token);
         if (profile == null)
         {
             return NotFound("Profile not found in history");
