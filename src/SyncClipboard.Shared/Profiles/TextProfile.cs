@@ -282,9 +282,9 @@ public class TextProfile : Profile
         _transferDataName = Path.GetFileName(targetPath);
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string _, CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string _, bool quick, CancellationToken token)
     {
-        if (HasTransferData is false)
+        if (HasTransferData is false || quick)
         {
             return new ProfileLocalInfo { Text = _text };
         }

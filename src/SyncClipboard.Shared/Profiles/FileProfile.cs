@@ -237,7 +237,7 @@ public class FileProfile : Profile
         };
     }
 
-    public override Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
     {
         if (FullPath is null)
         {

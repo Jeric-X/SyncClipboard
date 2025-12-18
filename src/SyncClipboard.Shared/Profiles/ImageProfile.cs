@@ -146,13 +146,13 @@ public class ImageProfile : FileProfile
         return await base.Persist(persistentDir, token);
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string persistentDir, CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string persistentDir, bool quick, CancellationToken token)
     {
         if (FullPath is null)
         {
             await PreparePersistent(persistentDir, token);
         }
 
-        return await base.Localize(persistentDir, token);
+        return await base.Localize(persistentDir, quick, token);
     }
 }

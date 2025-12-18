@@ -15,7 +15,7 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
             new MenuItem(Strings.Copy, () => { _ = setter.Set(profile, CancellationToken.None); }),
         ];
 
-        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
+        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), true, token);
 
         if (HasUrl(localInfo.Text, out var url) && url is not null)
         {

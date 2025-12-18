@@ -531,7 +531,7 @@ public class GroupProfile : Profile
         };
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
     {
         if (_files is null && _transferDataPath is not null)
         {

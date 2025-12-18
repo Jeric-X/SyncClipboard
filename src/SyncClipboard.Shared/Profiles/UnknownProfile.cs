@@ -50,7 +50,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task<ProfileLocalInfo> Localize(string persistentDir, CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string persistentDir, bool quick, CancellationToken token)
     {
         throw new NotImplementedException();
     }

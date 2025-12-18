@@ -20,7 +20,7 @@ public class LocalClipboardSetter(IServiceProvider serviceProvider, IThreadDispa
 
         try
         {
-            var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), ctk);
+            var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), false, ctk);
             await dispather.RunOnMainThreadAsync(() => setter.SetLocalClipboard(localInfo.GetMetaInfomation(), ctk));
         }
         finally
