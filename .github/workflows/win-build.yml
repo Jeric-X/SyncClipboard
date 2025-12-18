@@ -62,6 +62,11 @@ jobs:
     - name: copy SyncClipboard.WinUI3
       run: xcopy src\SyncClipboard.WinUI3\bin\${{ matrix.cpu }}\Release\net9.0-windows10.0.19041.0\win-${{ matrix.cpu }} WinUI3\ /s /e
 
+    - name: set update info
+      run: |
+        chmod +x ./build/SetUpdateSource.sh
+        ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}
+
     - name: Upload build artifacts SyncClipboard.WinUI3
       uses: actions/upload-artifact@v4
       with:

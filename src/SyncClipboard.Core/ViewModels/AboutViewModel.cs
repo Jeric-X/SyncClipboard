@@ -91,7 +91,7 @@ public partial class AboutViewModel : ObservableObject
     [RelayCommand]
     public void OpenReleasePage()
     {
-        Sys.OpenWithDefaultApp(_appConfig.UpdateUrl);
+        Sys.OpenWithDefaultApp(CheckUpdateForBeta ? _appConfig.UpdateUrl : _appConfig.UpdateUrl + "/latest");
     }
 
     public partial class UpdateStatusViewModel : ObservableObject
@@ -157,6 +157,7 @@ public partial class AboutViewModel : ObservableObject
             UpdaterState.CheckingForUpdate => Severity.Info,
             UpdaterState.UpdateAvailable => Severity.Warning,
             UpdaterState.UpdateAvailableAt3rdPartySrc => Severity.Warning,
+            UpdaterState.UpdateAvailableAtGitHubExtra => Severity.Warning,
             UpdaterState.ReadyForDownload => Severity.Warning,
             UpdaterState.UpToDate => Severity.Success,
             UpdaterState.Downloading => Severity.Info,

@@ -6,7 +6,7 @@
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
         public const string AppVersion = "3.1.1-beta2";
         public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
-        public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases/latest";
+        public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases";
 
         public const string RuntimeConfigName = "RuntimeConfig.json";
         public const string UpdateInfoFile = "update_info.json";

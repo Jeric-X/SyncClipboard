@@ -22,6 +22,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
 
     private bool NeedUpdate { get; set; } = false;
     private GitHubRelease? GithubRelease { get; set; } = null;
+    private GitHubAsset? GithubAsset { get; set; } = null;
     private string DownloadPath
     {
         get
@@ -166,7 +167,15 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
                 && updateInfo.UpdateSrc == "github"
                 && !string.IsNullOrEmpty(updateInfo.PackageName))
             {
-                SetStatus(UpdaterState.ReadyForDownload);
+                GithubAsset = GetGithubAsset();
+                if (GithubAsset != null)
+                {
+                    SetStatus(UpdaterState.ReadyForDownload);
+                }
+                else
+                {
+                    SetStatus(UpdaterState.UpdateAvailableAtGitHubExtra);
+                }
             }
             else if (string.IsNullOrEmpty(updateInfo.UpdateSrc) is false && updateInfo.UpdateSrc != "github")
             {
@@ -187,27 +196,26 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     {
         DownloadProgress = new();
         SetStatus(UpdaterState.Downloading);
-        if (GithubRelease == null)
+        if (GithubAsset == null)
         {
             throw new InvalidOperationException("No Update Available.");
         }
 
-        using var SHA256 = System.Security.Cryptography.SHA256.Create();
-        var githubAsset = GetGithubAsset();
-        var downloadUrl = githubAsset.BrowserDownloadUrl!;
+        var downloadUrl = GithubAsset.BrowserDownloadUrl!;
 
         if (Directory.Exists(DownloadPath))
         {
             Directory.Delete(DownloadPath, true);
         }
 
+        using var sha256 = SHA256.Create();
         if (File.Exists(DownloadPath))
         {
             var existFileStream = File.OpenRead(DownloadPath);
-            var existHash = await SHA256.ComputeHashAsync(existFileStream, token);
+            var existHash = await sha256.ComputeHashAsync(existFileStream, token);
             var existHashString = $"sha256:{Convert.ToHexString(existHash)}";
             existFileStream.Dispose();
-            if (string.Compare(githubAsset.Digest, existHashString, StringComparison.OrdinalIgnoreCase) != 0)
+            if (string.Compare(GithubAsset.Digest, existHashString, StringComparison.OrdinalIgnoreCase) != 0)
             {
                 File.Delete(DownloadPath);
             }
@@ -223,7 +231,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             DownloadPath,
             new Progress<HttpDownloadProgress>(progress =>
             {
-                progress.TotalBytesToReceive ??= githubAsset.Size;
+                progress.TotalBytesToReceive ??= GithubAsset.Size;
                 DownloadProgress = progress;
                 DownloadProgressChanged?.Invoke(progress);
             }),
@@ -231,19 +239,19 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         );
 
         using var fileStream = File.OpenRead(DownloadPath);
-        var localHash = await SHA256.ComputeHashAsync(fileStream, token);
+        var localHash = await sha256.ComputeHashAsync(fileStream, token);
         var localHashString = $"sha256:{Convert.ToHexString(localHash)}";
 
-        if (string.Compare(githubAsset.Digest, localHashString, StringComparison.OrdinalIgnoreCase) != 0)
+        if (string.Compare(GithubAsset.Digest, localHashString, StringComparison.OrdinalIgnoreCase) != 0)
         {
-            logger.Write($"Downloaded file hash does not match the expected hash. Expected: {githubAsset.Digest}, Actual: sha256:{BitConverter.ToString(localHash)}");
+            logger.Write($"Downloaded file hash does not match the expected hash. Expected: {GithubAsset.Digest}, Actual: sha256:{BitConverter.ToString(localHash)}");
             throw new InvalidOperationException(I18n.Strings.HashMismatch);
         }
 
         SetStatus(UpdaterState.Downloaded);
     }
 
-    private GitHubAsset GetGithubAsset()
+    private GitHubAsset? GetGithubAsset()
     {
         foreach (var asset in GithubRelease!.Assets ?? [])
         {
@@ -253,7 +261,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             }
         }
 
-        throw new InvalidOperationException($"No GitHub Asset for {updateInfo.PackageName} Available.");
+        return null;
     }
 
     private Task CancelUpdate(CancellationToken token)
@@ -307,6 +315,8 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             UpdaterState.Downloading => $"{I18n.Strings.Downloading} {updateInfo.PackageName}",
             UpdaterState.Downloaded => I18n.Strings.NewVersionDownloaded,
             UpdaterState.Failed => I18n.Strings.Error,
+            UpdaterState.UpdateAvailableAtGitHubExtra => I18n.Strings.FoundNewVersion + GithubRelease!.TagName
+                + $", current package '{updateInfo.PackageName}', please download manually.",
             _ => "Unknown state"
         };
     }
@@ -322,6 +332,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             // UpdaterState.UpToDate => null,
             //UpdaterState.UpdateAvailableAt3rdPartySrc => null,
             UpdaterState.UpdateAvailable => (I18n.Strings.OpenUpdatePage, OpenUpdatePage),
+            UpdaterState.UpdateAvailableAtGitHubExtra => (I18n.Strings.OpenUpdatePage, OpenUpdatePage),
             UpdaterState.Downloading => (I18n.Strings.Cancel, SingletonTask(CancelUpdate)),
             UpdaterState.Downloaded => (I18n.Strings.OpenFolder, SingletonTask(OpenInFileManager)),
             // UpdaterState.Failed => null,

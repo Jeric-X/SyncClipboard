@@ -70,7 +70,7 @@ internal class StorageBasedServerHelper
         var statusMessage = $"Server Error: {message}";
         if (innerException != null)
         {
-            statusMessage = $"{message}\n{innerException.Message}";
+            statusMessage = $"{message}\n{innerException.GetType()}: {innerException.Message}";
         }
         _logger.Write(statusMessage);
         _trayIcon.SetStatusString(ServerConstants.StatusName, statusMessage);

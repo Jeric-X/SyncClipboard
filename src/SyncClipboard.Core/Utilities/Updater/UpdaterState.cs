@@ -6,6 +6,7 @@ public enum UpdaterState
     CheckingForUpdate,
     UpdateAvailable,
     UpdateAvailableAt3rdPartySrc,
+    UpdateAvailableAtGitHubExtra,
     ReadyForDownload,
     UpToDate,
     Downloading,
