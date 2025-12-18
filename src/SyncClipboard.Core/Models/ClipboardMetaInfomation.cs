@@ -75,7 +75,8 @@ public record class ClipboardMetaInfomation
 
     public override string ToString()
     {
-        return $"Text={Text} Html={Html} Files='{string.Join(',', Files ?? [])}' DragDropEffects={Effects} OriginalType={OriginalType}";
+        string? displayText = Text is { Length: > 100 } ? Text[..100] + "..." : Text;
+        return $"Text={displayText} Html={Html} Files='{string.Join(',', Files ?? [])}' DragDropEffects={Effects} OriginalType={OriginalType}";
     }
 
     public bool Empty()

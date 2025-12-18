@@ -38,7 +38,14 @@ public class TextProfile : Profile
     {
         _text = entity.Text;
         _hasTransferData = !string.IsNullOrEmpty(entity.TransferDataFile) || entity.Size > _text.Length;
-        _transferDataPath = _hasTransferData ? entity.TransferDataFile : null;
+        if (_hasTransferData)
+        {
+            _transferDataPath = entity.TransferDataFile;
+            if (_transferDataPath is null && entity.FilePaths.Length > 0)
+            {
+                _transferDataPath = entity.FilePaths[0];
+            }
+        }
         Size = entity.Size;
         Hash = entity.Hash;
     }
@@ -194,7 +201,7 @@ public class TextProfile : Profile
             var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
             var dataName = _transferDataName ?? Utility.CreateTimeBasedFileName();
             var path = Path.Combine(workingDir, $"{Type}_{dataName}.txt");
-            await File.WriteAllTextAsync(path, _fullText, Encoding.UTF8, token);
+            await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
             _transferDataPath = path;
             _transferDataName = dataName;
             _fullText = null;
@@ -204,13 +211,16 @@ public class TextProfile : Profile
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
+        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var path = GetPersistentPath(workingDir, _transferDataPath);
         return new ProfilePersistentInfo
         {
             Type = Type,
             Text = _text,
             Size = await GetSize(token),
             Hash = await GetHash(token),
-            TransferDataFile = GetPersistentPath(GetWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataPath),
+            TransferDataFile = path,
+            FilePaths = path is null ? [] : [path]
         };
     }
 

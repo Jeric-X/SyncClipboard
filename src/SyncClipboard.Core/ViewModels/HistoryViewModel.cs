@@ -369,7 +369,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         CancelFetchTask();
         _isLocalEnd = false;
-        _isRemoteEnd = false;
+        _isRemoteEnd = SelectedFilter == HistoryFilterType.Transferring;
 
         allHistoryItems.Clear();
         _timeCursor = null;
