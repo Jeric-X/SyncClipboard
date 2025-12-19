@@ -357,12 +357,36 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
+    private async Task RemoveSoftDeletedOutOfDateRecords(CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var cutoffTime = DateTime.UtcNow.AddDays(-30);
+        var toDeletes = _dbContext.HistoryRecords
+            .Where(r => r.IsDeleted && r.LastModified < cutoffTime);
+
+        if (!toDeletes.Any())
+        {
+            return;
+        }
+
+        _dbContext.HistoryRecords.RemoveRange(toDeletes);
+        await _dbContext.SaveChangesAsync(token);
+    }
+
     public async Task CleanupExpiredHistory(CancellationToken token = default)
     {
         try
         {
+            if (_historyConfig.EnableSyncHistory)
+            {
+                await RemoveSoftDeletedOutOfDateRecords(token);
+                return;
+            }
+
             // When syncing history with server, local time-based cleanup is disabled
-            if (!_historyConfig.EnableHistory || _historyConfig.EnableSyncHistory || _historyConfig.HistoryRetentionMinutes == 0)
+            if (!_historyConfig.EnableHistory || _historyConfig.HistoryRetentionMinutes == 0)
             {
                 return;
             }
@@ -621,4 +645,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity => entity.Timestamp;
+
+    public Expression<Func<HistoryRecord, bool>> QueryCount => entity => true;
 }

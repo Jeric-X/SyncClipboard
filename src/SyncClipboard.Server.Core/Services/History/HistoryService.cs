@@ -346,6 +346,61 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return HistoryRecordDto.FromEntity(entity);
     }
 
+    private async Task DeleteProfileData(HistoryRecordEntity entity, CancellationToken token)
+    {
+        var workingDir = Profile.GetWorkingDir(_persistentDir, entity.Type, entity.Hash);
+        await Task.Run(() =>
+        {
+            if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
+            {
+                try
+                {
+                    Directory.Delete(workingDir, true);
+                }
+                catch when (!token.IsCancellationRequested) { }
+            }
+        }, token);
+    }
+
+    public async Task Remove(string userId, ProfileType type, string hash, CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var existing = await Query(userId, type, hash, token);
+        if (existing is null)
+        {
+            return;
+        }
+
+        existing.IsDeleted = true;
+        _dbContext.HistoryRecords.Remove(existing);
+        await _dbContext.SaveChangesAsync(token);
+        await DeleteProfileData(existing, token);
+    }
+
+    public async Task RemoveOutOfDateDeletedRecords(CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var toDeletes = _dbContext.HistoryRecords
+            .Where(r => r.UserId == HARD_CODED_USER_ID && r.IsDeleted && r.LastModified < DateTime.UtcNow.AddDays(-30));
+
+        if (!toDeletes.Any())
+        {
+            return;
+        }
+
+        _dbContext.HistoryRecords.RemoveRange(toDeletes);
+        await _dbContext.SaveChangesAsync(token);
+
+        foreach (var rec in toDeletes)
+        {
+            await DeleteProfileData(rec, token);
+        }
+    }
+
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
@@ -361,18 +416,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         foreach (var rec in records)
         {
-            if (!string.IsNullOrEmpty(rec.TransferDataFile))
-            {
-                try
-                {
-                    var dir = Path.GetDirectoryName(rec.TransferDataFile);
-                    if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
-                    {
-                        Directory.Delete(dir, true);
-                    }
-                }
-                catch { }
-            }
+            await DeleteProfileData(rec, token);
         }
 
         return count;
@@ -383,6 +427,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public DbSet<HistoryRecordEntity> RecordDbSet => _dbContext.HistoryRecords;
 
+    public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastAccessed;
 

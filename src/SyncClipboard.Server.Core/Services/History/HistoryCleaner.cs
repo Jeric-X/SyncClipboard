@@ -8,6 +8,20 @@ class HistoryCleaner(IServiceProvider serviceProvider, IOptions<AppSettings> opt
     private readonly CancellationTokenSource _cts = new();
     public Task StartAsync(CancellationToken _)
     {
+        CleanDeletedHistoryTask();
+        LimitHistoryCountTask();
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _cts.Cancel();
+        return Task.CompletedTask;
+    }
+
+    private void LimitHistoryCountTask()
+    {
         Task.Factory.StartNew(async () =>
         {
             while (!_cts.IsCancellationRequested)
@@ -26,13 +40,27 @@ class HistoryCleaner(IServiceProvider serviceProvider, IOptions<AppSettings> opt
                 await Task.Delay(TimeSpan.FromMinutes(10), _cts.Token);
             }
         }, TaskCreationOptions.LongRunning);
-
-        return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    private void CleanDeletedHistoryTask()
     {
-        _cts.Cancel();
-        return Task.CompletedTask;
+        Task.Factory.StartNew(async () =>
+        {
+            while (!_cts.IsCancellationRequested)
+            {
+                try
+                {
+                    using var scope = serviceProvider.CreateScope();
+                    var historyService = scope.ServiceProvider.GetRequiredService<HistoryService>();
+                    await historyService.RemoveOutOfDateDeletedRecords(_cts.Token);
+                }
+                catch (Exception ex) when (!_cts.IsCancellationRequested)
+                {
+                    logger.LogError(ex, "Error occurred when cleaning history records.");
+                }
+
+                await Task.Delay(TimeSpan.FromHours(12), _cts.Token);
+            }
+        }, TaskCreationOptions.LongRunning);
     }
 }

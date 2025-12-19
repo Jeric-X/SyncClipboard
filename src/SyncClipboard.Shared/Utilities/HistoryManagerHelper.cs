@@ -9,7 +9,7 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
 
     public async Task<uint> SetRecordsMaxCount(uint maxCount, CancellationToken token = default)
     {
-        uint count = (uint)records.Count();
+        uint count = (uint)await records.Where(repository.QueryCount).CountAsync(token);
 
         if (count > maxCount)
         {
