@@ -4,49 +4,32 @@ using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Utilities;
 using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
+using System.Linq.Expressions;
 
 namespace SyncClipboard.Server.Core.Services.History;
 
-public class HistoryService
+public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, DateTime>
 {
     public const string HARD_CODED_USER_ID = "default_user";
 
     private readonly HistoryDbContext _dbContext;
     private readonly string _persistentDir;
     private readonly IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext;
-
-    // When using SQLite provider we need a process-wide semaphore to avoid concurrent write issues.
     private static readonly SemaphoreSlim _processSem = new(1, 1);
-    // Per-instance semaphore used when not using SQLite
     private readonly SemaphoreSlim _sem;
 
-    public HistoryService(HistoryDbContext dbContext, IProfileEnv profileEnv, IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext)
+    public HistoryService(HistoryDbContext dbContext,
+        IProfileEnv profileEnv,
+        IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext)
     {
         _dbContext = dbContext;
         _persistentDir = profileEnv.GetPersistentDir();
         _sem = _dbContext.Database.IsSqlite() ? _processSem : new SemaphoreSlim(1, 1);
         _hubContext = hubContext;
+        _historyManagerHelper = new HistoryManagerHelper<HistoryRecordEntity, DateTime>(this);
     }
 
-    // public async Task<HistoryRecordDto?> GetAsync(string userId, string hash, ProfileType type, CancellationToken token = default)
-    // {
-    //     await _sem.WaitAsync(token);
-    //     try
-    //     {
-    //         var entity = await _dbContext.HistoryRecords.FirstOrDefaultAsync(r => r.UserId == userId && r.Hash == hash && r.Type == type, token);
-    //         if (entity == null) return null;
-
-    //         entity.LastAccessed = DateTime.UtcNow;
-    //         await _dbContext.SaveChangesAsync(token);
-    //         return HistoryRecordDto.FromEntity(entity);
-    //     }
-    //     finally
-    //     {
-    //         _sem.Release();
-    //     }
-    // }
-
-    public async Task<(bool? Updated, HistoryRecordDto? Server)> UpdateWithConcurrencyAsync(
+    public async Task<(bool? Updated, HistoryRecordDto? Server)> Update(
         string userId,
         ProfileType type,
         string hash,
@@ -60,17 +43,16 @@ public class HistoryService
         var existing = await Query(userId, type, hash, token);
         if (existing is null)
         {
-            return (null, null); // not found
+            return (null, null);
         }
 
         dto.Version ??= existing.Version + 1;
         dto.LastModified ??= DateTimeOffset.UtcNow;
-        // 并发检测：使用 ShouldUpdate 综合判断（5分钟阈值内用版本，超出用时间戳）
-        // 将可空的客户端值回退为已有值以满足非可空签名
+
         var shouldUpdate = HistoryHelper.ShouldUpdate(
             oldVersion: existing.Version,
             newVersion: dto.Version.Value,
-            oldLastModified: AsUtcOffset(existing.LastModified),
+            oldLastModified: new DateTimeOffset(existing.LastModified),
             newLastModified: dto.LastModified.Value);
 
         if (!shouldUpdate)
@@ -105,16 +87,6 @@ public class HistoryService
             await _hubContext.Clients.All.RemoteHistoryChanged(historyRecordDto);
         }
         catch { }
-    }
-
-    private static DateTimeOffset AsUtcOffset(DateTime dt)
-    {
-        if (dt.Kind == DateTimeKind.Utc)
-        {
-            return new DateTimeOffset(dt);
-        }
-        // Treat non-UTC as UTC-equivalent by converting to UTC first
-        return new DateTimeOffset(dt.ToUniversalTime(), TimeSpan.Zero);
     }
 
     public async Task<List<HistoryRecordDto>> GetListAsync(
@@ -170,14 +142,12 @@ public class HistoryService
             query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
         }
 
-        // Filter by starred if provided
         if (starred.HasValue)
         {
             var flag = starred.Value;
             query = query.Where(r => r.Stared == flag);
         }
 
-        // Filter by modifiedAfter if provided
         if (modifiedAfter.HasValue)
         {
             var modifiedAfterUtc = modifiedAfter.Value.ToUniversalTime();
@@ -301,9 +271,6 @@ public class HistoryService
         return entity.ToProfile(_persistentDir);
     }
 
-    /// <summary>
-    /// 如果记录不存在则创建，存在则根据并发规则尝试更新。返回服务器端快照。
-    /// </summary>
     public async Task<HistoryRecordDto> AddRecordDto(
         string userId,
         HistoryRecordDto incoming,
@@ -321,7 +288,7 @@ public class HistoryService
             var shouldUpdate = HistoryHelper.ShouldUpdate(
                 oldVersion: existing.Version,
                 newVersion: incoming.Version,
-                oldLastModified: AsUtcOffset(existing.LastModified),
+                oldLastModified: new DateTimeOffset(existing.LastModified),
                 newLastModified: incoming.LastModified);
 
             if (shouldUpdate)
@@ -379,10 +346,6 @@ public class HistoryService
         return HistoryRecordDto.FromEntity(entity);
     }
 
-    /// <summary>
-    /// 删除指定用户的全部历史记录以及相关的传输数据文件与目录。
-    /// 返回删除的记录数量。
-    /// </summary>
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
@@ -408,12 +371,41 @@ public class HistoryService
                         Directory.Delete(dir, true);
                     }
                 }
-                catch
-                {
-                }
+                catch { }
             }
         }
 
         return count;
     }
+
+    # region IHistoryEntityRepository Implementation
+    private readonly HistoryManagerHelper<HistoryRecordEntity, DateTime> _historyManagerHelper;
+
+    public DbSet<HistoryRecordEntity> RecordDbSet => _dbContext.HistoryRecords;
+
+    public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted;
+    public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastAccessed;
+
+    public async Task DeleteHistoryByOverCount(HistoryRecordEntity entity, CancellationToken token)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var existing = await Query(entity.UserId, entity.Type, entity.Hash, token);
+        if (existing is null)
+        {
+            return;
+        }
+
+        existing.IsDeleted = true;
+        existing.LastModified = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(token);
+        await NotifyProfileChangeAsync(existing);
+    }
+
+    public Task<uint> SetRecordsMaxCount(uint maxCount, CancellationToken token = default)
+    {
+        return _historyManagerHelper.SetRecordsMaxCount(maxCount, token);
+    }
+    #endregion
 }

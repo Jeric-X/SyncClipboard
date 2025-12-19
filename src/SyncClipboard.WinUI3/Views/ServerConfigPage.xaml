@@ -71,6 +71,14 @@
                         <FontIcon Glyph="&#xE838;" />
                     </Button>
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="Max History Count" Description="Maximum number of history records to keep">
+                    <NumberBox Value="{x:Bind _viewModel.MaxHistoryCount, Mode=TwoWay}"
+                               Minimum="1"
+                               Maximum="10000"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="100"
+                               LargeChange="1000" />
+                </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Port}" />

@@ -194,18 +194,29 @@ public class TextProfile : Profile
         return dataPath;
     }
 
+    private readonly SemaphoreSlim _persistentLock = new(1, 1);
     private async Task WriteFullTextToFile(string persistentDir, CancellationToken token)
     {
-        if (HasTransferData && File.Exists(_transferDataPath) is false && _fullText is not null)
+        if (!HasTransferData || File.Exists(_transferDataPath) is true || _fullText is null)
         {
-            var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
-            var dataName = _transferDataName ?? Utility.CreateTimeBasedFileName();
-            var path = Path.Combine(workingDir, $"{Type}_{dataName}.txt");
-            await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
-            _transferDataPath = path;
-            _transferDataName = dataName;
-            _fullText = null;
+            return;
         }
+
+        await _persistentLock.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _persistentLock.Release());
+
+        if (!HasTransferData || File.Exists(_transferDataPath) is true || _fullText is null)
+        {
+            return;
+        }
+
+        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var dataName = _transferDataName ?? Utility.CreateTimeBasedFileName();
+        var path = Path.Combine(workingDir, $"{Type}_{dataName}.txt");
+        await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
+        _transferDataPath = path;
+        _transferDataName = dataName;
+        _fullText = null;
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)

@@ -1,5 +1,6 @@
 using SyncClipboard.Server.Core;
 using SyncClipboard.Server.Core.CredentialChecker;
+using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Server;
 
@@ -39,6 +40,7 @@ public class Program
         {
             builder.Services.AddSingleton<ICredentialChecker, FileCredentialChecker>();
         }
+        builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
         var app = Web.Configure(builder);
         app.Run();
     }

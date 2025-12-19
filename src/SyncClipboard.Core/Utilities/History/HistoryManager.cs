@@ -46,14 +46,14 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        await DeleteRemoteRecords();
+        await DeleteObsoleteRemoteRecords();
         if (await _historyManagerHelper.SetRecordsMaxCount(config.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
         }
     }
 
-    private async Task<uint> DeleteRemoteRecords(CancellationToken token = default)
+    private async Task<uint> DeleteObsoleteRemoteRecords(CancellationToken token = default)
     {
         var remoteRecords = _dbContext.HistoryRecords.Where(r => r.IsDeleted || !r.IsLocalFileReady).ToList();
         uint remoteCount = (uint)remoteRecords.Count;
@@ -62,6 +62,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         foreach (var record in remoteRecords)
         {
+            record.SyncStatus = HistorySyncStatus.LocalOnly;
             await RemoveHistory(record, token);
         }
 
@@ -553,6 +554,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         {
             try
             {
+                record.SyncStatus = HistorySyncStatus.LocalOnly;
                 await RemoveHistory(record, token);
             }
             catch (Exception ex)
@@ -616,7 +618,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return RemoveHistory(entity, token);
     }
 
-    public Expression<Func<HistoryRecord, bool>> QueryNotDelete => entity => !entity.Stared && !entity.Pinned;
+    public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity => entity.Timestamp;
 }

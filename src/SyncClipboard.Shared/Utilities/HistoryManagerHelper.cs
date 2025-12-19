@@ -13,7 +13,7 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
 
         if (count > maxCount)
         {
-            var toDeletes = records.Where(repository.QueryNotDelete);
+            var toDeletes = records.Where(repository.QueryToDeleteByOverCount);
             toDeletes = toDeletes.OrderBy(repository.QueryDeleteOrderBy);
             toDeletes = toDeletes.Take((int)(count - maxCount));
             var toDeletesList = toDeletes.ToList();

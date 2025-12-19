@@ -36,6 +36,10 @@ public partial class ServerConfigViewModel : ObservableObject
     private string customConfigurationFilePath = string.Empty;
     partial void OnCustomConfigurationFilePathChanged(string value) => ServerConfig = ServerConfig with { CustomConfigurationFilePath = value };
 
+    [ObservableProperty]
+    private uint maxHistoryCount;
+    partial void OnMaxHistoryCountChanged(uint value) => ServerConfig = ServerConfig with { MaxHistoryCount = value };
+
     [RelayCommand]
     private static void OpenCustomConfigDescLink()
     {
@@ -53,6 +57,7 @@ public partial class ServerConfigViewModel : ObservableObject
         CertificatePemKeyPath = value.CertificatePemKeyPath;
         EnableCustomConfigurationFile = value.EnableCustomConfigurationFile;
         CustomConfigurationFilePath = value.CustomConfigurationFilePath;
+        MaxHistoryCount = value.MaxHistoryCount;
         _configManager.SetConfig(value);
 
         OnPropertyChanged(nameof(ShowHttpsConfig));
@@ -94,6 +99,7 @@ public partial class ServerConfigViewModel : ObservableObject
         certificatePemKeyPath = serverConfig.CertificatePemKeyPath;
         enableCustomConfigurationFile = serverConfig.EnableCustomConfigurationFile;
         customConfigurationFilePath = serverConfig.CustomConfigurationFilePath;
+        maxHistoryCount = serverConfig.MaxHistoryCount;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

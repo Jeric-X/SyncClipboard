@@ -10,6 +10,7 @@ using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Server.Core.Utilities;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Swagger;
+using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Server.Core;
 
@@ -41,6 +42,7 @@ public class Web
         });
 
         services.AddServerProfileEnvProvider();
+        services.AddHostedService<HistoryCleaner>();
 
         // This is minimal api project, but Swagger use Microsoft.AspNetCore.Mvc.JsonOptions to show enum as string.
         // The real working converter is written in dto definition in form of attribute. 
@@ -107,6 +109,10 @@ public class Web
                 });
             });
         }
+        builder.Services.Configure<AppSettings>(option =>
+        {
+            option.MaxSavedHistoryCount = serverConfig.MaxSavedHistoryCount;
+        });
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);
         await app.StartAsync();

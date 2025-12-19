@@ -90,6 +90,14 @@ public class ImageProfile : FileProfile
 
     private async Task WriteRawImageBytesToFile(string persistentDir, bool exception, CancellationToken token)
     {
+        await _persistentLock.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _persistentLock.Release());
+
+        if (FullPath is not null && File.Exists(FullPath))
+        {
+            return;
+        }
+
         var rawBytes = await GetRawImageBytes(token);
         if (rawBytes is null)
         {
@@ -104,30 +112,18 @@ public class ImageProfile : FileProfile
     }
 
     private readonly SemaphoreSlim _persistentLock = new(1, 1);
-    private async Task PreparePersistent(string persistentDir, CancellationToken token)
+    private async Task PrepareIfRawImageExist(string persistentDir, CancellationToken token)
     {
-        await _persistentLock.WaitAsync(token);
-        try
+        if (FullPath is not null && File.Exists(FullPath))
         {
-            if (FullPath is not null && File.Exists(FullPath))
-            {
-                return;
-            }
-            await WriteRawImageBytesToFile(persistentDir, true, token);
+            return;
         }
-        finally
-        {
-            _persistentLock.Release();
-        }
+        await WriteRawImageBytesToFile(persistentDir, true, token);
     }
 
     public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
-        if (FullPath is null || File.Exists(FullPath) is false)
-        {
-            await WriteRawImageBytesToFile(persistentDir, false, token);
-        }
-
+        await PrepareIfRawImageExist(persistentDir, token);
         return await base.PrepareTransferData(persistentDir, token);
     }
 
@@ -140,7 +136,7 @@ public class ImageProfile : FileProfile
     {
         if (FullPath is null)
         {
-            await PreparePersistent(persistentDir, token);
+            await PrepareIfRawImageExist(persistentDir, token);
         }
 
         return await base.Persist(persistentDir, token);
@@ -150,7 +146,7 @@ public class ImageProfile : FileProfile
     {
         if (FullPath is null)
         {
-            await PreparePersistent(persistentDir, token);
+            await PrepareIfRawImageExist(persistentDir, token);
         }
 
         return await base.Localize(persistentDir, quick, token);

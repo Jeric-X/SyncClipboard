@@ -8,7 +8,7 @@ public interface IHistoryEntityRepository<TEntity, TDeleteOrderKey> where TEntit
     // public DbContext DbContext { get; }
     public DbSet<TEntity> RecordDbSet { get; }
 
-    public Expression<Func<TEntity, bool>> QueryNotDelete { get; }
+    public Expression<Func<TEntity, bool>> QueryToDeleteByOverCount { get; }
     public Expression<Func<TEntity, TDeleteOrderKey>> QueryDeleteOrderBy { get; }
 
     public Task DeleteHistoryByOverCount(TEntity entity, CancellationToken token);

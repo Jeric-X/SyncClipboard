@@ -11,5 +11,6 @@ public record class ServerPara(
     bool EnableCustomConfigurationFile,
     string CustomConfigurationFilePath,
     bool DiagnoseMode,
+    uint MaxSavedHistoryCount,
     IServiceProvider Services
 );

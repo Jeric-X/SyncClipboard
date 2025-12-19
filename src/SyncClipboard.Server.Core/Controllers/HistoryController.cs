@@ -327,7 +327,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest();
         }
 
-        var (updated, server) = await _historyService.UpdateWithConcurrencyAsync(
+        var (updated, server) = await _historyService.Update(
             HARD_CODED_USER_ID, type, hash, dto, token);
 
         if (updated is null)
