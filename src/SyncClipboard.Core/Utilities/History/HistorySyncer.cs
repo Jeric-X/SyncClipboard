@@ -254,7 +254,7 @@ public class HistorySyncer
                 }
                 if (localRecord.IsLocalFileReady is false)
                 {
-                    await _historyManager.DeleteHistory(localRecord, token);
+                    await _historyManager.RemoveHistory(localRecord, token);
                     continue;
                 }
                 // 孤儿数据：服务器已删除，修改为 LocalOnly

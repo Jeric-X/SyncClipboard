@@ -1,17 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Server.Core.Models;
-using SyncClipboard.Shared.Profiles;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-public class HistoryManager
+public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 {
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
@@ -22,14 +20,16 @@ public class HistoryManager
     private HistoryDbContext _dbContext;
     private readonly IProfileEnv _profileEnv;
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
+    private readonly HistoryManagerHelper<HistoryRecord, DateTime> _historyManagerHelper;
 
-    // 移除对 HistorySyncer 的直接依赖，改用事件让外部订阅以避免循环依赖
+    public DbSet<HistoryRecord> RecordDbSet => _dbContext.HistoryRecords;
 
     public HistoryManager(ConfigManager configManager, ILogger logger, IProfileEnv profileEnv)
     {
         _logger = logger;
         _profileEnv = profileEnv;
         InitDatabaseContext();
+        _historyManagerHelper = new(this);
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
         LoadConfig(_historyConfig);
     }
@@ -41,49 +41,32 @@ public class HistoryManager
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        if (!config.EnableSyncHistory && await SetRecordsMaxCount(_dbContext, config.MaxItemCount) != 0)
+        if (config.EnableSyncHistory)
+        {
+            return;
+        }
+
+        await DeleteRemoteRecords();
+        if (await _historyManagerHelper.SetRecordsMaxCount(config.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
         }
     }
 
-    private async Task<uint> SetRecordsMaxCount(HistoryDbContext _dbContext, uint maxCount, CancellationToken token = default)
+    private async Task<uint> DeleteRemoteRecords(CancellationToken token = default)
     {
-        // 如果 maxCount 为 0，使用默认值 1
-        if (maxCount == 0)
-        {
-            maxCount = 1;
-        }
-
-        uint remoteCount = 0;
         var remoteRecords = _dbContext.HistoryRecords.Where(r => r.IsDeleted || !r.IsLocalFileReady).ToList();
-        remoteCount += (uint)remoteRecords.Count;
+        uint remoteCount = (uint)remoteRecords.Count;
+        if (remoteCount == 0)
+            return 0;
 
         foreach (var record in remoteRecords)
         {
-            await DeleteHistoryInternal(_dbContext, record, token);
-            remoteCount++;
+            await RemoveHistory(record, token);
         }
 
-        var records = _dbContext.HistoryRecords;
-        uint count = (uint)records.Count();
-
-        if (count > maxCount)
-        {
-            var toDeletes = records
-                .Where(r => !r.Stared && !r.Pinned)
-                .OrderBy(r => r.Timestamp)
-                .Take((int)(count - maxCount))
-                .ToArray();
-
-            foreach (var record in toDeletes)
-            {
-                await DeleteHistoryInternal(_dbContext, record, token);
-            }
-
-            return count - maxCount + remoteCount;
-        }
-        return 0;
+        await _dbContext.SaveChangesAsync(token);
+        return remoteCount;
     }
 
     public string? GetRecordWorkingDir(HistoryRecord record)
@@ -97,7 +80,7 @@ public class HistoryManager
         return workingDir;
     }
 
-    private async Task DeleteHistoryInternal(HistoryDbContext _dbContext, HistoryRecord record, CancellationToken token = default)
+    public async Task RemoveHistory(HistoryRecord record, CancellationToken token)
     {
         var entity = await Query(record.Type, record.Hash, token);
         if (entity != null)
@@ -148,12 +131,7 @@ public class HistoryManager
 
         if (!_historyConfig.EnableSyncHistory)
         {
-            await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
-
-            if (_historyConfig.MaxItemCount <= _dbContext.HistoryRecords.Count())
-            {
-                return;
-            }
+            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
         }
 
         await _dbContext.HistoryRecords.AddAsync(record, token);
@@ -236,10 +214,6 @@ public class HistoryManager
             }
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
-            if (!_historyConfig.EnableSyncHistory)
-            {
-                await SetRecordsMaxCount(_dbContext, _historyConfig.MaxItemCount, token);
-            }
         }
     }
 
@@ -403,7 +377,7 @@ public class HistoryManager
 
             foreach (var record in expiredRecords)
             {
-                await DeleteHistoryInternal(_dbContext, record, token);
+                await RemoveHistory(record, token);
             }
 
             if (expiredRecords.Count > 0)
@@ -579,7 +553,7 @@ public class HistoryManager
         {
             try
             {
-                await DeleteHistoryInternal(_dbContext, record, token);
+                await RemoveHistory(record, token);
             }
             catch (Exception ex)
             {
@@ -636,4 +610,13 @@ public class HistoryManager
     {
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(r => EF.Functions.Like(r.Hash, hash) && r.Type == type, token);
     }
+
+    public Task DeleteHistoryByOverCount(HistoryRecord entity, CancellationToken token)
+    {
+        return RemoveHistory(entity, token);
+    }
+
+    public Expression<Func<HistoryRecord, bool>> QueryNotDelete => entity => !entity.Stared && !entity.Pinned;
+
+    public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity => entity.Timestamp;
 }

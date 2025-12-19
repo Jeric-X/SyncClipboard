@@ -378,7 +378,7 @@ public class DownloadService : Service
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await _historyManager.DeleteHistory(historyRecord, token);
+            await _historyManager.RemoveHistory(historyRecord, token);
             return null;
         }
         return null;
