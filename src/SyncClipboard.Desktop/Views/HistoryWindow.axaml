@@ -198,9 +198,9 @@
                                         Spacing="2">
                                 <Button IsVisible="{Binding HasError}">
                                     <Button.Flyout>
-                                        <ui:FAMenuFlyout>
+                                        <Flyout>
                                             <TextBlock Text="{Binding ErrorMessage}" />
-                                        </ui:FAMenuFlyout>
+                                        </Flyout>
                                     </Button.Flyout>
                                     <ui:FontIcon Glyph="&#xE783;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
