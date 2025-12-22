@@ -876,7 +876,15 @@ public partial class HistoryViewModel : ObservableObject
         var isDiagnoseMode = _configManager.GetConfig<ProgramConfig>().DiagnoseMode;
         if (isDiagnoseMode)
         {
-            actions.Add(new MenuItem($"Hash: {record.Hash}", null));
+            actions.Add(new MenuItem($"Hash: {record.Hash}", async () =>
+            {
+                try
+                {
+                    var profile = new TextProfile(record.Hash);
+                    await localClipboardSetter.Set(profile, CancellationToken.None);
+                }
+                catch { }
+            }));
         }
 
         var profile = record.ToHistoryRecord().ToProfile();
