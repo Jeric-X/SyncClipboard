@@ -13,11 +13,13 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
     [SupportedOSPlatform("linux")]
     protected override DataObject CreatePackage(ClipboardMetaInfomation metaInfomation)
     {
-        var utf8Text = Encoding.UTF8.GetBytes(metaInfomation?.Text ?? "");
+        var str = metaInfomation?.Text ?? "";
+        var utf8Text = Encoding.UTF8.GetBytes(str);
         var dataObject = new DataObject();
         dataObject.Set(Format.TEXT, utf8Text);
         dataObject.Set("text/plain", utf8Text);
         dataObject.Set("text/plain;charset=utf-8", utf8Text);
+        dataObject.Set(Format.Utf8String, str);
         return dataObject;
     }
 
