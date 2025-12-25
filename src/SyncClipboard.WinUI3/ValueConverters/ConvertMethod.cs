@@ -92,13 +92,13 @@ internal static class ConvertMethod
         return state == SyncStatus.ServerOnly ? 0.5 : 1.0;
     }
 
-    public static BitmapImage? PreviewImage(string[] filePaths, bool show)
+    public static BitmapImage? CreateBitmap(string? uri)
     {
-        if (!show || filePaths.Length == 0)
+        if (string.IsNullOrEmpty(uri))
         {
             return null;
         }
 
-        return new BitmapImage(new Uri(filePaths[0]));
+        return new BitmapImage(new Uri(uri));
     }
 }

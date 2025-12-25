@@ -40,7 +40,7 @@
                            Stretch="None"
                            ImageOpened="Image_ImageOpened"
                            PointerPressed="Image_PointerPressed"
-                           Source="{x:Bind vc:ConvertMethod.PreviewImage(FilePath, IsLocalFileReady), Mode=OneWay}"
+                           Source="{x:Bind vc:ConvertMethod.CreateBitmap(PreviewImage), Mode=OneWay}"
                            Visibility="Collapsed">
                     </Image>
                     <TextBlock HorizontalAlignment="Left" Text="{x:Bind Text, Mode=OneWay}" />
