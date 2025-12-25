@@ -394,7 +394,7 @@ public partial class HistoryViewModel : ObservableObject
                 types = ProfileTypeFilter.Image;
                 break;
             case HistoryFilterType.File:
-                types = ProfileTypeFilter.File | ProfileTypeFilter.Group;
+                types = ProfileTypeFilter.FileAndGroup;
                 break;
             case HistoryFilterType.Starred:
                 types = ProfileTypeFilter.All;
