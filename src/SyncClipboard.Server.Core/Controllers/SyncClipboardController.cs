@@ -12,6 +12,7 @@ namespace SyncClipboard.Server.Core.Controllers;
 
 [ApiController]
 [Authorize]
+[Tags("SyncClipboard")]
 public class SyncClipboardController(
     IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext,
     IMemoryCache _cache,
@@ -41,125 +42,6 @@ public class SyncClipboardController(
             }
             catch { }
         }
-    }
-
-    [AcceptVerbs("PROPFIND")]
-    [Route("")]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    public IActionResult PropfindRoot()
-    {
-        return Ok();
-    }
-
-    [AcceptVerbs("PROPFIND", "MKCOL")]
-    [Route("file")]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    public IActionResult FileFolderEnsure()
-    {
-        var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
-        EnsureFolder(path);
-        return Ok();
-    }
-
-    [HttpDelete("file")]
-    public IActionResult DeleteFileFolder()
-    {
-        var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
-        SafeDeleteFolder(path);
-        return Ok();
-    }
-
-    [HttpHead("file/{fileName}")]
-    [HttpGet("file/{fileName}")]
-    public async Task<IActionResult> GetFileFromFolder(string fileName, CancellationToken token)
-    {
-        if (InvalidFileName(fileName))
-        {
-            return BadRequest();
-        }
-
-        try
-        {
-            var path = await _historyService.GetRecentTransferFile(HistoryService.HARD_CODED_USER_ID, fileName, token);
-            return await GetFileInternal(path);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [HttpPut("file/{fileName}")]
-    public async Task<IActionResult> PutFileToFolder(string fileName)
-    {
-        if (InvalidFileName(fileName))
-        {
-            return BadRequest();
-        }
-        var folder = Path.Combine(_serverEnv.GetDataRootPath(), "file");
-        EnsureFolder(folder);
-        var path = Path.Combine(folder, fileName);
-        using var fs = new FileStream(path, FileMode.Create);
-        await Request.Body.CopyToAsync(fs);
-
-        _cache.Remove("SyncClipboard.json");
-        return Ok();
-    }
-
-    [HttpGet("SyncClipboard.json")]
-    public async Task<ActionResult<ClipboardProfileDTO>> GetSyncProfile()
-    {
-        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
-        var cacheKey = path;
-        if (_cache.TryGetValue(cacheKey, out ClipboardProfileDTO? cached))
-        {
-            return Ok(cached);
-        }
-        try
-        {
-            if (!System.IO.File.Exists(path))
-            {
-                return Ok(new ClipboardProfileDTO());
-            }
-            var text = await System.IO.File.ReadAllTextAsync(path);
-            var dto = JsonSerializer.Deserialize<ClipboardProfileDTO>(text) ?? new ClipboardProfileDTO();
-            _cache.Set(cacheKey, dto);
-            return Ok(dto);
-        }
-        catch
-        {
-            return Ok(new ClipboardProfileDTO());
-        }
-    }
-
-    [HttpPut("SyncClipboard.json")]
-    public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto, CancellationToken token)
-    {
-        var persistentDir = _serverEnv.GetPersistentDir();
-        var profile = ClipboardProfileDTO.CreateProfile(profileDto);
-        if (string.IsNullOrEmpty(profileDto.File) is false)
-        {
-            var fileName = Path.GetFileName(profileDto.File);
-            var previousDataPath = Path.Combine(_serverEnv.GetDataRootPath(), "file", fileName);
-            if (!System.IO.File.Exists(previousDataPath))
-            {
-                return BadRequest("Data file not found on server.");
-            }
-
-            try
-            {
-                await profile.SetAndMoveTransferData(persistentDir, previousDataPath, token);
-            }
-            catch when (!token.IsCancellationRequested)
-            {
-                return BadRequest("Data file is invalid.");
-            }
-        }
-
-        await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
-        await SaveAndNotifyCurrentProfile(profile, token);
-
-        return Ok();
     }
 
     [HttpPatch("api/current")]
@@ -213,17 +95,141 @@ public class SyncClipboardController(
         return Ok(cachedProfile);
     }
 
+    [HttpGet("api/time")]
+    public DateTimeOffset GetServerTime()
+    {
+        return DateTimeOffset.Now;
+    }
+
+    [AcceptVerbs("PROPFIND")]
+    [Route("")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public IActionResult PropfindRoot()
+    {
+        return Ok();
+    }
+
+    [AcceptVerbs("PROPFIND", "MKCOL")]
+    [Route("file")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public IActionResult FileFolderEnsure()
+    {
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
+        EnsureFolder(path);
+        return Ok();
+    }
+
+    [HttpDelete("file")]
+    [Obsolete("Use DELETE api/history/clear")]
+    public IActionResult DeleteFileFolder()
+    {
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
+        SafeDeleteFolder(path);
+        return Ok();
+    }
+
+    [HttpHead("file/{fileName}")]
+    [HttpGet("file/{fileName}")]
+    [Obsolete("Use GET api/history/{profileId}/data")]
+    public async Task<IActionResult> GetFileFromFolder(string fileName, CancellationToken token)
+    {
+        if (InvalidFileName(fileName))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            var path = await _historyService.GetRecentTransferFile(HistoryService.HARD_CODED_USER_ID, fileName, token);
+            return await GetFileInternal(path);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("file/{fileName}")]
+    [Obsolete("Use POST api/history")]
+    public async Task<IActionResult> PutFileToFolder(string fileName)
+    {
+        if (InvalidFileName(fileName))
+        {
+            return BadRequest();
+        }
+        var folder = Path.Combine(_serverEnv.GetDataRootPath(), "file");
+        EnsureFolder(folder);
+        var path = Path.Combine(folder, fileName);
+        using var fs = new FileStream(path, FileMode.Create);
+        await Request.Body.CopyToAsync(fs);
+
+        _cache.Remove("SyncClipboard.json");
+        return Ok();
+    }
+
+    [Obsolete("Use GET /api/current")]
+    [HttpGet("SyncClipboard.json")]
+    public async Task<ActionResult<ClipboardProfileDTO>> GetSyncProfile()
+    {
+        var path = Path.Combine(_serverEnv.GetDataRootPath(), "SyncClipboard.json");
+        var cacheKey = path;
+        if (_cache.TryGetValue(cacheKey, out ClipboardProfileDTO? cached))
+        {
+            return Ok(cached);
+        }
+        try
+        {
+            if (!System.IO.File.Exists(path))
+            {
+                return Ok(new ClipboardProfileDTO());
+            }
+            var text = await System.IO.File.ReadAllTextAsync(path);
+            var dto = JsonSerializer.Deserialize<ClipboardProfileDTO>(text) ?? new ClipboardProfileDTO();
+            _cache.Set(cacheKey, dto);
+            return Ok(dto);
+        }
+        catch
+        {
+            return Ok(new ClipboardProfileDTO());
+        }
+    }
+
+    [Obsolete("Use PATCH /api/current instead")]
+    [HttpPut("SyncClipboard.json")]
+    public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto, CancellationToken token)
+    {
+        var persistentDir = _serverEnv.GetPersistentDir();
+        var profile = ClipboardProfileDTO.CreateProfile(profileDto);
+        if (string.IsNullOrEmpty(profileDto.File) is false)
+        {
+            var fileName = Path.GetFileName(profileDto.File);
+            var previousDataPath = Path.Combine(_serverEnv.GetDataRootPath(), "file", fileName);
+            if (!System.IO.File.Exists(previousDataPath))
+            {
+                return BadRequest("Data file not found on server.");
+            }
+
+            try
+            {
+                await profile.SetAndMoveTransferData(persistentDir, previousDataPath, token);
+            }
+            catch when (!token.IsCancellationRequested)
+            {
+                return BadRequest("Data file is invalid.");
+            }
+        }
+
+        await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
+        await SaveAndNotifyCurrentProfile(profile, token);
+
+        return Ok();
+    }
+
     [HttpGet("")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public IActionResult GetRoot()
     {
         return Ok("Server is running.");
-    }
-
-    [HttpGet("api/time")]
-    public DateTimeOffset GetServerTime()
-    {
-        return DateTimeOffset.Now;
     }
 
     private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)

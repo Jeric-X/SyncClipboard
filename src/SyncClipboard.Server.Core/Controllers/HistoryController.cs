@@ -12,6 +12,7 @@ namespace SyncClipboard.Server.Core.Controllers;
 [ApiController]
 [Route("api/history")]
 [Authorize]
+[Tags("SyncClipboard")]
 public class HistoryController(HistoryService historyService) : ControllerBase
 {
     private readonly HistoryService _historyService = historyService;
@@ -21,7 +22,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // GET api/history/{profileId}
     // Returns the metadata of a specific history record by profileId (format: "Type-Hash")
     [HttpGet("{profileId}")]
-    public async Task<IActionResult> Get(string profileId, CancellationToken token)
+    public async Task<ActionResult<HistoryRecordDto>> Get(string profileId, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(profileId))
         {
@@ -82,7 +83,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     //   types: ProfileTypeFilter flag enum (default All). Example: types=Text,Image
     //   q: optional search text (matches Text field, case-insensitive)
     [HttpGet]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult<List<HistoryRecordDto>>> GetAll(
         [FromQuery] int? page,
         [FromQuery] long? before = null,
         [FromQuery] long? after = null,
