@@ -60,7 +60,7 @@
                 <StackPanel Spacing="4" Orientation="Vertical">
                     <Image MaxHeight="202"
                            HorizontalAlignment="Left"
-                           asyncImage:ImageLoader.Source="{Binding FilePath[0]}"
+                           asyncImage:ImageLoader.Source="{Binding PreviewImage}"
                            Stretch="None"
                            DoubleTapped="Image_DoubleTapped"
                            Opacity="0"

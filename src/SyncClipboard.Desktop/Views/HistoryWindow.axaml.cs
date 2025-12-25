@@ -288,27 +288,9 @@ public partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        void OnPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName != nameof(HistoryRecordVM.IsLocalFileReady))
-            {
-                return;
-            }
-
-            if (record.IsLocalFileReady && record.FilePath.Length > 0)
-            {
-                AsyncImageLoader.ImageLoader.SetSource(image, record.FilePath[0]);
-            }
-            else
-            {
-                AsyncImageLoader.ImageLoader.SetSource(image, null);
-            }
-        }
-        record.PropertyChanged += OnPropertyChanged;
-
         void ImageProperChanged(object? s, AvaloniaPropertyChangedEventArgs e)
         {
-            if (e.Property != Image.SourceProperty && e.NewValue != null)
+            if (e.Property != Image.SourceProperty)
             {
                 return;
             }
@@ -318,7 +300,6 @@ public partial class HistoryWindow : Window, IWindow
 
         void OnUnloaded(object? s, RoutedEventArgs e)
         {
-            record.PropertyChanged -= OnPropertyChanged;
             image.Unloaded -= OnUnloaded;
             image.PropertyChanged -= ImageProperChanged;
         }

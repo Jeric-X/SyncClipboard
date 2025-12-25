@@ -20,6 +20,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     public ProfileType Type { get; set; } = record.Type;
     [ObservableProperty]
     private string[] filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
+    partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
+
     public string Hash { get; set; } = record.Hash;
     public long Size { get; set; } = record.Size;
     [ObservableProperty]
@@ -70,8 +72,18 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
     private bool isLocalFileReady = record.IsLocalFileReady;
+    partial void OnIsLocalFileReadyChanged(bool oldValue, bool newValue) => UpdatePreviewImage();
+
     public bool ShowDownloadButton => !IsLocalFileReady && SyncState != SyncStatus.LocalOnly && !IsDownloading;
     public bool ShowDownloadProgress => IsDownloading;
+
+    [ObservableProperty]
+    public string? previewImage;
+
+    private void UpdatePreviewImage()
+    {
+        PreviewImage = IsLocalFileReady && FilePath.Length > 0 ? FilePath[0] : null;
+    }
 
     private Progress<HttpDownloadProgress>? downloadProgressReporter = null;
     private Progress<HttpDownloadProgress>? uploadProgressReporter = null;
