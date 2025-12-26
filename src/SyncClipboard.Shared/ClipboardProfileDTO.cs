@@ -21,22 +21,23 @@ public record class ClipboardProfileDTO
         Type = type;
     }
 
-    public static Profile CreateProfile(ClipboardProfileDTO profileDTO)
+    public static Profile CreateProfile(ClipboardProfileDTO profileDTO, bool ignoreHash = false)
     {
         switch (profileDTO.Type)
         {
             case ProfileType.Text:
                 return new TextProfile(profileDTO.Clipboard);
             case ProfileType.File:
-                {
-                    if (ImageTool.FileIsImage(profileDTO.File))
-                    {
-                        return new ImageProfile(profileDTO);
-                    }
-                    return new FileProfile(profileDTO);
-                }
             case ProfileType.Image:
-                return new ImageProfile(profileDTO);
+                if (ignoreHash)
+                {
+                    profileDTO.Clipboard = string.Empty;
+                }
+                if (ImageTool.FileIsImage(profileDTO.File))
+                {
+                    return new ImageProfile(profileDTO);
+                }
+                return new FileProfile(profileDTO);
             case ProfileType.Group:
                 return new GroupProfile(profileDTO);
         }

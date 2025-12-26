@@ -199,7 +199,7 @@ public class SyncClipboardController(
     public async Task<IActionResult> PutSyncProfile([FromBody] ClipboardProfileDTO profileDto, CancellationToken token)
     {
         var persistentDir = _serverEnv.GetPersistentDir();
-        var profile = ClipboardProfileDTO.CreateProfile(profileDto);
+        var profile = ClipboardProfileDTO.CreateProfile(profileDto, true);
         if (string.IsNullOrEmpty(profileDto.File) is false)
         {
             var fileName = Path.GetFileName(profileDto.File);
