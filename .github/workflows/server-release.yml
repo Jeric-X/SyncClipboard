@@ -29,7 +29,6 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Build and push Docker image with branch tag
-      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
       uses: docker/build-push-action@v5
       with:
         context: "{{defaultContext}}:src"
@@ -40,7 +39,7 @@ jobs:
           jericx/syncclipboard-server:${{ github.ref_name }}
    
     - name: Build and push Docker image with version and latest tag
-      if: startsWith(github.ref, 'refs/tags/')
+      if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, 'beta') }} 
       uses: docker/build-push-action@v5
       with:
         context: "{{defaultContext}}:src"
@@ -48,7 +47,6 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          jericx/syncclipboard-server:${{ github.ref_name }}
           jericx/syncclipboard-server:latest
 
     # - name: Update Docker Hub Description
