@@ -488,7 +488,7 @@ public class HistoryTransferQueue : IDisposable
 
     private async Task ExecuteDownloadAsync(TransferTask task, CancellationToken ct)
     {
-        if (_remoteServerFactory.Current is not IHistorySyncServer server)
+        if (_remoteServerFactory.Current is not IOfficialSyncServer server)
         {
             throw new InvalidOperationException("当前服务器不支持历史记录同步");
         }
@@ -509,7 +509,7 @@ public class HistoryTransferQueue : IDisposable
 
     private async Task ExecuteUploadAsync(TransferTask task, CancellationToken ct)
     {
-        if (_remoteServerFactory.Current is not IHistorySyncServer server)
+        if (_remoteServerFactory.Current is not IOfficialSyncServer server)
         {
             throw new InvalidOperationException("当前服务器不支持历史记录同步");
         }

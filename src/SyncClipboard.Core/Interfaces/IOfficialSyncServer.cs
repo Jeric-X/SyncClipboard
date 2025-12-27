@@ -6,7 +6,7 @@ namespace SyncClipboard.Core.Interfaces;
 /// <summary>
 /// Interface for syncing clipboard history with the server.
 /// </summary>
-public interface IHistorySyncServer
+public interface IOfficialSyncServer
 {
     /// <summary>
     /// Event triggered when a history record changes on the server.
@@ -64,4 +64,11 @@ public interface IHistorySyncServer
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>服务器当前时间</returns>
     Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取服务器版本
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>服务器版本字符串</returns>
+    Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
 }

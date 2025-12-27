@@ -101,6 +101,12 @@ public class SyncClipboardController(
         return DateTimeOffset.Now;
     }
 
+    [HttpGet("api/version")]
+    public IActionResult GetVersion()
+    {
+        return Ok(SyncClipboardProperty.AppVersion);
+    }
+
     [AcceptVerbs("PROPFIND")]
     [Route("")]
     [ApiExplorerSettings(IgnoreApi = true)]

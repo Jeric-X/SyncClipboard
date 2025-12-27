@@ -14,6 +14,8 @@ using SyncClipboard.Core.Utilities.Web;
 using System.Net.Http.Json;
 using System.Net;
 using SyncClipboard.Core.Exceptions;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Utilities.Updater;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
@@ -21,7 +23,7 @@ public sealed class OfficialAdapter(
     ILogger logger,
     IAppConfig appConfig,
     [FromKeyedServices(WebDavConfig.ConfigTypeName)] IServerAdapter webDavAdapter)
-    : IServerAdapter<OfficialConfig>, IEventServerAdapter, IHistorySyncServer, IDisposable
+    : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
     private readonly ILogger _logger = logger;
     private readonly IAppConfig _appConfig = appConfig;
@@ -116,9 +118,32 @@ public sealed class OfficialAdapter(
         old?.StopAsync().Wait();
     }
 
-    public Task TestConnectionAsync(CancellationToken cancellationToken = default)
+    public async Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        return _webDavAdapter.TestConnectionAsync(cancellationToken);
+        await _webDavAdapter.TestConnectionAsync(cancellationToken);
+
+        // 验证服务器版本不能低于客户端版本
+        try
+        {
+            var serverVersion = await GetVersionAsync(cancellationToken);
+            var requestVersion = Env.RequestServerVersion;
+
+            if (AppVersion.TryParse(serverVersion, out var serverVer) && AppVersion.TryParse(requestVersion, out var requestVer))
+            {
+                if (serverVer < requestVer)
+                {
+                    throw new InvalidOperationException($"Server version ({serverVersion}) is lower than client version ({requestVersion}). Please upgrade your server.");
+                }
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to verify server version.", ex);
+        }
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -182,6 +207,24 @@ public sealed class OfficialAdapter(
         catch (Exception ex)
         {
             _logger.Write($"[OFFICIAL_ADAPTER] Failed to get server time: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = $"{_officialConfig.RemoteURL.TrimEnd('/')}/api/version";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadAsStringAsync(cancellationToken);
+            return result ?? "Unknown";
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to get version: {ex.Message}");
             throw;
         }
     }

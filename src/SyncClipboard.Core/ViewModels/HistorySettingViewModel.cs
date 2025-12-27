@@ -51,7 +51,7 @@ public partial class HistorySettingViewModel : ObservableObject
 
     private void UpdateServerSyncSupported()
     {
-        ServerSyncSupported = _remoteServerFactory.Current is IHistorySyncServer;
+        ServerSyncSupported = _remoteServerFactory.Current is IOfficialSyncServer;
     }
 
     private void UpdateEnableLocalHistoryConfig()

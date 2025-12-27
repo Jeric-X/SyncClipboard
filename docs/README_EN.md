@@ -96,7 +96,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
   },
   "AppSettings": {
     "UserName": "your_username",
-    "Password": "your_password"
+    "Password": "your_password",
+    "MaxSavedHistoryCount": 1000
   }
 }
 ```
@@ -126,7 +127,9 @@ docker run -d \
 curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml >> docker-compose.yml
 docker compose up -d
 ```
-To configure HTTPS, map the `appsettings.json` and certificate files manually. The path for `appsettings.json` inside the container is `/app/appsettings.json`.
+
+After the container starts for the first time, a default `appsettings.json` will be automatically created in the container directory `/app/data` (which corresponds to the host directory `/data/syncclipboard-server`).  
+When modifying `appsettings.json`, pay attention to the file path mapping between the container and the host.
 
 #### Arch Linux
 
@@ -269,6 +272,9 @@ There are three necessery config(maybe different words, same uses).
 
 ## API
 
+In a standalone server environment, set the environment variable ASPNETCORE_ENVIRONMENT to Development before running the server, or open the server in the desktop client and enable diagnostic mode in settings.
+Then visit `http://ip:port/swagger/index.html` to access the API page. The following are some simple APIs compatible with WebDAV. For more complex APIs, please refer to the API page.
+
 ### Download/Upload Text
 ```
 GET /SyncClipboard.json
@@ -286,9 +292,9 @@ PUT /SyncClipboard.json
 ```
 
 ### SyncClipboard.json
-```
+```jsonc
 {
-    "Type" : "Text"
+    "Type" : "Text",
     "Clipboard" : "Content",
     "File":""
 }
@@ -299,6 +305,8 @@ PUT /SyncClipboard.json
     "File": "filename"
 }
 ```
+
+For hash calculation method, please refer to [docs/Hash.md](Hash.md)
 
 ## Open Source Dependencies
 [NativeNotification](https://github.com/Jeric-X/NativeNotification) 

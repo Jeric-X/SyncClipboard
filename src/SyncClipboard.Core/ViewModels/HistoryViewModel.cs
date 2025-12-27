@@ -39,7 +39,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private readonly HistorySyncer historySyncer;
     private readonly IProfileEnv profileEnv;
-    private IHistorySyncServer? historySyncServer;
+    private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
     private bool _enableSyncHistory;
@@ -82,7 +82,7 @@ public partial class HistoryViewModel : ObservableObject
 
         var currentServer = remoteServerFactory.Current;
         _enableSyncHistory = runtimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory;
-        historySyncServer = _enableSyncHistory ? currentServer as IHistorySyncServer : null;
+        historySyncServer = _enableSyncHistory ? currentServer as IOfficialSyncServer : null;
 
         runtimeConfig.ListenConfig<RuntimeHistoryConfig>(OnHistoryConfigChanged);
 
@@ -100,7 +100,7 @@ public partial class HistoryViewModel : ObservableObject
         EnableSyncHistory = newEnable;
         if (EnableSyncHistory)
         {
-            historySyncServer = remoteServerFactory.Current as IHistorySyncServer;
+            historySyncServer = remoteServerFactory.Current as IOfficialSyncServer;
             _ = Refresh();
         }
         else
@@ -699,7 +699,7 @@ public partial class HistoryViewModel : ObservableObject
     private void OnRemoteServerChanged()
     {
         var currentServer = remoteServerFactory.Current;
-        historySyncServer = EnableSyncHistory ? currentServer as IHistorySyncServer : null;
+        historySyncServer = EnableSyncHistory ? currentServer as IOfficialSyncServer : null;
         _ = Refresh();
     }
 

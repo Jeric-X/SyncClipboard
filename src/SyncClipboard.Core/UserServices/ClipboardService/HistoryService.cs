@@ -12,7 +12,7 @@ namespace SyncClipboard.Core.UserServices.ClipboardService;
 
 public class HistoryService : ClipboardHander
 {
-    private IHistorySyncServer? _historySyncServer;
+    private IOfficialSyncServer? _historySyncServer;
     private IRemoteClipboardServer? _currentServer;
     private readonly SingletonTask _syncingTask;
     private DateTimeOffset? _lastSyncTime;
@@ -89,7 +89,7 @@ public class HistoryService : ClipboardHander
         _currentServer = currentServer;
         SetRuntimeConfig();
 
-        if (currentServer is not IHistorySyncServer historySyncServer)
+        if (currentServer is not IOfficialSyncServer historySyncServer)
         {
             trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
             return;
@@ -109,7 +109,7 @@ public class HistoryService : ClipboardHander
     {
         var runtimeHistoryConfig = new RuntimeHistoryConfig
         {
-            EnableSyncHistory = _currentServer is IHistorySyncServer && _enableSyncHistory
+            EnableSyncHistory = _currentServer is IOfficialSyncServer && _enableSyncHistory
         };
 
         runTimeConfig.SetConfig(runtimeHistoryConfig);

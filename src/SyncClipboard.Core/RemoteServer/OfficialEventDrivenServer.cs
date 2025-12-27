@@ -9,11 +9,11 @@ using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.RemoteServer;
 
-public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServer
+public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficialSyncServer
 {
     private readonly StorageBasedServerHelper _serverHelper;
     private readonly TestAliveHelper _testAliveHelper;
-    private readonly IEventServerAdapter _serverAdapter;
+    private readonly IOfficialServerAdapter _serverAdapter;
     private readonly ITrayIcon _trayIcon;
     private readonly ILogger _logger;
     private readonly HistoryTransferQueue _historyTransferQueue;
@@ -22,7 +22,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public event Action<HistoryRecordDto>? HistoryChanged;
 
-    public EventDrivenServer(IServiceProvider sp, IEventServerAdapter serverAdapter)
+    public OfficialEventDrivenServer(IServiceProvider sp, IOfficialServerAdapter serverAdapter)
     {
         _serverHelper = new StorageBasedServerHelper(sp, serverAdapter);
         _serverAdapter = serverAdapter;
@@ -36,7 +36,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _serverAdapter.ServerDisconnected += ServerDisconnected;
         _serverAdapter.ServerConnected += ServerConnected;
 
-        if (_serverAdapter is IHistorySyncServer historySyncServer)
+        if (_serverAdapter is IOfficialSyncServer historySyncServer)
         {
             historySyncServer.HistoryChanged += OnHistoryChanged;
         }
@@ -191,7 +191,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
         _serverAdapter.ServerDisconnected -= ServerDisconnected;
         _serverAdapter.ServerConnected -= ServerConnected;
         _serverAdapter.ProfileDtoChanged -= OnProfileDtoChanged;
-        if (_serverAdapter is IHistorySyncServer historySyncServer)
+        if (_serverAdapter is IOfficialSyncServer historySyncServer)
         {
             historySyncServer.HistoryChanged -= OnHistoryChanged;
         }
@@ -206,7 +206,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task<HistoryRecordDto?> GetHistoryByProfileIdAsync(string profileId, CancellationToken cancellationToken = default)
     {
-        if (_serverAdapter is not IHistorySyncServer syncServer)
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
@@ -215,7 +215,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
     {
-        if (_serverAdapter is not IHistorySyncServer syncServer)
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
@@ -224,7 +224,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (_serverAdapter is not IHistorySyncServer syncServer)
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
@@ -233,7 +233,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        if (_serverAdapter is not IHistorySyncServer syncServer)
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
@@ -242,7 +242,7 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task UploadHistoryAsync(HistoryRecordDto dto, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (_serverAdapter is not IHistorySyncServer syncServer)
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
@@ -251,10 +251,19 @@ public sealed class EventDrivenServer : IRemoteClipboardServer, IHistorySyncServ
 
     public Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default)
     {
-        if (_serverAdapter is not IHistorySyncServer syncServer)
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
         return syncServer.GetServerTimeAsync(cancellationToken);
+    }
+
+    public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.GetVersionAsync(cancellationToken);
     }
 }

@@ -93,9 +93,9 @@ public class RemoteClipboardServerFactory
             _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
         }
 
-        if (_currentAdapter is IEventServerAdapter eventServerAdapter)
+        if (_currentAdapter is IOfficialServerAdapter eventServerAdapter)
         {
-            _current = new EventDrivenServer(_serviceProvider, eventServerAdapter);
+            _current = new OfficialEventDrivenServer(_serviceProvider, eventServerAdapter);
         }
         else if (_currentAdapter is IStorageBasedServerAdapter pollingServerAdapter)
         {

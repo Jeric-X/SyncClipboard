@@ -97,7 +97,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
   },
   "AppSettings": {
     "UserName": "your_username",
-    "Password": "your_password"
+    "Password": "your_password",
+    "MaxSavedHistoryCount": 1000
   }
 }
 ```
@@ -279,8 +280,8 @@ Tasker是一款安卓系统上非常强大的自动化工具软件，你可以�
 
 ## API
 
-API基于WebDAV，在独立服务器运行环境下设定环境变量ASPNETCORE_ENVIRONMENT为Development后运行服务器，或桌面客户端打开服务器并打开设置里的诊断模式后，
-访问`http://ip:端口/swagger/index.html`可以打开API页面，以下是部分关键API
+在独立服务器运行环境下设定环境变量ASPNETCORE_ENVIRONMENT为Development后运行服务器，或桌面客户端打开服务器并打开设置里的诊断模式后，
+访问`http://ip:端口/swagger/index.html`可以打开API页面，以下是部分兼容WebDAV的简单API，更多复杂API请参阅API页面
 
 ### 获取/上传剪贴板（文字）
 ```
@@ -299,9 +300,9 @@ PUT /SyncClipboard.json
 ```
 
 ### SyncClipboard.json
-```
+```jsonc
 {
-    "Type" : "Text"
+    "Type" : "Text",
     "Clipboard" : "Content",
     "File":""
 }
