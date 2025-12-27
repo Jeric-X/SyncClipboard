@@ -247,7 +247,7 @@ paru -Sy syncclipboard-desktop
 
 </details>
 
-#### 使用[Sync Clipboard Flutter](https://github.com/bling-yshs/sync-clipboard-flutteri)
+#### 使用[Sync Clipboard Flutter](https://github.com/bling-yshs/sync-clipboard-flutter)
 
 这是一个使用 Flutter 构建的 Material 3 风格的安卓客户端应用，适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
 
