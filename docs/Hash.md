@@ -25,7 +25,7 @@ CombinedString = "FileName|" + ToUpperCase(ContentHash)
 Hash = SHA256(UTF8(CombinedString))
 ```
 
-## 4. GroupProfile (多文件或文件夹)
+## 3. GroupProfile (多文件或文件夹)
 
 ### 计算方法
 
@@ -33,16 +33,16 @@ Hash = SHA256(UTF8(CombinedString))
 
 ### 详细说明
 
-#### 4.1 Entry 收集
+#### 3.1 Entry 收集
 - 收集所有输入文件/目录及其子文件/子目录，每一条作为一个 entry
 - 每个 entry 以输入文件的父目录为根，取相对路径作为 EntryName
 - EntryName 中的路径分隔符统一为 `/`
 - 目录的 EntryName 以 `/` 结尾
 
-#### 4.2 排序
-- 取 EntryName 的 UTF-8 编码后的byte数组，以字典序升序排序
+#### 3.2 排序
+- 取 EntryName 按 UTF-8 编码后的byte数组，以字典序升序排序
 
-#### 4.3 Entry 的 Hash 输入字符串格式
+#### 3.3 Entry 的 Hash 输入字符串格式
 - 目录：`D|{entryName}\0`
 - 文件：`F|{entryName}|{length}|{contentHash}\0`
 
@@ -52,7 +52,7 @@ Hash = SHA256(UTF8(CombinedString))
 - `{contentHash}`：文件内容的 SHA256 哈希值（大写十六进制）
 - 每条 entry 的 hash 输入字符串以`\0`结尾
 
-#### 4.4 哈希计算
+#### 3.4 哈希计算
 - 将所有 entry 按序拼接成一个字符串，UTF8 编码后计算 SHA256
 
 ### 示例

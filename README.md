@@ -33,7 +33,7 @@
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
-      - [使用Sync Clipboard Tauri](#使用sync-clipboard-tauri)
+      - [使用Sync Clipboard Flutter](#使用sync-clipboard-flutter)
       - [使用Autox.js](#使用autoxjs)
       - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
@@ -247,11 +247,11 @@ paru -Sy syncclipboard-desktop
 
 </details>
 
-#### 使用[Sync Clipboard Tauri](https://github.com/bling-yshs/sync-clipboard-tauri)
+#### 使用[Sync Clipboard Flutter](https://github.com/bling-yshs/sync-clipboard-flutteri)
 
-这是一个使用 Tauri 和 Vue 构建的适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
+这是一个使用 Flutter 构建的 Material 3 风格的安卓客户端应用，适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
 
-功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-tauri)
+功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-flutter)
 
 #### 使用[Autox.js](https://github.com/kkevsekk1/AutoX)
 
