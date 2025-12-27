@@ -146,6 +146,11 @@ public abstract class Profile
 
     public static string GetWorkingDir(string persistentDir, ProfileType type, string hash)
     {
+        if (hash.Contains(Path.DirectorySeparatorChar) || hash.Contains(Path.AltDirectorySeparatorChar))
+        {
+            throw new ArgumentException("Hash contains invalid path characters.", nameof(hash));
+        }
+
         var dirName = $"{type}_{hash}";
         var profileDir = Path.Combine(persistentDir, dirName);
         if (!Directory.Exists(profileDir))
