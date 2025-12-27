@@ -13,16 +13,7 @@
     Example:
     
     ... ado.net/XML headers & schema ...
-    <resheader name="resmi  <data name="HistoryWindowKeyboardList" xml:space="preserve">
-    <value>Ctrl+F：聚焦搜索框
-Ctrl+↑：回到顶部
-Ctrl+↓：回到底部
-↑/↓：导航项目
-Tab/Shift+Tab：切换筛选器
-Enter：复制并粘贴
-Alt+Enter：仅复制
-Esc：关闭窗口</value>
-  </data>text/microsoft-resx</resheader>
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
     <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
     <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
@@ -126,14 +117,14 @@ Esc：关闭窗口</value>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="DefaultLanguage" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
   <data name="Server" xml:space="preserve">
     <value>服务器</value>
   </data>
-  <data name="Settings" xml:space="preserve">
-    <value>设置</value>
-  </data>
-  <data name="DefaultLanguage" xml:space="preserve">
-    <value>跟随系统</value>
+  <data name="SystemSettings" xml:space="preserve">
+    <value>系统设置</value>
   </data>
   <data name="ChangingLangInfo" xml:space="preserve">
     <value>重启后生效</value>
@@ -180,8 +171,8 @@ Esc：关闭窗口</value>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="SystemSettings" xml:space="preserve">
-    <value>系统设置</value>
+  <data name="Settings" xml:space="preserve">
+    <value>设置</value>
   </data>
   <data name="Address" xml:space="preserve">
     <value>地　址</value>
@@ -475,7 +466,7 @@ Esc：关闭面板</value>
     <value>清空本地历史记录</value>
   </data>
   <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
-    <value>这将永久删除此设备上本地的所有历史记录和缓存文件，是否继续？</value>
+    <value>这将永久删除此设备上的所有历史记录和缓存文件，服务器上已同步的记录不会受到影响，是否继续？</value>
   </data>
   <data name="SwitchOnBuiltInServer" xml:space="preserve">
     <value>内置服务器已开启</value>
@@ -862,5 +853,26 @@ Esc：关闭面板</value>
   </data>
   <data name="CannotCreateConfigInstance" xml:space="preserve">
     <value>无法创建配置实例，请检查输入参数是否正确。</value>
+  </data>
+  <data name="MaxHistoryCount" xml:space="preserve">
+    <value>历史记录上限</value>
+  </data>
+  <data name="MaxHistoryCountDescription" xml:space="preserve">
+    <value>服务器保存的最大历史记录条数</value>
+  </data>
+  <data name="ShowSyncStatus" xml:space="preserve">
+    <value>显示同步状态</value>
+  </data>
+  <data name="OnlyShowLocal" xml:space="preserve">
+    <value>仅显示本地记录</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="CancelDownload" xml:space="preserve">
+    <value>取消下载</value>
+  </data>
+  <data name="CancelUpload" xml:space="preserve">
+    <value>取消上传</value>
   </data>
 </root>

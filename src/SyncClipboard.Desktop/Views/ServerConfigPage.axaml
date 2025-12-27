@@ -81,7 +81,7 @@
                     </Button>
                 </ui:SettingsExpanderItem.Footer>
             </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="Max History Count" Description="Maximum number of history records to keep">
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxHistoryCount}" Description="{x:Static i18n:Strings.MaxHistoryCountDescription}">
                 <ui:SettingsExpanderItem.Footer>
                     <ui:NumberBox Value="{Binding MaxHistoryCount, Mode=TwoWay}"
                                   Minimum="1"

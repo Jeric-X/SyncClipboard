@@ -107,8 +107,8 @@
                         <ui:FAMenuFlyout>
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="显示同步状态" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="仅显示本地" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -136,7 +136,7 @@
                     <Button Width="32"
                             Height="32"
                             Command="{Binding RefreshCommand}"
-                            ToolTip.Tip="刷新">
+                            ToolTip.Tip="{x:Static i18n:Strings.Refresh}">
                         <Grid>
                             <ui:FontIcon Glyph="&#xE72C;" FontFamily="{StaticResource SymbolThemeFontFamily}" IsVisible="{Binding !IsLoading}" />
                             <ui:ProgressRing Width="16"
@@ -214,7 +214,7 @@
                                     <Button Command="{Binding #_HistoryWindow.ViewModel.CancelDownloadCommand}"
                                             CommandParameter="{Binding .}"
                                             IsVisible="{Binding ShowDownloadProgress}"
-                                            ToolTip.Tip="Cancel Download">
+                                            ToolTip.Tip="{x:Static i18n:Strings.CancelDownload}">
                                         <ui:ProgressRing Width="16"
                                                          Height="16"
                                                          IsIndeterminate="{Binding IsDownloadPending}"
@@ -229,7 +229,7 @@
                                     <Button Command="{Binding #_HistoryWindow.ViewModel.CancelUploadCommand}"
                                             CommandParameter="{Binding .}"
                                             IsVisible="{Binding ShowUploadProgress}"
-                                            ToolTip.Tip="Cancel Upload">
+                                            ToolTip.Tip="{x:Static i18n:Strings.CancelUpload}">
                                         <ui:ProgressRing Width="16"
                                                          Height="16"
                                                          IsIndeterminate="{Binding IsUploadPending}"

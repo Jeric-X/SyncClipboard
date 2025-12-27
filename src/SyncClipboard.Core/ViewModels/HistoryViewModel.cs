@@ -247,8 +247,11 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().OnlyShowLocal;
         set
         {
+            if (value == OnlyShowLocal) return;
+
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowLocal = value });
             OnPropertyChanged(nameof(OnlyShowLocal));
+            Refresh();
         }
     }
 

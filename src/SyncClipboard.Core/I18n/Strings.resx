@@ -466,7 +466,7 @@ Double click image: View full image</value>
     <value>Clear All Local History</value>
   </data>
   <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
-    <value>This will permanently delete ALL local history records and cached files on this device. Continue?</value>
+    <value>This will permanently delete all local history records and cached files on this device. Synced records on the server will not be affected. Continue?</value>
   </data>
   <data name="SwitchOnBuiltInServer" xml:space="preserve">
     <value>Switch On Built-In Server</value>
@@ -853,5 +853,26 @@ This operation cannot be undone.</value>
   </data>
   <data name="CannotCreateConfigInstance" xml:space="preserve">
     <value>Unable to create configuration instance, please check if input parameters are correct.</value>
+  </data>
+  <data name="MaxHistoryCount" xml:space="preserve">
+    <value>History Limit</value>
+  </data>
+  <data name="MaxHistoryCountDescription" xml:space="preserve">
+    <value>Maximum number of history records saved by the server</value>
+  </data>
+  <data name="ShowSyncStatus" xml:space="preserve">
+    <value>Show Sync Status</value>
+  </data>
+  <data name="OnlyShowLocal" xml:space="preserve">
+    <value>Show Local Records Only</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="CancelDownload" xml:space="preserve">
+    <value>Cancel Download</value>
+  </data>
+  <data name="CancelUpload" xml:space="preserve">
+    <value>Cancel Upload</value>
   </data>
 </root>

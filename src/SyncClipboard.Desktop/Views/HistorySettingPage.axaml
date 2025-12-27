@@ -22,7 +22,7 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="i18n:Strings.EnableSyncHistory" Description="i18n:Strings.EnableSyncHistoryDescription">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableSyncHistory}" Description="{x:Static i18n:Strings.EnableSyncHistoryDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>

@@ -19,7 +19,7 @@ namespace SyncClipboard.Core.I18n {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Strings {
@@ -151,6 +151,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Cancel Download 的本地化字符串。
+        /// </summary>
+        public static string CancelDownload {
+            get {
+                return ResourceManager.GetString("CancelDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Canceled 的本地化字符串。
         /// </summary>
         public static string Canceled {
@@ -165,6 +174,15 @@ namespace SyncClipboard.Core.I18n {
         public static string CancelTest {
             get {
                 return ResourceManager.GetString("CancelTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Cancel Upload 的本地化字符串。
+        /// </summary>
+        public static string CancelUpload {
+            get {
+                return ResourceManager.GetString("CancelUpload", resourceCulture);
             }
         }
         
@@ -257,7 +275,7 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("Clear", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Clear All Local History 的本地化字符串。
         /// </summary>
@@ -266,9 +284,9 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("ClearLocalHistory", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 This will permanently delete ALL local history records and cached files on this device. Continue? 的本地化字符串。
+        ///   查找类似 This will permanently delete all local history records and cached files on this device. Synced records on the server will not be affected. Continue? 的本地化字符串。
         /// </summary>
         public static string ClearLocalHistoryConfirmMessage {
             get {
@@ -738,6 +756,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Enable Sync History 的本地化字符串。
+        /// </summary>
+        public static string EnableSyncHistory {
+            get {
+                return ResourceManager.GetString("EnableSyncHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 When enabled, automatic deletion (maximum count and retention time) will be disabled locally and follow the server configuration. 的本地化字符串。
+        /// </summary>
+        public static string EnableSyncHistoryDescription {
+            get {
+                return ResourceManager.GetString("EnableSyncHistoryDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Enable Uploading 的本地化字符串。
         /// </summary>
         public static string EnableUpload {
@@ -990,20 +1026,20 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Transferring 的本地化字符串。
-        /// </summary>
-        public static string HistoryFilterTransferring {
-            get {
-                return ResourceManager.GetString("HistoryFilterTransferring", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Text 的本地化字符串。
         /// </summary>
         public static string HistoryFilterText {
             get {
                 return ResourceManager.GetString("HistoryFilterText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Transferring 的本地化字符串。
+        /// </summary>
+        public static string HistoryFilterTransferring {
+            get {
+                return ResourceManager.GetString("HistoryFilterTransferring", resourceCulture);
             }
         }
         
@@ -1260,6 +1296,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 History Limit 的本地化字符串。
+        /// </summary>
+        public static string MaxHistoryCount {
+            get {
+                return ResourceManager.GetString("MaxHistoryCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Maximum number of history records saved by the server 的本地化字符串。
+        /// </summary>
+        public static string MaxHistoryCountDescription {
+            get {
+                return ResourceManager.GetString("MaxHistoryCountDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Maximum number of records 的本地化字符串。
         /// </summary>
         public static string MaxItemCount {
@@ -1319,6 +1373,15 @@ namespace SyncClipboard.Core.I18n {
         public static string On {
             get {
                 return ResourceManager.GetString("On", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Only Show Local 的本地化字符串。
+        /// </summary>
+        public static string OnlyShowLocal {
+            get {
+                return ResourceManager.GetString("OnlyShowLocal", resourceCulture);
             }
         }
         
@@ -1773,6 +1836,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Show Sync Status 的本地化字符串。
+        /// </summary>
+        public static string ShowSyncStatus {
+            get {
+                return ResourceManager.GetString("ShowSyncStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Local version v{0}. Lasted released version {1}. 的本地化字符串。
         /// </summary>
         public static string SoftwareUpdateInfo {
@@ -2075,6 +2147,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UpdateFrom3rdSrc {
             get {
                 return ResourceManager.GetString("UpdateFrom3rdSrc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Upload 的本地化字符串。
+        /// </summary>
+        public static string Upload {
+            get {
+                return ResourceManager.GetString("Upload", resourceCulture);
             }
         }
         

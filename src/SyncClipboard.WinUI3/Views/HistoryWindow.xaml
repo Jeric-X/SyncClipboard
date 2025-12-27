@@ -71,8 +71,8 @@
                         <MenuFlyout Placement="Bottom">
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
-                            <ToggleMenuFlyoutItem Text="showSyncStatus" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
-                            <ToggleMenuFlyoutItem Text="only show local" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowSyncStatus}" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.OnlyShowLocal}" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -101,7 +101,7 @@
                 <Button Width="32"
                         Height="32"
                         Command="{x:Bind _viewModel.RefreshCommand}"
-                        ToolTipService.ToolTip="刷新">
+                        ToolTipService.ToolTip="{x:Bind i18n:Strings.Refresh}">
                     <Grid>
                         <FontIcon Glyph="&#xE72C;" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(_viewModel.IsLoading), Mode=OneWay}" />
                         <ProgressRing Width="16"
@@ -167,7 +167,7 @@
                                 <Button Click="CancelDownloadButtonClicked"
                                         IsTabStop="False"
                                         Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}"
-                                        ToolTipService.ToolTip="Cancel Download">
+                                        ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelDownload}">
                                     <ProgressRing Width="16"
                                                   Height="16"
                                                   IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
@@ -181,7 +181,7 @@
                                 <Button Click="CancelUploadButtonClicked"
                                         IsTabStop="False"
                                         Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}"
-                                        ToolTipService.ToolTip="Cancel Upload">
+                                        ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelUpload}">
                                     <ProgressRing Width="16"
                                                   Height="16"
                                                   IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
