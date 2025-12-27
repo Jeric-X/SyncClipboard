@@ -128,7 +128,9 @@ docker run -d \
 curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml >> docker-compose.yml
 docker compose up -d
 ```
-如需配置HTTPS，请自行映射`appsettings.json`和证书文件，`appsettings.json`的容器内路径为`/app/appsettings.json`
+
+首次启动容器后，在容器目录`/app/data`（即主机`/data/syncclipboard-server`目录）下会自动创建默认的`appsettings.json`  
+修改`appsettings.json`时，涉及文件路径的，请注意容器与主机间的文件映射关系
 
 #### Arch Linux
 

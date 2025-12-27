@@ -4,6 +4,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.RemoteServer;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -12,18 +13,26 @@ public partial class HistorySettingViewModel : ObservableObject
     private readonly ConfigManager _configManager;
     private readonly HistoryManager _historyManager;
     private readonly IMainWindowDialog _dialog;
+    private readonly RemoteClipboardServerFactory _remoteServerFactory;
 
-    public HistorySettingViewModel(ConfigManager configManager, HistoryManager historyManager, IMainWindowDialog dialog)
+    public HistorySettingViewModel(ConfigManager configManager, HistoryManager historyManager, IMainWindowDialog dialog, RemoteClipboardServerFactory remoteServerFactory)
     {
         _configManager = configManager;
         _historyManager = historyManager;
         _dialog = dialog;
+        _remoteServerFactory = remoteServerFactory;
+
         var config = configManager.GetConfig<HistoryConfig>();
         enableHistory = config.EnableHistory;
         enableSyncHistory = config.EnableSyncHistory;
         maxItemCount = config.MaxItemCount;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
+
+        UpdateServerSyncSupported();
+        UpdateEnableLocalHistoryConfig();
+
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
+        _remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
     }
 
     private void OnHistoryConfigChanged(HistoryConfig config)
@@ -32,6 +41,22 @@ public partial class HistorySettingViewModel : ObservableObject
         EnableSyncHistory = config.EnableSyncHistory;
         MaxItemCount = config.MaxItemCount;
         HistoryRetentionMinutes = config.HistoryRetentionMinutes;
+    }
+
+    private void OnCurrentServerChanged(object? sender, EventArgs e)
+    {
+        UpdateServerSyncSupported();
+        UpdateEnableLocalHistoryConfig();
+    }
+
+    private void UpdateServerSyncSupported()
+    {
+        ServerSyncSupported = _remoteServerFactory.Current is IHistorySyncServer;
+    }
+
+    private void UpdateEnableLocalHistoryConfig()
+    {
+        EnableLocalHistoryConfig = !(ServerSyncSupported && EnableSyncHistory);
     }
 
     private HistoryConfig GetCurrentRecord()
@@ -51,7 +76,11 @@ public partial class HistorySettingViewModel : ObservableObject
 
     [ObservableProperty]
     private bool enableSyncHistory;
-    partial void OnEnableSyncHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
+    partial void OnEnableSyncHistoryChanged(bool value)
+    {
+        _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
+        UpdateEnableLocalHistoryConfig();
+    }
 
     [ObservableProperty]
     private uint maxItemCount;
@@ -60,6 +89,12 @@ public partial class HistorySettingViewModel : ObservableObject
     [ObservableProperty]
     private uint historyRetentionMinutes;
     partial void OnHistoryRetentionMinutesChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { HistoryRetentionMinutes = value });
+
+    [ObservableProperty]
+    private bool enableLocalHistoryConfig;
+
+    [ObservableProperty]
+    private bool serverSyncSupported;
 
     [RelayCommand]
     private async Task ClearLocalHistoryAsync()

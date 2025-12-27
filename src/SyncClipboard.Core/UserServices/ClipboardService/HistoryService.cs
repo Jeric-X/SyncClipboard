@@ -6,6 +6,7 @@ using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Core.Utilities.Runner;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncClipboard.Core.UserServices.ClipboardService;
 
@@ -17,18 +18,21 @@ public class HistoryService : ClipboardHander
     private DateTimeOffset? _lastSyncTime;
     private readonly HistoryManager historyManager;
     private readonly ConfigManager configManager;
+    private readonly ConfigBase runTimeConfig;
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private readonly HistorySyncer historySyncer;
     private readonly ITrayIcon trayIcon;
     private bool _enableSyncHistory;
 
     public HistoryService(
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
         HistoryManager historyManager,
         ConfigManager configManager,
         RemoteClipboardServerFactory remoteServerFactory,
         HistorySyncer historySyncer,
         ITrayIcon trayIcon)
     {
+        this.runTimeConfig = runtimeConfig;
         this.historyManager = historyManager;
         this.configManager = configManager;
         this.remoteServerFactory = remoteServerFactory;
@@ -83,18 +87,32 @@ public class HistoryService : ClipboardHander
 
         var currentServer = remoteServerFactory.Current;
         _currentServer = currentServer;
+        SetRuntimeConfig();
 
-        if (currentServer is IHistorySyncServer historySyncServer)
+        if (currentServer is not IHistorySyncServer historySyncServer)
         {
-            _historySyncServer = historySyncServer;
-            _historySyncServer.HistoryChanged += OnRemoteHistoryChanged;
+            trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
+            return;
         }
+
+        _historySyncServer = historySyncServer;
+        _historySyncServer.HistoryChanged += OnRemoteHistoryChanged;
 
         // 订阅服务器状态变化事件，用于检测重连
         _currentServer.PollStatusEvent += OnPollStatusChanged;
 
         _lastSyncTime = null;
         TriggerSyncTask();
+    }
+
+    private void SetRuntimeConfig()
+    {
+        var runtimeHistoryConfig = new RuntimeHistoryConfig
+        {
+            EnableSyncHistory = _currentServer is IHistorySyncServer && _enableSyncHistory
+        };
+
+        runTimeConfig.SetConfig(runtimeHistoryConfig);
     }
 
     private void OnPollStatusChanged(object? sender, PollStatusEventArgs e)
@@ -142,10 +160,11 @@ public class HistoryService : ClipboardHander
         }
 
         _enableSyncHistory = newEnableSyncHistory;
+        SetRuntimeConfig();
         if (!_enableSyncHistory)
         {
             _syncingTask.Cancel();
-            trayIcon.SetStatusString(SERVICE_NAME, "Stoppped.", false);
+            trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
         }
         else
         {

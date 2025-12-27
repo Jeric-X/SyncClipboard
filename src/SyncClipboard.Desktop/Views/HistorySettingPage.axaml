@@ -22,7 +22,7 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableSyncHistory}" Description="{x:Static i18n:Strings.EnableSyncHistoryDescription}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableSyncHistory}" Description="{x:Static i18n:Strings.EnableSyncHistoryDescription}" IsVisible="{Binding ServerSyncSupported}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
@@ -32,7 +32,7 @@
                         <ui:NumberBox Minimum="1"
                                       Maximum="1000"
                                       Value="{Binding MaxItemCount, Mode=TwoWay}"
-                                      IsEnabled="{Binding !EnableSyncHistory}" />
+                                      IsEnabled="{Binding EnableLocalHistoryConfig}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HistoryRetentionMinutes}" Description="{x:Static i18n:Strings.HistoryRetentionDescription}">
@@ -40,7 +40,7 @@
                         <ui:NumberBox Minimum="0"
                                       Maximum="525600"
                                       Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
-                                      IsEnabled="{Binding !EnableSyncHistory}" />
+                                      IsEnabled="{Binding EnableLocalHistoryConfig}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}">

@@ -16,20 +16,20 @@
             </ui:SettingsExpander.HeaderIcon>
             <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EnableHistory, Mode=TwoWay}" />
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.EnableSyncHistory}" Description="{x:Bind i18n:Strings.EnableSyncHistoryDescription}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.EnableSyncHistory}" Description="{x:Bind i18n:Strings.EnableSyncHistoryDescription}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ServerSyncSupported), Mode=OneWay}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EnableSyncHistory, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.MaxItemCount}">
                     <NumberBox Minimum="1"
                                Maximum="1000"
                                Value="{x:Bind _viewModel.MaxItemCount, Mode=TwoWay}"
-                               IsEnabled="{x:Bind vc:ConvertMethod.BoolNegate(_viewModel.EnableSyncHistory), Mode=OneWay}" />
+                               IsEnabled="{x:Bind _viewModel.EnableLocalHistoryConfig, Mode=OneWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryRetentionMinutes}" Description="{x:Bind i18n:Strings.HistoryRetentionDescription}">
                     <NumberBox Minimum="0"
                                Maximum="525600"
                                Value="{x:Bind _viewModel.HistoryRetentionMinutes, Mode=TwoWay}"
-                               IsEnabled="{x:Bind vc:ConvertMethod.BoolNegate(_viewModel.EnableSyncHistory), Mode=OneWay}" />
+                               IsEnabled="{x:Bind _viewModel.EnableLocalHistoryConfig, Mode=OneWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}">
                     <Button Content="{x:Bind i18n:Strings.ClearLocalHistory}" Command="{x:Bind _viewModel.ClearLocalHistoryCommand}" />

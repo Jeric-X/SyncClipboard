@@ -41,8 +41,7 @@
                            ImageOpened="Image_ImageOpened"
                            PointerPressed="Image_PointerPressed"
                            Source="{x:Bind vc:ConvertMethod.CreateBitmap(PreviewImage), Mode=OneWay}"
-                           Visibility="Collapsed">
-                    </Image>
+                           Visibility="Collapsed" />
                     <TextBlock HorizontalAlignment="Left" Text="{x:Bind Text, Mode=OneWay}" />
                 </StackPanel>
             </DataTemplate>
@@ -161,32 +160,35 @@
                                     </Button.Flyout>
                                     <FontIcon Glyph="&#xE783;" />
                                 </Button>
-                                <Button Click="DownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE896;" />
-                                </Button>
-                                <Button Click="CancelDownloadButtonClicked"
-                                        IsTabStop="False"
-                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}"
-                                        ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelDownload}">
-                                    <ProgressRing Width="16"
-                                                  Height="16"
-                                                  IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
-                                                  Value="{x:Bind DownloadProgress, Mode=OneWay}" />
-                                </Button>
-                                <!--  Upload button  -->
-                                <Button Click="UploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadButton), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE898;" />
-                                </Button>
-                                <!--  Cancel upload button with progress ring  -->
-                                <Button Click="CancelUploadButtonClicked"
-                                        IsTabStop="False"
-                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}"
-                                        ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelUpload}">
-                                    <ProgressRing Width="16"
-                                                  Height="16"
-                                                  IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
-                                                  Value="{x:Bind UploadProgress, Mode=OneWay}" />
-                                </Button>
+                                <!--  Sync buttons container  -->
+                                <StackPanel Orientation="Horizontal" Loaded="SyncButtonsContainerLoaded">
+                                    <Button Click="DownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadButton), Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE896;" />
+                                    </Button>
+                                    <Button Click="CancelDownloadButtonClicked"
+                                            IsTabStop="False"
+                                            Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowDownloadProgress), Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelDownload}">
+                                        <ProgressRing Width="16"
+                                                      Height="16"
+                                                      IsIndeterminate="{x:Bind IsDownloadPending, Mode=OneWay}"
+                                                      Value="{x:Bind DownloadProgress, Mode=OneWay}" />
+                                    </Button>
+                                    <!--  Upload button  -->
+                                    <Button Click="UploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadButton), Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE898;" />
+                                    </Button>
+                                    <!--  Cancel upload button with progress ring  -->
+                                    <Button Click="CancelUploadButtonClicked"
+                                            IsTabStop="False"
+                                            Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowUploadProgress), Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelUpload}">
+                                        <ProgressRing Width="16"
+                                                      Height="16"
+                                                      IsIndeterminate="{x:Bind IsUploadPending, Mode=OneWay}"
+                                                      Value="{x:Bind UploadProgress, Mode=OneWay}" />
+                                    </Button>
+                                </StackPanel>
                                 <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsLocalFileReady), Mode=OneWay}">
                                     <FontIcon Glyph="&#xE8C8;" />
                                 </Button>

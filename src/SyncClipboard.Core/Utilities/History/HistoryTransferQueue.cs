@@ -6,6 +6,7 @@ using SyncClipboard.Core.Exceptions;
 using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -15,7 +16,6 @@ public class HistoryTransferQueue : IDisposable
     private readonly RemoteClipboardServerFactory _remoteServerFactory;
     private readonly HistoryManager _historyManager;
     private readonly IProfileEnv _profileEnv;
-    private readonly ConfigManager _configManager;
 
     // 队列和任务存储
     private readonly Queue<TransferTask> _pendingTasks = new();
@@ -41,15 +41,14 @@ public class HistoryTransferQueue : IDisposable
         RemoteClipboardServerFactory remoteServerFactory,
         HistoryManager historyManager,
         IProfileEnv profileEnv,
-        ConfigManager configManager)
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
     {
         _logger = logger;
         _remoteServerFactory = remoteServerFactory;
         _historyManager = historyManager;
         _profileEnv = profileEnv;
-        _configManager = configManager;
         _remoteServerFactory.CurrentServerChanged += (_, _) => ClearQueue();
-        _configManager.ListenConfig<HistoryConfig>(OnSyncHistoryChanged);
+        runtimeConfig.ListenConfig<RuntimeHistoryConfig>(OnSyncHistoryChanged);
     }
 
     public async Task<TransferTask> EnqueueDownload(Profile profile, bool forceResume = false, CancellationToken ct = default)
@@ -577,7 +576,7 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    private void OnSyncHistoryChanged(HistoryConfig config)
+    private void OnSyncHistoryChanged(RuntimeHistoryConfig config)
     {
         if (!config.EnableSyncHistory)
         {

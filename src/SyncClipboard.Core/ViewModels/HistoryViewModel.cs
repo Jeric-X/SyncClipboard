@@ -41,6 +41,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly IProfileEnv profileEnv;
     private IHistorySyncServer? historySyncServer;
 
+    [ObservableProperty]
     private bool _enableSyncHistory;
 
     private readonly ThreadSafeDeque<HistorySyncInfo> _remoteFetchQueue = new();
@@ -80,24 +81,24 @@ public partial class HistoryViewModel : ObservableObject
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
         var currentServer = remoteServerFactory.Current;
-        _enableSyncHistory = configManager.GetConfig<HistoryConfig>().EnableSyncHistory;
+        _enableSyncHistory = runtimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory;
         historySyncServer = _enableSyncHistory ? currentServer as IHistorySyncServer : null;
 
-        _configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
+        runtimeConfig.ListenConfig<RuntimeHistoryConfig>(OnHistoryConfigChanged);
 
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
         ApplyFilter();
     }
 
-    private void OnHistoryConfigChanged(HistoryConfig cfg)
+    private void OnHistoryConfigChanged(RuntimeHistoryConfig cfg)
     {
         var newEnable = cfg.EnableSyncHistory;
-        if (newEnable == _enableSyncHistory)
+        if (newEnable == EnableSyncHistory)
             return;
 
-        _enableSyncHistory = newEnable;
-        if (_enableSyncHistory)
+        EnableSyncHistory = newEnable;
+        if (EnableSyncHistory)
         {
             historySyncServer = remoteServerFactory.Current as IHistorySyncServer;
             _ = Refresh();
@@ -698,7 +699,7 @@ public partial class HistoryViewModel : ObservableObject
     private void OnRemoteServerChanged()
     {
         var currentServer = remoteServerFactory.Current;
-        historySyncServer = _enableSyncHistory ? currentServer as IHistorySyncServer : null;
+        historySyncServer = EnableSyncHistory ? currentServer as IHistorySyncServer : null;
         _ = Refresh();
     }
 

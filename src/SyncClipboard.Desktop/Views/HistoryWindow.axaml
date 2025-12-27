@@ -204,8 +204,8 @@
                                     </Button.Flyout>
                                     <ui:FontIcon Glyph="&#xE783;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                 </Button>
-                                <!--  Download / Upload cluster (left side grouping)  -->
-                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                <!--  Download / Upload cluster (sync buttons container)  -->
+                                <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding #_HistoryWindow.ViewModel.EnableSyncHistory}">
                                     <!--  Download button  -->
                                     <Button Command="{Binding #_HistoryWindow.ViewModel.DownloadRemoteProfileCommand}" CommandParameter="{Binding .}" IsVisible="{Binding ShowDownloadButton}">
                                         <ui:FontIcon Glyph="&#xE896;" FontFamily="{StaticResource SymbolThemeFontFamily}" />

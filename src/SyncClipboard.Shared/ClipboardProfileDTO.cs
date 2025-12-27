@@ -39,6 +39,10 @@ public record class ClipboardProfileDTO
                 }
                 return new FileProfile(profileDTO);
             case ProfileType.Group:
+                if (ignoreHash)
+                {
+                    profileDTO.Clipboard = string.Empty;
+                }
                 return new GroupProfile(profileDTO);
         }
 

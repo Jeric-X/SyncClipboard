@@ -556,8 +556,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private static readonly BoolToVisibilityConverter boolToVisibilityConverter = new();
     private void StatusBorderLoaded(object sender, RoutedEventArgs _)
     {
-        var border = sender as Border;
-        if (border == null) return;
+        if (sender is not Border border) return;
 
         var visualbilityBinding = new Binding
         {
@@ -568,5 +567,20 @@ public sealed partial class HistoryWindow : Window, IWindow
         };
 
         border.SetBinding(UIElement.VisibilityProperty, visualbilityBinding);
+    }
+
+    private void SyncButtonsContainerLoaded(object sender, RoutedEventArgs _)
+    {
+        if (sender is not StackPanel container) return;
+
+        var syncButtonsBinding = new Binding
+        {
+            Source = _viewModel,
+            Path = new PropertyPath(nameof(HistoryViewModel.EnableSyncHistory)),
+            Converter = boolToVisibilityConverter,
+            Mode = BindingMode.OneWay
+        };
+
+        container.SetBinding(UIElement.VisibilityProperty, syncButtonsBinding);
     }
 }

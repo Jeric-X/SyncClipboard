@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -16,6 +17,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public event Action<HistoryRecord>? HistoryUpdated;
 
     private HistoryConfig _historyConfig = new();
+    private RuntimeHistoryConfig _runtimeHistoryConfig = new();
     private readonly ILogger _logger;
     private HistoryDbContext _dbContext;
     private readonly IProfileEnv _profileEnv;
@@ -24,30 +26,43 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
     public DbSet<HistoryRecord> RecordDbSet => _dbContext.HistoryRecords;
 
-    public HistoryManager(ConfigManager configManager, ILogger logger, IProfileEnv profileEnv)
+    public HistoryManager(ConfigManager configManager, ILogger logger, IProfileEnv profileEnv,
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
     {
         _logger = logger;
         _profileEnv = profileEnv;
         InitDatabaseContext();
         _historyManagerHelper = new(this);
-        _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadConfig);
-        LoadConfig(_historyConfig);
+        _runtimeHistoryConfig = runtimeConfig.GetListenConfig<RuntimeHistoryConfig>(LoadRuntimeHistoryConfig);
+        _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadHistoryConfig);
+        LoadConfig(_runtimeHistoryConfig, _historyConfig);
     }
 
-    private async void LoadConfig(HistoryConfig config)
+    private async void LoadHistoryConfig(HistoryConfig config)
     {
         _historyConfig = config;
+        LoadConfig(_runtimeHistoryConfig, _historyConfig);
+    }
 
+    private async void LoadRuntimeHistoryConfig(RuntimeHistoryConfig config)
+    {
+        _runtimeHistoryConfig = config;
+        LoadConfig(_runtimeHistoryConfig, _historyConfig);
+    }
+
+
+    private async void LoadConfig(RuntimeHistoryConfig runtimeConfig, HistoryConfig historyConfig)
+    {
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        if (config.EnableSyncHistory)
+        if (runtimeConfig.EnableSyncHistory)
         {
             return;
         }
 
         await DeleteObsoleteRemoteRecords();
-        if (await _historyManagerHelper.SetRecordsMaxCount(config.MaxItemCount) != 0)
+        if (await _historyManagerHelper.SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
         }
@@ -130,7 +145,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        if (!_historyConfig.EnableSyncHistory)
+        if (!_runtimeHistoryConfig.EnableSyncHistory)
         {
             await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
         }
@@ -280,7 +295,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         entity.LastModified = DateTime.UtcNow;
         entity.Version += 1;
 
-        if (_historyConfig.EnableSyncHistory)
+        if (_runtimeHistoryConfig.EnableSyncHistory)
         {
             // 开启同步：需要向服务器同步删除，标记 NeedSync（LocalOnly 保持不变）
             if (entity.SyncStatus != HistorySyncStatus.LocalOnly)
@@ -379,7 +394,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         try
         {
-            if (_historyConfig.EnableSyncHistory)
+            if (_runtimeHistoryConfig.EnableSyncHistory)
             {
                 await RemoveSoftDeletedOutOfDateRecords(token);
                 return;
