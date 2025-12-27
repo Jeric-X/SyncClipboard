@@ -34,8 +34,7 @@ jobs:
       run: |
         Add-Content -Path "feature.txt" -Value ""
         Add-Content -Path "feature.txt" -Value "> [!NOTE]" -Encoding utf8
-        Add-Content -Path "feature.txt" -Value "> 不附带运行时体积更小的安装包可以在此处下载：" -Encoding utf8
-        Add-Content -Path "feature.txt" -Value "> $env:RUN_URL" -Encoding utf8
+        Add-Content -Path "feature.txt" -Value "> 不附带运行时体积更小的安装包可以在[此处下载]($env:RUN_URL)" -Encoding utf8
         Get-Content feature.txt -Encoding utf8
 
     - name: Upload windows change log
