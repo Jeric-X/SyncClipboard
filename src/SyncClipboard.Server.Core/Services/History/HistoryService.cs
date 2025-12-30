@@ -335,7 +335,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 await transferFileStream.CopyToAsync(fs, token);
             }
 
-            await profile.SetTranseferData(filePath, verify: true, token);
+            await profile.SetTransferData(filePath, verify: true, token);
             entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
         }
 

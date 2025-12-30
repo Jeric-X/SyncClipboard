@@ -468,7 +468,7 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var url = new Uri(_httpClient.BaseAddress!, "api/current");
+            var url = new Uri(_httpClient.BaseAddress!, "SyncClipboard.json");
             using var response = await _httpClient.PutAsJsonAsync(url, dto, JsonSerializerOptions.Web, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
@@ -489,7 +489,7 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var url = new Uri(_httpClient.BaseAddress!, "api/current");
+            var url = new Uri(_httpClient.BaseAddress!, "SyncClipboard.json");
             using var response = await _httpClient.GetAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.NotFound)

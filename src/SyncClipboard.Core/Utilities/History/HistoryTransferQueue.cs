@@ -503,7 +503,7 @@ public class HistoryTransferQueue : IDisposable
         }
 
         await server.DownloadHistoryDataAsync(task.ProfileId, localDataPath, task.ProgressReporter, ct);
-        await profile.SetTranseferData(localDataPath, true, ct);
+        await profile.SetTransferData(localDataPath, true, ct);
         await _historyManager.AddLocalProfile(profile, ct);
     }
 

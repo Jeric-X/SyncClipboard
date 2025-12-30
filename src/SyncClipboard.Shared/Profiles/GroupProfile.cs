@@ -3,7 +3,6 @@ using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Utilities;
 using System.Text;
 using System.Security.Cryptography;
-using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Shared.Profiles;
@@ -12,6 +11,7 @@ public class GroupProfile : Profile
 {
     private static readonly SemaphoreSlim ConcurrencyComputeLimiter = new(Math.Max(1, Environment.ProcessorCount));
     private static readonly Encoding EntryEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+    private readonly SemaphoreSlim _persistentLock = new(1, 1);
     private readonly FileFilterConfig _fileFilterConfig = new();
     public override bool HasTransferData => true;
     private string? _transferDataName = null;
@@ -57,7 +57,7 @@ public class GroupProfile : Profile
         _fileNames = dto.Text.Split(["\r\n", "\r", "\n"],
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToArray();
         _transferDataName = dto.DataName;
-        Hash = dto.Hash;
+        Hash = string.IsNullOrEmpty(dto.Hash) ? null : Hash;
         Size = dto.Size;
     }
 
@@ -235,6 +235,14 @@ public class GroupProfile : Profile
             return _transferDataPath;
         }
 
+        await _persistentLock.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _persistentLock.Release());
+
+        if (File.Exists(_transferDataPath))
+        {
+            return _transferDataPath;
+        }
+
         ArgumentNullException.ThrowIfNull(_files);
         var fileName = _transferDataName ?? CreateNewDataFileName();
         var filePath = Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), fileName);
@@ -384,7 +392,7 @@ public class GroupProfile : Profile
         _transferDataName = Path.GetFileName(path);
     }
 
-    public override Task SetTranseferData(string path, bool verify, CancellationToken token)
+    public override Task SetTransferData(string path, bool verify, CancellationToken token)
     {
         if (!File.Exists(path))
         {
@@ -416,7 +424,7 @@ public class GroupProfile : Profile
             return;
         }
 
-        await SetTranseferData(path, true, token);
+        await SetTransferData(path, true, token);
 
         var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
@@ -477,7 +485,7 @@ public class GroupProfile : Profile
         {
             try
             {
-                await SetTranseferData(_transferDataPath, true, token);
+                await SetTransferData(_transferDataPath, true, token);
                 return null;
             }
             catch when (token.IsCancellationRequested is false)

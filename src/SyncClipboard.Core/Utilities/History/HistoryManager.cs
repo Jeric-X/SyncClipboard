@@ -320,11 +320,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         if (remoteRecords.Any() == false)
             return addedRecords;
 
-        await _dbSemaphore.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-
         foreach (var dto in remoteRecords)
         {
+            await _dbSemaphore.WaitAsync(token);
+            using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
             var entity = await Query(dto.Type, dto.Hash, token);
             if (entity == null)
             {
@@ -354,9 +354,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.ApplyBasicFromRemote(dto);
                 TriggleUpdateOrDeleteEvent(entity);
             }
+            await _dbContext.SaveChangesAsync(token);
         }
 
-        await _dbContext.SaveChangesAsync(token);
         return addedRecords;
     }
 

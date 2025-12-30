@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
@@ -53,7 +52,7 @@ public class TextProfile : Profile
     public TextProfile(ProfileDto dto)
     {
         _text = dto.Text;
-        Hash = dto.Hash;
+        Hash = string.IsNullOrEmpty(dto.Hash) ? null : Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
         Size = dto.Size;
@@ -163,7 +162,7 @@ public class TextProfile : Profile
         {
             try
             {
-                await SetTranseferData(_transferDataPath, true, token);
+                await SetTransferData(_transferDataPath, true, token);
                 return null;
             }
             catch when (token.IsCancellationRequested is false)
@@ -233,12 +232,12 @@ public class TextProfile : Profile
         return _transferDataPath;
     }
 
-    public override async Task SetTranseferData(string path, bool verify, CancellationToken token)
+    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
-        if (verify && File.Exists(path))
+        if (verify && File.Exists(path) && Hash is not null)
         {
             var fileHash = await Utility.CalculateFileSHA256(path, token);
-            var textHash = await GetHash(token);
+            var textHash = Hash;
 
             if (!string.Equals(fileHash, textHash, StringComparison.OrdinalIgnoreCase))
             {
@@ -257,7 +256,7 @@ public class TextProfile : Profile
             return;
         }
 
-        await SetTranseferData(path, true, token);
+        await SetTransferData(path, true, token);
 
         var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);

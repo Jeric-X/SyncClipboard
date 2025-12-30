@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Shared.Profiles;
@@ -55,7 +54,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task SetTranseferData(string path, bool verify, CancellationToken token)
+    public override Task SetTransferData(string path, bool verify, CancellationToken token)
     {
         throw new NotImplementedException();
     }
