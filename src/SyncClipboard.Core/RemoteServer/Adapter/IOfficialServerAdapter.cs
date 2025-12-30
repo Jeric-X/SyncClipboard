@@ -8,6 +8,6 @@ public interface IOfficialServerAdapter : IStorageBasedServerAdapter
     event Action<Exception?> ServerDisconnected;
     event Action ServerConnected;
 
-    Task SetCurrentProfile(ProfileType type, string hash, CancellationToken cancellationToken = default);
+    Task SetCurrentProfile(ProfileDto dto, CancellationToken cancellationToken = default);
     Task<ProfileDto?> GetCurrentProfileAsync(CancellationToken cancellationToken = default);
 }

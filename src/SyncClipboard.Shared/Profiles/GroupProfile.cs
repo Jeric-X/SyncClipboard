@@ -52,12 +52,6 @@ public class GroupProfile : Profile
         return $"File_{Utility.CreateTimeBasedFileName()}.zip";
     }
 
-    public GroupProfile(ClipboardProfileDTO profileDTO)
-    {
-        _transferDataName = profileDTO.File;
-        Hash = profileDTO.Clipboard;
-    }
-
     public GroupProfile(ProfileDto dto)
     {
         _fileNames = dto.Text.Split(["\r\n", "\r", "\n"],
@@ -296,15 +290,6 @@ public class GroupProfile : Profile
         await using var entryStream = entry.Open();
         await using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         await sourceStream.CopyToAsync(entryStream, 81920, token).ConfigureAwait(false);
-    }
-
-    public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token)
-    {
-        if (_transferDataName is null)
-        {
-            throw new InvalidOperationException("Transfer data is not set.");
-        }
-        return new ClipboardProfileDTO(_transferDataName, await GetHash(token), Type);
     }
 
     public override async Task<ProfileDto> ToProfileDto(CancellationToken token)

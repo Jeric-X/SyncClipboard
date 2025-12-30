@@ -164,8 +164,8 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
     public async Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
     {
         await _historyTransferQueue.Upload(profile, null, cancellationToken);
-        var hash = await profile.GetHash(cancellationToken);
-        await _serverAdapter.SetCurrentProfile(profile.Type, hash, cancellationToken);
+        var dto = await profile.ToProfileDto(cancellationToken);
+        await _serverAdapter.SetCurrentProfile(dto, cancellationToken);
     }
 
     public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)

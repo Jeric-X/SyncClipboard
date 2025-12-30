@@ -25,12 +25,12 @@ public sealed class DefaultStorageAdapter : IStorageBasedServerAdapter
         throw new NotSupportedException(ErrorMessage);
     }
 
-    public Task<ClipboardProfileDTO?> GetProfileAsync(CancellationToken cancellationToken = default)
+    public Task<ProfileDto?> GetProfileAsync(CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(ErrorMessage);
     }
 
-    public Task SetProfileAsync(ClipboardProfileDTO profileDto, CancellationToken cancellationToken = default)
+    public Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(ErrorMessage);
     }

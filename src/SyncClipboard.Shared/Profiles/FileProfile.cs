@@ -52,10 +52,6 @@ public class FileProfile : Profile
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
     }
 
-    public FileProfile(ClipboardProfileDTO profileDTO) : this(null, profileDTO.File, profileDTO.Clipboard)
-    {
-    }
-
     public FileProfile(ProfileDto dto) : this(null, dto.DataName, dto.Hash)
     {
         Size = dto.Size;
@@ -81,8 +77,6 @@ public class FileProfile : Profile
         Size = fileInfo.Length;
         return Task.CompletedTask;
     }
-
-    public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token) => new ClipboardProfileDTO(FileName, await GetHash(token), Type);
 
     public override async Task<ProfileDto> ToProfileDto(CancellationToken token)
     {

@@ -13,11 +13,6 @@ public class UnknownProfile : Profile
 
     public override string DisplayText => "Do not support this type of clipboard";
 
-    public override Task<ClipboardProfileDTO> ToDto(CancellationToken token)
-    {
-        throw new NotImplementedException();
-    }
-
     public override Task<ProfileDto> ToProfileDto(CancellationToken token)
     {
         throw new NotImplementedException();

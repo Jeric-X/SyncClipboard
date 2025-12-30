@@ -20,10 +20,6 @@ public class ImageProfile : FileProfile
     {
     }
 
-    public ImageProfile(ClipboardProfileDTO profileDTO) : base(profileDTO)
-    {
-    }
-
     public ImageProfile(ProfileDto dto) : base(dto)
     {
     }

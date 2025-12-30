@@ -65,13 +65,13 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         await _webDav.CreateDirectory(RemoteFileFolder, cancellationToken);
     }
 
-    public async Task<ClipboardProfileDTO?> GetProfileAsync(CancellationToken cancellationToken = default)
+    public async Task<ProfileDto?> GetProfileAsync(CancellationToken cancellationToken = default)
     {
-        var profileDto = await _webDav.GetJson<ClipboardProfileDTO>(RemoteProfilePath, cancellationToken);
+        var profileDto = await _webDav.GetJson<ProfileDto>(RemoteProfilePath, cancellationToken);
         return profileDto;
     }
 
-    public async Task SetProfileAsync(ClipboardProfileDTO profileDto, CancellationToken cancellationToken = default)
+    public async Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default)
     {
         await _webDav.PutJson(RemoteProfilePath, profileDto, cancellationToken);
     }

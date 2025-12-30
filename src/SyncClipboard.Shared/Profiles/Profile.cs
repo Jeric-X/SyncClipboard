@@ -13,7 +13,6 @@ public abstract class Profile
     public abstract string DisplayText { get; }
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
-    public abstract Task<ClipboardProfileDTO> ToDto(CancellationToken token);
     public abstract Task<ProfileDto> ToProfileDto(CancellationToken token);
     protected abstract Task ComputeHash(CancellationToken token);
     protected abstract Task ComputeSize(CancellationToken token);

@@ -6,9 +6,9 @@ public interface IStorageBasedServerAdapter : IServerAdapter
 {
     Task InitializeAsync(CancellationToken cancellationToken = default);
 
-    Task<ClipboardProfileDTO?> GetProfileAsync(CancellationToken cancellationToken = default);
+    Task<ProfileDto?> GetProfileAsync(CancellationToken cancellationToken = default);
 
-    Task SetProfileAsync(ClipboardProfileDTO profileDto, CancellationToken cancellationToken = default);
+    Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default);
 
     Task UploadFileAsync(string fileName, string localPath, CancellationToken cancellationToken = default);
 

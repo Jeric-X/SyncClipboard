@@ -26,7 +26,7 @@ public class Program
             }
         );
 
-        EnsureAppSettingsExists(builder.Environment.ContentRootPath);
+        EnsureAppSettingsExists(builder.Environment.ContentRootPath, builder.Configuration);
 
         var envUsername = Environment.GetEnvironmentVariable(ENV_VAR_USERNAME);
         var envPassword = Environment.GetEnvironmentVariable(ENV_VAR_PASSWORD);
@@ -45,7 +45,7 @@ public class Program
         app.Run();
     }
 
-    private static void EnsureAppSettingsExists(string contentRootPath)
+    private static void EnsureAppSettingsExists(string contentRootPath, ConfigurationManager configurationManager)
     {
         var targetAppSettingsPath = Path.Combine(contentRootPath, "appsettings.json");
 
@@ -63,6 +63,7 @@ public class Program
             try
             {
                 File.Copy(defaultAppSettingsPath, targetAppSettingsPath);
+                configurationManager.AddJsonFile(targetAppSettingsPath);
                 Console.WriteLine($"Copied default appsettings.json to {targetAppSettingsPath}");
             }
             catch (Exception ex)

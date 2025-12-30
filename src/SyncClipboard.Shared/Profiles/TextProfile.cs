@@ -68,24 +68,6 @@ public class TextProfile : Profile
         return _text;
     }
 
-    public override async Task<ClipboardProfileDTO> ToDto(CancellationToken token)
-    {
-        if (_hasTransferData)
-        {
-            if (_fullText is not null)
-            {
-                return new ClipboardProfileDTO(string.Empty, _fullText, Type);
-            }
-            else if (File.Exists(_transferDataPath))
-            {
-                var fullText = await File.ReadAllTextAsync(_transferDataPath, token);
-                return new ClipboardProfileDTO(string.Empty, fullText, Type);
-            }
-            throw new Exception("Text profile data is not ready.");
-        }
-        return new ClipboardProfileDTO(string.Empty, _text, Type);
-    }
-
     public override async Task<ProfileDto> ToProfileDto(CancellationToken token)
     {
         return new ProfileDto

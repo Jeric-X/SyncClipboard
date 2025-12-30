@@ -151,12 +151,12 @@ public sealed class OfficialAdapter(
         return _webDavAdapter.InitializeAsync(cancellationToken);
     }
 
-    public Task<ClipboardProfileDTO?> GetProfileAsync(CancellationToken cancellationToken = default)
+    public Task<ProfileDto?> GetProfileAsync(CancellationToken cancellationToken = default)
     {
         return _webDavAdapter.GetProfileAsync(cancellationToken);
     }
 
-    public Task SetProfileAsync(ClipboardProfileDTO profileDto, CancellationToken cancellationToken = default)
+    public Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default)
     {
         return _webDavAdapter.SetProfileAsync(profileDto, cancellationToken);
     }
@@ -464,23 +464,23 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task SetCurrentProfile(ProfileType type, string hash, CancellationToken cancellationToken = default)
+    public async Task SetCurrentProfile(ProfileDto dto, CancellationToken cancellationToken = default)
     {
         try
         {
-            var url = new Uri(_httpClient.BaseAddress!, $"api/current?type={type}&hash={HttpUtility.UrlEncode(hash)}");
-            using var response = await _httpClient.PatchAsync(url, null, cancellationToken);
+            var url = new Uri(_httpClient.BaseAddress!, "api/current");
+            using var response = await _httpClient.PutAsJsonAsync(url, dto, JsonSerializerOptions.Web, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new RemoteHistoryNotFoundException($"Profile not found in history: {type}/{hash}");
+                throw new RemoteHistoryNotFoundException($"Profile not found in history: {dto.Type}/{dto.Hash}");
             }
 
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
-            _logger.Write($"[OFFICIAL_ADAPTER] Failed to set current profile from history {type}/{hash}: {ex.Message}");
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to set current profile from history {dto.Type}/{dto.Hash}: {ex.Message}");
             throw;
         }
     }

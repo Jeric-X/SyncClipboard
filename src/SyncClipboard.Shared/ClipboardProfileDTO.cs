@@ -4,6 +4,7 @@ using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared;
 
+[Obsolete("Use ProfileDto instead")]
 public record class ClipboardProfileDTO
 {
     [JsonPropertyName(nameof(File))]
@@ -21,31 +22,9 @@ public record class ClipboardProfileDTO
         Type = type;
     }
 
+    [Obsolete("Use Profile.Create(ProfileDto) instead")]
     public static Profile CreateProfile(ClipboardProfileDTO profileDTO, bool ignoreHash = false)
     {
-        switch (profileDTO.Type)
-        {
-            case ProfileType.Text:
-                return new TextProfile(profileDTO.Clipboard);
-            case ProfileType.File:
-            case ProfileType.Image:
-                if (ignoreHash)
-                {
-                    profileDTO.Clipboard = string.Empty;
-                }
-                if (ImageTool.FileIsImage(profileDTO.File))
-                {
-                    return new ImageProfile(profileDTO);
-                }
-                return new FileProfile(profileDTO);
-            case ProfileType.Group:
-                if (ignoreHash)
-                {
-                    profileDTO.Clipboard = string.Empty;
-                }
-                return new GroupProfile(profileDTO);
-        }
-
-        return new UnknownProfile();
+        throw new NotSupportedException("ClipboardProfileDTO is obsolete. Use Profile.Create(ProfileDto) instead.");
     }
 }

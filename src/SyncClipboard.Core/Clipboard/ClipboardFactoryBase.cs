@@ -57,27 +57,4 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         var meta = await GetMetaInfomation(ctk);
         return await CreateProfileFromMeta(meta, ctk);
     }
-
-    public static Profile GetProfileBy(ClipboardProfileDTO profileDTO)
-    {
-        switch (profileDTO.Type)
-        {
-            case ProfileType.Text:
-                return new TextProfile(profileDTO.Clipboard);
-            case ProfileType.File:
-                {
-                    if (ImageHelper.FileIsImage(profileDTO.File))
-                    {
-                        return new ImageProfile(profileDTO);
-                    }
-                    return new FileProfile(profileDTO);
-                }
-            case ProfileType.Image:
-                return new ImageProfile(profileDTO);
-            case ProfileType.Group:
-                return new GroupProfile(profileDTO);
-        }
-
-        return new UnknownProfile();
-    }
 }

@@ -95,7 +95,7 @@ internal class StorageBasedServerHelper
             }
 
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
-            return ClipboardProfileDTO.CreateProfile(profileDto);
+            return Profile.Create(profileDto);
         }
         catch (Exception ex) when (
             ex is JsonException ||
@@ -132,9 +132,10 @@ internal class StorageBasedServerHelper
         {
             await _serverAdapter.CleanupTempFilesAsync(cancellationToken);
             await UploadProfileDataAsync(profile, cancellationToken);
-            await _serverAdapter.SetProfileAsync(await profile.ToDto(cancellationToken), cancellationToken);
+            var profileDto = await profile.ToProfileDto(cancellationToken);
+            await _serverAdapter.SetProfileAsync(profileDto, cancellationToken);
 
-            _logger.Write($"[PUSH] Profile metadata updated: {JsonSerializer.Serialize(await profile.ToDto(cancellationToken))}");
+            _logger.Write($"[PUSH] Profile metadata updated: {JsonSerializer.Serialize(profileDto)}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)

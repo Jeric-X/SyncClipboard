@@ -179,6 +179,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (existing is not null)
         {
             existing.LastAccessed = DateTime.UtcNow;
+            existing.IsDeleted = false;
+            existing.LastModified = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync(token);
             return;
         }
@@ -200,7 +202,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
 
         var existing = _dbContext.HistoryRecords
-            .Where(r => r.UserId == userId && r.Type != ProfileType.Text)
+            .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.LastAccessed)
             .AsEnumerable()
             .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(Profile.GetFullPath(_persistentDir, r.Type, r.Hash, r.TransferDataFile)))
