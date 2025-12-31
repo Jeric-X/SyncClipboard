@@ -9,4 +9,5 @@ public record class HistoryWindowConfig
     public bool CloseWhenLostFocus { get; set; } = true;
     public bool ShowSyncState { get; set; } = true;
     public bool OnlyShowLocal { get; set; } = false;
+    public bool SortByLastAccessed { get; set; } = false;
 }

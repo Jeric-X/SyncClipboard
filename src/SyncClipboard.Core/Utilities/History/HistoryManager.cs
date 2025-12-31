@@ -38,13 +38,13 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         LoadConfig(_runtimeHistoryConfig, _historyConfig);
     }
 
-    private async void LoadHistoryConfig(HistoryConfig config)
+    private void LoadHistoryConfig(HistoryConfig config)
     {
         _historyConfig = config;
         LoadConfig(_runtimeHistoryConfig, _historyConfig);
     }
 
-    private async void LoadRuntimeHistoryConfig(RuntimeHistoryConfig config)
+    private void LoadRuntimeHistoryConfig(RuntimeHistoryConfig config)
     {
         _runtimeHistoryConfig = config;
         LoadConfig(_runtimeHistoryConfig, _historyConfig);
@@ -140,6 +140,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
             entity.LastModified = DateTime.UtcNow;
+            entity.LastAccessed = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
             return;
@@ -511,6 +512,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         DateTime? before = null,
         int minSize = int.MaxValue,
         string? searchText = null,
+        bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
@@ -536,7 +538,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         if (before.HasValue)
         {
             var beforeUtc = before.Value;
-            query = query.Where(r => r.Timestamp < beforeUtc);
+            query = sortByLastAccessed
+                ? query.Where(r => r.LastAccessed < beforeUtc)
+                : query.Where(r => r.Timestamp < beforeUtc);
         }
         if (started.HasValue)
         {
@@ -548,7 +552,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
         }
 
-        query = query.OrderByDescending(r => r.Timestamp).ThenByDescending(r => r.ID);
+        query = sortByLastAccessed
+            ? query.OrderByDescending(r => r.LastAccessed).ThenByDescending(r => r.ID)
+            : query.OrderByDescending(r => r.Timestamp).ThenByDescending(r => r.ID);
 
         // 先取minSize条记录
         var initialRecords = await query.Take(minSize).ToListAsync(token);
@@ -561,13 +567,13 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         // 获取最后一条记录的时间戳和ID
         var lastRecord = initialRecords[^1];
-        var lastTimestamp = lastRecord.Timestamp;
+        var lastTimestamp = sortByLastAccessed ? lastRecord.LastAccessed : lastRecord.Timestamp;
         var lastId = lastRecord.ID;
 
         // 查询是否还有其他记录具有相同的时间戳但ID更小（即在排序后位于更后面）
-        var additionalRecords = await query
-            .Where(r => r.Timestamp == lastTimestamp && r.ID < lastId)
-            .ToListAsync(token);
+        var additionalRecords = sortByLastAccessed
+            ? await query.Where(r => r.LastAccessed == lastTimestamp && r.ID < lastId).ToListAsync(token)
+            : await query.Where(r => r.Timestamp == lastTimestamp && r.ID < lastId).ToListAsync(token);
 
         // 合并结果
         if (additionalRecords.Count > 0)

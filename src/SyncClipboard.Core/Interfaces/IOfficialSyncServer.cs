@@ -31,7 +31,7 @@ public interface IOfficialSyncServer
     /// <param name="types">Profile types filter (flags). Default All.</param>
     /// <param name="searchText">Optional search text to match text content.</param>
     /// <returns>A collection of history records matching the filter criteria.</returns>
-    Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null);
+    Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false);
 
     /// <summary>
     /// Download transfer data file for a history record specified by profileId (Type-Hash) to localPath.

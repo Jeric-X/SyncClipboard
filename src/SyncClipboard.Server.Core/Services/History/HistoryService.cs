@@ -66,6 +66,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (dto.IsDelete.HasValue) existing.IsDeleted = dto.IsDelete.Value;
 
         existing.LastModified = dto.LastModified.Value.UtcDateTime;
+        if (dto.LastAccessed.HasValue) existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
         existing.Version = dto.Version.Value;
 
         await _dbContext.SaveChangesAsync(token);
@@ -99,6 +100,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         string? searchText = null,
         bool? starred = null,
         DateTime? modifiedAfter = null,
+        bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -113,13 +115,17 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (after.HasValue)
         {
             var afterUtc = after.Value.ToUniversalTime();
-            query = query.Where(r => r.CreateTime >= afterUtc);
+            query = sortByLastAccessed
+                ? query.Where(r => r.LastAccessed >= afterUtc)
+                : query.Where(r => r.CreateTime >= afterUtc);
         }
 
         if (before.HasValue)
         {
             var beforeUtc = before.Value.ToUniversalTime();
-            query = query.Where(r => r.CreateTime < beforeUtc);
+            query = sortByLastAccessed
+                ? query.Where(r => r.LastAccessed < beforeUtc)
+                : query.Where(r => r.CreateTime < beforeUtc);
         }
 
         if (types != ProfileTypeFilter.All)
@@ -154,8 +160,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             query = query.Where(r => r.LastModified >= modifiedAfterUtc);
         }
 
-        query = query.OrderByDescending(r => r.CreateTime)
-                     .ThenByDescending(r => r.ID);
+        query = sortByLastAccessed
+            ? query.OrderByDescending(r => r.LastAccessed).ThenByDescending(r => r.ID)
+            : query.OrderByDescending(r => r.CreateTime).ThenByDescending(r => r.ID);
 
         var skip = (long)(page - 1) * pageSize;
 
@@ -299,6 +306,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 existing.Pinned = incoming.Pinned;
                 existing.IsDeleted = incoming.IsDeleted;
                 existing.LastModified = incoming.LastModified.UtcDateTime;
+                existing.LastAccessed = incoming.LastAccessed.UtcDateTime;
                 existing.Version = incoming.Version;
 
                 await _dbContext.SaveChangesAsync(token);
@@ -316,7 +324,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             Text = incoming.Text,
             Size = incoming.Size,
             CreateTime = incoming.CreateTime.UtcDateTime,
-            LastAccessed = now,
+            LastAccessed = (incoming.LastAccessed == default ? DateTimeOffset.UtcNow : incoming.LastAccessed).UtcDateTime,
             LastModified = (incoming.LastModified == default ? DateTimeOffset.UtcNow : incoming.LastModified).UtcDateTime,
             Stared = incoming.Starred,
             Pinned = incoming.Pinned,

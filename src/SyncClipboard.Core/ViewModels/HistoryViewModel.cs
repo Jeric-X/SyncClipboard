@@ -256,6 +256,19 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public bool SortByLastAccessed
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().SortByLastAccessed;
+        set
+        {
+            if (value == SortByLastAccessed) return;
+
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { SortByLastAccessed = value });
+            OnPropertyChanged(nameof(SortByLastAccessed));
+            _ = Refresh();
+        }
+    }
+
     [RelayCommand]
     public Task DeleteItem(HistoryRecordVM record)
     {
@@ -619,9 +632,21 @@ public partial class HistoryViewModel : ObservableObject
             if (oldisShownInUI != isShownInUI)
             {
                 allHistoryItems.Remove(oldRecord);
+                if (isShownInUI)
+                    InsertHistoryInOrder(newRecord);
+                return;
+            }
+
+            // 检查记录的排序位置是否改变
+            var currentIndex = allHistoryItems.IndexOf(oldRecord);
+            if (currentIndex >= 0 && ShouldChangePosition(newRecord, currentIndex))
+            {
+                // 位置改变，先删除后重新插入
+                allHistoryItems.Remove(oldRecord);
                 InsertHistoryInOrder(newRecord);
                 return;
             }
+
             oldRecord.Update(newRecord);
             return;
         }
@@ -631,6 +656,32 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
         InsertHistoryInOrder(newRecord);
+    }
+
+    /// <summary>
+    /// 检查记录在排序列表中的位置是否应该改变
+    /// </summary>
+    private bool ShouldChangePosition(HistoryRecordVM vm, int currentIndex)
+    {
+        if (allHistoryItems.Count == 0) return false;
+
+        var t = SortByLastAccessed ? vm.LastAccessed : vm.Timestamp;
+
+        // 检查与前一个记录的顺序
+        if (currentIndex > 0)
+        {
+            var prevT = SortByLastAccessed ? allHistoryItems[currentIndex - 1].LastAccessed : allHistoryItems[currentIndex - 1].Timestamp;
+            if (prevT > t) return true; // 应该往前移
+        }
+
+        // 检查与后一个记录的顺序
+        if (currentIndex < allHistoryItems.Count - 1)
+        {
+            var nextT = SortByLastAccessed ? allHistoryItems[currentIndex + 1].LastAccessed : allHistoryItems[currentIndex + 1].Timestamp;
+            if (nextT < t) return true; // 应该往后移
+        }
+
+        return false;
     }
 
     private bool IsMatchDbFilter(HistoryRecordVM vm)
@@ -679,11 +730,13 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         int low = 0, high = allHistoryItems.Count;
-        var t = vm.Timestamp;
+        // 根据 SortByLastAccessed 汽选择排序採用的时间字段
+        var t = SortByLastAccessed ? vm.LastAccessed : vm.Timestamp;
+
         while (low < high)
         {
             int mid = (low + high) >> 1;
-            var midT = allHistoryItems[mid].Timestamp;
+            var midT = SortByLastAccessed ? allHistoryItems[mid].LastAccessed : allHistoryItems[mid].Timestamp;
             if (midT <= t)
             {
                 high = mid;
@@ -745,6 +798,7 @@ public partial class HistoryViewModel : ObservableObject
             _timeCursor,
             size,
             string.IsNullOrEmpty(searchText) ? null : searchText,
+            SortByLastAccessed,
             token);
 
         _isLocalEnd = records.Count == 0;
@@ -836,6 +890,7 @@ public partial class HistoryViewModel : ObservableObject
                 searchText: string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
                 starred: queryInfo.Starred,
                 pageLimit: 1,
+                sortByLastAccessed: SortByLastAccessed,
                 token: ct);
             _isRemoteEnd = addedRecords.Count == 0;
             _timeCursor = addedRecords.LastOrDefault()?.Timestamp ?? _timeCursor;
@@ -848,6 +903,7 @@ public partial class HistoryViewModel : ObservableObject
                 types: queryInfo.Types,
                 searchText: string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
                 starred: queryInfo.Starred,
+                sortByLastAccessed: SortByLastAccessed,
                 token: ct);
         }
         addedRecords.ForEach(RecordEntityUpdated);

@@ -30,6 +30,14 @@ public class HistoryRecord
         set => DateTimePropertyHelper.SetDateTimeProperty(value, ref lastModified);
     }
 
+    public DateTime lastAccessed = DateTime.UtcNow;
+    [BackingField(nameof(lastAccessed))]
+    public DateTime LastAccessed
+    {
+        get => DateTimePropertyHelper.GetDateTimeProperty(ref lastAccessed);
+        set => DateTimePropertyHelper.SetDateTimeProperty(value, ref lastAccessed);
+    }
+
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;
     public bool IsLocalFileReady { get; set; } = true;

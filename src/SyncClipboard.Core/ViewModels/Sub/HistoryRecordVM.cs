@@ -27,6 +27,8 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     [ObservableProperty]
     private DateTime timestamp = record.Timestamp;
     [ObservableProperty]
+    private DateTime lastAccessed = record.LastAccessed;
+    [ObservableProperty]
     private bool stared = record.Stared;
     [ObservableProperty]
     private bool pinned = record.Pinned;

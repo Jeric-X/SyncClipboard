@@ -72,6 +72,7 @@
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowSyncStatus}" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.OnlyShowLocal}" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="Sort by Last Accessed" IsChecked="{x:Bind _viewModel.SortByLastAccessed, Mode=TwoWay}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>

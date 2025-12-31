@@ -22,6 +22,7 @@ public static class MapperExtensions
             Pinned = dto.Pinned,
             SyncStatus = HistorySyncStatus.Synced,
             LastModified = dto.LastModified.UtcDateTime,
+            LastAccessed = dto.LastAccessed.UtcDateTime,
             Version = dto.Version,
             IsDeleted = dto.IsDeleted,
             IsLocalFileReady = !dto.HasData,
@@ -42,6 +43,7 @@ public static class MapperExtensions
         entity.Text = dto.Text;
         entity.Timestamp = dto.CreateTime.UtcDateTime;
         entity.LastModified = dto.LastModified.UtcDateTime;
+        entity.LastAccessed = dto.LastAccessed.UtcDateTime;
         entity.Size = dto.Size;
     }
 
@@ -74,7 +76,7 @@ public static class MapperExtensions
             Type = entity.Type,
             CreateTime = entity.Timestamp,
             LastModified = entity.LastModified,
-            LastAccessed = entity.LastModified,
+            LastAccessed = entity.LastAccessed,
             Starred = entity.Stared,
             Pinned = entity.Pinned,
             Size = entity.Size,
@@ -86,7 +88,7 @@ public static class MapperExtensions
 
     /// <summary>
     /// 将服务器返回的 HistoryRecordUpdateDto 的并发相关字段应用到本地实体上。
-    /// 仅覆盖 Stared/Pinned/IsDeleted/LastModified/Version，并将 SyncStatus 置为 Synced。
+    /// 仅覆盖 Stared/Pinned/IsDeleted/LastModified/LastAccessed/Version，并将 SyncStatus 置为 Synced。
     /// </summary>
     public static void ApplyFromServerUpdateDto(this HistoryRecord entity, HistoryRecordUpdateDto server)
     {
@@ -94,6 +96,7 @@ public static class MapperExtensions
         if (server.Pinned.HasValue) entity.Pinned = server.Pinned.Value;
         if (server.IsDelete.HasValue && server.IsDelete.Value) entity.IsDeleted = true;
         if (server.LastModified.HasValue) entity.LastModified = server.LastModified.Value.UtcDateTime;
+        if (server.LastAccessed.HasValue) entity.LastAccessed = server.LastAccessed.Value.UtcDateTime;
         if (server.Version.HasValue) entity.Version = server.Version.Value;
         entity.SyncStatus = HistorySyncStatus.Synced;
     }

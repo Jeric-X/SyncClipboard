@@ -33,6 +33,7 @@ public class HistorySyncer
         string? searchText = null,
         bool? starred = null,
         int pageLimit = int.MaxValue,
+        bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
         if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
@@ -49,6 +50,7 @@ public class HistorySyncer
             starred,
             pageLimit,
             null,
+            sortByLastAccessed,
             token);
 
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
@@ -73,6 +75,7 @@ public class HistorySyncer
             null,
             int.MaxValue,
             modifiedAfter,
+            false,
             token);
 
         await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
@@ -130,7 +133,8 @@ public class HistorySyncer
                 Pinned = record.Pinned,
                 IsDelete = record.IsDeleted ? true : null,
                 Version = record.Version,
-                LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero)
+                LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
+                LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
             };
             await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
             record.SyncStatus = HistorySyncStatus.Synced;
@@ -169,6 +173,7 @@ public class HistorySyncer
         bool? starred,
         int pageLimit,
         DateTime? modifiedAfter,
+        bool sortByLastAccessed,
         CancellationToken token)
     {
         var allRecords = new List<HistoryRecordDto>();
@@ -189,7 +194,8 @@ public class HistorySyncer
                     modifiedAfter: modifiedAfterMs,
                     types: types,
                     searchText: searchText,
-                    starred: starred);
+                    starred: starred,
+                    sortByLastAccessed: sortByLastAccessed);
 
                 if (!pageRecords.Any())
                 {
@@ -235,6 +241,7 @@ public class HistorySyncer
                 before,
                 int.MaxValue,
                 searchText,
+                false,
                 token);
 
             var localSyncedOrServerOnly = localRecords
@@ -288,6 +295,7 @@ public class HistorySyncer
                 before,
                 int.MaxValue,
                 searchText,
+                false,
                 token);
 
             var needSync = localRecords

@@ -7,4 +7,5 @@ public class HistoryRecordUpdateDto
     public bool? IsDelete { get; set; }
     public int? Version { get; set; }
     public DateTimeOffset? LastModified { get; set; }
+    public DateTimeOffset? LastAccessed { get; set; }
 }

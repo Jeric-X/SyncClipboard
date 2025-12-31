@@ -48,7 +48,8 @@ public static class Mapper
             Pinned = s.Pinned,
             IsDelete = s.IsDeleted,
             Version = s.Version,
-            LastModified = s.LastModified.ToUniversalTime()
+            LastModified = s.LastModified.ToUniversalTime(),
+            LastAccessed = s.LastAccessed.ToUniversalTime()
         };
     }
 }

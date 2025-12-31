@@ -229,7 +229,7 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null)
+    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
     {
         try
         {
@@ -250,6 +250,8 @@ public sealed class OfficialAdapter(
                 queryParams.Add($"q={HttpUtility.UrlEncode(searchText)}");
             if (starred.HasValue)
                 queryParams.Add($"starred={(starred.Value ? "true" : "false")}");
+            if (sortByLastAccessed)
+                queryParams.Add("sortByLastAccessed=true");
 
             if (queryParams.Count > 0)
                 uriBuilder.Query = string.Join("&", queryParams);
@@ -336,6 +338,7 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.Type.ToString()), "type" },
                 { new StringContent(dto.CreateTime.ToString("o")), "createTime" },
                 { new StringContent(dto.LastModified.ToString("o")), "lastModified" },
+                { new StringContent(dto.LastAccessed.ToString("o")), "lastAccessed" },
                 { new StringContent(dto.Starred.ToString()), "starred" },
                 { new StringContent(dto.Pinned.ToString()), "pinned" },
                 { new StringContent(dto.Version.ToString()), "version" },

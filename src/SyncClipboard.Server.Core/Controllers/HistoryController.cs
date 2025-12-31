@@ -90,7 +90,8 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         [FromQuery] long? modifiedAfter = null,
         [FromQuery] ProfileTypeFilter? types = ProfileTypeFilter.All,
         [FromQuery(Name = "q")] string? searchText = null,
-        [FromQuery] bool? starred = null)
+        [FromQuery] bool? starred = null,
+        [FromQuery] bool sortByLastAccessed = false)
     {
         page ??= 1;
         types ??= ProfileTypeFilter.All;
@@ -152,7 +153,8 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             types.Value,
             searchText,
             starred,
-            modifiedAfterDt);
+            modifiedAfterDt,
+            sortByLastAccessed);
         return Ok(list);
     }
 
@@ -258,6 +260,13 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             lastModified = lm;
         }
 
+        DateTimeOffset? lastAccessed = null;
+        if (metadata.TryGetValue("lastAccessed", out var laStr) && !string.IsNullOrWhiteSpace(laStr))
+        {
+            DateTimeOffset.TryParse(laStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var la);
+            lastAccessed = la;
+        }
+
         bool starred = metadata.TryGetValue("starred", out var starStr) && bool.TryParse(starStr, out var star) && star;
 
         bool pinned = metadata.TryGetValue("pinned", out var pinStr) && bool.TryParse(pinStr, out var pin) && pin;
@@ -282,6 +291,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             Type = type,
             CreateTime = createTime ?? DateTimeOffset.UtcNow,
             LastModified = lastModified ?? DateTimeOffset.UtcNow,
+            LastAccessed = lastAccessed ?? DateTimeOffset.UtcNow,
             Starred = starred,
             Pinned = pinned,
             Version = version,
