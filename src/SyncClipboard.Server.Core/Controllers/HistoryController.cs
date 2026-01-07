@@ -73,88 +73,40 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     //     return Ok(list);
     // }
 
-    // GET api/history
-    // Return list with optional filters
-    // Query parameters:
-    //   page: page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
-    //   before: Unix timestamp in milliseconds (UTC). Only records with CreateTime < before will be returned.
-    //   after:  Unix timestamp in milliseconds (UTC). Only records with CreateTime >= after will be returned.
-    //   modifiedAfter: Unix timestamp in milliseconds (UTC). Only records with LastModified >= modifiedAfter will be returned.
-    //   types: ProfileTypeFilter flag enum (default All). Example: types=Text,Image
-    //   q: optional search text (matches Text field, case-insensitive)
-    [HttpGet]
-    public async Task<ActionResult<List<HistoryRecordDto>>> GetAll(
-        [FromQuery] int? page,
-        [FromQuery] long? before = null,
-        [FromQuery] long? after = null,
-        [FromQuery] long? modifiedAfter = null,
-        [FromQuery] ProfileTypeFilter? types = ProfileTypeFilter.All,
-        [FromQuery(Name = "q")] string? searchText = null,
-        [FromQuery] bool? starred = null,
-        [FromQuery] bool sortByLastAccessed = false)
+    // POST api/history/query
+    // Query history records with filters
+    // Request form data contains HistoryQueryDto
+    [HttpPost("query")]
+    public async Task<ActionResult<List<HistoryRecordDto>>> QueryHistory([FromForm] HistoryQueryDto query)
     {
-        page ??= 1;
-        types ??= ProfileTypeFilter.All;
-        if (page < 1)
-            return BadRequest("page must be >= 1");
+        query ??= new HistoryQueryDto();
+
+        if (query.Page < 1)
+            query.Page = 1;
 
         const int PAGE_SIZE = 50;
 
-        DateTime? beforeDt = null;
-        if (before.HasValue)
-        {
-            try
-            {
-                beforeDt = DateTimeOffset.FromUnixTimeMilliseconds(before.Value).UtcDateTime;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                return BadRequest("before must be a valid Unix timestamp in milliseconds");
-            }
-        }
-
-        DateTime? afterDt = null;
-        if (after.HasValue)
-        {
-            try
-            {
-                afterDt = DateTimeOffset.FromUnixTimeMilliseconds(after.Value).UtcDateTime;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                return BadRequest("after must be a valid Unix timestamp in milliseconds");
-            }
-        }
+        DateTime? beforeDt = query.Before?.UtcDateTime;
+        DateTime? afterDt = query.After?.UtcDateTime;
 
         if (beforeDt.HasValue && afterDt.HasValue && afterDt.Value >= beforeDt.Value)
         {
             return BadRequest("after must be less than before");
         }
 
-        DateTime? modifiedAfterDt = null;
-        if (modifiedAfter.HasValue)
-        {
-            try
-            {
-                modifiedAfterDt = DateTimeOffset.FromUnixTimeMilliseconds(modifiedAfter.Value).UtcDateTime;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                return BadRequest("modifiedAfter must be a valid Unix timestamp in milliseconds");
-            }
-        }
+        DateTime? modifiedAfterDt = query.ModifiedAfter?.UtcDateTime;
 
         var list = await _historyService.GetListAsync(
             HARD_CODED_USER_ID,
-            page.Value,
+            query.Page,
             PAGE_SIZE,
             beforeDt,
             afterDt,
-            types.Value,
-            searchText,
-            starred,
+            query.Types,
+            query.SearchText,
+            query.Starred,
             modifiedAfterDt,
-            sortByLastAccessed);
+            query.SortByLastAccessed);
         return Ok(list);
     }
 

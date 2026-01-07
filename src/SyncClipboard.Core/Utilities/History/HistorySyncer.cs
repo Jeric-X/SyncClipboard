@@ -79,6 +79,7 @@ public class HistorySyncer
             token);
 
         await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
     }
 
@@ -179,19 +180,15 @@ public class HistorySyncer
         var allRecords = new List<HistoryRecordDto>();
         var page = 1;
 
-        long? beforeMs = before.HasValue ? ToUnixMilliseconds(before.Value) : null;
-        long? afterMs = after.HasValue ? ToUnixMilliseconds(after.Value) : null;
-        long? modifiedAfterMs = modifiedAfter.HasValue ? ToUnixMilliseconds(modifiedAfter.Value) : null;
-
         try
         {
             while (page <= pageLimit && !token.IsCancellationRequested)
             {
                 var pageRecords = await remoteServer.GetHistoryAsync(
                     page: page,
-                    before: beforeMs,
-                    after: afterMs,
-                    modifiedAfter: modifiedAfterMs,
+                    before: before,
+                    after: after,
+                    modifiedAfter: modifiedAfter,
                     types: types,
                     searchText: searchText,
                     starred: starred,

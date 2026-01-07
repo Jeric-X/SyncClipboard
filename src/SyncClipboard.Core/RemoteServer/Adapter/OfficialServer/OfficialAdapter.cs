@@ -229,34 +229,25 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
+    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
     {
         try
         {
-            var uriBuilder = new UriBuilder($"{_officialConfig.RemoteURL.TrimEnd('/')}/api/history");
-            var queryParams = new List<string>();
+            var url = new Uri(_httpClient.BaseAddress!, "api/history/query");
 
-            if (page > 0)
-                queryParams.Add($"page={page}");
-            if (before.HasValue)
-                queryParams.Add($"before={before.Value}");
-            if (after.HasValue)
-                queryParams.Add($"after={after.Value}");
-            if (modifiedAfter.HasValue)
-                queryParams.Add($"modifiedAfter={modifiedAfter.Value}");
-            if (types != ProfileTypeFilter.All)
-                queryParams.Add($"types={(int)types}");
-            if (!string.IsNullOrWhiteSpace(searchText))
-                queryParams.Add($"q={HttpUtility.UrlEncode(searchText)}");
-            if (starred.HasValue)
-                queryParams.Add($"starred={(starred.Value ? "true" : "false")}");
-            if (sortByLastAccessed)
-                queryParams.Add("sortByLastAccessed=true");
+            using var content = new MultipartFormDataContent
+            {
+                { new StringContent(page.ToString()), nameof(HistoryQueryDto.Page) },
+                { new StringContent(before?.ToString() ?? string.Empty), nameof(HistoryQueryDto.Before) },
+                { new StringContent(after?.ToString() ?? string.Empty), nameof(HistoryQueryDto.After) },
+                { new StringContent(modifiedAfter?.ToString() ?? string.Empty), nameof(HistoryQueryDto.ModifiedAfter) },
+                { new StringContent(types.ToString()), nameof(HistoryQueryDto.Types) },
+                { new StringContent(searchText ?? string.Empty), nameof(HistoryQueryDto.SearchText) },
+                { new StringContent(starred?.ToString() ?? string.Empty), nameof(HistoryQueryDto.Starred) },
+                { new StringContent(sortByLastAccessed.ToString()), nameof(HistoryQueryDto.SortByLastAccessed) }
+            };
 
-            if (queryParams.Count > 0)
-                uriBuilder.Query = string.Join("&", queryParams);
-
-            var response = await _httpClient.GetAsync(uriBuilder.Uri);
+            var response = await _httpClient.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
 
             var stream = await response.Content.ReadAsStreamAsync();

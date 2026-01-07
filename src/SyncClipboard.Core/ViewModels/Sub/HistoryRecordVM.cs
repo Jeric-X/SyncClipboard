@@ -6,37 +6,54 @@ using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.ViewModels.Sub;
 
-public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
+public partial class HistoryRecordVM : ObservableObject
 {
+    public HistoryRecordVM(HistoryRecord record)
+    {
+        id = record.ID;
+        text = record.Text;
+        Type = record.Type;
+        filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
+        Hash = record.Hash;
+        Size = record.Size;
+        timestamp = record.Timestamp;
+        lastAccessed = record.LastAccessed;
+        stared = record.Stared;
+        pinned = record.Pinned;
+        syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
+            record.IsLocalFileReady ? SyncStatus.Synced : SyncStatus.ServerOnly;
+        isLocalFileReady = record.IsLocalFileReady;
+        previewImage = isLocalFileReady && filePath.Length > 0 ? filePath[0] : null;
+    }
+
     private HistoryRecordVM() : this(new HistoryRecord())
     {
     }
 
-    private readonly int id = record.ID;
+    private readonly int id;
     private readonly IThreadDispatcher _threadDispatcher = AppCore.Current.Services.GetRequiredService<IThreadDispatcher>();
 
     [ObservableProperty]
-    private string text = record.Text;
-    public ProfileType Type { get; set; } = record.Type;
+    private string text;
+    public ProfileType Type { get; set; }
     [ObservableProperty]
-    private string[] filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
+    private string[] filePath;
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
 
-    public string Hash { get; set; } = record.Hash;
-    public long Size { get; set; } = record.Size;
+    public string Hash { get; set; }
+    public long Size { get; set; }
     [ObservableProperty]
-    private DateTime timestamp = record.Timestamp;
+    private DateTime timestamp;
     [ObservableProperty]
-    private DateTime lastAccessed = record.LastAccessed;
+    private DateTime lastAccessed;
     [ObservableProperty]
-    private bool stared = record.Stared;
+    private bool stared;
     [ObservableProperty]
-    private bool pinned = record.Pinned;
+    private bool pinned;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
-    private SyncStatus syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
-        record.IsLocalFileReady ? SyncStatus.Synced : SyncStatus.ServerOnly;
+    private SyncStatus syncState;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
@@ -73,7 +90,7 @@ public partial class HistoryRecordVM(HistoryRecord record) : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
-    private bool isLocalFileReady = record.IsLocalFileReady;
+    private bool isLocalFileReady;
     partial void OnIsLocalFileReadyChanged(bool oldValue, bool newValue) => UpdatePreviewImage();
 
     public bool ShowDownloadButton => !IsLocalFileReady && SyncState != SyncStatus.LocalOnly && !IsDownloading;

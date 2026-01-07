@@ -213,7 +213,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.GetHistoryByProfileIdAsync(profileId, cancellationToken);
     }
 
-    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, long? before = null, long? after = null, long? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
+    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {

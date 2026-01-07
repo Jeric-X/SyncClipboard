@@ -44,10 +44,6 @@ public partial class HistoryViewModel : ObservableObject
     [ObservableProperty]
     private bool _enableSyncHistory;
 
-    private readonly ThreadSafeDeque<HistorySyncInfo> _remoteFetchQueue = new();
-    private readonly SemaphoreSlim _remoteWorkerSemaphore = new(1, 1);
-    private CancellationTokenSource _remoteQueueCts = new();
-
     private readonly HistoryTransferQueue _transferQueue;
     private readonly IThreadDispatcher _threadDispatcher;
 
@@ -106,20 +102,6 @@ public partial class HistoryViewModel : ObservableObject
         else
         {
             historySyncServer = null;
-            CancelFetchTask();
-        }
-    }
-
-    private readonly object _remoteQueueCtsLock = new();
-    private void CancelFetchTask()
-    {
-        _remoteFetchQueue.Clear();
-        lock (_remoteQueueCtsLock)
-        {
-            var oldCts = _remoteQueueCts;
-            _remoteQueueCts = new CancellationTokenSource();
-            oldCts.Cancel();
-            oldCts.Dispose();
         }
     }
 
@@ -366,27 +348,19 @@ public partial class HistoryViewModel : ObservableObject
     }
 
 
-    public bool IsLoading => IsLoadingLocal || IsLoadingRemote;
+    public bool IsLoading => IsLoadingLocal;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
     private bool isLoadingLocal = false;
 
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsLoading))]
-    private bool isLoadingRemote = false;
-
     private bool _isLocalEnd = false;
-    private bool _isRemoteEnd = false;
-    private bool IsEnd => _isLocalEnd && _isRemoteEnd;
+    private bool IsEnd => _isLocalEnd;
 
     [RelayCommand]
     public Task Refresh()
     {
-        CancelFetchTask();
         _isLocalEnd = false;
-        _isRemoteEnd = SelectedFilter == HistoryFilterType.Transferring;
 
         allHistoryItems.Clear();
         _timeCursor = null;
@@ -671,14 +645,14 @@ public partial class HistoryViewModel : ObservableObject
         if (currentIndex > 0)
         {
             var prevT = SortByLastAccessed ? allHistoryItems[currentIndex - 1].LastAccessed : allHistoryItems[currentIndex - 1].Timestamp;
-            if (prevT > t) return true; // 应该往前移
+            if (prevT < t) return true; // 应该往前移
         }
 
         // 检查与后一个记录的顺序
         if (currentIndex < allHistoryItems.Count - 1)
         {
             var nextT = SortByLastAccessed ? allHistoryItems[currentIndex + 1].LastAccessed : allHistoryItems[currentIndex + 1].Timestamp;
-            if (nextT < t) return true; // 应该往后移
+            if (nextT > t) return true; // 应该往后移
         }
 
         return false;
@@ -701,6 +675,17 @@ public partial class HistoryViewModel : ObservableObject
         if (!string.IsNullOrEmpty(SearchText))
         {
             if (!vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        // 检查时间游标：只显示已加载范围内的记录
+        // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载
+        if (!_isLocalEnd && _timeCursor.HasValue)
+        {
+            var recordTime = SortByLastAccessed ? vm.LastAccessed : vm.Timestamp;
+            if (recordTime < _timeCursor.Value)
             {
                 return false;
             }
@@ -756,36 +741,12 @@ public partial class HistoryViewModel : ObservableObject
         _ = Refresh();
     }
 
-    private async Task LoadRemotePage()
-    {
-        if (historySyncServer == null)
-        {
-            return;
-        }
-
-        var (types, starred, searchText) = BuildQueryParameters();
-        var queryInfo = new HistorySyncInfo
-        {
-            Types = types,
-            Starred = starred,
-            SearchText = searchText,
-            BeforeDate = _timeCursor
-        };
-        _remoteFetchQueue.EnqueueTail(queryInfo);
-        try
-        {
-            await ProcessRemoteQueueAsync(waitAllTasks: true);
-        }
-        catch { }
-    }
-
     private async Task DoLoadPageAsync(int size, CancellationToken token)
     {
         var (types, started, searchText) = BuildQueryParameters();
 
         if (_isLocalEnd)
         {
-            await LoadRemotePage();
             return;
         }
 
@@ -804,7 +765,6 @@ public partial class HistoryViewModel : ObservableObject
         _isLocalEnd = records.Count == 0;
         if (_isLocalEnd)
         {
-            await LoadRemotePage();
             return;
         }
 
@@ -817,96 +777,8 @@ public partial class HistoryViewModel : ObservableObject
         allHistoryItems.AddRange(vms);
         var last = vms.LastOrDefault()!;
 
-        var queryInfo = new HistorySyncInfo
-        {
-            Types = types,
-            Starred = started,
-            SearchText = searchText,
-            BeforeDate = _timeCursor,
-            AfterDate = last.Timestamp
-        };
-        _remoteFetchQueue.EnqueueTail(queryInfo);
-        _ = ProcessRemoteQueueAsync(waitAllTasks: false);
-
-        _timeCursor = last.Timestamp;
+        _timeCursor = SortByLastAccessed ? last.LastAccessed : last.Timestamp;
         _isLocalEnd = vms.Length < size;
-    }
-
-    private async Task ProcessRemoteQueueAsync(bool waitAllTasks = false)
-    {
-        if (historySyncServer == null || _isRemoteEnd)
-        {
-            return;
-        }
-
-        var ct = _remoteQueueCts.Token;
-        if (waitAllTasks)
-        {
-            await _remoteWorkerSemaphore.WaitAsync(ct);
-        }
-        else if (!_remoteWorkerSemaphore.Wait(0))
-        {
-            return;
-        }
-
-        IsLoadingRemote = true;
-        int errorCount = 0;
-        try
-        {
-            while (errorCount <= 5 && !ct.IsCancellationRequested && _remoteFetchQueue.TryDequeue(out var queryInfo))
-            {
-                try
-                {
-                    await ProcessSingleRemoteSyncAsync(queryInfo, ct);
-                }
-                catch (Exception ex) when (ct.IsCancellationRequested == false)
-                {
-                    logger.Write("[HISTORY_VIEW_MODEL] Remote fetch failed:", ex.Message);
-                    errorCount++;
-                    _remoteFetchQueue.EnqueueHead(queryInfo);
-                }
-            }
-        }
-        finally
-        {
-            IsLoadingRemote = false;
-            _remoteWorkerSemaphore.Release();
-            if (errorCount == 0 && !_remoteFetchQueue.IsEmpty && !ct.IsCancellationRequested)
-            {
-                await ProcessRemoteQueueAsync(waitAllTasks);
-            }
-        }
-    }
-
-    private async Task ProcessSingleRemoteSyncAsync(HistorySyncInfo queryInfo, CancellationToken ct)
-    {
-        List<HistoryRecord> addedRecords;
-        if (_isLocalEnd)
-        {
-            addedRecords = await historySyncer.SyncRangeAsync(
-                before: queryInfo.BeforeDate,
-                after: null,
-                types: queryInfo.Types,
-                searchText: string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
-                starred: queryInfo.Starred,
-                pageLimit: 1,
-                sortByLastAccessed: SortByLastAccessed,
-                token: ct);
-            _isRemoteEnd = addedRecords.Count == 0;
-            _timeCursor = addedRecords.LastOrDefault()?.Timestamp ?? _timeCursor;
-        }
-        else
-        {
-            addedRecords = await historySyncer.SyncRangeAsync(
-                before: queryInfo.BeforeDate,
-                after: queryInfo.AfterDate,
-                types: queryInfo.Types,
-                searchText: string.IsNullOrEmpty(queryInfo.SearchText) ? null : queryInfo.SearchText,
-                starred: queryInfo.Starred,
-                sortByLastAccessed: SortByLastAccessed,
-                token: ct);
-        }
-        addedRecords.ForEach(RecordEntityUpdated);
     }
 
     [RelayCommand]
@@ -1100,14 +972,5 @@ public partial class HistoryViewModel : ObservableObject
                 InsertHistoryInOrder(vm);
             }
         });
-    }
-
-    internal class HistorySyncInfo
-    {
-        public ProfileTypeFilter Types { get; set; }
-        public bool? Starred { get; set; }
-        public string? SearchText { get; set; }
-        public DateTime? AfterDate { get; set; }
-        public DateTime? BeforeDate { get; set; }
     }
 }
