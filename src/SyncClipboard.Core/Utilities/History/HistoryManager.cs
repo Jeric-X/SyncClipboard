@@ -123,7 +123,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
-    public async Task AddLocalProfile(Profile profile, CancellationToken token)
+    public async Task AddLocalProfile(Profile profile, bool updateLastAccessed = true, CancellationToken token = default)
     {
         var record = await ToHistoryRecord(profile, token);
         record.Hash = record.Hash.ToUpperInvariant();
@@ -140,7 +140,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
             entity.LastModified = DateTime.UtcNow;
-            entity.LastAccessed = DateTime.UtcNow;
+            if (updateLastAccessed)
+            {
+                entity.LastAccessed = DateTime.UtcNow;
+            }
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
             return;

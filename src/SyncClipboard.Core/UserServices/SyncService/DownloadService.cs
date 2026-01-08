@@ -454,7 +454,7 @@ public class DownloadService : Service
             {
                 await _historyManager.AddRemoteProfile(remoteProfile, cancelToken);
                 await DownloadFileProfileData(remoteProfile, cancelToken);
-                await _historyManager.AddLocalProfile(remoteProfile, cancelToken);
+                await _historyManager.AddLocalProfile(remoteProfile, token: cancelToken);
             }
         }
         _downServiceChangingLocal = true;

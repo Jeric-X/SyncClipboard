@@ -504,7 +504,7 @@ public class HistoryTransferQueue : IDisposable
 
         await server.DownloadHistoryDataAsync(task.ProfileId, localDataPath, task.ProgressReporter, ct);
         await profile.SetTransferData(localDataPath, true, ct);
-        await _historyManager.AddLocalProfile(profile, ct);
+        await _historyManager.AddLocalProfile(profile, updateLastAccessed: false, token: ct);
     }
 
     private async Task ExecuteUploadAsync(TransferTask task, CancellationToken ct)

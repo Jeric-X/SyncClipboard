@@ -132,7 +132,7 @@ public sealed class OfficialAdapter(
             {
                 if (serverVer < requestVer)
                 {
-                    throw new InvalidOperationException($"Server version ({serverVersion}) is lower than client version ({requestVersion}). Please upgrade your server.");
+                    throw new InvalidOperationException($"Server version ({serverVersion}) is lower than requested version ({requestVersion}). Please upgrade your server.");
                 }
             }
         }

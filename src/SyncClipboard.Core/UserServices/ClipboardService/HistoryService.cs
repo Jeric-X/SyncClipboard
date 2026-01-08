@@ -245,6 +245,6 @@ public class HistoryService : ClipboardHander
             return;
         }
 
-        await historyManager.AddLocalProfile(profile, token);
+        await historyManager.AddLocalProfile(profile, token: token);
     }
 }
