@@ -274,6 +274,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         entity.IsDeleted = record.IsDeleted;
         entity.Version = record.Version;
         entity.LastModified = record.LastModified;
+        entity.LastAccessed = record.LastAccessed;
         entity.SyncStatus = record.SyncStatus; // 期望为 Synced
 
         await _dbContext.SaveChangesAsync(token);

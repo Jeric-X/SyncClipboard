@@ -314,7 +314,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, UploadService>(sp => sp.GetRequiredService<UploadService>());
             services.AddSingleton<DownloadService>();
             services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
-            services.AddSingleton<IService, HistoryService>();
+            services.AddSingleton<HistoryService>();
+            services.AddSingleton<IService, HistoryService>(sp => sp.GetRequiredService<HistoryService>());
         }
     }
 }

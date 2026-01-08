@@ -79,7 +79,10 @@ public class HistorySyncer
             token);
 
         await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
-        await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
+        if (modifiedAfter is null)
+        {
+            await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
+        }
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
     }
 

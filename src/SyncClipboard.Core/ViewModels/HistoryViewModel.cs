@@ -9,6 +9,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
@@ -39,6 +40,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private readonly HistorySyncer historySyncer;
     private readonly IProfileEnv profileEnv;
+    private readonly HistoryService _historyService;
     private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
@@ -58,6 +60,7 @@ public partial class HistoryViewModel : ObservableObject
         RemoteClipboardServerFactory remoteServerFactory,
         IProfileEnv profileEnv,
         HistorySyncer historySyncer,
+        HistoryService historyService,
         HistoryTransferQueue transferQueue,
         IThreadDispatcher threadDispatcher)
     {
@@ -71,6 +74,7 @@ public partial class HistoryViewModel : ObservableObject
         this.remoteServerFactory = remoteServerFactory;
         this.profileEnv = profileEnv;
         this.historySyncer = historySyncer;
+        this._historyService = historyService;
         this._transferQueue = transferQueue;
         this._threadDispatcher = threadDispatcher;
 
@@ -367,6 +371,10 @@ public partial class HistoryViewModel : ObservableObject
         _lastViewportHeight = 0;
         _lastExtentHeight = 0;
         window?.ScrollToTop();
+
+        // Trigger remote sync in background
+        _ = _historyService.SyncAllAsync();
+
         return RunLoadTask(InitialPageSize);
     }
 

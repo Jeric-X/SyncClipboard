@@ -172,6 +172,18 @@ public class HistoryService : ClipboardHander
         }
     }
 
+    public Task SyncAllAsync()
+    {
+        if (!_enableSyncHistory || _historySyncServer == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _lastSyncTime = null;
+        TriggerSyncTask();
+        return Task.CompletedTask;
+    }
+
     private async Task SyncTaskImpl(CancellationToken token)
     {
         trayIcon.SetStatusString(SERVICE_NAME, "Synchronizing history...");

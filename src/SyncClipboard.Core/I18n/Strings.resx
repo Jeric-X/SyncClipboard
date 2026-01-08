@@ -866,13 +866,13 @@ This operation cannot be undone.</value>
   <data name="OnlyShowLocal" xml:space="preserve">
     <value>Show Local Records Only</value>
   </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
   <data name="CancelDownload" xml:space="preserve">
     <value>Cancel Download</value>
   </data>
   <data name="CancelUpload" xml:space="preserve">
     <value>Cancel Upload</value>
+  </data>
+  <data name="SortByLastAccessed" xml:space="preserve">
+    <value>Sort by Last Accessed</value>
   </data>
 </root>

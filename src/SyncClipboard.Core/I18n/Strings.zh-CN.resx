@@ -866,13 +866,13 @@ Esc：关闭面板</value>
   <data name="OnlyShowLocal" xml:space="preserve">
     <value>仅显示本地记录</value>
   </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>刷新</value>
-  </data>
   <data name="CancelDownload" xml:space="preserve">
     <value>取消下载</value>
   </data>
   <data name="CancelUpload" xml:space="preserve">
     <value>取消上传</value>
+  </data>
+  <data name="SortByLastAccessed" xml:space="preserve">
+    <value>按最后复制时间排序</value>
   </data>
 </root>

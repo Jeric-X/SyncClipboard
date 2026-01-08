@@ -2214,6 +2214,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Sort by Last Accessed 的本地化字符串。
+        /// </summary>
+        public static string SortByLastAccessed {
+            get {
+                return ResourceManager.GetString("SortByLastAccessed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 Connect to built-in server directly without configuration 的本地化字符串。
         /// </summary>
         public static string UseBuiltInServerDescription {
