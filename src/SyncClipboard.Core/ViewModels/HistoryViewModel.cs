@@ -776,12 +776,16 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        var vms = records.Select(x =>
+        var vms = await Task.Run(() =>
         {
-            var vm = new HistoryRecordVM(x);
-            InitVMTransferStatus(vm);
-            return vm;
-        }).ToArray();
+            return records.Select(x =>
+            {
+                var vm = new HistoryRecordVM(x);
+                InitVMTransferStatus(vm);
+                return vm;
+            }).ToArray();
+        }, token);
+
         allHistoryItems.AddRange(vms);
         var last = vms.LastOrDefault()!;
 

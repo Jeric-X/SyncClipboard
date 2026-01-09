@@ -327,16 +327,16 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         foreach (var dto in remoteRecords)
         {
-            await _dbSemaphore.WaitAsync(token);
+            await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-            var entity = await Query(dto.Type, dto.Hash, token);
+            var entity = await Query(dto.Type, dto.Hash, token).ConfigureAwait(false);
             if (entity == null)
             {
                 if (dto.IsDeleted == false)
                 {
                     var newRecord = dto.ToHistoryRecord();
-                    await _dbContext.HistoryRecords.AddAsync(newRecord, token);
+                    await _dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
                     HistoryAdded?.Invoke(newRecord);
                     addedRecords.Add(newRecord);
                 }
@@ -359,7 +359,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.ApplyBasicFromRemote(dto);
                 TriggleUpdateOrDeleteEvent(entity);
             }
-            await _dbContext.SaveChangesAsync(token);
+            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         }
 
         return addedRecords;
@@ -519,7 +519,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
-        await _dbSemaphore.WaitAsync(token);
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
         var query = _dbContext.HistoryRecords.Where(r => r.IsDeleted == false);
@@ -561,7 +561,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             : query.OrderByDescending(r => r.Timestamp).ThenByDescending(r => r.ID);
 
         // 先取minSize条记录
-        var initialRecords = await query.Take(minSize).ToListAsync(token);
+        var initialRecords = await query.Take(minSize).ToListAsync(token).ConfigureAwait(false);
 
         // 如果记录数量少于minSize，说明已经取完所有记录
         if (initialRecords.Count < minSize)
@@ -576,8 +576,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         // 查询是否还有其他记录具有相同的时间戳但ID更小（即在排序后位于更后面）
         var additionalRecords = sortByLastAccessed
-            ? await query.Where(r => r.LastAccessed == lastTimestamp && r.ID < lastId).ToListAsync(token)
-            : await query.Where(r => r.Timestamp == lastTimestamp && r.ID < lastId).ToListAsync(token);
+            ? await query.Where(r => r.LastAccessed == lastTimestamp && r.ID < lastId).ToListAsync(token).ConfigureAwait(false)
+            : await query.Where(r => r.Timestamp == lastTimestamp && r.ID < lastId).ToListAsync(token).ConfigureAwait(false);
 
         // 合并结果
         if (additionalRecords.Count > 0)
