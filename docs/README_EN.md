@@ -35,6 +35,9 @@
       - [Use Autox.js](#use-autoxjs)
     - [Notes for Clients](#notes-for-clients)
   - [API](#api)
+    - [Get Clipboard](#get-clipboard)
+    - [Upload Clipboard](#upload-clipboard)
+    - [SyncClipboard.json](#syncclipboardjson)
   - [Open Source Dependencies](#open-source-dependencies)
 
 </details>
@@ -272,9 +275,41 @@ There are three necessery config(maybe different words, same uses).
 In a standalone server environment, set the environment variable ASPNETCORE_ENVIRONMENT to Development before running the server, or open the server in the desktop client and enable diagnostic mode in settings.
 Then visit `http://ip:port/swagger/index.html` to access the API description page.
 
-APIs that do not start with `/api/` are WebDAV-compatible APIs. When implementing clients, calling these APIs can support clipboard synchronization based on both WebDAV servers and official SyncClipboard servers.
+APIs that do not start with `/api/` are WebDAV-compatible APIs. When implementing clients, calling these APIs can support clipboard synchronization based on both WebDAV servers and official SyncClipboard servers. The key APIs are described below.
 
-For hash calculation methods involved in the API, please refer to [docs/Hash.md](Hash.md)
+### Get Clipboard
+```shell
+GET /SyncClipboard.json
+GET /file/dataName            # optional
+```
+
+### Upload Clipboard
+```shell
+PUT /file/dataName            # optional
+PUT /SyncClipboard.json
+```
+
+### SyncClipboard.json
+```jsonc
+{
+  "type": "Text",             // or Image/File/Group, required
+  "hash": "string",           // optional, empty string is treated as null
+  "text": "string",           // required
+  "hasData": true,            // or false, required  
+  "dataName": "string",       // if hasData is true, required
+  "size": 0                   // optional
+}
+```
+
+- `text` stores the clipboard preview string, or the complete content of Text type clipboard
+- `hasData` indicates whether an additional file is used to store the complete clipboard information
+  - For Image/File/Group types, `hasData` is always true
+  - For Text type, depending on the original string length, you can optionally use an additional UTF8-encoded `.txt` file to store the complete string. If so, the `text` field only stores the beginning part of the complete string
+- `hash` value is a unique identifier of the clipboard content. For the calculation method, please refer to [docs/Hash.md](Hash.md)
+  - The sender should provide `hash` information whenever possible
+  - When the `hash` value exists, the receiver should verify the consistency between the `hash` information and the clipboard content, and execute the error handling process when inconsistent
+  - When `hash` is empty, or in an environment where `hash` cannot be calculated, you can use the combination of `type`/`text` to simply determine the equality of clipboard content
+- `size` indicates the total byte size of the copied file, or the length of the complete string for Text type clipboard
 
 ## Open Source Dependencies
 [NativeNotification](https://github.com/Jeric-X/NativeNotification) 
