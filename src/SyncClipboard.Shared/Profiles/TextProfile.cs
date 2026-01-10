@@ -52,7 +52,7 @@ public class TextProfile : Profile
     public TextProfile(ProfileDto dto)
     {
         _text = dto.Text;
-        Hash = string.IsNullOrEmpty(dto.Hash) ? null : Hash;
+        Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
         Size = dto.Size;
@@ -169,9 +169,8 @@ public class TextProfile : Profile
             { }
         }
 
-        _transferDataName ??= Utility.CreateTimeBasedFileName();
-        var fileName = $"{Type}_{_transferDataName}.txt";
-        var dataPath = Path.Combine(GetWorkingDir(persistentDir, await GetHash(token)), fileName);
+        _transferDataName ??= $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+        var dataPath = Path.Combine(GetWorkingDir(persistentDir, await GetHash(token)), _transferDataName);
         return dataPath;
     }
 
@@ -192,8 +191,8 @@ public class TextProfile : Profile
         }
 
         var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
-        var dataName = _transferDataName ?? Utility.CreateTimeBasedFileName();
-        var path = Path.Combine(workingDir, $"{Type}_{dataName}.txt");
+        var dataName = _transferDataName ?? $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+        var path = Path.Combine(workingDir, dataName);
         await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
         _transferDataPath = path;
         _transferDataName = dataName;

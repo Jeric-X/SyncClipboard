@@ -356,7 +356,11 @@ public class DownloadService : Service
 
     private async Task<Profile?> GetHistoryProfile(Profile remoteProfile, CancellationToken token)
     {
-        var historyRecord = await _historyManager.GetHistoryRecord(await remoteProfile.GetHash(token), remoteProfile.Type, token);
+        var hash = await remoteProfile.GetHash(token);
+        if (string.IsNullOrEmpty(hash))
+            return null;
+
+        var historyRecord = await _historyManager.GetHistoryRecord(hash, remoteProfile.Type, token);
         if (historyRecord is null || historyRecord.IsDeleted || !historyRecord.IsLocalFileReady)
             return null;
 
