@@ -231,7 +231,7 @@ Multiple `--command-{command-name}` arguments are supported, multiple commands a
 
 ### Android
 #### Use [HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
-Import this [file](/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. Make sure no slash(/) at the end of url. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
+Import this [file](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. Make sure no slash(/) at the end of url. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
 
 <details>
 <summary>Screenshots</summary>

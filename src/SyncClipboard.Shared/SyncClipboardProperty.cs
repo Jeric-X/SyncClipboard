@@ -2,5 +2,5 @@ namespace SyncClipboard.Shared;
 
 public static class SyncClipboardProperty
 {
-    public const string AppVersion = "3.1.1-beta3";
+    public const string AppVersion = "3.1.1-beta4";
 }

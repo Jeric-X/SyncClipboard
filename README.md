@@ -236,7 +236,7 @@ paru -Sy syncclipboard-desktop
 
 ### Android
 #### 使用[HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
-导入这个[配置文件](/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`， `url`不要以斜线分隔符`/`结尾。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
+导入这个[配置文件](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`， `url`不要以斜线分隔符`/`结尾。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
 <details>
 <summary>导入配置文件后修改配置图示</summary>

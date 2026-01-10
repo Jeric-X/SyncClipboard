@@ -6,7 +6,7 @@
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
         public const string AppVersion = SyncClipboardProperty.AppVersion;
 
-        public const string RequestServerVersion = "3.1.1-beta3";
+        public const string RequestServerVersion = SyncClipboardProperty.AppVersion;
         public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases";
 
