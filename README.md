@@ -39,9 +39,6 @@
       - [使用Tasker](#使用tasker)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
-    - [获取/上传剪贴板（文字）](#获取上传剪贴板文字)
-    - [获取/上传剪贴板（图片/文件）](#获取上传剪贴板图片文件)
-    - [SyncClipboard.json](#syncclipboardjson)
   - [项目依赖](#项目依赖)
 
 </details>
@@ -281,40 +278,11 @@ Tasker是一款安卓系统上非常强大的自动化工具软件，你可以�
 ## API
 
 在独立服务器运行环境下设定环境变量ASPNETCORE_ENVIRONMENT为Development后运行服务器，或桌面客户端打开服务器并打开设置里的诊断模式后，
-访问`http://ip:端口/swagger/index.html`可以打开API页面，以下是部分兼容WebDAV的简单API，更多复杂API请参阅API页面
+访问`http://ip:端口/swagger/index.html`可以打开API描述页面
 
-### 获取/上传剪贴板（文字）
-```
-GET /SyncClipboard.json
-PUT /SyncClipboard.json
-```
+API路径不以`/api/`起始的为WebDAV兼容API，实现客户端时，调用此类API可以同时支持基于WebDAV服务器与SyncClipboard官方服务器的剪贴板同步功能
 
-### 获取/上传剪贴板（图片/文件）
-```
-GET  /SyncClipboard.json
-HEAD /file/filename         // optional
-GET  /file/filename
-
-PUT /file/filename
-PUT /SyncClipboard.json
-```
-
-### SyncClipboard.json
-```jsonc
-{
-    "Type" : "Text",
-    "Clipboard" : "Content",
-    "File":""
-}
-
-{
-    "Type": "Image", // or "File", "Group"
-    "Clipboard": "hash, optional",
-    "File": "filename"
-}
-```
-
-Hash计算方法可以参考[docs/Hash.md](docs/Hash.md)
+API中涉及Hash计算方法的可以参考[docs/Hash.md](docs/Hash.md)
 
 ## 项目依赖
 [NativeNotification](https://github.com/Jeric-X/NativeNotification)  

@@ -35,9 +35,6 @@
       - [Use Autox.js](#use-autoxjs)
     - [Notes for Clients](#notes-for-clients)
   - [API](#api)
-    - [Download/Upload Text](#downloadupload-text)
-    - [Download/Upload File/Image](#downloadupload-fileimage)
-    - [SyncClipboard.json](#syncclipboardjson)
   - [Open Source Dependencies](#open-source-dependencies)
 
 </details>
@@ -273,40 +270,11 @@ There are three necessery config(maybe different words, same uses).
 ## API
 
 In a standalone server environment, set the environment variable ASPNETCORE_ENVIRONMENT to Development before running the server, or open the server in the desktop client and enable diagnostic mode in settings.
-Then visit `http://ip:port/swagger/index.html` to access the API page. The following are some simple APIs compatible with WebDAV. For more complex APIs, please refer to the API page.
+Then visit `http://ip:port/swagger/index.html` to access the API description page.
 
-### Download/Upload Text
-```
-GET /SyncClipboard.json
-PUT /SyncClipboard.json
-```
+APIs that do not start with `/api/` are WebDAV-compatible APIs. When implementing clients, calling these APIs can support clipboard synchronization based on both WebDAV servers and official SyncClipboard servers.
 
-### Download/Upload File/Image
-```
-GET  /SyncClipboard.json
-HEAD /file/filename         // optional
-GET  /file/filename
-
-PUT /file/filename
-PUT /SyncClipboard.json
-```
-
-### SyncClipboard.json
-```jsonc
-{
-    "Type" : "Text",
-    "Clipboard" : "Content",
-    "File":""
-}
-
-{
-    "Type": "Image", // or "File", "Group"
-    "Clipboard": "hash, optional",
-    "File": "filename"
-}
-```
-
-For hash calculation method, please refer to [docs/Hash.md](Hash.md)
+For hash calculation methods involved in the API, please refer to [docs/Hash.md](Hash.md)
 
 ## Open Source Dependencies
 [NativeNotification](https://github.com/Jeric-X/NativeNotification) 
