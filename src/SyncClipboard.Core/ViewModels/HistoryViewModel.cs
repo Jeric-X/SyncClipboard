@@ -101,7 +101,7 @@ public partial class HistoryViewModel : ObservableObject
         if (EnableSyncHistory)
         {
             historySyncServer = remoteServerFactory.Current as IOfficialSyncServer;
-            _ = Refresh();
+            _ = Reload();
         }
         else
         {
@@ -139,7 +139,7 @@ public partial class HistoryViewModel : ObservableObject
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
     partial void OnSelectedFilterChanged(HistoryFilterType value)
     {
-        _ = Refresh();
+        _ = Reload();
         OnPropertyChanged(nameof(SelectedFilterOption));
     }
 
@@ -148,7 +148,7 @@ public partial class HistoryViewModel : ObservableObject
     private string searchText = string.Empty;
     partial void OnSearchTextChanged(string value)
     {
-        _ = Refresh();
+        _ = Reload();
     }
 
     public LocaleString<HistoryFilterType> SelectedFilterOption
@@ -238,7 +238,7 @@ public partial class HistoryViewModel : ObservableObject
 
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowLocal = value });
             OnPropertyChanged(nameof(OnlyShowLocal));
-            Refresh();
+            _ = Reload();
         }
     }
 
@@ -251,7 +251,7 @@ public partial class HistoryViewModel : ObservableObject
 
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { SortByLastAccessed = value });
             OnPropertyChanged(nameof(SortByLastAccessed));
-            _ = Refresh();
+            _ = Reload();
         }
     }
 
@@ -362,7 +362,15 @@ public partial class HistoryViewModel : ObservableObject
     private bool IsEnd => _isLocalEnd;
 
     [RelayCommand]
-    public Task Refresh()
+    public async Task Refresh()
+    {
+        // Trigger remote sync in background
+        _ = _historyService.SyncAllAsync();
+
+        await Reload();
+    }
+
+    private Task Reload()
     {
         _isLocalEnd = false;
 
@@ -371,9 +379,6 @@ public partial class HistoryViewModel : ObservableObject
         _lastViewportHeight = 0;
         _lastExtentHeight = 0;
         window?.ScrollToTop();
-
-        // Trigger remote sync in background
-        _ = _historyService.SyncAllAsync();
 
         return RunLoadTask(InitialPageSize);
     }
@@ -573,7 +578,7 @@ public partial class HistoryViewModel : ObservableObject
         historyManager.HistoryUpdated += RecordEntityUpdated;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
-        await Refresh();
+        await Reload();
 
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
     }
@@ -746,7 +751,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         var currentServer = remoteServerFactory.Current;
         historySyncServer = EnableSyncHistory ? currentServer as IOfficialSyncServer : null;
-        _ = Refresh();
+        _ = Reload();
     }
 
     private async Task DoLoadPageAsync(int size, CancellationToken token)

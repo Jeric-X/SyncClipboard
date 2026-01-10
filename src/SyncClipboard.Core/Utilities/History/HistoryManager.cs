@@ -325,42 +325,45 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         if (remoteRecords.Any() == false)
             return addedRecords;
 
-        foreach (var dto in remoteRecords)
+        await Task.Run(async () =>
         {
-            await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
-            using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+            foreach (var dto in remoteRecords)
+            {
+                await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+                using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-            var entity = await Query(dto.Type, dto.Hash, token).ConfigureAwait(false);
-            if (entity == null)
-            {
-                if (dto.IsDeleted == false)
+                var entity = await Query(dto.Type, dto.Hash, token).ConfigureAwait(false);
+                if (entity == null)
                 {
-                    var newRecord = dto.ToHistoryRecord();
-                    await _dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
-                    HistoryAdded?.Invoke(newRecord);
-                    addedRecords.Add(newRecord);
-                }
-            }
-            else
-            {
-                if (entity.ShouldUpdateFromRemote(dto))
-                {
-                    entity.ApplyChangesFromRemote(dto);
-                    entity.SyncStatus = HistorySyncStatus.Synced;
-                }
-                else if (entity.IsLocalNewerThanRemote(dto))
-                {
-                    entity.SyncStatus = HistorySyncStatus.NeedSync;
+                    if (dto.IsDeleted == false)
+                    {
+                        var newRecord = dto.ToHistoryRecord();
+                        await _dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
+                        HistoryAdded?.Invoke(newRecord);
+                        addedRecords.Add(newRecord);
+                    }
                 }
                 else
                 {
-                    entity.SyncStatus = HistorySyncStatus.Synced;
+                    if (entity.ShouldUpdateFromRemote(dto))
+                    {
+                        entity.ApplyChangesFromRemote(dto);
+                        entity.SyncStatus = HistorySyncStatus.Synced;
+                    }
+                    else if (entity.IsLocalNewerThanRemote(dto))
+                    {
+                        entity.SyncStatus = HistorySyncStatus.NeedSync;
+                    }
+                    else
+                    {
+                        entity.SyncStatus = HistorySyncStatus.Synced;
+                    }
+                    entity.ApplyBasicFromRemote(dto);
+                    TriggleUpdateOrDeleteEvent(entity);
                 }
-                entity.ApplyBasicFromRemote(dto);
-                TriggleUpdateOrDeleteEvent(entity);
+                await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
             }
-            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
-        }
+        }, token);
 
         return addedRecords;
     }
