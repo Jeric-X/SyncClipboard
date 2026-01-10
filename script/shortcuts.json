@@ -6,8 +6,8 @@
       "shortcuts": [
         {
           "authentication": "basic",
-          "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
-          "codeOnSuccess": "showToast(\u0027已上传\u0027);",
+          "bodyContent": "{\"hasData\": false, \"text\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\", \"type\":\"Text\"}",
+          "codeOnSuccess": "showToast(\u0027已上传\\n\u0027 + getVariable(/*[variable]*/\"76b1e948-84b3-497e-8ec5-b911d00f8f0f\"/*[/variable]*/));",
           "contentType": "application/json",
           "description": "支持选中文字后分享",
           "iconName": "freepik_upload",
@@ -15,7 +15,6 @@
           "method": "PUT",
           "name": "上传剪贴板",
           "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
-          "proxy": "",
           "quickSettingsTileShortcut": true,
           "responseHandling": {
             "successOutput": "none"
@@ -25,12 +24,13 @@
         },
         {
           "authentication": "basic",
-          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\r\nconst type \u003d profile.Type\r\n\r\nif (type \u003d\u003d \u0027Text\u0027) {\r\n    const ClibboardText \u003d profile.Clipboard;\r\n    copyToClipboard(ClibboardText);\r\n    showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\r\n\r\n    const httpstr \u003d httpString(ClibboardText);\r\n\r\n    if (httpstr) {\r\n        if (confirm(\u0027包含网址，是否打开\u0027)) {\r\n            openUrl(httpstr[0]);\r\n        }\r\n    }\r\n}\r\nelse if (profile.File \u0026\u0026 profile.File.length \u003e 0) {\r\n    const downloadUrl \u003d getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.File)\r\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\r\n    showToast(\u0027文件名已拷贝，正在下载\\n\u0027 + profile.File)\r\n    copyToClipboard(profile.File)\r\n    if (type \u003d\u003d \u0027Image\u0027 || isImageFile(profile.File)) {\r\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\r\n    } else {\r\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\r\n    }\r\n}\r\n\r\nfunction isImageFile(file) {\r\n    const filename \u003d file.toLowerCase();\r\n    const list \u003d [\r\n        \u0027.png\u0027,\r\n        \u0027.jpg\u0027,\r\n        \u0027.jpeg\u0027,\r\n        \u0027.gif\u0027,\r\n        \u0027.bmp\u0027,\r\n        \u0027.webp\u0027,\r\n    ]\r\n    let result \u003d false\r\n    list.forEach(element \u003d\u003e {\r\n        if (filename.endsWith(element)) {\r\n            result \u003d true\r\n        }\r\n    })\r\n    return result\r\n}\r\n\r\nfunction httpString(s) {\r\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\r\n    s \u003d s.match(reg);\r\n    return (s)\r\n}",
+          "bodyContent": "",
+          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\nconst type \u003d profile.type\n\nif (type \u003d\u003d \u0027Text\u0027) {\n    if (profile.hasData \u0026\u0026 profile.dataName \u0026\u0026 profile.dataName.length \u003e 0) {\n        const downloadUrl \u003d getDataUrl(profile)\n        const user \u003d getVariable(/*[variable]*/\"719f997c-6bf6-458f-a148-3c2a8ac5e405\"/*[/variable]*/)\n        const pass \u003d getVariable(/*[variable]*/\"9421719b-086f-4799-8432-158b84b6e05a\"/*[/variable]*/)\n        const authHeader \u003d \u0027basic \u0027 + base64encode(user + \u0027:\u0027 + pass);\n\n        const result \u003d sendHttpRequest(\n            downloadUrl,\n            {\n                method: \"GET\",\n                headers: {\n                    \u0027Authorization\u0027: authHeader,\n                },\n            },\n        )\n\n        copyToClipboard(result.response.body);\n        if (result.response.body.length \u003e 100) {\n            showToast(\u0027已拷贝\\n\u0027 + result.response.body.substring(0, 100) + \u0027...\u0027);\n        } else {\n            showToast(\u0027已拷贝\\n\u0027 + result.response.body);\n        }\n    } else {\n        const ClibboardText \u003d profile.text;\n        copyToClipboard(ClibboardText);\n        showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\n\n        const httpstr \u003d httpString(ClibboardText);\n\n        if (httpstr) {\n            if (confirm(\u0027包含网址，是否打开\u0027)) {\n                openUrl(httpstr[0]);\n            }\n        }\n    }\n} else if (profile.hasData \u0026\u0026 profile.dataName \u0026\u0026 profile.dataName.length \u003e 0) {\n    const downloadUrl \u003d getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.dataName)\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\n    showToast(\u0027文件名已拷贝，正在下载\\n\u0027 + profile.dataName)\n    copyToClipboard(profile.dataName)\n    if (type \u003d\u003d \u0027Image\u0027 || isImageFile(profile.dataName)) {\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n    } else {\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n    }\n}\n\nfunction isImageFile(file) {\n    const filename \u003d file.toLowerCase();\n    const list \u003d [\n        \u0027.png\u0027,\n        \u0027.jpg\u0027,\n        \u0027.jpeg\u0027,\n        \u0027.gif\u0027,\n        \u0027.bmp\u0027,\n        \u0027.webp\u0027,\n    ]\n    let result \u003d false\n    list.forEach(element \u003d\u003e {\n        if (filename.endsWith(element)) {\n            result \u003d true\n        }\n    })\n    return result\n}\n\nfunction httpString(s) {\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\n    s \u003d s.match(reg);\n    return (s)\n}\n\nfunction getDataUrl(profile) {\n    return getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.dataName)\n}",
           "iconName": "freepik_download",
           "id": "91cf41c5-da0c-45b5-988c-9f636e135abd",
+          "method": "GET",
           "name": "下载剪贴板",
           "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
-          "proxy": "",
           "quickSettingsTileShortcut": true,
           "responseHandling": {
             "successOutput": "none"
@@ -45,12 +45,12 @@
           "codeOnSuccess": "enqueueShortcut(\u0027上传文件 控制部分\u0027)",
           "contentType": "application/json",
           "description": "从分享菜单使用",
+          "fileUploadOptions": {},
           "iconName": "freepik_upload",
           "id": "2b8e95a4-2ece-41a1-aace-f8f80c0497fb",
           "method": "PUT",
           "name": "上传文件",
           "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
-          "proxy": "",
           "requestBodyType": "file",
           "responseHandling": {
             "successOutput": "none"
@@ -67,7 +67,7 @@
       "shortcuts": [
         {
           "authentication": "basic",
-          "bodyContent": "{\"File\":\"{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}\",\"Clipboard\":\"\",\"Type\":\"File\"}",
+          "bodyContent": "{\"text\":\"{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}\",\"dataName\":\"{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}\",\"Type\":\"File\", \"hasData\": true}",
           "codeOnSuccess": "showToast(\u0027已上传\u0027);",
           "contentType": "application/json",
           "iconName": "freepik_upload",
@@ -75,7 +75,6 @@
           "method": "PUT",
           "name": "上传文件 控制部分",
           "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
-          "proxy": "",
           "responseHandling": {
             "successOutput": "none"
           },
@@ -87,11 +86,12 @@
           "bodyContent": "{\"File\":\"\",\"Clipboard\":\"{{76b1e948-84b3-497e-8ec5-b911d00f8f0f}}\",\"Type\":\"Text\"}",
           "contentType": "application/json",
           "description": "只支持2m以下文件",
+          "fileUploadOptions": {},
           "iconName": "flat_color_folder",
           "id": "1e693964-ab59-4e9c-902b-6b94b90ff2f0",
+          "method": "GET",
           "name": "展示文件",
           "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
-          "proxy": "",
           "requestBodyType": "file",
           "responseHandling": {
             "actions": [
@@ -106,7 +106,9 @@
       ]
     }
   ],
-  "compatibilityVersion": 71,
+  "compatibilityVersion": 90,
+  "createdAt": "2026-01-10T08:13:20.326Z",
+  "originDeviceId": "RPAAPN9Q39",
   "variables": [
     {
       "id": "719f997c-6bf6-458f-a148-3c2a8ac5e405",
@@ -119,8 +121,8 @@
       "value": "ChangeIt"
     },
     {
-      "flags": 1,
       "id": "76b1e948-84b3-497e-8ec5-b911d00f8f0f",
+      "isShareText": true,
       "jsonEncode": true,
       "key": "Clipboard",
       "type": "clipboard"
@@ -138,9 +140,8 @@
     },
     {
       "id": "5989c421-2669-4424-80c3-69ba7995524a",
-      "key": "downloadUrl",
-      "value": ""
+      "key": "downloadUrl"
     }
   ],
-  "version": 75
+  "version": 91
 }

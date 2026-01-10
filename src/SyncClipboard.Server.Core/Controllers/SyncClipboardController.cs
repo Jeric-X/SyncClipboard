@@ -75,7 +75,6 @@ public class SyncClipboardController(
     }
 
     [HttpDelete("file")]
-    [Obsolete("Use DELETE api/history/clear")]
     public IActionResult DeleteFileFolder()
     {
         var path = Path.Combine(_serverEnv.GetDataRootPath(), "file");
