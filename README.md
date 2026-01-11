@@ -309,6 +309,7 @@ PUT /SyncClipboard.json
 }
 ```
 
+- API所有字段大小写敏感
 - `text`储存剪贴板预览字符串，或完整的Text类型剪贴板内容
 - `hasData`标识是否使用一个额外文件存储完整的剪贴板信息
   - 对于Image/File/Group类型，`hasData`恒为true

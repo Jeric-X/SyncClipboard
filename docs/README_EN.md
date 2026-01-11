@@ -301,6 +301,7 @@ PUT /SyncClipboard.json
 }
 ```
 
+- All API fields are case-sensitive
 - `text` stores the clipboard preview string, or the complete content of Text type clipboard
 - `hasData` indicates whether an additional file is used to store the complete clipboard information
   - For Image/File/Group types, `hasData` is always true

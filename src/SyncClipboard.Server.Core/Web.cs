@@ -3,14 +3,16 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Server.Core.Controllers;
 using SyncClipboard.Server.Core.CredentialChecker;
 using SyncClipboard.Server.Core.Hubs;
-using System.Net;
-using System.Text.Json.Serialization;
-using SyncClipboard.Server.Core.Services.History;
-using SyncClipboard.Server.Core.Utilities.History;
-using SyncClipboard.Server.Core.Utilities;
-using SyncClipboard.Server.Core.Services;
-using SyncClipboard.Server.Core.Swagger;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Server.Core.Services;
+using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Server.Core.Swagger;
+using SyncClipboard.Server.Core.Utilities;
+using SyncClipboard.Server.Core.Utilities.History;
+using System.Net;
+using System.Text.Encodings.Web;
+using System.Text.Json.Serialization;
+using System.Text.Unicode;
 
 namespace SyncClipboard.Server.Core;
 
@@ -27,6 +29,10 @@ public class Web
         services.AddAuthorizationBuilder().AddDefaultPolicy("DefaultPolicy", policy => policy.RequireAuthenticatedUser());
 
         services.AddControllers()
+            .AddJsonOptions(o =>
+            {
+                o.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+            })
             .AddApplicationPart(typeof(SyncClipboardController).Assembly);
         services.AddMemoryCache();
         services.AddSignalR();
