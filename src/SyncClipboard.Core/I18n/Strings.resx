@@ -663,6 +663,9 @@ Double click image: View full image</value>
   <data name="NewVersionDownloaded" xml:space="preserve">
     <value>New version package has been downloaded</value>
   </data>
+  <data name="CurrentPackageDownloadManually" xml:space="preserve">
+    <value>. Current package is '{0}', please download manually.</value>
+  </data>
   <data name="General" xml:space="preserve">
     <value>General</value>
   </data>

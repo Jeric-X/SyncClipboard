@@ -663,6 +663,9 @@ Esc：关闭面板</value>
   <data name="NewVersionDownloaded" xml:space="preserve">
     <value>新版本安装包已下载</value>
   </data>
+  <data name="CurrentPackageDownloadManually" xml:space="preserve">
+    <value>，当前包名为'{0}'，请手动下载。</value>
+  </data>
   <data name="General" xml:space="preserve">
     <value>通用</value>
   </data>

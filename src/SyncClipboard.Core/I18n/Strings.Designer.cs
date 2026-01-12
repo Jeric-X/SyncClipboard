@@ -448,6 +448,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 . Current package is &apos;{0}&apos;, please download manually. 的本地化字符串。
+        /// </summary>
+        public static string CurrentPackageDownloadManually {
+            get {
+                return ResourceManager.GetString("CurrentPackageDownloadManually", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 The custom configuration file is not used for the username and password 的本地化字符串。
         /// </summary>
         public static string CustomConfigFileDescription {
@@ -1377,7 +1386,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Only Show Local 的本地化字符串。
+        ///   查找类似 Show Local Records Only 的本地化字符串。
         /// </summary>
         public static string OnlyShowLocal {
             get {
@@ -1854,6 +1863,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Sort by Last Accessed 的本地化字符串。
+        /// </summary>
+        public static string SortByLastAccessed {
+            get {
+                return ResourceManager.GetString("SortByLastAccessed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Status 的本地化字符串。
         /// </summary>
         public static string Status {
@@ -2213,15 +2231,6 @@ namespace SyncClipboard.Core.I18n {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Sort by Last Accessed 的本地化字符串。
-        /// </summary>
-        public static string SortByLastAccessed {
-            get {
-                return ResourceManager.GetString("SortByLastAccessed", resourceCulture);
-            }
-        }
-
         /// <summary>
         ///   查找类似 Connect to built-in server directly without configuration 的本地化字符串。
         /// </summary>

@@ -316,7 +316,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             UpdaterState.Downloaded => I18n.Strings.NewVersionDownloaded,
             UpdaterState.Failed => I18n.Strings.Error,
             UpdaterState.UpdateAvailableAtGitHubExtra => I18n.Strings.FoundNewVersion + GithubRelease!.TagName
-                + $", current package '{updateInfo.PackageName}', please download manually.",
+                + string.Format(I18n.Strings.CurrentPackageDownloadManually, updateInfo.PackageName),
             _ => "Unknown state"
         };
     }
