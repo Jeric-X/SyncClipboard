@@ -43,8 +43,19 @@ public class GroupProfile : Profile
 
     public GroupProfile(IEnumerable<string> files, FileFilterConfig? filterConfig = null)
     {
-        _files = [.. files];
         _fileFilterConfig = filterConfig ?? new();
+        _files = files
+            .Where(file =>
+            {
+                // 目录不参与过滤，始终保留
+                if (Directory.Exists(file))
+                    return true;
+
+                // 文件需要通过过滤器检查
+                var fileName = Path.GetFileName(file);
+                return FileFilterHelper.IsFileAvailableAfterFilter(fileName, _fileFilterConfig);
+            })
+            .ToArray();
     }
 
     private static string CreateNewDataFileName()
@@ -179,15 +190,15 @@ public class GroupProfile : Profile
         if (string.IsNullOrEmpty(entryName))
             return;
 
-        if (!FileFilterHelper.IsFileAvailableAfterFilter(entryName, _fileFilterConfig))
-            return;
-
         if (isDir)
         {
             entries.Add(new GroupEntry(entryName, isDirectory: true, length: 0, hashTask: null));
         }
         else
         {
+            if (!FileFilterHelper.IsFileAvailableAfterFilter(entryName, _fileFilterConfig))
+                return;
+
             var fileInfo = new FileInfo(path);
             totalSize += fileInfo.Length;
             var hashTask = ComputeFileContentHashAsync(path, token);
@@ -264,8 +275,7 @@ public class GroupProfile : Profile
                     token.ThrowIfCancellationRequested();
                     var relativeDir = Path.GetRelativePath(path, subDir).Replace(Path.DirectorySeparatorChar, '/');
                     var dirEntryName = string.Join('/', [dirName, relativeDir]) + "/";
-                    if (FileFilterHelper.IsFileAvailableAfterFilter(dirEntryName, _fileFilterConfig))
-                        archive.CreateEntry(dirEntryName);
+                    archive.CreateEntry(dirEntryName);
                 }
 
                 var subFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
