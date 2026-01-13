@@ -1,12 +1,12 @@
-using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.RemoteServer;
-using SyncClipboard.Core.Exceptions;
-using System.Diagnostics.CodeAnalysis;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
-using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.RemoteServer;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.Utilities.History;
 

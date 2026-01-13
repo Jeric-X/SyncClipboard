@@ -32,7 +32,7 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 
     public async Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
-        AppCore.Current.Logger.Write("Clip Setter", "Clipboard setted, meta: " + metaInfomation);
+        await AppCore.Current.Logger.WriteAsync("Clip Setter", "Clipboard setted, meta: " + metaInfomation);
         await ClipboardSetterBase<ProfileType>.SetPackageToClipboard(await CreatePackage(metaInfomation), ctk);
     }
 }

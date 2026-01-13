@@ -46,7 +46,7 @@ public class TextProfile : Profile
             }
         }
         Size = entity.Size;
-        Hash = entity.Hash;
+        Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
     }
 
     public TextProfile(ProfileDto dto)

@@ -99,7 +99,7 @@ public class ServerService : Service
             }
             catch (Exception ex)
             {
-                _logger.Write(LOG_TAG, ex.ToString());
+                await _logger.WriteAsync(LOG_TAG, ex.ToString());
                 _trayIcon.SetStatusString(SERVICE_NAME, ex.Message, true);
                 NotificationManager.ShowText(I18n.Strings.FailedToStartServer, ex.Message);
             }

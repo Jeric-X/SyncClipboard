@@ -346,7 +346,7 @@ public partial class HistoryViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                logger.Write("Failed to load more history:", ex.Message);
+                await logger.WriteAsync("Failed to load more history:", ex.Message);
             }
         });
     }

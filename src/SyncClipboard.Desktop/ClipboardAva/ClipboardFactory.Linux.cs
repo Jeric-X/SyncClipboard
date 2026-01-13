@@ -64,7 +64,7 @@ internal partial class ClipboardFactory
                 }
                 catch (Exception ex) when (token.IsCancellationRequested is false)
                 {
-                    Logger.Write(ex.Message);
+                    await Logger.WriteAsync(ex.Message);
                     hasExcoption = true;
                 }
             }
@@ -95,7 +95,7 @@ internal partial class ClipboardFactory
         }
         catch (Exception ex) when (token.IsCancellationRequested is false)
         {
-            Logger.Write(ex.Message);
+            await Logger.WriteAsync(ex.Message);
         }
     }
 
@@ -163,7 +163,7 @@ internal partial class ClipboardFactory
             }
             catch (Exception ex) when (token.IsCancellationRequested is false)
             {
-                Logger.Write(ex.Message);
+                await Logger.WriteAsync(ex.Message);
             }
         }
     }

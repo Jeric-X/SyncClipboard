@@ -267,7 +267,7 @@ public class DownloadService : Service
     private async void OnRemoteProfileChanged(object? sender, ProfileChangedEventArgs e)
     {
         var remoteProfile = e.NewProfile;
-        _logger.Write(LOG_TAG, $"Remote profile changed: {remoteProfile}");
+        await _logger.WriteAsync(LOG_TAG, $"Remote profile changed: {remoteProfile}");
 
         try
         {
@@ -275,7 +275,7 @@ public class DownloadService : Service
         }
         catch (Exception ex)
         {
-            _logger.Write(LOG_TAG, $"Error handling remote profile change: {ex.Message}");
+            await _logger.WriteAsync(LOG_TAG, $"Error handling remote profile change: {ex.Message}");
         }
     }
 
@@ -397,7 +397,7 @@ public class DownloadService : Service
             var currentLocalProfile = await _clipboardFactory.CreateProfileFromLocal(token);
             if (await Profile.Same(currentLocalProfile, profile, token))
             {
-                _logger.Write(LOG_TAG, "Local clipboard is already same as remote profile, skipping download");
+                await _logger.WriteAsync(LOG_TAG, "Local clipboard is already same as remote profile, skipping download");
             }
             else
             {
@@ -408,12 +408,12 @@ public class DownloadService : Service
         }
         catch when (token.IsCancellationRequested)
         {
-            _logger.Write(LOG_TAG, "Canceled");
+            await _logger.WriteAsync(LOG_TAG, "Canceled");
             throw;
         }
         catch (RemoteServerException ex)
         {
-            _logger.Write(LOG_TAG, $"Error downloading remote profile: {ex.Message}");
+            await _logger.WriteAsync(LOG_TAG, $"Error downloading remote profile: {ex.Message}");
             _trayIcon.SetStatusString(SERVICE_NAME, $"Remote server Exception\n{ex.Message}", true);
             _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
@@ -421,7 +421,7 @@ public class DownloadService : Service
         {
             _nonServerErrorTimes++;
             _trayIcon.SetStatusString(SERVICE_NAME, $"Error. Failed times: {_nonServerErrorTimes}.\n{ex.Message}", true);
-            _logger.Write(LOG_TAG, ex.Message);
+            await _logger.WriteAsync(LOG_TAG, ex.Message);
 
             if (_nonServerErrorTimes > _syncConfig.RetryTimes)
             {
@@ -452,7 +452,7 @@ public class DownloadService : Service
             if (cachedProfile is not null)
             {
                 remoteProfile = cachedProfile;
-                _logger.Write(SERVICE_NAME, $"Loaded from cache: {cachedProfile}");
+                await _logger.WriteAsync(SERVICE_NAME, $"Loaded from cache: {cachedProfile}");
             }
             else
             {
@@ -468,7 +468,7 @@ public class DownloadService : Service
         {
             await _localClipboardSetter.Set(remoteProfile, cancelToken, false);
             _localProfileCache = remoteProfile;
-            _logger.Write(SERVICE_NAME, "Success set Local clipboard with remote profile: " + remoteProfile.ShortDisplayText);
+            await _logger.WriteAsync(SERVICE_NAME, "Success set Local clipboard with remote profile: " + remoteProfile.ShortDisplayText);
             if (_syncConfig.NotifyOnDownloaded)
             {
                 _clipboardNotificationHelper.Notify(remoteProfile, cancelToken);
@@ -479,7 +479,7 @@ public class DownloadService : Service
 
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
     {
-        _logger.Write($"Downloading: {profile.ShortDisplayText}");
+        await _logger.WriteAsync($"Downloading: {profile.ShortDisplayText}");
         _toastReporter = new ProgressToastReporter(profile.ShortDisplayText, I18n.Strings.DownloadingFile, _notificationManager);
 
         var remoteServer = _remoteClipboardServerFactory.Current;
@@ -526,7 +526,7 @@ public class DownloadService : Service
         }
         catch (Exception ex)
         {
-            _logger.Write(LOG_TAG, $"Quick download failed: {ex.Message}");
+            await _logger.WriteAsync(LOG_TAG, $"Quick download failed: {ex.Message}");
             _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
         finally

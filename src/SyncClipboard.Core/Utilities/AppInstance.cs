@@ -80,11 +80,11 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.Write(ex.ToString());
+                await logger.WriteAsync(ex.ToString());
             }
             catch (OperationCanceledException)
             {
-                logger.Write("AppInstance", "Exited Normally");
+                await logger.WriteAsync("AppInstance", "Exited Normally");
             }
         }
     }

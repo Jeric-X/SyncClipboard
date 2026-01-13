@@ -13,14 +13,14 @@ public class LocalFileCacheCleanupJob(LocalFileCacheManager cacheManager, ILogge
     {
         try
         {
-            _logger.Write("Starting cache cleanup job...");
+            await _logger.WriteAsync("Starting cache cleanup job...");
 
             var orphanCount = await _cacheManager.CleanupOrphanRecordsAsync();
-            _logger.Write($"Cache cleanup completed: Removed {orphanCount} orphan records");
+            await _logger.WriteAsync($"Cache cleanup completed: Removed {orphanCount} orphan records");
         }
         catch (Exception ex)
         {
-            _logger.Write($"Cache cleanup job failed: {ex.Message}");
+            await _logger.WriteAsync($"Cache cleanup job failed: {ex.Message}");
         }
     }
 }

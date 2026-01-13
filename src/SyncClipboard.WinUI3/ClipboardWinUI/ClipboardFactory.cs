@@ -178,12 +178,12 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             await Task.Delay(200, ctk);
             ClipboardData = Clipboard.GetContent();
             formats = ClipboardData.AvailableFormats;
-            Logger.Write(LOG_TAG, "retry times: " + (i + 1));
+            await Logger.WriteAsync(LOG_TAG, "retry times: " + (i + 1));
         }
 
         if (formats.Count == 0)
         {
-            Logger.Write(LOG_TAG, "ClipboardData.AvailableFormats.Count is 0");
+            await Logger.WriteAsync(LOG_TAG, "ClipboardData.AvailableFormats.Count is 0");
             meta.Text = "";
             return meta;
         }
@@ -203,13 +203,13 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                 catch (Exception ex) when (ctk.IsCancellationRequested is false)
                 {
                     errortimes += 1;
-                    Logger.Write(LOG_TAG, ex.ToString());
+                    await Logger.WriteAsync(LOG_TAG, ex.ToString());
                     await Task.Delay(100, ctk);
                 }
             }
         }
 
-        Logger.Write(LOG_TAG, "Text: " + meta.Text ?? "");
+        await Logger.WriteAsync(LOG_TAG, "Text: " + meta.Text ?? "");
         return meta;
     }
 }

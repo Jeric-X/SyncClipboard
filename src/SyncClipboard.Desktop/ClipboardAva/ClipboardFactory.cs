@@ -47,7 +47,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                 var formats = await Clipboard.GetFormatsAsync(ctk);
                 if (formats is null)
                 {
-                    Logger.Write(LOG_TAG, $"GetFormatsAsync() is null");
+                    await Logger.WriteAsync(LOG_TAG, $"GetFormatsAsync() is null");
                 }
                 else
                 {
@@ -64,7 +64,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             }
             catch (Exception ex) when (ctk.IsCancellationRequested is false)
             {
-                Logger.Write(ex.Message);
+                await Logger.WriteAsync(ex.Message);
             }
             finally { _semaphoreSlim.Release(); }
             await Task.Delay(200, ctk);
@@ -72,7 +72,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
         if (hasClipboard is false)
         {
-            Logger.Write(LOG_TAG, $"Clipboard is empty");
+            await Logger.WriteAsync(LOG_TAG, $"Clipboard is empty");
             return new ClipboardMetaInfomation();
         }
         throw new Exception("Can't get clipboard data");

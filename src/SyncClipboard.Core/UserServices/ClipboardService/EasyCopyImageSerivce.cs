@@ -42,7 +42,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         }
         catch (Exception ex)
         {
-            Logger.Write(LOG_TAG, ex.Message);
+            await Logger.WriteAsync(LOG_TAG, ex.Message);
         }
     }
 
@@ -197,7 +197,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         if (match.Success) // 是从浏览器复制的图片
         {
             TrayIcon.SetStatusString(SERVICE_NAME, "Downloading web image.");
-            _logger.Write(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
+            await _logger.WriteAsync(LOG_TAG, "http image url: " + match.Groups["imgUrl"].Value);
 
             try
             {

@@ -102,7 +102,7 @@ public sealed class OfficialAdapter(
         catch (Exception ex)
         {
             ServerDisconnected?.Invoke(ex);
-            _logger.Write("OfficialAdapter", $"SignalR连接失败: {ex.Message}");
+            await _logger.WriteAsync("OfficialAdapter", $"SignalR连接失败: {ex.Message}");
         }
     }
 

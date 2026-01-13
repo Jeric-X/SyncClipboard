@@ -280,14 +280,14 @@ public class HistorySyncer
                     continue;
                 }
                 // 孤儿数据：服务器已删除，修改为 LocalOnly
-                _logger.Write("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
+                await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
                 localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
                 await _historyManager.PersistServerSyncedAsync(localRecord, token);
             }
         }
         catch (Exception ex) when (!token.IsCancellationRequested)
         {
-            _logger.Write("HistorySyncer", $"孤儿数据检测失败: {ex.Message}");
+            await _logger.WriteAsync("HistorySyncer", $"孤儿数据检测失败: {ex.Message}");
         }
     }
 
@@ -376,8 +376,9 @@ public class HistorySyncer
         var needUpload = await Task.Run(
             () => allRecords
             .Where(r => r.SyncStatus == HistorySyncStatus.LocalOnly)
-            // .Take(3)
-            .ToList(), token);
+            // .Take(1)
+            .ToList(), token).ConfigureAwait(false);
+
         foreach (var record in needUpload)
         {
             if (token.IsCancellationRequested)
@@ -389,16 +390,16 @@ public class HistorySyncer
                 var validationError = await ContentControlHelper.IsContentValid(profile, token);
                 if (validationError != null)
                 {
-                    _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
+                    await _logger.WriteAsync("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
                     continue;
                 }
 
                 await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
-                _logger.Write("HistorySyncer", $"已将本地记录加入上传队列[{record.Hash}]");
+                await _logger.WriteAsync("HistorySyncer", $"已将本地记录加入上传队列[{record.Hash}]");
             }
             catch (Exception ex)
             {
-                _logger.Write("HistorySyncer", $"加入上传队列失败[{record.Hash}]: {ex.Message}");
+                await _logger.WriteAsync("HistorySyncer", $"加入上传队列失败[{record.Hash}]: {ex.Message}");
             }
         }
     }

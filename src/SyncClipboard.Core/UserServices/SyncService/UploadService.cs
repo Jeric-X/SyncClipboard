@@ -185,7 +185,7 @@ public class UploadService : ClipboardHander
     {
         if (await Profile.Same(profile, _profileCache, token))
         {
-            _logger.Write(LOG_TAG, "Same as lasted downloaded profile, won't push.");
+            await _logger.WriteAsync(LOG_TAG, "Same as lasted downloaded profile, won't push.");
             _profileCache = null;
             return true;
         }
@@ -218,14 +218,14 @@ public class UploadService : ClipboardHander
     {
         if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
         {
-            _logger.Write(LOG_TAG, "Cut won't Push.");
+            await _logger.WriteAsync(LOG_TAG, "Cut won't Push.");
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Cutting operation detected.", false);
             return false;
         }
 
         if (meta.ExcludeForSync ?? false)
         {
-            _logger.Write(LOG_TAG, "Stop Push for meta exclude for sync.");
+            await _logger.WriteAsync(LOG_TAG, "Stop Push for meta exclude for sync.");
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Sensitive content marked by system.", false);
             return false;
         }
@@ -233,7 +233,7 @@ public class UploadService : ClipboardHander
         var skipReason = await ContentControlHelper.IsContentValid(profile, token);
         if (skipReason != null)
         {
-            _logger.Write(LOG_TAG, "Stop Push: " + skipReason);
+            await _logger.WriteAsync(LOG_TAG, "Stop Push: " + skipReason);
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, skipReason, false);
             return false;
         }
@@ -248,9 +248,9 @@ public class UploadService : ClipboardHander
 
     protected async Task UploadProfileClipboard(ClipboardMetaInfomation meta, Profile profile, bool contentControl, CancellationToken token)
     {
-        _logger.Write(LOG_TAG, "New Push started, meta: " + meta);
+        await _logger.WriteAsync(LOG_TAG, "New Push started, meta: " + meta);
 
-        using var endLogGuard = new ScopeGuard(() => _logger.Write(LOG_TAG, "Push End"));
+        using var endLogGuard = new ScopeGuard(() => _logger.WriteAsync(LOG_TAG, "Push End").GetAwaiter().GetResult());
 
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
@@ -258,13 +258,13 @@ public class UploadService : ClipboardHander
 
             if (await IsDownloadServiceWorking(profile, token))
             {
-                _logger.Write(LOG_TAG, "Stop Push: Download service is working or profile is same as last downloaded.");
+                await _logger.WriteAsync(LOG_TAG, "Stop Push: Download service is working or profile is same as last downloaded.");
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
             if (await IsObsoleteProfile(profile, token))
             {
-                _logger.Write(LOG_TAG, "Stop Push: Clipboard profile is obsolete.");
+                await _logger.WriteAsync(LOG_TAG, "Stop Push: Clipboard profile is obsolete.");
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
@@ -281,7 +281,7 @@ public class UploadService : ClipboardHander
         }
         catch (OperationCanceledException)
         {
-            _logger.Write("Upload", "Upload Canceled");
+            await _logger.WriteAsync("Upload", "Upload Canceled");
         }
         finally
         {
@@ -293,7 +293,7 @@ public class UploadService : ClipboardHander
     {
         if (currentProfile.Type == ProfileType.Unknown)
         {
-            _logger.Write("Local profile type is Unkown, stop upload.");
+            await _logger.WriteAsync("Local profile type is Unkown, stop upload.");
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Local profile type is unkown, stopped.", false);
             return;
         }
@@ -317,12 +317,12 @@ public class UploadService : ClipboardHander
 
                 if (!await Profile.Same(remoteProfile, profile, cancelToken))
                 {
-                    _logger.Write(LOG_TAG, "Start: " + profile.DisplayText);
+                    await _logger.WriteAsync(LOG_TAG, "Start: " + profile.DisplayText);
                     await remoteServer.SetProfileAsync(profile, cancelToken);
                 }
                 else
                 {
-                    _logger.Write(LOG_TAG, "Remote is same as local, won't push.");
+                    await _logger.WriteAsync(LOG_TAG, "Remote is same as local, won't push.");
                 }
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
@@ -345,7 +345,7 @@ public class UploadService : ClipboardHander
         var status = profile.ShortDisplayText;
         _notificationManager.ShowText(I18n.Strings.FailedToUpload + status, errMessage);
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
-        _logger.Write(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
+        await _logger.WriteAsync(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
     }
 
     private async void QuickUpload(bool contentControl)
