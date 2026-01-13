@@ -3,6 +3,10 @@ using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Exceptions;
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Clipboard;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -11,17 +15,27 @@ public class HistorySyncer
     private readonly HistoryManager _historyManager;
     private readonly RemoteClipboardServerFactory _remoteServerFactory;
     private readonly ILogger _logger;
+    private readonly HistoryTransferQueue _historyTransferQueue;
+    private readonly ConfigBase _runtimeConfig;
+    private readonly ConfigManager _configManager;
 
     public HistorySyncer(
         HistoryManager historyManager,
         RemoteClipboardServerFactory remoteServerFactory,
-        ILogger logger)
+        ILogger logger,
+        HistoryTransferQueue historyTransferQueue,
+        ConfigManager configManager,
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
     {
         _historyManager = historyManager;
         _remoteServerFactory = remoteServerFactory;
         _logger = logger;
+        _historyTransferQueue = historyTransferQueue;
+        _configManager = configManager;
+        _runtimeConfig = runtimeConfig;
 
         // 订阅 HistoryManager 的事件：更新与删除（软删除）均可能需要同步
+        _historyManager.HistoryAdded += OnHistoryAdded;
         _historyManager.HistoryUpdated += OnHistoryUpdated;
         _historyManager.HistoryRemoved += OnHistoryRemoved;
     }
@@ -84,6 +98,7 @@ public class HistorySyncer
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
         }
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
+        await SyncPendingHistoryDataAsync(token);
     }
 
     /// <summary>
@@ -317,6 +332,77 @@ public class HistorySyncer
         }
     }
 
+    /// <summary>
+    /// 同步所有未同步记录的数据：下载所有 IsLocalFileReady 为 false 的记录，上传所有 LocalOnly 的记录
+    /// </summary>
+    private async Task SyncPendingHistoryDataAsync(CancellationToken token)
+    {
+        try
+        {
+            var allRecords = await _historyManager.GetHistory().ConfigureAwait(false);
+            await SyncPendingDownloadsAsync(allRecords, token);
+            await SyncPendingUploadsAsync(allRecords, token);
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            _logger.Write("HistorySyncer", $"同步转移队列失败: {ex.Message}");
+        }
+    }
+
+    private async Task SyncPendingDownloadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
+    {
+        var needDownload = await Task.Run(() => allRecords.Where(r => r.IsLocalFileReady is false).ToList(), token);
+        foreach (var record in needDownload)
+        {
+            if (token.IsCancellationRequested)
+                break;
+
+            try
+            {
+                var profile = record.ToProfile();
+                await _historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
+                _logger.Write("HistorySyncer", $"已将记录加入下载队列[{record.Hash}]");
+            }
+            catch (Exception ex)
+            {
+                _logger.Write("HistorySyncer", $"加入下载队列失败[{record.Hash}]: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task SyncPendingUploadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
+    {
+
+        var needUpload = await Task.Run(
+            () => allRecords
+            .Where(r => r.SyncStatus == HistorySyncStatus.LocalOnly)
+            // .Take(3)
+            .ToList(), token);
+        foreach (var record in needUpload)
+        {
+            if (token.IsCancellationRequested)
+                break;
+
+            try
+            {
+                var profile = record.ToProfile();
+                var validationError = await ContentControlHelper.IsContentValid(profile, token);
+                if (validationError != null)
+                {
+                    _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
+                    continue;
+                }
+
+                await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
+                _logger.Write("HistorySyncer", $"已将本地记录加入上传队列[{record.Hash}]");
+            }
+            catch (Exception ex)
+            {
+                _logger.Write("HistorySyncer", $"加入上传队列失败[{record.Hash}]: {ex.Message}");
+            }
+        }
+    }
+
     private static long ToUnixMilliseconds(DateTime time)
     {
         if (time.Kind == DateTimeKind.Unspecified)
@@ -338,6 +424,42 @@ public class HistorySyncer
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"事件同步失败[{record.Hash}]: {ex.Message}");
+        }
+    }
+
+    private async void OnHistoryAdded(HistoryRecord record)
+    {
+        try
+        {
+            // 如果已启用剪贴板同步且启用拉取，直接返回
+            var syncConfig = _configManager.GetConfig<SyncConfig>();
+            if (syncConfig.SyncSwitchOn && syncConfig.PullSwitchOn)
+            {
+                return;
+            }
+
+            var runtimeHistoryConfig = _runtimeConfig.GetConfig<RuntimeHistoryConfig>();
+            if (runtimeHistoryConfig.EnableSyncHistory is false)
+            {
+                return;
+            }
+
+            var profile = record.ToProfile();
+            // 使用 ContentControlHelper 过滤被 content control 过滤的记录
+            var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
+            if (validationError != null)
+            {
+                // 记录被过滤，跳过上传
+                _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
+                return;
+            }
+
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, CancellationToken.None);
+            _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
         }
     }
 

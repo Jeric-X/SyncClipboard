@@ -878,4 +878,10 @@ This operation cannot be undone.</value>
   <data name="SortByLastAccessed" xml:space="preserve">
     <value>Sort by Last Accessed</value>
   </data>
+  <data name="UploadWarning" xml:space="preserve">
+    <value>Upload Warning</value>
+  </data>
+  <data name="ContinueUpload" xml:space="preserve">
+    <value>This item is filtered by content control. Do you want to continue uploading?</value>
+  </data>
 </root>

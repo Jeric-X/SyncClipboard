@@ -873,6 +873,19 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
+        var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
+        if (validationError != null)
+        {
+            var dialog = AppCore.Current.Services.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
+            var confirmed = await dialog.ShowConfirmationAsync(
+                I18n.Strings.UploadWarning,
+                $"{validationError}\n\n{I18n.Strings.ContinueUpload}");
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+
         _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: CancellationToken.None);
     }
 

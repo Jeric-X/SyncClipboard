@@ -2320,5 +2320,23 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("WindowTopmost", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 Upload Warning 的本地化字符串。
+        /// </summary>
+        public static string UploadWarning {
+            get {
+                return ResourceManager.GetString("UploadWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 This item is filtered by content control. Do you want to continue uploading? 的本地化字符串。
+        /// </summary>
+        public static string ContinueUpload {
+            get {
+                return ResourceManager.GetString("ContinueUpload", resourceCulture);
+            }
+        }
     }
 }

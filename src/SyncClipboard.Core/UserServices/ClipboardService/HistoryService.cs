@@ -22,6 +22,7 @@ public class HistoryService : ClipboardHander
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private readonly HistorySyncer historySyncer;
     private readonly ITrayIcon trayIcon;
+    private readonly HistoryTransferQueue historyTransferQueue;
     private bool _enableSyncHistory;
 
     public HistoryService(
@@ -30,7 +31,8 @@ public class HistoryService : ClipboardHander
         ConfigManager configManager,
         RemoteClipboardServerFactory remoteServerFactory,
         HistorySyncer historySyncer,
-        ITrayIcon trayIcon)
+        ITrayIcon trayIcon,
+        HistoryTransferQueue historyTransferQueue)
     {
         this.runTimeConfig = runtimeConfig;
         this.historyManager = historyManager;
@@ -38,6 +40,7 @@ public class HistoryService : ClipboardHander
         this.remoteServerFactory = remoteServerFactory;
         this.historySyncer = historySyncer;
         this.trayIcon = trayIcon;
+        this.historyTransferQueue = historyTransferQueue;
         _enableSyncHistory = configManager.GetConfig<HistoryConfig>().EnableSyncHistory;
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
         _syncingTask = new SingletonTask(SyncTaskImpl);
@@ -220,6 +223,14 @@ public class HistoryService : ClipboardHander
         {
             var record = historyRecordDto.ToHistoryRecord();
             await historyManager.PersistServerSyncedAsync(record, CancellationToken.None);
+
+            // 如果未启用同步剪贴板或未启用拉取，使用 historyTransferQueue 下载
+            var syncConfig = configManager.GetConfig<SyncConfig>();
+            if (!syncConfig.SyncSwitchOn || !syncConfig.PullSwitchOn)
+            {
+                var profile = record.ToProfile();
+                await historyTransferQueue.EnqueueDownload(profile, forceResume: false, CancellationToken.None);
+            }
         }
         catch (Exception ex)
         {
@@ -241,6 +252,16 @@ public class HistoryService : ClipboardHander
 
         if (clipboardMetaInfomation.Effects.HasValue &&
             clipboardMetaInfomation.Effects.Value.HasFlag(DragDropEffects.Move))
+        {
+            return;
+        }
+
+        if (clipboardMetaInfomation.ExcludeForSync ?? false)
+        {
+            return;
+        }
+
+        if (clipboardMetaInfomation.ExcludeForHistory ?? false)
         {
             return;
         }

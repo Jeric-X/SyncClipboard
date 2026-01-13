@@ -24,24 +24,6 @@
         Icon="/Assets/icon.ico"
         WindowStartupLocation="CenterScreen"
         mc:Ignorable="d">
-    <Window.Styles>
-        <Style Selector="Button">
-            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Width" Value="28" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Focusable" Value="False" />
-        </Style>
-        <Style Selector="ToggleButton">
-            <Setter Property="Focusable" Value="False" />
-        </Style>
-        <Style Selector="ListBoxItem">
-            <Setter Property="Focusable" Value="False" />
-        </Style>
-        <Style Selector="TabStripItem">
-            <Setter Property="Focusable" Value="False" />
-        </Style>
-    </Window.Styles>
     <Window.Resources>
         <ResourceDictionary>
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
@@ -71,6 +53,24 @@
         </local:ClipboardViewerTemplateSelector>
     </Window.DataTemplates>
     <Panel>
+        <Panel.Styles>
+            <Style Selector="Button">
+                <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+                <Setter Property="Height" Value="28" />
+                <Setter Property="Width" Value="28" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Focusable" Value="False" />
+            </Style>
+            <Style Selector="ToggleButton">
+                <Setter Property="Focusable" Value="False" />
+            </Style>
+            <Style Selector="ListBoxItem">
+                <Setter Property="Focusable" Value="False" />
+            </Style>
+            <Style Selector="TabStripItem">
+                <Setter Property="Focusable" Value="False" />
+            </Style>
+        </Panel.Styles>
         <ExperimentalAcrylicBorder IsHitTestVisible="False">
             <ExperimentalAcrylicBorder.Material>
                 <ExperimentalAcrylicMaterial BackgroundSource="Digger"

@@ -878,4 +878,10 @@ Esc：关闭面板</value>
   <data name="SortByLastAccessed" xml:space="preserve">
     <value>按最后复制时间排序</value>
   </data>
+  <data name="UploadWarning" xml:space="preserve">
+    <value>上传警告</value>
+  </data>
+  <data name="ContinueUpload" xml:space="preserve">
+    <value>此条目被内容控制过滤，是否继续上传？</value>
+  </data>
 </root>

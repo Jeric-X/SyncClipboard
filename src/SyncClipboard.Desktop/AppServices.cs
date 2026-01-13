@@ -22,6 +22,11 @@ public class AppServices
         services.AddTransient<IAppConfig, AppConfig>();
 
         services.AddSingleton<IMainWindowDialog, Services.AvaloniaDialog>();
+        services.AddKeyedSingleton<IMainWindowDialog>("HistoryWindow", (sp, key) =>
+        {
+            var historyWindow = sp.GetRequiredKeyedService<IWindow>("HistoryWindow") as HistoryWindow;
+            return new Services.AvaloniaDialog(historyWindow!);
+        });
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<MultiSourceClipboardReader>();
         services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();

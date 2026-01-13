@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
@@ -8,6 +9,17 @@ namespace SyncClipboard.WinUI3.Services;
 
 public class WinUIDialog : IMainWindowDialog
 {
+    private readonly XamlRoot? _xamlRoot;
+
+    public WinUIDialog()
+    {
+    }
+
+    public WinUIDialog(Window window)
+    {
+        _xamlRoot = window.Content.XamlRoot;
+    }
+
     public async Task<bool> ShowConfirmationAsync(string title, string message)
     {
         var dialog = new ContentDialog
@@ -17,7 +29,7 @@ public class WinUIDialog : IMainWindowDialog
             PrimaryButtonText = Strings.Confirm,
             SecondaryButtonText = Strings.Cancel,
             DefaultButton = ContentDialogButton.Secondary,
-            XamlRoot = App.Current.MainWindow.Content.XamlRoot
+            XamlRoot = _xamlRoot ?? App.Current.MainWindow.Content.XamlRoot
         };
 
         var result = await dialog.ShowAsync();

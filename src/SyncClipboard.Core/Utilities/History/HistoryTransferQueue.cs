@@ -23,7 +23,7 @@ public class HistoryTransferQueue : IDisposable
     private readonly object _queueLock = new();
 
     // 并发控制
-    private readonly SemaphoreSlim _workerSemaphore = new(5, 5); // 并行度=5
+    private readonly SemaphoreSlim _workerSemaphore = new(2, 2); // 并行度=5
     private readonly SemaphoreSlim _startSemaphore = new(1, 1); // 确保启动方法的并发安全
     private readonly AutoResetEvent _queueSignal = new(false); // 条件变量：通知队列有新任务
     private CancellationTokenSource _globalCts = new();

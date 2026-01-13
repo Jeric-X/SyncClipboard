@@ -9,25 +9,48 @@ public static class ContentControlHelper
     private static SyncConfig GetSyncConfig() => AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>();
     private static FileFilterConfig GetFileFilterConfig() => AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<FileFilterConfig>();
 
-    public static bool IsContentValid(Profile profile)
+    public static async Task<string?> IsContentValid(Profile profile, CancellationToken token)
     {
         var syncConfig = GetSyncConfig();
         if (profile is TextProfile)
         {
-            return syncConfig.EnableUploadText;
+            if (!syncConfig.EnableUploadText)
+            {
+                return "Skipped: Text upload is disabled in settings.";
+            }
         }
-
-        if (profile is GroupProfile groupProfile)
+        else if (profile is GroupProfile groupProfile)
         {
             var hasItem = groupProfile.Files?.FirstOrDefault(name => Directory.Exists(name) || FileFilterHelper.IsFileAvailableAfterFilter(name, GetFileFilterConfig())) != null;
-            return hasItem && syncConfig.EnableUploadMultiFile;
+            if (!hasItem)
+            {
+                return "Skipped: No valid files found in the group.";
+            }
+            if (!syncConfig.EnableUploadMultiFile)
+            {
+                return "Skipped: Multiple files upload is disabled in settings.";
+            }
         }
-
-        if (profile is FileProfile fileProfile)
+        else if (profile is FileProfile fileProfile)
         {
-            return FileFilterHelper.IsFileAvailableAfterFilter(fileProfile.FullPath!, GetFileFilterConfig()) && syncConfig.EnableUploadSingleFile;
+            if (!FileFilterHelper.IsFileAvailableAfterFilter(fileProfile.FileName, GetFileFilterConfig()))
+            {
+                return $"Skipped: File '{fileProfile.FileName}' is filtered out.";
+            }
+            if (!syncConfig.EnableUploadSingleFile)
+            {
+                return "Skipped: Single file upload is disabled in settings.";
+            }
         }
 
-        return false;
+        var profileSize = await profile.GetSize(token);
+        if (profileSize > syncConfig.MaxFileByte)
+        {
+            var sizeMB = profileSize / (1024.0 * 1024.0);
+            var maxSizeMB = syncConfig.MaxFileByte / (1024.0 * 1024.0);
+            return $"Skipped: File size {sizeMB:F2}MB exceeds limit {maxSizeMB:F0}MB.";
+        }
+
+        return null;
     }
 }

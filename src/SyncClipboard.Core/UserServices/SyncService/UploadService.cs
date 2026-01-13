@@ -214,6 +214,33 @@ public class UploadService : ClipboardHander
         }
     }
 
+    private async Task<bool> ValidateContentControlAsync(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
+    {
+        if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
+        {
+            _logger.Write(LOG_TAG, "Cut won't Push.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Cutting operation detected.", false);
+            return false;
+        }
+
+        if (meta.ExcludeForSync ?? false)
+        {
+            _logger.Write(LOG_TAG, "Stop Push for meta exclude for sync.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Sensitive content marked by system.", false);
+            return false;
+        }
+
+        var skipReason = await ContentControlHelper.IsContentValid(profile, token);
+        if (skipReason != null)
+        {
+            _logger.Write(LOG_TAG, "Stop Push: " + skipReason);
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, skipReason, false);
+            return false;
+        }
+
+        return true;
+    }
+
     protected override Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
         return UploadProfileClipboard(meta, profile, true, token);
@@ -228,22 +255,6 @@ public class UploadService : ClipboardHander
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
-            if (contentControl)
-            {
-                if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
-                {
-                    _logger.Write(LOG_TAG, "Cut won't Push.");
-                    _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Cutting things, won't push.", false);
-                    return;
-                }
-
-                if (meta.ExcludeForSync ?? false)
-                {
-                    _logger.Write(LOG_TAG, "Stop Push for meta exclude for sync.");
-                    _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
-                    return;
-                }
-            }
 
             if (await IsDownloadServiceWorking(profile, token))
             {
@@ -257,10 +268,8 @@ public class UploadService : ClipboardHander
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
-            if (contentControl && !ContentControlHelper.IsContentValid(profile))
+            if (contentControl && !await ValidateContentControlAsync(meta, profile, token))
             {
-                _logger.Write(LOG_TAG, "Stop Push: Profile is not available from local.");
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
                 return;
             }
 
