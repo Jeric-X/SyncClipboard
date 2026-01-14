@@ -101,6 +101,12 @@ public class HistorySyncer
         await SyncPendingHistoryDataAsync(token);
     }
 
+    // 关闭历史记录同步功能后，将所有远程历史记录标记为本地，不完整的记录删除
+    public async Task RemoveRemoteHistorys(CancellationToken token)
+    {
+        await DetectOrphanDataAsync(null, null, [], ProfileTypeFilter.All, null, null, token);
+    }
+
     /// <summary>
     /// 遍历所有本地历史记录，将 SyncStatus == NeedSync 的记录更新到服务器。
     /// 如果服务器返回 409 冲突，则使用服务器返回的记录内容更新本地。
@@ -280,7 +286,7 @@ public class HistorySyncer
                     continue;
                 }
                 // 孤儿数据：服务器已删除，修改为 LocalOnly
-                await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
+                // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
                 localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
                 await _historyManager.PersistServerSyncedAsync(localRecord, token);
             }
@@ -361,7 +367,7 @@ public class HistorySyncer
             {
                 var profile = record.ToProfile();
                 await _historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
-                _logger.Write("HistorySyncer", $"已将记录加入下载队列[{record.Hash}]");
+                // _logger.Write("HistorySyncer", $"已将记录加入下载队列[{record.Hash}]");
             }
             catch (Exception ex)
             {
@@ -390,12 +396,12 @@ public class HistorySyncer
                 var validationError = await ContentControlHelper.IsContentValid(profile, token);
                 if (validationError != null)
                 {
-                    await _logger.WriteAsync("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
+                    // await _logger.WriteAsync("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
                     continue;
                 }
 
                 await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
-                await _logger.WriteAsync("HistorySyncer", $"已将本地记录加入上传队列[{record.Hash}]");
+                // await _logger.WriteAsync("HistorySyncer", $"已将本地记录加入上传队列[{record.Hash}]");
             }
             catch (Exception ex)
             {

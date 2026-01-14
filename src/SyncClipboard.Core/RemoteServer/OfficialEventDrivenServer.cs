@@ -129,7 +129,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
 
     private void OnHistoryChanged(HistoryRecordDto historyRecordDto)
     {
-        _logger.Write($"[EVENT] Remote history changed: {historyRecordDto.Type}/{historyRecordDto.Hash}");
+        // _logger.Write($"[EVENT] Remote history changed: {historyRecordDto.Type}/{historyRecordDto.Hash}");
         HistoryChanged?.Invoke(historyRecordDto);
     }
 

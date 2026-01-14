@@ -611,15 +611,14 @@ public partial class HistoryViewModel : ObservableObject
         {
             if (!isMatchDbFilter)
             {
-                allHistoryItems.Remove(oldRecord);
+                RemoveInsert(oldRecord, null);
                 return;
             }
             bool isShownInUI = IsMatchUiFilter(newRecord);
             bool oldisShownInUI = IsMatchUiFilter(oldRecord);
             if (oldisShownInUI != isShownInUI)
             {
-                allHistoryItems.Remove(oldRecord);
-                InsertHistoryInOrder(newRecord);
+                RemoveInsert(oldRecord, newRecord);
                 return;
             }
 
@@ -628,8 +627,7 @@ public partial class HistoryViewModel : ObservableObject
             if (currentIndex >= 0 && ShouldChangePosition(newRecord, currentIndex))
             {
                 // 位置改变，先删除后重新插入
-                allHistoryItems.Remove(oldRecord);
-                InsertHistoryInOrder(newRecord);
+                RemoveInsert(oldRecord, newRecord);
                 return;
             }
 
@@ -642,6 +640,20 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
         InsertHistoryInOrder(newRecord);
+    }
+
+    private void RemoveInsert(HistoryRecordVM oldR, HistoryRecordVM? newR)
+    {
+        try
+        {
+            allHistoryItems.Remove(oldR);
+            if (newR != null)
+                InsertHistoryInOrder(newR);
+        }
+        catch
+        {
+            Reload();
+        }
     }
 
     /// <summary>
@@ -657,14 +669,16 @@ public partial class HistoryViewModel : ObservableObject
         if (currentIndex > 0)
         {
             var prevT = SortByLastAccessed ? allHistoryItems[currentIndex - 1].LastAccessed : allHistoryItems[currentIndex - 1].Timestamp;
-            if (prevT < t) return true; // 应该往前移
+            if (prevT < t)
+                return true; // 应该往前移
         }
 
         // 检查与后一个记录的顺序
         if (currentIndex < allHistoryItems.Count - 1)
         {
             var nextT = SortByLastAccessed ? allHistoryItems[currentIndex + 1].LastAccessed : allHistoryItems[currentIndex + 1].Timestamp;
-            if (nextT > t) return true; // 应该往后移
+            if (nextT > t)
+                return true; // 应该往后移
         }
 
         return false;

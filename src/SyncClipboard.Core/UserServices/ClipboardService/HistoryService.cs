@@ -134,11 +134,6 @@ public class HistoryService : ClipboardHander
 
     private async void TriggerSyncTask()
     {
-        if (!_enableSyncHistory)
-        {
-            return;
-        }
-
         try
         {
             await _syncingTask.Run();
@@ -166,22 +161,13 @@ public class HistoryService : ClipboardHander
         SetRuntimeConfig();
         if (!_enableSyncHistory)
         {
-            _syncingTask.Cancel();
             trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
         }
-        else
-        {
-            TriggerSyncTask();
-        }
+        TriggerSyncTask();
     }
 
     public Task SyncAllAsync()
     {
-        if (!_enableSyncHistory || _historySyncServer == null)
-        {
-            return Task.CompletedTask;
-        }
-
         _lastSyncTime = null;
         TriggerSyncTask();
         return Task.CompletedTask;
@@ -189,7 +175,14 @@ public class HistoryService : ClipboardHander
 
     private async Task SyncTaskImpl(CancellationToken token)
     {
+        if (!_enableSyncHistory || _historySyncServer == null)
+        {
+            await historySyncer.RemoveRemoteHistorys(token).ConfigureAwait(false);
+            return;
+        }
+
         trayIcon.SetStatusString(SERVICE_NAME, "Synchronizing history...");
+        historyTransferQueue.ResumeQueue();
         await historySyncer.SyncAllAsync(_lastSyncTime?.LocalDateTime, token).ConfigureAwait(false);
         while (!token.IsCancellationRequested)
         {

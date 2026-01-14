@@ -475,7 +475,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                         try
                         {
                             Directory.Delete(dir, true);
-                            _logger.Write("HistoryManager", $"Deleted orphaned history folder: {dirName} (created: {dirInfo.CreationTime})");
                         }
                         catch (Exception ex)
                         {

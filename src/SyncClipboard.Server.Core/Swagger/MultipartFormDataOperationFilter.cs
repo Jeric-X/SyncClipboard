@@ -39,6 +39,7 @@ public class MultipartFormDataOperationFilter : IOperationFilter
                 ["type"] = context.SchemaGenerator.GenerateSchema(typeof(ProfileType), context.SchemaRepository),
                 ["createTime"] = context.SchemaGenerator.GenerateSchema(typeof(DateTimeOffset), context.SchemaRepository),
                 ["lastModified"] = context.SchemaGenerator.GenerateSchema(typeof(DateTimeOffset), context.SchemaRepository),
+                ["lastAccessed"] = context.SchemaGenerator.GenerateSchema(typeof(DateTimeOffset), context.SchemaRepository),
                 ["starred"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["pinned"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["version"] = context.SchemaGenerator.GenerateSchema(typeof(int), context.SchemaRepository),
