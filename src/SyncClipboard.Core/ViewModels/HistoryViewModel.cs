@@ -619,8 +619,7 @@ public partial class HistoryViewModel : ObservableObject
             if (oldisShownInUI != isShownInUI)
             {
                 allHistoryItems.Remove(oldRecord);
-                if (isShownInUI)
-                    InsertHistoryInOrder(newRecord);
+                InsertHistoryInOrder(newRecord);
                 return;
             }
 
@@ -987,20 +986,29 @@ public partial class HistoryViewModel : ObservableObject
         _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
-            if (vm == null) return;
+            if (vm == null)
+                return;
+
+            var newVm = vm.DeepCopy();
+            newVm.UpdateFromTask(task);
 
             var wasShownInUI = IsMatchUiFilter(vm);
-            vm.UpdateFromTask(task);
-            var isShownInUI = IsMatchUiFilter(vm);
+            var isShownInUI = IsMatchUiFilter(newVm);
             if (wasShownInUI != isShownInUI)
             {
                 try
                 {
                     allHistoryItems.Remove(vm);
                 }
-                catch { }
-                InsertHistoryInOrder(vm);
+                catch
+                {
+                    Reload();
+                }
+                InsertHistoryInOrder(newVm);
+                return;
             }
+
+            vm.UpdateFromTask(task);
         });
     }
 }
