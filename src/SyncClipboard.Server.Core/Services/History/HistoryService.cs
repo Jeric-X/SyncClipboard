@@ -344,7 +344,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             }
 
             await profile.SetTransferData(filePath, verify: true, token);
-            entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
+
+            var newEntity = await profile.ToHistoryEntity(_persistentDir, userId, token);
+            entity = InheritEntityFields(entity, newEntity);
         }
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);
@@ -354,6 +356,17 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         await NotifyProfileChangeAsync(entity);
 
         return HistoryRecordDto.FromEntity(entity);
+    }
+
+    private static HistoryRecordEntity InheritEntityFields(HistoryRecordEntity oldEntity, HistoryRecordEntity newEntity)
+    {
+        newEntity.CreateTime = oldEntity.CreateTime;
+        newEntity.LastAccessed = oldEntity.LastAccessed;
+        newEntity.LastModified = oldEntity.LastModified;
+        newEntity.Stared = oldEntity.Stared;
+        newEntity.Pinned = oldEntity.Pinned;
+        newEntity.Version = oldEntity.Version;
+        return newEntity;
     }
 
     private async Task DeleteProfileData(HistoryRecordEntity entity, CancellationToken token)
