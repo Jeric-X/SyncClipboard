@@ -364,10 +364,8 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public async Task Refresh()
     {
-        // Trigger remote sync in background
-        _ = _historyService.SyncAllAsync();
-
         await Reload();
+        _ = _historyService.SyncAllAsync();
     }
 
     private Task Reload()
@@ -621,10 +619,10 @@ public partial class HistoryViewModel : ObservableObject
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
     }
 
-    private void RecordEntityUpdated(HistoryRecord record)
+    private async void RecordEntityUpdated(HistoryRecord record)
     {
         var newRecordVM = new HistoryRecordVM(record);
-        _threadDispatcher.RunOnMainThreadAsync(() =>
+        await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
@@ -640,8 +638,14 @@ public partial class HistoryViewModel : ObservableObject
     {
         _threadDispatcher.RunOnMainThreadAsync(() => OnRemoteServerChanged());
     }
+
     private void RecordUpdated(HistoryRecordVM newRecord)
     {
+        if (SelectedFilter == HistoryFilterType.Transferring)
+        {
+            return;
+        }
+
         var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
         bool isMatchDbFilter = IsMatchDbFilter(newRecord);
 
@@ -1045,7 +1049,8 @@ public partial class HistoryViewModel : ObservableObject
             var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
             if (vm == null)
             {
-                if (SelectedFilter != HistoryFilterType.Transferring)
+                // return;
+                if (SelectedFilter == HistoryFilterType.Transferring)
                 {
                     var token = CancellationToken.None;
                     var record = await historyManager.GetHistoryRecord(await task.Profile.GetHash(token), task.Profile.Type, token);

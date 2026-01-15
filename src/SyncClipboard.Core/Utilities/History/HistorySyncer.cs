@@ -461,12 +461,12 @@ public class HistorySyncer
             if (validationError != null)
             {
                 // 记录被过滤，跳过上传
-                _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
+                // _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
                 return;
             }
 
             await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, CancellationToken.None);
-            _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
+            // _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
         }
         catch (Exception ex)
         {
