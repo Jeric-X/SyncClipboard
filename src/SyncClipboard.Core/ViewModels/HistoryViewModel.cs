@@ -398,7 +398,11 @@ public partial class HistoryViewModel : ObservableObject
 
             foreach (var task in tasks)
             {
-                var record = await historyManager.ToHistoryRecord(task.Profile, CancellationToken.None);
+                var token = CancellationToken.None;
+                var record = await historyManager.GetHistoryRecord(await task.Profile.GetHash(token), task.Profile.Type, token);
+                if (record is null)
+                    continue;
+
                 var vm = new HistoryRecordVM(record);
                 vm.UpdateFromTask(task);
                 vms.Add(vm);
@@ -1043,7 +1047,12 @@ public partial class HistoryViewModel : ObservableObject
             {
                 if (SelectedFilter != HistoryFilterType.Transferring)
                 {
-                    vm = new HistoryRecordVM(await historyManager.ToHistoryRecord(task.Profile, CancellationToken.None));
+                    var token = CancellationToken.None;
+                    var record = await historyManager.GetHistoryRecord(await task.Profile.GetHash(token), task.Profile.Type, token);
+                    if (record is null)
+                        return;
+
+                    vm = new HistoryRecordVM(record);
                     vm.UpdateFromTask(task);
                     if (IsMatchUiFilter(vm))
                     {
