@@ -804,10 +804,9 @@ public partial class HistoryViewModel : ObservableObject
             }).ToArray();
         }, token);
 
-        allHistoryItems.AddRange(vms);
         var last = vms.LastOrDefault()!;
-
         _timeCursor = SortByLastAccessed ? last.LastAccessed : last.Timestamp;
+        vms.ForEach(RecordUpdated);
         _isLocalEnd = vms.Length < size;
     }
 

@@ -263,33 +263,37 @@ public class HistorySyncer
                 int.MaxValue,
                 searchText,
                 false,
-                token);
+                token).ConfigureAwait(false);
 
-            var localSyncedOrServerOnly = localRecords
-                .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false)
-                .Where(r => !after.HasValue || r.Timestamp >= after.Value);
-
-            // 构建服务器记录的标识集合
-            var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
-
-            // 找出孤儿数据：本地认为已同步但服务器不存在
-            foreach (var localRecord in localSyncedOrServerOnly)
+            await Task.Run(async () =>
             {
-                var localId = $"{localRecord.Type}-{localRecord.Hash}";
-                if (remoteIds.Contains(localId))
+                var localSyncedOrServerOnly = localRecords
+                    .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false)
+                    .Where(r => !after.HasValue || r.Timestamp >= after.Value);
+
+                // 构建服务器记录的标识集合
+                var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
+
+                // 找出孤儿数据：本地认为已同步但服务器不存在
+                foreach (var localRecord in localSyncedOrServerOnly)
                 {
-                    continue;
+                    var localId = $"{localRecord.Type}-{localRecord.Hash}";
+                    if (remoteIds.Contains(localId))
+                    {
+                        continue;
+                    }
+                    if (localRecord.IsLocalFileReady is false)
+                    {
+                        await _historyManager.RemoveHistory(localRecord, token).ConfigureAwait(false);
+                        continue;
+                    }
+                    // 孤儿数据：服务器已删除，修改为 LocalOnly
+                    // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
+                    localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
+                    await _historyManager.PersistServerSyncedAsync(localRecord, token).ConfigureAwait(false);
                 }
-                if (localRecord.IsLocalFileReady is false)
-                {
-                    await _historyManager.RemoveHistory(localRecord, token);
-                    continue;
-                }
-                // 孤儿数据：服务器已删除，修改为 LocalOnly
-                // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
-                localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
-                await _historyManager.PersistServerSyncedAsync(localRecord, token);
-            }
+            }, token).ConfigureAwait(false);
+
         }
         catch (Exception ex) when (!token.IsCancellationRequested)
         {

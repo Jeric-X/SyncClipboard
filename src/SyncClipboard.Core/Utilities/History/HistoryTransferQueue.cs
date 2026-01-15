@@ -165,6 +165,7 @@ public class HistoryTransferQueue : IDisposable
             _pendingTasks.Enqueue(task);
         }
 
+        NotifyStatusChanged(task);
         // await _logger.WriteAsync($"{type} 任务 {taskId} 已加入队列");
 
         await EnsureProcessingTaskStartedAsync(ct);
