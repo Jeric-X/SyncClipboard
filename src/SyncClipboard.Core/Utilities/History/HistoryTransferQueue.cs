@@ -191,6 +191,13 @@ public class HistoryTransferQueue : IDisposable
         return null;
     }
 
+    public Task<List<TransferTask>> GetAllActiveTasks()
+    {
+        return Task.Run(() => _activeTasks.Values
+            .OrderBy(t => t.CreatedTime)
+            .ToList());
+    }
+
     public bool CancelDownload(string profileId)
     {
         var taskId = TransferTask.GetTaskId(TransferType.Download, profileId);
