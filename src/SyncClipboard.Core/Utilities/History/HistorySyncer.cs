@@ -99,6 +99,7 @@ public class HistorySyncer
         }
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
         await SyncPendingHistoryDataAsync(token);
+        await _historyTransferQueue.WaitAllTasks(token);
     }
 
     // 关闭历史记录同步功能后，将所有远程历史记录标记为本地，不完整的记录删除

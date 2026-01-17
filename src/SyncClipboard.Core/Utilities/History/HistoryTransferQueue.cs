@@ -208,6 +208,22 @@ public class HistoryTransferQueue : IDisposable
          }, token);
     }
 
+    public async Task WaitAllTasks(CancellationToken token)
+    {
+        var tasks = await GetAllActiveTasks(token);
+        var completionTasks = tasks
+            .Where(t => t.Status == TransferTaskStatus.Running ||
+                        t.Status == TransferTaskStatus.Pending ||
+                        t.Status == TransferTaskStatus.WaitForRetry)
+            .Select(t => t.CompletionSource.Task)
+            .ToList();
+
+        if (completionTasks.Count != 0)
+        {
+            await Task.WhenAll(completionTasks).WaitAsync(token);
+        }
+    }
+
     public bool CancelDownload(string profileId)
     {
         var taskId = TransferTask.GetTaskId(TransferType.Download, profileId);
