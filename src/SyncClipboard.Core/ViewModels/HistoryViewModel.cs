@@ -15,6 +15,7 @@ using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
+using System.Threading.Channels;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -48,6 +49,11 @@ public partial class HistoryViewModel : ObservableObject
 
     private readonly HistoryTransferQueue _transferQueue;
     private readonly IThreadDispatcher _threadDispatcher;
+    private CancellationTokenSource _loadCts = new();
+    private TaskCompletionSource<bool>? _transferringLoadingTcs;
+
+    private Channel<TransferTask> _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
+    private Task? _queueConsumerTask;
 
     public HistoryViewModel(
         HistoryManager historyManager,
@@ -319,11 +325,12 @@ public partial class HistoryViewModel : ObservableObject
         if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight) return;
 
         if (_isLoadTaskRunning != 0) return;
+        if (SelectedFilter == HistoryFilterType.Transferring) return;
 
-        await RunLoadTask(MorePageSize);
+        await RunLoadTask(MorePageSize, _loadCts.Token);
     }
 
-    private async Task RunLoadTask(int size)
+    private async Task RunLoadTask(int size, CancellationToken token)
     {
         if (window is null) return;
         if (Interlocked.CompareExchange(ref _isLoadTaskRunning, 1, 0) != 0) return;
@@ -348,7 +355,7 @@ public partial class HistoryViewModel : ObservableObject
             {
                 await logger.WriteAsync("Failed to load more history:", ex.Message);
             }
-        });
+        }, token);
     }
 
 
@@ -370,43 +377,50 @@ public partial class HistoryViewModel : ObservableObject
 
     private Task Reload()
     {
+        try
+        {
+            _loadCts.Cancel();
+            _loadCts.Dispose();
+        }
+        catch { }
+        _loadCts = new CancellationTokenSource();
+
         _isLocalEnd = false;
 
+        _transferringLoadingTcs = null;
         allHistoryItems.Clear();
         _timeCursor = null;
         _lastViewportHeight = 0;
         _lastExtentHeight = 0;
+        _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
+        _queueConsumerTask = Task.Run(() => _ = ConsumeUpdateTaskQueueAsync(_loadCts.Token));
         window?.ScrollToTop();
 
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
-            return LoadTransferringTasksAsync();
+            return LoadTransferringTasksAsync(_loadCts.Token);
         }
 
-        return RunLoadTask(InitialPageSize);
+        return RunLoadTask(InitialPageSize, _loadCts.Token);
     }
 
-    private async Task LoadTransferringTasksAsync()
+    private async Task LoadTransferringTasksAsync(CancellationToken token)
     {
         IsLoadingLocal = true;
         try
         {
-            var tasks = await _transferQueue.GetAllActiveTasks();
-            var vms = new List<HistoryRecordVM>();
+            _transferQueue.TaskStatusChanged -= OnTransferTaskStatusChanged;
+            _transferringLoadingTcs = new TaskCompletionSource<bool>();
+
+            await _transferQueue.ActiveTaskAddMutex.WaitAsync(token);
+            _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
+            var tasks = await _transferQueue.GetAllActiveTasks(token);
+            _transferQueue.ActiveTaskAddMutex.Release();
 
             foreach (var task in tasks)
             {
-                var token = CancellationToken.None;
-                var record = await historyManager.GetHistoryRecord(await task.Profile.GetHash(token), task.Profile.Type, token);
-                if (record is null)
-                    continue;
-
-                var vm = new HistoryRecordVM(record);
-                vm.UpdateFromTask(task);
-                vms.Add(vm);
+                OnTransferTaskStatusChanged(null, task);
             }
-
-            allHistoryItems.AddRange(vms);
             _isLocalEnd = true;
         }
         catch (Exception ex)
@@ -416,6 +430,7 @@ public partial class HistoryViewModel : ObservableObject
         finally
         {
             IsLoadingLocal = false;
+            _transferringLoadingTcs?.TrySetResult(true);
         }
     }
 
@@ -639,10 +654,21 @@ public partial class HistoryViewModel : ObservableObject
         _threadDispatcher.RunOnMainThreadAsync(() => OnRemoteServerChanged());
     }
 
+    private void UpdateTransferingRecord(HistoryRecordVM newRecord)
+    {
+        var oldRecord = allHistoryItems.FirstOrDefault(r => r == newRecord);
+        if (oldRecord != null)
+        {
+            oldRecord.Update(newRecord);
+            return;
+        }
+    }
+
     private void RecordUpdated(HistoryRecordVM newRecord)
     {
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
+            UpdateTransferingRecord(newRecord);
             return;
         }
 
@@ -813,7 +839,6 @@ public partial class HistoryViewModel : ObservableObject
     {
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
-            _isLocalEnd = true;
             return;
         }
 
@@ -1042,43 +1067,104 @@ public partial class HistoryViewModel : ObservableObject
         _transferQueue.CancelDownload(profileId);
     }
 
-    private void OnTransferTaskStatusChanged(object? sender, TransferTask task)
+    private async Task UpdateRecordFromTaskInTransferFilter(TransferTask task, CancellationToken token)
     {
-        _threadDispatcher.RunOnMainThreadAsync(async () =>
+        try
         {
-            var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
-            if (vm == null)
-            {
-                // return;
-                if (SelectedFilter == HistoryFilterType.Transferring)
-                {
-                    var token = CancellationToken.None;
-                    var record = await historyManager.GetHistoryRecord(await task.Profile.GetHash(token), task.Profile.Type, token);
-                    if (record is null)
-                        return;
-
-                    vm = new HistoryRecordVM(record);
-                    vm.UpdateFromTask(task);
-                    if (IsMatchUiFilter(vm))
-                    {
-                        allHistoryItems.Add(vm);
-                    }
-                }
+            if (_transferringLoadingTcs is null)
                 return;
-            }
+            await _transferringLoadingTcs.Task.WaitAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
 
+        var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
+
+        if (vm is null)
+        {
+            var record = await HistoryManager.ToRemoteHistoryRecord(task.Profile, token);
+
+            vm = new HistoryRecordVM(record);
+            vm.UpdateFromTask(task);
+            if (IsMatchUiFilter(vm))
+            {
+                allHistoryItems.Add(vm);
+                _ = Task.Run(async () =>
+                {
+                    var record = await historyManager.GetHistoryRecord(await task.Profile.GetHash(token), task.Profile.Type, token);
+                    if (record is not null)
+                        RecordEntityUpdated(record);
+                }, token);
+                await Task.Delay(20, token);
+            }
+        }
+        else
+        {
             var newVm = vm.DeepCopy();
             newVm.UpdateFromTask(task);
-
-            var wasShownInUI = IsMatchUiFilter(vm);
             var isShownInUI = IsMatchUiFilter(newVm);
-            if (wasShownInUI != isShownInUI)
+            if (!isShownInUI)
             {
-                RemoveInsert(vm, newVm);
-                return;
+                RemoveInsert(vm, null);
             }
+            else
+            {
+                vm.UpdateFromTask(task);
+            }
+            await Task.Delay(20, token);
+        }
+    }
 
-            vm.UpdateFromTask(task);
-        });
+    private void UpdateRecordFromTaskInNormalFilter(TransferTask task)
+    {
+        var vm = allHistoryItems.FirstOrDefault(r => Profile.GetProfileId(r.Type, r.Hash) == task.ProfileId);
+        if (vm == null)
+        {
+            return;
+        }
+
+        var newVm = vm.DeepCopy();
+        newVm.UpdateFromTask(task);
+
+        var wasShownInUI = IsMatchUiFilter(vm);
+        var isShownInUI = IsMatchUiFilter(newVm);
+        if (wasShownInUI != isShownInUI)
+        {
+            RemoveInsert(vm, newVm);
+            return;
+        }
+
+        vm.UpdateFromTask(task);
+    }
+
+    private void OnTransferTaskStatusChanged(object? sender, TransferTask task)
+    {
+        _updateTaskQueue.Writer.TryWrite(task);
+    }
+
+    private async Task ConsumeUpdateTaskQueueAsync(CancellationToken token)
+    {
+        try
+        {
+            await foreach (var task in _updateTaskQueue.Reader.ReadAllAsync(token))
+            {
+                await _threadDispatcher.RunOnMainThreadAsync(async () =>
+                {
+                    if (SelectedFilter == HistoryFilterType.Transferring)
+                    {
+                        await UpdateRecordFromTaskInTransferFilter(task, token);
+                    }
+                    else
+                    {
+                        UpdateRecordFromTaskInNormalFilter(task);
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 }

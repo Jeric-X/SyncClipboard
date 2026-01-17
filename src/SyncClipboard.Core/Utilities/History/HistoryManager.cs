@@ -255,7 +255,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     /// 持久化一次从服务器回写或同步成功后的本地记录，不修改版本号和时间戳（这些已由同步逻辑确定）。
     /// 保留传入的 SyncStatus（通常为 Synced）。
     /// </summary>
-    public async Task PersistServerSyncedAsync(HistoryRecord record, CancellationToken token = default)
+    public async Task<HistoryRecord> PersistServerSyncedAsync(HistoryRecord record, CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -268,7 +268,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             await _dbContext.HistoryRecords.AddAsync(record, token);
             await _dbContext.SaveChangesAsync(token);
             HistoryAdded?.Invoke(record);
-            return;
+            return record;
         }
 
         // 同步服务器返回的并发字段与状态
@@ -282,6 +282,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         await _dbContext.SaveChangesAsync(token);
         TriggleUpdateOrDeleteEvent(entity);
+        return entity;
     }
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)

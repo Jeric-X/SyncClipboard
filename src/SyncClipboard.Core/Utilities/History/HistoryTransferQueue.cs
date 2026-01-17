@@ -20,6 +20,7 @@ public class HistoryTransferQueue : IDisposable
     // 队列和任务存储
     private readonly Queue<TransferTask> _pendingTasks = new();
     private readonly ConcurrentDictionary<string, TransferTask> _activeTasks = new();
+    public readonly SemaphoreSlim ActiveTaskAddMutex = new(1, 1);
     private readonly object _queueLock = new();
 
     // 并发控制
@@ -122,6 +123,10 @@ public class HistoryTransferQueue : IDisposable
             ExternalProgressReporter = progress
         };
 
+        await ActiveTaskAddMutex.WaitAsync(ct);
+        using var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release());
+        NotifyStatusChanged(task);
+
         _activeTasks.AddOrUpdate(task.TaskId, task, (_, _) => task);
 
         var status = await ExecuteTaskAsync(task).WaitAsync(ct);
@@ -158,14 +163,16 @@ public class HistoryTransferQueue : IDisposable
             Status = TransferTaskStatus.Pending
         };
 
+        await ActiveTaskAddMutex.WaitAsync(ct);
+        using var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release());
+
         _activeTasks.TryAdd(taskId, task);
 
+        NotifyStatusChanged(task);
         lock (_queueLock)
         {
             _pendingTasks.Enqueue(task);
         }
-
-        NotifyStatusChanged(task);
         // await _logger.WriteAsync($"{type} 任务 {taskId} 已加入队列");
 
         await EnsureProcessingTaskStartedAsync(ct);
@@ -191,11 +198,14 @@ public class HistoryTransferQueue : IDisposable
         return null;
     }
 
-    public Task<List<TransferTask>> GetAllActiveTasks()
+    public Task<List<TransferTask>> GetAllActiveTasks(CancellationToken token)
     {
-        return Task.Run(() => _activeTasks.Values
-            .OrderBy(t => t.CreatedTime)
-            .ToList());
+        return Task.Run(() =>
+         {
+             return _activeTasks.Values
+                 .OrderBy(t => t.CreatedTime)
+                 .ToList();
+         }, token);
     }
 
     public bool CancelDownload(string profileId)
@@ -328,6 +338,7 @@ public class HistoryTransferQueue : IDisposable
         _workerSemaphore?.Dispose();
         _startSemaphore?.Dispose();
         _queueSignal?.Dispose();
+        ActiveTaskAddMutex?.Dispose();
 
         foreach (var task in _activeTasks.Values)
         {

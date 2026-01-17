@@ -244,20 +244,20 @@ public partial class HistoryRecordVM : ObservableObject
         Text = record.Text;
         Type = record.Type;
         FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
-        Hash = record.Hash;
+        // Hash = record.Hash;
         Size = record.Size;
         Timestamp = record.Timestamp;
         Stared = record.Stared;
         Pinned = record.Pinned;
         SyncState = record.SyncState;
-        IsDownloading = record.IsDownloading;
-        DownloadProgress = record.DownloadProgress;
-        IsDownloadPending = record.IsDownloadPending;
-        IsUploading = record.IsUploading;
-        UploadProgress = record.UploadProgress;
-        IsUploadPending = record.IsUploadPending;
-        HasError = record.HasError;
-        ErrorMessage = record.ErrorMessage;
+        // IsDownloading = record.IsDownloading;
+        // DownloadProgress = record.DownloadProgress;
+        // IsDownloadPending = record.IsDownloadPending;
+        // IsUploading = record.IsUploading;
+        // UploadProgress = record.UploadProgress;
+        // IsUploadPending = record.IsUploadPending;
+        // HasError = record.HasError;
+        // ErrorMessage = record.ErrorMessage;
         IsLocalFileReady = record.IsLocalFileReady;
     }
 
