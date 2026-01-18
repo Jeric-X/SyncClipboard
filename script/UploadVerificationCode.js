@@ -14,9 +14,6 @@ while (urlWithoutSlash.endsWith('/'))
     urlWithoutSlash = urlWithoutSlash.substring(0, urlWithoutSlash.length - 1)
 const apiUrl = urlWithoutSlash + '/SyncClipboard.json'
 
-/**
- * 核心修改部分：适配新版 JSON 结构
- */
 function upload(verifyCode) {
     if (verifyCode !== null && verifyCode.length !== 0) {
         return axios({
@@ -27,11 +24,8 @@ function upload(verifyCode) {
                 'Content-Type': 'application/json',
             },
             data: {
-                // 变更点 1: 新版使用 hasData 标识是否有文件，验证码文本设为 false
                 'hasData': false,
-                // 变更点 2: 字段名由 Clipboard 变更为 text
                 'text': verifyCode,
-                // 变更点 3: 字段名由 Type 变更为小写的 type
                 'type': 'Text'
             }
         }).then(res => {
