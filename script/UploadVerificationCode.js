@@ -11,11 +11,11 @@ const authHeader = 'basic ' + $base64.encode(`${username}:${token}`)
 
 let urlWithoutSlash = url
 while (urlWithoutSlash.endsWith('/'))
-    urlWithoutSlash = url.substring(0, url.length - 1)
+    urlWithoutSlash = urlWithoutSlash.substring(0, urlWithoutSlash.length - 1)
 const apiUrl = urlWithoutSlash + '/SyncClipboard.json'
 
-function upload(text) {
-    if (text !== null && text.length !== 0) {
+function upload(verifyCode) {
+    if (verifyCode !== null && verifyCode.length !== 0) {
         return axios({
             method: 'put',
             url: apiUrl,
@@ -24,9 +24,9 @@ function upload(text) {
                 'Content-Type': 'application/json',
             },
             data: {
-                'File': '',
-                'Clipboard': text,
-                'Type': 'Text'
+                'hasData': false,
+                'text': verifyCode,
+                'type': 'Text'
             }
         }).then(res => {
             if (res.status < 200 || res.status >= 300) {
@@ -34,9 +34,10 @@ function upload(text) {
             }
         }).then(() => {
             if (showToastNotification) {
-                toast('验证码已上传')
+                toast('验证码已上传: ' + verifyCode)
             }
         }).catch(error => {
+            console.error(error);
             if (showToastNotification) {
                 toast('验证码上传失败: \n' + error)
             }
@@ -44,11 +45,13 @@ function upload(text) {
     }
 }
 
+// 监听系统通知
 events.observeNotification();
 events.onNotification(notification => {
-    const text = notification.getText();
-    if (text !== null && text.includes('验证')) {
-        var res = /\d{4,}/.exec(notification.getText())
+    const content = notification.getText();
+    if (content !== null && (content.includes('验证') || content.includes('码'))) {
+        // 正则匹配 4 位及以上的数字
+        var res = /\d{4,}/.exec(content)
         if (res !== null) {
             upload(res[0])
         }
