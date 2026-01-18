@@ -52,15 +52,10 @@ function download() {
         } else {
             const profile = res.data;
             
-            /** * 变更点 1: 根据第二段 JSON，字段名已由 Type 变为 type
-             * 变更点 2: 逻辑过滤，只有当 type 为 Text 且没有关联数据文件时才处理
-             */
             if (profile.type !== 'Text' || profile.hasData === true) {
                 return;
             }
 
-            /** * 变更点 3: 字段名由 Clipboard 变为 text
-             */
             const text = profile.text;
             if (text && text !== remoteCache) {
                 remoteCache = text;
@@ -87,8 +82,6 @@ function upload() {
                 'Content-Type': 'application/json',
             },
             data: {
-                /** * 变更点 4: 适配新版 JSON 数据结构
-                 */
                 "hasData": false,
                 "text": text,
                 "type": "Text"
