@@ -6,10 +6,9 @@ public class SingletonTask
 {
     private CancelableTask? _task;
 
-    private readonly object _lock = new object();
     private CancellationTokenSource _cts = new CancellationTokenSource();
-
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private readonly object _ctsLock = new object();
+    private readonly SemaphoreSlim _taskSemaphore = new SemaphoreSlim(1, 1);
 
     public SingletonTask(CancelableTask task)
     {
@@ -26,12 +25,23 @@ public class SingletonTask
         return Run(task, token);
     }
 
-    public async Task Run(CancelableTask task, CancellationToken? token = null)
+    public Task Run(CancelableTask task, CancellationToken? token = null)
+    {
+        return Run(task, cancelPrevious: true, token);
+    }
+
+    public async Task Run(CancelableTask task, bool cancelPrevious, CancellationToken? token = null)
     {
         CancellationTokenSource methodLevelCts;
         CancellationTokenSource linkedCts;
-        lock (_lock)
+
+        lock (_ctsLock)
         {
+            if (!cancelPrevious && _taskSemaphore.CurrentCount == 0)
+            {
+                return;
+            }
+
             _cts.Cancel();
             _cts = new CancellationTokenSource();
             methodLevelCts = _cts;
@@ -41,8 +51,8 @@ public class SingletonTask
 
         try
         {
-            await _semaphore.WaitAsync(linkedCts.Token);
-            using var scopeGuard = new ScopeGuard(() => _semaphore.Release());
+            await _taskSemaphore.WaitAsync(linkedCts.Token);
+            using var scopeGuard = new ScopeGuard(() => _taskSemaphore.Release());
             await task(linkedCts.Token);
         }
         catch when (methodLevelCts.Token.IsCancellationRequested)
@@ -53,7 +63,7 @@ public class SingletonTask
 
     public void Cancel()
     {
-        lock (_lock)
+        lock (_ctsLock)
         {
             _cts.Cancel();
             _cts.Dispose();
@@ -63,7 +73,7 @@ public class SingletonTask
 
     public void SetTask(CancelableTask? task)
     {
-        lock (_lock)
+        lock (_ctsLock)
         {
             _task = task;
         }

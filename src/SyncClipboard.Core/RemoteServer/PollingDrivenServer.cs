@@ -1,11 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Clipboard;
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter;
+using SyncClipboard.Core.Utilities.Runner;
 
 namespace SyncClipboard.Core.RemoteServer;
 
@@ -16,9 +14,7 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
 
     // 轮询相关
     private Profile _lastKnownProfile = new UnknownProfile();
-    private readonly object _pollingLock = new object();
-    private bool _isPolling = false;
-    private CancellationTokenSource? _pollingCancellationTokenSource;
+    private readonly SingletonTask _pollingTask = new SingletonTask();
 
     // Helpers
     private readonly TestAliveHelper _testAliveHelper;
@@ -33,15 +29,15 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         add
         {
             RemoteProfileChangedImpl += value;
-            if (RemoteProfileChangedImpl != null && !_isPolling)
+            if (RemoteProfileChangedImpl != null)
             {
-                StartPolling();
+                StartPolling(false);
             }
         }
         remove
         {
             RemoteProfileChangedImpl -= value;
-            if (RemoteProfileChangedImpl == null && _isPolling)
+            if (RemoteProfileChangedImpl == null)
             {
                 StopPolling();
             }
@@ -94,18 +90,10 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         return _storageHelper.DownloadProfileDataAsync(profile, progress, cancellationToken);
     }
 
-    public void StartPolling()
+    public void StartPolling(bool cancelPreviouslyRunning = true)
     {
-        lock (_pollingLock)
-        {
-            if (_isPolling)
-                return;
-            _isPolling = true;
-        }
-
-        _pollingCancellationTokenSource = new CancellationTokenSource();
-        _ = RunPollingLoopAsync(_pollingCancellationTokenSource.Token);
-        _logger.Write("[POLLING] Started monitoring remote profile changes");
+        _logger.Write("[POLLING] Starting monitoring remote profile changes");
+        _ = _pollingTask.Run(RunPollingLoopAsync, cancelPreviouslyRunning);
     }
 
     private async Task RunPollingLoopAsync(CancellationToken cancellationToken)
@@ -153,26 +141,13 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         }
         finally
         {
-            lock (_pollingLock)
-            {
-                _isPolling = false;
-            }
             _logger.Write("[POLLING] Polling loop terminated");
         }
     }
 
     public void StopPolling()
     {
-        lock (_pollingLock)
-        {
-            if (!_isPolling) return;
-            _isPolling = false;
-        }
-
-        _pollingCancellationTokenSource?.Cancel();
-        _pollingCancellationTokenSource?.Dispose();
-        _pollingCancellationTokenSource = null;
-
+        _pollingTask.Cancel();
         _logger.Write("[POLLING] Stopped monitoring remote profile changes");
     }
 
@@ -186,20 +161,17 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
 
     private void ResumePolling()
     {
-        lock (_pollingLock)
+        if (RemoteProfileChangedImpl != null)
         {
-            if (RemoteProfileChangedImpl != null && !_isPolling)
+            _logger.Write("[TEST_ALIVE] Connection restored, resuming polling");
+
+            PollStatusEventImpl?.Invoke(this, new PollStatusEventArgs
             {
-                _logger.Write("[TEST_ALIVE] Connection restored, resuming polling");
+                Status = PollStatus.Resumed,
+                Message = "Network connection restored, polling resumed"
+            });
 
-                PollStatusEventImpl?.Invoke(this, new PollStatusEventArgs
-                {
-                    Status = PollStatus.Resumed,
-                    Message = "Network connection restored, polling resumed"
-                });
-
-                StartPolling();
-            }
+            StartPolling(false);
         }
     }
 
