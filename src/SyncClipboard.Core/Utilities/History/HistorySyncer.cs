@@ -480,10 +480,13 @@ public class HistorySyncer
     {
         try
         {
-            if (record.IsDeleted && record.SyncStatus == HistorySyncStatus.NeedSync)
+            if (record.SyncStatus == HistorySyncStatus.NeedSync)
             {
                 await SyncOneAsync(record, CancellationToken.None);
             }
+
+            var profileId = Profile.GetProfileId(record.Type, record.Hash);
+            _historyTransferQueue.DeleteTask(profileId);
         }
         catch (Exception ex)
         {

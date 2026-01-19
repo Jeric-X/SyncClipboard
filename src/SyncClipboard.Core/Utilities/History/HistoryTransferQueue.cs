@@ -236,6 +236,14 @@ public class HistoryTransferQueue : IDisposable
         return CancelTask(taskId);
     }
 
+    public void DeleteTask(string profileId)
+    {
+        var taskId = TransferTask.GetTaskId(TransferType.Upload, profileId);
+        CancelTask(taskId);
+        taskId = TransferTask.GetTaskId(TransferType.Download, profileId);
+        CancelTask(taskId);
+    }
+
     private bool CancelTask(string taskId)
     {
         if (_activeTasks.TryGetValue(taskId, out var task))
