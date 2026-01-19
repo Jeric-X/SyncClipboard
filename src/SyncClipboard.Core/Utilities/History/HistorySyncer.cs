@@ -351,6 +351,7 @@ public class HistorySyncer
         try
         {
             var allRecords = await _historyManager.GetHistory().ConfigureAwait(false);
+            allRecords = await Task.Run(allRecords.Where(r => r.IsDeleted == false).ToList, token);
             await SyncPendingDownloadsAsync(allRecords, token);
             await SyncPendingUploadsAsync(allRecords, token);
         }

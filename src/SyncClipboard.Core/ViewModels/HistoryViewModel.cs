@@ -1067,6 +1067,14 @@ public partial class HistoryViewModel : ObservableObject
         _transferQueue.CancelDownload(profileId);
     }
 
+    private static Task UICoolDown(CancellationToken token)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return Task.Delay(10, token);
+        }
+        return Task.Delay(20, token);
+    }
     private async Task UpdateRecordFromTaskInTransferFilter(TransferTask task, CancellationToken token)
     {
         try
@@ -1097,7 +1105,7 @@ public partial class HistoryViewModel : ObservableObject
                     if (record is not null)
                         RecordEntityUpdated(record);
                 }, token);
-                await Task.Delay(20, token);
+                await UICoolDown(token);
             }
         }
         else
@@ -1113,7 +1121,7 @@ public partial class HistoryViewModel : ObservableObject
             {
                 vm.UpdateFromTask(task);
             }
-            await Task.Delay(20, token);
+            await UICoolDown(token);
         }
     }
 

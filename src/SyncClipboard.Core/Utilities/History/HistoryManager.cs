@@ -185,9 +185,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         HistoryAdded?.Invoke(record);
     }
 
-    public async Task<List<HistoryRecord>> GetHistory()
+    public async Task<List<HistoryRecord>> GetHistory(CancellationToken? token = null)
     {
-        await _dbSemaphore.WaitAsync();
+        token ??= CancellationToken.None;
+        await _dbSemaphore.WaitAsync(token.Value);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
         return _dbContext.HistoryRecords
