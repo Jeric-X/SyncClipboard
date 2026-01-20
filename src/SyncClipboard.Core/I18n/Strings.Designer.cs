@@ -621,6 +621,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Ignore "Do Not Sync" suggestions in clipboard 的本地化字符串。
+        /// </summary>
+        public static string IgnoreExcludeForSyncSuggestion {
+            get {
+                return ResourceManager.GetString("IgnoreExcludeForSyncSuggestion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Some apps mark sensitive content in clipboard with a suggestion not to sync. Enable this option to ignore that suggestion. 的本地化字符串。
+        /// </summary>
+        public static string IgnoreExcludeForSyncSuggestionDescription {
+            get {
+                return ResourceManager.GetString("IgnoreExcludeForSyncSuggestionDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Download 的本地化字符串。
         /// </summary>
         public static string Download {

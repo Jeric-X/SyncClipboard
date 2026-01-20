@@ -223,7 +223,7 @@ public class UploadService : ClipboardHander
             return false;
         }
 
-        if (meta.ExcludeForSync ?? false)
+        if (!_syncConfig.IgnoreExcludeForSyncSuggestion && (meta.ExcludeForSync ?? false))
         {
             await _logger.WriteAsync(LOG_TAG, "Stop Push for meta exclude for sync.");
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Sensitive content marked by system.", false);

@@ -537,6 +537,12 @@ Esc：关闭面板</value>
   <data name="DoNotUploadWhenCut" xml:space="preserve">
     <value>剪切文件时不上传</value>
   </data>
+  <data name="IgnoreExcludeForSyncSuggestion" xml:space="preserve">
+    <value>忽略剪贴板中的“不建议同步”标记</value>
+  </data>
+  <data name="IgnoreExcludeForSyncSuggestionDescription" xml:space="preserve">
+    <value>部分应用会为剪贴板中的敏感信息设置“不建议同步”标记，启用此选项将忽略该标记</value>
+  </data>
   <data name="RetryTimes" xml:space="preserve">
     <value>重试次数</value>
   </data>

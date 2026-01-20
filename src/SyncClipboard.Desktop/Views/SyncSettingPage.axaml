@@ -112,6 +112,11 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.IgnoreExcludeForSyncSuggestion}" Description="{x:Static i18n:Strings.IgnoreExcludeForSyncSuggestionDescription}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding IgnoreExcludeForSyncSuggestion, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
                                          Command="{Binding OpenSyncContentControlPageCommand}"

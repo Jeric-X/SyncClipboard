@@ -254,14 +254,17 @@ public class HistoryService : ClipboardHander
             return;
         }
 
-        if (clipboardMetaInfomation.ExcludeForSync ?? false)
+        if (!configManager.GetConfig<SyncConfig>().IgnoreExcludeForSyncSuggestion)
         {
-            return;
-        }
+            if (clipboardMetaInfomation.ExcludeForSync ?? false)
+            {
+                return;
+            }
 
-        if (clipboardMetaInfomation.ExcludeForHistory ?? false)
-        {
-            return;
+            if (clipboardMetaInfomation.ExcludeForHistory ?? false)
+            {
+                return;
+            }
         }
 
         await historyManager.AddLocalProfile(profile, token: token);
