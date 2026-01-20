@@ -108,7 +108,7 @@
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />
+                            <!--<ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />-->
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
