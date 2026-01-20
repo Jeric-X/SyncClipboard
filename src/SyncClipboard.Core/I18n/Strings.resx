@@ -702,6 +702,9 @@ Double click image: View full image</value>
   <data name="ClipboardHistory" xml:space="preserve">
     <value>History</value>
   </data>
+  <data name="EnableLocalHistory" xml:space="preserve">
+    <value>Record local clipboard to history</value>
+  </data>
   <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
     <value>Close when losing focus</value>
   </data>

@@ -702,6 +702,9 @@ Esc：关闭面板</value>
   <data name="ClipboardHistory" xml:space="preserve">
     <value>历史记录</value>
   </data>
+  <data name="EnableLocalHistory" xml:space="preserve">
+    <value>记录本地剪贴板到历史记录</value>
+  </data>
   <data name="CloseHistoryWindowWhenLostFocus" xml:space="preserve">
     <value>失焦时关闭</value>
   </data>

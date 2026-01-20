@@ -322,6 +322,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Record local clipboard to history 的本地化字符串。
+        /// </summary>
+        public static string EnableLocalHistory {
+            get {
+                return ResourceManager.GetString("EnableLocalHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Clipboard image updated 的本地化字符串。
         /// </summary>
         public static string ClipboardImageUpdated {
