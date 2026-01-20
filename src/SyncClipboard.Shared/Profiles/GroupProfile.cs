@@ -11,7 +11,8 @@ public class GroupProfile : Profile
 {
     private static readonly SemaphoreSlim ConcurrencyComputeLimiter = new(Math.Max(1, Environment.ProcessorCount));
     private static readonly Encoding EntryEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    private readonly SemaphoreSlim _persistentLock = new(1, 1);
+    private readonly SemaphoreSlim _transferDataLock = new(1, 1);
+    private readonly SemaphoreSlim _backupLock = new(1, 1);
     private readonly FileFilterConfig _fileFilterConfig = new();
     public override bool HasTransferData => true;
     private string? _transferDataName = null;
@@ -246,8 +247,8 @@ public class GroupProfile : Profile
             return _transferDataPath;
         }
 
-        await _persistentLock.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _persistentLock.Release());
+        await _transferDataLock.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _transferDataLock.Release());
 
         if (File.Exists(_transferDataPath))
         {
@@ -514,6 +515,8 @@ public class GroupProfile : Profile
 
         var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
 
+        await BackUpFilteredFilesIfNeeded(workingDir, token);
+
         var relativeFiles = _files?
                             .Select(f => f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
                             .Select(f => Path.GetFileName(f))
@@ -532,6 +535,132 @@ public class GroupProfile : Profile
                             .Where(f => string.IsNullOrEmpty(f) is false)
                             .ToArray() ?? []
         };
+    }
+
+    private async Task BackUpFilteredFilesIfNeeded(string workingDir, CancellationToken token)
+    {
+        if (await ShouldBackUpFilteredFiles(workingDir, token))
+        {
+            await _backupLock.WaitAsync(token);
+            using var ScopeGuard = new ScopeGuard(() => _backupLock.Release());
+
+            if (await ShouldBackUpFilteredFiles(workingDir, token))
+            {
+                await CopyFilteredFiles(workingDir, token);
+            }
+
+        }
+    }
+
+    private async Task<bool> ShouldBackUpFilteredFiles(string workingDir, CancellationToken token)
+    {
+        var workingDirWithSlash = workingDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var comparision = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        foreach (var file in _files ?? [])
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (file.StartsWith(workingDirWithSlash, comparision))
+            {
+                return false;
+            }
+
+            if (await FileSys.DirectoryExistsAsync(file))
+            {
+                if (await HasFilteredFilesInDirectory(file, token))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<bool> HasFilteredFilesInDirectory(string directory, CancellationToken token)
+    {
+        foreach (var file in await FileSys.GetFilesAsync(directory, "*", SearchOption.AllDirectories))
+        {
+            token.ThrowIfCancellationRequested();
+            var fileName = Path.GetFileName(file);
+            if (!FileFilterHelper.IsFileAvailableAfterFilter(fileName, _fileFilterConfig))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task CopyFilteredFiles(string workingDir, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(_files);
+
+        var filteredDir = Path.Combine(workingDir, "filtered_files");
+        if (await FileSys.DirectoryExistsAsync(filteredDir))
+        {
+            await FileSys.DeleteDirectoryAsync(filteredDir, recursive: true);
+        }
+        await FileSys.CreateDirectoryAsync(filteredDir);
+
+        var newFilePaths = new List<string>();
+
+        foreach (var file in _files)
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (await FileSys.DirectoryExistsAsync(file))
+            {
+                var dirName = Path.GetFileName(file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                var targetDir = Path.Combine(filteredDir, dirName);
+                await CopyDirectoryAsync(file, targetDir, token).ConfigureAwait(false);
+                newFilePaths.Add(targetDir);
+            }
+            else if (await FileSys.FileExistsAsync(file))
+            {
+                var fileName = Path.GetFileName(file);
+                var targetFile = Path.Combine(filteredDir, fileName);
+                await FileSys.FileCopyAsync(file, targetFile, overwrite: true, token);
+                newFilePaths.Add(targetFile);
+            }
+        }
+
+        _files = newFilePaths.ToArray();
+    }
+
+    private async Task CopyDirectoryAsync(string sourceDir, string targetDir, CancellationToken token)
+    {
+        if (await FileSys.DirectoryExistsAsync(targetDir) is false)
+        {
+            await FileSys.CreateDirectoryAsync(targetDir);
+        }
+
+        var allSubDirs = await FileSys.GetDirectoriesAsync(sourceDir, "*", SearchOption.AllDirectories);
+        foreach (var subDir in allSubDirs)
+        {
+            token.ThrowIfCancellationRequested();
+            var relativePath = Path.GetRelativePath(sourceDir, subDir);
+            var targetSubDir = Path.Combine(targetDir, relativePath);
+            if (await FileSys.DirectoryExistsAsync(targetSubDir) is false)
+            {
+                await FileSys.CreateDirectoryAsync(targetSubDir);
+            }
+        }
+
+        var allFiles = await FileSys.GetFilesAsync(sourceDir, "*", SearchOption.AllDirectories);
+        foreach (var file in allFiles)
+        {
+            token.ThrowIfCancellationRequested();
+            var fileName = Path.GetFileName(file);
+
+            if (!FileFilterHelper.IsFileAvailableAfterFilter(fileName, _fileFilterConfig))
+                continue;
+
+            var relativePath = Path.GetRelativePath(sourceDir, file);
+            var targetFile = Path.Combine(targetDir, relativePath);
+            await FileSys.FileCopyAsync(file, targetFile, overwrite: true, token);
+        }
     }
 
     public override async Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
