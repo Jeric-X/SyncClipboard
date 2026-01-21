@@ -717,8 +717,11 @@ Double click image: View full image</value>
   <data name="MaxItemCount" xml:space="preserve">
     <value>Maximum number of records</value>
   </data>
+  <data name="MaxItemCountDescription" xml:space="preserve">
+    <value>Only applies to unsynced records.</value>
+  </data>
   <data name="HistoryRetentionDescription" xml:space="preserve">
-    <value>Set to 0 to disable time-based cleanup</value>
+    <value>Set to 0 to disable time-based cleanup. Only applies to unsynced records.</value>
   </data>
   <data name="HistoryRetentionMinutes" xml:space="preserve">
     <value>History retention time (minutes)</value>
@@ -727,7 +730,7 @@ Double click image: View full image</value>
     <value>Enable Sync History</value>
   </data>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
-    <value>When enabled, automatic deletion (maximum count and retention time) will be disabled locally and follow the server configuration.</value>
+    <value>Synced records will follow server settings for automatic deletion.</value>
   </data>
   <data name="HistoryDescription" xml:space="preserve">
     <value>History records will become invalid when users manually delete files</value>

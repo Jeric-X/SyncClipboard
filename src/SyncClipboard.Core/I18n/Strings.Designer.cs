@@ -792,7 +792,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 When enabled, automatic deletion (maximum count and retention time) will be disabled locally and follow the server configuration. 的本地化字符串。
+        ///   查找类似 Synced records will follow server settings for automatic deletion. 的本地化字符串。
         /// </summary>
         public static string EnableSyncHistoryDescription {
             get {
@@ -1089,7 +1089,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Set to 0 to disable time-based cleanup 的本地化字符串。
+        ///   查找类似 Set to 0 to disable time-based cleanup. Only applies to unsynced records. 的本地化字符串。
         /// </summary>
         public static string HistoryRetentionDescription {
             get {
@@ -1364,6 +1364,15 @@ namespace SyncClipboard.Core.I18n {
         public static string MaxItemCount {
             get {
                 return ResourceManager.GetString("MaxItemCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Only applies to unsynced records. 的本地化字符串。
+        /// </summary>
+        public static string MaxItemCountDescription {
+            get {
+                return ResourceManager.GetString("MaxItemCountDescription", resourceCulture);
             }
         }
         

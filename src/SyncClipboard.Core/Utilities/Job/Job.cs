@@ -11,9 +11,9 @@ public static class Job
         var scheduler = services.GetRequiredService<IScheduler>();
         scheduler.AddJob<AppdataFileDeleteJob>(TimeSpan.FromHours(24));
         scheduler.AddJob<UpdateJob>(TimeSpan.FromHours(24));
-        scheduler.AddJob<HistoryCleanupJob>(TimeSpan.FromMinutes(1)); // 每30分钟执行一次历史记录清理
-        scheduler.AddJob<OrphanedHistoryCleanupJob>(TimeSpan.FromHours(6)); // 每6小时执行一次孤立文件夹清理
-        scheduler.AddJob<LocalFileCacheCleanupJob>(TimeSpan.FromHours(6)); // 每6小时执行一次缓存清理
+        scheduler.AddJob<HistoryCleanupJob>(TimeSpan.FromMinutes(1));
+        scheduler.AddJob<OrphanedHistoryCleanupJob>(TimeSpan.FromHours(6));
+        scheduler.AddJob<LocalFileCacheCleanupJob>(TimeSpan.FromHours(6));
         scheduler.Start();
     }
 

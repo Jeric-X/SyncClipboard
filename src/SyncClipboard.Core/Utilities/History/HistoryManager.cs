@@ -56,16 +56,17 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
+        if (await _historyManagerHelper.SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+
         if (runtimeConfig.EnableSyncHistory)
         {
             return;
         }
 
         await DeleteObsoleteRemoteRecords();
-        if (await _historyManagerHelper.SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
-        {
-            await _dbContext.SaveChangesAsync();
-        }
     }
 
     private async Task<uint> DeleteObsoleteRemoteRecords(CancellationToken token = default)
@@ -149,11 +150,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        if (!_runtimeHistoryConfig.EnableSyncHistory)
-        {
-            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
-        }
-
+        await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
@@ -410,8 +407,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 return;
             }
 
-            // When syncing history with server, local time-based cleanup is disabled
-            if (!_historyConfig.EnableHistory || _historyConfig.HistoryRetentionMinutes == 0)
+            if (_historyConfig.HistoryRetentionMinutes == 0)
             {
                 return;
             }
@@ -422,7 +418,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
             var expiredRecords = _dbContext.HistoryRecords
-                .Where(r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned)
+                .Where(r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly)
                 .ToList();
 
             foreach (var record in expiredRecords)
@@ -671,9 +667,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return RemoveHistory(entity, token);
     }
 
-    public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned;
+    public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared &&
+        !entity.Pinned && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity => entity.Timestamp;
 
-    public Expression<Func<HistoryRecord, bool>> QueryCount => entity => true;
+    public Expression<Func<HistoryRecord, bool>> QueryCount => entity => entity.SyncStatus == HistorySyncStatus.LocalOnly;
 }

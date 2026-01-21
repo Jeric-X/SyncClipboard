@@ -29,7 +29,6 @@ public partial class HistorySettingViewModel : ObservableObject
         historyRetentionMinutes = config.HistoryRetentionMinutes;
 
         UpdateServerSyncSupported();
-        UpdateEnableLocalHistoryConfig();
 
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
         _remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
@@ -46,17 +45,11 @@ public partial class HistorySettingViewModel : ObservableObject
     private void OnCurrentServerChanged(object? sender, EventArgs e)
     {
         UpdateServerSyncSupported();
-        UpdateEnableLocalHistoryConfig();
     }
 
     private void UpdateServerSyncSupported()
     {
         ServerSyncSupported = _remoteServerFactory.Current is IOfficialSyncServer;
-    }
-
-    private void UpdateEnableLocalHistoryConfig()
-    {
-        EnableLocalHistoryConfig = !(ServerSyncSupported && EnableSyncHistory);
     }
 
     private HistoryConfig GetCurrentRecord()
@@ -76,11 +69,7 @@ public partial class HistorySettingViewModel : ObservableObject
 
     [ObservableProperty]
     private bool enableSyncHistory;
-    partial void OnEnableSyncHistoryChanged(bool value)
-    {
-        _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
-        UpdateEnableLocalHistoryConfig();
-    }
+    partial void OnEnableSyncHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
 
     [ObservableProperty]
     private uint maxItemCount;
@@ -89,9 +78,6 @@ public partial class HistorySettingViewModel : ObservableObject
     [ObservableProperty]
     private uint historyRetentionMinutes;
     partial void OnHistoryRetentionMinutesChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { HistoryRetentionMinutes = value });
-
-    [ObservableProperty]
-    private bool enableLocalHistoryConfig;
 
     [ObservableProperty]
     private bool serverSyncSupported;

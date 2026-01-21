@@ -29,14 +29,13 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}" Description="{x:Static i18n:Strings.MaxItemCountDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="1"
                                        Maximum="1000"
                                        Value="{Binding MaxItemCount, Mode=TwoWay}"
                                        Increment="1"
-                                       ButtonSpinnerLocation="Right"
-                                       IsEnabled="{Binding EnableLocalHistoryConfig}" />
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HistoryRetentionMinutes}" Description="{x:Static i18n:Strings.HistoryRetentionDescription}">
@@ -45,8 +44,7 @@
                                        Maximum="525600"
                                        Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
                                        Increment="1"
-                                       ButtonSpinnerLocation="Right"
-                                       IsEnabled="{Binding EnableLocalHistoryConfig}" />
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}">
