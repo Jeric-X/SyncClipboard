@@ -322,15 +322,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Record local clipboard to history 的本地化字符串。
-        /// </summary>
-        public static string EnableLocalHistory {
-            get {
-                return ResourceManager.GetString("EnableLocalHistory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Clipboard image updated 的本地化字符串。
         /// </summary>
         public static string ClipboardImageUpdated {
@@ -621,24 +612,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Ignore "Do Not Sync" suggestions in clipboard 的本地化字符串。
-        /// </summary>
-        public static string IgnoreExcludeForSyncSuggestion {
-            get {
-                return ResourceManager.GetString("IgnoreExcludeForSyncSuggestion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Some apps mark sensitive content in clipboard with a suggestion not to sync. Enable this option to ignore that suggestion. 的本地化字符串。
-        /// </summary>
-        public static string IgnoreExcludeForSyncSuggestionDescription {
-            get {
-                return ResourceManager.GetString("IgnoreExcludeForSyncSuggestionDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Download 的本地化字符串。
         /// </summary>
         public static string Download {
@@ -797,6 +770,15 @@ namespace SyncClipboard.Core.I18n {
         public static string EnableHttps {
             get {
                 return ResourceManager.GetString("EnableHttps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Record local clipboard to history 的本地化字符串。
+        /// </summary>
+        public static string EnableLocalHistory {
+            get {
+                return ResourceManager.GetString("EnableLocalHistory", resourceCulture);
             }
         }
         
@@ -1211,6 +1193,24 @@ namespace SyncClipboard.Core.I18n {
         public static string IconMissingDetected {
             get {
                 return ResourceManager.GetString("IconMissingDetected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Ignore &quot;Do Not Sync&quot; suggestions in clipboard 的本地化字符串。
+        /// </summary>
+        public static string IgnoreExcludeForSyncSuggestion {
+            get {
+                return ResourceManager.GetString("IgnoreExcludeForSyncSuggestion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Some apps mark sensitive content in clipboard with a suggestion not to sync. Enable this option to ignore that suggestion 的本地化字符串。
+        /// </summary>
+        public static string IgnoreExcludeForSyncSuggestionDescription {
+            get {
+                return ResourceManager.GetString("IgnoreExcludeForSyncSuggestionDescription", resourceCulture);
             }
         }
         

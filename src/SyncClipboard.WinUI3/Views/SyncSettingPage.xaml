@@ -72,14 +72,26 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TrustInsecureCertificate}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.TrustInsecureCertificate, Mode=TwoWay}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}">
-                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.QueryInterval}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowQueryInterval), Mode=OneWay}">
+                    <NumberBox Minimum="0"
+                               Maximum="100000"
+                               Value="{x:Bind _viewModel.IntervalTime, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.RetryTimes}">
-                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.RetryTimes, Mode=TwoWay}" />
+                    <NumberBox Minimum="0"
+                               Maximum="100000"
+                               Value="{x:Bind _viewModel.RetryTimes, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TimeoutPeriod}">
-                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}" />
+                    <NumberBox Minimum="0"
+                               Maximum="100000"
+                               Value="{x:Bind _viewModel.TimeOut, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SendNotificationAfterManuallyUpload}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnManualUpload, Mode=TwoWay}" />

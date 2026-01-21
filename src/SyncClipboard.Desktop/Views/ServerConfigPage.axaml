@@ -83,11 +83,12 @@
             </ui:SettingsExpanderItem>
             <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxHistoryCount}" Description="{x:Static i18n:Strings.MaxHistoryCountDescription}">
                 <ui:SettingsExpanderItem.Footer>
-                    <ui:NumberBox Value="{Binding MaxHistoryCount, Mode=TwoWay}"
-                                  Minimum="1"
-                                  Maximum="10000"
-                                  SpinButtonPlacementMode="Inline"
-                                  SimpleNumberFormat="F0" />
+                    <NumericUpDown Value="{Binding MaxHistoryCount, Mode=TwoWay}"
+                                   Minimum="1"
+                                   Maximum="10000"
+                                   Increment="1"
+                                   ButtonSpinnerLocation="Right"
+                                   FormatString="F0" />
                 </ui:SettingsExpanderItem.Footer>
             </ui:SettingsExpanderItem>
         </ui:SettingsExpander.Items>

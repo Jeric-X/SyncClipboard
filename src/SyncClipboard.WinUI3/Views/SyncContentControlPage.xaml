@@ -36,7 +36,11 @@
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.DoNotUploadWhenCut, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.MaxFileSizeToUpload}">
-                    <NumberBox Minimum="0" Maximum="100000" Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}" />
+                    <NumberBox Minimum="0"
+                               Maximum="100000"
+                               Value="{x:Bind _viewModel.MaxFileSize, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.FileSyncFilter}" IsClickEnabled="True" Command="{x:Bind _viewModel.SetFileSyncFilterCommand}" />
             </ui:SettingsExpander.Items>

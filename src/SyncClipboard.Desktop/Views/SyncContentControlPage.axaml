@@ -56,7 +56,11 @@
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding MaxFileSize, Mode=TwoWay}" />
+                        <NumericUpDown Minimum="0"
+                                       Maximum="100000"
+                                       Value="{Binding MaxFileSize, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"

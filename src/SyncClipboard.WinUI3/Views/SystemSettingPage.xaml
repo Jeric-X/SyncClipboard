@@ -42,10 +42,18 @@
             </ui:SettingsExpander.HeaderIcon>
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.TempFileRemainDays}">
-                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.TempFileRemainDays, Mode=TwoWay}" />
+                    <NumberBox Minimum="0"
+                               Maximum="1000"
+                               Value="{x:Bind _viewModel.TempFileRemainDays, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.LogRemainDays}">
-                    <NumberBox Minimum="0" Maximum="1000" Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}" />
+                    <NumberBox Minimum="0"
+                               Maximum="1000"
+                               Value="{x:Bind _viewModel.LogRemainDays, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.DiagnoseMode}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.DiagnoseMode, Mode=TwoWay}" />

@@ -71,12 +71,20 @@
             <ui:SettingsExpander.Items>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TempFileRemainDays}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding TempFileRemainDays, Mode=TwoWay}" />
+                        <NumericUpDown Minimum="0"
+                                       Maximum="1000"
+                                       Value="{Binding TempFileRemainDays, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.LogRemainDays}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="1000" Value="{Binding LogRemainDays, Mode=TwoWay}" />
+                        <NumericUpDown Minimum="0"
+                                       Maximum="1000"
+                                       Value="{Binding LogRemainDays, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DiagnoseMode}">

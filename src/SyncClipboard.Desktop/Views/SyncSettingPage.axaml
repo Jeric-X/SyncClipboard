@@ -87,19 +87,30 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding ShowQueryInterval}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding IntervalTime, Mode=TwoWay}" />
+                        <NumericUpDown Minimum="0"
+                                       Maximum="100000"
+                                       Value="{Binding IntervalTime, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding RetryTimes, Mode=TwoWay}" />
+                        <NumericUpDown Minimum="0"
+                                       Maximum="100000"
+                                       Value="{Binding RetryTimes, Mode=TwoWay}"
+                                       Increment="1" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}">
                     <ui:SettingsExpanderItem.Footer>
-                        <ui:NumberBox Minimum="0" Maximum="100000" Value="{Binding TimeOut, Mode=TwoWay}" />
+                        <NumericUpDown Minimum="0"
+                                       Maximum="100000"
+                                       Value="{Binding TimeOut, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterManuallyUpload}">

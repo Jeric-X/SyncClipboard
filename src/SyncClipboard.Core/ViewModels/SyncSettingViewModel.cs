@@ -5,6 +5,7 @@ using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -20,6 +21,9 @@ public partial class SyncSettingViewModel : ObservableObject
 
     [ObservableProperty]
     private bool hasMultipleAccounts = false;
+
+    [ObservableProperty]
+    private bool showQueryInterval = false;
 
     public bool IsNotLoggedIn => !IsLoggedIn;
 
@@ -41,6 +45,7 @@ public partial class SyncSettingViewModel : ObservableObject
             };
 
             _configManager.SetConfig(accountConfig);
+            UpdateShowQueryInterval(value.AccountType);
         }
     }
 
@@ -103,6 +108,16 @@ public partial class SyncSettingViewModel : ObservableObject
         SelectedAccount = SavedAccounts.FirstOrDefault(a =>
             a.AccountId == currentConfig.AccountId &&
             a.AccountType == currentConfig.AccountType);
+
+        if (SelectedAccount != null)
+        {
+            UpdateShowQueryInterval(SelectedAccount.AccountType);
+        }
+    }
+
+    private void UpdateShowQueryInterval(string accountType)
+    {
+        ShowQueryInterval = accountType != OfficialConfig.ConfigTypeName;
     }
     #endregion
 
