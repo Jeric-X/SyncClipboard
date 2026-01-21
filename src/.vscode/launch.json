@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "DebugMacos",
-            "program": "${workspaceFolder}/SyncClipboard.Desktop.MacOS/bin/Debug/net8.0-macos/osx-x64/SyncClipboard.Desktop.MacOS.app/Contents/MacOS/SyncClipboard.Desktop.MacOS",
+            "program": "${workspaceFolder}/SyncClipboard.Desktop.MacOS/bin/Debug/net9.0-macos/osx-x64/SyncClipboard.Desktop.MacOS.app/Contents/MacOS/SyncClipboard.Desktop.MacOS",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
