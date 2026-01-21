@@ -727,7 +727,7 @@ Double click image: View full image</value>
     <value>History retention time (minutes)</value>
   </data>
   <data name="EnableSyncHistory" xml:space="preserve">
-    <value>Enable Sync History</value>
+    <value>Sync History</value>
   </data>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
     <value>Synced records will follow server settings for automatic deletion.</value>

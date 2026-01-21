@@ -24,6 +24,7 @@ public class HistoryService : ClipboardHander
     private readonly ITrayIcon trayIcon;
     private readonly HistoryTransferQueue historyTransferQueue;
     private bool _enableSyncHistory;
+    protected override bool EnableToggleMenuItem => false;
 
     public HistoryService(
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
@@ -151,7 +152,7 @@ public class HistoryService : ClipboardHander
 
     private void OnHistoryConfigChanged(HistoryConfig cfg)
     {
-        var newEnableSyncHistory = cfg.EnableSyncHistory && SwitchOn;
+        var newEnableSyncHistory = cfg.EnableSyncHistory;
         if (newEnableSyncHistory == _enableSyncHistory)
         {
             return;

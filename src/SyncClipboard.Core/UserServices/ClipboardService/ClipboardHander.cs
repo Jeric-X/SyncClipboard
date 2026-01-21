@@ -16,6 +16,7 @@ abstract public class ClipboardHander : Service
     private IClipboardChangingListener ClipboardChangingListener { get; }
     private IContextMenu ContextMenu => sp.GetRequiredService<IContextMenu>();
     private ToggleMenuItem? ToggleMenuItem { get; set; }
+    protected virtual bool EnableToggleMenuItem => true;
     protected string? ContextMenuGroupName { get; init; }
 
     public ClipboardHander()
@@ -30,8 +31,11 @@ abstract public class ClipboardHander : Service
         ClipboardChangingListener.Changed += ClipBoardChangedHandler;
 
         Logger.Write(LOG_TAG, $"Service: {SERVICE_NAME} started");
-        ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
-        ContextMenu?.AddMenuItem(ToggleMenuItem, ContextMenuGroupName);
+        if (EnableToggleMenuItem)
+        {
+            ToggleMenuItem = new ToggleMenuItem(SERVICE_NAME, false, (status) => SwitchOn = status);
+            ContextMenu?.AddMenuItem(ToggleMenuItem, ContextMenuGroupName);
+        }
         Load();
     }
 

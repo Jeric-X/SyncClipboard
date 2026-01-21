@@ -727,7 +727,7 @@ Esc：关闭面板</value>
     <value>历史记录保存时长(分钟)</value>
   </data>
   <data name="EnableSyncHistory" xml:space="preserve">
-    <value>启用同步历史记录</value>
+    <value>同步历史记录</value>
   </data>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
     <value>已同步记录的自动删除将遵循服务器配置</value>
