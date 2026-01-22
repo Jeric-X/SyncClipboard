@@ -8,7 +8,7 @@ public static class ProfileExtentions
     public static async Task<string?> PrepareDataWithCache(this Profile profile, CancellationToken token)
     {
         var cacheManager = AppCore.Current.Services.GetRequiredService<LocalFileCacheManager>();
-        var cachedFilePath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token));
+        var cachedFilePath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token), token);
         if (!string.IsNullOrEmpty(cachedFilePath))
         {
             await profile.SetTransferData(cachedFilePath, false, token);
@@ -20,7 +20,7 @@ public static class ProfileExtentions
 
         if (File.Exists(path))
         {
-            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), path);
+            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), path, token);
         }
         return path;
     }

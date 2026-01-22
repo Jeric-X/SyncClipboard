@@ -24,11 +24,6 @@ public class ImageProfile : FileProfile
     {
     }
 
-    public ImageProfile(IClipboardImage clipboardImage) : base(null, CreateImageFileName())
-    {
-        _clipboardImage = clipboardImage;
-    }
-
     private async Task<byte[]?> GetRawImageBytes(CancellationToken token)
     {
         if (_rawImageBytes is not null)
@@ -123,7 +118,7 @@ public class ImageProfile : FileProfile
         return await base.PrepareTransferData(persistentDir, token);
     }
 
-    private static string CreateImageFileName()
+    public static string CreateImageFileName()
     {
         return $"Image_{Utility.CreateTimeBasedFileName()}.png";
     }

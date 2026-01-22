@@ -18,13 +18,13 @@ public sealed class LocalFileCacheManager : IDisposable
         _dbContext.Database.EnsureCreated();
     }
 
-    public async Task<string?> GetCachedFilePathAsync(string cacheType, string id)
+    public async Task<string?> GetCachedFilePathAsync(string cacheType, string id, CancellationToken token)
     {
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync(token);
         try
         {
             var entry = await _dbContext.CacheEntries
-                .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType);
+                .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 
             if (entry == null)
                 return null;
@@ -32,21 +32,25 @@ public sealed class LocalFileCacheManager : IDisposable
             if (!File.Exists(entry.FilePath))
             {
                 _dbContext.CacheEntries.Remove(entry);
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(token);
                 return null;
             }
 
-            if (!await IsFileValidAsync(entry))
+            if (!await IsFileValidAsync(entry, token))
             {
                 _dbContext.CacheEntries.Remove(entry);
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(token);
                 return null;
             }
 
             entry.LastAccessTime = DateTime.Now;
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(token);
 
             return entry.FilePath;
+        }
+        catch when (!token.IsCancellationRequested)
+        {
+            return null;
         }
         finally
         {
@@ -54,9 +58,14 @@ public sealed class LocalFileCacheManager : IDisposable
         }
     }
 
-    public async Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null)
+    public Task SaveCacheEntryAsync(string cacheType, string id, string filePath, CancellationToken token)
     {
-        await _semaphore.WaitAsync();
+        return SaveCacheEntryAsync(cacheType, id, filePath, null, token);
+    }
+
+    public async Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
+    {
+        await _semaphore.WaitAsync(token);
         try
         {
             var fileInfo = new FileInfo(filePath);
@@ -64,9 +73,9 @@ public sealed class LocalFileCacheManager : IDisposable
 
 
             var entry = await _dbContext.CacheEntries
-                .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType);
+                .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 
-            var cachedFileHash = await CalculateFileHashAsync(filePath);
+            var cachedFileHash = await CalculateFileHashAsync(filePath, token);
             if (entry == null)
             {
                 entry = new LocalFileCacheEntry
@@ -103,7 +112,7 @@ public sealed class LocalFileCacheManager : IDisposable
                 entry.FileSize = fileInfo.Length;
             }
 
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(token);
         }
         finally
         {
@@ -199,7 +208,7 @@ public sealed class LocalFileCacheManager : IDisposable
         };
     }
 
-    private static async Task<bool> IsFileValidAsync(LocalFileCacheEntry entry)
+    private static async Task<bool> IsFileValidAsync(LocalFileCacheEntry entry, CancellationToken token)
     {
         try
         {
@@ -209,7 +218,7 @@ public sealed class LocalFileCacheManager : IDisposable
 
             if (!string.IsNullOrEmpty(entry.CachedFileHash))
             {
-                var currentHash = await CalculateFileHashAsync(entry.FilePath);
+                var currentHash = await CalculateFileHashAsync(entry.FilePath, token);
                 return currentHash == entry.CachedFileHash;
             }
 
@@ -221,10 +230,10 @@ public sealed class LocalFileCacheManager : IDisposable
         }
     }
 
-    private static async Task<string> CalculateFileHashAsync(string filePath)
+    private static async Task<string> CalculateFileHashAsync(string filePath, CancellationToken token)
     {
         using var stream = File.OpenRead(filePath);
-        var hashBytes = await SHA256.HashDataAsync(stream);
+        var hashBytes = await SHA256.HashDataAsync(stream, token);
         return Convert.ToBase64String(hashBytes);
     }
 

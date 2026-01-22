@@ -6,6 +6,7 @@ public class ClipboardImage : IClipboardImage
 {
     private static int CacheHash = 0;
     private static readonly MemoryStream Cache = new MemoryStream();
+    private static readonly SemaphoreSlim CacheSemaphore = new SemaphoreSlim(1, 1);
 
     private readonly byte[] _imageBytes;
 
@@ -27,21 +28,21 @@ public class ClipboardImage : IClipboardImage
         return null;
     }
 
-    public void Save(string path)
+    public async Task Save(string path, CancellationToken token)
     {
         var hash = _imageBytes.ListHashCode();
-        if (UseCache(hash, path))
+        if (await UseCacheAsync(hash, path, token))
             return;
 
         using MagickImage magickImage = new(_imageBytes);
-        lock (Cache)
-        {
-            CacheHash = hash;
-            Cache.SetLength(0);
-            Cache.Seek(0, SeekOrigin.Begin);
-            magickImage.Write(Cache, MagickFormat.Png);
-            WriteToFile(path);
-        }
+        await CacheSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => CacheSemaphore.Release());
+
+        CacheHash = hash;
+        Cache.SetLength(0);
+        Cache.Seek(0, SeekOrigin.Begin);
+        await magickImage.WriteAsync(Cache, MagickFormat.Png, token);
+        await WriteToFileAsync(path, token);
     }
 
     public Task<byte[]> SaveToBytes(CancellationToken token)
@@ -50,7 +51,8 @@ public class ClipboardImage : IClipboardImage
         {
             var hash = _imageBytes.ListHashCode();
 
-            lock (Cache)
+            await CacheSemaphore.WaitAsync(token);
+            using (var guard = new ScopeGuard(() => CacheSemaphore.Release()))
             {
                 if (hash == CacheHash && Cache.Length > 0)
                 {
@@ -60,39 +62,40 @@ public class ClipboardImage : IClipboardImage
 
             using MagickImage magickImage = new(_imageBytes);
             using var ms = new MemoryStream();
-            await magickImage.WriteAsync(ms, MagickFormat.Png, token);
+            await magickImage.WriteAsync(ms, MagickFormat.Png, token);  // 只有文件操作是异步，转换操作是同步，需要用Task.Run包装
             var result = ms.ToArray();
 
-            lock (Cache)
+            await CacheSemaphore.WaitAsync(token);
+            using (var guard = new ScopeGuard(() => CacheSemaphore.Release()))
             {
                 CacheHash = hash;
                 Cache.SetLength(0);
                 Cache.Seek(0, SeekOrigin.Begin);
-                Cache.WriteAsync(result, 0, result.Length, token);
+                await Cache.WriteAsync(result, token);
                 Cache.Seek(0, SeekOrigin.Begin);
             }
             return result;
         }, token).WaitAsync(token);
     }
 
-    private static bool UseCache(int hash, string path)
+    private static async Task<bool> UseCacheAsync(int hash, string path, CancellationToken token)
     {
-        lock (Cache)
+        await CacheSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => CacheSemaphore.Release());
+
+        if (hash == CacheHash)
         {
-            if (hash == CacheHash)
-            {
-                WriteToFile(path);
-                return true;
-            }
+            await WriteToFileAsync(path, token);
+            return true;
         }
         return false;
     }
 
-    private static void WriteToFile(string file)
+    private static async Task WriteToFileAsync(string file, CancellationToken token)
     {
         using var fileStream = File.Create(file);
         Cache.Seek(0, SeekOrigin.Begin);
-        Cache.CopyTo(fileStream);
+        await Cache.CopyToAsync(fileStream, token);
     }
 
     public override bool Equals(object? obj)
