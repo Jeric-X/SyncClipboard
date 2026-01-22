@@ -308,6 +308,15 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         return Conflict(payload);
     }
 
+    // GET api/history/statistics
+    // 获取历史记录的统计信息
+    [HttpGet("statistics")]
+    public async Task<ActionResult<HistoryStatisticsDto>> GetStatistics(CancellationToken token)
+    {
+        var statistics = await _historyService.GetStatisticsAsync(HARD_CODED_USER_ID, token);
+        return Ok(statistics);
+    }
+
     // DELETE api/history/clear
     // 清除当前用户的所有历史记录及其相关数据文件。
     [HttpDelete("clear")]

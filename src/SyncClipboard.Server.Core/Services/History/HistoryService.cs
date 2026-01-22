@@ -476,4 +476,49 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return _historyManagerHelper.SetRecordsMaxCount(maxCount, token);
     }
     #endregion
+
+    public async Task<HistoryStatisticsDto> GetStatisticsAsync(string userId, CancellationToken token = default)
+    {
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var records = await _dbContext.HistoryRecords
+            .Where(r => r.UserId == userId)
+            .ToListAsync(token);
+
+        var totalCount = records.Count;
+        var starredCount = records.Count(r => r.Stared);
+        var deletedCount = records.Count(r => r.IsDeleted);
+
+        // 计算_persistentDir文件夹的总大小
+        long totalFileSizeBytes = 0;
+        if (Directory.Exists(_persistentDir))
+        {
+            try
+            {
+                var dirInfo = new DirectoryInfo(_persistentDir);
+                totalFileSizeBytes = dirInfo.EnumerateFiles("*", SearchOption.AllDirectories)
+                    .Sum(file => file.Length);
+            }
+            catch { }
+        }
+
+        // 转换为MB，保留两位小数
+        double totalFileSizeMB = totalFileSizeBytes / (1024.0 * 1024.0);
+        totalFileSizeMB = Math.Round(totalFileSizeMB, 2);
+
+        // 如果不是0但是显示为0，则显示为0.01
+        if (totalFileSizeBytes > 0 && totalFileSizeMB == 0)
+        {
+            totalFileSizeMB = 0.01;
+        }
+
+        return new HistoryStatisticsDto
+        {
+            TotalCount = totalCount,
+            StarredCount = starredCount,
+            DeletedCount = deletedCount,
+            TotalFileSizeMB = totalFileSizeMB
+        };
+    }
 }
