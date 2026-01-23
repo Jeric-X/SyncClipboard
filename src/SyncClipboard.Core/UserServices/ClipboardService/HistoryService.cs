@@ -182,9 +182,14 @@ public class HistoryService : ClipboardHander
             return;
         }
 
-        trayIcon.SetStatusString(SERVICE_NAME, "Synchronizing history...");
-        historyTransferQueue.ResumeQueue();
-        await historySyncer.SyncAllAsync(_lastSyncTime?.LocalDateTime, token).ConfigureAwait(false);
+        historyManager.EnableCleanup = false;
+        using (new ScopeGuard(() => historyManager.EnableCleanup = true))
+        {
+            trayIcon.SetStatusString(SERVICE_NAME, "Synchronizing history...");
+            historyTransferQueue.ResumeQueue();
+            await historySyncer.SyncAllAsync(_lastSyncTime?.LocalDateTime, token).ConfigureAwait(false);
+        }
+
         while (!token.IsCancellationRequested)
         {
             await SaveServerTime(token).ConfigureAwait(false);

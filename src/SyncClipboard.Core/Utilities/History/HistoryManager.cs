@@ -23,6 +23,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     private readonly IProfileEnv _profileEnv;
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
     private readonly HistoryManagerHelper<HistoryRecord, DateTime> _historyManagerHelper;
+    public bool EnableCleanup { get; set; } = true;
 
     public DbSet<HistoryRecord> RecordDbSet => _dbContext.HistoryRecords;
 
@@ -56,7 +57,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        if (await _historyManagerHelper.SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
+        if (EnableCleanup && await _historyManagerHelper.SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
         {
             await _dbContext.SaveChangesAsync();
         }
@@ -150,7 +151,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
+        if (EnableCleanup)
+        {
+            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
+        }
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
@@ -401,6 +405,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         try
         {
+            if (!EnableCleanup)
+            {
+                return;
+            }
+
             if (_runtimeHistoryConfig.EnableSyncHistory)
             {
                 await RemoveSoftDeletedOutOfDateRecords(token);
@@ -449,7 +458,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
             using var _dbContext = new HistoryDbContext();
             var existingHashes = _dbContext.HistoryRecords
-                .Where(r => r.Type == ProfileType.File || r.Type == ProfileType.Image || r.Type == ProfileType.Group)
                 .Select(r => r.Hash)
                 .ToHashSet();
 
