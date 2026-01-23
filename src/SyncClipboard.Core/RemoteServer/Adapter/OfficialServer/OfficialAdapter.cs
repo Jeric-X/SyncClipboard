@@ -42,21 +42,31 @@ public sealed class OfficialAdapter(
     public void OnConfigChanged(OfficialConfig config, SyncConfig syncConfig)
     {
         _officialConfig = config;
-
-        ReConnectSignalR();
-        _webDavAdapter.OnConfigChanged(new WebDavConfig
+        try
         {
-            RemoteURL = config.RemoteURL,
-            UserName = config.UserName,
-            Password = config.Password,
-            DeletePreviousFilesOnPush = config.DeletePreviousFilesOnPush
-        }, syncConfig);
-        ReCreateHttpClient();
+            ReConnectSignalR();
+            _webDavAdapter.OnConfigChanged(new WebDavConfig
+            {
+                RemoteURL = config.RemoteURL,
+                UserName = config.UserName,
+                Password = config.Password,
+                DeletePreviousFilesOnPush = config.DeletePreviousFilesOnPush
+            }, syncConfig);
+            ReCreateHttpClient();
+        }
+        catch (Exception ex)
+        {
+            ServerDisconnected?.Invoke(ex);
+            _logger.Write("OfficialAdapter", $"Connection failed: {ex.Message}");
+            _hubConnection = null;
+            return;
+        }
     }
 
     private void ReConnectSignalR()
     {
         DisconnectSignalR();
+
         lock (_hubLock)
         {
             if (_hubConnection != null)
