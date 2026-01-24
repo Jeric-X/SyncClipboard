@@ -278,7 +278,8 @@ public partial class AccountConfigEditViewModel(
             var adapter = _serverFactory.GetAdapter(AccountType) ?? throw new InvalidOperationException(Strings.NoAdapterFound);
             var configInstance = CreateConfigInstance() ?? throw new InvalidOperationException(Strings.CannotCreateConfigInstance);
             var syncConfig = _configManager.GetConfig<SyncConfig>();
-            adapter.OnConfigChanged(configInstance, syncConfig);
+            adapter.SetConfig(configInstance, syncConfig);
+            adapter.ApplyConfig();
 
             await adapter.TestConnectionAsync(cancellationToken);
             TestResult = true;

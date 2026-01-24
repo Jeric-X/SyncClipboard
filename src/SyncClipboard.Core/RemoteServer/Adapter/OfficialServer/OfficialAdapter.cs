@@ -39,19 +39,24 @@ public sealed class OfficialAdapter(
     public event Action<Exception?>? ServerDisconnected;
     public event Action? ServerConnected;
 
-    public void OnConfigChanged(OfficialConfig config, SyncConfig syncConfig)
+    public void SetConfig(OfficialConfig config, SyncConfig syncConfig)
     {
         _officialConfig = config;
+        _webDavAdapter.SetConfig(new WebDavConfig
+        {
+            RemoteURL = config.RemoteURL,
+            UserName = config.UserName,
+            Password = config.Password,
+            DeletePreviousFilesOnPush = config.DeletePreviousFilesOnPush
+        }, syncConfig);
+    }
+
+    public void ApplyConfig()
+    {
         try
         {
             ReConnectSignalR();
-            _webDavAdapter.OnConfigChanged(new WebDavConfig
-            {
-                RemoteURL = config.RemoteURL,
-                UserName = config.UserName,
-                Password = config.Password,
-                DeletePreviousFilesOnPush = config.DeletePreviousFilesOnPush
-            }, syncConfig);
+            _webDavAdapter.ApplyConfig();
             ReCreateHttpClient();
         }
         catch (Exception ex)

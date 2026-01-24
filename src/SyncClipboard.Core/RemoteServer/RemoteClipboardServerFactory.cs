@@ -54,7 +54,7 @@ public class RemoteClipboardServerFactory
         else if (Equals(config, _configDetail) == false)
         {
             _configDetail = config;
-            _currentAdapter?.OnConfigChanged(_configDetail, _syncConfig);
+            _currentAdapter?.SetConfig(_configDetail, _syncConfig);
             _current?.OnSyncConfigChanged(_syncConfig);
         }
     }
@@ -64,7 +64,7 @@ public class RemoteClipboardServerFactory
         _syncConfig = syncConfig;
         if (_currentAdapter is not null && _configDetail is not null)
         {
-            _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
+            _currentAdapter.SetConfig(_configDetail, _syncConfig);
             _current?.OnSyncConfigChanged(_syncConfig);
         }
     }
@@ -90,7 +90,7 @@ public class RemoteClipboardServerFactory
         _configDetail = configDetail ?? _accountManager.GetConfig(_currentAccount.AccountType, _currentAccount.AccountId);
         if (_configDetail is not null)
         {
-            _currentAdapter.OnConfigChanged(_configDetail, _syncConfig);
+            _currentAdapter.SetConfig(_configDetail, _syncConfig);
         }
 
         if (_currentAdapter is IOfficialServerAdapter eventServerAdapter)

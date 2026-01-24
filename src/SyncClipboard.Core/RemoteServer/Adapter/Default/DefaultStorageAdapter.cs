@@ -11,7 +11,11 @@ public sealed class DefaultStorageAdapter : IStorageBasedServerAdapter
 {
     private const string ErrorMessage = "No valid server account configured.";
 
-    public void OnConfigChanged(object config, SyncConfig syncConfig)
+    public void SetConfig(object config, SyncConfig syncConfig)
+    {
+    }
+
+    public void ApplyConfig()
     {
     }
 

@@ -67,6 +67,7 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
     public void OnSyncConfigChanged(SyncConfig syncConfig)
     {
         _syncConfig = syncConfig;
+        _serverAdapter.ApplyConfig();
         StartTestAliveBackgroudService();
     }
 

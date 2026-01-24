@@ -25,16 +25,19 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         _logger = logger;
         _appConfig = appConfig;
 
-        _webDavConfig = new WebDavConfig(); // 默认配置，将通过OnConfigChanged更新
-        _syncConfig = new SyncConfig(); // 默认SyncConfig，将通过OnConfigChanged更新
+        _webDavConfig = new WebDavConfig(); // 默认配置，将通过SetConfig更新
+        _syncConfig = new SyncConfig(); // 默认SyncConfig，将通过SetConfig更新
         _webDav = CreateWebDavInstance();
     }
 
-    public void OnConfigChanged(WebDavConfig config, SyncConfig syncConfig)
+    public void SetConfig(WebDavConfig config, SyncConfig syncConfig)
     {
         _webDavConfig = config;
         _syncConfig = syncConfig;
+    }
 
+    public void ApplyConfig()
+    {
         _webDav?.Dispose();
         _webDav = CreateWebDavInstance();
     }

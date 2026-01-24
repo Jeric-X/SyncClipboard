@@ -5,15 +5,16 @@ namespace SyncClipboard.Core.RemoteServer.Adapter;
 public interface IServerAdapter
 {
     Task TestConnectionAsync(CancellationToken cancellationToken = default);
-    void OnConfigChanged(object config, SyncConfig syncConfig);
+    void SetConfig(object config, SyncConfig syncConfig);
+    void ApplyConfig();
 }
 
 public interface IServerAdapter<T> : IServerAdapter where T : IAdapterConfig<T>
 {
-    void OnConfigChanged(T config, SyncConfig syncConfig);
+    void SetConfig(T config, SyncConfig syncConfig);
 
-    void IServerAdapter.OnConfigChanged(object config, SyncConfig syncConfig)
+    void IServerAdapter.SetConfig(object config, SyncConfig syncConfig)
     {
-        OnConfigChanged((T)config, syncConfig);
+        SetConfig((T)config, syncConfig);
     }
 }

@@ -158,6 +158,14 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
 
     public void OnSyncConfigChanged(SyncConfig syncConfig)
     {
+        try
+        {
+            _serverAdapter.ApplyConfig();
+        }
+        catch (Exception ex)
+        {
+            SetErrorStatus("Failed to apply config", ex);
+        }
         _testAliveHelper.Restart();
     }
 
