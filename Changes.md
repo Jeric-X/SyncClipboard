@@ -1,3 +1,8 @@
+v3.1.1-beta6
+- 修复了一些问题
+- 服务器版本需要v3.1.1-beta4及以上
+- 如果从v3.1.1-beta3及更低版本升级，Android端HTTP-Shortcuts以及IOS端快捷指令需要重新导入，导入链接请在[dev分支的主页说明](https://github.com/Jeric-X/SyncClipboard/tree/dev)中查找
+
 v3.1.1-beta5
 - 修复了一些问题
 

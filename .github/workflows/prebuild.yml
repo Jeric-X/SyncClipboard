@@ -24,7 +24,7 @@ jobs:
 
     - name: Generate windows change log
       run: |
-        .\PreRelease.bat
+        .\build\PreRelease.bat
         type feature.txt
 
     - name: Append current run URL to feature.txt
