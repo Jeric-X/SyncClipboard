@@ -25,7 +25,7 @@
         {
           "authentication": "basic",
           "bodyContent": "",
-          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\nconst type \u003d profile.type\n\nif (type \u003d\u003d \u0027Text\u0027) {\n    if (profile.hasData \u0026\u0026 profile.dataName \u0026\u0026 profile.dataName.length \u003e 0) {\n        const downloadUrl \u003d getDataUrl(profile)\n        const user \u003d getVariable(/*[variable]*/\"719f997c-6bf6-458f-a148-3c2a8ac5e405\"/*[/variable]*/)\n        const pass \u003d getVariable(/*[variable]*/\"9421719b-086f-4799-8432-158b84b6e05a\"/*[/variable]*/)\n        const authHeader \u003d \u0027basic \u0027 + base64encode(user + \u0027:\u0027 + pass);\n\n        const result \u003d sendHttpRequest(\n            downloadUrl,\n            {\n                method: \"GET\",\n                headers: {\n                    \u0027Authorization\u0027: authHeader,\n                },\n            },\n        )\n\n        copyToClipboard(result.response.body);\n        if (result.response.body.length \u003e 100) {\n            showToast(\u0027已拷贝\\n\u0027 + result.response.body.substring(0, 100) + \u0027...\u0027);\n        } else {\n            showToast(\u0027已拷贝\\n\u0027 + result.response.body);\n        }\n    } else {\n        const ClibboardText \u003d profile.text;\n        copyToClipboard(ClibboardText);\n        showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\n\n        const httpstr \u003d httpString(ClibboardText);\n\n        if (httpstr) {\n            if (confirm(\u0027包含网址，是否打开\u0027)) {\n                openUrl(httpstr[0]);\n            }\n        }\n    }\n} else if (profile.hasData \u0026\u0026 profile.dataName \u0026\u0026 profile.dataName.length \u003e 0) {\n    const downloadUrl \u003d getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.dataName)\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\n    showToast(\u0027文件名已拷贝，正在下载\\n\u0027 + profile.dataName)\n    copyToClipboard(profile.dataName)\n    if (type \u003d\u003d \u0027Image\u0027 || isImageFile(profile.dataName)) {\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n    } else {\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n    }\n}\n\nfunction isImageFile(file) {\n    const filename \u003d file.toLowerCase();\n    const list \u003d [\n        \u0027.png\u0027,\n        \u0027.jpg\u0027,\n        \u0027.jpeg\u0027,\n        \u0027.gif\u0027,\n        \u0027.bmp\u0027,\n        \u0027.webp\u0027,\n    ]\n    let result \u003d false\n    list.forEach(element \u003d\u003e {\n        if (filename.endsWith(element)) {\n            result \u003d true\n        }\n    })\n    return result\n}\n\nfunction httpString(s) {\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\n    s \u003d s.match(reg);\n    return (s)\n}\n\nfunction getDataUrl(profile) {\n    return getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.dataName)\n}",
+          "codeOnSuccess": "const profile \u003d JSON.parse(response.body)\nconst type \u003d profile.type\n\nif (type \u003d\u003d \u0027Text\u0027) {\n    if (profile.hasData \u0026\u0026 profile.dataName \u0026\u0026 profile.dataName.length \u003e 0) {\n        const downloadUrl \u003d getDataUrl(profile)\n        const user \u003d getVariable(/*[variable]*/\"719f997c-6bf6-458f-a148-3c2a8ac5e405\"/*[/variable]*/)\n        const pass \u003d getVariable(/*[variable]*/\"9421719b-086f-4799-8432-158b84b6e05a\"/*[/variable]*/)\n        const authHeader \u003d \u0027basic \u0027 + base64encode(user + \u0027:\u0027 + pass);\n\n        const result \u003d sendHttpRequest(\n            downloadUrl,\n            {\n                method: \"GET\",\n                headers: {\n                    \u0027Authorization\u0027: authHeader,\n                },\n            },\n        )\n\n        copyToClipboard(result.response.body);\n        if (result.response.body.length \u003e 100) {\n            showToast(\u0027已拷贝\\n\u0027 + result.response.body.substring(0, 100) + \u0027...\u0027);\n        } else {\n            showToast(\u0027已拷贝\\n\u0027 + result.response.body);\n        }\n    } else {\n        const ClibboardText \u003d profile.text;\n        copyToClipboard(ClibboardText);\n        showToast(\u0027已拷贝\\n\u0027 + ClibboardText);\n\n        const httpstr \u003d httpString(ClibboardText);\n\n        if (httpstr) {\n            if (confirm(\u0027包含网址，是否打开\u0027)) {\n                openUrl(httpstr[0]);\n            }\n        }\n    }\n} else if (profile.hasData \u0026\u0026 profile.dataName \u0026\u0026 profile.dataName.length \u003e 0) {\n    const downloadUrl \u003d getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.dataName)\n    const inputPara \u003d { \u0027downloadUrl\u0027: downloadUrl }\n    showToast(\u0027文件名已拷贝，正在下载\\n\u0027 + profile.dataName)\n    copyToClipboard(profile.dataName)\n    setVariable(/*[variable]*/\"d12cab01-6d2b-44aa-a1fb-dfddc6fe7895\"/*[/variable]*/, profile.dataName);\n    if (type \u003d\u003d \u0027Image\u0027 || isImageFile(profile.dataName)) {\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n    } else {\n        enqueueShortcut(/*[shortcut]*/\"1e693964-ab59-4e9c-902b-6b94b90ff2f0\"/*[/shortcut]*/, inputPara)\n    }\n}\n\nfunction isImageFile(file) {\n    const filename \u003d file.toLowerCase();\n    const list \u003d [\n        \u0027.png\u0027,\n        \u0027.jpg\u0027,\n        \u0027.jpeg\u0027,\n        \u0027.gif\u0027,\n        \u0027.bmp\u0027,\n        \u0027.webp\u0027,\n    ]\n    let result \u003d false\n    list.forEach(element \u003d\u003e {\n        if (filename.endsWith(element)) {\n            result \u003d true\n        }\n    })\n    return result\n}\n\nfunction httpString(s) {\n    var reg \u003d /(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+\u0026@#/%?\u003d~_|!:,.;]+[-A-Za-z0-9+\u0026@#/%\u003d~_|]/g;\n    s \u003d s.match(reg);\n    return (s)\n}\n\nfunction getDataUrl(profile) {\n    return getVariable(/*[variable]*/\"136751b5-5f38-49fc-81dc-80a825804203\"/*[/variable]*/) + \u0027/file/\u0027 + encodeURIComponent(profile.dataName)\n}",
           "iconName": "freepik_download",
           "id": "91cf41c5-da0c-45b5-988c-9f636e135abd",
           "method": "GET",
@@ -51,6 +51,7 @@
           "method": "PUT",
           "name": "上传文件",
           "password": "{{9421719b-086f-4799-8432-158b84b6e05a}}",
+          "quickSettingsTileShortcut": true,
           "requestBodyType": "file",
           "responseHandling": {
             "successOutput": "none"
@@ -98,7 +99,10 @@
               "share",
               "copy",
               "save"
-            ]
+            ],
+            "replaceFileIfExists": true,
+            "storeDirectoryId": "de5f8dd6-9245-439b-9449-9086260d862e",
+            "storeFileName": "{{d12cab01-6d2b-44aa-a1fb-dfddc6fe7895}}"
           },
           "url": "{{5989c421-2669-4424-80c3-69ba7995524a}}",
           "username": "{{719f997c-6bf6-458f-a148-3c2a8ac5e405}}"
@@ -107,18 +111,18 @@
     }
   ],
   "compatibilityVersion": 90,
-  "createdAt": "2026-01-10T08:13:20.326Z",
-  "originDeviceId": "RPAAPN9Q39",
+  "createdAt": "2026-01-25T14:50:45.937484Z",
+  "originDeviceId": "EAB6L66270",
   "variables": [
     {
       "id": "719f997c-6bf6-458f-a148-3c2a8ac5e405",
-      "key": "UserName",
-      "value": "ChangeIt"
+      "isExcludeValueFromExport": true,
+      "key": "UserName"
     },
     {
       "id": "9421719b-086f-4799-8432-158b84b6e05a",
-      "key": "UserToken",
-      "value": "ChangeIt"
+      "isExcludeValueFromExport": true,
+      "key": "UserToken"
     },
     {
       "id": "76b1e948-84b3-497e-8ec5-b911d00f8f0f",
@@ -129,19 +133,27 @@
     },
     {
       "id": "d12cab01-6d2b-44aa-a1fb-dfddc6fe7895",
+      "isExcludeValueFromExport": true,
       "jsonEncode": true,
-      "key": "FileName",
-      "value": ""
+      "key": "FileName"
     },
     {
       "id": "136751b5-5f38-49fc-81dc-80a825804203",
-      "key": "url",
-      "value": "ChangeIt"
+      "isExcludeValueFromExport": true,
+      "key": "url"
     },
     {
       "id": "5989c421-2669-4424-80c3-69ba7995524a",
+      "isExcludeValueFromExport": true,
       "key": "downloadUrl"
     }
   ],
-  "version": 91
+  "version": 91,
+  "workingDirectories": [
+    {
+      "directory": "content://com.android.externalstorage.documents/tree/primary%3ADownload%2FSyncClipboard",
+      "id": "de5f8dd6-9245-439b-9449-9086260d862e",
+      "name": "SyncClipboard"
+    }
+  ]
 }

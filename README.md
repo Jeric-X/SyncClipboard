@@ -241,9 +241,25 @@ paru -Sy syncclipboard-desktop
 <details>
 <summary>导入配置文件后修改配置图示</summary>
 
+- 通过`变量`修改账号、密码、网址
+  
 ![](docs/image/android1.jpg)
 ![](docs/image/android2.jpg)
 ![](docs/image/android3.jpg)
+  
+  
+- 下载文件时，如果你希望自动将文件存储到文件系统，请根据下图修改储存位置  
+  
+![](docs/image/android4.jpg)
+![](docs/image/android5.jpg)
+  
+  
+- 下载文件时，如果你想修改默认行为（默认行为：弹出一个展示页面等待用户处理，并将文件保存到前面选择的位置），可以根据你的需求修改如下内容  
+  
+![](docs/image/android6.jpg)
+![](docs/image/android7.jpg)
+![](docs/image/android8.jpg)
+  
 
 </details>
 
