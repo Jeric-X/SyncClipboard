@@ -718,7 +718,7 @@ Esc：关闭面板</value>
     <value>最大记录条数</value>
   </data>
   <data name="MaxItemCountDescription" xml:space="preserve">
-    <value>仅针对未同步记录</value>
+    <value>仅针对未同步记录，0表示不限制数量</value>
   </data>
   <data name="HistoryRetentionDescription" xml:space="preserve">
     <value>仅针对未同步记录，0表示不限制时长</value>

@@ -31,8 +31,8 @@
                 </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}" Description="{x:Static i18n:Strings.MaxItemCountDescription}">
                     <ui:SettingsExpanderItem.Footer>
-                        <NumericUpDown Minimum="1"
-                                       Maximum="1000"
+                        <NumericUpDown Minimum="0"
+                                       Maximum="10000"
                                        Value="{Binding MaxItemCount, Mode=TwoWay}"
                                        Increment="1"
                                        ButtonSpinnerLocation="Right" />

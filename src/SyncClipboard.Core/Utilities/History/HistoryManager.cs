@@ -151,9 +151,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        if (EnableCleanup)
+        if (EnableCleanup && _historyConfig.MaxItemCount > 0)
         {
-            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount > 0 ? _historyConfig.MaxItemCount - 1 : 0, token);
+            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount - 1, token);
         }
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);

@@ -718,7 +718,7 @@ Double click image: View full image</value>
     <value>Maximum number of records</value>
   </data>
   <data name="MaxItemCountDescription" xml:space="preserve">
-    <value>Only applies to unsynced records.</value>
+    <value>Only applies to unsynced records. Set to 0 for unlimited records.</value>
   </data>
   <data name="HistoryRetentionDescription" xml:space="preserve">
     <value>Set to 0 to disable time-based cleanup. Only applies to unsynced records.</value>
