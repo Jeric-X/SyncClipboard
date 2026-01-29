@@ -52,7 +52,6 @@
                         <Button Content="{x:Static i18n:Strings.ClearLocalHistory}" Command="{Binding ClearLocalHistoryCommand}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Description="{x:Static i18n:Strings.HistoryDescription}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Static i18n:Strings.HistoryWindowOperations}" IsExpanded="True">

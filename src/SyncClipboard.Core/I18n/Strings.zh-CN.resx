@@ -732,9 +732,6 @@ Esc：关闭面板</value>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
     <value>已同步记录的自动删除将遵循服务器配置</value>
   </data>
-  <data name="HistoryDescription" xml:space="preserve">
-    <value>当用户手动删除文件时，历史记录也会失效</value>
-  </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>历史记录面板</value>
   </data>
@@ -895,5 +892,8 @@ Esc：关闭面板</value>
   </data>
   <data name="ContinueUpload" xml:space="preserve">
     <value>此条目被内容控制过滤，是否继续上传？</value>
+  </data>
+  <data name="ServerTimeError" xml:space="preserve">
+    <value>服务器时间与本地时间差距过大，请同步时间</value>
   </data>
 </root>

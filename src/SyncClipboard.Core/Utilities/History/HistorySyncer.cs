@@ -180,17 +180,12 @@ public class HistorySyncer
             record.SyncStatus = HistorySyncStatus.LocalOnly;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
-        catch (Exception ex)
-        {
-            _logger.Write("HistorySyncer", $"同步记录异常[{record.Hash}]: {ex.Message}");
-            return;
-        }
     }
 
     /// <summary>
     /// 从服务器拉取指定时间范围内的所有历史记录(分页获取)
     /// </summary>
-    private async Task<List<HistoryRecordDto>> FetchRemoteRangeAsync(
+    private static async Task<List<HistoryRecordDto>> FetchRemoteRangeAsync(
         IOfficialSyncServer remoteServer,
         DateTime? before,
         DateTime? after,
@@ -205,40 +200,32 @@ public class HistorySyncer
         var allRecords = new List<HistoryRecordDto>();
         var page = 1;
 
-        try
+        while (page <= pageLimit && !token.IsCancellationRequested)
         {
-            while (page <= pageLimit && !token.IsCancellationRequested)
+            var pageRecords = await remoteServer.GetHistoryAsync(
+                page: page,
+                before: before,
+                after: after,
+                modifiedAfter: modifiedAfter,
+                types: types,
+                searchText: searchText,
+                starred: starred,
+                sortByLastAccessed: sortByLastAccessed);
+
+            if (!pageRecords.Any())
             {
-                var pageRecords = await remoteServer.GetHistoryAsync(
-                    page: page,
-                    before: before,
-                    after: after,
-                    modifiedAfter: modifiedAfter,
-                    types: types,
-                    searchText: searchText,
-                    starred: starred,
-                    sortByLastAccessed: sortByLastAccessed);
+                break;
+            }
 
-                if (!pageRecords.Any())
-                {
-                    break;
-                }
+            allRecords.AddRange(pageRecords);
+            page++;
 
-                allRecords.AddRange(pageRecords);
-                page++;
-
-                // 如果返回少于一页的数据，说明已到末尾
-                if (pageRecords.Count() < 50) // 假设页大小为50
-                {
-                    break;
-                }
+            // 如果返回少于一页的数据，说明已到末尾
+            if (pageRecords.Count() < 50) // 假设页大小为50
+            {
+                break;
             }
         }
-        catch (Exception ex) when (!token.IsCancellationRequested)
-        {
-            _logger.Write("HistorySyncer", $"从服务器拉取范围数据失败: {ex.Message}");
-        }
-
         return allRecords;
     }
 
@@ -254,52 +241,44 @@ public class HistorySyncer
         bool? starred,
         CancellationToken token)
     {
-        try
-        {
-            // 获取本地该范围内标记为 Synced 或 ServerOnly 的记录
-            var localRecords = await _historyManager.GetHistoryAsync(
-                types,
-                starred,
-                before,
-                int.MaxValue,
-                searchText,
-                false,
-                token).ConfigureAwait(false);
+        // 获取本地该范围内标记为 Synced 或 ServerOnly 的记录
+        var localRecords = await _historyManager.GetHistoryAsync(
+            types,
+            starred,
+            before,
+            int.MaxValue,
+            searchText,
+            false,
+            token).ConfigureAwait(false);
 
-            await Task.Run(async () =>
+        await Task.Run(async () =>
+        {
+            var localSyncedOrServerOnly = localRecords
+                .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false)
+                .Where(r => !after.HasValue || r.Timestamp >= after.Value);
+
+            // 构建服务器记录的标识集合
+            var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
+
+            // 找出孤儿数据：本地认为已同步但服务器不存在
+            foreach (var localRecord in localSyncedOrServerOnly)
             {
-                var localSyncedOrServerOnly = localRecords
-                    .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false)
-                    .Where(r => !after.HasValue || r.Timestamp >= after.Value);
-
-                // 构建服务器记录的标识集合
-                var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
-
-                // 找出孤儿数据：本地认为已同步但服务器不存在
-                foreach (var localRecord in localSyncedOrServerOnly)
+                var localId = $"{localRecord.Type}-{localRecord.Hash}";
+                if (remoteIds.Contains(localId))
                 {
-                    var localId = $"{localRecord.Type}-{localRecord.Hash}";
-                    if (remoteIds.Contains(localId))
-                    {
-                        continue;
-                    }
-                    if (localRecord.IsLocalFileReady is false)
-                    {
-                        await _historyManager.RemoveHistory(localRecord, token).ConfigureAwait(false);
-                        continue;
-                    }
-                    // 孤儿数据：服务器已删除，修改为 LocalOnly
-                    // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
-                    localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
-                    await _historyManager.PersistServerSyncedAsync(localRecord, token).ConfigureAwait(false);
+                    continue;
                 }
-            }, token).ConfigureAwait(false);
-
-        }
-        catch (Exception ex) when (!token.IsCancellationRequested)
-        {
-            await _logger.WriteAsync("HistorySyncer", $"孤儿数据检测失败: {ex.Message}");
-        }
+                if (localRecord.IsLocalFileReady is false)
+                {
+                    await _historyManager.RemoveHistory(localRecord, token).ConfigureAwait(false);
+                    continue;
+                }
+                // 孤儿数据：服务器已删除，修改为 LocalOnly
+                // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
+                localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
+                await _historyManager.PersistServerSyncedAsync(localRecord, token).ConfigureAwait(false);
+            }
+        }, token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -313,33 +292,26 @@ public class HistorySyncer
         bool? starred,
         CancellationToken token)
     {
-        try
+        var localRecords = await _historyManager.GetHistoryAsync(
+            types,
+            starred,
+            before,
+            int.MaxValue,
+            searchText,
+            false,
+            token);
+
+        var needSync = localRecords
+            .Where(r => r.SyncStatus == HistorySyncStatus.NeedSync
+                       && (!after.HasValue || r.Timestamp >= after.Value))
+            .ToList();
+
+        foreach (var record in needSync)
         {
-            var localRecords = await _historyManager.GetHistoryAsync(
-                types,
-                starred,
-                before,
-                int.MaxValue,
-                searchText,
-                false,
-                token);
+            if (token.IsCancellationRequested)
+                break;
 
-            var needSync = localRecords
-                .Where(r => r.SyncStatus == HistorySyncStatus.NeedSync
-                           && (!after.HasValue || r.Timestamp >= after.Value))
-                .ToList();
-
-            foreach (var record in needSync)
-            {
-                if (token.IsCancellationRequested)
-                    break;
-
-                await SyncOneAsync(record, token);
-            }
-        }
-        catch (Exception ex) when (!token.IsCancellationRequested)
-        {
-            _logger.Write("HistorySyncer", $"推送本地范围数据失败: {ex.Message}");
+            await SyncOneAsync(record, token);
         }
     }
 
@@ -348,17 +320,10 @@ public class HistorySyncer
     /// </summary>
     private async Task SyncPendingHistoryDataAsync(CancellationToken token)
     {
-        try
-        {
-            var allRecords = await _historyManager.GetHistory().ConfigureAwait(false);
-            allRecords = await Task.Run(allRecords.Where(r => r.IsDeleted == false).ToList, token);
-            await SyncPendingDownloadsAsync(allRecords, token);
-            await SyncPendingUploadsAsync(allRecords, token);
-        }
-        catch (Exception ex) when (!token.IsCancellationRequested)
-        {
-            _logger.Write("HistorySyncer", $"同步转移队列失败: {ex.Message}");
-        }
+        var allRecords = await _historyManager.GetHistory().ConfigureAwait(false);
+        allRecords = await Task.Run(allRecords.Where(r => r.IsDeleted == false).ToList, token);
+        await SyncPendingDownloadsAsync(allRecords, token);
+        await SyncPendingUploadsAsync(allRecords, token);
     }
 
     private async Task SyncPendingDownloadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
@@ -369,16 +334,8 @@ public class HistorySyncer
             if (token.IsCancellationRequested)
                 break;
 
-            try
-            {
-                var profile = record.ToProfile();
-                await _historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
-                // _logger.Write("HistorySyncer", $"已将记录加入下载队列[{record.Hash}]");
-            }
-            catch (Exception ex)
-            {
-                _logger.Write("HistorySyncer", $"加入下载队列失败[{record.Hash}]: {ex.Message}");
-            }
+            var profile = record.ToProfile();
+            await _historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
         }
     }
 
@@ -388,7 +345,6 @@ public class HistorySyncer
         var needUpload = await Task.Run(
             () => allRecords
             .Where(r => r.SyncStatus == HistorySyncStatus.LocalOnly)
-            // .Take(1)
             .ToList(), token).ConfigureAwait(false);
 
         foreach (var record in needUpload)
@@ -396,23 +352,14 @@ public class HistorySyncer
             if (token.IsCancellationRequested)
                 break;
 
-            try
+            var profile = record.ToProfile();
+            var validationError = await ContentControlHelper.IsContentValid(profile, token);
+            if (validationError != null)
             {
-                var profile = record.ToProfile();
-                var validationError = await ContentControlHelper.IsContentValid(profile, token);
-                if (validationError != null)
-                {
-                    // await _logger.WriteAsync("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
-                    continue;
-                }
+                continue;
+            }
 
-                await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
-                // await _logger.WriteAsync("HistorySyncer", $"已将本地记录加入上传队列[{record.Hash}]");
-            }
-            catch (Exception ex)
-            {
-                await _logger.WriteAsync("HistorySyncer", $"加入上传队列失败[{record.Hash}]: {ex.Message}");
-            }
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
         }
     }
 

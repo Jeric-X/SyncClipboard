@@ -38,7 +38,6 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}">
                     <Button Content="{x:Bind i18n:Strings.ClearLocalHistory}" Command="{x:Bind _viewModel.ClearLocalHistoryCommand}" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Description="{x:Bind i18n:Strings.HistoryDescription}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryWindowOperations}" IsExpanded="True">

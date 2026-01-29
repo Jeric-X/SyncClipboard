@@ -86,7 +86,7 @@
                     <NumericUpDown Value="{Binding MaxHistoryCount, Mode=TwoWay}"
                                    Minimum="1"
                                    Maximum="10000"
-                                   Increment="1"
+                                   Increment="100"
                                    ButtonSpinnerLocation="Right"
                                    FormatString="F0" />
                 </ui:SettingsExpanderItem.Footer>

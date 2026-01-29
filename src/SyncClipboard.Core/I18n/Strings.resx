@@ -732,9 +732,6 @@ Double click image: View full image</value>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
     <value>Synced records will follow server settings for automatic deletion.</value>
   </data>
-  <data name="HistoryDescription" xml:space="preserve">
-    <value>History records will become invalid when users manually delete files</value>
-  </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>History Panel</value>
   </data>
@@ -895,5 +892,8 @@ This operation cannot be undone.</value>
   </data>
   <data name="ContinueUpload" xml:space="preserve">
     <value>This item is filtered by content control. Do you want to continue uploading?</value>
+  </data>
+  <data name="ServerTimeError" xml:space="preserve">
+    <value>Server time differs significantly from local time. Please synchronize your system clock.</value>
   </data>
 </root>

@@ -128,7 +128,7 @@ public class HistoryService : ClipboardHander
         }
         if (e.Status == PollStatus.StoppedDueToNetworkIssues && _enableSyncHistory)
         {
-            trayIcon.SetStatusString(SERVICE_NAME, $"History synchronization failed. Last sync time: {_lastSyncTime?.LocalDateTime:g}", error: true);
+            trayIcon.SetStatusString(SERVICE_NAME, $"History synchronization failed with error: {e.Message}", error: true);
             _syncingTask.Cancel();
         }
     }
@@ -145,7 +145,7 @@ public class HistoryService : ClipboardHander
             {
                 return;
             }
-            trayIcon.SetStatusString(SERVICE_NAME, $"History synchronization failed. Last sync time: {_lastSyncTime?.LocalDateTime:g}", error: true);
+            trayIcon.SetStatusString(SERVICE_NAME, $"History synchronization failed with error: {ex.Message}", error: true);
             Logger?.Write($"[{LOG_TAG}] 同步所有历史记录失败: {ex.Message}");
         }
     }
@@ -180,6 +180,13 @@ public class HistoryService : ClipboardHander
         {
             await historySyncer.RemoveRemoteHistorys(token).ConfigureAwait(false);
             return;
+        }
+
+        var serverTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
+        var timeDifference = (DateTimeOffset.Now - serverTime).Duration().TotalMinutes;
+        if (timeDifference > 5)
+        {
+            throw new InvalidOperationException(I18n.Strings.ServerTimeError);
         }
 
         historyManager.EnableCleanup = false;

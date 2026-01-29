@@ -1008,15 +1008,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 History records will become invalid when users manually delete files 的本地化字符串。
-        /// </summary>
-        public static string HistoryDescription {
-            get {
-                return ResourceManager.GetString("HistoryDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 All 的本地化字符串。
         /// </summary>
         public static string HistoryFilterAll {
@@ -1368,7 +1359,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Only applies to unsynced records. 的本地化字符串。
+        ///   查找类似 Only applies to unsynced records. Set to 0 for unlimited records. 的本地化字符串。
         /// </summary>
         public static string MaxItemCountDescription {
             get {
@@ -1877,6 +1868,15 @@ namespace SyncClipboard.Core.I18n {
         public static string ServerDescription {
             get {
                 return ResourceManager.GetString("ServerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Server time differs significantly from local time. Please synchronize your system clock. 的本地化字符串。
+        /// </summary>
+        public static string ServerTimeError {
+            get {
+                return ResourceManager.GetString("ServerTimeError", resourceCulture);
             }
         }
         
