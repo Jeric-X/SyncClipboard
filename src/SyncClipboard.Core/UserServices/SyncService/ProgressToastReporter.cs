@@ -8,9 +8,13 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 {
     private readonly IProgressNotification _progressBar;
     private readonly Counter _counter;
-    public ProgressToastReporter(string filename, string title, INotificationManager notificationManager, params ActionButton[] buttons)
+    private readonly Action<HttpDownloadProgress>? _action;
+    private HttpDownloadProgress _progress;
+
+    public ProgressToastReporter(string filename, string title, INotificationManager notificationManager, Action<HttpDownloadProgress>? action, params ActionButton[] buttons)
     {
         _progressBar = notificationManager.CreateProgress(true);
+        _action = action;
         _progressBar.Title = title;
         _progressBar.ProgressTitle = filename;
         //_progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
@@ -19,8 +23,28 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar.Buttons = buttons.ToList();
 
         AppCore.Current.Logger.Write("ProgressToastReporter created");
-        //_progressBar.Show(new NotificationDeliverOption { Silent = true });
-        _counter = new Counter((_) => _progressBar.Update(), 500, ulong.MaxValue);
+        _progressBar.Show(new NotificationDeliverOption { Silent = true });
+        _counter = new Counter((_) => UpdateProgress(), 500, ulong.MaxValue);
+    }
+
+    private void UpdateProgress()
+    {
+        _action?.Invoke(_progress);
+
+        var percent = (double)_progress.BytesReceived / _progress.TotalBytesToReceive;
+        if (percent < _progressBar.ProgressValue)
+        {
+            return;
+        }
+        _progressBar.ProgressValue = percent;
+        _progressBar.ProgressValueTip = percent?.ToString("P");
+        if (_progress.End)
+        {
+            AppCore.Current.Logger.Write("ProgressToastReporter removed due to complete");
+            _counter.Cancle();
+            _progressBar.Remove();
+        }
+        _progressBar.Update();
     }
 
     public void Cancel()
@@ -40,18 +64,6 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 
     public void Report(HttpDownloadProgress progress)
     {
-        var percent = (double)progress.BytesReceived / progress.TotalBytesToReceive;
-        if (percent < _progressBar.ProgressValue)
-        {
-            return;
-        }
-        _progressBar.ProgressValue = percent;
-        _progressBar.ProgressValueTip = percent?.ToString("P");
-        if (progress.End)
-        {
-            AppCore.Current.Logger.Write("ProgressToastReporter removed due to complete");
-            _counter.Cancle();
-            _progressBar.Remove();
-        }
+        _progress = progress;
     }
 }

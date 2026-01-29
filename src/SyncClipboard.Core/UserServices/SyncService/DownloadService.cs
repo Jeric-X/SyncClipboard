@@ -480,7 +480,13 @@ public class DownloadService : Service
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
     {
         await _logger.WriteAsync($"Downloading: {profile.ShortDisplayText}");
-        _toastReporter = new ProgressToastReporter(profile.ShortDisplayText, I18n.Strings.DownloadingFile, _notificationManager);
+        _toastReporter = new ProgressToastReporter(profile.ShortDisplayText, I18n.Strings.DownloadingFile, _notificationManager, (progress) =>
+        {
+            var percent = progress.TotalBytesToReceive > 0
+                ? ((double)progress.BytesReceived / progress.TotalBytesToReceive)
+                : 0;
+            _trayIcon.SetStatusString(SERVICE_NAME, $"Downloading: {percent:P}");
+        });
 
         var remoteServer = _remoteClipboardServerFactory.Current;
         await remoteServer.DownloadProfileDataAsync(profile, _toastReporter, cancelToken);
