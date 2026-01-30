@@ -161,73 +161,67 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
     private static HistoryRecordDto ParseHistoryRecord(Dictionary<string, string> metadata)
     {
-        if (!metadata.TryGetValue("hash", out var hash) || string.IsNullOrWhiteSpace(hash))
-            throw new ArgumentException("Hash is required");
+        var type = ParseEnum<ProfileType>(metadata, "type");
 
-        if (!metadata.TryGetValue("type", out var typeStr)
-            || string.IsNullOrWhiteSpace(typeStr)
-            || !Enum.TryParse<ProfileType>(typeStr, true, out var type))
+        if (type is null || type == ProfileType.None || type == ProfileType.Unknown)
         {
-            throw new ArgumentException("Type is required");
+            throw new ArgumentException($"Type is invalid or missing");
         }
-        if (type == ProfileType.None)
-            throw new ArgumentException("Type is required");
-
-        DateTimeOffset? createTime = null;
-        if (metadata.TryGetValue("createTime", out var ctStr) && !string.IsNullOrWhiteSpace(ctStr))
-        {
-            DateTimeOffset.TryParse(ctStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var ct);
-            createTime = ct;
-        }
-
-        DateTimeOffset? lastModified = null;
-        if (metadata.TryGetValue("lastModified", out var lmStr) && !string.IsNullOrWhiteSpace(lmStr))
-        {
-            DateTimeOffset.TryParse(lmStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var lm);
-            lastModified = lm;
-        }
-
-        DateTimeOffset? lastAccessed = null;
-        if (metadata.TryGetValue("lastAccessed", out var laStr) && !string.IsNullOrWhiteSpace(laStr))
-        {
-            DateTimeOffset.TryParse(laStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var la);
-            lastAccessed = la;
-        }
-
-        bool starred = metadata.TryGetValue("starred", out var starStr) && bool.TryParse(starStr, out var star) && star;
-
-        bool pinned = metadata.TryGetValue("pinned", out var pinStr) && bool.TryParse(pinStr, out var pin) && pin;
-
-        int version = 0;
-        if (metadata.TryGetValue("version", out var verStr) && int.TryParse(verStr, out var ver))
-            version = ver;
-
-        bool isDeleted = metadata.TryGetValue("isDeleted", out var delStr) && bool.TryParse(delStr, out var del) && del;
-
-        string text = metadata.TryGetValue("text", out var textStr) ? textStr : string.Empty;
-
-        long size = 0;
-        if (metadata.TryGetValue("size", out var sizeStr) && long.TryParse(sizeStr, out var sz))
-            size = sz;
-
-        bool hasData = metadata.TryGetValue("hasData", out var hasDataStr) && bool.TryParse(hasDataStr, out var hasDataVal) && hasDataVal;
 
         return new HistoryRecordDto
         {
-            Hash = hash,
-            Type = type,
-            CreateTime = createTime ?? DateTimeOffset.UtcNow,
-            LastModified = lastModified ?? DateTimeOffset.UtcNow,
-            LastAccessed = lastAccessed ?? DateTimeOffset.UtcNow,
-            Starred = starred,
-            Pinned = pinned,
-            Version = version,
-            IsDeleted = isDeleted,
-            Text = text,
-            Size = size,
-            HasData = hasData
+            Hash = GetRequiredString(metadata, "hash"),
+            Type = type.Value,
+            CreateTime = ParseDateTimeOffset(metadata, "createTime"),
+            LastModified = ParseDateTimeOffset(metadata, "lastModified"),
+            LastAccessed = ParseDateTimeOffset(metadata, "lastAccessed"),
+            Starred = ParseBool(metadata, "starred"),
+            Pinned = ParseBool(metadata, "pinned"),
+            Version = ParseInt(metadata, "version"),
+            IsDeleted = ParseBool(metadata, "isDeleted"),
+            Text = metadata.TryGetValue("text", out var text) ? text : string.Empty,
+            Size = ParseLong(metadata, "size"),
+            HasData = ParseBool(metadata, "hasData")
         };
     }
+
+    private static string GetRequiredString(Dictionary<string, string> metadata, string key)
+    {
+        if (!metadata.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException($"{key} is required");
+        return value;
+    }
+
+    private static T? ParseEnum<T>(Dictionary<string, string> metadata, string key) where T : struct, Enum
+    {
+        if (!metadata.TryGetValue(key, out var value)
+            || string.IsNullOrWhiteSpace(value)
+            || !Enum.TryParse<T>(value, true, out var result))
+        {
+            return null;
+        }
+        return result;
+    }
+
+    private static DateTimeOffset ParseDateTimeOffset(Dictionary<string, string> metadata, string key)
+    {
+        if (metadata.TryGetValue(key, out var value)
+            && !string.IsNullOrWhiteSpace(value)
+            && DateTimeOffset.TryParse(value, null, System.Globalization.DateTimeStyles.RoundtripKind, out var result))
+        {
+            return result;
+        }
+        return DateTimeOffset.UtcNow;
+    }
+
+    private static bool ParseBool(Dictionary<string, string> metadata, string key) =>
+        metadata.TryGetValue(key, out var value) && bool.TryParse(value, out var result) && result;
+
+    private static int ParseInt(Dictionary<string, string> metadata, string key) =>
+        metadata.TryGetValue(key, out var value) && int.TryParse(value, out var result) ? result : 0;
+
+    private static long ParseLong(Dictionary<string, string> metadata, string key) =>
+        metadata.TryGetValue(key, out var value) && long.TryParse(value, out var result) ? result : 0;
 
     private static async Task<(bool HasData, Stream? DataStream)> TryHandleSectionAsync(
         MultipartSection section,
