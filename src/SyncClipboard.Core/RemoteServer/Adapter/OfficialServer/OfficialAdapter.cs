@@ -393,7 +393,6 @@ public sealed class OfficialAdapter(
         }
     }
 
-
     public async Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         try

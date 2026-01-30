@@ -372,7 +372,6 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         _FilterSelectorBar.SelectedItem = _FilterSelectorBar.Items[(int)_viewModel.SelectedFilter];
 
-
         _viewModel.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(_viewModel.SelectedFilter))
@@ -549,7 +548,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         _ButtonArea.Measure(infiniteSize);
         _SearchTextBox.Measure(infiniteSize);
 
-        _windowManger.MinWidth = _FilterSelectorBar.DesiredSize.Width + _ButtonArea.DesiredSize.Width * 2;
+        _windowManger.MinWidth = _FilterSelectorBar.DesiredSize.Width + (_ButtonArea.DesiredSize.Width * 2);
         _windowManger.MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height + 20;
     }
 

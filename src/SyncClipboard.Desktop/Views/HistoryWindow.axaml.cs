@@ -61,7 +61,7 @@ public partial class HistoryWindow : Window, IWindow
         _ButtonArea.Measure(infiniteSize);
         _SearchTextBox.Measure(infiniteSize);
 
-        MinWidth = _FilterSelectorBar.DesiredSize.Width + _ButtonArea.DesiredSize.Width * 2;
+        MinWidth = _FilterSelectorBar.DesiredSize.Width + (_ButtonArea.DesiredSize.Width * 2);
         MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height;
     }
 

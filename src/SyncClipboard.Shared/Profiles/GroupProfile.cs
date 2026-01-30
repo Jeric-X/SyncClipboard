@@ -548,7 +548,6 @@ public class GroupProfile : Profile
             {
                 await CopyFilteredFiles(workingDir, token);
             }
-
         }
     }
 

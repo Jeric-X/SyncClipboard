@@ -149,7 +149,6 @@ public partial class HistoryViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedFilterOption));
     }
 
-
     [ObservableProperty]
     private string searchText = string.Empty;
     partial void OnSearchTextChanged(string value)
@@ -357,7 +356,6 @@ public partial class HistoryViewModel : ObservableObject
             }
         }, token);
     }
-
 
     public bool IsLoading => IsLoadingLocal;
 

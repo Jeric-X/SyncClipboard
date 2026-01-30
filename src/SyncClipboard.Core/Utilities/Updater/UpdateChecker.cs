@@ -19,7 +19,6 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     public UpdaterStatus CurrentState { get; private set; }
     public HttpDownloadProgress DownloadProgress { get; private set; }
 
-
     private bool NeedUpdate { get; set; } = false;
     private GitHubRelease? GithubRelease { get; set; } = null;
     private GitHubAsset? GithubAsset { get; set; } = null;
