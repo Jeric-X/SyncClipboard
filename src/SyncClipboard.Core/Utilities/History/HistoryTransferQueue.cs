@@ -124,10 +124,11 @@ public class HistoryTransferQueue : IDisposable
         };
 
         await ActiveTaskAddMutex.WaitAsync(ct);
-        using var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release());
-        NotifyStatusChanged(task);
-
-        _activeTasks.AddOrUpdate(task.TaskId, task, (_, _) => task);
+        using (var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release()))
+        {
+            NotifyStatusChanged(task);
+            _activeTasks.AddOrUpdate(task.TaskId, task, (_, _) => task);
+        }
 
         var status = await ExecuteTaskAsync(task).WaitAsync(ct);
         if (status != TransferTaskStatus.Completed)

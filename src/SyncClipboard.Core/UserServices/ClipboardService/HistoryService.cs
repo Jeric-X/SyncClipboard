@@ -93,17 +93,12 @@ public class HistoryService : ClipboardHander
         _currentServer = currentServer;
         SetRuntimeConfig();
 
-        if (currentServer is not IOfficialSyncServer historySyncServer)
+        _historySyncServer = currentServer as IOfficialSyncServer;
+        if (_historySyncServer is not null)
         {
-            trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
-            return;
+            _historySyncServer.HistoryChanged += OnRemoteHistoryChanged;
+            _currentServer.PollStatusEvent += OnPollStatusChanged;
         }
-
-        _historySyncServer = historySyncServer;
-        _historySyncServer.HistoryChanged += OnRemoteHistoryChanged;
-
-        // 订阅服务器状态变化事件，用于检测重连
-        _currentServer.PollStatusEvent += OnPollStatusChanged;
 
         _lastSyncTime = null;
         TriggerSyncTask();
@@ -160,10 +155,6 @@ public class HistoryService : ClipboardHander
 
         _enableSyncHistory = newEnableSyncHistory;
         SetRuntimeConfig();
-        if (!_enableSyncHistory)
-        {
-            trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
-        }
         TriggerSyncTask();
     }
 
@@ -178,7 +169,9 @@ public class HistoryService : ClipboardHander
     {
         if (!_enableSyncHistory || _historySyncServer == null)
         {
+            trayIcon.SetStatusString(SERVICE_NAME, "Organizing local history records...", false);
             await historySyncer.RemoveRemoteHistorys(token).ConfigureAwait(false);
+            trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
             return;
         }
 
