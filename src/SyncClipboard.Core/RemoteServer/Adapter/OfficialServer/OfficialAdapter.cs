@@ -292,6 +292,10 @@ public sealed class OfficialAdapter(
             response.EnsureSuccessStatusCode();
 
             var dto = await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken);
+            if (dto is not null && dto.IsDeleted)
+            {
+                return null;
+            }
             return dto;
         }
         catch (Exception ex)

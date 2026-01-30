@@ -259,13 +259,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return HistoryRecordDto.FromEntity(entity);
     }
 
-    public async Task<Profile?> GetAndResumeProfileAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
+    public async Task<Profile?> GetExistingProfileAsync(string userId, ProfileType type, string hash, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
         var entity = await Query(userId, type, hash, token);
-        if (entity is null)
+        if (entity is null || entity.IsDeleted)
         {
             return null;
         }
@@ -290,7 +290,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         using var guard = new ScopeGuard(() => _sem.Release());
 
         var existing = await Query(userId, incoming.Type, incoming.Hash, token);
-        var now = DateTime.UtcNow;
 
         if (existing is not null)
         {
@@ -299,15 +298,14 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 newVersion: incoming.Version,
                 oldLastModified: new DateTimeOffset(existing.LastModified),
                 newLastModified: incoming.LastModified);
-
             if (shouldUpdate)
             {
-                existing.Stared = incoming.Starred;
-                existing.Pinned = incoming.Pinned;
-                existing.IsDeleted = incoming.IsDeleted;
-                existing.LastModified = incoming.LastModified.UtcDateTime;
-                existing.LastAccessed = incoming.LastAccessed.UtcDateTime;
-                existing.Version = incoming.Version;
+                if (existing.IsDeleted && transferFileStream != null)
+                {
+                    await SaveTransferDataAsync(existing, transferFileStream, token);
+                }
+
+                UpdateEntityFields(incoming.ToEntity(userId), existing);
 
                 await _dbContext.SaveChangesAsync(token);
                 await NotifyProfileChangeAsync(existing);
@@ -316,57 +314,45 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return HistoryRecordDto.FromEntity(existing);
         }
 
-        var entity = new HistoryRecordEntity
-        {
-            UserId = userId,
-            Type = incoming.Type,
-            Hash = incoming.Hash.ToUpperInvariant(),
-            Text = incoming.Text,
-            Size = incoming.Size,
-            CreateTime = incoming.CreateTime.UtcDateTime,
-            LastAccessed = (incoming.LastAccessed == default ? DateTimeOffset.UtcNow : incoming.LastAccessed).UtcDateTime,
-            LastModified = (incoming.LastModified == default ? DateTimeOffset.UtcNow : incoming.LastModified).UtcDateTime,
-            Stared = incoming.Starred,
-            Pinned = incoming.Pinned,
-            Version = incoming.Version,
-            IsDeleted = incoming.IsDeleted,
-        };
-
-        var profile = entity.ToProfile(_persistentDir);
+        var entity = incoming.ToEntity(userId);
 
         if (transferFileStream != null)
         {
-            var filePath = await profile.NeedsTransferData(_persistentDir, token)
-                ?? throw new InvalidOperationException("Profile does not support transfer data.");
-            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                await transferFileStream.CopyToAsync(fs, token);
-            }
-
-            await profile.SetTransferData(filePath, verify: true, token);
-
+            var profile = await SaveTransferDataAsync(entity, transferFileStream, token);
             var newEntity = await profile.ToHistoryEntity(_persistentDir, userId, token);
-            entity = InheritEntityFields(entity, newEntity);
+            UpdateEntityFields(entity, newEntity);
+            entity = newEntity;
         }
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
-
-        // Notify clients of new profile
         await NotifyProfileChangeAsync(entity);
-
         return HistoryRecordDto.FromEntity(entity);
     }
 
-    private static HistoryRecordEntity InheritEntityFields(HistoryRecordEntity oldEntity, HistoryRecordEntity newEntity)
+    private static void UpdateEntityFields(HistoryRecordEntity srcEntity, HistoryRecordEntity dstEntity)
     {
-        newEntity.CreateTime = oldEntity.CreateTime;
-        newEntity.LastAccessed = oldEntity.LastAccessed;
-        newEntity.LastModified = oldEntity.LastModified;
-        newEntity.Stared = oldEntity.Stared;
-        newEntity.Pinned = oldEntity.Pinned;
-        newEntity.Version = oldEntity.Version;
-        return newEntity;
+        dstEntity.CreateTime = srcEntity.CreateTime;
+        dstEntity.LastAccessed = srcEntity.LastAccessed;
+        dstEntity.LastModified = srcEntity.LastModified;
+        dstEntity.Stared = srcEntity.Stared;
+        dstEntity.Pinned = srcEntity.Pinned;
+        dstEntity.Version = srcEntity.Version;
+        dstEntity.IsDeleted = srcEntity.IsDeleted;
+    }
+
+    private async Task<Profile> SaveTransferDataAsync(HistoryRecordEntity entity, Stream transferFileStream, CancellationToken token)
+    {
+        var profile = entity.ToProfile(_persistentDir);
+        var filePath = await profile.NeedsTransferData(_persistentDir, token)
+            ?? throw new InvalidOperationException("Profile does not support transfer data.");
+        using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await transferFileStream.CopyToAsync(fs, token);
+        }
+
+        await profile.SetTransferData(filePath, verify: true, token);
+        return profile;
     }
 
     private async Task DeleteProfileData(HistoryRecordEntity entity, CancellationToken token)
@@ -469,6 +455,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         existing.LastModified = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(existing);
+        await DeleteProfileData(existing, token);
     }
 
     public Task<uint> SetRecordsMaxCount(uint maxCount, CancellationToken token = default)

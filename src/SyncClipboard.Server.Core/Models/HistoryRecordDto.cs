@@ -37,11 +37,12 @@ public class HistoryRecordDto
         };
     }
 
-    public HistoryRecordEntity ToEntity()
+    public HistoryRecordEntity ToEntity(string userId)
     {
         return new HistoryRecordEntity
         {
-            Hash = this.Hash,
+            UserId = userId,
+            Hash = this.Hash.ToUpperInvariant(),
             Text = this.Text,
             Type = this.Type,
             CreateTime = this.CreateTime.UtcDateTime,

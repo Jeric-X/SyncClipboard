@@ -163,7 +163,7 @@ public class SyncClipboardController(
 
         if (!string.IsNullOrWhiteSpace(dto.Hash))
         {
-            var profile = await _historyService.GetAndResumeProfileAsync(
+            var profile = await _historyService.GetExistingProfileAsync(
                 HistoryService.HARD_CODED_USER_ID, dto.Type, dto.Hash, token);
 
             if (profile != null)

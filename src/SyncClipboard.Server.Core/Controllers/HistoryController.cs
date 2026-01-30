@@ -110,31 +110,6 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         return Ok(list);
     }
 
-    private static bool IsInvalidFileName(string fileName)
-    {
-        // Reject path traversal
-        if (fileName.Contains("..")) return true;
-
-        // Disallow directory separators explicitly
-        if (fileName.Contains(Path.DirectorySeparatorChar)) return true;
-        if (fileName.Contains(Path.AltDirectorySeparatorChar)) return true;
-
-        // Disallow any OS-invalid filename characters
-        var invalid = Path.GetInvalidFileNameChars();
-        if (fileName.IndexOfAny(invalid) >= 0) return true;
-
-        // Length limit (avoid extremely long names)
-        if (fileName.Length > 255) return true;
-
-        // Control characters
-        foreach (var c in fileName)
-        {
-            if (char.IsControl(c)) return true;
-        }
-
-        return false;
-    }
-
     /// <summary>
     /// POST api/history
     /// 使用 multipart/form-data 流式传输文件和元数据。
