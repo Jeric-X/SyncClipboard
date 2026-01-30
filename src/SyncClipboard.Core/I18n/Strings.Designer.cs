@@ -648,7 +648,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Download file 的本地化字符串。
+        ///   查找类似 Downloading 的本地化字符串。
         /// </summary>
         public static string DownloadingFile {
             get {
@@ -2246,6 +2246,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UploadFailedStatusTimeout {
             get {
                 return ResourceManager.GetString("UploadFailedStatusTimeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Uploading 的本地化字符串。
+        /// </summary>
+        public static string UploadingFile {
+            get {
+                return ResourceManager.GetString("UploadingFile", resourceCulture);
             }
         }
         

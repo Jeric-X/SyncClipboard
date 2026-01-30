@@ -325,7 +325,10 @@
     <value>Failed to download clipboard</value>
   </data>
   <data name="DownloadingFile" xml:space="preserve">
-    <value>Download file</value>
+    <value>Downloading</value>
+  </data>
+  <data name="UploadingFile" xml:space="preserve">
+    <value>Uploading</value>
   </data>
   <data name="DownloadStatus" xml:space="preserve">
     <value>Downloading status</value>

@@ -325,7 +325,10 @@
     <value>剪贴板下载失败</value>
   </data>
   <data name="DownloadingFile" xml:space="preserve">
-    <value>正在下载远程文件</value>
+    <value>正在下载</value>
+  </data>
+  <data name="UploadingFile" xml:space="preserve">
+    <value>正在上传</value>
   </data>
   <data name="DownloadStatus" xml:space="preserve">
     <value>当前状态</value>

@@ -323,7 +323,7 @@ public class UploadService : ClipboardHander
                     {
                         toastReporter = ProgressToastReporter.CreateWithTrayProgress(
                             profile.ShortDisplayText,
-                            I18n.Strings.Upload,
+                            I18n.Strings.UploadingFile,
                             SERVICE_NAME_SIMPLE,
                             "Uploading");
                     }

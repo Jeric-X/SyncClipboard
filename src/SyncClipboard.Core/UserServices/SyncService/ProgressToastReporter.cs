@@ -18,7 +18,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar = notificationManager.CreateProgress(true);
         _action = action;
         _progressBar.Title = title;
-        _progressBar.ProgressTitle = filename;
+        _progressBar.Message = filename;
         //_progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
         _progressBar.ProgressValue = 0;
         _progressBar.ProgressValueTip = I18n.Strings.Preparing;
