@@ -437,7 +437,6 @@ public class HistoryTransferQueue : IDisposable
                 }
             }
 
-
             var worker = Task.Run(async () =>
             {
                 try

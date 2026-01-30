@@ -194,7 +194,6 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         }
     }
 
-
     bool isDisposed = false;
     public void Dispose()
     {

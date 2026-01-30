@@ -191,7 +191,6 @@ public abstract class Profile
         return Path.Combine(workingDir, persistentPath);
     }
 
-
     [return: NotNullIfNotNull(nameof(persistentPath))]
     public static string? GetFullPath(string persistentDir, ProfileType type, string hash, string? persistentPath)
     {

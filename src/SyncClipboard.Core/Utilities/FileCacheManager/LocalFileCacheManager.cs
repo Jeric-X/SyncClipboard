@@ -71,7 +71,6 @@ public sealed class LocalFileCacheManager : IDisposable
             var fileInfo = new FileInfo(filePath);
             var metadataJson = metadata != null ? JsonSerializer.Serialize(metadata) : string.Empty;
 
-
             var entry = await _dbContext.CacheEntries
                 .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 

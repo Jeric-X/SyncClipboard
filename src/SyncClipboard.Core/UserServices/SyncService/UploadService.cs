@@ -255,7 +255,6 @@ public class UploadService : ClipboardHander
         await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
-
             if (await IsDownloadServiceWorking(profile, token))
             {
                 await _logger.WriteAsync(LOG_TAG, "Stop Push: Download service is working or profile is same as last downloaded.");

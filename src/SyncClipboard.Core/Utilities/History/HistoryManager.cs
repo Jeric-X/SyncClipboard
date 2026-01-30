@@ -51,7 +51,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         LoadConfig(_runtimeHistoryConfig, _historyConfig);
     }
 
-
     private async void LoadConfig(RuntimeHistoryConfig runtimeConfig, HistoryConfig historyConfig)
     {
         await _dbSemaphore.WaitAsync();

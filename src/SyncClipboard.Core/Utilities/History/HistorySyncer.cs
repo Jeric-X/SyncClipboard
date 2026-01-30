@@ -341,7 +341,6 @@ public class HistorySyncer
 
     private async Task SyncPendingUploadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
     {
-
         var needUpload = await Task.Run(
             () => allRecords
             .Where(r => r.SyncStatus == HistorySyncStatus.LocalOnly)

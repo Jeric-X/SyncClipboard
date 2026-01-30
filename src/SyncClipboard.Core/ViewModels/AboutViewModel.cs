@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -80,7 +80,6 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("MiSans Font", "https://hyperos.mi.com/font", string.Empty),
 #endif
     ];
-
 
     [RelayCommand]
     public static void OpenHomePage()
