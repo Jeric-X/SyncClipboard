@@ -21,6 +21,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar.Message = filename;
         //_progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
         _progressBar.ProgressValue = 0;
+        _progressBar.IsIndeterminate = true;
         _progressBar.ProgressValueTip = I18n.Strings.Preparing;
         _progressBar.Buttons = buttons.ToList();
 
@@ -51,12 +52,13 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _action?.Invoke(_progress);
 
         var percent = (double)_progress.BytesReceived / _progress.TotalBytesToReceive;
-        if (percent < _progressBar.ProgressValue)
+        if (percent < _progressBar.ProgressValue || percent <= 0.01)
         {
             return;
         }
         _progressBar.ProgressValue = percent;
         _progressBar.ProgressValueTip = percent?.ToString("P");
+        _progressBar.IsIndeterminate = false;
         if (_progress.End)
         {
             AppCore.Current.Logger.Write("ProgressToastReporter removed due to complete");

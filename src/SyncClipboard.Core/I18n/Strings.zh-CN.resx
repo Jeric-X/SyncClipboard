@@ -334,7 +334,7 @@
     <value>当前状态</value>
   </data>
   <data name="Preparing" xml:space="preserve">
-    <value>准备下载</value>
+    <value>准备中</value>
   </data>
   <data name="Canceled" xml:space="preserve">
     <value>已取消</value>
