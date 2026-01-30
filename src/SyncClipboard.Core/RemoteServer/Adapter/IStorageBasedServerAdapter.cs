@@ -10,7 +10,7 @@ public interface IStorageBasedServerAdapter : IServerAdapter
 
     Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default);
 
-    Task UploadFileAsync(string fileName, string localPath, CancellationToken cancellationToken = default);
+    Task UploadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default);
 
     Task DownloadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default);
 

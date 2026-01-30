@@ -181,9 +181,9 @@ public sealed class OfficialAdapter(
         return _webDavAdapter.DownloadFileAsync(fileName, localPath, progress, cancellationToken);
     }
 
-    public Task UploadFileAsync(string fileName, string localPath, CancellationToken cancellationToken = default)
+    public Task UploadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        return _webDavAdapter.UploadFileAsync(fileName, localPath, cancellationToken);
+        return _webDavAdapter.UploadFileAsync(fileName, localPath, progress, cancellationToken);
     }
 
     public Task CleanupTempFilesAsync(CancellationToken cancellationToken = default)
@@ -357,15 +357,9 @@ public sealed class OfficialAdapter(
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             {
                 var stream = File.OpenRead(filePath);
-                HttpContent fileContent;
-                if (progress is null)
-                {
-                    fileContent = new StreamContent(stream);
-                }
-                else
-                {
-                    fileContent = new ProgressableStreamContent(stream, progress, cancellationToken);
-                }
+                HttpContent fileContent = progress is null
+                    ? new StreamContent(stream)
+                    : new ProgressableStreamContent(stream, progress, cancellationToken);
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
                 content.Add(fileContent, "data", Path.GetFileName(filePath));
             }
@@ -395,62 +389,6 @@ public sealed class OfficialAdapter(
         }
     }
 
-    private sealed class ProgressableStreamContent : HttpContent
-    {
-        private const int DefaultBufferSize = 81920; // 80KB .NET default
-        private readonly Stream _stream;
-        private readonly IProgress<HttpDownloadProgress> _progress;
-        private readonly CancellationToken _ct;
-        private readonly long? _totalLength;
-
-        public ProgressableStreamContent(Stream stream, IProgress<HttpDownloadProgress> progress, CancellationToken ct)
-        {
-            _stream = stream;
-            _progress = progress;
-            _ct = ct;
-            if (stream.CanSeek)
-            {
-                _totalLength = stream.Length;
-            }
-        }
-
-        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
-        {
-            var buffer = new byte[DefaultBufferSize];
-            long totalBytesRead = 0;
-            int bytesRead;
-            while ((bytesRead = await _stream.ReadAsync(buffer, _ct)) > 0)
-            {
-                await stream.WriteAsync(buffer.AsMemory(0, bytesRead), _ct);
-                totalBytesRead += bytesRead;
-                _progress.Report(new HttpDownloadProgress
-                {
-                    BytesReceived = (ulong)totalBytesRead,
-                    TotalBytesToReceive = (ulong?)_totalLength
-                });
-            }
-        }
-
-        protected override bool TryComputeLength(out long length)
-        {
-            if (_totalLength is not null)
-            {
-                length = _totalLength.Value;
-                return true;
-            }
-            length = -1;
-            return false;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            if (disposing)
-            {
-                _stream.Dispose();
-            }
-        }
-    }
 
     public async Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {

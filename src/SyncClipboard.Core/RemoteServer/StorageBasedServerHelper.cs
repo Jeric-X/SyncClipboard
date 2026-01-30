@@ -116,7 +116,7 @@ internal class StorageBasedServerHelper
         try
         {
             var blankProfile = new TextProfile("");
-            await SetProfileAsync(blankProfile, cancellationToken);
+            await SetProfileAsync(blankProfile, cancellationToken: cancellationToken);
             return blankProfile;
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -126,12 +126,12 @@ internal class StorageBasedServerHelper
         }
     }
 
-    public async Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
+    public async Task SetProfileAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         try
         {
             await _serverAdapter.CleanupTempFilesAsync(cancellationToken);
-            await UploadProfileDataAsync(profile, cancellationToken);
+            await UploadProfileDataAsync(profile, progress, cancellationToken);
             var profileDto = await profile.ToProfileDto(cancellationToken);
             await _serverAdapter.SetProfileAsync(profileDto, cancellationToken);
 
@@ -144,7 +144,7 @@ internal class StorageBasedServerHelper
         }
     }
 
-    private async Task UploadProfileDataAsync(Profile profile, CancellationToken cancellationToken = default)
+    private async Task UploadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var localDataPath = await profile.PrepareDataWithCache(cancellationToken);
         if (localDataPath is null)
@@ -160,7 +160,7 @@ internal class StorageBasedServerHelper
             }
 
             var fileName = Path.GetFileName(localDataPath);
-            await _serverAdapter.UploadFileAsync(fileName, localDataPath, cancellationToken);
+            await _serverAdapter.UploadFileAsync(fileName, localDataPath, progress, cancellationToken);
             _logger.Write($"[PUSH] Upload completed for {fileName}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)

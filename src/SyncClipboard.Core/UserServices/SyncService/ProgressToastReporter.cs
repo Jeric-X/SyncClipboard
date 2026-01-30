@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 
@@ -25,6 +27,23 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         AppCore.Current.Logger.Write("ProgressToastReporter created");
         _progressBar.Show(new NotificationDeliverOption { Silent = true });
         _counter = new Counter((_) => UpdateProgress(), 500, ulong.MaxValue);
+    }
+
+    public static ProgressToastReporter CreateWithTrayProgress(
+        string filename,
+        string title,
+        string serviceName,
+        string statusLabel)
+    {
+        var notificationManager = AppCore.Current.Services.GetRequiredService<INotificationManager>();
+        var trayIcon = AppCore.Current.Services.GetRequiredService<ITrayIcon>();
+        return new ProgressToastReporter(filename, title, notificationManager, (progress) =>
+        {
+            var percent = progress.TotalBytesToReceive > 0
+                ? ((double)progress.BytesReceived / progress.TotalBytesToReceive)
+                : 0;
+            trayIcon.SetStatusString(serviceName, $"{statusLabel}: {percent:P}");
+        });
     }
 
     private void UpdateProgress()

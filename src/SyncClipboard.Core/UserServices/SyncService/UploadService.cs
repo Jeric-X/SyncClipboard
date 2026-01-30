@@ -310,6 +310,7 @@ public class UploadService : ClipboardHander
         string? stackTrace = null;
         for (int i = 0; i <= _syncConfig.RetryTimes; i++)
         {
+            ProgressToastReporter? toastReporter = null;
             try
             {
                 var remoteServer = _remoteClipboardServerFactory.Current;
@@ -318,7 +319,16 @@ public class UploadService : ClipboardHander
                 if (!await Profile.Same(remoteProfile, profile, cancelToken))
                 {
                     await _logger.WriteAsync(LOG_TAG, "Start: " + profile.DisplayText);
-                    await remoteServer.SetProfileAsync(profile, cancelToken);
+                    if (profile.HasTransferData)
+                    {
+                        toastReporter = ProgressToastReporter.CreateWithTrayProgress(
+                            profile.ShortDisplayText,
+                            I18n.Strings.Upload,
+                            SERVICE_NAME_SIMPLE,
+                            "Uploading");
+                    }
+
+                    await remoteServer.SetProfileAsync(profile, toastReporter, cancelToken);
                 }
                 else
                 {
@@ -338,6 +348,10 @@ public class UploadService : ClipboardHander
                 errMessage = ex.Message;
                 stackTrace = ex.StackTrace;
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, string.Format(I18n.Strings.UploadFailedStatus, i + 1, errMessage), true);
+            }
+            finally
+            {
+                toastReporter?.CancelSicent();
             }
 
             await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);

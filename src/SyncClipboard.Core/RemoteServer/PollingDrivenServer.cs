@@ -76,9 +76,9 @@ public sealed class PollingDrivenServer : IRemoteClipboardServer
         return _storageHelper.GetProfileAsync(cancellationToken);
     }
 
-    public Task SetProfileAsync(Profile profile, CancellationToken cancellationToken = default)
+    public Task SetProfileAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        return _storageHelper.SetProfileAsync(profile, cancellationToken);
+        return _storageHelper.SetProfileAsync(profile, progress, cancellationToken);
     }
 
     public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)

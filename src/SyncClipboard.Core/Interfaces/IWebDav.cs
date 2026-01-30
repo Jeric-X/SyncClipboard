@@ -7,6 +7,7 @@ namespace SyncClipboard.Core.Interfaces
         Task<string> GetText(string url, CancellationToken? cancelToken = null);
         Task PutText(string url, string text, CancellationToken? cancelToken = null);
         Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null);
+        Task PutFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress, CancellationToken? cancelToken = null);
         Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null);
         Task GetFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress = null,
             CancellationToken? cancelToken = null);

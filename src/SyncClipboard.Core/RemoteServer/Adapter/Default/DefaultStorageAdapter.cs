@@ -39,7 +39,7 @@ public sealed class DefaultStorageAdapter : IStorageBasedServerAdapter
         throw new NotSupportedException(ErrorMessage);
     }
 
-    public Task UploadFileAsync(string fileName, string localPath, CancellationToken cancellationToken = default)
+    public Task UploadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(ErrorMessage);
     }

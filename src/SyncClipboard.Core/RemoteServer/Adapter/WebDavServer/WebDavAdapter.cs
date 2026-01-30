@@ -79,10 +79,10 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         await _webDav.PutJson(RemoteProfilePath, profileDto, cancellationToken);
     }
 
-    public async Task UploadFileAsync(string fileName, string localPath, CancellationToken cancellationToken = default)
+    public async Task UploadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var remotePath = $"{RemoteFileFolder}/{fileName}";
-        await _webDav.PutFile(remotePath, localPath, cancellationToken);
+        await _webDav.PutFile(remotePath, localPath, progress, cancellationToken);
         _logger.Write($"[WEBDAV] Upload completed for {fileName}");
     }
 

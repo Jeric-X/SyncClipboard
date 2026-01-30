@@ -120,6 +120,15 @@ namespace SyncClipboard.Core.Utilities.Web
             await HttpClient.PutAsync(url, streamContent, AdjustCancelToken(cancelToken));
         }
 
+        public async Task PutFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress, CancellationToken? cancelToken = null)
+        {
+            using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using HttpContent streamContent = progress is null
+                ? new StreamContent(fileStream)
+                : new ProgressableStreamContent(fileStream, progress, AdjustCancelToken(cancelToken));
+            await HttpClient.PutAsync(url, streamContent, AdjustCancelToken(cancelToken));
+        }
+
         public Task<string> GetText(string url, CancellationToken? cancelToken = null)
         {
             return HttpClient.GetStringAsync(url, AdjustCancelToken(cancelToken));
