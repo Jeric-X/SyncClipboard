@@ -490,6 +490,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         var totalCount = records.Count;
         var starredCount = records.Count(r => r.Stared);
         var deletedCount = records.Count(r => r.IsDeleted);
+        var activeCount = records.Count(r => !r.IsDeleted);
 
         // 计算_persistentDir文件夹的总大小
         long totalFileSizeBytes = 0;
@@ -519,6 +520,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             TotalCount = totalCount,
             StarredCount = starredCount,
             DeletedCount = deletedCount,
+            ActiveCount = activeCount,
             TotalFileSizeMB = totalFileSizeMB
         };
     }

@@ -6,9 +6,9 @@ namespace SyncClipboard.Server.Core.Models;
 public class HistoryStatisticsDto
 {
     /// <summary>
-    /// 历史记录总数
+    /// 未删除条目数
     /// </summary>
-    public int TotalCount { get; set; }
+    public int ActiveCount { get; set; }
 
     /// <summary>
     /// 星标条目数
@@ -19,6 +19,11 @@ public class HistoryStatisticsDto
     /// 已删除条目数
     /// </summary>
     public int DeletedCount { get; set; }
+
+    /// <summary>
+    /// 历史记录总数
+    /// </summary>
+    public int TotalCount { get; set; }
 
     /// <summary>
     /// 总文件占用大小（MB）
