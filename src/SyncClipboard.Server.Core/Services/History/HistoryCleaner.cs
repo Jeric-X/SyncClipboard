@@ -10,6 +10,7 @@ class HistoryCleaner(IServiceProvider serviceProvider, IOptions<AppSettings> opt
     {
         CleanDeletedHistoryTask();
         LimitHistoryCountTask();
+        CleanOrphanedFoldersTask();
 
         return Task.CompletedTask;
     }
@@ -57,6 +58,28 @@ class HistoryCleaner(IServiceProvider serviceProvider, IOptions<AppSettings> opt
                 catch (Exception ex) when (!_cts.IsCancellationRequested)
                 {
                     logger.LogError(ex, "Error occurred when cleaning history records.");
+                }
+
+                await Task.Delay(TimeSpan.FromHours(12), _cts.Token);
+            }
+        }, TaskCreationOptions.LongRunning);
+    }
+
+    private void CleanOrphanedFoldersTask()
+    {
+        Task.Factory.StartNew(async () =>
+        {
+            while (!_cts.IsCancellationRequested)
+            {
+                try
+                {
+                    using var scope = serviceProvider.CreateScope();
+                    var historyService = scope.ServiceProvider.GetRequiredService<HistoryService>();
+                    await historyService.CleanOrphanedFolders(_cts.Token);
+                }
+                catch (Exception ex) when (!_cts.IsCancellationRequested)
+                {
+                    logger.LogError(ex, "Error occurred when cleaning orphaned folders.");
                 }
 
                 await Task.Delay(TimeSpan.FromHours(12), _cts.Token);

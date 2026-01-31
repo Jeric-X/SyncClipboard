@@ -70,9 +70,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         existing.Version = dto.Version.Value;
 
         await _dbContext.SaveChangesAsync(token);
-
-        // Notify clients of profile change
         await NotifyProfileChangeAsync(existing);
+        await DeleteProfileDataIfNeed(existing, token);
 
         return (true, HistoryRecordDto.FromEntity(existing));
     }
@@ -176,6 +175,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public async Task AddProfile(string userId, Profile profile, CancellationToken token)
     {
+        var entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
+
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
@@ -188,11 +189,14 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             existing.LastAccessed = DateTime.UtcNow;
             existing.IsDeleted = false;
             existing.LastModified = DateTime.UtcNow;
+            existing.TransferDataFile = entity.TransferDataFile;
+            existing.FilePaths = entity.FilePaths;
+            existing.Version++;
             await _dbContext.SaveChangesAsync(token);
+            await NotifyProfileChangeAsync(existing);
             return;
         }
 
-        var entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(entity);
@@ -273,7 +277,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         entity.LastModified = DateTime.UtcNow;
         entity.LastAccessed = DateTime.UtcNow;
         entity.Version++;
-        entity.IsDeleted = false;
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(entity);
 
@@ -306,9 +309,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 }
 
                 UpdateEntityFields(incoming.ToEntity(userId), existing);
-
                 await _dbContext.SaveChangesAsync(token);
                 await NotifyProfileChangeAsync(existing);
+                await DeleteProfileDataIfNeed(existing, token);
             }
 
             return HistoryRecordDto.FromEntity(existing);
@@ -327,6 +330,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         await _dbContext.HistoryRecords.AddAsync(entity, token);
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(entity);
+        await DeleteProfileDataIfNeed(entity, token);
         return HistoryRecordDto.FromEntity(entity);
     }
 
@@ -355,8 +359,18 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return profile;
     }
 
-    private async Task DeleteProfileData(HistoryRecordEntity entity, CancellationToken token)
+    private Task DeleteProfileDataIfNeed(HistoryRecordEntity entity, CancellationToken token)
     {
+        return DeleteProfileData(entity, false, token);
+    }
+
+    private async Task DeleteProfileData(HistoryRecordEntity entity, bool force, CancellationToken token)
+    {
+        if (!force && entity.IsDeleted == false)
+        {
+            return;
+        }
+
         var workingDir = Profile.GetWorkingDir(_persistentDir, entity.Type, entity.Hash);
         await Task.Run(() =>
         {
@@ -371,22 +385,22 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }, token);
     }
 
-    public async Task Remove(string userId, ProfileType type, string hash, CancellationToken token = default)
-    {
-        await _sem.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _sem.Release());
+    // public async Task Remove(string userId, ProfileType type, string hash, CancellationToken token = default)
+    // {
+    //     await _sem.WaitAsync(token);
+    //     using var guard = new ScopeGuard(() => _sem.Release());
 
-        var existing = await Query(userId, type, hash, token);
-        if (existing is null)
-        {
-            return;
-        }
+    //     var existing = await Query(userId, type, hash, token);
+    //     if (existing is null)
+    //     {
+    //         return;
+    //     }
 
-        existing.IsDeleted = true;
-        _dbContext.HistoryRecords.Remove(existing);
-        await _dbContext.SaveChangesAsync(token);
-        await DeleteProfileData(existing, token);
-    }
+    //     existing.IsDeleted = true;
+    //     _dbContext.HistoryRecords.Remove(existing);
+    //     await _dbContext.SaveChangesAsync(token);
+    //     await DeleteProfileData(existing, token);
+    // }
 
     public async Task RemoveOutOfDateDeletedRecords(CancellationToken token = default)
     {
@@ -406,7 +420,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         foreach (var rec in toDeletes)
         {
-            await DeleteProfileData(rec, token);
+            await DeleteProfileDataIfNeed(rec, token);
         }
     }
 
@@ -425,7 +439,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         foreach (var rec in records)
         {
-            await DeleteProfileData(rec, token);
+            await DeleteProfileData(rec, true, token);
         }
 
         return count;
@@ -455,7 +469,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         existing.LastModified = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(existing);
-        await DeleteProfileData(existing, token);
+        await DeleteProfileDataIfNeed(existing, token);
     }
 
     public Task<uint> SetRecordsMaxCount(uint maxCount, CancellationToken token = default)
@@ -507,5 +521,42 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             DeletedCount = deletedCount,
             TotalFileSizeMB = totalFileSizeMB
         };
+    }
+
+    public async Task CleanOrphanedFolders(CancellationToken token = default)
+    {
+        if (!Directory.Exists(_persistentDir))
+        {
+            return;
+        }
+
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var directories = Directory.GetDirectories(_persistentDir);
+        foreach (var directory in directories)
+        {
+            token.ThrowIfCancellationRequested();
+
+            var dirName = Path.GetFileName(directory);
+            var parts = dirName.Split('_', 2);
+            if (parts.Length != 2)
+            {
+                continue;
+            }
+
+            if (!Enum.TryParse<ProfileType>(parts[0], out var type))
+            {
+                continue;
+            }
+
+            var hash = parts[1];
+            var entity = await Query(HARD_CODED_USER_ID, type, hash, token);
+
+            if (entity is null || entity.IsDeleted)
+            {
+                Directory.Delete(directory, true);
+            }
+        }
     }
 }
