@@ -230,8 +230,8 @@ paru -Sy syncclipboard-desktop
 ### IOS 
 #### 使用[快捷指令](https://apps.apple.com/cn/app/%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4/id1462947752)  
 
-- 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/e4e5ca4319bf452bb7760c4e928f4602)，手动触发上传或下载
-- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/2064a1c1367f453c92d4475293b7d66c)，运行后设备会自动在后台同步剪贴板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
+- 手动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/34404963b512432cb5672c8a95001b19)，手动触发上传或下载
+- 自动同步，导入这个[快捷指令](https://www.icloud.com/shortcuts/05e7ac5aca5f4f588b776117cf740587)，运行后设备会自动在后台同步剪贴板内容，此快捷指令将执行无限时长，需要手动关闭，你还可以手动修改同步后是否发送系统通知、查询的间隔秒数
 - 自动上传短信验证码，参考这个帖子中的视频教程 https://github.com/Jeric-X/SyncClipboard/discussions/60
 
 ### Android
