@@ -224,17 +224,12 @@ public class HistoryService : ClipboardHander
             var record = historyRecordDto.ToHistoryRecord();
             record = await historyManager.PersistServerSyncedAsync(record, token);
 
-            // 如果未启用同步剪贴板或未启用拉取，使用 historyTransferQueue 下载
-            var syncConfig = configManager.GetConfig<SyncConfig>();
-            if (!syncConfig.SyncSwitchOn || !syncConfig.PullSwitchOn)
+            if (record.IsLocalFileReady)
             {
-                if (record.IsLocalFileReady)
-                {
-                    return;
-                }
-                var profile = record.ToProfile();
-                await historyTransferQueue.EnqueueDownload(profile, forceResume: false, CancellationToken.None);
+                return;
             }
+            var profile = record.ToProfile();
+            await historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
         }
         catch (Exception ex)
         {

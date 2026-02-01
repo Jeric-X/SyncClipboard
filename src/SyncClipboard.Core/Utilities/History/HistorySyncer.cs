@@ -362,15 +362,6 @@ public class HistorySyncer
         }
     }
 
-    private static long ToUnixMilliseconds(DateTime time)
-    {
-        if (time.Kind == DateTimeKind.Unspecified)
-        {
-            time = DateTime.SpecifyKind(time, DateTimeKind.Utc);
-        }
-        return new DateTimeOffset(time).ToUnixTimeMilliseconds();
-    }
-
     private async void OnHistoryUpdated(HistoryRecord record)
     {
         try
