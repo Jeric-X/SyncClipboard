@@ -11,8 +11,8 @@ using SyncClipboard.Core.Utilities.History;
 namespace SyncClipboard.Core.Migrations
 {
     [DbContext(typeof(HistoryDbContext))]
-    [Migration("20250828082948_Initial")]
-    partial class Initial
+    [Migration("20260201124514_InitV3_1_1")]
+    partial class InitV3_1_1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,14 +30,36 @@ namespace SyncClipboard.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("From")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Hash")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsLocalFileReady")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastAccessed")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Pinned")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("Stared")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SyncStatus")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Text")
@@ -48,6 +70,9 @@ namespace SyncClipboard.Core.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Version")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("ID");

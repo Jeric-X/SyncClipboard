@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SyncClipboard.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class InitV3_1_1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -23,7 +23,15 @@ namespace SyncClipboard.Core.Migrations
                     Hash = table.Column<string>(type: "TEXT", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Stared = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Pinned = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Pinned = table.Column<bool>(type: "INTEGER", nullable: false),
+                    SyncStatus = table.Column<int>(type: "INTEGER", nullable: false),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastAccessed = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsLocalFileReady = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Size = table.Column<long>(type: "INTEGER", nullable: false),
+                    From = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
