@@ -49,23 +49,30 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 
     private void UpdateProgress()
     {
-        _action?.Invoke(_progress);
-
         var percent = (double)_progress.BytesReceived / _progress.TotalBytesToReceive;
-        if (percent < _progressBar.ProgressValue || percent <= 0.01)
+        if (percent is null || percent < _progressBar.ProgressValue || percent <= 0.01)
         {
             return;
         }
+
+        _action?.Invoke(_progress);
         _progressBar.ProgressValue = percent;
         _progressBar.ProgressValueTip = percent?.ToString("P");
-        _progressBar.IsIndeterminate = false;
         if (_progress.End)
         {
-            AppCore.Current.Logger.Write("ProgressToastReporter removed due to complete");
             _counter.Cancle();
             _progressBar.Remove();
         }
-        _progressBar.Update();
+        else if (_progressBar.IsIndeterminate)
+        {
+            _progressBar.Remove();
+            _progressBar.IsIndeterminate = false;
+            _progressBar.Show();
+        }
+        else
+        {
+            _progressBar.Update();
+        }
     }
 
     public void Cancel()
