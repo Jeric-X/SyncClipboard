@@ -63,4 +63,8 @@ public class UnknownProfile : Profile
     {
         throw new NotImplementedException();
     }
+
+    public override void CopyTo(Profile target)
+    {
+    }
 }

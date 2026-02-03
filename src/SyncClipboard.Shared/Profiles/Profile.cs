@@ -66,6 +66,7 @@ public abstract class Profile
     }
     public abstract Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token);
     public abstract Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token);
+    public abstract void CopyTo(Profile target);
 
     public abstract bool HasTransferData { get; }
     public abstract Task<string?> PrepareTransferData(string persistentDir, CancellationToken token);

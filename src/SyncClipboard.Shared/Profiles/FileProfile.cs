@@ -243,4 +243,15 @@ public class FileProfile : Profile
             FilePaths = [FullPath],
         });
     }
+
+    public override void CopyTo(Profile target)
+    {
+        if (target is not FileProfile fileTarget)
+            return;
+
+        fileTarget.FullPath = FullPath;
+        fileTarget.FileName = FileName;
+        fileTarget.Hash = Hash;
+        fileTarget.Size = Size;
+    }
 }

@@ -108,6 +108,7 @@ public class HistoryTransferQueue : IDisposable
                 runningTask.ExternalProgressReporter = progress;
             }
             await runningTask.CompletionSource.Task.WaitAsync(ct);
+            runningTask.Profile.CopyTo(profile);
             return;
         }
 

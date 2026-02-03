@@ -676,4 +676,17 @@ public class GroupProfile : Profile
             FilePaths = _files,
         };
     }
+
+    public override void CopyTo(Profile target)
+    {
+        if (target is not GroupProfile groupTarget)
+            return;
+
+        groupTarget._transferDataPath = _transferDataPath;
+        groupTarget._transferDataName = _transferDataName;
+        groupTarget._files = _files;
+        groupTarget._fileNames = _fileNames;
+        groupTarget.Hash = Hash;
+        groupTarget.Size = Size;
+    }
 }

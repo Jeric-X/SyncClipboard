@@ -292,4 +292,16 @@ public class TextProfile : Profile
 
         throw new Exception("Text profile data lost.");
     }
+
+    public override void CopyTo(Profile target)
+    {
+        if (target is not TextProfile textTarget)
+            return;
+
+        textTarget._fullText = _fullText;
+        textTarget._transferDataPath = _transferDataPath;
+        textTarget._transferDataName = _transferDataName;
+        textTarget.Hash = Hash;
+        textTarget.Size = Size;
+    }
 }
