@@ -17,8 +17,9 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
     {
         _progressBar = notificationManager.CreateProgress(true);
         _action = action;
-        _progressBar.Title = title;
+        //_progressBar.Title = title;
         _progressBar.Message = filename;
+        _progressBar.ProgressTitle = title;
         //_progressBar.ProgressStatus = I18n.Strings.DownloadStatus;
         _progressBar.ProgressValue = 0;
         _progressBar.IsIndeterminate = true;
@@ -58,6 +59,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _action?.Invoke(_progress);
         _progressBar.ProgressValue = percent;
         _progressBar.ProgressValueTip = percent?.ToString("P");
+        //_progressBar.ProgressTitle = percent?.ToString("P");
         if (_progress.End)
         {
             _counter.Cancle();
@@ -80,6 +82,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         AppCore.Current.Logger.Write("ProgressToastReporter status set to cancel");
         _counter.Cancle();
         _progressBar.ProgressValueTip = I18n.Strings.Canceled;
+        //_progressBar.ProgressTitle = I18n.Strings.Canceled;
         _progressBar.Update();
     }
 
