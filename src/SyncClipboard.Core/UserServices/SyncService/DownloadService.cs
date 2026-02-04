@@ -480,11 +480,11 @@ public class DownloadService : Service
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
     {
         await _logger.WriteAsync($"Downloading: {profile.ShortDisplayText}");
-        _toastReporter = ProgressToastReporter.CreateWithTrayProgress(
+        _toastReporter = new ProgressToastReporter(
+            SERVICE_NAME,
             profile.ShortDisplayText,
             I18n.Strings.DownloadingFile,
-            SERVICE_NAME,
-            "Downloading");
+            useToast: _syncConfig.NotifyFileSyncProgress);
 
         var remoteServer = _remoteClipboardServerFactory.Current;
         await remoteServer.DownloadProfileDataAsync(profile, _toastReporter, cancelToken);

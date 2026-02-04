@@ -320,11 +320,11 @@ public class UploadService : ClipboardHander
                     await _logger.WriteAsync(LOG_TAG, "Start: " + profile.DisplayText);
                     if (profile.HasTransferData)
                     {
-                        toastReporter = ProgressToastReporter.CreateWithTrayProgress(
+                        toastReporter = new ProgressToastReporter(
+                            SERVICE_NAME_SIMPLE,
                             profile.ShortDisplayText,
                             I18n.Strings.UploadingFile,
-                            SERVICE_NAME_SIMPLE,
-                            "Uploading");
+                            useToast: _syncConfig.NotifyFileSyncProgress);
                     }
 
                     await remoteServer.SetProfileAsync(profile, toastReporter, cancelToken);

@@ -226,11 +226,10 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         lock (_progressLocker)
         {
             _progress ??= new ProgressToastReporter(
+                SERVICE_NAME,
                 filename.Value[..Math.Min(filename.Value.Length, 50)],
                 I18n.Strings.DownloadingWebImage,
-                _notificationManager,
-                null,
-                new ActionButton(I18n.Strings.Cancel, downloadingCts.Cancel)
+                buttons: new ActionButton(I18n.Strings.Cancel, downloadingCts.Cancel)
             );
         }
 

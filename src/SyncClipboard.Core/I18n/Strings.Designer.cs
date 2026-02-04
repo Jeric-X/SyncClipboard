@@ -1395,6 +1395,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Show file sync progress with system notifications 的本地化字符串。
+        /// </summary>
+        public static string NotifyFileSyncProgress {
+            get {
+                return ResourceManager.GetString("NotifyFileSyncProgress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Not Logged In 的本地化字符串。
         /// </summary>
         public static string NotLoggedIn {

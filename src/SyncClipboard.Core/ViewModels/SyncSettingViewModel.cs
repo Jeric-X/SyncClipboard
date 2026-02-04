@@ -159,6 +159,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnIgnoreExcludeForSyncSuggestionChanged(bool value) => ClientConfig = ClientConfig with { IgnoreExcludeForSyncSuggestion = value };
 
     [ObservableProperty]
+    private bool notifyFileSyncProgress;
+    partial void OnNotifyFileSyncProgressChanged(bool value) => ClientConfig = ClientConfig with { NotifyFileSyncProgress = value };
+
+    [ObservableProperty]
     private bool trustInsecureCertificate;
     partial void OnTrustInsecureCertificateChanged(bool value) => ClientConfig = ClientConfig with { TrustInsecureCertificate = value };
 
@@ -195,6 +199,7 @@ public partial class SyncSettingViewModel : ObservableObject
         NotifyOnManualUpload = value.NotifyOnManualUpload;
         DoNotUploadWhenCut = value.DoNotUploadWhenCut;
         IgnoreExcludeForSyncSuggestion = value.IgnoreExcludeForSyncSuggestion;
+        NotifyFileSyncProgress = value.NotifyFileSyncProgress;
         TrustInsecureCertificate = value.TrustInsecureCertificate;
         UploadEnable = value.PushSwitchOn;
         DownloadEnable = value.PullSwitchOn;
@@ -243,6 +248,7 @@ public partial class SyncSettingViewModel : ObservableObject
         notifyOnManualUpload = clientConfig.NotifyOnManualUpload;
         doNotUploadWhenCut = clientConfig.DoNotUploadWhenCut;
         ignoreExcludeForSyncSuggestion = clientConfig.IgnoreExcludeForSyncSuggestion;
+        notifyFileSyncProgress = clientConfig.NotifyFileSyncProgress;
         trustInsecureCertificate = clientConfig.TrustInsecureCertificate;
         uploadEnable = clientConfig.PushSwitchOn;
         downloadEnable = clientConfig.PullSwitchOn;

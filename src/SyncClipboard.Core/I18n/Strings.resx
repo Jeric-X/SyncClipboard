@@ -546,6 +546,9 @@ Double click image: View full image</value>
   <data name="IgnoreExcludeForSyncSuggestionDescription" xml:space="preserve">
     <value>Some apps mark sensitive content in clipboard with a suggestion not to sync. Enable this option to ignore that suggestion</value>
   </data>
+  <data name="NotifyFileSyncProgress" xml:space="preserve">
+    <value>Show file sync progress with system notifications</value>
+  </data>
   <data name="RetryTimes" xml:space="preserve">
     <value>Retry Times</value>
   </data>

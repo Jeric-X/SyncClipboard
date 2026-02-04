@@ -545,8 +545,9 @@ Esc：关闭面板</value>
   </data>
   <data name="IgnoreExcludeForSyncSuggestionDescription" xml:space="preserve">
     <value>部分应用会为剪贴板中的敏感信息设置“不建议同步”标记，启用此选项将忽略该标记</value>
-  </data>
-  <data name="RetryTimes" xml:space="preserve">
+  </data>  <data name="NotifyFileSyncProgress" xml:space="preserve">
+    <value>同步文件时使用系统通知展示进度</value>
+  </data>  <data name="RetryTimes" xml:space="preserve">
     <value>重试次数</value>
   </data>
   <data name="FileSyncFilter" xml:space="preserve">
