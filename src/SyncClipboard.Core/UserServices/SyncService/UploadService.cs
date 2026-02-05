@@ -243,16 +243,13 @@ public class UploadService : ClipboardHander
 
     protected override Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
-        return UploadProfileClipboard(meta, profile, true, token);
+        return CheckAndUpload(meta, profile, true, token);
     }
 
-    protected async Task UploadProfileClipboard(ClipboardMetaInfomation meta, Profile profile, bool contentControl, CancellationToken token)
+    protected async Task CheckAndUpload(ClipboardMetaInfomation meta, Profile profile, bool contentControl, CancellationToken token)
     {
         await _logger.WriteAsync(LOG_TAG, "New Push started, meta: " + meta);
 
-        using var endLogGuard = new ScopeGuard(() => _logger.WriteAsync(LOG_TAG, "Push End").GetAwaiter().GetResult());
-
-        await SyncService.remoteProfilemutex.WaitAsync(token);
         try
         {
             if (await IsDownloadServiceWorking(profile, token))
@@ -272,11 +269,14 @@ public class UploadService : ClipboardHander
                 return;
             }
 
-            SetWorkingStartStatus();
-            using var workingStatusGuard = new ScopeGuard(SetWorkingEndStatus);
+            if (profile.Type == ProfileType.Unknown)
+            {
+                await _logger.WriteAsync("Local profile type is Unkown, stop upload.");
+                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Local profile type is unkown, stopped.", false);
+                return;
+            }
+
             await UploadClipboard(profile, token);
-            DownloadService.SetRemoteCache(profile);
-            _profileCache = profile;
         }
         catch (OperationCanceledException)
         {
@@ -284,23 +284,24 @@ public class UploadService : ClipboardHander
         }
         finally
         {
-            SyncService.remoteProfilemutex.Release();
+            await _logger.WriteAsync(LOG_TAG, "Push End");
         }
     }
 
-    private async Task UploadClipboard(Profile currentProfile, CancellationToken cancelToken)
+    private async Task UploadClipboard(Profile currentProfile, CancellationToken token)
     {
-        if (currentProfile.Type == ProfileType.Unknown)
-        {
-            await _logger.WriteAsync("Local profile type is Unkown, stop upload.");
-            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Local profile type is unkown, stopped.", false);
-            return;
-        }
-
         PushStarted?.Invoke();
         using var eventGuard = new ScopeGuard(() => PushStopped?.Invoke());
 
-        await UploadLoop(currentProfile, cancelToken);
+        SetWorkingStartStatus();
+        using var workingStatusGuard = new ScopeGuard(SetWorkingEndStatus);
+
+        await SyncService.remoteProfilemutex.WaitAsync(token);
+        using var mutexGuard = new ScopeGuard(() => SyncService.remoteProfilemutex.Release());
+
+        await UploadLoop(currentProfile, token);
+        DownloadService.SetRemoteCache(currentProfile);
+        _profileCache = currentProfile;
     }
 
     private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
@@ -368,7 +369,7 @@ public class UploadService : ClipboardHander
         {
             var meta = await _clipboardFactory.GetMetaInfomation(token);
             var profile = await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
-            await UploadProfileClipboard(meta, profile, contentControl, token);
+            await CheckAndUpload(meta, profile, contentControl, token);
             if (NotifyOnManualUpload)
             {
                 var notification = _notificationManager.Shared;

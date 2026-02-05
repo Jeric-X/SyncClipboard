@@ -205,7 +205,7 @@ public class DownloadService : Service
         {
             if (!_isEventDrivenModeActive)
             {
-                StartEventDrivenMode();
+                SetStartStatus();
 
                 _isEventDrivenModeActive = true;
                 _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
@@ -231,6 +231,8 @@ public class DownloadService : Service
             if (_isEventDrivenModeActive)
             {
                 _isEventDrivenModeActive = false;
+                _singleDownloadTask.Cancel();
+
                 _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
                 _clipboardListener.Changed -= ClipboardProfileChanged;
 
@@ -239,7 +241,7 @@ public class DownloadService : Service
                 remoteServer.PollStatusEvent -= OnPollStatusChanged;
 
                 _localProfileCache = null;
-                StopEventDrivenMode();
+                SetStopStatus();
             }
         }
     }
@@ -252,13 +254,13 @@ public class DownloadService : Service
         }
     }
 
-    private void StartEventDrivenMode()
+    private void SetStartStatus()
     {
         _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
         _logger.Write(LOG_TAG, "Event-driven mode started");
     }
 
-    private void StopEventDrivenMode()
+    private void SetStopStatus()
     {
         _trayIcon.SetStatusString(SERVICE_NAME, "Stopped.");
         _logger.Write(LOG_TAG, "Event-driven mode stopped");
