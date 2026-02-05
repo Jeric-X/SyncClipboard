@@ -94,7 +94,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
             {
                 _progressBar.Remove();
                 _progressBar.IsIndeterminate = false;
-                _progressBar.Show();
+                _progressBar.Show(new NotificationDeliverOption { Silent = true });
             }
         }
         else
