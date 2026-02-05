@@ -97,26 +97,31 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return workingDir;
     }
 
+    private async Task DeleteWorkingDirAsync(HistoryRecord record, CancellationToken token)
+    {
+        var workingDir = GetRecordWorkingDir(record);
+        await Task.Run(() =>
+        {
+            if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
+            {
+                try
+                {
+                    Directory.Delete(workingDir, true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Write("HistoryManager", $"Failed to delete temp folder {workingDir}: {ex.Message}");
+                }
+            }
+        }, token);
+    }
+
     public async Task RemoveHistory(HistoryRecord record, CancellationToken token)
     {
         var entity = await Query(record.Type, record.Hash, token);
         if (entity != null)
         {
-            var workingDir = GetRecordWorkingDir(entity);
-            await Task.Run(() =>
-            {
-                if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
-                {
-                    try
-                    {
-                        Directory.Delete(workingDir, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Write("HistoryManager", $"Failed to delete temp folder {workingDir}: {ex.Message}");
-                    }
-                }
-            }, token);
+            await DeleteWorkingDirAsync(entity, token);
 
             _dbContext.HistoryRecords.Remove(entity);
             await _dbContext.SaveChangesAsync(token);
@@ -297,27 +302,25 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        // Soft delete: 标记 IsDeleted 而不是物理删除；交由容量/过期清理逻辑后续清理。
         entity.IsDeleted = true;
         entity.LastModified = DateTime.UtcNow;
         entity.Version += 1;
+        if (entity.FilePath.Length > 0)
+        {
+            entity.FilePath = [];
+            entity.IsLocalFileReady = false;
+        }
+        await DeleteWorkingDirAsync(entity, token);
 
         if (_runtimeHistoryConfig.EnableSyncHistory)
         {
-            // 开启同步：需要向服务器同步删除，标记 NeedSync（LocalOnly 保持不变）
             if (entity.SyncStatus != HistorySyncStatus.LocalOnly)
             {
                 entity.SyncStatus = HistorySyncStatus.NeedSync;
             }
         }
-        else
-        {
-            // 未开启同步：保持 SyncStatus，不再标记 NeedSync
-            // 可选：如果原来是 Synced 改为 LocalOnly；此处暂不更改保留原状态
-        }
 
         await _dbContext.SaveChangesAsync(token);
-        // 触发 Removed 事件供 UI 移除，并供同步器监听做删除同步（记录仍保留在数据库中）
         HistoryRemoved?.Invoke(entity);
     }
 
@@ -398,6 +401,33 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         _dbContext.HistoryRecords.RemoveRange(toDeletes);
         await _dbContext.SaveChangesAsync(token);
+    }
+
+    public async Task ClearDeletedHistoryData(CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var deletedRecords = _dbContext.HistoryRecords
+            .Where(r => r.IsDeleted && r.FilePath.Length > 0 && r.IsLocalFileReady)
+            .ToList();
+
+        if (deletedRecords.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var record in deletedRecords)
+        {
+            record.FilePath = [];
+            record.IsLocalFileReady = false;
+            await DeleteWorkingDirAsync(record, token);
+        }
+
+        _dbContext.HistoryRecords.RemoveRange(deletedRecords);
+        await _dbContext.SaveChangesAsync(token);
+
+        _logger.Write("HistoryManager", $"Cleared {deletedRecords.Count} deleted history records and their data");
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)

@@ -12,6 +12,7 @@ public static class Job
         scheduler.AddJob<AppdataFileDeleteJob>(TimeSpan.FromHours(24));
         scheduler.AddJob<UpdateJob>(TimeSpan.FromHours(24));
         scheduler.AddJob<HistoryCleanupJob>(TimeSpan.FromMinutes(1));
+        scheduler.AddJob<DeletedHistoryDataCleanupJob>(TimeSpan.FromMinutes(5));
         scheduler.AddJob<OrphanedHistoryCleanupJob>(TimeSpan.FromHours(6));
         scheduler.AddJob<LocalFileCacheCleanupJob>(TimeSpan.FromHours(6));
         scheduler.Start();
