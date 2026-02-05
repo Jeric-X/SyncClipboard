@@ -12,6 +12,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
     protected abstract ILogger Logger { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
     protected ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
+    private IProfileEnv ProfileEnv => ServiceProvider.GetRequiredService<IProfileEnv>();
     private LocalFileCacheManager FileCacheManager => ServiceProvider.GetRequiredService<LocalFileCacheManager>();
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
@@ -63,8 +64,21 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
 
         var tempPath = Path.Combine(Env.TemplateFileFolder, ImageProfile.CreateImageFileName());
         await image.Save(tempPath, ctk);
-        await FileCacheManager.SaveCacheEntryAsync(nameof(IClipboardImage), hash, tempPath, ctk);
-        return new ImageProfile(tempPath);
+
+        var imageProfile = new ImageProfile(tempPath);
+
+        var profileHash = await imageProfile.GetHash(ctk);
+        var workingDir = imageProfile.CreateWorkingDir(ProfileEnv.GetPersistentDir(), profileHash);
+        var dataPath = Path.Combine(workingDir, Path.GetFileName(tempPath));
+
+        if (tempPath != dataPath)
+        {
+            await Task.Run(() => File.Move(tempPath, dataPath, true), ctk).WaitAsync(ctk);
+            await imageProfile.SetTransferData(dataPath, false, ctk);
+        }
+
+        await FileCacheManager.SaveCacheEntryAsync(nameof(IClipboardImage), hash, dataPath, ctk);
+        return imageProfile;
     }
 
     public async Task<Profile> CreateProfileFromLocal(CancellationToken ctk)

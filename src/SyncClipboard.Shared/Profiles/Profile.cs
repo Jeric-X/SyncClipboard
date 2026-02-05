@@ -140,7 +140,7 @@ public abstract class Profile
         throw new NotImplementedException();
     }
 
-    protected string CreateWorkingDir(string persistentDir, string hash)
+    public string CreateWorkingDir(string persistentDir, string hash)
     {
         return CreateWorkingDir(persistentDir, Type, hash);
     }
