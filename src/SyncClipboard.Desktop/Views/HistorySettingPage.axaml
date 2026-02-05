@@ -18,12 +18,10 @@
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Footer>
+                <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
+            </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableLocalHistory}">
-                    <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableSyncHistory}" Description="{x:Static i18n:Strings.EnableSyncHistoryDescription}" IsVisible="{Binding ServerSyncSupported}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
