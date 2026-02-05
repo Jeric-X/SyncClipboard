@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using SyncClipboard.Shared.Profiles.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared.Profiles;
 
@@ -223,7 +224,9 @@ public abstract class Profile
         return dto.Type switch
         {
             ProfileType.Text => new TextProfile(dto),
-            ProfileType.File => new FileProfile(dto),
+            ProfileType.File => dto.DataName is not null && ImageTool.FileIsImage(dto.DataName)
+                ? new ImageProfile(dto)
+                : new FileProfile(dto),
             ProfileType.Image => new ImageProfile(dto),
             ProfileType.Group => new GroupProfile(dto),
             _ => throw new NotSupportedException($"Unsupported profile type from ProfileDto: {dto.Type}"),
