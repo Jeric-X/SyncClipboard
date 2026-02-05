@@ -16,6 +16,7 @@ public class HistoryTransferQueue : IDisposable
     private readonly RemoteClipboardServerFactory _remoteServerFactory;
     private readonly HistoryManager _historyManager;
     private readonly IProfileEnv _profileEnv;
+    private readonly ConfigManager _configManager;
 
     // 队列和任务存储
     private readonly Queue<TransferTask> _pendingTasks = new();
@@ -42,12 +43,14 @@ public class HistoryTransferQueue : IDisposable
         RemoteClipboardServerFactory remoteServerFactory,
         HistoryManager historyManager,
         IProfileEnv profileEnv,
+        ConfigManager configManager,
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
     {
         _logger = logger;
         _remoteServerFactory = remoteServerFactory;
         _historyManager = historyManager;
         _profileEnv = profileEnv;
+        _configManager = configManager;
         _remoteServerFactory.CurrentServerChanged += (_, _) => ClearQueue();
         runtimeConfig.ListenConfig<RuntimeHistoryConfig>(OnSyncHistoryChanged);
     }
@@ -548,7 +551,10 @@ public class HistoryTransferQueue : IDisposable
 
         await server.DownloadHistoryDataAsync(task.ProfileId, localDataPath, task.ProgressReporter, ct);
         await profile.SetTransferData(localDataPath, true, ct);
-        await _historyManager.AddLocalProfile(profile, updateLastAccessed: false, token: ct);
+        if (_configManager.GetConfig<HistoryConfig>().EnableHistory)
+        {
+            await _historyManager.AddLocalProfile(profile, updateLastAccessed: false, token: ct);
+        }
     }
 
     private async Task ExecuteUploadAsync(TransferTask task, CancellationToken ct)

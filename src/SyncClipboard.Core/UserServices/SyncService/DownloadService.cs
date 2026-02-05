@@ -458,9 +458,17 @@ public class DownloadService : Service
             }
             else
             {
-                await _historyManager.AddRemoteProfile(remoteProfile, cancelToken);
-                await DownloadFileProfileData(remoteProfile, cancelToken);
-                await _historyManager.AddLocalProfile(remoteProfile, token: cancelToken);
+                var enableHistory = _configManager.GetConfig<HistoryConfig>().EnableHistory;
+                if (remoteProfile.HasTransferData)
+                {
+                    if (enableHistory)
+                        await _historyManager.AddRemoteProfile(remoteProfile, cancelToken);
+
+                    await DownloadFileProfileData(remoteProfile, cancelToken);
+                }
+
+                if (enableHistory)
+                    await _historyManager.AddLocalProfile(remoteProfile, token: cancelToken);
             }
         }
         _downServiceChangingLocal = true;
