@@ -170,7 +170,7 @@ public class TextProfile : Profile
         }
 
         _transferDataName ??= $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
-        var dataPath = Path.Combine(GetWorkingDir(persistentDir, await GetHash(token)), _transferDataName);
+        var dataPath = Path.Combine(CreateWorkingDir(persistentDir, await GetHash(token)), _transferDataName);
         return dataPath;
     }
 
@@ -190,7 +190,7 @@ public class TextProfile : Profile
             return;
         }
 
-        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var workingDir = CreateWorkingDir(persistentDir, Type, await GetHash(token));
         var dataName = _transferDataName ?? $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
         var path = Path.Combine(workingDir, dataName);
         await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
@@ -202,7 +202,7 @@ public class TextProfile : Profile
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
-        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var workingDir = QueryGetWorkingDir(persistentDir, Type, await GetHash(token));
         var path = GetPersistentPath(workingDir, _transferDataPath);
         return new ProfilePersistentInfo
         {
@@ -257,7 +257,7 @@ public class TextProfile : Profile
 
         await SetTransferData(path, true, token);
 
-        var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
+        var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)

@@ -257,7 +257,7 @@ public class GroupProfile : Profile
 
         ArgumentNullException.ThrowIfNull(_files);
         var fileName = _transferDataName ?? CreateNewDataFileName();
-        var filePath = Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), fileName);
+        var filePath = Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), fileName);
 
         await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
@@ -437,7 +437,7 @@ public class GroupProfile : Profile
 
         await SetTransferData(path, true, token);
 
-        var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
+        var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -503,7 +503,7 @@ public class GroupProfile : Profile
             { }
         }
 
-        return Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataName ?? CreateNewDataFileName());
+        return Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataName ?? CreateNewDataFileName());
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
@@ -513,7 +513,7 @@ public class GroupProfile : Profile
             throw new InvalidOperationException("No local data available to prepare persistent storage.");
         }
 
-        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var workingDir = CreateWorkingDir(persistentDir, Type, await GetHash(token));
 
         await BackUpFilteredFilesIfNeeded(workingDir, token);
 

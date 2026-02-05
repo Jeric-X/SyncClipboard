@@ -92,7 +92,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return null;
 
         var persistentDir = _profileEnv.GetPersistentDir();
-        var workingDir = Profile.GetWorkingDir(persistentDir, record.Type, record.Hash);
+        var workingDir = Profile.QueryGetWorkingDir(persistentDir, record.Type, record.Hash);
 
         return workingDir;
     }

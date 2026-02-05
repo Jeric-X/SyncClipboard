@@ -155,7 +155,7 @@ public class FileProfile : Profile
 
         await SetTransferData(path, true, token);
 
-        var workingDir = GetWorkingDir(persistentDir, Type, Hash!);
+        var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
 
         if (Path.IsPathRooted(persistentPath!) is false)
@@ -204,7 +204,7 @@ public class FileProfile : Profile
 
         if (FullPath is null)
         {
-            return Path.Combine(GetWorkingDir(persistentDir, Type, await GetHash(token)), FileName);
+            return Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), FileName);
         }
 
         return FullPath;
@@ -217,7 +217,7 @@ public class FileProfile : Profile
             throw new Exception("Cannot persist a FileProfile with no data.");
         }
 
-        var workingDir = GetWorkingDir(persistentDir, Type, await GetHash(token));
+        var workingDir = QueryGetWorkingDir(persistentDir, Type, await GetHash(token));
         var path = GetPersistentPath(workingDir, FullPath);
         return new ProfilePersistentInfo
         {

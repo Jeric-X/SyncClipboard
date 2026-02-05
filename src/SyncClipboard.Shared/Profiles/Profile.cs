@@ -140,12 +140,20 @@ public abstract class Profile
         throw new NotImplementedException();
     }
 
-    protected string GetWorkingDir(string persistentDir, string hash)
+    protected string CreateWorkingDir(string persistentDir, string hash)
     {
-        return GetWorkingDir(persistentDir, Type, hash);
+        return CreateWorkingDir(persistentDir, Type, hash);
     }
 
-    public static string GetWorkingDir(string persistentDir, ProfileType type, string hash)
+    public static string CreateWorkingDir(string persistentDir, ProfileType type, string hash)
+    {
+        var profileDir = QueryGetWorkingDir(persistentDir, type, hash);
+        if (!Directory.Exists(profileDir))
+            Directory.CreateDirectory(profileDir);
+        return profileDir;
+    }
+
+    public static string QueryGetWorkingDir(string persistentDir, ProfileType type, string hash)
     {
         if (hash.Contains(Path.DirectorySeparatorChar) || hash.Contains(Path.AltDirectorySeparatorChar))
         {
@@ -154,8 +162,6 @@ public abstract class Profile
 
         var dirName = $"{type}_{hash}";
         var profileDir = Path.Combine(persistentDir, dirName);
-        if (!Directory.Exists(profileDir))
-            Directory.CreateDirectory(profileDir);
         return profileDir;
     }
 
@@ -196,13 +202,13 @@ public abstract class Profile
     [return: NotNullIfNotNull(nameof(persistentPath))]
     public static string? GetFullPath(string persistentDir, ProfileType type, string hash, string? persistentPath)
     {
-        var workingDir = GetWorkingDir(persistentDir, type, hash);
+        var workingDir = QueryGetWorkingDir(persistentDir, type, hash);
         return GetFullPath(workingDir, persistentPath);
     }
 
     public static Profile Create(string persistentDir, ProfilePersistentInfo persistentEntity)
     {
-        var workingDir = GetWorkingDir(persistentDir, persistentEntity.Type, persistentEntity.Hash);
+        var workingDir = QueryGetWorkingDir(persistentDir, persistentEntity.Type, persistentEntity.Hash);
         var entity = persistentEntity with
         {
             TransferDataFile = GetFullPath(workingDir, persistentEntity.TransferDataFile),

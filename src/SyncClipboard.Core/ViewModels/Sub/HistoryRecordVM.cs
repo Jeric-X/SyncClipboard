@@ -303,7 +303,7 @@ public partial class HistoryRecordVM : ObservableObject
             return [];
         }
 
-        var workingDir = Profile.GetWorkingDir(profileEnv.GetHistoryPersistentDir(), type, hash);
+        var workingDir = Profile.QueryGetWorkingDir(profileEnv.GetHistoryPersistentDir(), type, hash);
         var restoredPaths = new string[persistentPaths.Length];
         for (int i = 0; i < persistentPaths.Length; i++)
         {

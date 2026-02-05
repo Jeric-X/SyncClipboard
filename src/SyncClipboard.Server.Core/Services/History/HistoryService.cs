@@ -371,7 +371,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return;
         }
 
-        var workingDir = Profile.GetWorkingDir(_persistentDir, entity.Type, entity.Hash);
+        var workingDir = Profile.QueryGetWorkingDir(_persistentDir, entity.Type, entity.Hash);
         await Task.Run(() =>
         {
             if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
