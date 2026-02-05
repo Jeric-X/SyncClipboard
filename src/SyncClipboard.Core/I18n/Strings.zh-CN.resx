@@ -289,7 +289,7 @@
     <value>打开</value>
   </data>
   <data name="OpenFolder" xml:space="preserve">
-    <value>在文件夹中显示</value>
+    <value>打开文件夹</value>
   </data>
   <data name="ClipboardImageUpdated" xml:space="preserve">
     <value>图片同步成功</value>
