@@ -18,14 +18,14 @@
   - [客户端](#客户端)
     - [Windows](#windows)
       - [免安装板](#免安装板)
-      - [故常排除](#故常排除)
+      - [故障排除](#故障排除)
     - [macOS](#macos)
       - [手动安装](#手动安装)
-      - [故常排除](#故常排除-1)
+      - [故障排除](#故障排除-1)
     - [Linux](#linux)
       - [手动安装](#手动安装-1)
       - [Arch Linux](#arch-linux-1)
-      - [故常排除](#故常排除-2)
+      - [故障排除](#故障排除-2)
     - [桌面客户端命令行参数](#桌面客户端命令行参数)
       - [--shutdown-previous](#--shutdown-previous)
       - [--command-{command-name}](#--command-command-name)
@@ -48,11 +48,12 @@
 
 ## 功能
 
-- 剪贴板同步，支持文字、图片和文件。服务器/客户端架构，可以使用客户端内置服务器、独立部署服务器，也可以使用支持WebDAV的网盘作为服务器  
-- 剪贴板历史记录管理器  
+- 跨平台（Windows/macOS/Linux）剪贴板实时同步、剪贴板历史记录管理、历史记录同步
+- 支持客户端内置服务器、docker部署服务器，也可以使用支持WebDAV协议的网盘作为服务器
+- 基于第三方工具的移动端剪贴板同步
 - 优化图片类型的剪贴板，功能有：
   - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件，反之亦然
-  - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器拷贝动态图的问题（大多网站有认证，适用范围有限，支持bilibili动态图片）
+  - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器直接复制动态图的问题
   - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪贴板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
 
 
@@ -175,7 +176,7 @@ sudo systemctl enable --now syncclipboard.service
 
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的zip文件，解压后运行`SyncClipboard.exe`
 
-#### 故常排除
+#### 故障排除
 - 支持的最低系统版本为Windows10 2004
 - 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
@@ -183,7 +184,7 @@ sudo systemctl enable --now syncclipboard.service
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 
-#### 故常排除
+#### 故障排除
 - 系统提示`由于开发者无法验证，“SyncClipboard”无法打开`： 
 在macOS的`设置`->`隐私与安全性`页面，点击`仍要打开`
 - 系统提示`“SyncClipboard”已损坏，无法打开`：在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
@@ -203,12 +204,11 @@ paru -Sy syncclipboard-desktop
 
 安装后从菜单中启动即可。如果在命令行中使用命令`syncclipboard-desktop`启动报错，请将环境变量`LANG`设置为`en_US.UTF-8`，以`LANG=en_US.UTF-8 syncclipboard-desktop`来启动。
 
-#### 故常排除
+#### 故障排除
 - 剪贴板同步不及时、无法同步、上传乱码：建议在系统内安装`xclip`（X11）或`wl-clipboard`（Wayland），SyncClipboard会使用这些工具辅助获取剪贴板以增强稳定性。使用`xclip -version`或`wl-paste -version`命令确认是否已安装
 - 使用`deb`、`rpm`安装包时，升级安装失败时，请先删除旧版再安装新版
 - 使用`AppImage`包时，请确认AppImage文件具有可执行权限
 - 快捷键在Wayland可能无法使用
-- 无法自动识别语言，默认为英语，启动后可以在SyncClipboard的设置中修改
 
 > [!NOTE]  
 > 需要彻底删除SyncClipboard时请手动删除配置文件和临时文件目录：  

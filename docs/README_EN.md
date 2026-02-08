@@ -44,8 +44,9 @@
 
 ## Features
 
-- Clipboard syncing, supporting text/image/file, client-server architecture. You can also use a WebDAV compatible netdisk as server.
-- Clipboard history manager.  
+- Cross-platform (Windows/macOS/Linux) real-time clipboard syncing, clipboard history management, and history syncing.
+- Supports desktop client built-in server, Docker-deployed server, or WebDAV-compatible cloud storage as server.
+- Mobile clipboard syncing based on third-party tools.
 - Optimize image type clipboard:
   - Paste image to a textbox directly after copying a image file from file system, and vice versa.
   - Download the original file and copy it after copying a image in web browser. This is helpful for copying an animated image in browser. Web sites always prevent downloads from non-browser, so this feature isn't always usable.
