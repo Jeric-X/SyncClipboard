@@ -100,21 +100,23 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         _logger.Write($"[WEBDAV] Downloaded {fileName} to {localPath}");
     }
 
-    public async Task CleanupTempFilesAsync(CancellationToken cancellationToken = default)
+    public async Task CleanupTempFilesAsync(CancellationToken token = default)
     {
         if (_webDavConfig.DeletePreviousFilesOnPush)
         {
             try
             {
-                await _webDav.DirectoryDelete(RemoteFileFolder, cancellationToken);
+                await _webDav.DirectoryDelete(RemoteFileFolder, token);
             }
-            catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound)
+            catch when (token.IsCancellationRequested == false)
             {
                 // 如果目录不存在，直接忽略
             }
 
-            // 重新创建目录
-            await _webDav.CreateDirectory(RemoteFileFolder, cancellationToken);
+            if (!await _webDav.DirectoryExist(RemoteFileFolder, token))
+            {
+                await _webDav.CreateDirectory(RemoteFileFolder, token);
+            }
         }
     }
 
