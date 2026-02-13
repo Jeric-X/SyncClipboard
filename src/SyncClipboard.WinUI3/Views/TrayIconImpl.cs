@@ -54,7 +54,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
         }
         else
         {
-            _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.IconSource = icon).Wait();
+            _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.IconSource = icon);
         }
     }
 
