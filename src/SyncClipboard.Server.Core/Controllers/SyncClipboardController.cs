@@ -208,7 +208,7 @@ public class SyncClipboardController(
             }
             catch when (!token.IsCancellationRequested)
             {
-                return BadRequest("Data file is invalid.");
+                return BadRequest("Hash is not match data.");
             }
         }
 

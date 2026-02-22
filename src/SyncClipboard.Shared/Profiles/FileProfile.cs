@@ -137,7 +137,7 @@ public class FileProfile : Profile
         }
 
         var hash = await GetSHA256HashFromFile(path, token);
-        if (Hash is not null && hash != Hash)
+        if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
         {
             throw new InvalidDataException("Hash mismatch for the provided file.");
         }
@@ -187,7 +187,7 @@ public class FileProfile : Profile
         try
         {
             var hash = await GetSHA256HashFromFile(FullPath, token);
-            return hash == Hash;
+            return string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase);
         }
         catch when (token.IsCancellationRequested is false)
         {

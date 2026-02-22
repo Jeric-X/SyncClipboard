@@ -136,7 +136,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
+        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && EF.Functions.Like(r.Hash, record.Hash)) is HistoryRecord entity)
         {
             if (string.IsNullOrEmpty(entity.Text) && !string.IsNullOrEmpty(record.Text))
             {
@@ -174,7 +174,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && r.Hash == record.Hash) is HistoryRecord entity)
+        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && EF.Functions.Like(r.Hash, record.Hash)) is HistoryRecord entity)
         {
             entity.IsDeleted = false;
             entity.SyncStatus = HistorySyncStatus.Synced;

@@ -61,7 +61,7 @@ public class HistoryRecord
             return Text == other.Text;
         }
 
-        return Hash == other.Hash;
+        return string.Equals(Hash, other.Hash, StringComparison.OrdinalIgnoreCase);
     }
 
     public override int GetHashCode()

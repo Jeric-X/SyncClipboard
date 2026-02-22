@@ -392,7 +392,7 @@ public class GroupProfile : Profile
         _files = topLevelFiles;
 
         var (hash, size) = await Task.Run(() => CaclHashAndSize(_files, token), token).WaitAsync(token);
-        if (Hash is not null && hash != Hash)
+        if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
         {
             var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
             throw new InvalidDataException(errorMsg);
