@@ -33,8 +33,9 @@
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
       - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
+      - [使用SyncClipboard Mobile](#使用syncclipboard-mobile)
       - [使用Sync Clipboard Flutter](#使用sync-clipboard-flutter)
-      - [使用Autox.js](#使用autoxjs)
+      - [使用AutoJs6脚本](#使用autojs6脚本)
       - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
     - [客户端配置说明](#客户端配置说明)
@@ -263,18 +264,19 @@ paru -Sy syncclipboard-desktop
 
 </details>
 
+#### 使用[SyncClipboard Mobile](https://github.com/Jeric-X/syncclipboard-mobile)
+
+使用React Native构建的移动客户端，支持从通知中心磁铁、桌面快捷方式、分享菜单中使用
+
 #### 使用[Sync Clipboard Flutter](https://github.com/bling-yshs/sync-clipboard-flutter)
 
 这是一个使用 Flutter 构建的 Material 3 风格的、适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
 
 功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-flutter)
 
-#### 使用[Autox.js](https://github.com/aiselp/AutoX)
+#### 使用[AutoJs6脚本](https://github.com/imgs/SyncAutojs6)
 
-- 自动同步，使用这个[js文件](/script/SyncAutoxJs.js)。由于安卓系统限制，在安卓10及以上的系统应用无法在后台读取剪贴板，但可以使用基于Root权限的工具(Magisk/Xposed)解除应用后台读取剪贴版的权限，如[Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)、[Clipboard Whitelist](https://modules.lsposed.org/module/io.github.tehcneko.clipboardwhitelist)。由于在安卓13及以上的系统应用必须由用户手动授权才被允许访问系统日志（剪贴板），也可以使用Xposed自动为应用授权访问系统日志的权限，如[DisableLogRequest/禁用日志访问请求](https://github.com/QueallyTech/DisableLogRequest)
-- 自动上传验证码，使用这个[js文件](/script/UploadVerificationCode.js)，这个脚本运行在后台时将读取所有通知消息，在识别到验证码类信息时将证码上传到服务器
-
-导入js文件、修改每个文件头部的用户配置后，手动点击运行，或者为每个js文件设置触发方式，例如：开机时触发
+此项目通过[AutoJs6](https://github.com/SuperMonster003/AutoJs6)基于悬浮窗的后台剪贴板获取方式，实现了Android 10+系统上的后台剪贴板同步能力
 
 #### 使用[SmsForwarder](https://github.com/pppscn/SmsForwarder)
 
