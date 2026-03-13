@@ -106,13 +106,15 @@ public class Web
 
             builder.WebHost.UseKestrel((context, serverOptions) =>
             {
-                serverOptions.Listen(IPAddress.Any, serverConfig.Port, listenOptions =>
+                void OptionAction(ListenOptions options)
                 {
                     if (serverConfig.EnableHttps)
                     {
-                        listenOptions.UseHttps();
+                        options.UseHttps();
                     }
-                });
+                }
+                serverOptions.Listen(IPAddress.Any, serverConfig.Port, OptionAction);
+                serverOptions.Listen(IPAddress.IPv6Any, serverConfig.Port, OptionAction);
             });
         }
         builder.Services.Configure<AppSettings>(option =>
