@@ -60,19 +60,19 @@ jobs:
     needs: build
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
       - name: Install .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
 
       - name: Download last-job-built artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-${{ matrix.cpu }}-${{ matrix.type }}
           path: linux-bin/
@@ -83,7 +83,7 @@ jobs:
           ./build/SetUpdateSource.sh -m manual -s github -o linux-bin -n SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
 
       - name: Download last-job-built change log
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: feature
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: ./build/linux/output
 
       - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
           path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}

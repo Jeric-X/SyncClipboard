@@ -10,11 +10,11 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     # Install the .NET workload
     - name: Install .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
@@ -32,7 +32,7 @@ jobs:
         cp -r src/SyncClipboard.Server/bin/Release/net8.0/publish/ server/
 
     - name: Upload build artifacts SyncClipboard.Server
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: SyncClipboard.Server
         path: server/
