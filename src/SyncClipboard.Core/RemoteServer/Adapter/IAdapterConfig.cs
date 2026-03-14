@@ -23,4 +23,18 @@ public interface IAdapterConfig<T> : IAdapterConfig
             return type.Name;
         }
     }
+
+    static int Priority
+    {
+        get
+        {
+            var type = typeof(T);
+            var accountAttribute = type.GetCustomAttribute<AccountConfigTypeAttribute>();
+            if (accountAttribute != null)
+            {
+                return accountAttribute.Priority;
+            }
+            return int.MaxValue;
+        }
+    }
 }

@@ -3,7 +3,7 @@ using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 
-[AccountConfigType(ConfigTypeName)]
+[AccountConfigType(ConfigTypeName, Priority = 2)]
 public record WebDavConfig : IAdapterConfig<WebDavConfig>
 {
     public const string ConfigTypeName = "WebDAV";

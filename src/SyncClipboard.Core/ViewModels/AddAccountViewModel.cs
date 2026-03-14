@@ -1,7 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.RemoteServer.LogInHelper;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -71,12 +73,32 @@ public partial class AddAccountViewModel : ObservableObject
     {
         LoginTypes.Clear();
 
+        // 收集所有账号类型及其优先级
+        var typeWithPriority = new Dictionary<string, int>();
+
         // 从 AccountManager 获取已注册的适配器类型
         foreach (var typeName in _accountManager.GetRegisteredTypeNames())
         {
-            if (!LoginTypes.Contains(typeName))
+            if (!typeWithPriority.ContainsKey(typeName))
             {
-                LoginTypes.Add(typeName);
+                var registeredType = _accountManager.GetRegisteredType(typeName);
+                if (registeredType != null)
+                {
+                    // 通过反射获取Priority属性
+                    var adapterConfigInterface = registeredType.GetInterfaces()
+                        .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAdapterConfig<>));
+
+                    if (adapterConfigInterface != null)
+                    {
+                        var priorityProperty = adapterConfigInterface.GetProperty("Priority", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                        var priority = (int?)priorityProperty?.GetValue(null) ?? int.MaxValue;
+                        typeWithPriority[typeName] = priority;
+                    }
+                    else
+                    {
+                        typeWithPriority[typeName] = int.MaxValue;
+                    }
+                }
             }
         }
 
@@ -84,10 +106,22 @@ public partial class AddAccountViewModel : ObservableObject
         foreach (var helper in _logInHelpers)
         {
             var typeName = helper.TypeName;
-            if (!string.IsNullOrEmpty(typeName) && !LoginTypes.Contains(typeName))
+            if (!string.IsNullOrEmpty(typeName) && !typeWithPriority.ContainsKey(typeName))
             {
-                LoginTypes.Add(typeName);
+                typeWithPriority[typeName] = helper.Priority;
             }
+        }
+
+        // 按优先级排序，优先级相同则按名称字母顺序排序
+        var sortedTypes = typeWithPriority
+            .OrderBy(kvp => kvp.Value)
+            .ThenBy(kvp => kvp.Key)
+            .Select(kvp => kvp.Key);
+
+        // 将排序后的类型添加到LoginTypes
+        foreach (var typeName in sortedTypes)
+        {
+            LoginTypes.Add(typeName);
         }
 
         // 如果有可用类型，默认选择第一个

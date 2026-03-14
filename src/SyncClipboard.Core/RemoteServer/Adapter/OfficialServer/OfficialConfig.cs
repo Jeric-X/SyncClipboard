@@ -3,7 +3,7 @@ using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
-[AccountConfigType(ConfigTypeName)]
+[AccountConfigType(ConfigTypeName, Priority = 1)]
 public record OfficialConfig : IAdapterConfig<OfficialConfig>
 {
     public const string ConfigTypeName = "SyncClipboard";

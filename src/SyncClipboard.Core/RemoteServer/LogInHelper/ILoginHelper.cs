@@ -6,6 +6,7 @@ public interface ILoginHelper
 {
     string TypeName { get; }
     string LoginPageName { get; }
+    int Priority { get; }
 }
 
 public interface ILoginHelper<T> : ILoginHelper where T : IAdapterConfig<T>

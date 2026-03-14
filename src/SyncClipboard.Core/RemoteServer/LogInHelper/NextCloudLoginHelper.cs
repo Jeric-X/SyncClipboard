@@ -6,4 +6,5 @@ public class NextCloudLoginHelper : ILoginHelper<WebDavConfig>
 {
     public string TypeName => "NextCloud";
     public string LoginPageName => "NextCloudLogInPage";
+    public int Priority => 3;
 }
