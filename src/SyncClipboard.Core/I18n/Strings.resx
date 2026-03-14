@@ -824,14 +824,11 @@ This operation cannot be undone.</value>
   <data name="ServerAddress" xml:space="preserve">
     <value>Server Address</value>
   </data>
-  <data name="ServerAddressDescription" xml:space="preserve">
-    <value>Full URL address of the WebDAV server</value>
+  <data name="WebDAVServerAddressDescription" xml:space="preserve">
+    <value>Set the format to "http(s)://host:port/webdav_api_path" and specify the path to a dedicated sync folder</value>
   </data>
-  <data name="UserNameDescription" xml:space="preserve">
-    <value>Username for logging into the WebDAV server</value>
-  </data>
-  <data name="PasswordDescription" xml:space="preserve">
-    <value>Password for logging into the WebDAV server</value>
+  <data name="SyncClipboardServerAddressDescription" xml:space="preserve">
+    <value>Set the format to "http(s)://host:port". For built-in server, set the host to "127.0.0.1"</value>
   </data>
   <data name="TrustInsecureCertificateDescription" xml:space="preserve">
     <value>Whether to trust self-signed or invalid SSL certificates</value>

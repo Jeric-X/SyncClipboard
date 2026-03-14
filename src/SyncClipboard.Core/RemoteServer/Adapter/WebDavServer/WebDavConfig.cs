@@ -8,14 +8,14 @@ public record WebDavConfig : IAdapterConfig<WebDavConfig>
 {
     public const string ConfigTypeName = "WebDAV";
 
-    [PropertyDisplay("ServerAddress", Description = "ServerAddressDescription")]
+    [PropertyDisplay("ServerAddress", Description = "WebDAVServerAddressDescription")]
     public string RemoteURL { get; set; } = string.Empty;
 
     [UserName]
-    [PropertyDisplay("UserName", Description = "UserNameDescription")]
+    [PropertyDisplay("UserName")]
     public string UserName { get; set; } = string.Empty;
 
-    [PropertyDisplay("Password", IsPassword = true, Description = "PasswordDescription")]
+    [PropertyDisplay("Password", IsPassword = true)]
     public string Password { get; set; } = string.Empty;
 
     [PropertyDisplay("DeleteServerTemporaryFileAutoly", Description = "DeletePreviousFilesDescription")]

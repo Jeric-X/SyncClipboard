@@ -822,14 +822,11 @@ Esc：关闭面板</value>
   <data name="ServerAddress" xml:space="preserve">
     <value>服务器地址</value>
   </data>
-  <data name="ServerAddressDescription" xml:space="preserve">
-    <value>WebDAV服务器的完整URL地址</value>
+  <data name="WebDAVServerAddressDescription" xml:space="preserve">
+    <value>请设置为"http(s)://host:port/webdav_api_path"的形式，并将路径具体到一个专用同步文件夹</value>
   </data>
-  <data name="UserNameDescription" xml:space="preserve">
-    <value>登录WebDAV服务器的用户名</value>
-  </data>
-  <data name="PasswordDescription" xml:space="preserve">
-    <value>登录WebDAV服务器的密码</value>
+  <data name="SyncClipboardServerAddressDescription" xml:space="preserve">
+    <value>请设置为"http(s)://host:port"的形式。如果使用本机内置服务器，host部分填写为"127.0.0.1"</value>
   </data>
   <data name="TrustInsecureCertificateDescription" xml:space="preserve">
     <value>是否信任自签名或无效的SSL证书</value>

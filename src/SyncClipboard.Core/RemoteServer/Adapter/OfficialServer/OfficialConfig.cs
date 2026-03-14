@@ -8,7 +8,7 @@ public record OfficialConfig : IAdapterConfig<OfficialConfig>
 {
     public const string ConfigTypeName = "SyncClipboard";
 
-    [PropertyDisplay("ServerAddress")]
+    [PropertyDisplay("ServerAddress", Description = "SyncClipboardServerAddressDescription")]
     public string RemoteURL { get; set; } = string.Empty;
 
     [UserName]

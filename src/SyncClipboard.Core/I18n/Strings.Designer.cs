@@ -1863,15 +1863,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Full URL address of the WebDAV server 的本地化字符串。
-        /// </summary>
-        public static string ServerAddressDescription {
-            get {
-                return ResourceManager.GetString("ServerAddressDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 If you want to sync the clipboard on this machine, please add an account and enable syncing on the &quot;Clipboard Syncing&quot; page 的本地化字符串。
         /// </summary>
         public static string ServerDescription {
@@ -2021,6 +2012,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SyncAccount {
             get {
                 return ResourceManager.GetString("SyncAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 For built-in server, set address to &quot;http(s)://127.0.0.1:port&quot; 的本地化字符串。
+        /// </summary>
+        public static string SyncClipboardServerAddressDescription {
+            get {
+                return ResourceManager.GetString("SyncClipboardServerAddressDescription", resourceCulture);
             }
         }
         
@@ -2372,6 +2372,15 @@ namespace SyncClipboard.Core.I18n {
         public static string UseSelfHostServer {
             get {
                 return ResourceManager.GetString("UseSelfHostServer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Full URL address of the WebDAV server 的本地化字符串。
+        /// </summary>
+        public static string WebDAVServerAddressDescription {
+            get {
+                return ResourceManager.GetString("WebDAVServerAddressDescription", resourceCulture);
             }
         }
         
