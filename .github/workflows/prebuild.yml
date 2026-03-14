@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: ${{ inputs.checkout-repo }}
         ref: ${{ inputs.checkout-ref }}
@@ -38,7 +38,7 @@ jobs:
         Get-Content feature.txt -Encoding utf8
 
     - name: Upload windows change log
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: feature
         path: feature.txt

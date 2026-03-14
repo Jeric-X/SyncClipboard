@@ -27,14 +27,14 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: ${{ inputs.checkout-repo }}
         ref: ${{ inputs.checkout-ref }}
 
     # Install the .NET workload
     - name: Install .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
@@ -56,7 +56,7 @@ jobs:
       working-directory: ./src
 
     - name: Upload linux-${{ matrix.cpu }}-${{ matrix.type }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: linux-${{ matrix.cpu }}-${{ matrix.type }}
         path: linux-${{ matrix.cpu }}-${{ matrix.type }}/
