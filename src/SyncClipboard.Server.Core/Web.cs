@@ -45,6 +45,7 @@ public class Web
         services.AddSwaggerGen(options =>
         {
             options.OperationFilter<MultipartFormDataOperationFilter>();
+            options.OperationFilter<QueryHistoryOperationFilter>();
         });
 
         services.AddServerProfileEnvProvider();
@@ -113,8 +114,7 @@ public class Web
                         options.UseHttps();
                     }
                 }
-                serverOptions.Listen(IPAddress.Any, serverConfig.Port, OptionAction);
-                serverOptions.Listen(IPAddress.IPv6Any, serverConfig.Port, OptionAction);
+                serverOptions.ListenAnyIP(serverConfig.Port, OptionAction);
             });
         }
         builder.Services.Configure<AppSettings>(option =>
