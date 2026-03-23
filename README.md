@@ -38,6 +38,7 @@
       - [使用AutoJs6脚本](#使用autojs6脚本)
       - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
+      - [使用 Fcitx5-SyncClipboard](#使用fcitx5-syncclipboard)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
     - [获取剪贴板](#获取剪贴板)
@@ -287,6 +288,12 @@ paru -Sy syncclipboard-desktop
 - https://github.com/forrestgao/taskerforSyncClipboard ，作者：[forrestgao](https://github.com/forrestgao)
 
 Tasker是一款安卓系统上非常强大的自动化工具软件，你可以根据SyncClipboard的API创建适合自己的配置文件，如果你认为你的配置文件非常通用并希望分享出来，欢迎联系我置于此处
+
+#### 使用[Fcitx5-SyncClipboard](https://github.com/qh7574/Fcitx5-SyncClipboard)
+
+这是一个为 Fcitx5-android 开发的插件，借助输入法特权实现与 SyncClipboard 服务的无感剪贴板同步，无需手动获取；同时支持同步大文本、图片、文件等，文件无感下载并智能复制 uri 到剪贴板。
+
+具体使用方法、操作事项等请参见该项目 [README.md](https://github.com/qh7574/Fcitx5-SyncClipboard)
 
 
 ### 客户端配置说明
