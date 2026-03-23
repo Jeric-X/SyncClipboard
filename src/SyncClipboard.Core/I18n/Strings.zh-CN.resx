@@ -897,4 +897,37 @@ Esc：关闭面板</value>
   <data name="ServerTimeError" xml:space="preserve">
     <value>服务器时间与本地时间差距过大，请同步时间</value>
   </data>
+  <data name="S3ServerAddressDescription" xml:space="preserve">
+    <value>可选。可填写类似 "https://s3.us-east-1.amazonaws.com" 的地址，或任意兼容 S3 API 的 OSS 终端地址。</value>
+  </data>
+  <data name="S3Region" xml:space="preserve">
+    <value>区域</value>
+  </data>
+  <data name="S3RegionDescription" xml:space="preserve">
+    <value>请求签名使用的区域名，例如 "us-east-1"。</value>
+  </data>
+  <data name="S3BucketName" xml:space="preserve">
+    <value>Bucket 名称</value>
+  </data>
+  <data name="S3BucketNameDescription" xml:space="preserve">
+    <value>用于存储 SyncClipboard 元数据和文件的 S3 Bucket。</value>
+  </data>
+  <data name="S3ObjectPrefix" xml:space="preserve">
+    <value>对象前缀</value>
+  </data>
+  <data name="S3ObjectPrefixDescription" xml:space="preserve">
+    <value>可选。Bucket 内的目录前缀，例如 "syncclipboard"。</value>
+  </data>
+  <data name="S3ForcePathStyle" xml:space="preserve">
+    <value>强制 Path-Style 地址</value>
+  </data>
+  <data name="S3ForcePathStyleDescription" xml:space="preserve">
+    <value>对不支持虚拟主机风格 Bucket 地址的 S3 兼容服务请开启此项。</value>
+  </data>
+  <data name="S3AccessKeyId" xml:space="preserve">
+    <value>Access Key ID</value>
+  </data>
+  <data name="S3SecretAccessKey" xml:space="preserve">
+    <value>Secret Access Key</value>
+  </data>
 </root>

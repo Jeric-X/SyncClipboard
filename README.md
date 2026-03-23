@@ -15,6 +15,7 @@
       - [Arch Linux](#arch-linux)
     - [客户端内置服务器](#客户端内置服务器)
     - [WebDAV服务器](#webdav服务器)
+    - [S3服务器](#s3服务器)
   - [客户端](#客户端)
     - [Windows](#windows)
       - [免安装板](#免安装板)
@@ -50,7 +51,7 @@
 ## 功能
 
 - 跨平台（Windows/macOS/Linux）剪贴板实时同步、剪贴板历史记录管理、历史记录同步
-- 支持客户端内置服务器、docker部署服务器，也可以使用支持WebDAV协议的网盘作为服务器
+- 支持客户端内置服务器、docker部署服务器，也可以使用支持WebDAV协议或S3兼容API的对象存储作为服务器
 - 基于第三方工具的移动端剪贴板同步
 - 优化图片类型的剪贴板，功能有：
   - 从任意位置复制图片时，可以直接向文件系统粘贴图片文件，反之亦然
@@ -161,6 +162,17 @@ sudo systemctl enable --now syncclipboard.service
 - [x] [AList](https://alist.nn.ci/)
 - [x] [InfiniCLOUD](https://infini-cloud.net/en/)
 - [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
+
+### S3服务器
+桌面客户端支持使用 AWS 官方 S3 SDK 直连 S3，也支持使用兼容 S3 API 的对象存储服务。  
+添加账号时选择`S3`，配置以下字段：
+
+- `Server Address`：可选，AWS 可留空；使用兼容 S3 的服务时填写对应 endpoint
+- `Region`：签名区域，例如`us-east-1`
+- `Bucket Name`：用于存储`SyncClipboard.json`与`file/`对象的 bucket
+- `Object Prefix`：可选，建议设置独立前缀（如`syncclipboard`）隔离数据
+- `Force Path-Style Addressing`：兼容服务建议开启
+- `Access Key ID` / `Secret Access Key`：访问密钥
 
 ## 客户端
 
