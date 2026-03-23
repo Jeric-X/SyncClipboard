@@ -42,6 +42,7 @@
     <PackageReference Include="Magick.NET-Q16-AnyCPU" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="ObservableCollections" />

@@ -14,6 +14,7 @@
       - [Arch Linux](#arch-linux)
     - [Desktop Client Built-in Server](#desktop-client-built-in-server)
     - [WebDAV Server](#webdav-server)
+    - [S3 Server](#s3-server)
   - [Client](#client)
     - [Windows](#windows)
       - [Portable Version](#portable-version)
@@ -45,7 +46,7 @@
 ## Features
 
 - Cross-platform (Windows/macOS/Linux) real-time clipboard syncing, clipboard history management, and history syncing.
-- Supports desktop client built-in server, Docker-deployed server, or WebDAV-compatible cloud storage as server.
+- Supports desktop client built-in server, Docker-deployed server, or storage services compatible with WebDAV/S3 APIs.
 - Mobile clipboard syncing based on third-party tools.
 - Optimize image type clipboard:
   - Paste image to a textbox directly after copying a image file from file system, and vice versa.
@@ -156,6 +157,17 @@ Tested server：
 - [x] [AList](https://alist.nn.ci/)
 - [x] [InfiniCLOUD](https://infini-cloud.net/en/)
 - [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
+
+### S3 Server
+The desktop client supports AWS S3 via the official AWS SDK, and also supports OSS providers that expose an S3-compatible API.  
+When adding an account, choose `S3` and configure:
+
+- `Server Address`: Optional. Leave empty for AWS; set your endpoint for S3-compatible providers.
+- `Region`: Signing region, for example `us-east-1`.
+- `Bucket Name`: Bucket used to store `SyncClipboard.json` and `file/` objects.
+- `Object Prefix`: Optional. Recommended to isolate data with a dedicated prefix (for example `syncclipboard`).
+- `Force Path-Style Addressing`: Recommended for many S3-compatible providers.
+- `Access Key ID` / `Secret Access Key`: Access credentials.
 
 ## Client
 

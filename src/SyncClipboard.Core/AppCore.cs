@@ -26,6 +26,7 @@ using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.RemoteServer.LogInHelper;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
+using SyncClipboard.Core.RemoteServer.Adapter.S3Server;
 using SyncClipboard.Core.Clipboard;
 
 namespace SyncClipboard.Core
@@ -280,6 +281,7 @@ namespace SyncClipboard.Core
 
             services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
             services.AddServerAdapter<OfficialConfig, OfficialAdapter>();
+            services.AddServerAdapter<S3Config, S3Adapter>();
             services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
             services.AddSingleton<LocalClipboardSetter>();
             services.AddSingleton<ProfileActionBuilder>();

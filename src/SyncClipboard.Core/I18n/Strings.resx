@@ -899,4 +899,37 @@ This operation cannot be undone.</value>
   <data name="ServerTimeError" xml:space="preserve">
     <value>Server time differs significantly from local time. Please synchronize your system clock.</value>
   </data>
+  <data name="S3ServerAddressDescription" xml:space="preserve">
+    <value>Optional. Set to a custom endpoint such as "https://s3.us-east-1.amazonaws.com" or an S3-compatible OSS endpoint.</value>
+  </data>
+  <data name="S3Region" xml:space="preserve">
+    <value>Region</value>
+  </data>
+  <data name="S3RegionDescription" xml:space="preserve">
+    <value>AWS region name used for signing requests, such as "us-east-1".</value>
+  </data>
+  <data name="S3BucketName" xml:space="preserve">
+    <value>Bucket Name</value>
+  </data>
+  <data name="S3BucketNameDescription" xml:space="preserve">
+    <value>S3 bucket used to store SyncClipboard metadata and files.</value>
+  </data>
+  <data name="S3ObjectPrefix" xml:space="preserve">
+    <value>Object Prefix</value>
+  </data>
+  <data name="S3ObjectPrefixDescription" xml:space="preserve">
+    <value>Optional folder-like prefix inside the bucket, e.g. "syncclipboard".</value>
+  </data>
+  <data name="S3ForcePathStyle" xml:space="preserve">
+    <value>Force Path-Style Addressing</value>
+  </data>
+  <data name="S3ForcePathStyleDescription" xml:space="preserve">
+    <value>Enable for S3-compatible endpoints that do not support virtual-host style buckets.</value>
+  </data>
+  <data name="S3AccessKeyId" xml:space="preserve">
+    <value>Access Key ID</value>
+  </data>
+  <data name="S3SecretAccessKey" xml:space="preserve">
+    <value>Secret Access Key</value>
+  </data>
 </root>
