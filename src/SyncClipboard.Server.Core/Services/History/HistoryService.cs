@@ -60,6 +60,11 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return (false, HistoryRecordDto.FromEntity(existing));
         }
 
+        if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
+        {
+            return (null, null);
+        }
+
         // 部分字段更新
         if (dto.Starred.HasValue) existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
