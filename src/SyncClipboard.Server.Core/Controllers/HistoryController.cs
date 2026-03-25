@@ -155,7 +155,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         }
         catch (Exception ex) when (token.IsCancellationRequested == false)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, $"Internal server error: {ex.Message}\n{ex.StackTrace}");
         }
     }
 
