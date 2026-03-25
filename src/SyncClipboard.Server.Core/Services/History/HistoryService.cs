@@ -308,9 +308,20 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 newLastModified: incoming.LastModified);
             if (shouldUpdate)
             {
-                if (existing.IsDeleted && transferFileStream != null)
+                if (existing.IsDeleted)
                 {
-                    await SaveTransferDataAsync(existing, transferFileStream, token);
+                    if (transferFileStream is not null)
+                    {
+                        await SaveTransferDataAsync(existing, transferFileStream, token);
+                    }
+                    else
+                    {
+                        var existProfile = existing.ToProfile(_persistentDir);
+                        if (await existProfile.IsLocalDataValid(true, token) is false)
+                        {
+                            throw new ArgumentException("Needs tranfer data.");
+                        }
+                    }
                 }
 
                 UpdateEntityFields(incoming.ToEntity(userId), existing);
@@ -323,13 +334,20 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
 
         var entity = incoming.ToEntity(userId);
+        Profile? profile = null;
 
         if (transferFileStream != null)
         {
-            var profile = await SaveTransferDataAsync(entity, transferFileStream, token);
+            profile = await SaveTransferDataAsync(entity, transferFileStream, token);
             var newEntity = await profile.ToHistoryEntity(_persistentDir, userId, token);
             UpdateEntityFields(entity, newEntity);
             entity = newEntity;
+        }
+
+        profile ??= entity.ToProfile(_persistentDir);
+        if (await profile.IsLocalDataValid(true, token) is false)
+        {
+            throw new ArgumentException("Needs tranfer data.");
         }
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);
