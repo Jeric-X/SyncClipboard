@@ -373,6 +373,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         var profile = entity.ToProfile(_persistentDir);
         var filePath = await profile.NeedsTransferData(_persistentDir, token)
             ?? throw new InvalidOperationException("Profile does not support transfer data.");
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
         using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
             await transferFileStream.CopyToAsync(fs, token);
