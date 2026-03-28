@@ -301,29 +301,30 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (existing is not null)
         {
+            if (existing.IsDeleted)
+            {
+                if (transferFileStream is not null)
+                {
+                    await SaveTransferDataAsync(existing, transferFileStream, token);
+                }
+                else
+                {
+                    var existProfile = existing.ToProfile(_persistentDir);
+                    if (await existProfile.IsLocalDataValid(true, token) is false)
+                    {
+                        throw new ArgumentException("Needs tranfer data.");
+                    }
+                }
+            }
+
             var shouldUpdate = HistoryHelper.ShouldUpdate(
                 oldVersion: existing.Version,
                 newVersion: incoming.Version,
                 oldLastModified: new DateTimeOffset(existing.LastModified),
                 newLastModified: incoming.LastModified);
-            if (shouldUpdate)
+            if (shouldUpdate || existing.IsDeleted)
             {
-                if (existing.IsDeleted)
-                {
-                    if (transferFileStream is not null)
-                    {
-                        await SaveTransferDataAsync(existing, transferFileStream, token);
-                    }
-                    else
-                    {
-                        var existProfile = existing.ToProfile(_persistentDir);
-                        if (await existProfile.IsLocalDataValid(true, token) is false)
-                        {
-                            throw new ArgumentException("Needs tranfer data.");
-                        }
-                    }
-                }
-
+                incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
                 UpdateEntityFields(incoming.ToEntity(userId), existing);
                 await _dbContext.SaveChangesAsync(token);
                 await NotifyProfileChangeAsync(existing);
