@@ -8,6 +8,8 @@
 
 - [SyncClipboard](#syncclipboard)
   - [功能](#功能)
+  - [不兼容变更记录](#不兼容变更记录)
+    - [v3.1.1](#v311)
   - [服务器](#服务器)
     - [独立服务器](#独立服务器)
       - [服务器配置](#服务器配置)
@@ -39,7 +41,7 @@
       - [使用AutoJs6脚本](#使用autojs6脚本)
       - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
-      - [使用 Fcitx5-SyncClipboard](#使用fcitx5-syncclipboard)
+      - [使用Fcitx5-SyncClipboard](#使用fcitx5-syncclipboard)
     - [客户端配置说明](#客户端配置说明)
   - [API](#api)
     - [获取剪贴板](#获取剪贴板)
@@ -59,10 +61,14 @@
   - 从浏览器复制图片后，后台下载原图到本地，解决无法从浏览器直接复制动态图的问题
   - 从文件系统复制较新格式类型的图片文件时（webp/heic等），在剪贴板内储存gif或jpg格式，用于直接向支持图片的文本框粘贴图片
 
-
 > [!WARNING]  
 > 剪贴板历史记录功能处于早期阶段，请做好丢失全部信息的准备，重要信息不要仅依赖本工具保存
 >
+
+## 不兼容变更记录
+### [v3.1.1](https://github.com/Jeric-X/SyncClipboard/issues/286)
+v3.1.1及以上的客户端、服务器与之前的版本不兼容，同步网络中的客户端、服务器、第三方客户端需同步升级
+
 
 ## 服务器
 ### 独立服务器

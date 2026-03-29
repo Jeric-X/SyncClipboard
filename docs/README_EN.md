@@ -7,6 +7,8 @@
 
 - [SyncClipboard](#syncclipboard)
   - [Features](#features)
+  - [Breaking Changes](#breaking-changes)
+    - [v3.1.1](#v311)
   - [Server](#server)
     - [Standalone Server](#standalone-server)
       - [Server Configuration](#server-configuration)
@@ -57,6 +59,10 @@
 > [!WARNING]  
 > The clipboard history feature is in its early stages. Please be prepared for the possibility of losing all information. Do not rely solely on this tool to save important information.
 >
+
+## Breaking Changes
+### [v3.1.1](https://github.com/Jeric-X/SyncClipboard/issues/286)
+Clients and servers v3.1.1 and above are incompatible with previous versions. All clients, servers, and third-party clients in the sync network need to be upgraded together.
 
 ## Server
 ### Standalone Server
