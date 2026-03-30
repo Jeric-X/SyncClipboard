@@ -125,7 +125,10 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private static async Task HanleFiles(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
         IReadOnlyList<IStorageItem> list = await ClipboardData.GetStorageItemsAsync().AsTask().WaitAsync(ctk);
-        meta.Files = list.Select(storageItem => storageItem.Path).ToArray();
+        meta.Files = list
+            .Select(storageItem => storageItem.Path)
+            .Where(path => !string.IsNullOrEmpty(path) && (Directory.Exists(path) || File.Exists(path)))
+            .ToArray();
     }
 
     // https://learn.microsoft.com/en-us/windows/win32/shell/clipboard#cf_hdrop
@@ -138,7 +141,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         stream.CopyTo(ms);
         var bytes = ms.ToArray();
         var str = Encoding.Unicode.GetString(bytes);
-        var files = str.Split('\0').Where(file => Directory.Exists(file) || File.Exists(file)).ToArray();
+        var files = str.Split('\0').Where(file => !string.IsNullOrEmpty(file) && (Directory.Exists(file) || File.Exists(file))).ToArray();
 
         if (meta.Files?.Length > files.Length)
             return;
