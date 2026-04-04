@@ -269,15 +269,17 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public Task ChangeStarStatus(HistoryRecordVM record)
     {
-        record.Stared = !record.Stared;
-        return historyManager.UpdateHistoryProperty(record.ToHistoryRecord());
+        var entity = record.ToHistoryRecord();
+        entity.Stared = !record.Stared;
+        return historyManager.UpdateHistoryProperty(entity);
     }
 
     [RelayCommand]
     public Task ChangePinStatus(HistoryRecordVM record)
     {
-        record.Pinned = !record.Pinned;
-        return historyManager.UpdateHistoryProperty(record.ToHistoryRecord());
+        var entity = record.ToHistoryRecord();
+        entity.Pinned = !record.Pinned;
+        return historyManager.UpdateHistoryProperty(entity);
     }
 
     [RelayCommand]
