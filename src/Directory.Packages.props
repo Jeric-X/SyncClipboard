@@ -7,8 +7,8 @@
     <PackageVersion Include="AsyncImageLoader.Avalonia" Version="3.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
-    <PackageVersion Include="NativeNotification" Version="1.0.3" />
-    <PackageVersion Include="NativeNotification.Interface" Version="1.0.3" />
+    <PackageVersion Include="NativeNotification" Version="1.0.4" />
+    <PackageVersion Include="NativeNotification.Interface" Version="1.0.4" />
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.8" />
@@ -36,7 +36,6 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="11.2.8" />
     <PackageVersion Include="FluentAvaloniaUI" Version="2.3.0" />
     <PackageVersion Include="FluentAvalonia.BreadcrumbBar" Version="2.0.2" />
-    <PackageVersion Include="Tmds.DBus" Version="0.18.0" />
     <PackageVersion Include="SharpHook" Version="5.2.3" />
   </ItemGroup>
   <ItemGroup>

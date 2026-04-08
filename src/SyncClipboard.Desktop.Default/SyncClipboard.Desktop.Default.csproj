@@ -23,7 +23,6 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="Tmds.DBus" />
   </ItemGroup>
 
   <ItemGroup>
