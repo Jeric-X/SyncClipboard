@@ -70,7 +70,7 @@ public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) :
         TreeList = null;
         try
         {
-            var insecure = ConfigManager.GetConfig<SyncConfig>().TrustInsecureCertificate;
+            var insecure = ConfigManager.GetConfig<SyncConfig>().IgnoreCertificateErrors;
             using var httpClient = new HttpClientFactory { TrustInsecureCertificate = insecure }.CreateClient();
             var loginFlow = new NextcloudLogInFlow(UserInputUrl, httpClient);
             var userloginUrl = await loginFlow.GetUserLoginUrl(CancelSource.Token);

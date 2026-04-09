@@ -82,11 +82,6 @@
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SyncEnable, Mode=TwoWay}" />
             </ui:SettingsExpander.Footer>
             <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TrustInsecureCertificate}">
-                    <ui:SettingsExpanderItem.Footer>
-                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TrustInsecureCertificate, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding ShowQueryInterval}">
                     <ui:SettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"

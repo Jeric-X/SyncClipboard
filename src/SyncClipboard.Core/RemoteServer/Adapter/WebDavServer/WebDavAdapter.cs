@@ -52,7 +52,7 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         };
 
         var timeout = _syncConfig?.TimeOut != 0 ? _syncConfig?.TimeOut ?? 100u : 100u; // 默认100秒
-        var trustInsecureCertificate = _syncConfig?.TrustInsecureCertificate ?? false;
+        var trustInsecureCertificate = _syncConfig?.IgnoreCertificateErrors ?? false;
         var webDav = new WebDav(credential, _appConfig, trustInsecureCertificate, _logger) { Timeout = timeout };
 
         return webDav;
