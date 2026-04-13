@@ -35,9 +35,9 @@
     - [IOS](#ios)
       - [使用快捷指令](#使用快捷指令)
     - [Android](#android)
-      - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
       - [使用SyncClipboard Mobile](#使用syncclipboard-mobile)
       - [使用Sync Clipboard Flutter](#使用sync-clipboard-flutter)
+      - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
       - [使用AutoJs6脚本](#使用autojs6脚本)
       - [使用SmsForwarder](#使用smsforwarder)
       - [使用Tasker](#使用tasker)
@@ -255,6 +255,19 @@ paru -Sy syncclipboard-desktop
 - 自动上传短信验证码，参考这个帖子中的视频教程 https://github.com/Jeric-X/SyncClipboard/discussions/60
 
 ### Android
+#### 使用[SyncClipboard Mobile](https://github.com/Jeric-X/syncclipboard-mobile)
+
+- 从通知中心、桌面快捷方式、分享菜单中快捷手动触发
+- 一定程度的后台同步能力
+- 剪贴板历史记录及同步
+- 自动上传短信验证码
+
+#### 使用[Sync Clipboard Flutter](https://github.com/bling-yshs/sync-clipboard-flutter)
+
+这是一个使用 Flutter 构建的 Material 3 风格的、适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
+
+功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-flutter)
+
 #### 使用[HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
 导入这个[配置文件](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`， `url`不要以斜线分隔符`/`结尾。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
 
@@ -282,16 +295,6 @@ paru -Sy syncclipboard-desktop
   
 
 </details>
-
-#### 使用[SyncClipboard Mobile](https://github.com/Jeric-X/syncclipboard-mobile)
-
-使用React Native构建的移动客户端，支持从通知中心磁铁、桌面快捷方式、分享菜单中使用
-
-#### 使用[Sync Clipboard Flutter](https://github.com/bling-yshs/sync-clipboard-flutter)
-
-这是一个使用 Flutter 构建的 Material 3 风格的、适配了SyncClipboard API的安卓客户端应用，支持从控制中心快捷上传或下载。
-
-功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-flutter)
 
 #### 使用[AutoJs6脚本](https://github.com/imgs/SyncAutojs6)
 
