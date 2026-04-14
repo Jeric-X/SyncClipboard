@@ -3,7 +3,8 @@
 public interface ITrayIcon
 {
     void Create();
-    event Action MainWindowWakedUp;
+    event Action? LeftClicked;
+    event Action? DoubleClicked;
 
     void ShowUploadAnimation();
     void ShowDownloadAnimation();

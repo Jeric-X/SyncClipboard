@@ -1,12 +1,25 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Core.AbstractClasses;
 
 public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 {
-    public abstract event Action MainWindowWakedUp;
+    public event Action? LeftClicked;
+    public event Action? DoubleClicked;
+
+    private readonly MultiTimesEventSimulator _clickSimulator = new(TimeSpan.FromMilliseconds(200));
+
+    protected TrayIconBase()
+    {
+        _clickSimulator[1] = () => LeftClicked?.Invoke();
+        _clickSimulator[2] = () => DoubleClicked?.Invoke();
+    }
+
+    protected void OnRawLeftClicked() => _clickSimulator.TriggerOriginalEvent();
+
     public abstract void Create();
 
     private static IThreadDispatcher Dispatcher => AppCore.Current.Services.GetRequiredService<IThreadDispatcher>();

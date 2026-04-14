@@ -213,7 +213,10 @@ namespace SyncClipboard.Core
         private void InitTrayIcon()
         {
             var trayIcon = Services.GetRequiredService<ITrayIcon>();
-            trayIcon.MainWindowWakedUp += Services.GetRequiredService<IMainWindow>().Show;
+            var historyWindow = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
+            var mainWindow = Services.GetRequiredService<IMainWindow>();
+            trayIcon.LeftClicked += historyWindow.Focus;
+            trayIcon.DoubleClicked += mainWindow.Show;
             trayIcon.Create();
         }
 
