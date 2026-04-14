@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
@@ -43,11 +44,45 @@ public partial class HistoryRecordVM : ObservableObject
     public string Hash { get; set; }
     public long Size { get; set; }
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailText))]
     private DateTime timestamp;
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailText))]
     private DateTime lastAccessed;
     [ObservableProperty]
     private bool stared;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailText))]
+    private bool sortByLastAccessed;
+
+    public string DetailText
+    {
+        get
+        {
+            var time = SortByLastAccessed ? LastAccessed : Timestamp;
+            var localTime = time.Kind == DateTimeKind.Utc ? time.ToLocalTime() : time;
+            var timeStr = localTime.ToString("yyyy-MM-dd HH:mm:ss");
+            var sizeStr = Type == ProfileType.Text
+                ? $"{Size:N0} {Strings.Characters}"
+                : FormatFileSize(Size);
+            return $"{timeStr}   {sizeStr}";
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 0) return "0 B";
+        string[] units = ["B", "KB", "MB", "GB"];
+        double size = bytes;
+        int unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.Length - 1)
+        {
+            size /= 1024;
+            unitIndex++;
+        }
+        return unitIndex == 0 ? $"{size:N0} {units[unitIndex]}" : $"{size:N1} {units[unitIndex]}";
+    }
     [ObservableProperty]
     private bool pinned;
     [ObservableProperty]
@@ -337,7 +372,8 @@ public partial class HistoryRecordVM : ObservableObject
             IsUploadPending = this.IsUploadPending,
             HasError = this.HasError,
             ErrorMessage = this.ErrorMessage,
-            IsLocalFileReady = this.IsLocalFileReady
+            IsLocalFileReady = this.IsLocalFileReady,
+            SortByLastAccessed = this.SortByLastAccessed
         };
 
         return copy;

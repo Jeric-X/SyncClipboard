@@ -887,8 +887,14 @@ This operation cannot be undone.</value>
   <data name="CancelUpload" xml:space="preserve">
     <value>Cancel Upload</value>
   </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>Show Details</value>
+  </data>
   <data name="SortByLastAccessed" xml:space="preserve">
     <value>Sort by Last Accessed</value>
+  </data>
+  <data name="Characters" xml:space="preserve">
+    <value>chars</value>
   </data>
   <data name="UploadWarning" xml:space="preserve">
     <value>Upload Warning</value>

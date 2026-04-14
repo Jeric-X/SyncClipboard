@@ -582,4 +582,19 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         container.SetBinding(UIElement.VisibilityProperty, syncButtonsBinding);
     }
+
+    private void DetailTextBlockLoaded(object sender, RoutedEventArgs _)
+    {
+        if (sender is not TextBlock textBlock) return;
+
+        var visibilityBinding = new Binding
+        {
+            Source = _viewModel,
+            Path = new PropertyPath(nameof(HistoryViewModel.ShowDetail)),
+            Converter = boolToVisibilityConverter,
+            Mode = BindingMode.OneWay
+        };
+
+        textBlock.SetBinding(UIElement.VisibilityProperty, visibilityBinding);
+    }
 }

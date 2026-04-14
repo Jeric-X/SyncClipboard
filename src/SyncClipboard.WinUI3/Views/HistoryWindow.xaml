@@ -73,6 +73,7 @@
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowSyncStatus}" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
                             <!--<ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.OnlyShowLocal}" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />-->
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.SortByLastAccessed}" IsChecked="{x:Bind _viewModel.SortByLastAccessed, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowDetail}" IsChecked="{x:Bind _viewModel.ShowDetail, Mode=TwoWay}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -145,13 +146,19 @@
                             <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                 <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                             </Border>
-                            <ContentControl Grid.Column="1"
-                                            Padding="8,8,0,8"
-                                            HorizontalAlignment="Left"
-                                            VerticalAlignment="Center"
-                                            FontSize="12"
-                                            Content="{x:Bind}"
-                                            ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <ContentControl Padding="8,8,0,0"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Content="{x:Bind}"
+                                                ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
+                                <TextBlock Padding="8,2,0,6"
+                                           FontSize="10"
+                                           Opacity="0.5"
+                                           Text="{x:Bind DetailText, Mode=OneWay}"
+                                           Loaded="DetailTextBlockLoaded" />
+                            </StackPanel>
                             <StackPanel Grid.Column="2" Margin="5,0,0,0" Orientation="Horizontal">
                                 <Button Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasError), Mode=OneWay}">
                                     <Button.Flyout>

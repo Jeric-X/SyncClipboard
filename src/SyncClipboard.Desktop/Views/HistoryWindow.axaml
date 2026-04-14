@@ -110,6 +110,7 @@
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
                             <!--<ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />-->
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowDetail}" IsChecked="{Binding ShowDetail, Mode=TwoWay}" />
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -188,11 +189,17 @@
                                     VerticalAlignment="Top">
                                 <ui:FontIcon VerticalAlignment="Center" Glyph="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToFontIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             </Border>
-                            <ContentControl Grid.Column="1"
-                                            Padding="8,8,0,8"
-                                            VerticalAlignment="Center"
-                                            FontSize="12"
-                                            Content="{Binding .}" />
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <ContentControl Padding="8,8,0,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Content="{Binding .}" />
+                                <TextBlock Padding="8,2,0,6"
+                                           FontSize="10"
+                                           Opacity="0.5"
+                                           Text="{Binding DetailText}"
+                                           IsVisible="{Binding #_HistoryWindow.ViewModel.ShowDetail}" />
+                            </StackPanel>
                             <StackPanel Grid.Column="2"
                                         Margin="5,0,0,0"
                                         Orientation="Horizontal"

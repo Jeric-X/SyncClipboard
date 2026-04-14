@@ -885,8 +885,14 @@ Esc：关闭面板</value>
   <data name="CancelUpload" xml:space="preserve">
     <value>取消上传</value>
   </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>显示详细信息</value>
+  </data>
   <data name="SortByLastAccessed" xml:space="preserve">
     <value>按最后复制时间排序</value>
+  </data>
+  <data name="Characters" xml:space="preserve">
+    <value>字符</value>
   </data>
   <data name="UploadWarning" xml:space="preserve">
     <value>上传警告</value>

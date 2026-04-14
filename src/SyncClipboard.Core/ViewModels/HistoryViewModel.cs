@@ -260,6 +260,16 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public bool ShowDetail
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().ShowDetail;
+        set
+        {
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ShowDetail = value });
+            OnPropertyChanged(nameof(ShowDetail));
+        }
+    }
+
     [RelayCommand]
     public Task DeleteItem(HistoryRecordVM record)
     {
@@ -636,7 +646,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void RecordEntityUpdated(HistoryRecord record)
     {
-        var newRecordVM = new HistoryRecordVM(record);
+        var newRecordVM = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             InitVMTransferStatus(newRecordVM);
@@ -867,11 +877,12 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
+        var sortByLastAccessed = SortByLastAccessed;
         var vms = await Task.Run(() =>
         {
             return records.Select(x =>
             {
-                var vm = new HistoryRecordVM(x);
+                var vm = new HistoryRecordVM(x) { SortByLastAccessed = sortByLastAccessed };
                 InitVMTransferStatus(vm);
                 return vm;
             }).ToArray();
@@ -1094,7 +1105,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             var record = await HistoryManager.ToRemoteHistoryRecord(task.Profile, token);
 
-            vm = new HistoryRecordVM(record);
+            vm = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
             vm.UpdateFromTask(task);
             if (IsMatchUiFilter(vm))
             {
