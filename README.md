@@ -47,6 +47,7 @@
     - [获取剪贴板](#获取剪贴板)
     - [上传剪贴板](#上传剪贴板)
     - [SyncClipboard.json](#syncclipboardjson)
+    - [S3 同步协议规范](#s3-同步协议规范)
   - [项目依赖](#项目依赖)
 
 </details>
@@ -365,6 +366,10 @@ PUT /SyncClipboard.json
   - 当`hash`值存在时，接收方应验证`hash`信息与剪贴板内容的一致性，在不一致时执行错误处理流程
   - 当`hash`为空时，或处于无法计算`hash`的环境，可以使用`type`/`text`的组合简单判断剪贴板内容的相等性
 - `size`标识复制文件的总字节大小，或Text类型剪贴板完整字符串的长度，仅用于展示
+
+### S3 同步协议规范
+
+使用 S3 兼容对象存储作为同步后端时的协议与数据格式规范请参阅 [S3 Adapter Design](docs/S3-Adapter-Design.md)。
 
 ## 项目依赖
 [NativeNotification](https://github.com/Jeric-X/NativeNotification)  
