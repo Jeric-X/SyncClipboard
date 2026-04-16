@@ -936,4 +936,10 @@ Esc：关闭面板</value>
   <data name="S3SecretAccessKey" xml:space="preserve">
     <value>Secret Access Key</value>
   </data>
+  <data name="CustomName" xml:space="preserve">
+    <value>自定义名称</value>
+  </data>
+  <data name="CustomNameDescription" xml:space="preserve">
+    <value>可选。设置后将使用此名称代替自动生成的标识。</value>
+  </data>
 </root>

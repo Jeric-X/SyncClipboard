@@ -5,6 +5,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Core.RemoteServer.Adapter;
 using System.Collections.ObjectModel;
 using System.Reflection;
 
@@ -103,7 +104,7 @@ public partial class AccountConfigEditViewModel(
                 DisplayName = GetDisplayName(property, displayAttribute),
                 PropertyType = property.PropertyType,
                 InputType = GetPropertyInputType(property, displayAttribute),
-                Description = GetDescriptionText(displayAttribute)
+                Description = GetDescriptionText(displayAttribute),
             };
 
             if (sourceConfig != null)
@@ -122,6 +123,37 @@ public partial class AccountConfigEditViewModel(
             }
 
             Properties.Add(propertyInput);
+        }
+
+        // CustomName special handling: ensure it exists and set watermark to DisplayIdentify
+        var customNameProp = Properties.FirstOrDefault(p => p.PropertyName == nameof(IAdapterConfig.CustomName));
+        if (customNameProp != null && sourceConfig is IAdapterConfig)
+        {
+            customNameProp.DisplayName = TryGetLocalizedString(nameof(IAdapterConfig.CustomName)) ?? nameof(IAdapterConfig.CustomName);
+            customNameProp.Description = TryGetLocalizedString("CustomNameDescription");
+            UpdateCustomNameWatermark();
+
+            // Subscribe to all other properties' changes to update watermark in real-time
+            foreach (var prop in Properties)
+            {
+                if (prop.PropertyName != nameof(IAdapterConfig.CustomName))
+                {
+                    prop.PropertyChanged += (_, _) => UpdateCustomNameWatermark();
+                }
+            }
+        }
+    }
+
+    private void UpdateCustomNameWatermark()
+    {
+        var customNameProp = Properties.FirstOrDefault(p => p.PropertyName == nameof(IAdapterConfig.CustomName));
+        if (customNameProp == null)
+            return;
+
+        var configInstance = CreateConfigInstance();
+        if (configInstance is IAdapterConfig adapterConfig)
+        {
+            customNameProp.Watermark = adapterConfig.NameSuggestion;
         }
     }
 

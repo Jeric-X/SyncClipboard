@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Attributes;
 using SyncClipboard.Core.Utilities;
+using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.S3Server;
 
@@ -33,7 +34,10 @@ public record S3Config : IAdapterConfig<S3Config>
     [PropertyDisplay("DeleteServerTemporaryFileAutoly", Description = "DeletePreviousFilesDescription")]
     public bool DeletePreviousFilesOnPush { get; set; } = true;
 
-    public string DisplayIdentify
+    public string CustomName { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string NameSuggestion
     {
         get
         {

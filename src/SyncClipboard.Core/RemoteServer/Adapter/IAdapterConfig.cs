@@ -5,7 +5,8 @@ namespace SyncClipboard.Core.RemoteServer.Adapter;
 
 public interface IAdapterConfig
 {
-    string DisplayIdentify { get; }
+    string NameSuggestion { get; }
+    string CustomName { get; set; }
 }
 
 public interface IAdapterConfig<T> : IAdapterConfig

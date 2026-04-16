@@ -31,6 +31,9 @@ public partial class PropertyInputViewModel : ObservableObject
     [ObservableProperty]
     private string? description;
 
+    [ObservableProperty]
+    private string? watermark;
+
     public bool IsText => InputType == PropertyInputType.Text;
     public bool IsPassword => InputType == PropertyInputType.Password;
     public bool IsInteger => InputType == PropertyInputType.Integer;

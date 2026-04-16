@@ -73,7 +73,7 @@
                                     <TextBox MinWidth="300"
                                              HorizontalAlignment="Left"
                                              Text="{Binding Value, Mode=TwoWay}"
-                                             Watermark="{Binding DisplayName}"
+                                             Watermark="{Binding Watermark}"
                                              IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
                                              IsVisible="{Binding IsText}" />
 
@@ -81,7 +81,7 @@
                                     <TextBox MinWidth="300"
                                              HorizontalAlignment="Left"
                                              Text="{Binding Value, Mode=TwoWay}"
-                                             Watermark="{Binding DisplayName}"
+                                             Watermark="{Binding Watermark}"
                                              PasswordChar="●"
                                              IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
                                              IsVisible="{Binding IsPassword}" />
@@ -90,7 +90,7 @@
                                     <NumericUpDown MinWidth="300"
                                                    HorizontalAlignment="Left"
                                                    Value="{Binding NumericValue, Mode=TwoWay}"
-                                                   Watermark="{Binding DisplayName}"
+                                                   Watermark="{Binding Watermark}"
                                                    Increment="1"
                                                    ParsingNumberStyle="Integer"
                                                    IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
@@ -100,7 +100,7 @@
                                     <NumericUpDown MinWidth="300"
                                                    HorizontalAlignment="Left"
                                                    Value="{Binding NumericValue, Mode=TwoWay}"
-                                                   Watermark="{Binding DisplayName}"
+                                                   Watermark="{Binding Watermark}"
                                                    Increment="0.1"
                                                    ParsingNumberStyle="Float"
                                                    IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"

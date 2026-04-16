@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Attributes;
 using SyncClipboard.Core.Utilities;
+using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 
@@ -21,5 +22,8 @@ public record WebDavConfig : IAdapterConfig<WebDavConfig>
     [PropertyDisplay("DeleteServerTemporaryFileAutoly", Description = "DeletePreviousFilesDescription")]
     public bool DeletePreviousFilesOnPush { get; set; } = true;
 
-    public string DisplayIdentify => $"{UserName} - {StringHelper.GetHostFromUrl(RemoteURL)} - {ConfigTypeName}";
+    public string CustomName { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string NameSuggestion => $"{UserName} - {StringHelper.GetHostFromUrl(RemoteURL)} - {ConfigTypeName}";
 }

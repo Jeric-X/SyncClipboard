@@ -58,18 +58,18 @@
                                         <TextBox MinWidth="300"
                                                  HorizontalAlignment="Left"
                                                  Text="{x:Bind Value, Mode=TwoWay}"
-                                                 PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                 PlaceholderText="{x:Bind Watermark, Mode=OneWay}"
                                                  Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsText), Mode=OneWay}" />
 
                                         <!--  密码框  -->
                                         <PasswordBox MinWidth="300"
                                                      Password="{x:Bind Value, Mode=TwoWay}"
-                                                     PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                     PlaceholderText="{x:Bind Watermark, Mode=OneWay}"
                                                      Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsPassword), Mode=OneWay}" />
 
                                         <!--  整数输入框  -->
                                         <NumberBox MinWidth="300"
-                                                   PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                   PlaceholderText="{x:Bind Watermark, Mode=OneWay}"
                                                    SpinButtonPlacementMode="Compact"
                                                    SmallChange="1"
                                                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsInteger), Mode=OneWay}"
@@ -77,7 +77,7 @@
 
                                         <!--  小数输入框  -->
                                         <NumberBox MinWidth="300"
-                                                   PlaceholderText="{x:Bind DisplayName, Mode=OneWay}"
+                                                   PlaceholderText="{x:Bind Watermark, Mode=OneWay}"
                                                    SpinButtonPlacementMode="Compact"
                                                    SmallChange="0.1"
                                                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsDecimal), Mode=OneWay}"

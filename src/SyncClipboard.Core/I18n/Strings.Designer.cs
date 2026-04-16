@@ -502,6 +502,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Custom Name 的本地化字符串。
+        /// </summary>
+        public static string CustomName {
+            get {
+                return ResourceManager.GetString("CustomName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Optional. If set, this name will be displayed instead of the auto-generated identifier. 的本地化字符串。
+        /// </summary>
+        public static string CustomNameDescription {
+            get {
+                return ResourceManager.GetString("CustomNameDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Custom Proxy 的本地化字符串。
         /// </summary>
         public static string CustomProxy {

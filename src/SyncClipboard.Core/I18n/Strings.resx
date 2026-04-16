@@ -938,4 +938,10 @@ This operation cannot be undone.</value>
   <data name="S3SecretAccessKey" xml:space="preserve">
     <value>Secret Access Key</value>
   </data>
+  <data name="CustomName" xml:space="preserve">
+    <value>Custom Name</value>
+  </data>
+  <data name="CustomNameDescription" xml:space="preserve">
+    <value>Optional. If set, this name will be displayed instead of the auto-generated identifier.</value>
+  </data>
 </root>

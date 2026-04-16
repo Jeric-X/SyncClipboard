@@ -247,7 +247,10 @@ public class AccountManager
 
             if (config is IAdapterConfig adapterConfig)
             {
-                var identify = adapterConfig.DisplayIdentify;
+                if (!string.IsNullOrWhiteSpace(adapterConfig.CustomName))
+                    return adapterConfig.CustomName;
+
+                var identify = adapterConfig.NameSuggestion;
                 if (!string.IsNullOrWhiteSpace(identify))
                     return identify;
             }
