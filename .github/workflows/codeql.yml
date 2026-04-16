@@ -50,9 +50,10 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
+        build-mode: manual
         # If you wish to specify custom queries, you can do so here or in a config file.
         # By default, queries listed here will override any specified in a config file.
         # Prefix the list here with "+" to use these queries and those in the config file.
@@ -76,7 +77,7 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 9.0.x
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
@@ -92,6 +93,6 @@ jobs:
       working-directory: ./src
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:${{matrix.language}}"
