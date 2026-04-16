@@ -36,6 +36,8 @@
     - [Android](#android)
       - [Use HTTP Request Shortcuts](#use-http-request-shortcuts)
       - [Use Autox.js](#use-autoxjs)
+    - [HarmonyOS Next](#harmonyos-next)
+      - [Use ClipLink](#use-cliplink)
     - [Notes for Clients](#notes-for-clients)
   - [API](#api)
     - [Get Clipboard](#get-clipboard)
@@ -281,6 +283,11 @@ If satisfy any of the following conditions, upload is automatic.
   - https://github.com/GamerGirlandCo/xposed-clipboard-whitelist
   - https://modules.lsposed.org/module/io.github.tehcneko.clipboardwhitelist
   - https://github.com/QueallyTech/DisableLogRequest
+
+### HarmonyOS Next
+#### Use [ClipLink](https://github.com/xiebaiyuan/ClipLink)
+
+A HarmonyOS Next client. Download the `.hap` file from [Releases](https://github.com/xiebaiyuan/ClipLink/releases) and install via [auto-installer](https://github.com/likuai2010/auto-installer) or `hdc install` (sideloading required due to HarmonyOS restrictions).
 
 ### Notes for Clients
 
