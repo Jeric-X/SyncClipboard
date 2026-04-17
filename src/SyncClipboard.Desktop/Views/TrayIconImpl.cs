@@ -15,7 +15,7 @@ public abstract class TrayIconImpl : TrayIconBase<WindowIcon>
 
     protected override WindowIcon DefaultInactiveIcon => _DefaultInactiveIcon;
     protected override WindowIcon ErrorInactiveIcon => _ErrorInactiveIcon;
-    protected override int MaxToolTipLenth => 255;
+    protected override int MaxToolTipLenth => 1024;
 
     private readonly ServiceStatusViewModel _serviceStatusViewModel;
     protected override ServiceStatusViewModel? ServiceStatusViewModel => _serviceStatusViewModel;

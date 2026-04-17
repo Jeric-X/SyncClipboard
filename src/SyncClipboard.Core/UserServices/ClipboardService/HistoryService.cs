@@ -192,7 +192,7 @@ public class HistoryService : ClipboardHander
         while (!token.IsCancellationRequested)
         {
             await SaveServerTime(token).ConfigureAwait(false);
-            trayIcon.SetStatusString(SERVICE_NAME, $"Synchronized. Last sync time {_lastSyncTime?.LocalDateTime:g}", false);
+            trayIcon.SetStatusString(SERVICE_NAME, $"Synchronized. Last sync time {_lastSyncTime?.LocalDateTime.ToString("HH:mm")}", false);
             await Task.Delay(TimeSpan.FromMinutes(1), token).ConfigureAwait(false);
         }
     }

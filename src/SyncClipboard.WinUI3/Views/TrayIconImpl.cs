@@ -22,7 +22,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
     protected override BitmapImage DefaultInactiveIcon => defaultInactiveIcon;
     protected override BitmapImage ErrorIcon => errorIcon;
     protected override BitmapImage ErrorInactiveIcon => errorInactiveIcon;
-    protected override int MaxToolTipLenth => 255;
+    protected override int MaxToolTipLenth => 1024;
 
     public TrayIconImpl(TrayIcon trayIcon, ServiceStatusViewModel serviceStatusViewModel)
     {
