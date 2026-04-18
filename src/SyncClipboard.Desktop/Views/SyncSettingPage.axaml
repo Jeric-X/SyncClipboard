@@ -133,5 +133,27 @@
                                          Content="{x:Static i18n:Strings.ClipboardAcquisitionRules}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.LocalClipboardSource}" IsExpanded="True" IsVisible="{Binding IsLinux}">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="Avalonia">
+                    <ui:SettingsExpanderItem.Footer>
+                        <CheckBox IsChecked="{Binding AvaloniaEnabled, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="xclip">
+                    <ui:SettingsExpanderItem.Footer>
+                        <CheckBox IsChecked="{Binding XClipEnabled, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="wl-clipboard">
+                    <ui:SettingsExpanderItem.Footer>
+                        <CheckBox IsChecked="{Binding WlClipboardEnabled, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
     </StackPanel>
 </UserControl>
