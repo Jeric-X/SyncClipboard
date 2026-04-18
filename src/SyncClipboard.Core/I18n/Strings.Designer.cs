@@ -79,6 +79,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Acquire Image 的本地化字符串。
+        /// </summary>
+        public static string AcquireImage {
+            get {
+                return ResourceManager.GetString("AcquireImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Acquire Text 的本地化字符串。
+        /// </summary>
+        public static string AcquireText {
+            get {
+                return ResourceManager.GetString("AcquireText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Add Account 的本地化字符串。
         /// </summary>
         public static string AddAccount {
@@ -309,6 +327,15 @@ namespace SyncClipboard.Core.I18n {
         public static string ClientGeneral {
             get {
                 return ResourceManager.GetString("ClientGeneral", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Local Clipboard Acquisition Rules 的本地化字符串。
+        /// </summary>
+        public static string ClipboardAcquisitionRules {
+            get {
+                return ResourceManager.GetString("ClipboardAcquisitionRules", resourceCulture);
             }
         }
         
@@ -2255,6 +2282,15 @@ namespace SyncClipboard.Core.I18n {
         public static string TestConnectionError {
             get {
                 return ResourceManager.GetString("TestConnectionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 When text and image coexist 的本地化字符串。
+        /// </summary>
+        public static string TextImageCoexistRule {
+            get {
+                return ResourceManager.GetString("TextImageCoexistRule", resourceCulture);
             }
         }
         

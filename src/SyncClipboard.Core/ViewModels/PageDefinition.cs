@@ -21,6 +21,7 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
     public static readonly PageDefinition FileSyncFilterSetting = new("FileSyncFilterSetting", I18n.Strings.FileSyncFilter);
     public static readonly PageDefinition SyncContentControl = new("SyncContentControl", I18n.Strings.SyncContentControl);
     public static readonly PageDefinition Hotkey = new("Hotkey", I18n.Strings.Hotkeys, "\uE144");
+    public static readonly PageDefinition ClipboardAcquisitionRules = new("ClipboardAcquisitionRules", I18n.Strings.ClipboardAcquisitionRules);
 
     public override bool Equals(object? obj)
     {

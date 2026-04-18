@@ -944,4 +944,16 @@ This operation cannot be undone.</value>
   <data name="CustomNameDescription" xml:space="preserve">
     <value>Optional. If set, this name will be displayed instead of the auto-generated identifier.</value>
   </data>
+  <data name="ClipboardAcquisitionRules" xml:space="preserve">
+    <value>Local Clipboard Acquisition Rules</value>
+  </data>
+  <data name="TextImageCoexistRule" xml:space="preserve">
+    <value>When text and image coexist</value>
+  </data>
+  <data name="AcquireText" xml:space="preserve">
+    <value>Acquire Text</value>
+  </data>
+  <data name="AcquireImage" xml:space="preserve">
+    <value>Acquire Image</value>
+  </data>
 </root>

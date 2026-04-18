@@ -127,6 +127,10 @@
                                          IsClickEnabled="True"
                                          Command="{Binding OpenSyncContentControlPageCommand}"
                                          Content="{x:Static i18n:Strings.SyncContentControl}" />
+                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding OpenClipboardAcquisitionRulesPageCommand}"
+                                         Content="{x:Static i18n:Strings.ClipboardAcquisitionRules}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
     </StackPanel>

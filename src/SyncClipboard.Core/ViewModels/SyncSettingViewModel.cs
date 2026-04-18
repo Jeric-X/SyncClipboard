@@ -216,6 +216,12 @@ public partial class SyncSettingViewModel : ObservableObject
         _mainVM.NavigateToNextLevel(PageDefinition.SyncContentControl);
     }
 
+    [RelayCommand]
+    private void OpenClipboardAcquisitionRulesPage()
+    {
+        _mainVM.NavigateToNextLevel(PageDefinition.ClipboardAcquisitionRules);
+    }
+
     #endregion
 
     private readonly ConfigManager _configManager;

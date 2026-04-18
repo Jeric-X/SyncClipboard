@@ -2,6 +2,7 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.Image;
 
@@ -38,6 +39,16 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             {
                 return new GroupProfile(metaInfomation.Files, contentControl ? Config.GetConfig<FileFilterConfig>() : null);
             }
+        }
+
+        if (metaInfomation.Text != null && metaInfomation.Image != null)
+        {
+            var textImageRule = Config.GetConfig<ClipboardAcquisitionConfig>().TextImageRule;
+            if (textImageRule == TextImageRule.Image)
+            {
+                return await CreateImageProfileWithCache(metaInfomation.Image, ctk);
+            }
+            return new TextProfile(metaInfomation.Text);
         }
 
         if (metaInfomation.Text != null)

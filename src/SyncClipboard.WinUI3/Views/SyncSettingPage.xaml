@@ -103,6 +103,7 @@
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.IgnoreExcludeForSyncSuggestion, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.SyncContentControl}" IsClickEnabled="True" Command="{x:Bind _viewModel.OpenSyncContentControlPageCommand}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ClipboardAcquisitionRules}" IsClickEnabled="True" Command="{x:Bind _viewModel.OpenClipboardAcquisitionRulesPageCommand}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
     </StackPanel>

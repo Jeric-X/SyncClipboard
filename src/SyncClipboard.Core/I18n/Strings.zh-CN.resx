@@ -942,4 +942,16 @@ Esc：关闭面板</value>
   <data name="CustomNameDescription" xml:space="preserve">
     <value>可选。设置后将使用此名称代替自动生成的标识。</value>
   </data>
+  <data name="ClipboardAcquisitionRules" xml:space="preserve">
+    <value>本地剪贴板获取规则</value>
+  </data>
+  <data name="TextImageCoexistRule" xml:space="preserve">
+    <value>文字和图片同时存在时</value>
+  </data>
+  <data name="AcquireText" xml:space="preserve">
+    <value>获取文字</value>
+  </data>
+  <data name="AcquireImage" xml:space="preserve">
+    <value>获取图片</value>
+  </data>
 </root>

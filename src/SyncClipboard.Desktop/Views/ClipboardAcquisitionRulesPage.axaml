@@ -1,0 +1,37 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.ClipboardAcquisitionRulesPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:m="using:SyncClipboard.Core.Models"
+             x:DataType="vm:ClipboardAcquisitionRulesViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:ClipboardAcquisitionRulesViewModel />
+    </Design.DataContext>
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardAcquisitionRules}" IsExpanded="True">
+            <ui:SettingsExpander.IconSource>
+                <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:SettingsExpander.IconSource>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TextImageCoexistRule}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding TextImageRuleSelection, Mode=TwoWay}" ItemsSource="{x:Static vm:ClipboardAcquisitionRulesViewModel.TextImageRules}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=m:TextImageRule}">
+                                    <TextBlock Text="{Binding ShownString}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+    </StackPanel>
+</UserControl>
