@@ -331,15 +331,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Local Clipboard Source 的本地化字符串。
-        /// </summary>
-        public static string LocalClipboardSource {
-            get {
-                return ResourceManager.GetString("LocalClipboardSource", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Local Clipboard Acquisition Rules 的本地化字符串。
         /// </summary>
         public static string ClipboardAcquisitionRules {
@@ -1346,6 +1337,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Light {
             get {
                 return ResourceManager.GetString("Light", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Local Clipboard Source 的本地化字符串。
+        /// </summary>
+        public static string LocalClipboardSource {
+            get {
+                return ResourceManager.GetString("LocalClipboardSource", resourceCulture);
             }
         }
         
