@@ -286,7 +286,6 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
         // streaming trailer signatures used by newer AWS SDK defaults.
         request.UseChunkEncoding = false;
         request.DisablePayloadSigning = true;
-        request.DisableDefaultChecksumValidation = true;
     }
 
     private void ValidateConfig()
