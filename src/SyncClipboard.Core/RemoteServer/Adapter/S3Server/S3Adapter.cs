@@ -233,7 +233,28 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                 deleteRequest.AddKey(obj.Key);
             }
 
-            await _s3Client.DeleteObjectsAsync(deleteRequest, cancellationToken);
+            try
+            {
+                await _s3Client.DeleteObjectsAsync(deleteRequest, cancellationToken);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                if (ex.Message != "Missing required header for this request: Content-MD5")
+                {
+                    throw;
+                }
+
+                foreach (var obj in listResponse.S3Objects)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var deleteObj = new DeleteObjectRequest
+                    {
+                        BucketName = _s3Config.BucketName,
+                        Key = obj.Key
+                    };
+                    await _s3Client.DeleteObjectAsync(deleteObj, cancellationToken);
+                }
+            }
         } while (!string.IsNullOrEmpty(continuationToken));
     }
 
