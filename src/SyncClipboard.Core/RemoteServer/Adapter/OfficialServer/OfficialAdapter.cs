@@ -360,7 +360,7 @@ public sealed class OfficialAdapter(
             // 添加文件字段（如果提供）
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
             {
-                var stream = File.OpenRead(filePath);
+                var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 HttpContent fileContent = progress is null
                     ? new StreamContent(stream)
                     : new ProgressableStreamContent(stream, progress, cancellationToken);

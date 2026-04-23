@@ -231,7 +231,7 @@ public sealed class LocalFileCacheManager : IDisposable
 
     private static async Task<string> CalculateFileHashAsync(string filePath, CancellationToken token)
     {
-        using var stream = File.OpenRead(filePath);
+        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         var hashBytes = await SHA256.HashDataAsync(stream, token);
         return Convert.ToBase64String(hashBytes);
     }
