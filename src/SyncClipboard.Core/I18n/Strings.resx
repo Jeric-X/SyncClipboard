@@ -890,6 +890,9 @@ This operation cannot be undone.</value>
   <data name="ShowDetail" xml:space="preserve">
     <value>Show Details</value>
   </data>
+  <data name="FontScale" xml:space="preserve">
+    <value>Font Scale</value>
+  </data>
   <data name="SortByLastAccessed" xml:space="preserve">
     <value>Sort by Last Accessed</value>
   </data>

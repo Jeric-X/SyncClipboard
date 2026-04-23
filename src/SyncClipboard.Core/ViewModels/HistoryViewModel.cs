@@ -270,6 +270,21 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public int FontScalePercent
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FontScalePercent;
+        set
+        {
+            var clamped = Math.Clamp(value, 25, 400);
+            if (clamped == FontScalePercent) return;
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FontScalePercent = clamped });
+            OnPropertyChanged(nameof(FontScalePercent));
+            OnPropertyChanged(nameof(ListItemFontSize));
+        }
+    }
+
+    public double ListItemFontSize => FontScalePercent / 100.0 * 12.0;
+
     [RelayCommand]
     public Task DeleteItem(HistoryRecordVM record)
     {

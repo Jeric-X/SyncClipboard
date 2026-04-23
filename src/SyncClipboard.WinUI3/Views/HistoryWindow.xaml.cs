@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
@@ -101,6 +102,42 @@ public sealed partial class HistoryWindow : Window, IWindow
         InitializeScrollWatcher();
 
         this.SetTopmost(_viewModel.IsTopmost);
+
+        ApplyFontScale(_viewModel.FontScalePercent);
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HistoryViewModel.FontScalePercent))
+        {
+            DispatcherQueue.TryEnqueue(() => ApplyFontScale(_viewModel.FontScalePercent));
+        }
+    }
+
+    private void ApplyFontScale(int scalePercent)
+    {
+        ((FontScaleProxy)_HistoryWindowGrid.Resources[nameof(FontScaleProxy)]).SetScale(scalePercent / 100.0);
+    }
+
+    private void FontScaleMenuItem_Click(object _0, RoutedEventArgs _1)
+    {
+        ((Flyout)_HistoryWindowGrid.Resources["FontScaleFlyout"]).ShowAt(_MenuButton);
+    }
+
+    private void FontScaleFlyout_Opening(object sender, object _)
+    {
+        var panel = (StackPanel)((Flyout)sender).Content;
+        ((TextBlock)panel.Children[0]).Text = Strings.FontScale;
+        ((NumberBox)panel.Children[1]).Value = _viewModel.FontScalePercent;
+    }
+
+    private void FontScaleNumberBox_ValueChanged(NumberBox _, NumberBoxValueChangedEventArgs args)
+    {
+        if (!double.IsNaN(args.NewValue))
+        {
+            _viewModel.FontScalePercent = (int)Math.Clamp(args.NewValue, 25, 400);
+        }
     }
 
     private void HistoryWindow_SizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs args)

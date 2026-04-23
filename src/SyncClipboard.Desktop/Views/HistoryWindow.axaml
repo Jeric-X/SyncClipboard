@@ -27,6 +27,18 @@
     <Window.Resources>
         <ResourceDictionary>
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
+            <Flyout x:Key="FontScaleFlyout">
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="4">
+                    <TextBlock VerticalAlignment="Center" />
+                    <NumericUpDown Minimum="25"
+                                   Maximum="400"
+                                   Increment="5"
+                                   FormatString="0"
+                                   Width="130"
+                                   ValueChanged="FontScaleNumericUpDown_ValueChanged" />
+                    <TextBlock Text="%" VerticalAlignment="Center" />
+                </StackPanel>
+            </Flyout>
         </ResourceDictionary>
     </Window.Resources>
     <Window.KeyBindings>
@@ -101,7 +113,7 @@
                 <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.WindowTopmost}" Classes="FontIcon" IsChecked="{Binding IsTopmost, Mode=TwoWay}">
                     <ui:FontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ToggleButton>
-                <Button Width="24" Height="24" VerticalAlignment="Center">
+                <Button x:Name="_MenuButton" Width="24" Height="24" VerticalAlignment="Center">
                     <ui:FontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     <Button.Flyout>
                         <ui:FAMenuFlyout>
@@ -111,6 +123,8 @@
                             <!--<ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />-->
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowDetail}" IsChecked="{Binding ShowDetail, Mode=TwoWay}" />
+                            <ui:MenuFlyoutSeparator />
+                            <ui:MenuFlyoutItem Text="{x:Static i18n:Strings.FontScale}" Click="FontScaleMenuItem_Click" />
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -192,10 +206,10 @@
                             <StackPanel Grid.Column="1" Orientation="Vertical">
                                 <ContentControl Padding="8,8,0,0"
                                                 VerticalAlignment="Center"
-                                                FontSize="12"
+                                                FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
                                                 Content="{Binding .}" />
                                 <TextBlock Padding="8,2,0,6"
-                                           FontSize="10"
+                                           FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
                                            Opacity="0.5"
                                            Text="{Binding DetailText}"
                                            IsVisible="{Binding #_HistoryWindow.ViewModel.ShowDetail}" />

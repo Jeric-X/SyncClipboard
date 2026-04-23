@@ -7,6 +7,7 @@ using Avalonia.Platform;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -246,6 +247,26 @@ public partial class HistoryWindow : Window, IWindow
 
         e.Handled = true;
         _ = _viewModel.CopyToClipboard(record, true, CancellationToken.None);
+    }
+
+    private void FontScaleMenuItem_Click(object? sender, RoutedEventArgs e)
+    {
+        this.TryGetResource("FontScaleFlyout", null, out var resource);
+        if (resource is Flyout flyout)
+        {
+            if (flyout.Content is StackPanel panel)
+            {
+                ((TextBlock)panel.Children[0]).Text = Strings.FontScale;
+                ((NumericUpDown)panel.Children[1]).Value = _viewModel.FontScalePercent;
+            }
+            flyout.ShowAt(_MenuButton);
+        }
+    }
+
+    private void FontScaleNumericUpDown_ValueChanged(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (e.NewValue.HasValue)
+            _viewModel.FontScalePercent = (int)Math.Clamp((double)e.NewValue.Value, 25, 400);
     }
 
     private void CopyButtonClicked(object? sender, RoutedEventArgs e)
