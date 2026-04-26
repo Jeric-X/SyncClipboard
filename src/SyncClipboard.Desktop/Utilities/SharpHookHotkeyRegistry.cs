@@ -18,8 +18,9 @@ namespace SyncClipboard.Desktop.Utilities;
 internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 {
     private readonly IGlobalHook _globalHook;
-    private readonly HashSet<KeyCode> _pressingKeys = [];
+    private readonly Dictionary<KeyCode, DateTime> _pressingKeys = [];
     private readonly Dictionary<Hotkey, Action> _registedHotkeys = [];
+    private static readonly TimeSpan KeyPressTimeout = TimeSpan.FromSeconds(30);
 
     private readonly AutoResetEvent _globalHookRunEvent = new(false);
 
@@ -49,13 +50,31 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
         _pressingKeys.Remove(e.Data.KeyCode);
     }
 
+    private void CleanupExpiredKeys()
+    {
+        var now = DateTime.UtcNow;
+        var expiredKeys = _pressingKeys
+            .Where(kvp => now - kvp.Value > KeyPressTimeout)
+            .Select(kvp => kvp.Key)
+            .ToList();
+        foreach (var key in expiredKeys)
+        {
+            _pressingKeys.Remove(key);
+        }
+    }
+
     private void KeyPressed(object? sender, KeyboardHookEventArgs e)
     {
-        if (SupressHotkey || _pressingKeys.Contains(e.Data.KeyCode))
+        if (SupressHotkey)
         {
             return;
         }
-        _pressingKeys.Add(e.Data.KeyCode);
+        CleanupExpiredKeys();
+        if (_pressingKeys.ContainsKey(e.Data.KeyCode))
+        {
+            return;
+        }
+        _pressingKeys[e.Data.KeyCode] = DateTime.UtcNow;
 
         if (_registedHotkeys.TryGetValue(CreateHotkey(), out var action))
         {
@@ -66,7 +85,7 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
 
     private Hotkey CreateHotkey()
     {
-        var keys = _pressingKeys
+        var keys = _pressingKeys.Keys
             .Where(key => KeyCodeMap.Map.ContainsKey(key))
             .Select(key => KeyCodeMap.Map[key]);
         return new Hotkey(keys);
