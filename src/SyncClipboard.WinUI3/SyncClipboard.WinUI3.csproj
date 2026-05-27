@@ -25,6 +25,7 @@
     <!--<PublishAot>false</PublishAot>
     <IsAotCompatible>false</IsAotCompatible>-->
     <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
+    <CETCompat>false</CETCompat>
   </PropertyGroup>
 
   <Target Name="DeleteServerAppsettings" AfterTargets="Build">
