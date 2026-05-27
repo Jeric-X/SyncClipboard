@@ -10,12 +10,90 @@ public sealed class LocalFileCacheManager : IDisposable
     private readonly LocalFileCacheDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private const int SchemaVersion = 1;
+    private const string SchemaVersionTableName = "__SchemaVersion";
 
     public LocalFileCacheManager(ILogger logger)
     {
         _logger = logger;
+        EnsureCompatibleDatabase();
         _dbContext = new LocalFileCacheDbContext();
         _dbContext.Database.EnsureCreated();
+        WriteSchemaVersion();
+    }
+
+    private void EnsureCompatibleDatabase()
+    {
+        var dbPath = LocalFileCacheDbContext.DbPath;
+        if (!File.Exists(dbPath))
+            return;
+
+        bool needRecreate = false;
+        do
+        {
+            try
+            {
+                using var checkContext = new LocalFileCacheDbContext();
+                using var connection = checkContext.Database.GetDbConnection();
+                connection.Open();
+
+                using var command = connection.CreateCommand();
+                command.CommandText = $"SELECT name FROM sqlite_master WHERE type='table' AND name='{SchemaVersionTableName}'";
+                var tableExists = command.ExecuteScalar() != null;
+
+                if (!tableExists)
+                {
+                    _logger.Write($"LocalFileCache database missing schema version table. Recreating database.");
+                    needRecreate = true;
+                    break;
+                }
+
+                command.CommandText = $"SELECT Version FROM {SchemaVersionTableName} LIMIT 1";
+                var storedVersion = Convert.ToInt32(command.ExecuteScalar());
+
+                if (storedVersion != SchemaVersion)
+                {
+                    _logger.Write($"LocalFileCache database schema version mismatch (expected {SchemaVersion}, found {storedVersion}). Recreating database.");
+                    needRecreate = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Write($"Failed to check LocalFileCache database schema: {ex.Message}. Recreating database.");
+                needRecreate = true;
+            }
+        } while (false);
+
+        if (needRecreate)
+        {
+            LocalFileCacheDbContext.ClearConnectionPool();
+            try { File.Delete(dbPath); }
+            catch (Exception ex)
+            {
+                _logger.Write($"Failed to delete database file: {ex.Message}");
+                throw;
+            }
+        }
+    }
+
+    private void WriteSchemaVersion()
+    {
+        try
+        {
+            var connection = _dbContext.Database.GetDbConnection();
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = $"CREATE TABLE IF NOT EXISTS {SchemaVersionTableName} (Version INTEGER NOT NULL)";
+            command.ExecuteNonQuery();
+            command.CommandText = $"DELETE FROM {SchemaVersionTableName}";
+            command.ExecuteNonQuery();
+            command.CommandText = $"INSERT INTO {SchemaVersionTableName} (Version) VALUES ({SchemaVersion})";
+            command.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"Failed to write schema version: {ex.Message}");
+        }
     }
 
     public async Task<string?> GetCachedFilePathAsync(string cacheType, string id, CancellationToken token)

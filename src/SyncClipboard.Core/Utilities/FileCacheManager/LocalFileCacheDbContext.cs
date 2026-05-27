@@ -5,26 +5,26 @@ namespace SyncClipboard.Core.Utilities.FileCacheManager;
 
 public class LocalFileCacheDbContext : DbContext
 {
-    private readonly string _dbPath;
-
-    public LocalFileCacheDbContext()
-    {
-        _dbPath = Path.Combine(Env.AppDataFileFolder, "LocalFileCache.db");
-    }
+    public static string DbPath { get; } = Path.Combine(Env.AppDataFileFolder, "LocalFileCache.db");
 
     public DbSet<LocalFileCacheEntry> CacheEntries { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseSqlite($"Data Source={_dbPath}");
+        optionsBuilder.UseSqlite($"Data Source={DbPath}");
+    }
+
+    public static void ClearConnectionPool()
+    {
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={DbPath}");
+        Microsoft.Data.Sqlite.SqliteConnection.ClearPool(connection);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<LocalFileCacheEntry>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.CacheType);
+            entity.HasKey(e => new { e.Id, e.CacheType });
             entity.HasIndex(e => e.LastAccessTime);
             entity.HasIndex(e => e.CachedFileHash);
             entity.HasIndex(e => new { e.CacheType, e.CachedFileHash });
