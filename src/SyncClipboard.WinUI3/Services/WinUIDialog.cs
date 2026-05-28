@@ -48,4 +48,27 @@ public class WinUIDialog : IMainWindowDialog
 
         await dialog.ShowAsync();
     }
+
+    public async Task<bool?> ShowThreeButtonConfirmationAsync(string title, string message, string primaryText, string secondaryText, string closeText)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            PrimaryButtonText = primaryText,
+            SecondaryButtonText = secondaryText,
+            CloseButtonText = closeText,
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = _xamlRoot ?? App.Current.MainWindow.Content.XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+
+        return result switch
+        {
+            ContentDialogResult.Primary => true,
+            ContentDialogResult.Secondary => false,
+            _ => null
+        };
+    }
 }

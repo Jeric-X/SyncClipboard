@@ -259,6 +259,28 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Do you want to create a &quot;SyncClipboard&quot; subfolder in the selected directory?
+        ///
+        ///Click &quot;Yes&quot; to use: {0}
+        ///Click &quot;No&quot; to use: {1}
+        ///Click &quot;Cancel&quot; to abort the operation. 的本地化字符串。
+        /// </summary>
+        public static string ChangeAppDataFolderConfirmMessage {
+            get {
+                return ResourceManager.GetString("ChangeAppDataFolderConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Create Subfolder? 的本地化字符串。
+        /// </summary>
+        public static string ChangeAppDataFolderConfirmTitle {
+            get {
+                return ResourceManager.GetString("ChangeAppDataFolderConfirmTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Change 的本地化字符串。
         /// </summary>
         public static string ChangeFolder {
@@ -1539,6 +1561,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 No 的本地化字符串。
+        /// </summary>
+        public static string NoWithoutSubfolder {
+            get {
+                return ResourceManager.GetString("NoWithoutSubfolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Off 的本地化字符串。
         /// </summary>
         public static string Off {
@@ -2642,6 +2673,15 @@ namespace SyncClipboard.Core.I18n {
         public static string WindowTopmost {
             get {
                 return ResourceManager.GetString("WindowTopmost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Yes 的本地化字符串。
+        /// </summary>
+        public static string YesWithSubfolder {
+            get {
+                return ResourceManager.GetString("YesWithSubfolder", resourceCulture);
             }
         }
     }

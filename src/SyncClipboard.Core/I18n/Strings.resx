@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -985,5 +985,17 @@ This operation cannot be undone.</value>
   </data>
   <data name="AcquireImage" xml:space="preserve">
     <value>Acquire Image</value>
+  </data>
+  <data name="ChangeAppDataFolderConfirmTitle" xml:space="preserve">
+    <value>Create Subfolder?</value>
+  </data>
+  <data name="ChangeAppDataFolderConfirmMessage" xml:space="preserve">
+    <value>Do you want to create a "SyncClipboard" subfolder in the selected directory?&#10;&#10;Click "Yes" to use: {0}&#10;Click "No" to use: {1}&#10;Click "Cancel" to abort the operation.</value>
+  </data>
+  <data name="YesWithSubfolder" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="NoWithoutSubfolder" xml:space="preserve">
+    <value>No</value>
   </data>
 </root>

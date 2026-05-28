@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -983,5 +983,17 @@ Esc：关闭面板</value>
   </data>
   <data name="AcquireImage" xml:space="preserve">
     <value>获取图片</value>
+  </data>
+  <data name="ChangeAppDataFolderConfirmTitle" xml:space="preserve">
+    <value>是否创建子文件夹？</value>
+  </data>
+  <data name="ChangeAppDataFolderConfirmMessage" xml:space="preserve">
+    <value>是否在选中的目录下创建 SyncClipboard 子文件夹？&#10;&#10;点击"是"将使用：{0}&#10;点击"否"将使用：{1}&#10;点击"取消"将放弃此次操作。</value>
+  </data>
+  <data name="YesWithSubfolder" xml:space="preserve">
+    <value>是</value>
+  </data>
+  <data name="NoWithoutSubfolder" xml:space="preserve">
+    <value>否</value>
   </data>
 </root>

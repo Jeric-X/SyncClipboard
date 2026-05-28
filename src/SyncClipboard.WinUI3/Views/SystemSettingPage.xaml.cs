@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
 using System;
 using Windows.Storage.Pickers;

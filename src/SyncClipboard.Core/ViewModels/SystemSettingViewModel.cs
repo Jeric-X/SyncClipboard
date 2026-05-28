@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
@@ -8,6 +8,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Diagnostics;
+using System.IO;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -156,10 +157,13 @@ public partial class SystemSettingViewModel : ObservableObject
 
     /// <summary>
     /// Called by code-behind after a folder is picked by the user.
-    /// Handles copying, error/success dialogs, and restart prompt via IMainWindowDialog.
+    /// Shows confirmation dialog, handles copying, error/success dialogs, and restart prompt.
     /// </summary>
-    public async Task ChangeAppDataFolderAsync(string targetFolder)
+    public async Task ChangeAppDataFolderAsync(string selectedFolder)
     {
+        var targetFolder = await ConfirmAndResolveTargetFolderAsync(selectedFolder);
+        if (targetFolder is null) return;
+
         if (Env.IsSamePath(targetFolder, Env.AppDataDirectory))
             return;
 
@@ -184,6 +188,27 @@ public partial class SystemSettingViewModel : ObservableObject
 
         await dialog.ShowMessageAsync(Strings.AppDataFolder, Strings.AppDataFolderCopySuccess);
         RestartApp();
+    }
+
+    /// <summary>
+    /// Shows a confirmation dialog for creating a subfolder.
+    /// Returns the target folder path, or null if cancelled.
+    /// </summary>
+    private async Task<string?> ConfirmAndResolveTargetFolderAsync(string selectedFolder)
+    {
+        var dialog = _services.GetRequiredService<IMainWindowDialog>();
+        var withSubfolder = Path.Combine(selectedFolder, Env.SoftName);
+        var message = string.Format(Strings.ChangeAppDataFolderConfirmMessage, withSubfolder, selectedFolder);
+        var result = await dialog.ShowThreeButtonConfirmationAsync(
+            Strings.ChangeAppDataFolderConfirmTitle,
+            message,
+            Strings.YesWithSubfolder,
+            Strings.NoWithoutSubfolder,
+            Strings.Cancel);
+
+        if (result is null) return null;
+
+        return result == true ? withSubfolder : selectedFolder;
     }
 
     /// <summary>
