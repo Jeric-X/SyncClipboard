@@ -33,12 +33,14 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          if ($env:GITHUB_REF -match 'refs/tags/(.*)') {
+          $ref = "${{ github.ref }}"
+          if ($ref -match 'refs/tags/(.*)') {
             $version = $matches[1]
           } else {
             $version = "1.0.0"
           }
           echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Detected version: $version"
         shell: powershell
 
       - name: Set update info for portable
