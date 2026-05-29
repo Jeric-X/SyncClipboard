@@ -36,6 +36,10 @@ jobs:
           $ref = "${{ github.ref }}"
           if ($ref -match 'refs/tags/(.*)') {
             $version = $matches[1]
+            # Remove 'v' prefix if present (v3.1.2 -> 3.1.2)
+            if ($version -match '^v(.*)') {
+              $version = $matches[1]
+            }
           } else {
             $version = "1.0.0"
           }

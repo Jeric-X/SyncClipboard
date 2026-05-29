@@ -465,3 +465,4 @@ build/featuretemp.txt
 build/linux/build_bin/
 TODO.md
 docs/image/todo/FluentAvaloniaContentDialog.png
+build/temp/
