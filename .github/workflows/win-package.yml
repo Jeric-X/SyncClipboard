@@ -1,0 +1,83 @@
+name: win-package
+
+on:
+  workflow_call
+
+jobs:
+  build:
+    uses: ./.github/workflows/win-build.yml
+
+  package-windows:
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+        package-type: [portable, installer]
+        include:
+          - package-type: portable
+            package-ext: .zip
+          - package-type: installer
+            package-ext: .exe
+
+    runs-on: windows-2025
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: win_${{ matrix.cpu }}
+          path: WinUI3/
+
+      - name: Get version from tag
+        id: version
+        run: |
+          if ($env:GITHUB_REF -match 'refs/tags/(.*)') {
+            $version = $matches[1]
+          } else {
+            $version = "1.0.0"
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+        shell: powershell
+
+      - name: Set update info for portable
+        if: matrix.package-type == 'portable'
+        run: |
+          chmod +x ./build/SetUpdateSource.sh
+          ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n SyncClipboard_win_${{ matrix.cpu }}_portable.zip
+        shell: bash
+
+      - name: Package portable
+        if: matrix.package-type == 'portable'
+        run: |
+          7z a SyncClipboard_win_${{ matrix.cpu }}_portable.zip ./WinUI3/*
+
+      - name: Set update info for installer
+        if: matrix.package-type == 'installer'
+        run: |
+          chmod +x ./build/SetUpdateSource.sh
+          ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n SyncClipboard_win_${{ matrix.cpu }}_installer.exe
+        shell: bash
+
+      - name: Package installer
+        if: matrix.package-type == 'installer'
+        run: |
+          $ISCCPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          $SourceFolder = (Resolve-Path ".\WinUI3").Path
+          $OutputFolder = (Resolve-Path ".").Path
+          $Version = "${{ steps.version.outputs.version }}"
+          
+          & $ISCCPath ".\build\windows\setup.iss" `
+            /DSourceFolder="$SourceFolder" `
+            /DAppVersion="$Version" `
+            /DOutputDir="$OutputFolder"
+          
+          Move-Item "SyncClipboard-$Version-installer.exe" "SyncClipboard_win_${{ matrix.cpu }}_installer.exe"
+        shell: powershell
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: SyncClipboard_win_${{ matrix.cpu }}_${{ matrix.package-type }}${{ matrix.package-ext }}
+          path: SyncClipboard_win_${{ matrix.cpu }}_${{ matrix.package-type }}${{ matrix.package-ext }}

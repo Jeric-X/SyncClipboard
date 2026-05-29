@@ -4,53 +4,42 @@ permissions:
   contents: write
 
 on:
-  workflow_call:
+  workflow_call
 
 jobs:
-  win-build:
-    uses: ./.github/workflows/win-build.yml
+  package:
+    uses: ./.github/workflows/win-package.yml
 
-  win-release:
+  release-windows:
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
     strategy:
       matrix:
         cpu: [x64, arm64]
-        dotnet_runtime: ['true']
-        win_app_sdk: ['true']
+        package-type: [portable, installer]
         include:
-          - dotnet_runtime: 'true'
-            dotnet_runtime_filename: ''
-          # - dotnet_runtime: 'false'
-          #   dotnet_runtime_filename: '_no-dotnet-runtime'
-          - win_app_sdk: 'true'
-            win_app_sdk_filename: ''
-          # - win_app_sdk: 'false'
-          #   win_app_sdk_filename: '_no-win-app-sdk'
+          - package-type: portable
+            package-ext: .zip
+          - package-type: installer
+            package-ext: .exe
 
-    if: ${{ startsWith(github.ref, 'refs/tags/') }}
-    needs: win-build
     runs-on: ubuntu-latest
+    needs: package
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Download last-job-built artifact SyncClipboard.WinUI3
+      - name: Download last-job-built change log
         uses: actions/download-artifact@v8
         with:
-          name: win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}
-          path: WinUI3/
+          name: feature
 
-      - name: set update info
-        run: |
-          chmod +x ./build/SetUpdateSource.sh
-          ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n SyncClipboard_win_${{ matrix.cpu }}_portable${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip
-
-      - name: Zip SyncClipboard.WinUI3
-        run: 7z a SyncClipboard_win_${{ matrix.cpu }}_portable${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip ./WinUI3/*
+      - name: Download package SyncClipboard_win_${{ matrix.cpu }}_${{ matrix.package-type }}
+        uses: actions/download-artifact@v8
+        with:
+          name: SyncClipboard_win_${{ matrix.cpu }}_${{ matrix.package-type }}${{ matrix.package-ext }}
 
       - name: Release
         uses: ncipollo/release-action@v1
         with:
-          draft: true
           allowUpdates: true
+          draft: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-          artifacts: SyncClipboard_win_${{ matrix.cpu }}_portable${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}.zip
+          artifacts: SyncClipboard_win_${{ matrix.cpu }}_${{ matrix.package-type }}${{ matrix.package-ext }}
+          bodyFile: feature.txt
