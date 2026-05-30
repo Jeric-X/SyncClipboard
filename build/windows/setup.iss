@@ -237,7 +237,7 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
-  if (PageID = wpSelectDir) and GOverwriteInstall then
+  if (PageID = wpSelectDir) and GOverwriteInstall and (GExistingInstallPath <> '') then
     Result := True;
 end;
 
