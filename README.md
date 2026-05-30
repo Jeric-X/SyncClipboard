@@ -20,7 +20,8 @@
     - [S3服务器](#s3服务器)
   - [客户端](#客户端)
     - [Windows](#windows)
-      - [免安装板](#免安装板)
+      - [安装板](#安装板)
+      - [便携版](#便携版)
       - [故障排除](#故障排除)
     - [macOS](#macos)
       - [手动安装](#手动安装)
@@ -195,7 +196,11 @@ sudo systemctl enable --now syncclipboard.service
 </details>
 
 ### Windows
-#### 免安装板
+#### 安装板
+
+在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的exe安装包，双击运行安装程序后即可使用
+
+#### 便携版
 
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的zip文件，解压后运行`SyncClipboard.exe`
 

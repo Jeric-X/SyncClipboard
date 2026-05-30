@@ -19,6 +19,7 @@
     - [S3 Server](#s3-server)
   - [Client](#client)
     - [Windows](#windows)
+      - [Installer](#installer)
       - [Portable Version](#portable-version)
       - [Troubleshooting](#troubleshooting)
     - [macOS](#macos)
@@ -189,6 +190,10 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 </details>
 
 ### Windows
+#### Installer
+
+Download the exe installer starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click to run the installer and it will be ready to use.
+
 #### Portable Version
 
 Download the zip file starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Extract it and run `SyncClipboard.exe`.
