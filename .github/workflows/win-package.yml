@@ -30,18 +30,17 @@ jobs:
           name: win_${{ matrix.cpu }}
           path: WinUI3/
 
-      - name: Get version from tag
+      - name: Download feature file
+        uses: actions/download-artifact@v8
+        with:
+          name: feature
+
+      - name: Get version from feature file
         id: version
         run: |
-          $ref = "${{ github.ref }}"
-          if ($ref -match 'refs/tags/(.*)') {
+          $version = (Get-Content feature.txt -First 1).Trim()
+          if ($version -match '^v(.*)') {
             $version = $matches[1]
-            # Remove 'v' prefix if present (v3.1.2 -> 3.1.2)
-            if ($version -match '^v(.*)') {
-              $version = $matches[1]
-            }
-          } else {
-            $version = "1.0.0"
           }
           echo "version=$version" >> $env:GITHUB_OUTPUT
           echo "Detected version: $version"
@@ -69,16 +68,11 @@ jobs:
       - name: Package installer
         if: matrix.package-type == 'installer'
         run: |
-          $ISCCPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          $SourceFolder = (Resolve-Path ".\WinUI3").Path
-          $OutputFolder = (Resolve-Path ".").Path
           $Version = "${{ steps.version.outputs.version }}"
-          
-          & $ISCCPath ".\build\windows\setup.iss" `
-            /DSourceFolder="$SourceFolder" `
-            /DAppVersion="$Version" `
-            /DOutputDir="$OutputFolder"
-          
+          & powershell -File ".\build\windows\CreateInstaller.ps1" `
+            -SourceFolder ".\WinUI3" `
+            -Version $Version `
+            -OutputFolder "."
           Move-Item "SyncClipboard-$Version-installer.exe" "SyncClipboard_win_${{ matrix.cpu }}_installer.exe"
         shell: powershell
 

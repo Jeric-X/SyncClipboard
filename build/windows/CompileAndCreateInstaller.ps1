@@ -255,7 +255,7 @@ Write-Host "步骤 3/3: 创建安装包..." -ForegroundColor Yellow
 Write-Host ""
 
 if ([string]::IsNullOrEmpty($OutputDir)) {
-    $OutputDir = Join-Path $rootDir "output"
+    $OutputDir = Join-Path $rootDir "build\output"
 }
 
 if (-not (Test-Path $OutputDir)) {

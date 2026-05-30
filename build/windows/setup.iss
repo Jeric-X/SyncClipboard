@@ -30,6 +30,7 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+SetupIconFile=..\..\src\SyncClipboard.WinUI3\Assets\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 DisableProgramGroupPage=no
 DisableWelcomePage=no
@@ -49,23 +50,25 @@ chinesesimplified.AppRunning=检测到 %1 正在运行。
 chinesesimplified.NeedClose=安装前需要关闭应用程序。是否自动关闭？
 chinesesimplified.UninstallNeedClose=卸载前需要关闭应用程序。是否自动关闭？
 chinesesimplified.ManualClose=请手动关闭 %1 后重试。
-chinesesimplified.OldVersionFound=检测到已安装的版本，是否先卸载？
 chinesesimplified.KillFailed=无法自动关闭 %1。请手动关闭应用程序后重试。
-chinesesimplified.ExistingInstall=检测到已安装的版本：%1%n安装路径：%2%n%n请选择操作：
-chinesesimplified.UninstallFirst=卸载旧版本后安装
-chinesesimplified.OverwriteInstall=覆盖安装（保留设置）
-chinesesimplified.CancelInstall=取消安装
+chinesesimplified.CreateDesktopIcon=创建桌面快捷方式(&D)
+chinesesimplified.AdditionalIcons=附加图标:
+chinesesimplified.LaunchProgram=运行 %1
+chinesesimplified.UninstallProgram=卸载 %1
+chinesesimplified.AlreadyInstalled=检测到 {#AppName} 已安装。%n%n已安装版本：%1%n安装路径：%2%n%n是否覆盖安装？
+chinesesimplified.RemoveAppDataPrompt=是否同时删除以下应用数据和配置目录？
 
 english.AppRunning=Detected that %1 is running.
 english.NeedClose=The application needs to be closed before installation. Close automatically?
 english.UninstallNeedClose=The application needs to be closed before uninstallation. Close automatically?
 english.ManualClose=Please close %1 manually and try again.
-english.OldVersionFound=An existing installation was detected. Uninstall it first?
 english.KillFailed=Failed to automatically close %1. Please close the application manually and try again.
-english.ExistingInstall=An existing installation was detected: %1%nInstallation path: %2%n%nPlease choose an action:
-english.UninstallFirst=Uninstall old version then install
-english.OverwriteInstall=Overwrite installation (keep settings)
-english.CancelInstall=Cancel installation
+english.CreateDesktopIcon=Create a &desktop shortcut
+english.AdditionalIcons=Additional icons:
+english.LaunchProgram=Launch %1
+english.UninstallProgram=Uninstall %1
+english.AlreadyInstalled=Detected {#AppName} is already installed.%n%nInstalled version: %1%nInstall path: %2%n%nDo you want to overwrite the existing installation?
+english.RemoveAppDataPrompt=Would you also like to remove the following application data and settings directories?
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -84,6 +87,11 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filen
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+var
+  GOverwriteInstall: Boolean;
+  GExistingInstallPath: String;
+  GRemoveAppData: Boolean;
+
 function IsAppRunning(const AppExe: String): Boolean;
 var
   WMICmd: String;
@@ -146,98 +154,114 @@ begin
   end;
 end;
 
+function GetInstalledInfo(var Version: String; var InstallPath: String): Boolean;
 var
-  ShouldUninstallOld: Boolean;
+  RegKey: String;
+begin
+  RegKey := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1');
+  Result := False;
+  Version := '';
+  InstallPath := '';
+  if RegQueryStringValue(HKCU, RegKey, 'DisplayVersion', Version) then
+  begin
+    RegQueryStringValue(HKCU, RegKey, 'InstallLocation', InstallPath);
+    Result := True;
+  end
+  else if RegQueryStringValue(HKLM, RegKey, 'DisplayVersion', Version) then
+  begin
+    RegQueryStringValue(HKLM, RegKey, 'InstallLocation', InstallPath);
+    Result := True;
+  end;
+end;
+
+function ShowAlreadyInstalledDialog(const InstalledVersion: String; const InstallPath: String): Integer;
+var
+  Msg: String;
+begin
+  Msg := ExpandConstant('{cm:AlreadyInstalled}');
+  StringChange(Msg, '%1', InstalledVersion);
+  StringChange(Msg, '%2', InstallPath);
+  if MsgBox(Msg, mbConfirmation, MB_YESNO) = IDNO then
+    Result := 3  // Cancel
+  else
+    Result := 1; // Overwrite
+end;
 
 function InitializeSetup(): Boolean;
 var
-  AppPath: String;
-  OldVersion: String;
-  OldInstallPath: String;
-  UninstallPath: String;
-  Msg: String;
-  ResultCode: Integer;
+  InstalledVersion, InstallPath: String;
+  Choice: Integer;
 begin
   Result := True;
-  ShouldUninstallOld := False;
-  
+
+  if GetInstalledInfo(InstalledVersion, InstallPath) then
+  begin
+    Choice := ShowAlreadyInstalledDialog(InstalledVersion, InstallPath);
+    if Choice = 1 then
+    begin
+      GOverwriteInstall := True;
+      GExistingInstallPath := InstallPath;
+    end
+    else
+    begin
+      Result := False;
+      Exit;
+    end;
+  end;
+
   if IsAppRunning('{#AppExe}') then
   begin
-    Result := TryCloseApp('{#AppExe}', 'NeedClose');
-    if not Result then
-      Exit;
-  end;
-  
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE,
-    'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1',
-    'UninstallString', UninstallPath) then
-  begin
-    UninstallPath := RemoveQuotes(UninstallPath);
-    if FileExists(UninstallPath) then
-    begin
-      RegQueryStringValue(HKEY_LOCAL_MACHINE,
-        'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1',
-        'DisplayVersion', OldVersion);
-      
-      RegQueryStringValue(HKEY_LOCAL_MACHINE,
-        'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1',
-        'InstallLocation', OldInstallPath);
-      
-      if OldInstallPath = '' then
-        OldInstallPath := ExtractFilePath(UninstallPath);
-      
-      Msg := FmtMessage(ExpandConstant('{cm:ExistingInstall}'), [OldVersion, OldInstallPath]) + #13#10 + #13#10 +
-             '[是] - ' + ExpandConstant('{cm:UninstallFirst}') + #13#10 +
-             '[否] - ' + ExpandConstant('{cm:OverwriteInstall}') + #13#10 +
-             '[取消] - ' + ExpandConstant('{cm:CancelInstall}');
-      
-      case MsgBox(Msg, mbConfirmation, MB_YESNOCANCEL) of
-        IDYES:
-        begin
-          ShouldUninstallOld := True;
-          Result := True;
-        end;
-        IDNO:
-        begin
-          ShouldUninstallOld := False;
-          Result := True;
-        end;
-        IDCANCEL:
-        begin
-          Result := False;
-        end;
-      end;
-    end;
+    Result := TryCloseApp('{#AppExe}', '{cm:NeedClose}');
   end;
 end;
 
 function InitializeUninstall(): Boolean;
 begin
   Result := True;
-  
+
   if IsAppRunning('{#AppExe}') then
   begin
-    Result := TryCloseApp('{#AppExe}', 'UninstallNeedClose');
+    Result := TryCloseApp('{#AppExe}', '{cm:UninstallNeedClose}');
   end;
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  OldVersion: String;
-  UninstallPath: String;
-  ErrorCode: Integer;
+procedure InitializeWizard;
 begin
-  if (CurStep = ssInstall) and ShouldUninstallOld then
+  if GOverwriteInstall and (GExistingInstallPath <> '') then
+    WizardForm.DirEdit.Text := GExistingInstallPath;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+  if (PageID = wpSelectDir) and GOverwriteInstall then
+    Result := True;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Msg: String;
+  DataDir: String;
+  GlobalDir: String;
+begin
+  if CurUninstallStep = usUninstall then
   begin
-    if RegQueryStringValue(HKEY_LOCAL_MACHINE,
-      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1',
-      'UninstallString', UninstallPath) then
+    DataDir := ExpandConstant('{userappdata}\{#AppName}');
+    GlobalDir := ExpandConstant('{userappdata}\{#AppName}_global');
+    Msg := ExpandConstant('{cm:RemoveAppDataPrompt}') + #13#10#13#10 +
+           DataDir + #13#10 + GlobalDir;
+    GRemoveAppData := MsgBox(Msg, mbConfirmation, MB_YESNO) = IDYES;
+  end;
+  if CurUninstallStep = usPostUninstall then
+  begin
+    if GRemoveAppData then
     begin
-      UninstallPath := RemoveQuotes(UninstallPath);
-      if FileExists(UninstallPath) then
-      begin
-        Exec(UninstallPath, '/SILENT', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
-      end;
+      DataDir := ExpandConstant('{userappdata}\{#AppName}');
+      GlobalDir := ExpandConstant('{userappdata}\{#AppName}_global');
+      if DirExists(DataDir) then
+        DelTree(DataDir, True, True, True);
+      if DirExists(GlobalDir) then
+        DelTree(GlobalDir, True, True, True);
     end;
   end;
 end;
