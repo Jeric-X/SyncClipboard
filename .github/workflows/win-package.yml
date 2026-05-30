@@ -1,7 +1,7 @@
 name: win-package
 
 on:
-  workflow_call
+  workflow_call:
 
 jobs:
   build:
@@ -82,7 +82,8 @@ jobs:
           & powershell -File ".\build\windows\CreateInstaller.ps1" `
             -SourceFolder ".\WinUI3" `
             -Version $Version `
-            -OutputFolder "."
+            -OutputFolder "." `
+            -TargetArch "${{ matrix.cpu }}"
           Move-Item "SyncClipboard-$Version-installer.exe" "SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_installer.exe"
         shell: powershell
 

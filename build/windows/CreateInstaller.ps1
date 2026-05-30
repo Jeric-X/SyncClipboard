@@ -12,7 +12,10 @@ param(
     [string]$ISCCPath = "",
     
     [Parameter(Mandatory=$false, HelpMessage="InnoSetup script path")]
-    [string]$IssPath = ""
+    [string]$IssPath = "",
+
+    [Parameter(Mandatory=$false, HelpMessage="Target architecture (x64 or arm64)")]
+    [string]$TargetArch = "x64"
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,13 +84,15 @@ Write-Host "Using script: $IssPath" -ForegroundColor Green
 Write-Host "Source folder: $SourceFolder" -ForegroundColor Cyan
 Write-Host "Version: $Version" -ForegroundColor Cyan
 Write-Host "Output folder: $OutputFolder" -ForegroundColor Cyan
+Write-Host "Target arch: $TargetArch" -ForegroundColor Cyan
 Write-Host "Building installer..." -ForegroundColor Yellow
 
 $arguments = @(
     "`"$IssPath`"",
     "/DSourceFolder=`"$SourceFolder`"",
     "/DAppVersion=$Version",
-    "/DOutputDir=`"$OutputFolder`""
+    "/DOutputDir=`"$OutputFolder`"",
+    "/DTargetArch=$TargetArch"
 )
 
 try {
