@@ -1,17 +1,17 @@
 param(
-    [Parameter(Mandatory=$true, HelpMessage="包含应用程序文件的文件夹路径")]
+    [Parameter(Mandatory=$true, HelpMessage="Path to the folder containing application files")]
     [string]$SourceFolder,
     
-    [Parameter(Mandatory=$false, HelpMessage="应用程序版本号")]
+    [Parameter(Mandatory=$false, HelpMessage="Application version number")]
     [string]$Version = "1.0.0",
     
-    [Parameter(Mandatory=$false, HelpMessage="输出文件夹路径")]
+    [Parameter(Mandatory=$false, HelpMessage="Output folder path")]
     [string]$OutputFolder = "",
     
-    [Parameter(Mandatory=$false, HelpMessage="InnoSetup 编译器路径")]
+    [Parameter(Mandatory=$false, HelpMessage="InnoSetup compiler path")]
     [string]$ISCCPath = "",
     
-    [Parameter(Mandatory=$false, HelpMessage="InnoSetup 脚本路径")]
+    [Parameter(Mandatory=$false, HelpMessage="InnoSetup script path")]
     [string]$IssPath = ""
 )
 
@@ -21,7 +21,7 @@ $AppName = "SyncClipboard"
 $AppExe = "SyncClipboard.exe"
 
 if (-not (Test-Path $SourceFolder)) {
-    Write-Error "源文件夹不存在: $SourceFolder"
+    Write-Error "Source folder not found: $SourceFolder"
     exit 1
 }
 
@@ -29,7 +29,7 @@ $SourceFolder = (Resolve-Path $SourceFolder).Path
 
 $exePath = Join-Path $SourceFolder $AppExe
 if (-not (Test-Path $exePath)) {
-    Write-Error "在源文件夹中找不到可执行文件: $AppExe"
+    Write-Error "Executable not found in source folder: $AppExe"
     exit 1
 }
 
@@ -48,7 +48,7 @@ if ([string]::IsNullOrEmpty($IssPath)) {
 }
 
 if (-not (Test-Path $IssPath)) {
-    Write-Error "找不到 InnoSetup 脚本文件: $IssPath"
+    Write-Error "InnoSetup script not found: $IssPath"
     exit 1
 }
 
@@ -70,18 +70,18 @@ if ([string]::IsNullOrEmpty($ISCCPath)) {
     }
     
     if ([string]::IsNullOrEmpty($ISCCPath)) {
-        Write-Error "找不到 InnoSetup 编译器 (ISCC.exe)。请通过 -ISCCPath 参数指定路径。"
-        Write-Host "可以从 https://jrsoftware.org/isdl.php 下载 InnoSetup"
+        Write-Error "InnoSetup compiler (ISCC.exe) not found. Specify the path via -ISCCPath parameter."
+        Write-Host "Download InnoSetup from https://jrsoftware.org/isdl.php"
         exit 1
     }
 }
 
-Write-Host "使用 InnoSetup: $ISCCPath" -ForegroundColor Green
-Write-Host "使用脚本文件: $IssPath" -ForegroundColor Green
-Write-Host "源文件夹: $SourceFolder" -ForegroundColor Cyan
-Write-Host "版本号: $Version" -ForegroundColor Cyan
-Write-Host "输出目录: $OutputFolder" -ForegroundColor Cyan
-Write-Host "开始编译安装包..." -ForegroundColor Yellow
+Write-Host "Using InnoSetup: $ISCCPath" -ForegroundColor Green
+Write-Host "Using script: $IssPath" -ForegroundColor Green
+Write-Host "Source folder: $SourceFolder" -ForegroundColor Cyan
+Write-Host "Version: $Version" -ForegroundColor Cyan
+Write-Host "Output folder: $OutputFolder" -ForegroundColor Cyan
+Write-Host "Building installer..." -ForegroundColor Yellow
 
 $arguments = @(
     "`"$IssPath`"",
@@ -95,18 +95,18 @@ try {
     
     if ($process.ExitCode -eq 0) {
         $installerPath = Join-Path $OutputFolder "$AppName-$Version-installer.exe"
-        Write-Host "`n安装包创建成功!" -ForegroundColor Green
-        Write-Host "安装包位置: $installerPath" -ForegroundColor Cyan
+        Write-Host "`nInstaller created successfully!" -ForegroundColor Green
+        Write-Host "Installer path: $installerPath" -ForegroundColor Cyan
         
         if (Test-Path $installerPath) {
             $fileInfo = Get-Item $installerPath
-            Write-Host "文件大小: $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Cyan
+            Write-Host "File size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Cyan
         }
     }
     else {
-        Write-Error "InnoSetup 编译失败，退出代码: $($process.ExitCode)"
+        Write-Error "InnoSetup compilation failed with exit code: $($process.ExitCode)"
     }
 }
 catch {
-    Write-Error "编译过程中发生错误: $_"
+    Write-Error "Error during compilation: $_"
 }
