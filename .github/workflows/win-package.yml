@@ -1,0 +1,94 @@
+name: win-package
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/win-build.yml
+
+  package-windows:
+    strategy:
+      matrix:
+        cpu: [x64, arm64]
+        dotnet_runtime: [self-contained, no-self-contained]
+        win_app_sdk: ['win_app_sdk', 'no_win_app_sdk']
+        package-type: [portable, installer]
+        include:
+          - dotnet_runtime: 'self-contained'
+            dotnet_runtime_filename: ''
+          - dotnet_runtime: 'no-self-contained'
+            dotnet_runtime_filename: '_no-dotnet-runtime'
+          - win_app_sdk: 'win_app_sdk'
+            win_app_sdk_filename: ''
+          - win_app_sdk: 'no_win_app_sdk'
+            win_app_sdk_filename: '_no-win-app-sdk'
+          - package-type: portable
+            package-ext: .zip
+          - package-type: installer
+            package-ext: .exe
+
+    runs-on: windows-2025-vs2026
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}
+          path: WinUI3/
+
+      - name: Download feature file
+        uses: actions/download-artifact@v8
+        with:
+          name: feature
+
+      - name: Get version from feature file
+        id: version
+        run: |
+          $version = (Get-Content feature.txt -First 1).Trim()
+          if ($version -match '^v(.*)') {
+            $version = $matches[1]
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Detected version: $version"
+        shell: powershell
+
+      - name: Set update info for portable
+        if: matrix.package-type == 'portable'
+        run: |
+          chmod +x ./build/SetUpdateSource.sh
+          ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_portable.zip
+        shell: bash
+
+      - name: Package portable
+        if: matrix.package-type == 'portable'
+        run: |
+          7z a SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_portable.zip ./WinUI3/*
+
+      - name: Set update info for installer
+        if: matrix.package-type == 'installer'
+        run: |
+          chmod +x ./build/SetUpdateSource.sh
+          ./build/SetUpdateSource.sh -m manual -s github -o WinUI3 -n SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_installer.exe
+        shell: bash
+
+      - name: Package installer
+        if: matrix.package-type == 'installer'
+        run: |
+          $Version = "${{ steps.version.outputs.version }}"
+          & powershell -File ".\build\windows\CreateInstaller.ps1" `
+            -SourceFolder ".\WinUI3" `
+            -Version $Version `
+            -OutputFolder "." `
+            -TargetArch "${{ matrix.cpu }}"
+          Move-Item "SyncClipboard-$Version-installer.exe" "SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_installer.exe"
+        shell: powershell
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_${{ matrix.package-type }}${{ matrix.package-ext }}
+          path: SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_${{ matrix.package-type }}${{ matrix.package-ext }}

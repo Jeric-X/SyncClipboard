@@ -8,7 +8,7 @@ on:
 
 jobs:
   release-formal:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
     steps:
       - name: Download last-job-built change log
         uses: actions/download-artifact@v8
