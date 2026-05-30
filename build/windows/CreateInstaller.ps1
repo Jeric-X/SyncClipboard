@@ -60,9 +60,7 @@ $IssPath = (Resolve-Path $IssPath).Path
 if ([string]::IsNullOrEmpty($ISCCPath)) {
     $commonPaths = @(
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-        "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
-        "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
-        "$env:ProgramFiles\Inno Setup 5\ISCC.exe"
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
     )
     
     foreach ($path in $commonPaths) {

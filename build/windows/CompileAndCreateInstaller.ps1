@@ -272,7 +272,8 @@ try {
     & $createInstallerScript `
         -SourceFolder $destPath `
         -Version $Version `
-        -OutputFolder $OutputDir
+        -OutputFolder $OutputDir `
+        -TargetArch $Architecture
     
     if ($LASTEXITCODE -ne 0) {
         throw "创建安装包失败"
