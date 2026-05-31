@@ -183,24 +183,6 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                 return result;
             }
 
-            result = TryGetCaretFromDescendantsWithPattern(focusedElement, Interop.UIAutomationClient.UIA_PatternIds.UIA_TextPattern2Id);
-            if (result.IsValid)
-            {
-                return result;
-            }
-
-            result = TryGetCaretFromDescendantsWithPattern(focusedElement, Interop.UIAutomationClient.UIA_PatternIds.UIA_TextPatternId);
-            if (result.IsValid)
-            {
-                return result;
-            }
-
-            result = TryGetCaretFromAllDescendants(focusedElement);
-            if (result.IsValid)
-            {
-                return result;
-            }
-
             var legacyPattern = focusedElement.GetCurrentPattern(Interop.UIAutomationClient.UIA_PatternIds.UIA_LegacyIAccessiblePatternId);
             if (legacyPattern is Interop.UIAutomationClient.IUIAutomationLegacyIAccessiblePattern legacy)
             {
@@ -235,43 +217,6 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         {
             _logger.Write(Tag, $"LogElementPatterns failed: {ex.Message}");
         }
-    }
-
-    private ScreenPosition TryGetCaretFromAllDescendants(Interop.UIAutomationClient.IUIAutomationElement element)
-    {
-        try
-        {
-            var trueCondition = _uiAutomation!.CreateTrueCondition();
-            var descendants = element.FindAll(Interop.UIAutomationClient.TreeScope.TreeScope_Descendants, trueCondition);
-            if (descendants != null && descendants.Length > 0)
-            {
-                _logger.Write(Tag, $"Found {descendants.Length} descendants, checking for TextPattern...");
-                for (int i = 0; i < Math.Min(descendants.Length, 50); i++)
-                {
-                    var child = descendants.GetElement(i);
-                    if (child == null) continue;
-
-                    var hasTextPattern = child.GetCurrentPropertyValue(Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId);
-                    var hasTextPattern2 = child.GetCurrentPropertyValue(Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsTextPattern2AvailablePropertyId);
-
-                    if ((bool)hasTextPattern || (bool)hasTextPattern2)
-                    {
-                        _logger.Write(Tag, $"Descendant[{i}]: Name='{child.CurrentName}', ClassName='{child.CurrentClassName}', TextPattern={hasTextPattern}, TextPattern2={hasTextPattern2}");
-                        var result = TryGetCaretFromElement(child);
-                        if (result.IsValid)
-                        {
-                            return result;
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Write(Tag, $"TryGetCaretFromAllDescendants failed: {ex.Message}");
-        }
-
-        return ScreenPosition.Invalid;
     }
 
     private ScreenPosition TryGetCaretFromElement(Interop.UIAutomationClient.IUIAutomationElement element)
@@ -364,40 +309,6 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             {
                 _logger.Write(Tag, $"TextPattern GetSelection failed: {ex.Message}");
             }
-        }
-
-        return ScreenPosition.Invalid;
-    }
-
-    private ScreenPosition TryGetCaretFromDescendantsWithPattern(Interop.UIAutomationClient.IUIAutomationElement element, int patternId)
-    {
-        try
-        {
-            var propertyId = patternId == Interop.UIAutomationClient.UIA_PatternIds.UIA_TextPattern2Id
-                ? Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsTextPattern2AvailablePropertyId
-                : Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId;
-
-            var condition = _uiAutomation!.CreatePropertyCondition(propertyId, true);
-            var descendants = element.FindAll(Interop.UIAutomationClient.TreeScope.TreeScope_Descendants, condition);
-            if (descendants != null && descendants.Length > 0)
-            {
-                for (int i = 0; i < descendants.Length; i++)
-                {
-                    var child = descendants.GetElement(i);
-                    if (child == null) continue;
-
-                    var result = TryGetCaretFromElement(child);
-                    if (result.IsValid)
-                    {
-                        _logger.Write(Tag, $"Found caret in descendant: Name='{child.CurrentName}', ClassName='{child.CurrentClassName}'");
-                        return result;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Write(Tag, $"TryGetCaretFromDescendantsWithPattern failed: {ex.Message}");
         }
 
         return ScreenPosition.Invalid;
