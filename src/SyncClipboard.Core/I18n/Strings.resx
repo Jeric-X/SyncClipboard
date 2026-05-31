@@ -1004,4 +1004,7 @@ This operation cannot be undone.</value>
   <data name="FollowForegroundWindowScreen" xml:space="preserve">
     <value>Follow Foreground Window Screen</value>
   </data>
+  <data name="FollowMousePosition" xml:space="preserve">
+    <value>Follow Mouse Position</value>
+  </data>
 </root>

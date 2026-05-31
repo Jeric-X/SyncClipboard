@@ -44,6 +44,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly HistoryService _historyService;
     private readonly ICaretPositionProvider _caretPositionProvider;
     private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider;
+    private readonly IMousePositionProvider _mousePositionProvider;
     private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
@@ -72,7 +73,8 @@ public partial class HistoryViewModel : ObservableObject
         HistoryTransferQueue transferQueue,
         IThreadDispatcher threadDispatcher,
         ICaretPositionProvider caretPositionProvider,
-        IForegroundWindowInfoProvider foregroundWindowInfoProvider)
+        IForegroundWindowInfoProvider foregroundWindowInfoProvider,
+        IMousePositionProvider mousePositionProvider)
     {
         this.historyManager = historyManager;
         this.keyboard = keyboard;
@@ -89,6 +91,7 @@ public partial class HistoryViewModel : ObservableObject
         this._threadDispatcher = threadDispatcher;
         this._caretPositionProvider = caretPositionProvider;
         this._foregroundWindowInfoProvider = foregroundWindowInfoProvider;
+        this._mousePositionProvider = mousePositionProvider;
 
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
@@ -301,6 +304,12 @@ public partial class HistoryViewModel : ObservableObject
         set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
     }
 
+    public bool FollowMousePosition
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowMousePosition;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowMousePosition = value });
+    }
+
     public ScreenPosition GetActivePosition()
     {
         if (FollowCaretPosition)
@@ -314,9 +323,53 @@ public partial class HistoryViewModel : ObservableObject
         return ScreenPosition.Invalid;
     }
 
+    public ScreenPosition GetCaretPosition()
+    {
+        return _caretPositionProvider.GetCaretPosition();
+    }
+
     public ForegroundWindowInfo GetForegroundWindowInfo()
     {
         return _foregroundWindowInfoProvider.GetForegroundWindowInfo();
+    }
+
+    public ScreenPosition GetMousePosition()
+    {
+        return _mousePositionProvider.GetMousePosition();
+    }
+
+    public bool RepositionWindow()
+    {
+        if (FollowCaretPosition)
+        {
+            var position = GetCaretPosition();
+            if (position.IsValid && window.SetPositionNearPoint(position.X, position.Y))
+            {
+                return true;
+            }
+        }
+        if (FollowForegroundWindowScreen)
+        {
+            var foregroundInfo = GetForegroundWindowInfo();
+            if (foregroundInfo.IsValid)
+            {
+                var centerX = foregroundInfo.X + foregroundInfo.Width / 2;
+                var centerY = foregroundInfo.Y + foregroundInfo.Height / 2;
+                if (window.SetPositionOnScreen(centerX, centerY))
+                {
+                    return true;
+                }
+            }
+        }
+        if (FollowMousePosition)
+        {
+            var position = GetMousePosition();
+            if (position.IsValid && window.SetPositionNearPoint(position.X, position.Y))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public double ListItemFontSize => FontScalePercent / 100.0 * 12.0;

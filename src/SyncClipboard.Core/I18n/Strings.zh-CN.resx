@@ -1002,4 +1002,7 @@ Esc：关闭面板</value>
   <data name="FollowForegroundWindowScreen" xml:space="preserve">
     <value>跟随前台窗口所在屏幕</value>
   </data>
+  <data name="FollowMousePosition" xml:space="preserve">
+    <value>跟随鼠标位置</value>
+  </data>
 </root>

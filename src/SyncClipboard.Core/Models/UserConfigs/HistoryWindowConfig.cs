@@ -14,4 +14,5 @@ public record class HistoryWindowConfig
     public int FontScalePercent { get; set; } = 100;
     public bool FollowCaretPosition { get; set; } = false;
     public bool FollowForegroundWindowScreen { get; set; } = false;
+    public bool FollowMousePosition { get; set; } = false;
 }

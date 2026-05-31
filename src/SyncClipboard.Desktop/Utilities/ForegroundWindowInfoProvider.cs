@@ -1,6 +1,7 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.Versioning;
 
 namespace SyncClipboard.Desktop.Utilities;

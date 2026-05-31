@@ -1093,6 +1093,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Follow Mouse Position 的本地化字符串。
+        /// </summary>
+        public static string FollowMousePosition {
+            get {
+                return ResourceManager.GetString("FollowMousePosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Font 的本地化字符串。
         /// </summary>
         public static string Font {

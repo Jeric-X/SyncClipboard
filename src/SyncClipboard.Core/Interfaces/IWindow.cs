@@ -13,4 +13,7 @@ public interface IWindow
         offsetY = 0; viewportHeight = 0; extentHeight = 0;
         return false;
     }
+
+    bool SetPositionNearPoint(int x, int y);
+    bool SetPositionOnScreen(int screenX, int screenY);
 }

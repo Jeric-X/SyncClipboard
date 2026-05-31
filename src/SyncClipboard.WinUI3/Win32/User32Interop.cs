@@ -64,8 +64,8 @@ internal static class User32Interop
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    internal static extern int GetWindowText(IntPtr hWnd, [Out] StringBuilder lpString, int nMaxCount);
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
@@ -80,4 +80,8 @@ internal static class User32Interop
 
     [DllImport("oleacc.dll")]
     internal static extern int AccessibleObjectFromWindow(IntPtr hwnd, int dwObjectID, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppvObject);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetCursorPos(out Point lpPoint);
 }

@@ -12,6 +12,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
+using System.Linq;
 using System.Threading;
 
 namespace SyncClipboard.Desktop.Views;
@@ -128,16 +129,15 @@ public partial class HistoryWindow : Window, IWindow
     {
         if (!this.IsVisible)
         {
-            var position = _viewModel.GetActivePosition();
-            if (position.IsValid)
-            {
-                PositionNearCaret(position.X, position.Y);
-            }
-            else if (_firstShow)
+            if (!_viewModel.RepositionWindow() && _firstShow)
             {
                 this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
             _firstShow = false;
+        }
+        else
+        {
+            _viewModel.RepositionWindow();
         }
         this.Show();
         if (this.WindowState == WindowState.Minimized)
@@ -149,41 +149,6 @@ public partial class HistoryWindow : Window, IWindow
         _SearchTextBox.Focus();
         _SearchTextBox.SelectAll();
         _viewModel.OnWindowShown();
-    }
-
-    private void PositionNearCaret(int caretX, int caretY)
-    {
-        var screens = Screens.All;
-        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(caretX, caretY)))
-                     ?? screens.Primary;
-
-        if (screen == null)
-        {
-            this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            return;
-        }
-
-        var workArea = screen.WorkingArea;
-        var windowWidth = _viewModel.Width;
-        var windowHeight = _viewModel.Height;
-
-        var x = caretX + 20;
-        var y = caretY + 20;
-
-        if (x + windowWidth > workArea.X + workArea.Width)
-        {
-            x = caretX - windowWidth - 20;
-        }
-        if (y + windowHeight > workArea.Y + workArea.Height)
-        {
-            y = caretY - windowHeight - 20;
-        }
-
-        x = Math.Max(workArea.X, Math.Min(x, workArea.X + workArea.Width - windowWidth));
-        y = Math.Max(workArea.Y, Math.Min(y, workArea.Y + workArea.Height - windowHeight));
-
-        this.WindowStartupLocation = WindowStartupLocation.Manual;
-        this.Position = new PixelPoint(x, y);
     }
 
     void IWindow.Focus()
@@ -405,5 +370,72 @@ public partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.Topmost = topmost;
+    }
+
+    public bool SetPositionNearPoint(int x, int y)
+    {
+        var screens = Screens.All;
+        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(x, y)))
+                     ?? Screens.Primary;
+
+        if (screen == null)
+        {
+            return false;
+        }
+
+        var workArea = screen.WorkingArea;
+        var windowWidth = _viewModel.Width;
+        var windowHeight = _viewModel.Height;
+
+        var posX = x + 20;
+        var posY = y + 20;
+
+        if (posX + windowWidth > workArea.X + workArea.Width)
+        {
+            posX = x - windowWidth - 20;
+        }
+        if (posY + windowHeight > workArea.Y + workArea.Height)
+        {
+            posY = y - windowHeight - 20;
+        }
+
+        posX = Math.Max(workArea.X, Math.Min(posX, workArea.X + workArea.Width - windowWidth));
+        posY = Math.Max(workArea.Y, Math.Min(posY, workArea.Y + workArea.Height - windowHeight));
+
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(posX, posY);
+        return true;
+    }
+
+    public bool SetPositionOnScreen(int screenX, int screenY)
+    {
+        var screens = Screens.All;
+        var targetScreen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(screenX, screenY)))
+                           ?? Screens.Primary;
+
+        if (targetScreen == null)
+        {
+            return false;
+        }
+
+        if (!_firstShow)
+        {
+            var currentScreen = screens.FirstOrDefault(s => s.Bounds.Contains(this.Position))
+                                ?? Screens.Primary;
+            if (currentScreen != null && currentScreen == targetScreen)
+            {
+                return false;
+            }
+        }
+
+        var workArea = targetScreen.WorkingArea;
+        var windowWidth = _viewModel.Width;
+        var windowHeight = _viewModel.Height;
+        var x = workArea.X + (workArea.Width - windowWidth) / 2;
+        var y = workArea.Y + (workArea.Height - windowHeight) / 2;
+
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(x, y);
+        return true;
     }
 }

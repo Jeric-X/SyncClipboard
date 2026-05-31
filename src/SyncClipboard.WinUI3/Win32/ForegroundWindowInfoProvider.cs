@@ -54,7 +54,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             }
 
             var titleBuilder = new StringBuilder(256);
-            User32Interop.GetWindowText(hWnd, titleBuilder, titleBuilder.Capacity);
+            _ = User32Interop.GetWindowText(hWnd, titleBuilder, titleBuilder.Capacity);
             var windowTitle = titleBuilder.ToString();
 
             if (!User32Interop.GetWindowRect(hWnd, out var rect))

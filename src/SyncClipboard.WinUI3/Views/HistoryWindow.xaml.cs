@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
@@ -171,16 +170,7 @@ public sealed partial class HistoryWindow : Window, IWindow
             _ = _viewModel.Init(this);
         }
 
-        var position = _viewModel.GetActivePosition();
-        if (position.IsValid)
-        {
-            PositionNearCaret(position.X, position.Y);
-        }
-        else if (_viewModel.FollowForegroundWindowScreen)
-        {
-            PositionOnForegroundWindowScreen();
-        }
-        else if (!_windowLoaded)
+        if (!_viewModel.RepositionWindow() && !_windowLoaded)
         {
             this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
         }
@@ -197,87 +187,17 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
-    private void PositionOnForegroundWindowScreen()
-    {
-        var foregroundInfo = _viewModel.GetForegroundWindowInfo();
-        if (!foregroundInfo.IsValid)
-        {
-            if (!_windowLoaded)
-            {
-                this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
-            }
-            return;
-        }
-
-        var centerX = foregroundInfo.X + foregroundInfo.Width / 2;
-        var centerY = foregroundInfo.Y + foregroundInfo.Height / 2;
-        var targetDisplayArea = DisplayArea.GetFromPoint(new PointInt32(centerX, centerY), DisplayAreaFallback.Primary);
-        if (targetDisplayArea == null)
-        {
-            if (!_windowLoaded)
-            {
-                this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
-            }
-            return;
-        }
-
-        if (_windowLoaded)
-        {
-            var currentCenterX = this.AppWindow.Position.X + this.AppWindow.Size.Width / 2;
-            var currentCenterY = this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2;
-            var currentDisplayArea = DisplayArea.GetFromPoint(new PointInt32(currentCenterX, currentCenterY), DisplayAreaFallback.Primary);
-            if (currentDisplayArea != null && currentDisplayArea.DisplayId.Value == targetDisplayArea.DisplayId.Value)
-            {
-                return;
-            }
-        }
-
-        var workArea = targetDisplayArea.WorkArea;
-        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, centerX, centerY);
-        var x = workArea.X + (workArea.Width - windowWidth) / 2;
-        var y = workArea.Y + (workArea.Height - windowHeight) / 2;
-
-        this.AppWindow.Move(new PointInt32(x, y));
-        this.AppWindow.Resize(new SizeInt32(windowWidth, windowHeight));
-    }
-
-    private void PositionNearCaret(int caretX, int caretY)
-    {
-        var displayArea = DisplayArea.GetFromPoint(new PointInt32(caretX, caretY), DisplayAreaFallback.Primary);
-        if (displayArea == null)
-        {
-            this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
-            return;
-        }
-
-        var workArea = displayArea.WorkArea;
-        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, caretX, caretY);
-
-        var x = caretX + 20;
-        var y = caretY + 20;
-
-        if (x + windowWidth > workArea.X + workArea.Width)
-        {
-            x = caretX - windowWidth - 20;
-        }
-        if (y + windowHeight > workArea.Y + workArea.Height)
-        {
-            y = caretY - windowHeight - 20;
-        }
-
-        x = Math.Max(workArea.X, Math.Min(x, workArea.X + workArea.Width - windowWidth));
-        y = Math.Max(workArea.Y, Math.Min(y, workArea.Y + workArea.Height - windowHeight));
-
-        this.AppWindow.Move(new PointInt32(x, y));
-    }
-
     public void Focus()
     {
         if (!this.Visible)
         {
             ShowWindow();
         }
-        this.SetForegroundWindow();
+        else
+        {
+            _viewModel.RepositionWindow();
+            this.SetForegroundWindow();
+        }
     }
 
     public void SwitchVisible()
@@ -686,6 +606,65 @@ public sealed partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.SetIsAlwaysOnTop(topmost);
+    }
+
+    public bool SetPositionNearPoint(int x, int y)
+    {
+        var displayArea = DisplayArea.GetFromPoint(new PointInt32(x, y), DisplayAreaFallback.Primary);
+        if (displayArea == null)
+        {
+            return false;
+        }
+
+        var workArea = displayArea.WorkArea;
+        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, x, y);
+
+        var posX = x + 20;
+        var posY = y + 20;
+
+        if (posX + windowWidth > workArea.X + workArea.Width)
+        {
+            posX = x - windowWidth - 20;
+        }
+        if (posY + windowHeight > workArea.Y + workArea.Height)
+        {
+            posY = y - windowHeight - 20;
+        }
+
+        posX = Math.Max(workArea.X, Math.Min(posX, workArea.X + workArea.Width - windowWidth));
+        posY = Math.Max(workArea.Y, Math.Min(posY, workArea.Y + workArea.Height - windowHeight));
+
+        this.AppWindow.Move(new PointInt32(posX, posY));
+        return true;
+    }
+
+    public bool SetPositionOnScreen(int screenX, int screenY)
+    {
+        var targetDisplayArea = DisplayArea.GetFromPoint(new PointInt32(screenX, screenY), DisplayAreaFallback.Primary);
+        if (targetDisplayArea == null)
+        {
+            return false;
+        }
+
+        if (_windowLoaded)
+        {
+            var currentCenterX = this.AppWindow.Position.X + this.AppWindow.Size.Width / 2;
+            var currentCenterY = this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2;
+            var currentDisplayArea = DisplayArea.GetFromPoint(new PointInt32(currentCenterX, currentCenterY), DisplayAreaFallback.Primary);
+            if (currentDisplayArea != null && currentDisplayArea.DisplayId.Value == targetDisplayArea.DisplayId.Value)
+            {
+                return true;
+            }
+        }
+
+        var workArea = targetDisplayArea.WorkArea;
+        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, screenX, screenY);
+        var x = workArea.X + (workArea.Width - windowWidth) / 2;
+        var y = workArea.Y + (workArea.Height - windowHeight) / 2;
+
+        this.AppWindow.Move(new PointInt32(x, y));
+        this.AppWindow.Resize(new SizeInt32(windowWidth, windowHeight));
+        return true;
     }
 
     private void SetWindowMinSize()

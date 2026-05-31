@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using System;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 
