@@ -35,8 +35,8 @@
     - [IOS](#ios)
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
+      - [Use SyncClipboard Mobile](#use-syncclipboard-mobile)
       - [Use HTTP Request Shortcuts](#use-http-request-shortcuts)
-      - [Use Autox.js](#use-autoxjs)
     - [HarmonyOS Next](#harmonyos-next)
       - [Use ClipLink](#use-cliplink)
     - [Notes for Clients](#notes-for-clients)
@@ -44,7 +44,9 @@
     - [Get Clipboard](#get-clipboard)
     - [Upload Clipboard](#upload-clipboard)
     - [SyncClipboard.json](#syncclipboardjson)
+    - [S3 Sync Protocol Specification](#s3-sync-protocol-specification)
   - [Open Source Dependencies](#open-source-dependencies)
+  - [Donate](#donate)
 
 </details>
 
@@ -256,6 +258,13 @@ Multiple `--command-{command-name}` arguments are supported, multiple commands a
 - Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/05e7ac5aca5f4f588b776117cf740587). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
+#### Use [SyncClipboard Mobile](https://github.com/Jeric-X/syncclipboard-mobile)
+
+- Quick manual trigger from notification center, home screen shortcut, and share menu
+- Limited background sync capability
+- Clipboard history and history sync
+- Auto-upload SMS verification codes
+
 #### Use [HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
 Import this [file](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. Make sure no slash(/) at the end of url. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
 
@@ -268,26 +277,6 @@ Import this [file](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/s
 
 </details>
 
-#### Use [Autox.js](https://github.com/kkevsekk1/AutoX)
-Import this [js file](/script/SyncAutoxJs.js). Change the user config. And set a running trigger, for example, running the script when Android system startup.
-```
-// START  User Config  
-const url = 'http://192.168.5.194:5033'
-const username = 'admin'
-const token = 'admin'
-const intervalTime = 3 * 1000                         // 3 seconds
-const showToastNotification = true
-// END    User Config  
-```
-Running in background, the script will download the remote text clipbaord automatically and set it to local clipboard. 
-If satisfy any of the following conditions, upload is automatic.
-- The app is running in forground
-- Android 9 Pie or lower Android version
-- Use root-based tools like Magisk/Xposed to unlock the limition of clipboard operation in background. There are some references:
-  - https://github.com/Kr328/Riru-ClipboardWhitelist
-  - https://github.com/GamerGirlandCo/xposed-clipboard-whitelist
-  - https://modules.lsposed.org/module/io.github.tehcneko.clipboardwhitelist
-  - https://github.com/QueallyTech/DisableLogRequest
 
 ### HarmonyOS Next
 #### Use [ClipLink](https://github.com/xiebaiyuan/ClipLink)
@@ -343,6 +332,10 @@ PUT /SyncClipboard.json
   - When `hash` is empty, or in an environment where `hash` cannot be calculated, you can use the combination of `type`/`text` to simply determine the equality of clipboard content
 - `size` indicates the total byte size of the copied file, or the length of the complete string for Text type clipboard
 
+### S3 Sync Protocol Specification
+
+For protocol and data format specifications when using S3-compatible object storage as sync backend, please refer to [S3 Adapter Design](S3-Adapter-Design.md).
+
 ## Open Source Dependencies
 [NativeNotification](https://github.com/Jeric-X/NativeNotification) 
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  
@@ -358,3 +351,7 @@ PUT /SyncClipboard.json
 [Tmds.DBus](https://github.com/tmds/Tmds.DBus)  
 [SharpHook](https://github.com/TolikPylypchuk/SharpHook)  
 [Quartz.NET](https://github.com/quartznet/quartznet)   
+
+## Donate
+
+If SyncClipboard helps you, donations are welcome to support ongoing maintenance. View donation details [here](donate.md).

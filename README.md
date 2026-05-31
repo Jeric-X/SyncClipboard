@@ -52,6 +52,7 @@
     - [SyncClipboard.json](#syncclipboardjson)
     - [S3 同步协议规范](#s3-同步协议规范)
   - [项目依赖](#项目依赖)
+  - [打赏](#打赏)
 
 </details>
 
@@ -400,3 +401,7 @@ PUT /SyncClipboard.json
 [SharpHook](https://github.com/TolikPylypchuk/SharpHook)  
 [Quartz.NET](https://github.com/quartznet/quartznet)  
 [MiSans](https://hyperos.mi.com/font)  
+
+## 打赏
+
+如果 SyncClipboard 对你有所帮助，并希望打赏支持，请[参阅此处](docs/donate.md)
