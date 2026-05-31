@@ -42,6 +42,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly HistorySyncer historySyncer;
     private readonly IProfileEnv profileEnv;
     private readonly HistoryService _historyService;
+    private readonly ICaretPositionProvider _caretPositionProvider;
     private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
@@ -68,7 +69,8 @@ public partial class HistoryViewModel : ObservableObject
         HistorySyncer historySyncer,
         HistoryService historyService,
         HistoryTransferQueue transferQueue,
-        IThreadDispatcher threadDispatcher)
+        IThreadDispatcher threadDispatcher,
+        ICaretPositionProvider caretPositionProvider)
     {
         this.historyManager = historyManager;
         this.keyboard = keyboard;
@@ -83,6 +85,7 @@ public partial class HistoryViewModel : ObservableObject
         this._historyService = historyService;
         this._transferQueue = transferQueue;
         this._threadDispatcher = threadDispatcher;
+        this._caretPositionProvider = caretPositionProvider;
 
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
@@ -281,6 +284,25 @@ public partial class HistoryViewModel : ObservableObject
             OnPropertyChanged(nameof(FontScalePercent));
             OnPropertyChanged(nameof(ListItemFontSize));
         }
+    }
+
+    public bool FollowCaretPosition
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowCaretPosition;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
+    }
+
+    public ScreenPosition GetActivePosition()
+    {
+        if (FollowCaretPosition)
+        {
+            var caretPos = _caretPositionProvider.GetCaretPosition();
+            if (caretPos.IsValid)
+            {
+                return caretPos;
+            }
+        }
+        return ScreenPosition.Invalid;
     }
 
     public double ListItemFontSize => FontScalePercent / 100.0 * 12.0;

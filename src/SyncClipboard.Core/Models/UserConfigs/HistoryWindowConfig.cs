@@ -12,4 +12,5 @@ public record class HistoryWindowConfig
     public bool SortByLastAccessed { get; set; } = false;
     public bool ShowDetail { get; set; } = false;
     public int FontScalePercent { get; set; } = 100;
+    public bool FollowCaretPosition { get; set; } = false;
 }

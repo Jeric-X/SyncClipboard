@@ -996,4 +996,7 @@ Esc：关闭面板</value>
   <data name="NoWithoutSubfolder" xml:space="preserve">
     <value>否</value>
   </data>
+  <data name="FollowCaretPosition" xml:space="preserve">
+    <value>跟随文字输入光标位置</value>
+  </data>
 </root>

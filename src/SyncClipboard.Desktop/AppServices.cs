@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using SharpHook;
 using SyncClipboard.Core;
@@ -49,6 +49,7 @@ public class AppServices
         {
             services.AddSingleton<IClipboardReader, XClipReader>();
             services.AddSingleton<IClipboardReader, WlClipboardReader>();
+            services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
         }
 
         if (!OperatingSystem.IsMacOS())

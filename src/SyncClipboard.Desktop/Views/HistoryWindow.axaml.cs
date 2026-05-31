@@ -19,10 +19,13 @@ namespace SyncClipboard.Desktop.Views;
 public partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
+    private readonly ICaretPositionProvider _caretPositionProvider;
     public HistoryViewModel ViewModel => _viewModel;
+    private bool _firstShow = true;
     public HistoryWindow()
     {
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
+        _caretPositionProvider = App.Current.Services.GetRequiredService<ICaretPositionProvider>();
         var configManager = App.Current.Services.GetRequiredService<ConfigManager>();
         DataContext = ViewModel;
 
@@ -123,6 +126,19 @@ public partial class HistoryWindow : Window, IWindow
 
     protected virtual void FocusOnScreen()
     {
+        if (!this.IsVisible)
+        {
+            var position = _viewModel.GetActivePosition();
+            if (position.IsValid)
+            {
+                PositionNearCaret(position.X, position.Y);
+            }
+            else if (_firstShow)
+            {
+                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+            _firstShow = false;
+        }
         this.Show();
         if (this.WindowState == WindowState.Minimized)
         {
@@ -133,6 +149,41 @@ public partial class HistoryWindow : Window, IWindow
         _SearchTextBox.Focus();
         _SearchTextBox.SelectAll();
         _viewModel.OnWindowShown();
+    }
+
+    private void PositionNearCaret(int caretX, int caretY)
+    {
+        var screens = Screens.All;
+        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(caretX, caretY)))
+                     ?? screens.Primary;
+
+        if (screen == null)
+        {
+            this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            return;
+        }
+
+        var workArea = screen.WorkingArea;
+        var windowWidth = _viewModel.Width;
+        var windowHeight = _viewModel.Height;
+
+        var x = caretX + 20;
+        var y = caretY + 20;
+
+        if (x + windowWidth > workArea.X + workArea.Width)
+        {
+            x = caretX - windowWidth - 20;
+        }
+        if (y + windowHeight > workArea.Y + workArea.Height)
+        {
+            y = caretY - windowHeight - 20;
+        }
+
+        x = Math.Max(workArea.X, Math.Min(x, workArea.X + workArea.Width - windowWidth));
+        y = Math.Max(workArea.Y, Math.Min(y, workArea.Y + workArea.Height - windowHeight));
+
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(x, y);
     }
 
     void IWindow.Focus()

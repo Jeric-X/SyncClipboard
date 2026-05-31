@@ -998,4 +998,7 @@ This operation cannot be undone.</value>
   <data name="NoWithoutSubfolder" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="FollowCaretPosition" xml:space="preserve">
+    <value>Follow Caret Position</value>
+  </data>
 </root>

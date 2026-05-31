@@ -41,11 +41,13 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly MultiTimesEventSimulator _imageClickEvents = new(TimeSpan.FromMilliseconds(300));
     private readonly WindowManager _windowManger;
     private ScrollViewer? _scrollViewer = null;
+    private readonly ICaretPositionProvider _caretPositionProvider;
 
-    public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel)
+    public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel, ICaretPositionProvider caretPositionProvider)
     {
         _viewModel = viewModel;
         _windowManger = WindowManager.Get(this);
+        _caretPositionProvider = caretPositionProvider;
         this.AppWindow.Resize(new SizeInt32(1200, 800));
 
         InitializeComponent();
@@ -57,7 +59,6 @@ public sealed partial class HistoryWindow : Window, IWindow
         _TitleBar.Loaded += (_, _) => SetNonClientPointerSource();
         _FilterSelectorBar.Loaded += (_, _) => DisableSelectorBarScrollBars();
 
-        this.AppWindow.Resize(new SizeInt32(_viewModel.Width, _viewModel.Height));
         this.SizeChanged += HistoryWindow_SizeChanged;
 
         configManager.GetAndListenConfig<ProgramConfig>(config => this.SetTheme(config.Theme));
@@ -145,8 +146,13 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         if (_windowLoaded)
         {
-            _viewModel.Height = this.AppWindow.Size.Height;
-            _viewModel.Width = this.AppWindow.Size.Width;
+            var centerX = this.AppWindow.Position.X + this.AppWindow.Size.Width / 2;
+            var centerY = this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2;
+            var (width, height) = WindowExtention.PhysicalToDip(
+                this.AppWindow.Size.Width, this.AppWindow.Size.Height,
+                centerX, centerY);
+            _viewModel.Width = width;
+            _viewModel.Height = height;
         }
         SetNonClientPointerSource();
     }
@@ -162,10 +168,18 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (!_windowLoaded)
         {
             SetWindowMinSize();
-            this.CenterOnScreen();
             _ = _viewModel.Init(this);
         }
 
+        var position = _viewModel.GetActivePosition();
+        if (position.IsValid)
+        {
+            PositionNearCaret(position.X, position.Y);
+        }
+        else if (!_windowLoaded)
+        {
+            this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
+        }
         this.Activate();
         this.SetForegroundWindow();
 
@@ -177,6 +191,36 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             _windowLoaded = true;
         }
+    }
+
+    private void PositionNearCaret(int caretX, int caretY)
+    {
+        var displayArea = DisplayArea.GetFromPoint(new PointInt32(caretX, caretY), DisplayAreaFallback.Primary);
+        if (displayArea == null)
+        {
+            this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
+            return;
+        }
+
+        var workArea = displayArea.WorkArea;
+        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, caretX, caretY);
+
+        var x = caretX + 20;
+        var y = caretY + 20;
+
+        if (x + windowWidth > workArea.X + workArea.Width)
+        {
+            x = caretX - windowWidth - 20;
+        }
+        if (y + windowHeight > workArea.Y + workArea.Height)
+        {
+            y = caretY - windowHeight - 20;
+        }
+
+        x = Math.Max(workArea.X, Math.Min(x, workArea.X + workArea.Width - windowWidth));
+        y = Math.Max(workArea.Y, Math.Min(y, workArea.Y + workArea.Height - windowHeight));
+
+        this.AppWindow.Move(new PointInt32(x, y));
     }
 
     public void Focus()
@@ -560,7 +604,9 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private RectInt32 GetElementRect(FrameworkElement element)
     {
-        var scale = _TitleBar.XamlRoot.RasterizationScale;
+        var scale = WindowExtention.GetScaleFactorForPoint(
+            this.AppWindow.Position.X + this.AppWindow.Size.Width / 2,
+            this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2);
         var transform = element.TransformToVisual(null);
         var bounds = transform.TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
         RectInt32 rect = GetRect(bounds, scale);

@@ -1075,6 +1075,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Follow Caret Position 的本地化字符串。
+        /// </summary>
+        public static string FollowCaretPosition {
+            get {
+                return ResourceManager.GetString("FollowCaretPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Font 的本地化字符串。
         /// </summary>
         public static string Font {
