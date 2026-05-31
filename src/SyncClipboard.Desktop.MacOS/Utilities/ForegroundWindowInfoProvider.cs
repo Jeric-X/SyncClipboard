@@ -1,7 +1,8 @@
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 

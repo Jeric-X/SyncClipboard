@@ -1,7 +1,8 @@
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
@@ -170,11 +171,12 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
 
             try
             {
-                if (AXValueGetValue(boundsValue, kAXValueCGRectType, out var bounds))
+                var valueResult = AXValueGetValue(boundsValue, kAXValueCGRectType, out var bounds);
+                if (valueResult == errAXSuccess)
                 {
                     return bounds;
                 }
-                _logger.Write(Tag, "AXValueGetValue returned false");
+                _logger.Write(Tag, $"AXValueGetValue failed with error: {valueResult}");
             }
             finally
             {
