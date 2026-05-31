@@ -50,6 +50,7 @@ public class AppServices
             services.AddSingleton<IClipboardReader, XClipReader>();
             services.AddSingleton<IClipboardReader, WlClipboardReader>();
             services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
+            services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
         }
 
         if (!OperatingSystem.IsMacOS())

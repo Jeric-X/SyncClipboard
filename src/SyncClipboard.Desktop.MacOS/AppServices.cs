@@ -15,6 +15,7 @@ public class AppServices
 
         services.AddSingleton<INativeHotkeyRegistry, CarbonHotkeyRegistry>();
         services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
+        services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         services.AddSingleton<ITrayIcon, TrayIconImpl>();

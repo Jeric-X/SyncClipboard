@@ -6,69 +6,10 @@ using System.Runtime.InteropServices;
 
 namespace SyncClipboard.WinUI3.Win32;
 
-[ComImport]
-[Guid("618736E0-3C3D-11CF-810C-00AA00389B71")]
-[InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
-internal interface IAccessible
-{
-#pragma warning disable IDE1006 // 命名样式
-    object accParent { get; }
-    int accChildCount { get; }
-    object accName(object varChild);
-    object accValue(object varChild);
-    object accDescription(object varChild);
-    object accRole(object varChild);
-    object accState(object varChild);
-    object accHelp(object varChild);
-    object accHelpTopic(out string pszHelpFile, object varChild);
-    object accKeyboardShortcut(object varChild);
-    object accFocus { get; }
-    object accSelection { get; }
-    object accLocation(out int pxLeft, out int pyTop, out int pcxWidth, out int pcyHeight, object varChild);
-    object accNavigate(int navDir, object varStart);
-    object accHitTest(int xLeft, int yTop);
-    void accDoDefaultAction(object varChild);
-#pragma warning restore IDE1006 // 命名样式
-}
-
 internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProvider
 {
     private readonly ILogger _logger = logger;
     private const string Tag = "CaretPosition";
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct GUITHREADINFO
-    {
-        public int cbSize;
-        public int flags;
-        public IntPtr hwndActive;
-        public IntPtr hwndFocus;
-        public IntPtr hwndCapture;
-        public IntPtr hwndMenuOwner;
-        public IntPtr hwndMoveSize;
-        public IntPtr hwndCaret;
-        public Rectangle rcCaret;
-    }
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetGUIThreadInfo(int idThread, ref GUITHREADINFO pgui);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ClientToScreen(IntPtr hWnd, ref Point lpPoint);
-
-    [DllImport("oleacc.dll")]
-    private static extern int AccessibleObjectFromWindow(IntPtr hwnd, int dwObjectID, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppvObject);
-
-    private const int OBJID_CARET = -8;
-    private static readonly Guid IID_IAccessible = new(0x618736E0, 0x3C3D, 0x11CF, 0x81, 0x0C, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 
     private Interop.UIAutomationClient.IUIAutomation? _uiAutomation;
 
@@ -108,16 +49,16 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                 cbSize = Marshal.SizeOf<GUITHREADINFO>()
             };
 
-            var foregroundWindow = GetForegroundWindow();
+            var foregroundWindow = User32Interop.GetForegroundWindow();
             if (foregroundWindow == IntPtr.Zero)
             {
                 _logger.Write(Tag, "GetForegroundWindow returned null");
                 return ScreenPosition.Invalid;
             }
 
-            var threadId = GetWindowThreadProcessId(foregroundWindow, out _);
+            var threadId = User32Interop.GetWindowThreadProcessId(foregroundWindow, out _);
 
-            if (!GetGUIThreadInfo((int)threadId, ref info))
+            if (!User32Interop.GetGUIThreadInfo((int)threadId, ref info))
             {
                 var error = Marshal.GetLastWin32Error();
                 _logger.Write(Tag, $"GetGUIThreadInfo failed, error code: {error}");
@@ -131,7 +72,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             }
 
             var point = new Point(info.rcCaret.Left, info.rcCaret.Top);
-            if (!ClientToScreen(info.hwndCaret, ref point))
+            if (!User32Interop.ClientToScreen(info.hwndCaret, ref point))
             {
                 var error = Marshal.GetLastWin32Error();
                 _logger.Write(Tag, $"ClientToScreen failed, error code: {error}");
@@ -157,20 +98,20 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
     {
         try
         {
-            var foregroundWindow = GetForegroundWindow();
+            var foregroundWindow = User32Interop.GetForegroundWindow();
             if (foregroundWindow == IntPtr.Zero)
             {
                 _logger.Write(Tag, "MSAA: GetForegroundWindow returned null");
                 return ScreenPosition.Invalid;
             }
 
-            var threadId = GetWindowThreadProcessId(foregroundWindow, out _);
+            var threadId = User32Interop.GetWindowThreadProcessId(foregroundWindow, out _);
             var info = new GUITHREADINFO
             {
                 cbSize = Marshal.SizeOf<GUITHREADINFO>()
             };
 
-            if (!GetGUIThreadInfo((int)threadId, ref info))
+            if (!User32Interop.GetGUIThreadInfo((int)threadId, ref info))
             {
                 _logger.Write(Tag, "MSAA: GetGUIThreadInfo failed");
                 return ScreenPosition.Invalid;
@@ -179,8 +120,8 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             var hwnd = info.hwndFocus != IntPtr.Zero ? info.hwndFocus : foregroundWindow;
             _logger.Write(Tag, $"MSAA: Using hwnd={hwnd.ToInt64():X}, hwndFocus={info.hwndFocus.ToInt64():X}");
 
-            var iid = IID_IAccessible;
-            var result = AccessibleObjectFromWindow(hwnd, OBJID_CARET, ref iid, out var accObject);
+            var iid = User32Interop.IID_IAccessible;
+            var result = User32Interop.AccessibleObjectFromWindow(hwnd, User32Interop.OBJID_CARET, ref iid, out var accObject);
             if (result != 0 || accObject == null)
             {
                 _logger.Write(Tag, $"AccessibleObjectFromWindow failed, result: {result}");

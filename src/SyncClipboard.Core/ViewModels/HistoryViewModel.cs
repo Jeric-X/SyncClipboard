@@ -43,6 +43,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly IProfileEnv profileEnv;
     private readonly HistoryService _historyService;
     private readonly ICaretPositionProvider _caretPositionProvider;
+    private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider;
     private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
@@ -70,7 +71,8 @@ public partial class HistoryViewModel : ObservableObject
         HistoryService historyService,
         HistoryTransferQueue transferQueue,
         IThreadDispatcher threadDispatcher,
-        ICaretPositionProvider caretPositionProvider)
+        ICaretPositionProvider caretPositionProvider,
+        IForegroundWindowInfoProvider foregroundWindowInfoProvider)
     {
         this.historyManager = historyManager;
         this.keyboard = keyboard;
@@ -86,6 +88,7 @@ public partial class HistoryViewModel : ObservableObject
         this._transferQueue = transferQueue;
         this._threadDispatcher = threadDispatcher;
         this._caretPositionProvider = caretPositionProvider;
+        this._foregroundWindowInfoProvider = foregroundWindowInfoProvider;
 
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
@@ -292,6 +295,12 @@ public partial class HistoryViewModel : ObservableObject
         set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
     }
 
+    public bool FollowForegroundWindowScreen
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowForegroundWindowScreen;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
+    }
+
     public ScreenPosition GetActivePosition()
     {
         if (FollowCaretPosition)
@@ -303,6 +312,11 @@ public partial class HistoryViewModel : ObservableObject
             }
         }
         return ScreenPosition.Invalid;
+    }
+
+    public ForegroundWindowInfo GetForegroundWindowInfo()
+    {
+        return _foregroundWindowInfoProvider.GetForegroundWindowInfo();
     }
 
     public double ListItemFontSize => FontScalePercent / 100.0 * 12.0;

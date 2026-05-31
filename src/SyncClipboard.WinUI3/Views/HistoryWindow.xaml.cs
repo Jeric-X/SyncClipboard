@@ -176,6 +176,10 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             PositionNearCaret(position.X, position.Y);
         }
+        else if (_viewModel.FollowForegroundWindowScreen)
+        {
+            PositionOnForegroundWindowScreen();
+        }
         else if (!_windowLoaded)
         {
             this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
@@ -191,6 +195,50 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             _windowLoaded = true;
         }
+    }
+
+    private void PositionOnForegroundWindowScreen()
+    {
+        var foregroundInfo = _viewModel.GetForegroundWindowInfo();
+        if (!foregroundInfo.IsValid)
+        {
+            if (!_windowLoaded)
+            {
+                this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
+            }
+            return;
+        }
+
+        var centerX = foregroundInfo.X + foregroundInfo.Width / 2;
+        var centerY = foregroundInfo.Y + foregroundInfo.Height / 2;
+        var targetDisplayArea = DisplayArea.GetFromPoint(new PointInt32(centerX, centerY), DisplayAreaFallback.Primary);
+        if (targetDisplayArea == null)
+        {
+            if (!_windowLoaded)
+            {
+                this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
+            }
+            return;
+        }
+
+        if (_windowLoaded)
+        {
+            var currentCenterX = this.AppWindow.Position.X + this.AppWindow.Size.Width / 2;
+            var currentCenterY = this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2;
+            var currentDisplayArea = DisplayArea.GetFromPoint(new PointInt32(currentCenterX, currentCenterY), DisplayAreaFallback.Primary);
+            if (currentDisplayArea != null && currentDisplayArea.DisplayId.Value == targetDisplayArea.DisplayId.Value)
+            {
+                return;
+            }
+        }
+
+        var workArea = targetDisplayArea.WorkArea;
+        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, centerX, centerY);
+        var x = workArea.X + (workArea.Width - windowWidth) / 2;
+        var y = workArea.Y + (workArea.Height - windowHeight) / 2;
+
+        this.AppWindow.Move(new PointInt32(x, y));
+        this.AppWindow.Resize(new SizeInt32(windowWidth, windowHeight));
     }
 
     private void PositionNearCaret(int caretX, int caretY)

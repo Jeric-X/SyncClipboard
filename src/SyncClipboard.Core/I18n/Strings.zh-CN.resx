@@ -999,4 +999,7 @@ Esc：关闭面板</value>
   <data name="FollowCaretPosition" xml:space="preserve">
     <value>跟随文字输入光标位置</value>
   </data>
+  <data name="FollowForegroundWindowScreen" xml:space="preserve">
+    <value>跟随前台窗口所在屏幕</value>
+  </data>
 </root>

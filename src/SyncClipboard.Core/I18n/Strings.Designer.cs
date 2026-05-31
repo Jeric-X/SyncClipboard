@@ -1084,6 +1084,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Follow Foreground Window Screen 的本地化字符串。
+        /// </summary>
+        public static string FollowForegroundWindowScreen {
+            get {
+                return ResourceManager.GetString("FollowForegroundWindowScreen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Font 的本地化字符串。
         /// </summary>
         public static string Font {

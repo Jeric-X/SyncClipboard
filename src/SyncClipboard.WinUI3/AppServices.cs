@@ -38,6 +38,7 @@ public class AppServices
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<INativeHotkeyRegistry>(sp => new NativeHotkeyRegistry((MainWindow)sp.GetRequiredService<IMainWindow>()));
         services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
+        services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
 
         services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));
 

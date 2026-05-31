@@ -1001,4 +1001,7 @@ This operation cannot be undone.</value>
   <data name="FollowCaretPosition" xml:space="preserve">
     <value>Follow Caret Position</value>
   </data>
+  <data name="FollowForegroundWindowScreen" xml:space="preserve">
+    <value>Follow Foreground Window Screen</value>
+  </data>
 </root>
