@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.ViewModels;
+namespace SyncClipboard.Core.ViewModels;
 
 public class PageDefinition(string name, string title, string? fontIcon = null)
 {
@@ -19,6 +19,7 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
     public static readonly PageDefinition AddAccount = new("AddAccount", I18n.Strings.AddAccount);
     public static readonly PageDefinition DefaultAddAccount = new("AccountConfigEdit", I18n.Strings.EditAccountConfig);
     public static readonly PageDefinition FileSyncFilterSetting = new("FileSyncFilterSetting", I18n.Strings.FileSyncFilter);
+    public static readonly PageDefinition ClipboardOwnerFilterSetting = new("ClipboardOwnerFilterSetting", I18n.Strings.ClipboardOwnerFilter);
     public static readonly PageDefinition SyncContentControl = new("SyncContentControl", I18n.Strings.SyncContentControl);
     public static readonly PageDefinition Hotkey = new("Hotkey", I18n.Strings.Hotkeys, "\uE144");
     public static readonly PageDefinition ClipboardAcquisitionRules = new("ClipboardAcquisitionRules", I18n.Strings.ClipboardAcquisitionRules);

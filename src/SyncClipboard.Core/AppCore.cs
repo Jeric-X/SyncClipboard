@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NativeNotification;
@@ -302,6 +302,7 @@ namespace SyncClipboard.Core
             services.AddTransient<AddAccountViewModel>();
             services.AddTransient<AccountConfigEditViewModel>();
             services.AddTransient<FileSyncFilterSettingViewModel>();
+            services.AddTransient<ClipboardOwnerFilterSettingViewModel>();
             services.AddTransient<ClipboardAcquisitionRulesViewModel>();
             services.AddTransient<ProxySettingViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();

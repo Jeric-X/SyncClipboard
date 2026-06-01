@@ -115,6 +115,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Add Item 的本地化字符串。
+        /// </summary>
+        public static string AddItem {
+            get {
+                return ResourceManager.GetString("AddItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Address 的本地化字符串。
         /// </summary>
         public static string Address {
@@ -421,6 +430,42 @@ namespace SyncClipboard.Core.I18n {
         public static string ClipboardImageUpdated {
             get {
                 return ResourceManager.GetString("ClipboardImageUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Clipboard Source Filter 的本地化字符串。
+        /// </summary>
+        public static string ClipboardOwnerFilter {
+            get {
+                return ResourceManager.GetString("ClipboardOwnerFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Each process name per line 的本地化字符串。
+        /// </summary>
+        public static string ClipboardOwnerFilterDescription {
+            get {
+                return ResourceManager.GetString("ClipboardOwnerFilterDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Capture from Clipboard 的本地化字符串。
+        /// </summary>
+        public static string CaptureFromClipboard {
+            get {
+                return ResourceManager.GetString("CaptureFromClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Listening for next clipboard change... 的本地化字符串。
+        /// </summary>
+        public static string ListeningNextChange {
+            get {
+                return ResourceManager.GetString("ListeningNextChange", resourceCulture);
             }
         }
         
@@ -868,6 +913,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Edit Item 的本地化字符串。
+        /// </summary>
+        public static string EditItem {
+            get {
+                return ResourceManager.GetString("EditItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Operation 的本地化字符串。
+        /// </summary>
+        public static string Operation {
+            get {
+                return ResourceManager.GetString("Operation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Use Custom Configuration File 的本地化字符串。
         /// </summary>
         public static string EnableCustomConfigurationFile {
@@ -972,6 +1035,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Error {
             get {
                 return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Executable Name 的本地化字符串。
+        /// </summary>
+        public static string ExecutableName {
+            get {
+                return ResourceManager.GetString("ExecutableName", resourceCulture);
             }
         }
         
@@ -1800,6 +1872,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Preparing {
             get {
                 return ResourceManager.GetString("Preparing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Process Name 的本地化字符串。
+        /// </summary>
+        public static string ProcessName {
+            get {
+                return ResourceManager.GetString("ProcessName", resourceCulture);
             }
         }
         
@@ -2700,6 +2781,15 @@ namespace SyncClipboard.Core.I18n {
         public static string WhiteList {
             get {
                 return ResourceManager.GetString("WhiteList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Window Title 的本地化字符串。
+        /// </summary>
+        public static string WindowTitle {
+            get {
+                return ResourceManager.GetString("WindowTitle", resourceCulture);
             }
         }
         

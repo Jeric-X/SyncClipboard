@@ -10,7 +10,7 @@ internal static class WindowInfoHelper
 {
     public static ForegroundWindowInfo? GetWindowInfoFromHwnd(IntPtr hWnd, ILogger logger, string tag)
     {
-        var threadId = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
+        _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
         if (processId == 0)
         {
             logger.Write(tag, $"GetWindowThreadProcessId failed for hwnd={hWnd.ToInt64():X}");

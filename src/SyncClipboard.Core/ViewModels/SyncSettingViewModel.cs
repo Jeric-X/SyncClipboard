@@ -216,6 +216,12 @@ public partial class SyncSettingViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SetClipboardOwnerFilter()
+    {
+        _mainVM.NavigateToNextLevel(PageDefinition.ClipboardOwnerFilterSetting);
+    }
+
+    [RelayCommand]
     private void OpenSyncContentControlPage()
     {
         _mainVM.NavigateToNextLevel(PageDefinition.SyncContentControl);

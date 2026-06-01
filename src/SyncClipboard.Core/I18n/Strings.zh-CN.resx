@@ -586,6 +586,36 @@ Esc：关闭面板</value>
   <data name="FileFilterDescription" xml:space="preserve">
     <value>每行一个文件扩展名</value>
   </data>
+  <data name="ClipboardOwnerFilter" xml:space="preserve">
+    <value>剪贴板来源过滤</value>
+  </data>
+  <data name="ClipboardOwnerFilterDescription" xml:space="preserve">
+    <value>所有字段均需匹配才会过滤，留空表示忽略该字段</value>
+  </data>
+  <data name="AddItem" xml:space="preserve">
+    <value>添加条目</value>
+  </data>
+  <data name="CaptureFromClipboard" xml:space="preserve">
+    <value>从剪贴板捕获</value>
+  </data>
+  <data name="ListeningNextChange" xml:space="preserve">
+    <value>正在监听下次剪贴板变化...</value>
+  </data>
+  <data name="EditItem" xml:space="preserve">
+    <value>编辑条目</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>进程名</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>窗口标题</value>
+  </data>
+  <data name="ExecutableName" xml:space="preserve">
+    <value>可执行文件名</value>
+  </data>
   <data name="SaveList" xml:space="preserve">
     <value>保存名单</value>
   </data>
