@@ -594,6 +594,9 @@ Double click image: View full image</value>
   <data name="EnableUploadText" xml:space="preserve">
     <value>Enable Uploading Text</value>
   </data>
+  <data name="EnableUploadImage" xml:space="preserve">
+    <value>Enable Uploading Image</value>
+  </data>
   <data name="EnableUploadFile" xml:space="preserve">
     <value>Enable Uploading Single File</value>
   </data>

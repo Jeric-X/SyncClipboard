@@ -592,6 +592,9 @@ Esc：关闭面板</value>
   <data name="EnableUploadText" xml:space="preserve">
     <value>上传文字</value>
   </data>
+  <data name="EnableUploadImage" xml:space="preserve">
+    <value>上传图片</value>
+  </data>
   <data name="EnableUploadFile" xml:space="preserve">
     <value>上传单个文件</value>
   </data>

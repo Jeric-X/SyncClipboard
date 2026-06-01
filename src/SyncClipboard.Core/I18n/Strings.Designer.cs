@@ -940,6 +940,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Enable Uploading Image 的本地化字符串。
+        /// </summary>
+        public static string EnableUploadImage {
+            get {
+                return ResourceManager.GetString("EnableUploadImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Enable Uploading Multi Files or Folder 的本地化字符串。
         /// </summary>
         public static string EnableUploadMultiFile {
