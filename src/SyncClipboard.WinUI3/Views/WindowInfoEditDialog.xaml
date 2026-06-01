@@ -14,8 +14,17 @@
         <Style TargetType="local:WindowInfoEditDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
     <StackPanel Spacing="12" MinWidth="400">
-        <TextBox x:Name="_ProcessName" Header="{x:Bind i18n:Strings.ProcessName}" PlaceholderText="{x:Bind i18n:Strings.ProcessName}" TextChanged="OnTextChanged" />
-        <TextBox x:Name="_WindowTitle" Header="{x:Bind i18n:Strings.WindowTitle}" PlaceholderText="{x:Bind i18n:Strings.WindowTitle}" TextChanged="OnTextChanged" />
-        <TextBox x:Name="_ExecutableName" Header="{x:Bind i18n:Strings.ExecutableName}" PlaceholderText="{x:Bind i18n:Strings.ExecutableName}" TextChanged="OnTextChanged" />
+        <TextBox x:Name="_ProcessName"
+                 Header="{x:Bind i18n:Strings.ProcessName}"
+                 PlaceholderText="{x:Bind i18n:Strings.ProcessName}"
+                 TextChanged="OnTextChanged" />
+        <TextBox x:Name="_WindowTitle"
+                 Header="{x:Bind i18n:Strings.WindowTitle}"
+                 PlaceholderText="{x:Bind i18n:Strings.WindowTitle}"
+                 TextChanged="OnTextChanged" />
+        <TextBox x:Name="_ExecutableName"
+                 Header="{x:Bind i18n:Strings.ExecutableName}"
+                 PlaceholderText="{x:Bind i18n:Strings.ExecutableName}"
+                 TextChanged="OnTextChanged" />
     </StackPanel>
 </ContentDialog>

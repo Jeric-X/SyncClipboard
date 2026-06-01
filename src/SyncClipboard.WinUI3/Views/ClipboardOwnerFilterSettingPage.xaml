@@ -28,7 +28,10 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10" Spacing="8">
+            <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Margin="0,0,0,10"
+                        Spacing="8">
                 <Button Click="AddItemClick">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE710;" FontSize="12" />
@@ -41,11 +44,18 @@
                         <TextBlock Text="{x:Bind i18n:Strings.CaptureFromClipboard}" />
                     </StackPanel>
                 </Button>
-                <TextBlock Text="{x:Bind i18n:Strings.ListeningNextChange}" VerticalAlignment="Center" Foreground="{ThemeResource SystemAccentColor}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsListening), Mode=OneWay}" />
+                <TextBlock Text="{x:Bind i18n:Strings.ListeningNextChange}"
+                           VerticalAlignment="Center"
+                           Foreground="{ThemeResource SystemAccentColor}"
+                           Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsListening), Mode=OneWay}" />
             </StackPanel>
             <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <Grid Padding="12,8" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8,8,0,0">
+                    <Grid Padding="12,8"
+                          Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                          BorderThickness="1"
+                          CornerRadius="8,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="1*" />
@@ -55,26 +65,53 @@
                         <TextBlock Grid.Column="0" Text="{x:Bind i18n:Strings.ProcessName}" FontWeight="SemiBold" />
                         <TextBlock Grid.Column="1" Text="{x:Bind i18n:Strings.WindowTitle}" FontWeight="SemiBold" />
                         <TextBlock Grid.Column="2" Text="{x:Bind i18n:Strings.ExecutableName}" FontWeight="SemiBold" />
-                        <TextBlock Grid.Column="3" Text="{x:Bind i18n:Strings.Operation}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="3"
+                                   Text="{x:Bind i18n:Strings.Operation}"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
                     </Grid>
                     <ItemsControl ItemsSource="{x:Bind _viewModel.FilterList, Mode=OneWay}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:EditableWindowInfo">
-                                <Grid Padding="12,8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,1,1">
+                                <Grid Padding="12,8"
+                                      Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                      BorderThickness="1,0,1,1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="1*" />
                                         <ColumnDefinition Width="1*" />
                                         <ColumnDefinition Width="1*" />
                                         <ColumnDefinition Width="80" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding ProcessName}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding WindowTitle}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="2" Text="{Binding ExecutableName}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Button Click="EditItemClick" DataContext="{Binding}" Width="32" Height="32" Padding="0">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding ProcessName}"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding WindowTitle}"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding ExecutableName}"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="3"
+                                                Orientation="Horizontal"
+                                                Spacing="4"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center">
+                                        <Button Click="EditItemClick"
+                                                DataContext="{Binding}"
+                                                Width="32"
+                                                Height="32"
+                                                Padding="0">
                                             <FontIcon Glyph="&#xE70F;" FontSize="14" />
                                         </Button>
-                                        <Button Click="DeleteItemClick" DataContext="{Binding}" Width="32" Height="32" Padding="0">
+                                        <Button Click="DeleteItemClick"
+                                                DataContext="{Binding}"
+                                                Width="32"
+                                                Height="32"
+                                                Padding="0">
                                             <FontIcon Glyph="&#xE74D;" FontSize="14" />
                                         </Button>
                                     </StackPanel>
