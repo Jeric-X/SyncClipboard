@@ -243,6 +243,13 @@ public class UploadService : ClipboardHander
 
     protected override Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
+        var filterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>();
+        if (ClipboardOwnerFilterHelper.ShouldFilter(filterConfig, meta.Owner))
+        {
+            _logger.Write(LOG_TAG, "Stop Push: Filtered by clipboard owner.");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Filtered by clipboard owner.", false);
+            return Task.CompletedTask;
+        }
         return CheckAndUpload(meta, profile, true, token);
     }
 

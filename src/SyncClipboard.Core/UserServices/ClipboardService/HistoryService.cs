@@ -6,6 +6,7 @@ using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Core.Utilities.Runner;
+using SyncClipboard.Core.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncClipboard.Core.UserServices.ClipboardService;
@@ -238,6 +239,12 @@ public class HistoryService : ClipboardHander
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, Profile profile, CancellationToken token)
     {
+        var filterConfig = configManager.GetConfig<ClipboardOwnerFilterConfig>();
+        if (ClipboardOwnerFilterHelper.ShouldFilter(filterConfig, clipboardMetaInfomation.Owner))
+        {
+            return;
+        }
+
         if (profile.Type == ProfileType.Unknown)
         {
             return;
