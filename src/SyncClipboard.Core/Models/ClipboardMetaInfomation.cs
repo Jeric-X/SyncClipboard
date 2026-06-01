@@ -25,6 +25,7 @@ public record class ClipboardMetaInfomation
     }
     public DragDropEffects? Effects;
     public string? OriginalType;
+    public ForegroundWindowInfo? Owner;
 
     public virtual bool Equals(ClipboardMetaInfomation? other)
     {

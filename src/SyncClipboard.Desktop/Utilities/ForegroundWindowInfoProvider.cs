@@ -9,7 +9,7 @@ namespace SyncClipboard.Desktop.Utilities;
 [SupportedOSPlatform("linux")]
 internal sealed class ForegroundWindowInfoProvider : IForegroundWindowInfoProvider
 {
-    public ForegroundWindowInfo GetForegroundWindowInfo()
+    public ForegroundWindowDetail GetForegroundWindowDetail()
     {
         try
         {
@@ -32,13 +32,13 @@ internal sealed class ForegroundWindowInfoProvider : IForegroundWindowInfoProvid
 
             if (process.ExitCode != 0 || string.IsNullOrEmpty(output))
             {
-                return ForegroundWindowInfo.Invalid;
+                return ForegroundWindowDetail.Invalid;
             }
 
             var lines = output.Split('\n');
             if (lines.Length < 2)
             {
-                return ForegroundWindowInfo.Invalid;
+                return ForegroundWindowDetail.Invalid;
             }
 
             var positionLine = lines.FirstOrDefault(l => l.Trim().StartsWith("Position:"));
@@ -46,7 +46,7 @@ internal sealed class ForegroundWindowInfoProvider : IForegroundWindowInfoProvid
 
             if (positionLine == null || geometryLine == null)
             {
-                return ForegroundWindowInfo.Invalid;
+                return ForegroundWindowDetail.Invalid;
             }
 
             var positionParts = positionLine.Split(' ', '\t').Where(p => p.Contains(',')).FirstOrDefault()?.Split(',');
@@ -54,24 +54,22 @@ internal sealed class ForegroundWindowInfoProvider : IForegroundWindowInfoProvid
 
             if (positionParts == null || geometryParts == null || positionParts.Length < 2 || geometryParts.Length < 2)
             {
-                return ForegroundWindowInfo.Invalid;
+                return ForegroundWindowDetail.Invalid;
             }
 
             if (!int.TryParse(positionParts[0], out var x) || !int.TryParse(positionParts[1], out var y))
             {
-                return ForegroundWindowInfo.Invalid;
+                return ForegroundWindowDetail.Invalid;
             }
 
             if (!int.TryParse(geometryParts[0], out var width) || !int.TryParse(geometryParts[1], out var height))
             {
-                return ForegroundWindowInfo.Invalid;
+                return ForegroundWindowDetail.Invalid;
             }
 
-            return new ForegroundWindowInfo
+            return new ForegroundWindowDetail
             {
-                ProcessName = "",
-                WindowTitle = "",
-                ExecutableName = "",
+                WindowInfo = null,
                 X = x,
                 Y = y,
                 Width = width,
@@ -81,7 +79,12 @@ internal sealed class ForegroundWindowInfoProvider : IForegroundWindowInfoProvid
         }
         catch
         {
-            return ForegroundWindowInfo.Invalid;
+            return ForegroundWindowDetail.Invalid;
         }
+    }
+
+    public ForegroundWindowInfo? GetForegroundWindowInfo()
+    {
+        return null;
     }
 }

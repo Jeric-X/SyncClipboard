@@ -52,6 +52,7 @@ public class AppServices
             services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
             services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
             services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
+            services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
         }
 
         if (!OperatingSystem.IsMacOS())

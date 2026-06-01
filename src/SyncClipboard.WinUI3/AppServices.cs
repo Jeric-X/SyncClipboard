@@ -40,6 +40,7 @@ public class AppServices
         services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
         services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
         services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
+        services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
 
         services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));
 

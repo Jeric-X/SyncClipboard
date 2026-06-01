@@ -17,6 +17,7 @@ public class AppServices
         services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
         services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
         services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
+        services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         services.AddSingleton<ITrayIcon, TrayIconImpl>();

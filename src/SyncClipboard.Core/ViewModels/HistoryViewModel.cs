@@ -328,9 +328,9 @@ public partial class HistoryViewModel : ObservableObject
         return _caretPositionProvider.GetCaretPosition();
     }
 
-    public ForegroundWindowInfo GetForegroundWindowInfo()
+    public ForegroundWindowDetail GetForegroundWindowInfo()
     {
-        return _foregroundWindowInfoProvider.GetForegroundWindowInfo();
+        return _foregroundWindowInfoProvider.GetForegroundWindowDetail();
     }
 
     public ScreenPosition GetMousePosition()

@@ -29,15 +29,20 @@ internal sealed class ForegroundWindowInfoProvider : IForegroundWindowInfoProvid
     [DllImport("/usr/lib/libSystem.dylib")]
     private static extern IntPtr strlcpy(IntPtr dst, IntPtr src, IntPtr size);
 
-    public ForegroundWindowInfo GetForegroundWindowInfo()
+    public ForegroundWindowDetail GetForegroundWindowDetail()
     {
         try
         {
-            return ForegroundWindowInfo.Invalid;
+            return ForegroundWindowDetail.Invalid;
         }
         catch
         {
-            return ForegroundWindowInfo.Invalid;
+            return ForegroundWindowDetail.Invalid;
         }
+    }
+
+    public ForegroundWindowInfo? GetForegroundWindowInfo()
+    {
+        return null;
     }
 }

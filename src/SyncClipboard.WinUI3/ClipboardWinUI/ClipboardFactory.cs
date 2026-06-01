@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -213,6 +213,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         }
 
         await Logger.WriteAsync(LOG_TAG, "Text: " + meta.Text ?? "");
+        SetClipboardOwner(meta);
         return meta;
     }
 }
