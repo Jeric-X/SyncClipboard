@@ -250,6 +250,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Capture from Clipboard 的本地化字符串。
+        /// </summary>
+        public static string CaptureFromClipboard {
+            get {
+                return ResourceManager.GetString("CaptureFromClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 PEM Certificate Key File Path 的本地化字符串。
         /// </summary>
         public static string CertificatePemKeyPath {
@@ -434,7 +443,7 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Clipboard Source Filter 的本地化字符串。
+        ///   查找类似 Clipboard Content Source Filter 的本地化字符串。
         /// </summary>
         public static string ClipboardOwnerFilter {
             get {
@@ -443,29 +452,11 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Each process name per line 的本地化字符串。
+        ///   查找类似 All fields must match to filter, leave empty to ignore 的本地化字符串。
         /// </summary>
         public static string ClipboardOwnerFilterDescription {
             get {
                 return ResourceManager.GetString("ClipboardOwnerFilterDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Capture from Clipboard 的本地化字符串。
-        /// </summary>
-        public static string CaptureFromClipboard {
-            get {
-                return ResourceManager.GetString("CaptureFromClipboard", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Listening for next clipboard change... 的本地化字符串。
-        /// </summary>
-        public static string ListeningNextChange {
-            get {
-                return ResourceManager.GetString("ListeningNextChange", resourceCulture);
             }
         }
         
@@ -918,15 +909,6 @@ namespace SyncClipboard.Core.I18n {
         public static string EditItem {
             get {
                 return ResourceManager.GetString("EditItem", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Operation 的本地化字符串。
-        /// </summary>
-        public static string Operation {
-            get {
-                return ResourceManager.GetString("Operation", resourceCulture);
             }
         }
         
@@ -1525,6 +1507,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Listening for next clipboard change... 的本地化字符串。
+        /// </summary>
+        public static string ListeningNextChange {
+            get {
+                return ResourceManager.GetString("ListeningNextChange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Local Clipboard Source 的本地化字符串。
         /// </summary>
         public static string LocalClipboardSource {
@@ -1800,6 +1791,15 @@ namespace SyncClipboard.Core.I18n {
         public static string OpenUpdatePage {
             get {
                 return ResourceManager.GetString("OpenUpdatePage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Operation 的本地化字符串。
+        /// </summary>
+        public static string Operation {
+            get {
+                return ResourceManager.GetString("Operation", resourceCulture);
             }
         }
         

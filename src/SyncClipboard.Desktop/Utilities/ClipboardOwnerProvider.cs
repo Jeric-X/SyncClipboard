@@ -73,7 +73,7 @@ internal sealed class ClipboardOwnerProvider(
         }
         finally
         {
-            X11Interop.XCloseDisplay(display);
+            _ = X11Interop.XCloseDisplay(display);
         }
     }
 
@@ -113,7 +113,7 @@ internal sealed class ClipboardOwnerProvider(
             if (result != 0 && windowNamePtr != IntPtr.Zero)
             {
                 var windowName = Marshal.PtrToStringAnsi(windowNamePtr);
-                X11Interop.XFree(windowNamePtr);
+                _ = X11Interop.XFree(windowNamePtr);
                 return windowName;
             }
 
@@ -130,7 +130,7 @@ internal sealed class ClipboardOwnerProvider(
                 if (result == 0 && propPtr != IntPtr.Zero && nItems > 0)
                 {
                     var windowName = Marshal.PtrToStringAnsi(propPtr);
-                    X11Interop.XFree(propPtr);
+                    _ = X11Interop.XFree(propPtr);
                     return windowName;
                 }
             }
@@ -163,7 +163,7 @@ internal sealed class ClipboardOwnerProvider(
             if (result == 0 && propPtr != IntPtr.Zero && nItems > 0)
             {
                 var pid = Marshal.ReadInt32(propPtr);
-                X11Interop.XFree(propPtr);
+                _ = X11Interop.XFree(propPtr);
                 return pid;
             }
 

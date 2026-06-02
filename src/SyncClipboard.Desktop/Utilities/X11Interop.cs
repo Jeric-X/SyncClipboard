@@ -15,7 +15,7 @@ internal static class X11Interop
     [DllImport(LibX11)]
     internal static extern int XCloseDisplay(IntPtr display);
 
-    [DllImport(LibX11, CharSet = CharSet.Ansi)]
+    [DllImport(LibX11, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
     internal static extern IntPtr XInternAtom(IntPtr display, string atomName, bool onlyIfExists);
 
     [DllImport(LibX11)]
@@ -45,7 +45,7 @@ internal static class X11Interop
         IntPtr window,
         out XWindowAttributes attributes);
 
-    [DllImport(LibX11, CharSet = CharSet.Ansi)]
+    [DllImport(LibX11, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
     internal static extern int XFetchName(
         IntPtr display,
         IntPtr window,
