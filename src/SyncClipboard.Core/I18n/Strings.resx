@@ -589,7 +589,7 @@ Double click image: View full image</value>
     <value>Each file extension per line</value>
   </data>
   <data name="ClipboardOwnerFilter" xml:space="preserve">
-    <value>Clipboard Source Filter</value>
+    <value>Clipboard Content Source Filter</value>
   </data>
   <data name="ClipboardOwnerFilterDescription" xml:space="preserve">
     <value>All fields must match to filter, leave empty to ignore</value>

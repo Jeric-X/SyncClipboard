@@ -75,7 +75,7 @@ public partial class ClipboardOwnerFilterSettingPage : UserControl
     {
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            App.Current.MainWindow.Focus();
+            App.Current.MainWindow.Show();
 
             var dialog = new WindowInfoEditDialog();
             dialog.SetWindowInfo(info);

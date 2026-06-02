@@ -123,7 +123,10 @@
                             <!--<ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />-->
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowDetail}" IsChecked="{Binding ShowDetail, Mode=TwoWay}" />
+                            <ui:MenuFlyoutSeparator />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowCaretPosition}" IsChecked="{Binding FollowCaretPosition, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowForegroundWindowScreen}" IsChecked="{Binding FollowForegroundWindowScreen, Mode=TwoWay}" />
+                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowMousePosition}" IsChecked="{Binding FollowMousePosition, Mode=TwoWay}" />
                             <ui:MenuFlyoutSeparator />
                             <ui:MenuFlyoutItem Text="{x:Static i18n:Strings.FontScale}" Click="FontScaleMenuItem_Click" />
                         </ui:FAMenuFlyout>

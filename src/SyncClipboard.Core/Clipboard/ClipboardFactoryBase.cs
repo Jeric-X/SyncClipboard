@@ -17,7 +17,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
     private LocalFileCacheManager FileCacheManager => ServiceProvider.GetRequiredService<LocalFileCacheManager>();
     private IClipboardOwnerProvider? ClipboardOwnerProvider => ServiceProvider.GetService<IClipboardOwnerProvider>();
 
-    protected void SetClipboardOwner(ClipboardMetaInfomation meta)
+    public void SetClipboardOwner(ClipboardMetaInfomation meta)
     {
         meta.Owner = ClipboardOwnerProvider?.GetClipboardOwner();
     }

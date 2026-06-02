@@ -42,7 +42,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                 if (OperatingSystem.IsWindows())
                 {
                     var meta = new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
-                    SetClipboardOwner(meta);
                     return meta;
                 }
 
@@ -57,13 +56,11 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                     if (OperatingSystem.IsLinux())
                     {
                         var meta = await HandleLinuxClipboard(formats, ctk);
-                        SetClipboardOwner(meta);
                         return meta;
                     }
                     else if (OperatingSystem.IsMacOS())
                     {
                         var meta = await HandleMacosClipboard(formats, ctk);
-                        SetClipboardOwner(meta);
                         return meta;
                     }
                 }

@@ -587,7 +587,7 @@ Esc：关闭面板</value>
     <value>每行一个文件扩展名</value>
   </data>
   <data name="ClipboardOwnerFilter" xml:space="preserve">
-    <value>剪贴板来源过滤</value>
+    <value>剪贴板内容来源过滤</value>
   </data>
   <data name="ClipboardOwnerFilterDescription" xml:space="preserve">
     <value>所有字段均需匹配才会过滤，留空表示忽略该字段</value>
