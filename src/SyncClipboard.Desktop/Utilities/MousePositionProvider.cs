@@ -1,64 +1,78 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using System.Diagnostics;
-using System.Runtime.Versioning;
 using System;
+using System.Runtime.Versioning;
 
 namespace SyncClipboard.Desktop.Utilities;
 
 [SupportedOSPlatform("linux")]
-internal sealed class MousePositionProvider : IMousePositionProvider
+internal sealed class MousePositionProvider(ILogger logger) : IMousePositionProvider
 {
+    private readonly ILogger _logger = logger;
+    private const string Tag = "MousePosition";
+
     public ScreenPosition GetMousePosition()
     {
+        if (!X11Interop.IsAvailable)
+        {
+            _logger.Write(Tag, "X11 library not available");
+            return ScreenPosition.Invalid;
+        }
+
+        nint display = nint.Zero;
         try
         {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "xdotool",
-                    Arguments = "getmouselocation",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(1000);
-
-            if (process.ExitCode != 0 || string.IsNullOrEmpty(output))
+            display = X11Interop.XOpenDisplay(nint.Zero);
+            if (display == nint.Zero)
             {
                 return ScreenPosition.Invalid;
             }
 
-            var parts = output.Split(' ');
-            int x = 0, y = 0;
-            foreach (var part in parts)
+            var rootWindow = X11Interop.XDefaultRootWindow(display);
+            if (rootWindow == nint.Zero)
             {
-                if (part.StartsWith("x:"))
-                {
-                    _ = int.TryParse(part.AsSpan(2), out x);
-                }
-                else if (part.StartsWith("y:"))
-                {
-                    _ = int.TryParse(part.AsSpan(2), out y);
-                }
+                return ScreenPosition.Invalid;
+            }
+
+            int result = X11Interop.XQueryPointer(
+                display,
+                rootWindow,
+                out _,
+                out _,
+                out int rootX,
+                out int rootY,
+                out _,
+                out _,
+                out _);
+
+            if (result == 0)
+            {
+                return ScreenPosition.Invalid;
             }
 
             return new ScreenPosition
             {
-                X = x,
-                Y = y,
+                X = rootX,
+                Y = rootY,
                 IsValid = true
             };
         }
-        catch
+        catch (DllNotFoundException ex)
         {
+            _logger.Write(Tag, $"DllNotFoundException: {ex.Message}");
             return ScreenPosition.Invalid;
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(Tag, $"Exception: {ex.Message}");
+            return ScreenPosition.Invalid;
+        }
+        finally
+        {
+            if (display != nint.Zero)
+            {
+                _ = X11Interop.XCloseDisplay(display);
+            }
         }
     }
 }

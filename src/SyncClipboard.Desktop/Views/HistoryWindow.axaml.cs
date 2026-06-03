@@ -36,11 +36,6 @@ public partial class HistoryWindow : Window, IWindow
         InitializeComponent();
         InitializeScrollWatcher();
         SetWindowMinSize();
-        this.Loaded += async (_, _) =>
-        {
-            await _viewModel.Init(this);
-        };
-
         this.Deactivated += (_, _) => _viewModel.OnLostFocus();
         this.Activated += (_, _) =>
         {
@@ -57,6 +52,7 @@ public partial class HistoryWindow : Window, IWindow
         };
 
         this.Topmost = _viewModel.IsTopmost;
+        _ = _viewModel.Init(this);
     }
 
     private void SetWindowMinSize()
