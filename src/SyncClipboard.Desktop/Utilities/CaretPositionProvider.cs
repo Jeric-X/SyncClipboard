@@ -10,8 +10,8 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
     private readonly ILogger _logger = logger;
     private const string Tag = "CaretPosition";
 
-    public ScreenPosition GetCaretPosition()
+    public ScreenPosition? GetCaretPosition()
     {
-        return ScreenPosition.Invalid;
+        return null;
     }
 }

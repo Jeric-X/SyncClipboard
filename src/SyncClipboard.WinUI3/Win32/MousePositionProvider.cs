@@ -6,25 +6,24 @@ namespace SyncClipboard.WinUI3.Win32;
 
 internal sealed class MousePositionProvider : IMousePositionProvider
 {
-    public ScreenPosition GetMousePosition()
+    public ScreenPosition? GetMousePosition()
     {
         try
         {
             if (!User32Interop.GetCursorPos(out var point))
             {
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             return new ScreenPosition
             {
                 X = point.X,
-                Y = point.Y,
-                IsValid = true
+                Y = point.Y
             };
         }
         catch (Exception)
         {
-            return ScreenPosition.Invalid;
+            return null;
         }
     }
 }

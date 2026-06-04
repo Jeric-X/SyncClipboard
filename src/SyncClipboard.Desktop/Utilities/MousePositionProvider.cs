@@ -11,12 +11,12 @@ internal sealed class MousePositionProvider(ILogger logger) : IMousePositionProv
     private readonly ILogger _logger = logger;
     private const string Tag = "MousePosition";
 
-    public ScreenPosition GetMousePosition()
+    public ScreenPosition? GetMousePosition()
     {
         if (!X11Interop.IsAvailable)
         {
             _logger.Write(Tag, "X11 library not available");
-            return ScreenPosition.Invalid;
+            return null;
         }
 
         nint display = nint.Zero;
@@ -25,13 +25,13 @@ internal sealed class MousePositionProvider(ILogger logger) : IMousePositionProv
             display = X11Interop.XOpenDisplay(nint.Zero);
             if (display == nint.Zero)
             {
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             var rootWindow = X11Interop.XDefaultRootWindow(display);
             if (rootWindow == nint.Zero)
             {
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             int result = X11Interop.XQueryPointer(
@@ -47,25 +47,24 @@ internal sealed class MousePositionProvider(ILogger logger) : IMousePositionProv
 
             if (result == 0)
             {
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             return new ScreenPosition
             {
                 X = rootX,
-                Y = rootY,
-                IsValid = true
+                Y = rootY
             };
         }
         catch (DllNotFoundException ex)
         {
             _logger.Write(Tag, $"DllNotFoundException: {ex.Message}");
-            return ScreenPosition.Invalid;
+            return null;
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Exception: {ex.Message}");
-            return ScreenPosition.Invalid;
+            return null;
         }
         finally
         {

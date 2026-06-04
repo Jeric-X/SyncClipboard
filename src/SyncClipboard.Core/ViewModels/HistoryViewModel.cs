@@ -310,20 +310,7 @@ public partial class HistoryViewModel : ObservableObject
         set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowMousePosition = value });
     }
 
-    public ScreenPosition GetActivePosition()
-    {
-        if (FollowCaretPosition)
-        {
-            var caretPos = _caretPositionProvider.GetCaretPosition();
-            if (caretPos.IsValid)
-            {
-                return caretPos;
-            }
-        }
-        return ScreenPosition.Invalid;
-    }
-
-    public ScreenPosition GetCaretPosition()
+    public ScreenPosition? GetCaretPosition()
     {
         return _caretPositionProvider.GetCaretPosition();
     }
@@ -333,7 +320,7 @@ public partial class HistoryViewModel : ObservableObject
         return _foregroundWindowInfoProvider.GetForegroundWindowDetail();
     }
 
-    public ScreenPosition GetMousePosition()
+    public ScreenPosition? GetMousePosition()
     {
         return _mousePositionProvider.GetMousePosition();
     }
@@ -343,7 +330,7 @@ public partial class HistoryViewModel : ObservableObject
         if (FollowCaretPosition)
         {
             var position = GetCaretPosition();
-            if (position.IsValid && window.SetPositionNearPoint(position.X, position.Y))
+            if (position != null && window.SetNearCaretPosition(position))
             {
                 return true;
             }
@@ -364,7 +351,7 @@ public partial class HistoryViewModel : ObservableObject
         if (FollowMousePosition)
         {
             var position = GetMousePosition();
-            if (position.IsValid && window.SetPositionNearPoint(position.X, position.Y))
+            if (position != null && window.SetNearMousePosition(position))
             {
                 return true;
             }

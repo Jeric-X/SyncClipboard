@@ -13,19 +13,19 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
 
     private Interop.UIAutomationClient.IUIAutomation? _uiAutomation;
 
-    public ScreenPosition GetCaretPosition()
+    public ScreenPosition? GetCaretPosition()
     {
         try
         {
             var result = GetCaretPositionFromWin32();
-            if (result.IsValid)
+            if (result != null)
             {
                 return result;
             }
 
             _logger.Write(Tag, "Win32 method failed, trying MSAA");
             result = GetCaretPositionFromMSAA();
-            if (result.IsValid)
+            if (result != null)
             {
                 return result;
             }
@@ -36,11 +36,11 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Exception: {ex.Message}");
-            return ScreenPosition.Invalid;
+            return null;
         }
     }
 
-    private ScreenPosition GetCaretPositionFromWin32()
+    private ScreenPosition? GetCaretPositionFromWin32()
     {
         try
         {
@@ -53,7 +53,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             if (foregroundWindow == IntPtr.Zero)
             {
                 _logger.Write(Tag, "GetForegroundWindow returned null");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             var threadId = User32Interop.GetWindowThreadProcessId(foregroundWindow, out _);
@@ -62,13 +62,13 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             {
                 var error = Marshal.GetLastWin32Error();
                 _logger.Write(Tag, $"GetGUIThreadInfo failed, error code: {error}");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             if (info.hwndCaret == IntPtr.Zero)
             {
                 _logger.Write(Tag, "No caret window found (hwndCaret is null)");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             var point = new Point(info.rcCaret.Left, info.rcCaret.Top);
@@ -76,25 +76,29 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             {
                 var error = Marshal.GetLastWin32Error();
                 _logger.Write(Tag, $"ClientToScreen failed, error code: {error}");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
-            _logger.Write(Tag, $"Win32 caret position: ({point.X}, {point.Y})");
+            var width = info.rcCaret.Right - info.rcCaret.Left;
+            var height = info.rcCaret.Bottom - info.rcCaret.Top;
+
+            _logger.Write(Tag, $"Win32 caret position: ({point.X}, {point.Y}), size: {width}x{height}");
             return new ScreenPosition
             {
                 X = point.X,
                 Y = point.Y,
-                IsValid = true
+                Width = width,
+                Height = height
             };
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Win32 method exception: {ex.Message}");
-            return ScreenPosition.Invalid;
+            return null;
         }
     }
 
-    private ScreenPosition GetCaretPositionFromMSAA()
+    private ScreenPosition? GetCaretPositionFromMSAA()
     {
         try
         {
@@ -102,7 +106,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             if (foregroundWindow == IntPtr.Zero)
             {
                 _logger.Write(Tag, "MSAA: GetForegroundWindow returned null");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             var threadId = User32Interop.GetWindowThreadProcessId(foregroundWindow, out _);
@@ -114,7 +118,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             if (!User32Interop.GetGUIThreadInfo((int)threadId, ref info))
             {
                 _logger.Write(Tag, "MSAA: GetGUIThreadInfo failed");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             var hwnd = info.hwndFocus != IntPtr.Zero ? info.hwndFocus : foregroundWindow;
@@ -125,7 +129,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             if (result != 0 || accObject == null)
             {
                 _logger.Write(Tag, $"AccessibleObjectFromWindow failed, result: {result}");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             try
@@ -136,26 +140,26 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                 if (x != 0 || y != 0)
                 {
                     _logger.Write(Tag, $"MSAA caret position: ({x}, {y}), size: {w}x{h}");
-                    return new ScreenPosition { X = x, Y = y, IsValid = true };
+                    return new ScreenPosition { X = x, Y = y, Width = w, Height = h };
                 }
                 _logger.Write(Tag, "MSAA accLocation returned (0,0), likely invalid");
-                return ScreenPosition.Invalid;
+                return null;
             }
             catch (Exception ex)
             {
                 _logger.Write(Tag, $"MSAA accLocation failed: {ex.Message}");
             }
 
-            return ScreenPosition.Invalid;
+            return null;
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"MSAA method exception: {ex.Message}");
-            return ScreenPosition.Invalid;
+            return null;
         }
     }
 
-    private ScreenPosition GetCaretPositionFromUIAutomation()
+    private ScreenPosition? GetCaretPositionFromUIAutomation()
     {
         try
         {
@@ -163,14 +167,14 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             if (_uiAutomation == null)
             {
                 _logger.Write(Tag, "Failed to create UI Automation instance");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             var focusedElement = _uiAutomation.GetFocusedElement();
             if (focusedElement == null)
             {
                 _logger.Write(Tag, "No focused element found");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             _logger.Write(Tag, $"Focused element: Name='{focusedElement.CurrentName}', ClassName='{focusedElement.CurrentClassName}', ControlType={focusedElement.CurrentControlType}");
@@ -178,7 +182,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             LogElementPatterns(focusedElement, "Focused");
 
             var result = TryGetCaretFromElement(focusedElement);
-            if (result.IsValid)
+            if (result != null)
             {
                 return result;
             }
@@ -190,17 +194,17 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             }
 
             _logger.Write(Tag, "No suitable pattern found for caret position");
-            return ScreenPosition.Invalid;
+            return null;
         }
         catch (COMException comEx)
         {
             _logger.Write(Tag, $"UI Automation COM error: {comEx.Message}, HRESULT: {comEx.ErrorCode:X}");
-            return ScreenPosition.Invalid;
+            return null;
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"UI Automation exception: {ex.Message}");
-            return ScreenPosition.Invalid;
+            return null;
         }
     }
 
@@ -219,7 +223,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         }
     }
 
-    private ScreenPosition TryGetCaretFromElement(Interop.UIAutomationClient.IUIAutomationElement element)
+    private ScreenPosition? TryGetCaretFromElement(Interop.UIAutomationClient.IUIAutomationElement element)
     {
         _logger.Write(Tag, $"TryGetCaretFromElement: Name='{element.CurrentName}', ClassName='{element.CurrentClassName}'");
 
@@ -237,8 +241,10 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                     {
                         var x = (int)rects[0];
                         var y = (int)rects[1];
-                        _logger.Write(Tag, $"UI Automation (TextPattern2) caret position: ({x}, {y}), isActive: {isActive}");
-                        return new ScreenPosition { X = x, Y = y, IsValid = true };
+                        var width = (int)rects[2];
+                        var height = (int)rects[3];
+                        _logger.Write(Tag, $"UI Automation (TextPattern2) caret position: ({x}, {y}), size: {width}x{height}, isActive: {isActive}");
+                        return new ScreenPosition { X = x, Y = y, Width = width, Height = height };
                     }
                     _logger.Write(Tag, $"TextPattern2 GetCaretRange: rects.Length={rects?.Length ?? -1}");
                 }
@@ -270,8 +276,10 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                     {
                         var x = (int)rects[0];
                         var y = (int)rects[1];
-                        _logger.Write(Tag, $"UI Automation (TextPattern selection) position: ({x}, {y})");
-                        return new ScreenPosition { X = x, Y = y, IsValid = true };
+                        var width = (int)rects[2];
+                        var height = (int)rects[3];
+                        _logger.Write(Tag, $"UI Automation (TextPattern selection) position: ({x}, {y}), size: {width}x{height}");
+                        return new ScreenPosition { X = x, Y = y, Width = width, Height = height };
                     }
 
                     if (rects == null || rects.Length == 0)
@@ -293,8 +301,10 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                                 {
                                     var x = (int)rects[0];
                                     var y = (int)rects[1];
-                                    _logger.Write(Tag, $"UI Automation (expanded range) position: ({x}, {y})");
-                                    return new ScreenPosition { X = x, Y = y, IsValid = true };
+                                    var width = (int)rects[2];
+                                    var height = (int)rects[3];
+                                    _logger.Write(Tag, $"UI Automation (expanded range) position: ({x}, {y}), size: {width}x{height}");
+                                    return new ScreenPosition { X = x, Y = y, Width = width, Height = height };
                                 }
                             }
                         }
@@ -311,6 +321,6 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             }
         }
 
-        return ScreenPosition.Invalid;
+        return null;
     }
 }

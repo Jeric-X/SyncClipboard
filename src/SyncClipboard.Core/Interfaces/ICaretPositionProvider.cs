@@ -4,5 +4,5 @@ namespace SyncClipboard.Core.Interfaces;
 
 public interface ICaretPositionProvider
 {
-    ScreenPosition GetCaretPosition();
+    ScreenPosition? GetCaretPosition();
 }

@@ -1,3 +1,5 @@
+using SyncClipboard.Core.Models;
+
 namespace SyncClipboard.Core.Interfaces;
 
 public interface IWindow
@@ -14,6 +16,7 @@ public interface IWindow
         return false;
     }
 
-    bool SetPositionNearPoint(int x, int y);
+    bool SetNearCaretPosition(ScreenPosition caretPosition);
+    bool SetNearMousePosition(ScreenPosition mousePosition);
     bool SetPositionOnScreen(int screenX, int screenY);
 }

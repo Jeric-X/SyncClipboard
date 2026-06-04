@@ -74,12 +74,12 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         return CFStringCreateWithCString(IntPtr.Zero, str, 0x08000100);
     }
 
-    public ScreenPosition GetCaretPosition()
+    public ScreenPosition? GetCaretPosition()
     {
         if (!AXIsProcessTrusted())
         {
             _logger.Write(Tag, "Accessibility permission not granted");
-            return ScreenPosition.Invalid;
+            return null;
         }
 
         try
@@ -88,7 +88,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             if (focusedElement == IntPtr.Zero)
             {
                 _logger.Write(Tag, "Failed to get focused UI element");
-                return ScreenPosition.Invalid;
+                return null;
             }
 
             try
@@ -96,12 +96,13 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                 var bounds = GetCaretBounds(focusedElement);
                 if (bounds.HasValue)
                 {
-                    _logger.Write(Tag, $"Caret position: ({(int)bounds.Value.X}, {(int)bounds.Value.Y})");
+                    _logger.Write(Tag, $"Caret position: ({(int)bounds.Value.X}, {(int)bounds.Value.Y}), size: {(int)bounds.Value.Width}x{(int)bounds.Value.Height}");
                     return new ScreenPosition
                     {
                         X = (int)bounds.Value.X,
                         Y = (int)bounds.Value.Y,
-                        IsValid = true
+                        Width = (int)bounds.Value.Width,
+                        Height = (int)bounds.Value.Height
                     };
                 }
                 _logger.Write(Tag, "Failed to get caret bounds");
@@ -116,7 +117,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             _logger.Write(Tag, $"Exception: {ex.Message}");
         }
 
-        return ScreenPosition.Invalid;
+        return null;
     }
 
     private IntPtr GetFocusedUIElement()

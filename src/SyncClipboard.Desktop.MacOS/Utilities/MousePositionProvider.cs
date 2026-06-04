@@ -7,15 +7,8 @@ namespace SyncClipboard.Desktop.MacOS.Utilities;
 [SupportedOSPlatform("macos")]
 internal sealed class MousePositionProvider : IMousePositionProvider
 {
-    public ScreenPosition GetMousePosition()
+    public ScreenPosition? GetMousePosition()
     {
-        try
-        {
-            return ScreenPosition.Invalid;
-        }
-        catch
-        {
-            return ScreenPosition.Invalid;
-        }
+        return null;
     }
 }

@@ -12,6 +12,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -608,31 +609,39 @@ public sealed partial class HistoryWindow : Window, IWindow
         this.SetIsAlwaysOnTop(topmost);
     }
 
-    public bool SetPositionNearPoint(int x, int y)
+    public bool SetNearCaretPosition(ScreenPosition caretPosition)
     {
-        var displayArea = DisplayArea.GetFromPoint(new PointInt32(x, y), DisplayAreaFallback.Primary);
+        var displayArea = DisplayArea.GetFromPoint(new PointInt32(caretPosition.X, caretPosition.Y), DisplayAreaFallback.Primary);
         if (displayArea == null)
         {
             return false;
         }
 
         var workArea = displayArea.WorkArea;
-        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, x, y);
+        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, caretPosition.X, caretPosition.Y);
 
-        var posX = x + 20;
-        var posY = y + 20;
+        var (posX, posY) = WindowPositionHelper.CalculateNearCaretPosition(
+            caretPosition, windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
 
-        if (posX + windowWidth > workArea.X + workArea.Width)
+        this.AppWindow.Move(new PointInt32(posX, posY));
+        return true;
+    }
+
+    public bool SetNearMousePosition(ScreenPosition mousePosition)
+    {
+        var displayArea = DisplayArea.GetFromPoint(new PointInt32(mousePosition.X, mousePosition.Y), DisplayAreaFallback.Primary);
+        if (displayArea == null)
         {
-            posX = x - windowWidth - 20;
-        }
-        if (posY + windowHeight > workArea.Y + workArea.Height)
-        {
-            posY = y - windowHeight - 20;
+            return false;
         }
 
-        posX = Math.Max(workArea.X, Math.Min(posX, workArea.X + workArea.Width - windowWidth));
-        posY = Math.Max(workArea.Y, Math.Min(posY, workArea.Y + workArea.Height - windowHeight));
+        var workArea = displayArea.WorkArea;
+        var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, mousePosition.X, mousePosition.Y);
+
+        var (posX, posY) = WindowPositionHelper.CalculateNearMousePosition(
+            mousePosition, windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
 
         this.AppWindow.Move(new PointInt32(posX, posY));
         return true;
@@ -659,8 +668,10 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         var workArea = targetDisplayArea.WorkArea;
         var (windowWidth, windowHeight) = WindowExtention.DipToPhysical(_viewModel.Width, _viewModel.Height, screenX, screenY);
-        var x = workArea.X + (workArea.Width - windowWidth) / 2;
-        var y = workArea.Y + (workArea.Height - windowHeight) / 2;
+
+        var (x, y) = WindowPositionHelper.CalculateCenterOnScreenPosition(
+            windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
 
         this.AppWindow.Move(new PointInt32(x, y));
         this.AppWindow.Resize(new SizeInt32(windowWidth, windowHeight));

@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
@@ -368,10 +370,10 @@ public partial class HistoryWindow : Window, IWindow
         this.Topmost = topmost;
     }
 
-    public bool SetPositionNearPoint(int x, int y)
+    public bool SetNearCaretPosition(ScreenPosition caretPosition)
     {
         var screens = Screens.All;
-        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(x, y)))
+        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(caretPosition.X, caretPosition.Y)))
                      ?? Screens.Primary;
 
         if (screen == null)
@@ -380,23 +382,38 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         var workArea = screen.WorkingArea;
-        var windowWidth = _viewModel.Width;
-        var windowHeight = _viewModel.Height;
+        var scale = this.RenderScaling;
+        var windowWidth = (int)Math.Round(_viewModel.Width * scale);
+        var windowHeight = (int)Math.Round(_viewModel.Height * scale);
 
-        var posX = x + 20;
-        var posY = y + 20;
+        var (posX, posY) = WindowPositionHelper.CalculateNearCaretPosition(
+            caretPosition, windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
 
-        if (posX + windowWidth > workArea.X + workArea.Width)
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(posX, posY);
+        return true;
+    }
+
+    public bool SetNearMousePosition(ScreenPosition mousePosition)
+    {
+        var screens = Screens.All;
+        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(mousePosition.X, mousePosition.Y)))
+                     ?? Screens.Primary;
+
+        if (screen == null)
         {
-            posX = x - windowWidth - 20;
-        }
-        if (posY + windowHeight > workArea.Y + workArea.Height)
-        {
-            posY = y - windowHeight - 20;
+            return false;
         }
 
-        posX = Math.Max(workArea.X, Math.Min(posX, workArea.X + workArea.Width - windowWidth));
-        posY = Math.Max(workArea.Y, Math.Min(posY, workArea.Y + workArea.Height - windowHeight));
+        var workArea = screen.WorkingArea;
+        var scale = this.RenderScaling;
+        var windowWidth = (int)Math.Round(_viewModel.Width * scale);
+        var windowHeight = (int)Math.Round(_viewModel.Height * scale);
+
+        var (posX, posY) = WindowPositionHelper.CalculateNearMousePosition(
+            mousePosition, windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
 
         this.WindowStartupLocation = WindowStartupLocation.Manual;
         this.Position = new PixelPoint(posX, posY);
@@ -420,15 +437,18 @@ public partial class HistoryWindow : Window, IWindow
                                 ?? Screens.Primary;
             if (currentScreen != null && currentScreen == targetScreen)
             {
-                return false;
+                return true;
             }
         }
 
         var workArea = targetScreen.WorkingArea;
-        var windowWidth = _viewModel.Width;
-        var windowHeight = _viewModel.Height;
-        var x = workArea.X + (workArea.Width - windowWidth) / 2;
-        var y = workArea.Y + (workArea.Height - windowHeight) / 2;
+        var scale = this.RenderScaling;
+        var windowWidth = (int)Math.Round(_viewModel.Width * scale);
+        var windowHeight = (int)Math.Round(_viewModel.Height * scale);
+
+        var (x, y) = WindowPositionHelper.CalculateCenterOnScreenPosition(
+            windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
 
         this.WindowStartupLocation = WindowStartupLocation.Manual;
         this.Position = new PixelPoint(x, y);
