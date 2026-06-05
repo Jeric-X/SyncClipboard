@@ -48,7 +48,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         _viewModel = viewModel;
         _windowManger = WindowManager.Get(this);
         _caretPositionProvider = caretPositionProvider;
-        this.AppWindow.Resize(new SizeInt32(1200, 800));
+        this.ResizeDip(_viewModel.Width, _viewModel.Height);
 
         InitializeComponent();
 

@@ -94,6 +94,15 @@ public static partial class WindowExtention
         window.AppWindow.Resize(new SizeInt32(width, height));
     }
 
+    public static void ResizeDip(this Window window, int dipWidth, int dipHeight)
+    {
+        var primaryDisplay = DisplayArea.Primary;
+        var (x, y) = primaryDisplay != null
+            ? (primaryDisplay.WorkArea.X + primaryDisplay.WorkArea.Width / 2, primaryDisplay.WorkArea.Y + primaryDisplay.WorkArea.Height / 2)
+            : (0, 0);
+        window.ResizeDip(dipWidth, dipHeight, x, y);
+    }
+
     public static void CenterOnScreenDip(this Window window, int dipWidth, int dipHeight)
     {
         var primaryDisplay = DisplayArea.Primary;
