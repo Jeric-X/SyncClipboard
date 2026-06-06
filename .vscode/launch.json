@@ -1,0 +1,140 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "DebugMacos",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugMacos",
+            "program": "${workspaceFolder}/src/SyncClipboard.Desktop.MacOS/bin/Debug/net9.0-macos/osx-x64/SyncClipboard.Desktop.MacOS.app/Contents/MacOS/SyncClipboard.Desktop.MacOS",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+            }
+        },
+        {
+            "name": "DebugLinux",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugLinux",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "DebugDesktopRemote",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DebugLinux",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "DISPLAY": ":0"
+            }
+        },
+        {
+            "name": "ReleaseAva",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "ReleaseAva",
+            "program": "${workspaceFolder}/src/SyncClipboard.Desktop/bin/Release/net8.0/linux-x64/publish/SyncClipboard.Desktop",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Production",
+                "LANG": "en_US.UTF-8"
+            }
+        },
+        {
+            "name": "Debug server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Debug Server",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/src/SyncClipboard.Server/bin/debug/net8.0/SyncClipboard.Server.dll",
+                "--contentRoot",
+                "./"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Development"
+            }
+        },
+        {
+            "name": "Release server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Release",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/src/SyncClipboard.Server/bin/release/net8.0/publish/SyncClipboard.Server.dll",
+                "--contentRoot",
+                "./"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
+        {
+            "name": "Debug WinUI",
+            "type": "coreclr",
+            "preLaunchTask": "Build Debug WinUI",
+            "request": "launch",
+            "program": "src/SyncClipboard.WinUI3/bin/x64/Debug/net9.0-windows10.0.19041.0/win-x64/SyncClipboard.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
+        {
+            "name": "Release WinUI",
+            "type": "coreclr",
+            "preLaunchTask": "Build Release WinUI",
+            "request": "launch",
+            "program": "src/SyncClipboard.WinUI3/bin/x64/Release/net9.0-windows10.0.19041.0/win-x64/SyncClipboard.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT" : "Production"
+            }
+        },
+    ]
+}
