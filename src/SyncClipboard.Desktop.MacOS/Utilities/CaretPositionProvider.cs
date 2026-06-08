@@ -14,20 +14,10 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
     private const string Tag = "CaretPosition";
 
     // Pre-create CFString attributes using NSString
-    private static readonly IntPtr kAXFocusedUIElementAttribute = CreateCFString("AXFocusedUIElement");
-    private static readonly IntPtr kAXSelectedTextRangeAttribute = CreateCFString("AXSelectedTextRange");
-    private static readonly IntPtr kAXBoundsForRangeParameterizedAttribute = CreateCFString("AXBoundsForRange");
-    private static readonly IntPtr kAXManualAccessibilityAttribute = CreateCFString("AXManualAccessibility");
-
-    /// <summary>
-    /// Create a CFString using NSString helper (managed by .NET runtime)
-    /// </summary>
-    private static IntPtr CreateCFString(string str)
-    {
-        // NSString.CreateNative returns a toll-free bridged CFString
-        // The returned IntPtr is managed by the NSString object, so we don't need to CFRelease it
-        return NSString.CreateNative(str);
-    }
+    private static readonly IntPtr kAXFocusedUIElementAttribute = MacInteropHelper.CreateCFString("AXFocusedUIElement");
+    private static readonly IntPtr kAXSelectedTextRangeAttribute = MacInteropHelper.CreateCFString("AXSelectedTextRange");
+    private static readonly IntPtr kAXBoundsForRangeParameterizedAttribute = MacInteropHelper.CreateCFString("AXBoundsForRange");
+    private static readonly IntPtr kAXManualAccessibilityAttribute = MacInteropHelper.CreateCFString("AXManualAccessibility");
 
     public ScreenPosition? GetCaretPosition()
     {

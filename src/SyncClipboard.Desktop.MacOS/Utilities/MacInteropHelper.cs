@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Versioning;
+using Foundation;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
@@ -9,6 +10,15 @@ namespace SyncClipboard.Desktop.MacOS.Utilities;
 [SupportedOSPlatform("macos")]
 internal static class MacInteropHelper
 {
+    /// <summary>
+    /// Create a CFString using NSString helper (managed by .NET runtime).
+    /// The returned IntPtr is toll-free bridged and managed by the NSString object,
+    /// so it doesn't need to be CFReleased.
+    /// </summary>
+    public static IntPtr CreateCFString(string str)
+    {
+        return NSString.CreateNative(str, true);
+    }
     /// <summary>
     /// Creates a system-wide accessibility UI element.
     /// </summary>
@@ -67,5 +77,29 @@ internal static class MacInteropHelper
             return null;
         }
         return new CFHandle(value);
+    }
+
+    /// <summary>
+    /// Gets the main window of an application UI element.
+    /// Returns null if the operation fails.
+    /// </summary>
+    public static CFHandle? GetMainWindow(IntPtr appElement, IntPtr mainWindowAttribute)
+    {
+        return CopyAttributeValue(appElement, mainWindowAttribute);
+    }
+
+    /// <summary>
+    /// Gets the title of a window UI element.
+    /// Returns null if the operation fails or the title is empty.
+    /// </summary>
+    public static string? GetWindowTitle(IntPtr windowElement, IntPtr titleAttribute)
+    {
+        using var titleValue = CopyAttributeValue(windowElement, titleAttribute);
+        if (titleValue == null)
+        {
+            return null;
+        }
+
+        return NSString.FromHandle(titleValue.Handle);
     }
 }

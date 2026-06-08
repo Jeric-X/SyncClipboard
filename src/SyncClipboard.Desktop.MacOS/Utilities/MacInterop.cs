@@ -64,6 +64,9 @@ internal static class MacInterop
     [DllImport(ApplicationServicesLib)]
     public static extern int AXUIElementCopyParameterizedAttributeValue(IntPtr element, IntPtr attribute, IntPtr parameter, out IntPtr value);
 
+    [DllImport(ApplicationServicesLib)]
+    public static extern int AXUIElementCopyActionNames(IntPtr element, out IntPtr names);
+
     #endregion
 
     #region AXValue Functions
