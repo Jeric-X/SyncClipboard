@@ -5,10 +5,10 @@ using System.Runtime.Versioning;
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 /// <summary>
-/// Native macOS Accessibility API (AX) declarations
+/// Native macOS API declarations
 /// </summary>
 [SupportedOSPlatform("macos")]
-internal static class AccessibilityNativeMethods
+internal static class MacInterop
 {
     private const string ApplicationServicesLib = "/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices";
 
