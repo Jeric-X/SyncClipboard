@@ -4,6 +4,6 @@ namespace SyncClipboard.Core.Interfaces;
 
 public interface IForegroundWindowInfoProvider
 {
-    ForegroundWindowDetail GetForegroundWindowDetail();
+    ForegroundWindowDetail? GetForegroundWindowDetail();
     ForegroundWindowInfo? GetForegroundWindowInfo();
 }

@@ -9,7 +9,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
     private readonly ILogger _logger = logger;
     private const string Tag = "ForegroundWindow";
 
-    public ForegroundWindowDetail GetForegroundWindowDetail()
+    public ForegroundWindowDetail? GetForegroundWindowDetail()
     {
         try
         {
@@ -17,35 +17,37 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             if (hWnd == IntPtr.Zero)
             {
                 _logger.Write(Tag, "GetForegroundWindow returned null");
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             var windowInfo = WindowInfoHelper.GetWindowInfoFromHwnd(hWnd, _logger, Tag);
             if (windowInfo == null)
             {
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             if (!User32Interop.GetWindowRect(hWnd, out var rect))
             {
                 _logger.Write(Tag, $"GetWindowRect failed for hwnd={hWnd.ToInt64():X}");
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             return new ForegroundWindowDetail
             {
                 WindowInfo = windowInfo,
-                X = rect.Left,
-                Y = rect.Top,
-                Width = rect.Right - rect.Left,
-                Height = rect.Bottom - rect.Top,
-                IsValid = true
+                Bounds = new ScreenPosition
+                {
+                    X = rect.Left,
+                    Y = rect.Top,
+                    Width = rect.Right - rect.Left,
+                    Height = rect.Bottom - rect.Top
+                }
             };
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Exception: {ex.Message}");
-            return ForegroundWindowDetail.Invalid;
+            return null;
         }
     }
 

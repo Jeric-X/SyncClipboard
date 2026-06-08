@@ -11,12 +11,12 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
     private readonly ILogger _logger = logger;
     private const string Tag = "ForegroundWindowInfo";
 
-    public ForegroundWindowDetail GetForegroundWindowDetail()
+    public ForegroundWindowDetail? GetForegroundWindowDetail()
     {
         if (!X11Interop.IsAvailable)
         {
             _logger.Write(Tag, "X11 library not available");
-            return ForegroundWindowDetail.Invalid;
+            return null;
         }
 
         nint display = nint.Zero;
@@ -25,7 +25,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             display = X11Interop.XOpenDisplay(nint.Zero);
             if (display == nint.Zero)
             {
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             // 获取焦点窗口
@@ -33,7 +33,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
 
             if (window == nint.Zero)
             {
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             // 找到顶层窗口
@@ -46,7 +46,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             // 获取窗口属性
             if (X11Interop.XGetWindowAttributes(display, topLevelWindow, out var attributes) == 0)
             {
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             var windowInfo = WindowInfoHelper.GetWindowInfo(display, topLevelWindow);
@@ -54,22 +54,24 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             return new ForegroundWindowDetail
             {
                 WindowInfo = windowInfo,
-                X = attributes.x,
-                Y = attributes.y,
-                Width = attributes.width,
-                Height = attributes.height,
-                IsValid = true
+                Bounds = new ScreenPosition
+                {
+                    X = attributes.x,
+                    Y = attributes.y,
+                    Width = attributes.width,
+                    Height = attributes.height
+                }
             };
         }
         catch (DllNotFoundException ex)
         {
             _logger.Write(Tag, $"DllNotFoundException: {ex.Message}");
-            return ForegroundWindowDetail.Invalid;
+            return null;
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Exception: {ex.Message}");
-            return ForegroundWindowDetail.Invalid;
+            return null;
         }
         finally
         {

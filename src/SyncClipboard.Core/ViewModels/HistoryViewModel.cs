@@ -315,7 +315,7 @@ public partial class HistoryViewModel : ObservableObject
         return _caretPositionProvider.GetCaretPosition();
     }
 
-    public ForegroundWindowDetail GetForegroundWindowInfo()
+    public ForegroundWindowDetail? GetForegroundWindowInfo()
     {
         return _foregroundWindowInfoProvider.GetForegroundWindowDetail();
     }
@@ -338,10 +338,10 @@ public partial class HistoryViewModel : ObservableObject
         if (FollowForegroundWindowScreen)
         {
             var foregroundInfo = GetForegroundWindowInfo();
-            if (foregroundInfo.IsValid)
+            if (foregroundInfo is { Bounds: { } bounds })
             {
-                var centerX = foregroundInfo.X + foregroundInfo.Width / 2;
-                var centerY = foregroundInfo.Y + foregroundInfo.Height / 2;
+                var centerX = bounds.X + bounds.Width / 2;
+                var centerY = bounds.Y + bounds.Height / 2;
                 if (window.SetPositionOnScreen(centerX, centerY))
                 {
                     return true;

@@ -18,7 +18,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
     private static readonly IntPtr kAXPositionAttribute = MacInteropHelper.CreateCFString("AXPosition");
     private static readonly IntPtr kAXSizeAttribute = MacInteropHelper.CreateCFString("AXSize");
 
-    public ForegroundWindowDetail GetForegroundWindowDetail()
+    public ForegroundWindowDetail? GetForegroundWindowDetail()
     {
         try
         {
@@ -26,7 +26,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             if (frontmostApp == null)
             {
                 _logger.Write(Tag, "FrontmostApplication is null");
-                return ForegroundWindowDetail.Invalid;
+                return null;
             }
 
             var pid = frontmostApp.ProcessIdentifier;
@@ -44,33 +44,24 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
                 ExecutableName = executableName ?? processName
             };
 
-            if (bounds.HasValue)
-            {
-                return new ForegroundWindowDetail
-                {
-                    WindowInfo = windowInfo,
-                    X = (int)bounds.Value.X,
-                    Y = (int)bounds.Value.Y,
-                    Width = (int)bounds.Value.Width,
-                    Height = (int)bounds.Value.Height,
-                    IsValid = true
-                };
-            }
-
             return new ForegroundWindowDetail
             {
                 WindowInfo = windowInfo,
-                X = 0,
-                Y = 0,
-                Width = 0,
-                Height = 0,
-                IsValid = true
+                Bounds = bounds.HasValue
+                    ? new ScreenPosition
+                    {
+                        X = (int)bounds.Value.X,
+                        Y = (int)bounds.Value.Y,
+                        Width = (int)bounds.Value.Width,
+                        Height = (int)bounds.Value.Height
+                    }
+                    : null
             };
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Exception: {ex.Message}");
-            return ForegroundWindowDetail.Invalid;
+            return null;
         }
     }
 
