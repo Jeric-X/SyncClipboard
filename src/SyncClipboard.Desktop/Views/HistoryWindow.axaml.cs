@@ -370,6 +370,17 @@ public partial class HistoryWindow : Window, IWindow
         this.Topmost = topmost;
     }
 
+    // 在 macOS 上，ViewModel 的 Width 和 Height 已经是物理像素值，不需要再乘以 RenderScaling
+    private (int Width, int Height) GetPhysicalPixelSize()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return (_viewModel.Width, _viewModel.Height);
+        }
+        var scale = this.RenderScaling;
+        return ((int)Math.Round(_viewModel.Width * scale), (int)Math.Round(_viewModel.Height * scale));
+    }
+
     public bool SetNearCaretPosition(ScreenPosition caretPosition)
     {
         var screens = Screens.All;
@@ -382,9 +393,7 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         var workArea = screen.WorkingArea;
-        var scale = this.RenderScaling;
-        var windowWidth = (int)Math.Round(_viewModel.Width * scale);
-        var windowHeight = (int)Math.Round(_viewModel.Height * scale);
+        var (windowWidth, windowHeight) = GetPhysicalPixelSize();
 
         var (posX, posY) = WindowPositionHelper.CalculateNearCaretPosition(
             caretPosition, windowWidth, windowHeight,
@@ -407,9 +416,7 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         var workArea = screen.WorkingArea;
-        var scale = this.RenderScaling;
-        var windowWidth = (int)Math.Round(_viewModel.Width * scale);
-        var windowHeight = (int)Math.Round(_viewModel.Height * scale);
+        var (windowWidth, windowHeight) = GetPhysicalPixelSize();
 
         var (posX, posY) = WindowPositionHelper.CalculateNearMousePosition(
             mousePosition, windowWidth, windowHeight,
@@ -442,9 +449,7 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         var workArea = targetScreen.WorkingArea;
-        var scale = this.RenderScaling;
-        var windowWidth = (int)Math.Round(_viewModel.Width * scale);
-        var windowHeight = (int)Math.Round(_viewModel.Height * scale);
+        var (windowWidth, windowHeight) = GetPhysicalPixelSize();
 
         var (x, y) = WindowPositionHelper.CalculateCenterOnScreenPosition(
             windowWidth, windowHeight,

@@ -17,7 +17,7 @@ internal static class MacInteropHelper
     /// </summary>
     public static IntPtr CreateCFString(string str)
     {
-        return NSString.CreateNative(str, true);
+        return NSString.CreateNative(str);
     }
     /// <summary>
     /// Creates a system-wide accessibility UI element.

@@ -129,7 +129,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
 
         try
         {
-            var bounds = GetCaretBoundsFromRange(element, textRangeValue.Handle);
+            var bounds = GetBoundsForRange(element, textRangeValue.Handle);
             if (bounds.HasValue)
             {
                 return bounds;
@@ -148,33 +148,6 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
     }
 
     /// <summary>
-    /// Get caret bounds from the selected text range.
-    /// Returns null if bounds cannot be determined or insertion point method should be tried instead.
-    /// </summary>
-    private MacInterop.CGRect? GetCaretBoundsFromRange(IntPtr element, IntPtr textRangeValue)
-    {
-        var bounds = GetBoundsForRange(element, textRangeValue);
-        if (bounds is null)
-        {
-            return null;
-        }
-
-        // Check if length == 0 and point is not on screen, we should try insertion point method instead
-        var rangeType = MacInterop.AXValueGetType(textRangeValue);
-        if (rangeType == MacInterop.kAXValueCFRangeType &&
-            MacInterop.AXValueGetValueCFRange(textRangeValue, MacInterop.kAXValueCFRangeType, out var cfRange))
-        {
-            if (cfRange.Length == 0 && !IsPointOnScreen(bounds.Value.X, bounds.Value.Y))
-            {
-                _logger.Write(Tag, $"Length is 0 and point ({bounds.Value.X}, {bounds.Value.Y}) is not on screen, trying insertion point method");
-                return null;
-            }
-        }
-
-        return bounds;
-    }
-
-    /// <summary>
     /// Get bounds for a given range value.
     /// </summary>
     private MacInterop.CGRect? GetBoundsForRange(IntPtr element, IntPtr rangeValue)
@@ -186,7 +159,13 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             return null;
         }
 
-        return ParseBoundsValue(boundsValue.Handle);
+        var bounds = ParseBoundsValue(boundsValue.Handle);
+        if (bounds?.Height == 0)
+        {
+            _logger.Write(Tag, "Bounds height is 0, likely an invalid value. Ignoring.");
+            return null;
+        }
+        return bounds;
     }
 
     /// <summary>
@@ -222,7 +201,6 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             return null;
         }
         _logger.Write(Tag, $"Raw bounds: X={bounds.Value.X}, Y={bounds.Value.Y}, W={bounds.Value.Width}, H={bounds.Value.Height}");
-
         return bounds;
     }
 
@@ -243,8 +221,8 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
             {
                 var frame = screen.Frame;
                 // macOS coordinate system: origin is at bottom-left
-                if (x >= frame.X && x <= frame.X + frame.Width &&
-                    y >= frame.Y && y <= frame.Y + frame.Height)
+                if (x > frame.X && x < frame.X + frame.Width &&
+                    y > frame.Y && y < frame.Y + frame.Height)
                 {
                     return true;
                 }
