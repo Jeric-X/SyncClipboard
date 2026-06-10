@@ -14,6 +14,7 @@ internal static class MacInterop
 
     // AXValue types
     public const int kAXValueCGPointType = 1;
+    public const int kAXValueCGSizeType = 2;
     public const int kAXValueCGRectType = 3;
     public const int kAXValueCFRangeType = 4;
 
@@ -27,6 +28,13 @@ internal static class MacInterop
     {
         public double X;
         public double Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CGSize
+    {
+        public double Width;
+        public double Height;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -84,6 +92,10 @@ internal static class MacInterop
     [DllImport(ApplicationServicesLib, EntryPoint = "AXValueGetValue")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool AXValueGetValuePoint(IntPtr value, int type, out CGPoint outValue);
+
+    [DllImport(ApplicationServicesLib, EntryPoint = "AXValueGetValue")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AXValueGetValueSize(IntPtr value, int type, out CGSize outValue);
 
     [DllImport(ApplicationServicesLib, EntryPoint = "AXValueGetValue")]
     [return: MarshalAs(UnmanagedType.Bool)]

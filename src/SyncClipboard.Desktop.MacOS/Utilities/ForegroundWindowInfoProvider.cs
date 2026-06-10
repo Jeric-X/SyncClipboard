@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 using AppKit;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -7,9 +8,10 @@ using SyncClipboard.Core.Models;
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 [SupportedOSPlatform("macos")]
-internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForegroundWindowInfoProvider
+internal sealed class ForegroundWindowInfoProvider(ILogger logger, IThreadDispatcher threadDispatcher) : IForegroundWindowInfoProvider
 {
     private readonly ILogger _logger = logger;
+    private readonly IThreadDispatcher _threadDispatcher = threadDispatcher;
     private const string Tag = "ForegroundWindow";
 
     // Pre-create CFString attributes using NSString (managed by .NET runtime)
@@ -22,7 +24,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
     {
         try
         {
-            var frontmostApp = NSWorkspace.SharedWorkspace.FrontmostApplication;
+            var frontmostApp = GetFrontmostApplication();
             if (frontmostApp == null)
             {
                 _logger.Write(Tag, "FrontmostApplication is null");
@@ -44,7 +46,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
                 ExecutableName = executableName ?? processName
             };
 
-            return new ForegroundWindowDetail
+            var result = new ForegroundWindowDetail
             {
                 WindowInfo = windowInfo,
                 Bounds = bounds.HasValue
@@ -57,6 +59,11 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
                     }
                     : null
             };
+
+            // Print all information before returning
+            _logger.Write(Tag, $"Window: {processName}, Title: {windowTitle}, Bounds: {(bounds.HasValue ? $"({bounds.Value.X},{bounds.Value.Y}) {bounds.Value.Width}x{bounds.Value.Height}" : "null")}");
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -69,7 +76,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
     {
         try
         {
-            var frontmostApp = NSWorkspace.SharedWorkspace.FrontmostApplication;
+            var frontmostApp = GetFrontmostApplication();
             if (frontmostApp == null)
             {
                 _logger.Write(Tag, "FrontmostApplication is null");
@@ -96,6 +103,11 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             _logger.Write(Tag, $"Exception: {ex.Message}");
             return null;
         }
+    }
+
+    private NSRunningApplication? GetFrontmostApplication()
+    {
+        return _threadDispatcher.RunOnMainThreadAsync(() => Task.FromResult(NSWorkspace.SharedWorkspace.FrontmostApplication)).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -175,10 +187,10 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             }
 
             var sizeType = MacInterop.AXValueGetType(sizeValue.Handle);
-            if (sizeType != MacInterop.kAXValueCGPointType ||
-                !MacInterop.AXValueGetValuePoint(sizeValue.Handle, MacInterop.kAXValueCGPointType, out var size))
+            if (sizeType != MacInterop.kAXValueCGSizeType ||
+                !MacInterop.AXValueGetValueSize(sizeValue.Handle, MacInterop.kAXValueCGSizeType, out var size))
             {
-                _logger.Write(Tag, $"Window size type mismatch: {sizeType}");
+                _logger.Write(Tag, $"Window size type mismatch: {sizeType}, expected: {MacInterop.kAXValueCGSizeType}");
                 return null;
             }
 
@@ -186,8 +198,8 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
             {
                 X = position.X,
                 Y = position.Y,
-                Width = size.X,
-                Height = size.Y
+                Width = size.Width,
+                Height = size.Height
             };
         }
         catch (Exception ex)
