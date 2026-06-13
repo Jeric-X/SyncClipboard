@@ -25,7 +25,7 @@ internal struct GUITHREADINFO
     public IntPtr hwndMenuOwner;
     public IntPtr hwndMoveSize;
     public IntPtr hwndCaret;
-    public Rectangle rcCaret;
+    public RECT rcCaret;
 }
 
 [ComImport]

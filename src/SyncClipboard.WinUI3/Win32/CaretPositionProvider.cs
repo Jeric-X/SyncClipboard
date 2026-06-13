@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using Interop.UIAutomationClient;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -11,7 +12,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
     private readonly ILogger _logger = logger;
     private const string Tag = "CaretPosition";
 
-    private Interop.UIAutomationClient.IUIAutomation? _uiAutomation;
+    private IUIAutomation? _uiAutomation;
 
     public ScreenPosition? GetCaretPosition()
     {
@@ -163,7 +164,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
     {
         try
         {
-            _uiAutomation ??= new Interop.UIAutomationClient.CUIAutomation8();
+            _uiAutomation ??= new CUIAutomation8();
             if (_uiAutomation == null)
             {
                 _logger.Write(Tag, "Failed to create UI Automation instance");
@@ -187,8 +188,8 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
                 return result;
             }
 
-            var legacyPattern = focusedElement.GetCurrentPattern(Interop.UIAutomationClient.UIA_PatternIds.UIA_LegacyIAccessiblePatternId);
-            if (legacyPattern is Interop.UIAutomationClient.IUIAutomationLegacyIAccessiblePattern legacy)
+            var legacyPattern = focusedElement.GetCurrentPattern(UIA_PatternIds.UIA_LegacyIAccessiblePatternId);
+            if (legacyPattern is IUIAutomationLegacyIAccessiblePattern legacy)
             {
                 _logger.Write(Tag, $"LegacyIAccessible: Name='{legacy.CurrentName}', Value='{legacy.CurrentValue}', Role={legacy.CurrentRole}, State={legacy.CurrentState}");
             }
@@ -208,13 +209,13 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         }
     }
 
-    private void LogElementPatterns(Interop.UIAutomationClient.IUIAutomationElement element, string label)
+    private void LogElementPatterns(IUIAutomationElement element, string label)
     {
         try
         {
-            var hasTextPattern2 = element.GetCurrentPropertyValue(Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsTextPattern2AvailablePropertyId);
-            var hasTextPattern = element.GetCurrentPropertyValue(Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId);
-            var hasLegacyPattern = element.GetCurrentPropertyValue(Interop.UIAutomationClient.UIA_PropertyIds.UIA_IsLegacyIAccessiblePatternAvailablePropertyId);
+            var hasTextPattern2 = element.GetCurrentPropertyValue(UIA_PropertyIds.UIA_IsTextPattern2AvailablePropertyId);
+            var hasTextPattern = element.GetCurrentPropertyValue(UIA_PropertyIds.UIA_IsTextPatternAvailablePropertyId);
+            var hasLegacyPattern = element.GetCurrentPropertyValue(UIA_PropertyIds.UIA_IsLegacyIAccessiblePatternAvailablePropertyId);
             _logger.Write(Tag, $"{label} patterns: TextPattern2={hasTextPattern2}, TextPattern={hasTextPattern}, LegacyIAccessible={hasLegacyPattern}");
         }
         catch (Exception ex)
@@ -223,104 +224,133 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         }
     }
 
-    private ScreenPosition? TryGetCaretFromElement(Interop.UIAutomationClient.IUIAutomationElement element)
+    private ScreenPosition? TryGetCaretFromElement(IUIAutomationElement element)
     {
         _logger.Write(Tag, $"TryGetCaretFromElement: Name='{element.CurrentName}', ClassName='{element.CurrentClassName}'");
 
-        var pattern2 = element.GetCurrentPattern(Interop.UIAutomationClient.UIA_PatternIds.UIA_TextPattern2Id);
+        return TryGetCaretFromTextPattern2(element)
+            ?? TryGetCaretFromTextPattern(element);
+    }
+
+    private ScreenPosition? TryGetCaretFromTextPattern2(IUIAutomationElement element)
+    {
+        var pattern2 = element.GetCurrentPattern(UIA_PatternIds.UIA_TextPattern2Id);
         _logger.Write(Tag, $"TextPattern2 pattern: {(pattern2 != null ? pattern2.GetType().Name : "null")}");
-        if (pattern2 is Interop.UIAutomationClient.IUIAutomationTextPattern2 textPattern2)
+
+        if (pattern2 is not IUIAutomationTextPattern2 textPattern2)
+            return null;
+
+        try
         {
-            try
+            var caretRange = textPattern2.GetCaretRange(out var isActive);
+            if (caretRange == null)
             {
-                var caretRange = textPattern2.GetCaretRange(out var isActive);
-                if (caretRange != null)
-                {
-                    var rects = caretRange.GetBoundingRectangles();
-                    if (rects != null && rects.Length >= 4)
-                    {
-                        var x = (int)rects[0];
-                        var y = (int)rects[1];
-                        var width = (int)rects[2];
-                        var height = (int)rects[3];
-                        _logger.Write(Tag, $"UI Automation (TextPattern2) caret position: ({x}, {y}), size: {width}x{height}, isActive: {isActive}");
-                        return new ScreenPosition { X = x, Y = y, Width = width, Height = height };
-                    }
-                    _logger.Write(Tag, $"TextPattern2 GetCaretRange: rects.Length={rects?.Length ?? -1}");
-                }
-                else
-                {
-                    _logger.Write(Tag, "TextPattern2 GetCaretRange returned null");
-                }
+                _logger.Write(Tag, "TextPattern2 GetCaretRange returned null");
+                return null;
             }
-            catch (Exception ex)
+
+            var rects = caretRange.GetBoundingRectangles();
+            var result = ScreenPositionFromBoundingRects(rects);
+            if (result != null)
             {
-                _logger.Write(Tag, $"TextPattern2 GetCaretRange failed: {ex.Message}");
+                _logger.Write(Tag, $"UI Automation (TextPattern2) caret position: ({result.X}, {result.Y}), size: {result.Width}x{result.Height}, isActive: {isActive}");
+            }
+            else
+            {
+                _logger.Write(Tag, $"TextPattern2 GetCaretRange: rects.Length={rects?.Length ?? -1}");
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(Tag, $"TextPattern2 GetCaretRange failed: {ex.Message}");
+            return null;
+        }
+    }
+
+    private ScreenPosition? TryGetCaretFromTextPattern(IUIAutomationElement element)
+    {
+        var pattern1 = element.GetCurrentPattern(UIA_PatternIds.UIA_TextPatternId);
+        _logger.Write(Tag, $"TextPattern pattern: {(pattern1 != null ? pattern1.GetType().Name : "null")}");
+
+        if (pattern1 is not IUIAutomationTextPattern textPattern)
+            return null;
+
+        try
+        {
+            var selection = textPattern.GetSelection();
+            _logger.Write(Tag, $"TextPattern GetSelection: selection={(selection != null ? selection.Length.ToString() : "null")}");
+
+            if (selection == null || selection.Length == 0)
+                return null;
+
+            var range = selection.GetElement(0);
+            var rects = range.GetBoundingRectangles();
+            _logger.Write(Tag, $"TextPattern range GetBoundingRectangles: rects.Length={rects?.Length ?? -1}");
+
+            var result = ScreenPositionFromBoundingRects(rects);
+            if (result != null)
+            {
+                _logger.Write(Tag, $"UI Automation (TextPattern selection) position: ({result.X}, {result.Y}), size: {result.Width}x{result.Height}");
+                return result;
+            }
+
+            if (rects == null || rects.Length == 0)
+            {
+                return TryGetCaretFromExpandedRange(range);
             }
         }
-
-        var pattern1 = element.GetCurrentPattern(Interop.UIAutomationClient.UIA_PatternIds.UIA_TextPatternId);
-        _logger.Write(Tag, $"TextPattern pattern: {(pattern1 != null ? pattern1.GetType().Name : "null")}");
-        if (pattern1 is Interop.UIAutomationClient.IUIAutomationTextPattern textPattern)
+        catch (Exception ex)
         {
-            try
-            {
-                var selection = textPattern.GetSelection();
-                _logger.Write(Tag, $"TextPattern GetSelection: selection={(selection != null ? selection.Length.ToString() : "null")}");
-                if (selection != null && selection.Length > 0)
-                {
-                    var range = selection.GetElement(0);
-                    var rects = range.GetBoundingRectangles();
-                    _logger.Write(Tag, $"TextPattern range GetBoundingRectangles: rects.Length={rects?.Length ?? -1}");
-                    if (rects != null && rects.Length >= 4)
-                    {
-                        var x = (int)rects[0];
-                        var y = (int)rects[1];
-                        var width = (int)rects[2];
-                        var height = (int)rects[3];
-                        _logger.Write(Tag, $"UI Automation (TextPattern selection) position: ({x}, {y}), size: {width}x{height}");
-                        return new ScreenPosition { X = x, Y = y, Width = width, Height = height };
-                    }
-
-                    if (rects == null || rects.Length == 0)
-                    {
-                        _logger.Write(Tag, "TextPattern range is degenerate (empty), trying to expand...");
-                        try
-                        {
-                            var expandedRange = range.Clone();
-                            var moved = expandedRange.MoveEndpointByUnit(
-                                Interop.UIAutomationClient.TextPatternRangeEndpoint.TextPatternRangeEndpoint_End,
-                                Interop.UIAutomationClient.TextUnit.TextUnit_Character,
-                                1);
-                            _logger.Write(Tag, $"Expanded range, moved={moved}");
-                            if (moved > 0)
-                            {
-                                rects = expandedRange.GetBoundingRectangles();
-                                _logger.Write(Tag, $"Expanded range GetBoundingRectangles: rects.Length={rects?.Length ?? -1}");
-                                if (rects != null && rects.Length >= 4)
-                                {
-                                    var x = (int)rects[0];
-                                    var y = (int)rects[1];
-                                    var width = (int)rects[2];
-                                    var height = (int)rects[3];
-                                    _logger.Write(Tag, $"UI Automation (expanded range) position: ({x}, {y}), size: {width}x{height}");
-                                    return new ScreenPosition { X = x, Y = y, Width = width, Height = height };
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Write(Tag, $"Expand range failed: {ex.Message}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Write(Tag, $"TextPattern GetSelection failed: {ex.Message}");
-            }
+            _logger.Write(Tag, $"TextPattern GetSelection failed: {ex.Message}");
         }
 
         return null;
+    }
+
+    private ScreenPosition? TryGetCaretFromExpandedRange(IUIAutomationTextRange range)
+    {
+        _logger.Write(Tag, "TextPattern range is degenerate (empty), trying to expand...");
+        try
+        {
+            var expandedRange = range.Clone();
+            var moved = expandedRange.MoveEndpointByUnit(
+                TextPatternRangeEndpoint.TextPatternRangeEndpoint_End,
+                TextUnit.TextUnit_Character,
+                1);
+            _logger.Write(Tag, $"Expanded range, moved={moved}");
+
+            if (moved > 0)
+            {
+                var rects = expandedRange.GetBoundingRectangles();
+                _logger.Write(Tag, $"Expanded range GetBoundingRectangles: rects.Length={rects?.Length ?? -1}");
+
+                var result = ScreenPositionFromBoundingRects(rects);
+                if (result != null)
+                {
+                    _logger.Write(Tag, $"UI Automation (expanded range) position: ({result.X}, {result.Y}), size: {result.Width}x{result.Height}");
+                }
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(Tag, $"Expand range failed: {ex.Message}");
+        }
+        return null;
+    }
+
+    private static ScreenPosition? ScreenPositionFromBoundingRects(double[]? rects)
+    {
+        if (rects == null || rects.Length < 4)
+            return null;
+
+        return new ScreenPosition
+        {
+            X = (int)rects[0],
+            Y = (int)rects[1],
+            Width = (int)rects[2],
+            Height = (int)rects[3]
+        };
     }
 }

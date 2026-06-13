@@ -21,7 +21,7 @@ internal static class WindowInfoHelper
         string executableName = "";
         try
         {
-            var process = Process.GetProcessById((int)processId);
+            using var process = Process.GetProcessById((int)processId);
             processName = process.ProcessName ?? "";
             try
             {

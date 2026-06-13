@@ -7,6 +7,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using SyncClipboard.Desktop.Utilities;
+using SyncClipboard.Desktop.Utilities.Fake;
 using SyncClipboard.Desktop.Views;
 
 namespace SyncClipboard.Desktop;
@@ -53,6 +54,14 @@ public class AppServices
             services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
             services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
             services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            services.AddSingleton<ICaretPositionProvider, FakeCaretPositionProvider>();
+            services.AddSingleton<IForegroundWindowInfoProvider, FakeForegroundWindowInfoProvider>();
+            services.AddSingleton<IMousePositionProvider, FakeMousePositionProvider>();
+            services.AddSingleton<IClipboardOwnerProvider, FakeClipboardOwnerProvider>();
         }
 
         if (!OperatingSystem.IsMacOS())
