@@ -98,7 +98,7 @@ public static partial class WindowExtention
     {
         var primaryDisplay = DisplayArea.Primary;
         var (x, y) = primaryDisplay != null
-            ? (primaryDisplay.WorkArea.X + primaryDisplay.WorkArea.Width / 2, primaryDisplay.WorkArea.Y + primaryDisplay.WorkArea.Height / 2)
+            ? (primaryDisplay.WorkArea.X + (primaryDisplay.WorkArea.Width / 2), primaryDisplay.WorkArea.Y + (primaryDisplay.WorkArea.Height / 2))
             : (0, 0);
         window.ResizeDip(dipWidth, dipHeight, x, y);
     }
@@ -113,9 +113,9 @@ public static partial class WindowExtention
         }
 
         var workArea = primaryDisplay.WorkArea;
-        var (width, height) = DipToPhysical(dipWidth, dipHeight, workArea.X + workArea.Width / 2, workArea.Y + workArea.Height / 2);
-        var x = workArea.X + (workArea.Width - width) / 2;
-        var y = workArea.Y + (workArea.Height - height) / 2;
+        var (width, height) = DipToPhysical(dipWidth, dipHeight, workArea.X + (workArea.Width / 2), workArea.Y + (workArea.Height / 2));
+        var x = workArea.X + ((workArea.Width - width) / 2);
+        var y = workArea.Y + ((workArea.Height - height) / 2);
 
         window.AppWindow.Move(new PointInt32(x, y));
         window.AppWindow.Resize(new SizeInt32(width, height));

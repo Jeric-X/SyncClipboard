@@ -146,8 +146,8 @@ public sealed partial class HistoryWindow : Window, IWindow
     {
         if (_windowLoaded)
         {
-            var centerX = this.AppWindow.Position.X + this.AppWindow.Size.Width / 2;
-            var centerY = this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2;
+            var centerX = this.AppWindow.Position.X + (this.AppWindow.Size.Width / 2);
+            var centerY = this.AppWindow.Position.Y + (this.AppWindow.Size.Height / 2);
             var (width, height) = WindowExtention.PhysicalToDip(
                 this.AppWindow.Size.Width, this.AppWindow.Size.Height,
                 centerX, centerY);
@@ -574,8 +574,8 @@ public sealed partial class HistoryWindow : Window, IWindow
     private RectInt32 GetElementRect(FrameworkElement element)
     {
         var scale = WindowExtention.GetScaleFactorForPoint(
-            this.AppWindow.Position.X + this.AppWindow.Size.Width / 2,
-            this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2);
+            this.AppWindow.Position.X + (this.AppWindow.Size.Width / 2),
+            this.AppWindow.Position.Y + (this.AppWindow.Size.Height / 2));
         var transform = element.TransformToVisual(null);
         var bounds = transform.TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
         RectInt32 rect = GetRect(bounds, scale);
@@ -657,8 +657,8 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         if (_windowLoaded)
         {
-            var currentCenterX = this.AppWindow.Position.X + this.AppWindow.Size.Width / 2;
-            var currentCenterY = this.AppWindow.Position.Y + this.AppWindow.Size.Height / 2;
+            var currentCenterX = this.AppWindow.Position.X + (this.AppWindow.Size.Width / 2);
+            var currentCenterY = this.AppWindow.Position.Y + (this.AppWindow.Size.Height / 2);
             var currentDisplayArea = DisplayArea.GetFromPoint(new PointInt32(currentCenterX, currentCenterY), DisplayAreaFallback.Primary);
             if (currentDisplayArea != null && currentDisplayArea.DisplayId.Value == targetDisplayArea.DisplayId.Value)
             {

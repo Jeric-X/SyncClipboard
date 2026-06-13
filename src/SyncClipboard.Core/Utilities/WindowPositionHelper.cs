@@ -45,8 +45,8 @@ public static class WindowPositionHelper
         int workAreaX, int workAreaY, int workAreaWidth, int workAreaHeight)
     {
         // 窗口中心点在鼠标位置
-        var posX = mousePosition.X - windowWidth / 2;
-        var posY = mousePosition.Y - windowHeight / 2;
+        var posX = mousePosition.X - (windowWidth / 2);
+        var posY = mousePosition.Y - (windowHeight / 2);
 
         // 确保窗口在工作区域内
         posX = Math.Max(workAreaX, Math.Min(posX, workAreaX + workAreaWidth - windowWidth));
@@ -62,8 +62,8 @@ public static class WindowPositionHelper
         int windowWidth, int windowHeight,
         int workAreaX, int workAreaY, int workAreaWidth, int workAreaHeight)
     {
-        var x = workAreaX + (workAreaWidth - windowWidth) / 2;
-        var y = workAreaY + (workAreaHeight - windowHeight) / 2;
+        var x = workAreaX + ((workAreaWidth - windowWidth) / 2);
+        var y = workAreaY + ((workAreaHeight - windowHeight) / 2);
 
         return (x, y);
     }

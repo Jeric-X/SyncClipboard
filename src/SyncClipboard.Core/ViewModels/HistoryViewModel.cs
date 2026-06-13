@@ -340,8 +340,8 @@ public partial class HistoryViewModel : ObservableObject
             var foregroundInfo = GetForegroundWindowInfo();
             if (foregroundInfo is { Bounds: { } bounds })
             {
-                var centerX = bounds.X + bounds.Width / 2;
-                var centerY = bounds.Y + bounds.Height / 2;
+                var centerX = bounds.X + (bounds.Width / 2);
+                var centerY = bounds.Y + (bounds.Height / 2);
                 if (window.SetPositionOnScreen(centerX, centerY))
                 {
                     return true;
