@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
@@ -175,6 +175,10 @@ public partial class SyncSettingViewModel : ObservableObject
     partial void OnTextEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadText = value };
 
     [ObservableProperty]
+    private bool imageEnable;
+    partial void OnImageEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadImage = value };
+
+    [ObservableProperty]
     private bool singleFileEnable;
     partial void OnSingleFileEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadSingleFile = value };
 
@@ -199,6 +203,7 @@ public partial class SyncSettingViewModel : ObservableObject
         UploadEnable = value.PushSwitchOn;
         DownloadEnable = value.PullSwitchOn;
         TextEnable = value.EnableUploadText;
+        ImageEnable = value.EnableUploadImage;
         SingleFileEnable = value.EnableUploadSingleFile;
         MultiFileEnable = value.EnableUploadMultiFile;
         _configManager.SetConfig(value);
@@ -208,6 +213,12 @@ public partial class SyncSettingViewModel : ObservableObject
     private void SetFileSyncFilter()
     {
         _mainVM.NavigateToNextLevel(PageDefinition.FileSyncFilterSetting);
+    }
+
+    [RelayCommand]
+    private void SetClipboardOwnerFilter()
+    {
+        _mainVM.NavigateToNextLevel(PageDefinition.ClipboardOwnerFilterSetting);
     }
 
     [RelayCommand]
@@ -290,6 +301,7 @@ public partial class SyncSettingViewModel : ObservableObject
         uploadEnable = clientConfig.PushSwitchOn;
         downloadEnable = clientConfig.PullSwitchOn;
         textEnable = clientConfig.EnableUploadText;
+        imageEnable = clientConfig.EnableUploadImage;
         singleFileEnable = clientConfig.EnableUploadSingleFile;
         multiFileEnable = clientConfig.EnableUploadMultiFile;
 

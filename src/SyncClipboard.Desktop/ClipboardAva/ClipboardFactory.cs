@@ -1,4 +1,4 @@
-﻿using Avalonia.Platform.Storage;
+using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
@@ -41,7 +41,8 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             {
                 if (OperatingSystem.IsWindows())
                 {
-                    return new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
+                    var meta = new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
+                    return meta;
                 }
 
                 var formats = await Clipboard.GetFormatsAsync(ctk);
@@ -54,11 +55,13 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                     hasClipboard = true;
                     if (OperatingSystem.IsLinux())
                     {
-                        return await HandleLinuxClipboard(formats, ctk);
+                        var meta = await HandleLinuxClipboard(formats, ctk);
+                        return meta;
                     }
                     else if (OperatingSystem.IsMacOS())
                     {
-                        return await HandleMacosClipboard(formats, ctk);
+                        var meta = await HandleMacosClipboard(formats, ctk);
+                        return meta;
                     }
                 }
             }

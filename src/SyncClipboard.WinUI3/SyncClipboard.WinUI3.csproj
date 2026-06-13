@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
@@ -153,6 +153,7 @@
     <PackageReference Include="Vanara.PInvoke.Kernel32" />
     <PackageReference Include="Vanara.PInvoke.User32" />
     <PackageReference Include="WinUIEx" />
+    <PackageReference Include="Interop.UIAutomationClient" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

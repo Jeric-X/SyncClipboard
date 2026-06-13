@@ -6,6 +6,7 @@ public record class SyncConfig
     public bool PullSwitchOn { get; set; } = true;
     public bool PushSwitchOn { get; set; } = true;
     public bool EnableUploadText { get; set; } = true;
+    public bool EnableUploadImage { get; set; } = true;
     public bool EnableUploadSingleFile { get; set; } = true;
     public bool EnableUploadMultiFile { get; set; } = true;
     public bool NotifyOnDownloaded { get; set; } = true;

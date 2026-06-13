@@ -9,9 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
+using System.Linq;
 using System.Threading;
 
 namespace SyncClipboard.Desktop.Views;
@@ -19,10 +22,13 @@ namespace SyncClipboard.Desktop.Views;
 public partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
+    private readonly ICaretPositionProvider _caretPositionProvider;
     public HistoryViewModel ViewModel => _viewModel;
+    private bool _firstShow = true;
     public HistoryWindow()
     {
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
+        _caretPositionProvider = App.Current.Services.GetRequiredService<ICaretPositionProvider>();
         var configManager = App.Current.Services.GetRequiredService<ConfigManager>();
         DataContext = ViewModel;
 
@@ -32,11 +38,6 @@ public partial class HistoryWindow : Window, IWindow
         InitializeComponent();
         InitializeScrollWatcher();
         SetWindowMinSize();
-        this.Loaded += async (_, _) =>
-        {
-            await _viewModel.Init(this);
-        };
-
         this.Deactivated += (_, _) => _viewModel.OnLostFocus();
         this.Activated += (_, _) =>
         {
@@ -53,6 +54,7 @@ public partial class HistoryWindow : Window, IWindow
         };
 
         this.Topmost = _viewModel.IsTopmost;
+        _ = _viewModel.Init(this);
     }
 
     private void SetWindowMinSize()
@@ -123,6 +125,18 @@ public partial class HistoryWindow : Window, IWindow
 
     protected virtual void FocusOnScreen()
     {
+        if (!this.IsVisible)
+        {
+            if (!_viewModel.RepositionWindow() && _firstShow)
+            {
+                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+            _firstShow = false;
+        }
+        else
+        {
+            _viewModel.RepositionWindow();
+        }
         this.Show();
         if (this.WindowState == WindowState.Minimized)
         {
@@ -354,5 +368,95 @@ public partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.Topmost = topmost;
+    }
+
+    // 在 macOS 上，ViewModel 的 Width 和 Height 已经是物理像素值，不需要再乘以 RenderScaling
+    private (int Width, int Height) GetPhysicalPixelSize()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return (_viewModel.Width, _viewModel.Height);
+        }
+        var scale = this.RenderScaling;
+        return ((int)Math.Round(_viewModel.Width * scale), (int)Math.Round(_viewModel.Height * scale));
+    }
+
+    public bool SetNearCaretPosition(ScreenPosition caretPosition)
+    {
+        var screens = Screens.All;
+        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(caretPosition.X, caretPosition.Y)))
+                     ?? Screens.Primary;
+
+        if (screen == null)
+        {
+            return false;
+        }
+
+        var workArea = screen.WorkingArea;
+        var (windowWidth, windowHeight) = GetPhysicalPixelSize();
+
+        var (posX, posY) = WindowPositionHelper.CalculateNearCaretPosition(
+            caretPosition, windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
+
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(posX, posY);
+        return true;
+    }
+
+    public bool SetNearMousePosition(ScreenPosition mousePosition)
+    {
+        var screens = Screens.All;
+        var screen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(mousePosition.X, mousePosition.Y)))
+                     ?? Screens.Primary;
+
+        if (screen == null)
+        {
+            return false;
+        }
+
+        var workArea = screen.WorkingArea;
+        var (windowWidth, windowHeight) = GetPhysicalPixelSize();
+
+        var (posX, posY) = WindowPositionHelper.CalculateNearMousePosition(
+            mousePosition, windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
+
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(posX, posY);
+        return true;
+    }
+
+    public bool SetPositionOnScreen(int screenX, int screenY)
+    {
+        var screens = Screens.All;
+        var targetScreen = screens.FirstOrDefault(s => s.Bounds.Contains(new PixelPoint(screenX, screenY)))
+                           ?? Screens.Primary;
+
+        if (targetScreen == null)
+        {
+            return false;
+        }
+
+        if (!_firstShow)
+        {
+            var currentScreen = screens.FirstOrDefault(s => s.Bounds.Contains(this.Position))
+                                ?? Screens.Primary;
+            if (currentScreen != null && currentScreen == targetScreen)
+            {
+                return true;
+            }
+        }
+
+        var workArea = targetScreen.WorkingArea;
+        var (windowWidth, windowHeight) = GetPhysicalPixelSize();
+
+        var (x, y) = WindowPositionHelper.CalculateCenterOnScreenPosition(
+            windowWidth, windowHeight,
+            workArea.X, workArea.Y, workArea.Width, workArea.Height);
+
+        this.WindowStartupLocation = WindowStartupLocation.Manual;
+        this.Position = new PixelPoint(x, y);
+        return true;
     }
 }

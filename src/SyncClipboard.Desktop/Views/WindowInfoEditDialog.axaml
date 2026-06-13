@@ -1,0 +1,17 @@
+<ui:ContentDialog x:Class="SyncClipboard.Desktop.Views.WindowInfoEditDialog"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:ui="using:FluentAvalonia.UI.Controls"
+                  xmlns:i18n="using:SyncClipboard.Core.I18n"
+                  Title="{x:Static i18n:Strings.EditItem}"
+                  PrimaryButtonText="{x:Static i18n:Strings.Confirm}"
+                  CloseButtonText="{x:Static i18n:Strings.Cancel}"
+                  mc:Ignorable="d">
+    <StackPanel Spacing="12" MinWidth="400">
+        <TextBox x:Name="_ProcessName" Watermark="{x:Static i18n:Strings.ProcessName}" TextChanged="OnTextChanged" />
+        <TextBox x:Name="_WindowTitle" Watermark="{x:Static i18n:Strings.WindowTitle}" TextChanged="OnTextChanged" />
+        <TextBox x:Name="_ExecutableName" Watermark="{x:Static i18n:Strings.ExecutableName}" TextChanged="OnTextChanged" />
+    </StackPanel>
+</ui:ContentDialog>

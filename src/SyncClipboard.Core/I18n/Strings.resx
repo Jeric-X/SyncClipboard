@@ -588,11 +588,44 @@ Double click image: View full image</value>
   <data name="FileFilterDescription" xml:space="preserve">
     <value>Each file extension per line</value>
   </data>
+  <data name="ClipboardOwnerFilter" xml:space="preserve">
+    <value>Clipboard Content Source Filter</value>
+  </data>
+  <data name="ClipboardOwnerFilterDescription" xml:space="preserve">
+    <value>All fields must match to filter, leave empty to ignore</value>
+  </data>
+  <data name="AddItem" xml:space="preserve">
+    <value>Add Item</value>
+  </data>
+  <data name="CaptureFromClipboard" xml:space="preserve">
+    <value>Capture from Clipboard</value>
+  </data>
+  <data name="ListeningNextChange" xml:space="preserve">
+    <value>Listening for next clipboard change...</value>
+  </data>
+  <data name="EditItem" xml:space="preserve">
+    <value>Edit Item</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>Operation</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>Process Name</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Window Title</value>
+  </data>
+  <data name="ExecutableName" xml:space="preserve">
+    <value>Executable Name</value>
+  </data>
   <data name="SaveList" xml:space="preserve">
     <value>Save List</value>
   </data>
   <data name="EnableUploadText" xml:space="preserve">
     <value>Enable Uploading Text</value>
+  </data>
+  <data name="EnableUploadImage" xml:space="preserve">
+    <value>Enable Uploading Image</value>
   </data>
   <data name="EnableUploadFile" xml:space="preserve">
     <value>Enable Uploading Single File</value>
@@ -997,5 +1030,14 @@ This operation cannot be undone.</value>
   </data>
   <data name="NoWithoutSubfolder" xml:space="preserve">
     <value>No</value>
+  </data>
+  <data name="FollowCaretPosition" xml:space="preserve">
+    <value>Follow Caret Position</value>
+  </data>
+  <data name="FollowForegroundWindowScreen" xml:space="preserve">
+    <value>Follow Foreground Window Screen</value>
+  </data>
+  <data name="FollowMousePosition" xml:space="preserve">
+    <value>Follow Mouse Position</value>
   </data>
 </root>

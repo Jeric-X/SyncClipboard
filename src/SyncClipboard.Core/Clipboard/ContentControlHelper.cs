@@ -16,6 +16,7 @@ public static class ContentControlHelper
         var typeValidationError = profile switch
         {
             TextProfile => ValidateTextUpload(syncConfig),
+            ImageProfile => ValidateImageUpload(syncConfig),
             GroupProfile group => ValidateGroupUpload(group, syncConfig),
             FileProfile file => ValidateFileUpload(file, syncConfig),
             _ => null
@@ -29,6 +30,9 @@ public static class ContentControlHelper
 
     private static string? ValidateTextUpload(SyncConfig config) =>
         config.EnableUploadText ? null : "Skipped: Text upload is disabled in settings.";
+
+    private static string? ValidateImageUpload(SyncConfig config) =>
+        config.EnableUploadImage ? null : "Skipped: Image upload is disabled in settings.";
 
     private static string? ValidateGroupUpload(GroupProfile profile, SyncConfig config)
     {

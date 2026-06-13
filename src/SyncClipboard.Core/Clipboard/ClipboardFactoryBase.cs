@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -15,6 +15,12 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
     protected ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
     private IProfileEnv ProfileEnv => ServiceProvider.GetRequiredService<IProfileEnv>();
     private LocalFileCacheManager FileCacheManager => ServiceProvider.GetRequiredService<LocalFileCacheManager>();
+    private IClipboardOwnerProvider? ClipboardOwnerProvider => ServiceProvider.GetService<IClipboardOwnerProvider>();
+
+    public void SetClipboardOwner(ClipboardMetaInfomation meta)
+    {
+        meta.Owner = ClipboardOwnerProvider?.GetClipboardOwner();
+    }
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
     public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)

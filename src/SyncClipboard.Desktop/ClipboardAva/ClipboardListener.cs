@@ -66,6 +66,7 @@ internal class ClipboardListener(IClipboardFactory clipboardFactory, ILogger log
             if (_meta is not null)
             {
                 _meta = meta;
+                ClipboardFactory.SetClipboardOwner(_meta);
                 _ = Task.Run(() => _action?.Invoke(meta));
                 _ = _logger.WriteAsync($"Clipboard changed to {meta}");
             }

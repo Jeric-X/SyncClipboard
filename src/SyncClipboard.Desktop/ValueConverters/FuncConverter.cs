@@ -1,4 +1,4 @@
-﻿using Avalonia.Data.Converters;
+using Avalonia.Data.Converters;
 using Avalonia.Media;
 using SyncClipboard.Core.I18n;
 using Avalonia.Media.Imaging;
@@ -12,6 +12,9 @@ namespace SyncClipboard.Desktop.ValueConverters;
 
 public class FuncConverter
 {
+    public static FuncValueConverter<bool, bool> Not { get; } =
+        new FuncValueConverter<bool, bool>(value => !value);
+
     public static FuncValueConverter<Severity?, InfoBarSeverity> ConvertSeverity { get; } =
         new FuncValueConverter<Severity?, InfoBarSeverity>(severity => severity switch
         {

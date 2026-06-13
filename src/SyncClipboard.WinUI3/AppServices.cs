@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
@@ -37,6 +37,10 @@ public class AppServices
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<INativeHotkeyRegistry>(sp => new NativeHotkeyRegistry((MainWindow)sp.GetRequiredService<IMainWindow>()));
+        services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
+        services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
+        services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
+        services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
 
         services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));
 

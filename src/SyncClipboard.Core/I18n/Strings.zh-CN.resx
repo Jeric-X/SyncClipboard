@@ -586,11 +586,44 @@ Esc：关闭面板</value>
   <data name="FileFilterDescription" xml:space="preserve">
     <value>每行一个文件扩展名</value>
   </data>
+  <data name="ClipboardOwnerFilter" xml:space="preserve">
+    <value>剪贴板内容来源过滤</value>
+  </data>
+  <data name="ClipboardOwnerFilterDescription" xml:space="preserve">
+    <value>所有字段均需匹配才会过滤，留空表示忽略该字段</value>
+  </data>
+  <data name="AddItem" xml:space="preserve">
+    <value>添加条目</value>
+  </data>
+  <data name="CaptureFromClipboard" xml:space="preserve">
+    <value>从剪贴板捕获</value>
+  </data>
+  <data name="ListeningNextChange" xml:space="preserve">
+    <value>正在监听下次剪贴板变化...</value>
+  </data>
+  <data name="EditItem" xml:space="preserve">
+    <value>编辑条目</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>进程名</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>窗口标题</value>
+  </data>
+  <data name="ExecutableName" xml:space="preserve">
+    <value>可执行文件名</value>
+  </data>
   <data name="SaveList" xml:space="preserve">
     <value>保存名单</value>
   </data>
   <data name="EnableUploadText" xml:space="preserve">
     <value>上传文字</value>
+  </data>
+  <data name="EnableUploadImage" xml:space="preserve">
+    <value>上传图片</value>
   </data>
   <data name="EnableUploadFile" xml:space="preserve">
     <value>上传单个文件</value>
@@ -995,5 +1028,14 @@ Esc：关闭面板</value>
   </data>
   <data name="NoWithoutSubfolder" xml:space="preserve">
     <value>否</value>
+  </data>
+  <data name="FollowCaretPosition" xml:space="preserve">
+    <value>跟随文字输入光标位置</value>
+  </data>
+  <data name="FollowForegroundWindowScreen" xml:space="preserve">
+    <value>跟随前台窗口所在屏幕</value>
+  </data>
+  <data name="FollowMousePosition" xml:space="preserve">
+    <value>跟随鼠标位置</value>
   </data>
 </root>

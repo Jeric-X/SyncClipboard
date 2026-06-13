@@ -42,6 +42,9 @@ public partial class HistoryViewModel : ObservableObject
     private readonly HistorySyncer historySyncer;
     private readonly IProfileEnv profileEnv;
     private readonly HistoryService _historyService;
+    private readonly ICaretPositionProvider _caretPositionProvider;
+    private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider;
+    private readonly IMousePositionProvider _mousePositionProvider;
     private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
@@ -68,7 +71,10 @@ public partial class HistoryViewModel : ObservableObject
         HistorySyncer historySyncer,
         HistoryService historyService,
         HistoryTransferQueue transferQueue,
-        IThreadDispatcher threadDispatcher)
+        IThreadDispatcher threadDispatcher,
+        ICaretPositionProvider caretPositionProvider,
+        IForegroundWindowInfoProvider foregroundWindowInfoProvider,
+        IMousePositionProvider mousePositionProvider)
     {
         this.historyManager = historyManager;
         this.keyboard = keyboard;
@@ -83,6 +89,9 @@ public partial class HistoryViewModel : ObservableObject
         this._historyService = historyService;
         this._transferQueue = transferQueue;
         this._threadDispatcher = threadDispatcher;
+        this._caretPositionProvider = caretPositionProvider;
+        this._foregroundWindowInfoProvider = foregroundWindowInfoProvider;
+        this._mousePositionProvider = mousePositionProvider;
 
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
@@ -281,6 +290,73 @@ public partial class HistoryViewModel : ObservableObject
             OnPropertyChanged(nameof(FontScalePercent));
             OnPropertyChanged(nameof(ListItemFontSize));
         }
+    }
+
+    public bool FollowCaretPosition
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowCaretPosition;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
+    }
+
+    public bool FollowForegroundWindowScreen
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowForegroundWindowScreen;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
+    }
+
+    public bool FollowMousePosition
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowMousePosition;
+        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowMousePosition = value });
+    }
+
+    public ScreenPosition? GetCaretPosition()
+    {
+        return _caretPositionProvider.GetCaretPosition();
+    }
+
+    public ForegroundWindowDetail? GetForegroundWindowInfo()
+    {
+        return _foregroundWindowInfoProvider.GetForegroundWindowDetail();
+    }
+
+    public ScreenPosition? GetMousePosition()
+    {
+        return _mousePositionProvider.GetMousePosition();
+    }
+
+    public bool RepositionWindow()
+    {
+        if (FollowCaretPosition)
+        {
+            var position = GetCaretPosition();
+            if (position != null && window.SetNearCaretPosition(position))
+            {
+                return true;
+            }
+        }
+        if (FollowForegroundWindowScreen)
+        {
+            var foregroundInfo = GetForegroundWindowInfo();
+            if (foregroundInfo is { Bounds: { } bounds })
+            {
+                var centerX = bounds.X + (bounds.Width / 2);
+                var centerY = bounds.Y + (bounds.Height / 2);
+                if (window.SetPositionOnScreen(centerX, centerY))
+                {
+                    return true;
+                }
+            }
+        }
+        if (FollowMousePosition)
+        {
+            var position = GetMousePosition();
+            if (position != null && window.SetNearMousePosition(position))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public double ListItemFontSize => FontScalePercent / 100.0 * 12.0;

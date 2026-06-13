@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -23,6 +23,11 @@ internal static class ConvertMethod
     }
 
     public static bool BoolNegate(bool value)
+    {
+        return !value;
+    }
+
+    public static bool Not(bool value)
     {
         return !value;
     }

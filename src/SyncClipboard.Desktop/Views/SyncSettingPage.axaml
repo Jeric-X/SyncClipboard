@@ -129,6 +129,10 @@
                                          Content="{x:Static i18n:Strings.SyncContentControl}" />
                 <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
+                                         Command="{Binding SetClipboardOwnerFilterCommand}"
+                                         Content="{x:Static i18n:Strings.ClipboardOwnerFilter}" />
+                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                         IsClickEnabled="True"
                                          Command="{Binding OpenClipboardAcquisitionRulesPageCommand}"
                                          Content="{x:Static i18n:Strings.ClipboardAcquisitionRules}" />
             </ui:SettingsExpander.Items>

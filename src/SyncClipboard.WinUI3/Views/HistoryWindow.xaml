@@ -93,6 +93,10 @@
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.SortByLastAccessed}" IsChecked="{x:Bind _viewModel.SortByLastAccessed, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowDetail}" IsChecked="{x:Bind _viewModel.ShowDetail, Mode=TwoWay}" />
                             <MenuFlyoutSeparator />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.FollowCaretPosition}" IsChecked="{x:Bind _viewModel.FollowCaretPosition, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.FollowForegroundWindowScreen}" IsChecked="{x:Bind _viewModel.FollowForegroundWindowScreen, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.FollowMousePosition}" IsChecked="{x:Bind _viewModel.FollowMousePosition, Mode=TwoWay}" />
+                            <MenuFlyoutSeparator />
                             <MenuFlyoutItem Text="{x:Bind i18n:Strings.FontScale}" Click="FontScaleMenuItem_Click" />
                         </MenuFlyout>
                     </Button.Flyout>
