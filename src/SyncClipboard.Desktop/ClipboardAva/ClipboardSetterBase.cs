@@ -14,17 +14,17 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 {
     public abstract Task FillPackage(object package, ClipboardMetaInfomation metaInfomation);
 
-    private static async Task SetPackageToClipboard(DataObject obj, CancellationToken ctk)
+    private static async Task SetPackageToClipboard(DataTransfer transfer, CancellationToken ctk)
     {
         if (OperatingSystem.IsLinux())
         {
-            SetTimeStamp(obj);
+            SetTimeStamp(transfer);
         }
 
         await ClipboardFactory._semaphoreSlim.WaitAsync(ctk);
         try
         {
-            await App.Current.Clipboard.SetDataObjectAsync(obj).WaitAsync(ctk);
+            await App.Current.Clipboard.SetDataAsync(transfer).WaitAsync(ctk);
         }
         catch { }
         finally
@@ -36,15 +36,17 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
     }
 
     [SupportedOSPlatform("linux")]
-    public static void SetTimeStamp(DataObject dataObject)
+    public static void SetTimeStamp(DataTransfer dataTransfer)
     {
-        dataObject.Set(Format.TimeStamp, Encoding.UTF8.GetBytes($"{Environment.TickCount}{Environment.NewLine}"));
+        var item = new DataTransferItem();
+        item.Set(DataFormat.CreateBytesPlatformFormat(Format.TimeStamp), Encoding.UTF8.GetBytes($"{Environment.TickCount}{Environment.NewLine}"));
+        dataTransfer.Add(item);
     }
 
     public virtual async Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
-        var dataObject = new DataObject();
-        await FillPackage(dataObject, metaInfomation);
-        await ClipboardSetterBase<ProfileType>.SetPackageToClipboard(dataObject, ctk);
+        var dataTransfer = new DataTransfer();
+        await FillPackage(dataTransfer, metaInfomation);
+        await ClipboardSetterBase<ProfileType>.SetPackageToClipboard(dataTransfer, ctk);
     }
 }

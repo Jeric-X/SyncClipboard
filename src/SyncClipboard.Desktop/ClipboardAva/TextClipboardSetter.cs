@@ -12,26 +12,29 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
 {
     public override Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
-        if (package is not DataObject dataObject)
+        if (package is not DataTransfer dataTransfer)
         {
             return Task.CompletedTask;
         }
 
+        var text = metaInfomation?.Text ?? "";
+        var item = new DataTransferItem();
+
         if (OperatingSystem.IsLinux())
         {
-            var str = metaInfomation?.Text ?? "";
-            var utf8Text = Encoding.UTF8.GetBytes(str);
-            dataObject.Set(Format.TEXT, utf8Text);
-            dataObject.Set("text/plain", utf8Text);
-            dataObject.Set("text/plain;charset=utf-8", utf8Text);
-            dataObject.Set(Format.Utf8String, str);
+            var utf8Text = Encoding.UTF8.GetBytes(text);
+            item.Set(DataFormat.CreateBytesPlatformFormat(Format.TEXT), utf8Text);
+            item.Set(DataFormat.CreateBytesPlatformFormat("text/plain"), utf8Text);
+            item.Set(DataFormat.CreateBytesPlatformFormat("text/plain;charset=utf-8"), utf8Text);
+            item.Set(DataFormat.CreateStringPlatformFormat(Format.Utf8String), text);
         }
         else
         {
             // macOS and Windows use simpler text format
-            dataObject.Set(Format.Text, metaInfomation?.Text ?? "");
+            item.SetText(text);
         }
 
+        dataTransfer.Add(item);
         return Task.CompletedTask;
     }
 

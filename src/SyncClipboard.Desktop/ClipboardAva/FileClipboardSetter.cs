@@ -20,22 +20,12 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
             throw new ArgumentException("Not Contain File.");
         }
 
-        // 支持新的 DataTransfer 和旧的 DataObject
-        if (package is DataTransfer dataTransfer)
+        if (package is not DataTransfer dataTransfer)
         {
-            await SetFilesToDataTransfer(dataTransfer, metaInfomation.Files);
+            return;
         }
-        else if (package is DataObject dataObject)
-        {
-            if (OperatingSystem.IsLinux())
-            {
-                SetLinux(dataObject, metaInfomation.Files);
-            }
-            else if (OperatingSystem.IsMacOS())
-            {
-                await SetMacos(dataObject, metaInfomation.Files);
-            }
-        }
+
+        await SetFilesToDataTransfer(dataTransfer, metaInfomation.Files);
     }
 
     private static async Task SetFilesToDataTransfer(DataTransfer dataTransfer, string[] files)
@@ -50,42 +40,41 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
             return await provider.TryGetFileFromPathAsync(file);
         }));
 
-        foreach (var item in storageItems.Where(item => item is not null))
+        var validItems = storageItems.Where(item => item is not null).Cast<IStorageItem>().ToList();
+
+        // 创建主文件项
+        var item = new DataTransferItem();
+        foreach (var storageItem in validItems)
         {
-            dataTransfer.Add(DataTransferItem.Create(DataFormat.File, item!));
+            item.SetFile(storageItem);
         }
+
+        if (OperatingSystem.IsLinux())
+        {
+            SetLinuxFormats(item, files);
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            // macOS 使用标准文件格式，已在上面设置
+        }
+
+        dataTransfer.Add(item);
     }
 
     [SupportedOSPlatform("linux")]
-    private static void SetLinux(DataObject dataObject, string[] files)
+    private static void SetLinuxFormats(DataTransferItem item, string[] files)
     {
-        dataObject.Set(Format.TEXT, Encoding.UTF8.GetBytes(string.Join('\n', files)));
+        item.Set(DataFormat.CreateBytesPlatformFormat(Format.TEXT), Encoding.UTF8.GetBytes(string.Join('\n', files)));
 
         var uriEnum = files.Select(file => new Uri(file).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
         var uris = string.Join("\n", uriEnum);
 
-        dataObject.Set(Format.UriList, Encoding.UTF8.GetBytes(uris));
+        item.Set(DataFormat.CreateBytesPlatformFormat(Format.UriList), Encoding.UTF8.GetBytes(uris));
 
         var nautilus = $"x-special/nautilus-clipboard\ncopy\n{uris}\n";
-        dataObject.Set(Format.CompoundText, Encoding.UTF8.GetBytes(nautilus));
+        item.Set(DataFormat.CreateBytesPlatformFormat(Format.CompoundText), Encoding.UTF8.GetBytes(nautilus));
 
         var gnome = $"copy\n{uris}";
-        dataObject.Set(Format.GnomeFiles, Encoding.UTF8.GetBytes(gnome));
-    }
-
-    [SupportedOSPlatform("macos")]
-    private static async Task SetMacos(DataObject dataObject, string[] files)
-    {
-        var provider = App.Current.MainWindow.StorageProvider;
-        var storageItems = await Task.WhenAll(files.Select(async file =>
-        {
-            if (Directory.Exists(file))
-            {
-                return (IStorageItem?)await provider.TryGetFolderFromPathAsync(file);
-            }
-            return await provider.TryGetFileFromPathAsync(file);
-        }));
-
-        dataObject.Set(Format.FileList, storageItems.Where(item => item is not null));
+        item.Set(DataFormat.CreateBytesPlatformFormat(Format.GnomeFiles), Encoding.UTF8.GetBytes(gnome));
     }
 }

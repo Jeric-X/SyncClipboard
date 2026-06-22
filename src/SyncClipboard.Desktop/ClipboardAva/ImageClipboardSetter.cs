@@ -16,26 +16,30 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
     {
         await base.FillPackage(package, metaInfomation);
 
-        if (package is not DataObject dataObject)
+        if (package is not DataTransfer dataTransfer)
         {
             return;
         }
 
         string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(metaInfomation.Files![0]);
 
+        var item = new DataTransferItem();
+
         if (OperatingSystem.IsLinux())
         {
-            SetImage(dataObject, metaInfomation.Files![0], LinuxImageFormat);
-            dataObject.Set(Format.TextHtml, System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
+            SetImage(item, metaInfomation.Files![0], LinuxImageFormat);
+            item.Set(DataFormat.CreateBytesPlatformFormat(Format.TextHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
         else if (OperatingSystem.IsMacOS())
         {
-            SetImage(dataObject, metaInfomation.Files![0], MacImageFormat);
-            dataObject.Set(Format.PublicHtml, System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
+            SetImage(item, metaInfomation.Files![0], MacImageFormat);
+            item.Set(DataFormat.CreateBytesPlatformFormat(Format.PublicHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
 
         string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(metaInfomation.Files![0]);
-        dataObject.Set("QQ_Unicode_RichEdit_Format", System.Text.Encoding.UTF8.GetBytes(clipboardQq));
+        item.Set(DataFormat.CreateBytesPlatformFormat("QQ_Unicode_RichEdit_Format"), System.Text.Encoding.UTF8.GetBytes(clipboardQq));
+
+        dataTransfer.Add(item);
     }
 
     [SupportedOSPlatform("linux")]
@@ -53,7 +57,7 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
         [Format.PublicTiff] = MagickFormat.Tiff,
     };
 
-    private static void SetImage(DataObject dataObject, string path, Dictionary<string, MagickFormat> mapper)
+    private static void SetImage(DataTransferItem item, string path, Dictionary<string, MagickFormat> mapper)
     {
         using var magickImage = new MagickImage(path);
 
@@ -61,7 +65,7 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
         {
             using var stream = new MemoryStream();
             magickImage.Write(stream, imageType.Value);
-            dataObject.Set(imageType.Key, stream.ToArray());
+            item.Set(DataFormat.CreateBytesPlatformFormat(imageType.Key), stream.ToArray());
         }
     }
 }

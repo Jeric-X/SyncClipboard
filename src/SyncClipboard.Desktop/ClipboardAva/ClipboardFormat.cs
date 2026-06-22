@@ -5,8 +5,8 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal static class Format
 {
-    public readonly static string FileList = DataFormats.Files;
-    public readonly static string Text = DataFormats.Text;
+    public readonly static string FileList = DataFormat.File.Identifier;
+    public readonly static string Text = DataFormat.Text.Identifier;
 
     [SupportedOSPlatform("linux")] public const string UriList = "text/uri-list";
     [SupportedOSPlatform("linux")] public const string GnomeFiles = "x-special/gnome-copied-files";
