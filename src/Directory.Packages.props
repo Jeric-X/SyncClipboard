@@ -30,11 +30,11 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="Avalonia" Version="11.2.8" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.2.8" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.2.8" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.2.8" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.2.8" />
+    <PackageVersion Include="Avalonia" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.10" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.10" />
     <PackageVersion Include="FluentAvaloniaUI" Version="2.3.0" />
     <PackageVersion Include="FluentAvalonia.BreadcrumbBar" Version="2.0.2" />
     <PackageVersion Include="SharpHook" Version="5.2.3" />

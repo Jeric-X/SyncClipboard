@@ -13,28 +13,47 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboardSetter<GroupProfile>
 {
-    public override Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
+    public override async Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
         {
             throw new ArgumentException("Not Contain File.");
         }
 
-        if (package is not DataObject dataObject)
+        // 支持新的 DataTransfer 和旧的 DataObject
+        if (package is DataTransfer dataTransfer)
         {
-            return Task.CompletedTask;
+            await SetFilesToDataTransfer(dataTransfer, metaInfomation.Files);
         }
+        else if (package is DataObject dataObject)
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                SetLinux(dataObject, metaInfomation.Files);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                await SetMacos(dataObject, metaInfomation.Files);
+            }
+        }
+    }
 
-        if (OperatingSystem.IsLinux())
+    private static async Task SetFilesToDataTransfer(DataTransfer dataTransfer, string[] files)
+    {
+        var provider = App.Current.MainWindow.StorageProvider;
+        var storageItems = await Task.WhenAll(files.Select(async file =>
         {
-            SetLinux(dataObject, metaInfomation.Files);
-        }
-        else if (OperatingSystem.IsMacOS())
-        {
-            SetMacos(dataObject, metaInfomation.Files);
-        }
+            if (Directory.Exists(file))
+            {
+                return (IStorageItem?)await provider.TryGetFolderFromPathAsync(file);
+            }
+            return await provider.TryGetFileFromPathAsync(file);
+        }));
 
-        return Task.CompletedTask;
+        foreach (var item in storageItems.Where(item => item is not null))
+        {
+            dataTransfer.Add(DataTransferItem.Create(DataFormat.File, item!));
+        }
     }
 
     [SupportedOSPlatform("linux")]
@@ -55,18 +74,18 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
     }
 
     [SupportedOSPlatform("macos")]
-    private static void SetMacos(DataObject dataObject, string[] files)
+    private static async Task SetMacos(DataObject dataObject, string[] files)
     {
         var provider = App.Current.MainWindow.StorageProvider;
-        var storageItems = files.Select<string, IStorageItem?>(file =>
+        var storageItems = await Task.WhenAll(files.Select(async file =>
         {
             if (Directory.Exists(file))
             {
-                return provider.TryGetFolderFromPathAsync(file).Result;
+                return (IStorageItem?)await provider.TryGetFolderFromPathAsync(file);
             }
-            return provider.TryGetFileFromPathAsync(file).Result;
-        }).Where(item => item is not null);
+            return await provider.TryGetFileFromPathAsync(file);
+        }));
 
-        dataObject.Set(Format.FileList, storageItems);
+        dataObject.Set(Format.FileList, storageItems.Where(item => item is not null));
     }
 }

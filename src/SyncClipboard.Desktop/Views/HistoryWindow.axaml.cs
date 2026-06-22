@@ -347,14 +347,14 @@ public partial class HistoryWindow : Window, IWindow
             {
                 try
                 {
-                    // Avalonia: 创建DataObject并填充数据
-                    var dataObject = new DataObject();
-                    var success = await _viewModel.FillDragPackage(dataObject, clickedItem, CancellationToken.None);
+                    // Avalonia 11.3+: 使用 DataTransfer API
+                    var dataTransfer = new DataTransfer();
+                    var success = await _viewModel.FillDragPackage(dataTransfer, clickedItem, CancellationToken.None);
                     if (success)
                     {
-                        var result = await DragDrop.DoDragDrop(
+                        var result = await DragDrop.DoDragDropAsync(
                             e,
-                            dataObject,
+                            dataTransfer,
                             Avalonia.Input.DragDropEffects.Copy);
                     }
                 }
