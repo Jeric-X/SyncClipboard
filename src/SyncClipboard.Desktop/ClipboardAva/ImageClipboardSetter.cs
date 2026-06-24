@@ -1,4 +1,5 @@
 using Avalonia.Input;
+using Avalonia.Media.Imaging;
 using ImageMagick;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
@@ -21,22 +22,31 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
             return;
         }
 
-        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(metaInfomation.Files![0]);
+        string imagePath = metaInfomation.Files![0];
+        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
 
         var item = new DataTransferItem();
 
+        // 使用 Avalonia 通用 Bitmap 格式
+        using var bitmap = new Bitmap(imagePath);
+        item.Set(DataFormat.Bitmap, bitmap);
+
         if (OperatingSystem.IsLinux())
         {
-            SetImage(item, metaInfomation.Files![0], LinuxImageFormat);
+            SetPlatformImageFormats(item, imagePath, LinuxImageFormat);
             item.Set(DataFormat.CreateBytesPlatformFormat(Format.TextHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
         else if (OperatingSystem.IsMacOS())
         {
-            SetImage(item, metaInfomation.Files![0], MacImageFormat);
+            SetPlatformImageFormats(item, imagePath, MacImageFormat);
             item.Set(DataFormat.CreateBytesPlatformFormat(Format.PublicHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
+        else if (OperatingSystem.IsWindows())
+        {
+            item.Set(DataFormat.CreateBytesPlatformFormat("HTML Format"), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
+        }
 
-        string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(metaInfomation.Files![0]);
+        string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(imagePath);
         item.Set(DataFormat.CreateBytesPlatformFormat("QQ_Unicode_RichEdit_Format"), System.Text.Encoding.UTF8.GetBytes(clipboardQq));
 
         dataTransfer.Add(item);
@@ -57,7 +67,7 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
         [Format.PublicTiff] = MagickFormat.Tiff,
     };
 
-    private static void SetImage(DataTransferItem item, string path, Dictionary<string, MagickFormat> mapper)
+    private static void SetPlatformImageFormats(DataTransferItem item, string path, Dictionary<string, MagickFormat> mapper)
     {
         using var magickImage = new MagickImage(path);
 

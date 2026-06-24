@@ -209,6 +209,8 @@
                                   Background="Transparent"
                                   Opacity="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToOpacity}}"
                                   PointerPressed="Grid_PointerPressed"
+                                  PointerMoved="Grid_PointerMoved"
+                                  PointerReleased="Grid_PointerReleased"
                                   IsHitTestVisible="True">
                                 <Grid.ContextFlyout>
                                     <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />

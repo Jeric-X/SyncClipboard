@@ -42,28 +42,27 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
 
         var validItems = storageItems.Where(item => item is not null).Cast<IStorageItem>().ToList();
 
-        // 创建主文件项
-        var item = new DataTransferItem();
+        // 为每个文件创建独立的 DataTransferItem
         foreach (var storageItem in validItems)
         {
+            var item = new DataTransferItem();
             item.SetFile(storageItem);
+            dataTransfer.Add(item);
         }
 
+        // Linux 特定格式：合并所有文件 URI
         if (OperatingSystem.IsLinux())
         {
-            SetLinuxFormats(item, files);
+            SetLinuxFormats(dataTransfer, files);
         }
-        else if (OperatingSystem.IsMacOS())
-        {
-            // macOS 使用标准文件格式，已在上面设置
-        }
-
-        dataTransfer.Add(item);
     }
 
     [SupportedOSPlatform("linux")]
-    private static void SetLinuxFormats(DataTransferItem item, string[] files)
+    private static void SetLinuxFormats(DataTransfer dataTransfer, string[] files)
     {
+        // 创建一个额外的 item 用于 Linux 特定格式
+        var item = new DataTransferItem();
+
         item.Set(DataFormat.CreateBytesPlatformFormat(Format.TEXT), Encoding.UTF8.GetBytes(string.Join('\n', files)));
 
         var uriEnum = files.Select(file => new Uri(file).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
@@ -76,5 +75,7 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
 
         var gnome = $"copy\n{uris}";
         item.Set(DataFormat.CreateBytesPlatformFormat(Format.GnomeFiles), Encoding.UTF8.GetBytes(gnome));
+
+        dataTransfer.Add(item);
     }
 }

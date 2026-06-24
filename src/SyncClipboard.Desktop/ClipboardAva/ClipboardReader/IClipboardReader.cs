@@ -1,3 +1,5 @@
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +12,8 @@ public interface IClipboardReader
     Task<string[]?> GetFormatsAsync(CancellationToken token);
     Task<string?> GetTextAsync(CancellationToken token);
     Task<object?> GetDataAsync(string format, CancellationToken token);
+    Task<Bitmap?> GetBitmapAsync(CancellationToken token);
+    Task<IStorageItem[]?> GetFilesAsync(CancellationToken token);
     [SupportedOSPlatform("linux")]
     Task<int?> GetTimeStamp(CancellationToken token);
 }

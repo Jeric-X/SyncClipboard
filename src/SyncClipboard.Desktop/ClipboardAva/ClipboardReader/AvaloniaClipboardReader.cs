@@ -9,6 +9,8 @@ using System.Runtime.Versioning;
 using System.Text;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 
 namespace SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 
@@ -32,6 +34,22 @@ public class AvaloniaClipboardReader(IMainWindow mainWindow) : IClipboardReader
         return await Dispatcher.UIThread.InvokeAsync<string?>(async () =>
         {
             return await _clipboard.TryGetTextAsync().WaitAsync(token);
+        }, DispatcherPriority.Normal);
+    }
+
+    public async Task<Bitmap?> GetBitmapAsync(CancellationToken token)
+    {
+        return await Dispatcher.UIThread.InvokeAsync<Bitmap?>(async () =>
+        {
+            return await _clipboard.TryGetBitmapAsync().WaitAsync(token);
+        }, DispatcherPriority.Normal);
+    }
+
+    public async Task<IStorageItem[]?> GetFilesAsync(CancellationToken token)
+    {
+        return await Dispatcher.UIThread.InvokeAsync<IStorageItem[]?>(async () =>
+        {
+            return await _clipboard.TryGetFilesAsync().WaitAsync(token);
         }, DispatcherPriority.Normal);
     }
 

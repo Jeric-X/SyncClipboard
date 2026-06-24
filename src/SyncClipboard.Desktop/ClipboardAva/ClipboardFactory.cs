@@ -41,7 +41,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             {
                 if (OperatingSystem.IsWindows())
                 {
-                    var meta = new ClipboardMetaInfomation { Text = await Clipboard.GetTextAsync(ctk) };
+                    var meta = await HandleWindowsClipboard(ctk);
                     return meta;
                 }
 

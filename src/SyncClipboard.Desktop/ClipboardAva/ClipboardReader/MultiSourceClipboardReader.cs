@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 
 namespace SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 
@@ -59,6 +61,16 @@ public class MultiSourceClipboardReader : IClipboardReader
     public Task<string?> GetTextAsync(CancellationToken token)
     {
         return TryGetFromSourcesAsync((s, t) => s.GetTextAsync(t), token);
+    }
+
+    public Task<Bitmap?> GetBitmapAsync(CancellationToken token)
+    {
+        return TryGetFromSourcesAsync((s, t) => s.GetBitmapAsync(t), token);
+    }
+
+    public Task<IStorageItem[]?> GetFilesAsync(CancellationToken token)
+    {
+        return TryGetFromSourcesAsync((s, t) => s.GetFilesAsync(t), token);
     }
 
     [SupportedOSPlatform("linux")]
