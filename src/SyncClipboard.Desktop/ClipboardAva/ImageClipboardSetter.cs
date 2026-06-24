@@ -1,4 +1,4 @@
-using Avalonia.Input;
+﻿using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using ImageMagick;
 using SyncClipboard.Core.Clipboard;
@@ -27,8 +27,8 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
 
         var item = new DataTransferItem();
 
-        // 使用 Avalonia 通用 Bitmap 格式
-        using var bitmap = new Bitmap(imagePath);
+        // 不能dispose bitmap，图片仍关联着程序
+        var bitmap = new Bitmap(imagePath);
         item.Set(DataFormat.Bitmap, bitmap);
 
         if (OperatingSystem.IsLinux())
