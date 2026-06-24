@@ -12,15 +12,11 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
-internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<SyncClipboard.Shared.Profiles.ImageProfile>
+internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClipboardSetter<SyncClipboard.Shared.Profiles.ImageProfile>
 {
-    private readonly ILogger _logger;
+    private readonly ILogger _logger = logger;
     private const string LOG_TAG = nameof(ImageClipboardSetter);
 
-    public ImageClipboardSetter(ILogger logger)
-    {
-        _logger = logger;
-    }
     public override async Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
         await base.FillPackage(package, metaInfomation);
