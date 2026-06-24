@@ -2,6 +2,7 @@
 using Avalonia.Media.Imaging;
 using ImageMagick;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,13 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<SyncClipboard.Shared.Profiles.ImageProfile>
 {
+    private readonly ILogger _logger;
+    private const string LOG_TAG = nameof(ImageClipboardSetter);
+
+    public ImageClipboardSetter(ILogger logger)
+    {
+        _logger = logger;
+    }
     public override async Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
         await base.FillPackage(package, metaInfomation);
@@ -28,8 +36,15 @@ internal class ImageClipboardSetter : FileClipboardSetter, IClipboardSetter<Sync
         var item = new DataTransferItem();
 
         // 不能dispose bitmap，图片仍关联着程序
-        var bitmap = new Bitmap(imagePath);
-        item.Set(DataFormat.Bitmap, bitmap);
+        try
+        {
+            var bitmap = new Bitmap(imagePath);
+            item.Set(DataFormat.Bitmap, bitmap);
+        }
+        catch (Exception ex)
+        {
+            await _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
+        }
 
         if (OperatingSystem.IsLinux())
         {
