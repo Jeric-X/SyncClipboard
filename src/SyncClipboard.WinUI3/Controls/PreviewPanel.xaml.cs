@@ -11,7 +11,9 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.ValueConverters;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics.Imaging;
 
 namespace SyncClipboard.WinUI3.Controls;
@@ -221,6 +223,32 @@ public sealed partial class PreviewPanel : UserControl
         if (SelectedItem is HistoryRecordVM record && record.Type == ProfileType.Image && record.PreviewImage != null)
         {
             ViewModel?.ViewImage(record);
+        }
+    }
+
+    internal async void PreviewImage_DragStarting(UIElement _, DragStartingEventArgs e)
+    {
+        if (SelectedItem is not HistoryRecordVM record)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        try
+        {
+            e.Data.RequestedOperation = DataPackageOperation.Copy;
+            var success = await ViewModel.FillDragPackage(e.Data, record, CancellationToken.None);
+            e.DragUI.SetContentFromDataPackage();
+
+            if (!success)
+            {
+                e.Cancel = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppCore.TryGetCurrent()?.Logger.Write(nameof(PreviewPanel), $"Drag operation failed: {ex.Message}");
+            e.Cancel = true;
         }
     }
 }

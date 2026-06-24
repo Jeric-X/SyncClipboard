@@ -10,6 +10,7 @@ using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Controls;
@@ -20,6 +21,11 @@ namespace SyncClipboard.Desktop.Controls;
 public sealed partial class PreviewPanel : UserControl
 {
     private (uint width, uint height) _currentPreviewImageSize = (0, 0);
+    private const double DragThreshold = 4; // 拖拽阈值（像素）
+    private bool _isPendingDrag = false;
+    private Point _dragStartPoint;
+    private HistoryRecordVM? _pendingDragItem;
+    private Control? _dragSource;
 
     /// <summary>
     /// ViewModel依赖属性
@@ -211,6 +217,93 @@ public sealed partial class PreviewPanel : UserControl
         if (SelectedItem is HistoryRecordVM record && record.Type == ProfileType.Image && record.PreviewImage != null)
         {
             ViewModel?.ViewImage(record);
+        }
+    }
+
+    private void PreviewImage_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var clickedItem = SelectedItem;
+        if (clickedItem == null)
+        {
+            return;
+        }
+
+        // 鼠标左键：记录起始位置，等待拖拽阈值
+        if (e.Pointer.Type == PointerType.Mouse)
+        {
+            var properties = e.GetCurrentPoint((Image?)sender!).Properties;
+            if (properties.IsLeftButtonPressed)
+            {
+                _isPendingDrag = true;
+                _dragStartPoint = e.GetPosition(null);
+                _pendingDragItem = clickedItem;
+                _dragSource = sender as Control;
+                e.Pointer.Capture((IInputElement)sender!);
+            }
+        }
+    }
+
+    private async void PreviewImage_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        if (!_isPendingDrag || _pendingDragItem == null || _dragSource == null || ViewModel == null)
+            return;
+
+        var currentPoint = e.GetPosition(null);
+        var delta = currentPoint - _dragStartPoint;
+
+        // 检查是否超过拖拽阈值
+        if (Math.Abs(delta.X) < DragThreshold && Math.Abs(delta.Y) < DragThreshold)
+            return;
+
+        // 开始拖拽，此时阻止默认行为
+        e.Handled = true;
+        _isPendingDrag = false;
+        var item = _pendingDragItem;
+        _pendingDragItem = null;
+
+        try
+        {
+            // Avalonia 11.3+: 使用 DataTransfer API
+            var dataTransfer = new DataTransfer();
+            var success = await ViewModel.FillDragPackage(dataTransfer, item, CancellationToken.None);
+            if (success)
+            {
+                var result = await DragDrop.DoDragDropAsync(
+                    e,
+                    dataTransfer,
+                    Avalonia.Input.DragDropEffects.Copy);
+            }
+        }
+        catch
+        {
+            // 拖拽失败，忽略
+        }
+    }
+
+    private void PreviewImage_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        if (_isPendingDrag)
+        {
+            // 只是点击，没有触发拖拽，释放指针捕获
+            _isPendingDrag = false;
+            _pendingDragItem = null;
+            _dragSource = null;
+            e.Pointer.Capture(null);
         }
     }
 }

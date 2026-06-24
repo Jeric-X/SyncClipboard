@@ -32,9 +32,7 @@
                 <Setter Property="FontSize" Value="12" />
             </Style>
             <DataTemplate x:Key="normalTemplate" x:DataType="vms:HistoryRecordVM">
-                <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text), Mode=OneWay}"
-                           MaxLines="{Binding MaxLines, Source={StaticResource CompactListProxy}, Mode=OneWay}"
-                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{x:Bind vc:ConvertMethod.LimitLines(Text), Mode=OneWay}" MaxLines="{Binding MaxLines, Source={StaticResource CompactListProxy}, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
             </DataTemplate>
             <DataTemplate x:Key="imageTemplate" x:DataType="vms:HistoryRecordVM">
                 <StackPanel Orientation="Vertical" Spacing="5">
@@ -43,6 +41,8 @@
                            Stretch="None"
                            ImageOpened="Image_ImageOpened"
                            PointerPressed="Image_PointerPressed"
+                           DragStarting="Item_DragStarting"
+                           CanDrag="True"
                            Source="{x:Bind vc:ConvertMethod.CreateBitmap(PreviewImage), Mode=OneWay}"
                            Visibility="Collapsed" />
                     <TextBlock HorizontalAlignment="Left" Text="{x:Bind Text, Mode=OneWay}" />
@@ -171,7 +171,7 @@
                             </ListViewItem.ContextFlyout>
                             <Grid MinHeight="10"
                                   PointerPressed="Grid_PointerPressed"
-                                  DragStarting="Grid_DragStarting"
+                                  DragStarting="Item_DragStarting"
                                   CanDrag="True"
                                   ColumnDefinitions="Auto, *, Auto, Auto"
                                   Background="Transparent"
@@ -179,8 +179,8 @@
                                 <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
                                     <FontIcon VerticalAlignment="Center" Glyph="{x:Bind vc:ConvertMethod.ProfileTypeToFontIcon(Type)}" FontSize="16" />
                                 </Border>
-                                <StackPanel Grid.Column="1" Orientation="Vertical">
-                                    <ContentControl Padding="8,8,0,0"
+                                <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+                                    <ContentControl Padding="8,8,0,8"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Center"
                                                     FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
@@ -226,10 +226,10 @@
                     PointerMoved="PreviewSplitter_PointerMoved"
                     PointerReleased="PreviewSplitter_PointerReleased" />
             <controls:PreviewPanel x:Name="_PreviewPanel"
-                                Grid.Column="2"
-                                Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowPreviewPanel), Mode=OneWay}"
-                                ViewModel="{x:Bind _viewModel, Mode=OneWay}"
-                                SelectedItem="{Binding SelectedItem, ElementName=_ListView, Mode=OneWay}" />
+                                   Grid.Column="2"
+                                   Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowPreviewPanel), Mode=OneWay}"
+                                   ViewModel="{x:Bind _viewModel, Mode=OneWay}"
+                                   SelectedItem="{Binding SelectedItem, ElementName=_ListView, Mode=OneWay}" />
         </Grid>
         <InfoBar x:Name="_InfoBar"
                  Grid.Row="2"

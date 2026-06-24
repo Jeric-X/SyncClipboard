@@ -76,7 +76,10 @@
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Stretch="None"
-                   DoubleTapped="PreviewImage_DoubleTapped">
+                   DoubleTapped="PreviewImage_DoubleTapped"
+                   PointerPressed="PreviewImage_PointerPressed"
+                   PointerMoved="PreviewImage_PointerMoved"
+                   PointerReleased="PreviewImage_PointerReleased">
                 <Image.IsVisible>
                     <MultiBinding Converter="{x:Static vc:FuncConverter.ShowImagePreviewMulti}">
                         <Binding Path="#_PreviewPanel.SelectedItem" />

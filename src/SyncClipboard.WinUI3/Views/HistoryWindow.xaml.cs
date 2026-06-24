@@ -450,6 +450,12 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void Grid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        // 如果事件来自 Image，则跳过处理（Image 有自己的 PointerPressed 处理）
+        if (e.OriginalSource is Image)
+        {
+            return;
+        }
+
         e.Handled = false;
         var clickedItem = (HistoryRecordVM)((Grid?)sender)?.DataContext!;
         if ((HistoryRecordVM?)_ListView.SelectedValue != clickedItem)
@@ -472,9 +478,9 @@ public sealed partial class HistoryWindow : Window, IWindow
         _historyItemEvents.TriggerOriginalEvent();
     }
 
-    private async void Grid_DragStarting(UIElement sender, DragStartingEventArgs e)
+    private async void Item_DragStarting(UIElement sender, DragStartingEventArgs e)
     {
-        var draggedItem = (HistoryRecordVM)((Grid)sender).DataContext;
+        var draggedItem = (HistoryRecordVM)((FrameworkElement)sender).DataContext;
         if (draggedItem == null)
         {
             e.Cancel = true;
@@ -499,9 +505,8 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
-    private void Image_PointerPressed(object sender, PointerRoutedEventArgs e)
+    private void Image_PointerPressed(object sender, PointerRoutedEventArgs _)
     {
-        e.Handled = true;
         var clickedItem = (HistoryRecordVM)((Image?)sender)?.DataContext!;
         if ((HistoryRecordVM?)_ListView.SelectedValue != clickedItem)
         {
