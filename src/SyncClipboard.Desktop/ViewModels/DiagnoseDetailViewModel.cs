@@ -73,11 +73,17 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
                 CsharpString = str;
             }
 
-            if (clipboard is int || clipboard is uint)
+            if (clipboard is int intValue)
             {
                 IsNumber = true;
-                Int_32 = Convert.ToInt32(clipboard);
-                Uint_32 = Convert.ToUInt32(clipboard);
+                Int_32 = intValue;
+                Uint_32 = unchecked((uint)intValue);
+            }
+            else if (clipboard is uint uintValue)
+            {
+                IsNumber = true;
+                Int_32 = unchecked((int)uintValue);
+                Uint_32 = uintValue;
             }
 
             await ProcessImageBytes(clipboard);

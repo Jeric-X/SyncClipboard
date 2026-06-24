@@ -386,6 +386,10 @@ public partial class HistoryWindow : Window, IWindow
         var item = _pendingDragItem;
         _pendingDragItem = null;
 
+        // 释放指针捕获并清理状态
+        e.Pointer.Capture(null);
+        _dragSource = null;
+
         try
         {
             // Avalonia 11.3+: 使用 DataTransfer API
