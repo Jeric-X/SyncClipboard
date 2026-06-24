@@ -48,12 +48,14 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly WindowManager _windowManger;
     private ScrollViewer? _scrollViewer = null;
     private readonly ICaretPositionProvider _caretPositionProvider;
+    private readonly ILogger _logger;
 
-    public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel, ICaretPositionProvider caretPositionProvider)
+    public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel, ICaretPositionProvider caretPositionProvider, ILogger logger)
     {
         _viewModel = viewModel;
         _windowManger = WindowManager.Get(this);
         _caretPositionProvider = caretPositionProvider;
+        _logger = logger;
         this.ResizeDip(_viewModel.Width, _viewModel.Height);
 
         InitializeComponent();
@@ -405,7 +407,8 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         if (!key.HasValue)
         {
-            throw new NotSupportedException($"WinUI3 VirtualKey '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
+            _logger.Write($"WinUI3 VirtualKey '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
+            return;
         }
 
         var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed);

@@ -27,12 +27,14 @@ public partial class HistoryWindow : Window, IWindow
 {
     private readonly HistoryViewModel _viewModel;
     private readonly ICaretPositionProvider _caretPositionProvider;
+    private readonly ILogger _logger;
     public HistoryViewModel ViewModel => _viewModel;
     private bool _firstShow = true;
     public HistoryWindow()
     {
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
         _caretPositionProvider = App.Current.Services.GetRequiredService<ICaretPositionProvider>();
+        _logger = App.Current.Services.GetRequiredService<ILogger>();
         var configManager = App.Current.Services.GetRequiredService<ConfigManager>();
         DataContext = ViewModel;
 
@@ -104,7 +106,8 @@ public partial class HistoryWindow : Window, IWindow
 
         if (!key.HasValue)
         {
-            throw new NotSupportedException($"Avalonia key '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
+            _logger.Write($"Avalonia key '{e.Key}' is not supported by KeyboardMap. Please add mapping for this key.");
+            return;
         }
 
         var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed);
