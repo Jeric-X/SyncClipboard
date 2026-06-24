@@ -42,6 +42,17 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
 
     private void FillItemImageFormats(DataTransferItem item, string imagePath)
     {
+        try
+        {
+            // 不能dispose bitmap，图片仍关联着程序
+            var bitmap = new Bitmap(imagePath);
+            item.Set(DataFormat.Bitmap, bitmap);
+        }
+        catch (Exception ex)
+        {
+            _ = _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
+        }
+
         string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
 
         if (OperatingSystem.IsLinux())
@@ -52,21 +63,11 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
         }
         else if (OperatingSystem.IsMacOS())
         {
-            // SetPlatformImageFormats(item, imagePath, MacImageFormat);
+            // SetPlatformImageFormats(item, imagePath, MacImageFormat); 完全靠avalonia统一的bitmap设置，稳定的话删除这条专用于macos的调用
             item.Set(DataFormat.CreateBytesPlatformFormat(Format.PublicHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
         else if (OperatingSystem.IsWindows())
         {
-            try
-            {
-                // 不能dispose bitmap，图片仍关联着程序
-                var bitmap = new Bitmap(imagePath);
-                item.Set(DataFormat.Bitmap, bitmap);
-            }
-            catch (Exception ex)
-            {
-                _ = _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
-            }
             item.Set(DataFormat.CreateBytesPlatformFormat("HTML Format"), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
 
