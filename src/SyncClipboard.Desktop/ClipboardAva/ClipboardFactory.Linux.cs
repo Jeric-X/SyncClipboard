@@ -172,6 +172,7 @@ internal partial class ClipboardFactory
     private async Task HandleLinuxImage(ClipboardMetaInfomation meta, string[] formats, CancellationToken token)
     {
         await HandleAllImageTypeData(meta, formats, token);
+        await HandleBitmap(meta, token);
 
         if (meta.OriginalType == ClipboardMetaInfomation.ImageType && meta.Image is null && meta.Files is null)
         {

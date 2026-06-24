@@ -1,4 +1,4 @@
-﻿using Avalonia.Platform.Storage;
+﻿using Avalonia.Input;
 using FluentAvalonia.Core;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
@@ -73,6 +73,8 @@ internal partial class ClipboardFactory
             }
         }
 
+        await HandleBitmap(meta, token);
+
         if (meta.Image is null)
         {
             meta.Text = "Unknow Image";
@@ -94,7 +96,7 @@ internal partial class ClipboardFactory
     }
 
     [SupportedOSPlatform("macos")]
-    private Task HandleTransient(ClipboardMetaInfomation meta, CancellationToken _)
+    private static Task HandleTransient(ClipboardMetaInfomation meta, CancellationToken _)
     {
         meta.ExcludeForHistory = true;
         meta.ExcludeForSync = true;

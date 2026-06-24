@@ -19,26 +19,40 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
 
     public override async Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
-        await base.FillPackage(package, metaInfomation);
+        if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)
+        {
+            throw new ArgumentException("Not Contain Image.");
+        }
 
         if (package is not DataTransfer dataTransfer)
         {
             return;
         }
 
-        string imagePath = metaInfomation.Files![0];
-        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
-
+        string imagePath = metaInfomation.Files[0];
         var item = new DataTransferItem();
+
+        await FillFileItem(item, imagePath);
+
+        // 添加图片特定格式
+        FillItemImageFormats(item, imagePath);
+
+        dataTransfer.Add(item);
+    }
+
+    private void FillItemImageFormats(DataTransferItem item, string imagePath)
+    {
+        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
 
         if (OperatingSystem.IsLinux())
         {
+            FillLinuxFileItem(item, [imagePath]);
             SetPlatformImageFormats(item, imagePath, LinuxImageFormat);
             item.Set(DataFormat.CreateBytesPlatformFormat(Format.TextHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
         else if (OperatingSystem.IsMacOS())
         {
-            SetPlatformImageFormats(item, imagePath, MacImageFormat);
+            // SetPlatformImageFormats(item, imagePath, MacImageFormat);
             item.Set(DataFormat.CreateBytesPlatformFormat(Format.PublicHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
         else if (OperatingSystem.IsWindows())
@@ -51,15 +65,13 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
             }
             catch (Exception ex)
             {
-                await _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
+                _ = _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
             }
             item.Set(DataFormat.CreateBytesPlatformFormat("HTML Format"), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
 
         string clipboardQq = ClipboardImageBuilder.GetClipboardQQFormat(imagePath);
         item.Set(DataFormat.CreateBytesPlatformFormat("QQ_Unicode_RichEdit_Format"), System.Text.Encoding.UTF8.GetBytes(clipboardQq));
-
-        dataTransfer.Add(item);
     }
 
     [SupportedOSPlatform("linux")]

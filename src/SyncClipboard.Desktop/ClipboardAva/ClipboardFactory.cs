@@ -1,11 +1,11 @@
-using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -83,7 +83,26 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     private async Task HandleFiles(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var items = await Clipboard.GetDataAsync(Format.FileList, token) as IEnumerable<IStorageItem>;
-        meta.Files = items?.Select(item => item.Path.LocalPath).ToArray();
+        var files = await Clipboard.GetFilesAsync(token);
+        if (files is not null)
+        {
+            meta.Files = files?.Select(item => item.Path.LocalPath).ToArray();
+        }
+    }
+
+    private async Task HandleBitmap(ClipboardMetaInfomation meta, CancellationToken token)
+    {
+        if (meta.Image is not null)
+        {
+            return;
+        }
+
+        var bitmap = await Clipboard.GetBitmapAsync(token);
+        if (bitmap is not null)
+        {
+            using var stream = new MemoryStream();
+            bitmap.Save(stream);
+            meta.Image = ClipboardImage.TryCreateImage(stream.ToArray());
+        }
     }
 }

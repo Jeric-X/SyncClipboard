@@ -28,25 +28,32 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
         await SetFilesToDataTransfer(dataTransfer, metaInfomation.Files);
     }
 
-    private static async Task SetFilesToDataTransfer(DataTransfer dataTransfer, string[] files)
+    protected static async Task FillFileItem(DataTransferItem item, string file)
     {
         var provider = App.Current.MainWindow.StorageProvider;
-        var storageItems = await Task.WhenAll(files.Select(async file =>
+        IStorageItem? storageItem;
+        if (Directory.Exists(file))
         {
-            if (Directory.Exists(file))
-            {
-                return (IStorageItem?)await provider.TryGetFolderFromPathAsync(file);
-            }
-            return await provider.TryGetFileFromPathAsync(file);
-        }));
+            storageItem = await provider.TryGetFolderFromPathAsync(file);
+        }
+        else
+        {
+            storageItem = await provider.TryGetFileFromPathAsync(file);
+        }
 
-        var validItems = storageItems.Where(item => item is not null).Cast<IStorageItem>().ToList();
+        if (storageItem is not null)
+        {
+            item.SetFile(storageItem);
+        }
+    }
 
+    private static async Task SetFilesToDataTransfer(DataTransfer dataTransfer, string[] files)
+    {
         // 为每个文件创建独立的 DataTransferItem
-        foreach (var storageItem in validItems)
+        foreach (var file in files)
         {
             var item = new DataTransferItem();
-            item.SetFile(storageItem);
+            await FillFileItem(item, file);
             dataTransfer.Add(item);
         }
 
@@ -58,11 +65,17 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
     }
 
     [SupportedOSPlatform("linux")]
-    private static void SetLinuxFormats(DataTransfer dataTransfer, string[] files)
+    protected static void SetLinuxFormats(DataTransfer dataTransfer, string[] files)
     {
         // 创建一个额外的 item 用于 Linux 特定格式
         var item = new DataTransferItem();
+        FillLinuxFileItem(item, files);
+        dataTransfer.Add(item);
+    }
 
+    [SupportedOSPlatform("linux")]
+    protected static void FillLinuxFileItem(DataTransferItem item, string[] files)
+    {
         item.Set(DataFormat.CreateBytesPlatformFormat(Format.TEXT), Encoding.UTF8.GetBytes(string.Join('\n', files)));
 
         var uriEnum = files.Select(file => new Uri(file).GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
@@ -75,7 +88,5 @@ internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboar
 
         var gnome = $"copy\n{uris}";
         item.Set(DataFormat.CreateBytesPlatformFormat(Format.GnomeFiles), Encoding.UTF8.GetBytes(gnome));
-
-        dataTransfer.Add(item);
     }
 }
