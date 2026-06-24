@@ -84,7 +84,6 @@ public class LinuxCmdClipboardReader : IClipboardReader
         return int.TryParse(timeStampStr, out var timeStamp) ? timeStamp : BitConverter.ToInt32(textBytes);
     }
 
-
     public async Task<object?> CheckAndGetDataByParasAsync(string parameters, CancellationToken token)
     {
         if (!_inited)
