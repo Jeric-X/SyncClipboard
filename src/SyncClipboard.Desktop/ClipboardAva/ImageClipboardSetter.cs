@@ -31,17 +31,6 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
 
         var item = new DataTransferItem();
 
-        // 不能dispose bitmap，图片仍关联着程序
-        try
-        {
-            var bitmap = new Bitmap(imagePath);
-            item.Set(DataFormat.Bitmap, bitmap);
-        }
-        catch (Exception ex)
-        {
-            await _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
-        }
-
         if (OperatingSystem.IsLinux())
         {
             SetPlatformImageFormats(item, imagePath, LinuxImageFormat);
@@ -54,6 +43,16 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
         }
         else if (OperatingSystem.IsWindows())
         {
+            try
+            {
+                // 不能dispose bitmap，图片仍关联着程序
+                var bitmap = new Bitmap(imagePath);
+                item.Set(DataFormat.Bitmap, bitmap);
+            }
+            catch (Exception ex)
+            {
+                await _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
+            }
             item.Set(DataFormat.CreateBytesPlatformFormat("HTML Format"), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
 

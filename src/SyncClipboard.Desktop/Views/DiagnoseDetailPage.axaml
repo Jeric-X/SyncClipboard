@@ -39,6 +39,8 @@
             <ui:SettingsExpander Header="UTF32">
                 <TextBlock Text="{Binding Utf32}" TextWrapping="Wrap" />
             </ui:SettingsExpander>
+        </StackPanel>
+        <StackPanel Spacing="10" IsVisible="{Binding IsNumber}">
             <ui:SettingsExpander Header="INT32">
                 <TextBlock Text="{Binding Int_32}" TextWrapping="Wrap" />
             </ui:SettingsExpander>
