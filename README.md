@@ -325,6 +325,9 @@ Tasker是一款安卓系统上非常强大的自动化工具软件，你可以�
 
 具体使用方法、操作事项等请参见该项目 [README.md](https://github.com/qh7574/Fcitx5-SyncClipboard)
 
+#### 使用[syncclipboard-xposed](https://github.com/shaklow/syncclipboard-xposed)
+一个lsposed模块，实现完全无感自动同步
+
 
 ### 鸿蒙OS (HarmonyOS Next)
 #### 使用[ClipLink](https://github.com/xiebaiyuan/ClipLink)
