@@ -32,7 +32,7 @@ public class SingletonTask
 
     public async Task Run(CancelableTask task, bool cancelPrevious, CancellationToken? token = null)
     {
-        CancellationTokenSource methodLevelCts;
+        CancellationToken methodLevelToken;
         CancellationTokenSource linkedCts;
 
         lock (_ctsLock)
@@ -42,22 +42,25 @@ public class SingletonTask
                 return;
             }
 
-            _cts.Cancel();
+            var previousCts = _cts;
+            previousCts.Cancel();
+            previousCts.Dispose();
+
             _cts = new CancellationTokenSource();
-            methodLevelCts = _cts;
+            methodLevelToken = _cts.Token;
             _task = task;
-            linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, token ?? CancellationToken.None);
+            linkedCts = CancellationTokenSource.CreateLinkedTokenSource(methodLevelToken, token ?? CancellationToken.None);
         }
 
-        try
+        using (linkedCts)
         {
-            await _taskSemaphore.WaitAsync(linkedCts.Token);
-            using var scopeGuard = new ScopeGuard(() => _taskSemaphore.Release());
-            await task(linkedCts.Token);
-        }
-        catch when (methodLevelCts.Token.IsCancellationRequested)
-        {
-            methodLevelCts.Dispose();
+            try
+            {
+                await _taskSemaphore.WaitAsync(linkedCts.Token);
+                using var scopeGuard = new ScopeGuard(() => _taskSemaphore.Release());
+                await task(linkedCts.Token);
+            }
+            catch when (methodLevelToken.IsCancellationRequested) { }
         }
     }
 
