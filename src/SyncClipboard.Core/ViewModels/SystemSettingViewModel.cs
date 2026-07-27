@@ -65,7 +65,6 @@ public partial class SystemSettingViewModel : ObservableObject
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
         Theme = Themes.FirstOrDefault(x => x.Key == ProgramConfig.Theme) ?? Themes[0];
         OnPropertyChanged(nameof(RunAsAdminOnStartUp));
-        OnPropertyChanged(nameof(IsRunAsAdminEnabled));
         _configManager.SetConfig(value);
     }
 
@@ -224,7 +223,6 @@ public partial class SystemSettingViewModel : ObservableObject
         {
             StartUpHelper.Set(value, RunAsAdminOnStartUp);
             OnPropertyChanged(nameof(StartUpWithSystem));
-            OnPropertyChanged(nameof(IsRunAsAdminEnabled));
         }
     }
 
@@ -241,8 +239,6 @@ public partial class SystemSettingViewModel : ObservableObject
             }
         }
     }
-
-    public bool IsRunAsAdminEnabled => StartUpHelper.Status();
 
     /// <summary>
     /// Called by code-behind after a folder is picked by the user.
