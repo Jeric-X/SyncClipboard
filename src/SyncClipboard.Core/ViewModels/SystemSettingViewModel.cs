@@ -64,6 +64,8 @@ public partial class SystemSettingViewModel : ObservableObject
         Font = value.Font;
         Language = Languages.FirstOrDefault(x => x.LocaleTag == value.Language) ?? Languages[0];
         Theme = Themes.FirstOrDefault(x => x.Key == ProgramConfig.Theme) ?? Themes[0];
+        OnPropertyChanged(nameof(RunAsAdminOnStartUp));
+        OnPropertyChanged(nameof(IsRunAsAdminEnabled));
         _configManager.SetConfig(value);
     }
 
@@ -188,6 +190,8 @@ public partial class SystemSettingViewModel : ObservableObject
 
     public bool ShowStartUpSetting { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
 
+    public bool ShowRunAsAdminSetting { get; } = OperatingSystem.IsWindows();
+
     public bool ShowPortableLocationSetting { get; } = OperatingSystem.IsWindows();
 
     public static string AppDataDirectory => Env.AppDataDirectory;
@@ -218,10 +222,27 @@ public partial class SystemSettingViewModel : ObservableObject
         get => StartUpHelper.Status();
         set
         {
-            StartUpHelper.Set(value);
+            StartUpHelper.Set(value, RunAsAdminOnStartUp);
             OnPropertyChanged(nameof(StartUpWithSystem));
+            OnPropertyChanged(nameof(IsRunAsAdminEnabled));
         }
     }
+
+    public bool RunAsAdminOnStartUp
+    {
+        get => ProgramConfig.RunAsAdminOnStartUp;
+        set
+        {
+            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value };
+            // Recreate the task with the new RunLevel if auto-start is active
+            if (StartUpHelper.Status())
+            {
+                StartUpHelper.Set(true, value);
+            }
+        }
+    }
+
+    public bool IsRunAsAdminEnabled => StartUpHelper.Status();
 
     /// <summary>
     /// Called by code-behind after a folder is picked by the user.

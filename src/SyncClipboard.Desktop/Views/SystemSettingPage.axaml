@@ -25,6 +25,11 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding StartUpWithSystem, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RunAsAdminOnStartUp}" IsVisible="{Binding ShowRunAsAdminSetting}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding RunAsAdminOnStartUp, Mode=TwoWay}" IsEnabled="{Binding IsRunAsAdminEnabled, Mode=OneWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HideOnStartup}">
                     <ui:SettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding HideWindowOnStartUp, Mode=TwoWay}" />

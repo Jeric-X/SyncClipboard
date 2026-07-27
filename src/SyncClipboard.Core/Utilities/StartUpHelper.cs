@@ -1,7 +1,5 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.Versioning;
-using System.Security.Principal;
-using Microsoft.Win32;
 using SyncClipboard.Core.Commons;
 
 namespace SyncClipboard.Core.Utilities;
@@ -24,11 +22,11 @@ public class StartUpHelper
         }
     }
 
-    public static void Set(bool enable)
+    public static void Set(bool enable, bool runAsAdmin = false)
     {
         if (OperatingSystem.IsOSPlatform("windows"))
         {
-            SetWindows(enable);
+            SetWindows(enable, runAsAdmin);
         }
         else if (OperatingSystem.IsOSPlatform("linux"))
         {
@@ -41,39 +39,20 @@ public class StartUpHelper
     }
 
     [SupportedOSPlatform("windows")]
-    private static bool IsElevated()
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static void SetWindows(bool enable)
+    private static void SetWindows(bool enable, bool runAsAdmin)
     {
         if (enable)
         {
-            if (IsElevated())
-            {
-                // Running elevated: must use Task Scheduler — HKCU\Run is blocked by UAC
-                CreateTaskViaCom();
-                CleanupRegistryKey();
-            }
-            else
-            {
-                // Running normally: use registry — schtasks /rl highest would fail without elevation
-                SetRegistry(true);
-                DeleteTask();
-            }
+            CreateTaskViaCom(runAsAdmin);
         }
         else
         {
-            SetRegistry(false);
             DeleteTask();
         }
     }
 
     [SupportedOSPlatform("windows")]
-    private static void CreateTaskViaCom()
+    private static void CreateTaskViaCom(bool runAsAdmin)
     {
         try
         {
@@ -83,7 +62,7 @@ public class StartUpHelper
             dynamic folder = scheduler.GetFolder("\\");
             dynamic taskDef = scheduler.NewTask(0);
 
-            taskDef.Principal.RunLevel = 1; // TASK_RUNLEVEL_HIGHEST
+            taskDef.Principal.RunLevel = runAsAdmin ? 1 : 0; // 1 = TASK_RUNLEVEL_HIGHEST, 0 = TASK_RUNLEVEL_LUA
             taskDef.Settings.DisallowStartIfOnBatteries = false;
             taskDef.Settings.StopIfGoingOnBatteries = false;
             taskDef.Triggers.Create(9); // TASK_TRIGGER_LOGON
@@ -100,10 +79,11 @@ public class StartUpHelper
             // Fallback: schtasks CLI (no WorkingDirectory — may fail for WinUI3/self-contained apps)
             try
             {
+                var rl = runAsAdmin ? "/rl highest" : "";
                 var psi = new ProcessStartInfo
                 {
                     FileName = "schtasks",
-                    Arguments = $"/create /tn \"{Env.SoftName}\" /tr \"\\\"{Env.ProgramPath}\\\"\" /sc onlogon /rl highest /f",
+                    Arguments = $"/create /tn \"{Env.SoftName}\" /tr \"\\\"{Env.ProgramPath}\\\"\" /sc onlogon {rl} /f",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 };
@@ -136,38 +116,6 @@ public class StartUpHelper
         }
     }
 
-    [SupportedOSPlatform("windows")]
-    private static void SetRegistry(bool enable)
-    {
-        if (enable)
-        {
-            Registry.SetValue(
-                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run",
-                Env.SoftName, Env.ProgramPath);
-        }
-        else
-        {
-            Registry.CurrentUser.OpenSubKey(
-                @"Software\Microsoft\Windows\CurrentVersion\Run", true)
-                ?.DeleteValue(Env.SoftName, false);
-        }
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static void CleanupRegistryKey()
-    {
-        try
-        {
-            Registry.CurrentUser.OpenSubKey(
-                @"Software\Microsoft\Windows\CurrentVersion\Run", true)
-                ?.DeleteValue(Env.SoftName, false);
-        }
-        catch
-        {
-            // Key may not exist
-        }
-    }
-
     [SupportedOSPlatform("linux")]
     private static void SetLinux(bool enable)
     {
@@ -190,7 +138,6 @@ public class StartUpHelper
     [SupportedOSPlatform("windows")]
     private static bool CheckWindows()
     {
-        // Check task scheduler first
         var psi = new ProcessStartInfo
         {
             FileName = "schtasks",
@@ -200,16 +147,7 @@ public class StartUpHelper
         };
         var process = Process.Start(psi);
         process?.WaitForExit();
-        if (process?.ExitCode == 0)
-        {
-            return true;
-        }
-
-        // Fallback: check old registry method
-        var path = Registry.GetValue(
-            @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run",
-            Env.SoftName, null);
-        return path as string == Env.ProgramPath;
+        return process?.ExitCode == 0;
     }
 
     [SupportedOSPlatform("linux")]

@@ -2212,7 +2212,16 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("RunAtSystemStartup", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Run as Administrator 的本地化字符串。
+        /// </summary>
+        public static string RunAsAdminOnStartUp {
+            get {
+                return ResourceManager.GetString("RunAsAdminOnStartUp", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Access Key ID 的本地化字符串。
         /// </summary>
