@@ -221,24 +221,42 @@ public partial class SystemSettingViewModel : ObservableObject
         get => StartUpHelper.Status();
         set
         {
-            StartUpHelper.Set(value, RunAsAdminOnStartUp);
+            var runAsAdmin = RunAsAdminOnStartUp;
+            if (value
+                && ProgramConfig.RunAsAdminOnStartUp
+                && !StartUpHelper.CanCurrentWindowsUserRunAsAdmin())
+            {
+                ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = false };
+            }
+
+            StartUpHelper.TrySet(value, runAsAdmin);
             OnPropertyChanged(nameof(StartUpWithSystem));
+            OnPropertyChanged(nameof(RunAsAdminOnStartUp));
         }
     }
 
     public bool RunAsAdminOnStartUp
     {
-        get => ProgramConfig.RunAsAdminOnStartUp;
+        get => StartUpHelper.TryGetRunAsAdmin(out var runAsAdmin)
+            ? runAsAdmin
+            : ProgramConfig.RunAsAdminOnStartUp
+                && StartUpHelper.CanCurrentWindowsUserRunAsAdmin();
         set
         {
-            // Recreate the task first if auto-start is active, then persist config.
-            if (StartUpHelper.Status())
+            if (value && !StartUpHelper.CanCurrentWindowsUserRunAsAdmin())
             {
-                StartUpHelper.Set(true, value);
+                OnPropertyChanged(nameof(RunAsAdminOnStartUp));
+                return;
             }
-            // Only persist the requested value if the task still exists;
-            // if creation silently failed, save false (the effective state).
-            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value && StartUpHelper.Status() };
+
+            if (StartUpHelper.Status()
+                && !StartUpHelper.TrySet(enable: true, runAsAdmin: value))
+            {
+                OnPropertyChanged(nameof(RunAsAdminOnStartUp));
+                return;
+            }
+
+            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value };
         }
     }
 
