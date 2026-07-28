@@ -1,11 +1,14 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Microsoft.Win32;
 using SyncClipboard.Core.Commons;
 
 namespace SyncClipboard.Core.Utilities;
 
 public class StartUpHelper
 {
+    private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
     public static bool Status()
     {
         if (OperatingSystem.IsOSPlatform("windows"))
@@ -22,7 +25,10 @@ public class StartUpHelper
         }
     }
 
-    public static void Set(bool enable, bool runAsAdmin = false)
+    // Single-parameter overload for binary compatibility with existing compiled callers
+    public static void Set(bool enable) => Set(enable, runAsAdmin: false);
+
+    public static void Set(bool enable, bool runAsAdmin)
     {
         if (OperatingSystem.IsOSPlatform("windows"))
         {
@@ -41,6 +47,9 @@ public class StartUpHelper
     [SupportedOSPlatform("windows")]
     private static void SetWindows(bool enable, bool runAsAdmin)
     {
+        // Clean up old HKCU\Run entry on every transition (migration from <3.2.x)
+        DeleteRegistryKey();
+
         if (enable)
         {
             CreateTaskViaCom(runAsAdmin);
@@ -50,6 +59,8 @@ public class StartUpHelper
             DeleteTask();
         }
     }
+
+    #region Task Scheduler (COM API)
 
     [SupportedOSPlatform("windows")]
     private static void CreateTaskViaCom(bool runAsAdmin)
@@ -62,9 +73,10 @@ public class StartUpHelper
             dynamic folder = scheduler.GetFolder("\\");
             dynamic taskDef = scheduler.NewTask(0);
 
-            taskDef.Principal.RunLevel = runAsAdmin ? 1 : 0; // 1 = TASK_RUNLEVEL_HIGHEST, 0 = TASK_RUNLEVEL_LUA
+            taskDef.Principal.RunLevel = runAsAdmin ? 1 : 0; // 1=Highest, 0=LUA
             taskDef.Settings.DisallowStartIfOnBatteries = false;
             taskDef.Settings.StopIfGoingOnBatteries = false;
+            taskDef.Settings.ExecutionTimeLimit = "PT0S"; // disable 72h default limit
             taskDef.Triggers.Create(9); // TASK_TRIGGER_LOGON
 
             dynamic action = taskDef.Actions.Create(0); // TASK_ACTION_EXEC
@@ -76,7 +88,6 @@ public class StartUpHelper
         }
         catch
         {
-            // Fallback: schtasks CLI (no WorkingDirectory — may fail for WinUI3/self-contained apps)
             try
             {
                 var rl = runAsAdmin ? "/rl highest" : "";
@@ -116,6 +127,52 @@ public class StartUpHelper
         }
     }
 
+    #endregion
+
+    #region Registry (HKCU\Run) — migration cleanup
+
+    [SupportedOSPlatform("windows")]
+    private static void DeleteRegistryKey()
+    {
+        try
+        {
+            Registry.CurrentUser.OpenSubKey(RunKeyPath, true)?.DeleteValue(Env.SoftName, false);
+        }
+        catch
+        {
+            // Key may not exist
+        }
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool CheckWindows()
+    {
+        // Primary: Task Scheduler
+        var psi = new ProcessStartInfo
+        {
+            FileName = "schtasks",
+            Arguments = $"/query /tn \"{Env.SoftName}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        var process = Process.Start(psi);
+        process?.WaitForExit();
+        if (process?.ExitCode == 0)
+        {
+            return true;
+        }
+
+        // Fallback: legacy HKCU\Run entry (users upgrading from <3.2.x)
+        var path = Registry.GetValue(
+            @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run",
+            Env.SoftName, null);
+        return path as string == Env.ProgramPath;
+    }
+
+    #endregion
+
+    #region Linux
+
     [SupportedOSPlatform("linux")]
     private static void SetLinux(bool enable)
     {
@@ -133,21 +190,6 @@ public class StartUpHelper
         {
             DesktopEntryHelper.RemvoeLinuxDesktopEntry(autoStartFolder);
         }
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static bool CheckWindows()
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "schtasks",
-            Arguments = $"/query /tn \"{Env.SoftName}\"",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        var process = Process.Start(psi);
-        process?.WaitForExit();
-        return process?.ExitCode == 0;
     }
 
     [SupportedOSPlatform("linux")]
@@ -169,4 +211,6 @@ public class StartUpHelper
 
         return File.ReadLines(autoStartDestkopFilePath).Any(line => line == $"TryExec={Env.ProgramPath}");
     }
+
+    #endregion
 }

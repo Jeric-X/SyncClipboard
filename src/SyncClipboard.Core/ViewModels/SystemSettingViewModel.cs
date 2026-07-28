@@ -231,12 +231,13 @@ public partial class SystemSettingViewModel : ObservableObject
         get => ProgramConfig.RunAsAdminOnStartUp;
         set
         {
-            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value };
-            // Recreate the task with the new RunLevel if auto-start is active
+            // Recreate the task first if auto-start is active, then persist config.
+            // If task creation fails, the old value stays in config.
             if (StartUpHelper.Status())
             {
                 StartUpHelper.Set(true, value);
             }
+            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value };
         }
     }
 
