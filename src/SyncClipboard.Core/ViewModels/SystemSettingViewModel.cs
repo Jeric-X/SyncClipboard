@@ -232,12 +232,13 @@ public partial class SystemSettingViewModel : ObservableObject
         set
         {
             // Recreate the task first if auto-start is active, then persist config.
-            // If task creation fails, the old value stays in config.
             if (StartUpHelper.Status())
             {
                 StartUpHelper.Set(true, value);
             }
-            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value };
+            // Only persist the requested value if the task still exists;
+            // if creation silently failed, save false (the effective state).
+            ProgramConfig = ProgramConfig with { RunAsAdminOnStartUp = value && StartUpHelper.Status() };
         }
     }
 
