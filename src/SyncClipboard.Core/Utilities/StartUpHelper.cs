@@ -336,6 +336,34 @@ public class StartUpHelper
         string ProgramPath,
         string ProgramDirectory);
 
+    private sealed record WindowsTaskSnapshot(
+        WindowsTaskLookupStatus Status,
+        WindowsStartupTaskInfo? Task,
+        string? Xml,
+        string? SecurityDescriptor)
+    {
+        public bool HasCompleteRollbackData =>
+            Status != WindowsTaskLookupStatus.Error
+            && (Status != WindowsTaskLookupStatus.Found
+                || (Xml is not null && SecurityDescriptor is not null));
+    }
+
+    private sealed record WindowsStartupState(
+        string TaskName,
+        WindowsTaskSnapshot CurrentTask,
+        WindowsTaskLookupStatus LegacyTaskStatus,
+        WindowsTaskSnapshot? LegacyTask,
+        WindowsStartupRegistryEntry? RegistryEntry)
+    {
+        public bool CanChange =>
+            CurrentTask.HasCompleteRollbackData
+            && LegacyTaskStatus != WindowsTaskLookupStatus.Error
+            && (LegacyTask?.HasCompleteRollbackData ?? true);
+
+        public string? LegacyTaskName =>
+            LegacyTask is null ? null : Env.SoftName;
+    }
+
     internal static string GetWindowsTaskName(string appName, string userId) => $"{appName}-{userId}";
 
     [SupportedOSPlatform("windows")]
@@ -416,27 +444,67 @@ public class StartUpHelper
         string programPath,
         string programDirectory)
     {
-        if (task is null
-            || !PathsEqual(task.ExecutablePath, programPath)
-            || !string.IsNullOrEmpty(task.Arguments)
-            || !PathsEqual(task.WorkingDirectory, programDirectory)
-            || task.ActionCount != 1
-            || !string.Equals(task.PrincipalUserId, userId, StringComparison.OrdinalIgnoreCase)
-            || task.PrincipalLogonType != 3
-            || !string.Equals(task.TriggerUserId, userId, StringComparison.OrdinalIgnoreCase)
-            || task.TriggerCount != 1
-            || !task.Enabled
-            || !task.TriggerEnabled
-            || task.DisallowStartIfOnBatteries
-            || task.StopIfGoingOnBatteries
-            || task.ExecutionTimeLimit != "PT0S"
-            || task.RunLevel is not TaskRunLevelLeastPrivilege and not TaskRunLevelHighest)
+        if (task is null)
+        {
+            return false;
+        }
+
+        return IsExpectedWindowsTaskAction(task, programPath, programDirectory)
+            && IsExpectedWindowsTaskPrincipal(task, userId)
+            && IsExpectedWindowsTaskSettings(task)
+            && IsExpectedWindowsTaskRunLevel(task, runAsAdmin);
+    }
+
+    private static bool IsExpectedWindowsTaskAction(
+        WindowsStartupTaskInfo task,
+        string programPath,
+        string programDirectory)
+    {
+        return PathsEqual(task.ExecutablePath, programPath)
+            && string.IsNullOrEmpty(task.Arguments)
+            && PathsEqual(task.WorkingDirectory, programDirectory)
+            && task.ActionCount == 1;
+    }
+
+    private static bool IsExpectedWindowsTaskPrincipal(
+        WindowsStartupTaskInfo task,
+        string userId)
+    {
+        return string.Equals(
+                task.PrincipalUserId,
+                userId,
+                StringComparison.OrdinalIgnoreCase)
+            && task.PrincipalLogonType == 3
+            && string.Equals(
+                task.TriggerUserId,
+                userId,
+                StringComparison.OrdinalIgnoreCase)
+            && task.TriggerCount == 1;
+    }
+
+    private static bool IsExpectedWindowsTaskSettings(WindowsStartupTaskInfo task)
+    {
+        return task.Enabled
+            && task.TriggerEnabled
+            && !task.DisallowStartIfOnBatteries
+            && !task.StopIfGoingOnBatteries
+            && task.ExecutionTimeLimit == "PT0S";
+    }
+
+    private static bool IsExpectedWindowsTaskRunLevel(
+        WindowsStartupTaskInfo task,
+        bool? runAsAdmin)
+    {
+        if (task.RunLevel is not TaskRunLevelLeastPrivilege and not TaskRunLevelHighest)
         {
             return false;
         }
 
         return runAsAdmin is null
-            || task.RunLevel == (runAsAdmin.Value ? TaskRunLevelHighest : TaskRunLevelLeastPrivilege);
+            || task.RunLevel
+            == (runAsAdmin.Value
+                ? TaskRunLevelHighest
+                : TaskRunLevelLeastPrivilege);
     }
 
     internal static bool NeedsWindowsStartupMigrationElevation(
@@ -750,166 +818,104 @@ public class StartUpHelper
     [SupportedOSPlatform("windows")]
     private static bool TryEnableWindowsStartup(string userId, string userName, bool runAsAdmin)
     {
-        var taskName = GetWindowsTaskName(Env.SoftName, userId);
-        var previousTaskStatus = GetWindowsTaskLookupStatus(taskName);
-        var previousTaskXml = previousTaskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskXml(taskName)
-            : null;
-        var previousTaskSecurityDescriptor =
-            previousTaskStatus == WindowsTaskLookupStatus.Found
-                ? GetWindowsTaskSecurityDescriptor(taskName)
-                : null;
-        var previousTask = previousTaskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskInfo(taskName)
-            : null;
-        var legacyTaskStatus = GetWindowsTaskLookupStatus(Env.SoftName);
-        var legacyTaskCandidate = legacyTaskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskInfo(Env.SoftName)
-            : null;
-        var legacyTask = IsLegacyTaskForCurrentUser(legacyTaskCandidate, userId, userName)
-            ? legacyTaskCandidate
-            : null;
-        var legacyTaskXml = legacyTask is null
-            ? null
-            : GetWindowsTaskXml(Env.SoftName);
-        var legacyTaskSecurityDescriptor = legacyTask is null
-            ? null
-            : GetWindowsTaskSecurityDescriptor(Env.SoftName);
-        var registryEntry = GetLegacyRegistryEntry();
-
-        if (previousTaskStatus == WindowsTaskLookupStatus.Error
-            || legacyTaskStatus == WindowsTaskLookupStatus.Error
-            || (previousTaskStatus == WindowsTaskLookupStatus.Found
-                && (previousTaskXml is null
-                    || previousTaskSecurityDescriptor is null))
-            || (legacyTask is not null
-                && (legacyTaskXml is null
-                    || legacyTaskSecurityDescriptor is null)))
-        {
-            return false;
-        }
-
-        if (NeedsWindowsStartupMigrationElevation(runAsAdmin, previousTask, legacyTask))
-        {
-            return TryRunElevatedWindowsStartupTransaction(
-                enable: true,
-                taskName,
-                userId,
-                runAsAdmin,
-                previousTaskXml,
-                previousTaskSecurityDescriptor,
-                legacyTask is null ? null : Env.SoftName,
-                legacyTaskXml,
-                legacyTaskSecurityDescriptor,
-                registryEntry);
-        }
-
-        if (!TryRegisterWindowsTaskWithoutElevation(taskName, userId, runAsAdmin)
-            || !IsExpectedWindowsTask(
-                GetWindowsTaskInfo(taskName),
-                userId,
-                runAsAdmin,
-                Env.ProgramPath,
-                Env.ProgramDirectory))
-        {
-            RestoreWindowsTask(taskName, previousTaskXml, previousTask);
-            return TryRunElevatedWindowsStartupTransaction(
-                enable: true,
-                taskName,
-                userId,
-                runAsAdmin,
-                previousTaskXml,
-                previousTaskSecurityDescriptor,
-                legacyTask is null ? null : Env.SoftName,
-                legacyTaskXml,
-                legacyTaskSecurityDescriptor,
-                registryEntry);
-        }
-
-        if (!TryRemoveLegacyWindowsStartup(userId, userName))
-        {
-            RestoreWindowsTask(Env.SoftName, legacyTaskXml, legacyTask);
-            RestoreLegacyRegistryEntry(registryEntry);
-            RestoreWindowsTask(taskName, previousTaskXml, previousTask);
-            return TryRunElevatedWindowsStartupTransaction(
-                enable: true,
-                taskName,
-                userId,
-                runAsAdmin,
-                previousTaskXml,
-                previousTaskSecurityDescriptor,
-                legacyTask is null ? null : Env.SoftName,
-                legacyTaskXml,
-                legacyTaskSecurityDescriptor,
-                registryEntry);
-        }
-
-        return true;
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static bool TryDisableWindowsStartup(string userId, string userName)
-    {
-        var taskName = GetWindowsTaskName(Env.SoftName, userId);
-        var taskStatus = GetWindowsTaskLookupStatus(taskName);
-        var task = taskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskInfo(taskName)
-            : null;
-        var taskXml = taskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskXml(taskName)
-            : null;
-        var taskSecurityDescriptor = taskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskSecurityDescriptor(taskName)
-            : null;
-        var legacyTaskStatus = GetWindowsTaskLookupStatus(Env.SoftName);
-        var legacyTaskCandidate = legacyTaskStatus == WindowsTaskLookupStatus.Found
-            ? GetWindowsTaskInfo(Env.SoftName)
-            : null;
-        var legacyTask = IsLegacyTaskForCurrentUser(legacyTaskCandidate, userId, userName)
-            ? legacyTaskCandidate
-            : null;
-        var legacyTaskXml = legacyTask is null
-            ? null
-            : GetWindowsTaskXml(Env.SoftName);
-        var legacyTaskSecurityDescriptor = legacyTask is null
-            ? null
-            : GetWindowsTaskSecurityDescriptor(Env.SoftName);
-        var registryEntry = GetLegacyRegistryEntry();
-
-        if (taskStatus == WindowsTaskLookupStatus.Error
-            || legacyTaskStatus == WindowsTaskLookupStatus.Error
-            || (taskStatus == WindowsTaskLookupStatus.Found
-                && (taskXml is null
-                    || taskSecurityDescriptor is null))
-            || (legacyTask is not null
-                && (legacyTaskXml is null
-                    || legacyTaskSecurityDescriptor is null)))
+        var state = CaptureWindowsStartupState(userId, userName);
+        if (!state.CanChange)
         {
             return false;
         }
 
         if (NeedsWindowsStartupMigrationElevation(
-            runAsAdmin: false,
-            currentTask: task,
-            legacyTask))
+                runAsAdmin,
+                state.CurrentTask.Task,
+                state.LegacyTask?.Task))
+        {
+            return TryRunElevatedWindowsStartupTransaction(
+                enable: true,
+                userId,
+                runAsAdmin,
+                state);
+        }
+
+        return TryEnableWindowsStartupWithoutElevation(
+            userId,
+            userName,
+            runAsAdmin,
+            state);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool TryEnableWindowsStartupWithoutElevation(
+        string userId,
+        string userName,
+        bool runAsAdmin,
+        WindowsStartupState state)
+    {
+        var registered = TryRegisterWindowsTaskWithoutElevation(
+                state.TaskName,
+                userId,
+                runAsAdmin)
+            && IsExpectedWindowsTask(
+                GetWindowsTaskInfo(state.TaskName),
+                userId,
+                runAsAdmin,
+                Env.ProgramPath,
+                Env.ProgramDirectory);
+        if (!registered)
+        {
+            RestoreWindowsStartupState(state);
+            return TryRunElevatedWindowsStartupTransaction(
+                enable: true,
+                userId,
+                runAsAdmin,
+                state);
+        }
+
+        if (TryRemoveLegacyWindowsStartup(userId, userName))
+        {
+            return true;
+        }
+
+        RestoreWindowsStartupState(state);
+        return TryRunElevatedWindowsStartupTransaction(
+            enable: true,
+            userId,
+            runAsAdmin,
+            state);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool TryDisableWindowsStartup(string userId, string userName)
+    {
+        var state = CaptureWindowsStartupState(userId, userName);
+        if (!state.CanChange)
+        {
+            return false;
+        }
+
+        if (NeedsWindowsStartupMigrationElevation(
+                runAsAdmin: false,
+                currentTask: state.CurrentTask.Task,
+                state.LegacyTask?.Task))
         {
             return TryRunElevatedWindowsStartupTransaction(
                     enable: false,
-                    taskName,
                     userId,
                     runAsAdmin: false,
-                    taskXml,
-                    taskSecurityDescriptor,
-                    legacyTask is null ? null : Env.SoftName,
-                    legacyTaskXml,
-                    legacyTaskSecurityDescriptor,
-                    registryEntry)
+                    state)
                 && !CheckWindows();
         }
 
-        var removed = (taskStatus == WindowsTaskLookupStatus.NotFound
-                || TryDeleteWindowsTask(taskName, allowElevation: false))
-            && (legacyTask is null
+        return TryDisableWindowsStartupWithoutElevation(userId, state);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool TryDisableWindowsStartupWithoutElevation(
+        string userId,
+        WindowsStartupState state)
+    {
+        var removed = (state.CurrentTask.Status == WindowsTaskLookupStatus.NotFound
+                || TryDeleteWindowsTask(state.TaskName, allowElevation: false))
+            && (state.LegacyTask is null
                 || TryDeleteWindowsTask(Env.SoftName, allowElevation: false))
             && TryDeleteLegacyRegistryEntry()
             && !CheckWindows();
@@ -918,21 +924,87 @@ public class StartUpHelper
             return true;
         }
 
-        RestoreLegacyRegistryEntry(registryEntry);
-        RestoreWindowsTask(Env.SoftName, legacyTaskXml, legacyTask);
-        RestoreWindowsTask(taskName, taskXml, task);
+        RestoreWindowsStartupState(state);
         return TryRunElevatedWindowsStartupTransaction(
                 enable: false,
-                taskName,
                 userId,
                 runAsAdmin: false,
-                taskXml,
-                taskSecurityDescriptor,
-                legacyTask is null ? null : Env.SoftName,
-                legacyTaskXml,
-                legacyTaskSecurityDescriptor,
-                registryEntry)
+                state)
             && !CheckWindows();
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static WindowsStartupState CaptureWindowsStartupState(
+        string userId,
+        string userName)
+    {
+        var taskName = GetWindowsTaskName(Env.SoftName, userId);
+        var currentTask = CaptureWindowsTaskSnapshot(taskName);
+        var legacyCandidate = CaptureWindowsTaskSnapshot(Env.SoftName);
+        var legacyTask = IsLegacyTaskForCurrentUser(
+            legacyCandidate.Task,
+            userId,
+            userName)
+            ? legacyCandidate
+            : null;
+
+        return new WindowsStartupState(
+            taskName,
+            currentTask,
+            legacyCandidate.Status,
+            legacyTask,
+            GetLegacyRegistryEntry());
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static WindowsTaskSnapshot CaptureWindowsTaskSnapshot(string taskName)
+    {
+        var status = GetWindowsTaskLookupStatus(taskName);
+        return status == WindowsTaskLookupStatus.Found
+            ? new WindowsTaskSnapshot(
+                status,
+                GetWindowsTaskInfo(taskName),
+                GetWindowsTaskXml(taskName),
+                GetWindowsTaskSecurityDescriptor(taskName))
+            : new WindowsTaskSnapshot(status, null, null, null);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void RestoreWindowsStartupState(WindowsStartupState state)
+    {
+        RestoreLegacyRegistryEntry(state.RegistryEntry);
+        if (state.LegacyTask is not null)
+        {
+            RestoreWindowsTask(
+                Env.SoftName,
+                state.LegacyTask.Xml,
+                state.LegacyTask.Task);
+        }
+
+        RestoreWindowsTask(
+            state.TaskName,
+            state.CurrentTask.Xml,
+            state.CurrentTask.Task);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool TryRunElevatedWindowsStartupTransaction(
+        bool enable,
+        string userId,
+        bool runAsAdmin,
+        WindowsStartupState state)
+    {
+        return TryRunElevatedWindowsStartupTransaction(
+            enable,
+            state.TaskName,
+            userId,
+            runAsAdmin,
+            state.CurrentTask.Xml,
+            state.CurrentTask.SecurityDescriptor,
+            state.LegacyTaskName,
+            state.LegacyTask?.Xml,
+            state.LegacyTask?.SecurityDescriptor,
+            state.RegistryEntry);
     }
 
     [SupportedOSPlatform("windows")]
@@ -1038,57 +1110,87 @@ public class StartUpHelper
     {
         try
         {
-            var newTaskXml = enable
-                ? NormalizeTaskXml(
-                    BuildWindowsTaskXml(
-                        userId,
-                        runAsAdmin,
-                        Env.ProgramPath,
-                        Env.ProgramDirectory))
-                : null;
-
-            var manifest = new WindowsStartupMigrationManifest(
+            var manifest = CreateWindowsStartupMigrationManifest(
+                enable,
                 taskName,
-                newTaskXml,
-                enable && !runAsAdmin
-                    ? BuildWindowsTaskSecurityDescriptor(userId)
-                    : null,
-                DeleteNewTask: !enable && previousTaskXml is not null,
-                previousTaskXml is null ? null : NormalizeTaskXml(previousTaskXml),
+                userId,
+                runAsAdmin,
+                previousTaskXml,
                 previousTaskSecurityDescriptor,
                 legacyTaskName,
-                legacyTaskXml is null ? null : NormalizeTaskXml(legacyTaskXml),
+                legacyTaskXml,
                 legacyTaskSecurityDescriptor,
-                registryEntry?.Value,
-                registryEntry is null ? null : (int)registryEntry.ValueKind,
-                RunKeyPath,
-                Env.SoftName,
-                userId,
-                runAsAdmin ? TaskRunLevelHighest : TaskRunLevelLeastPrivilege,
-                Env.ProgramPath,
-                Env.ProgramDirectory);
+                registryEntry);
             var command = BuildElevatedPowerShellCommand(
                 JsonSerializer.Serialize(manifest),
                 WindowsStartupMigrationScript);
             var startInfo = CreateElevatedPowerShellStartInfo(command);
-            if (startInfo.ArgumentList[^1].Length >= 30_000)
-            {
-                return false;
-            }
-
-            using var process = Process.Start(startInfo);
-            if (process is null)
-            {
-                return false;
-            }
-
-            process.WaitForExit();
-            return process.ExitCode == 0;
+            return RunElevatedWindowsStartupProcess(startInfo);
         }
         catch
         {
             return false;
         }
+    }
+
+    private static WindowsStartupMigrationManifest CreateWindowsStartupMigrationManifest(
+        bool enable,
+        string taskName,
+        string userId,
+        bool runAsAdmin,
+        string? previousTaskXml,
+        string? previousTaskSecurityDescriptor,
+        string? legacyTaskName,
+        string? legacyTaskXml,
+        string? legacyTaskSecurityDescriptor,
+        WindowsStartupRegistryEntry? registryEntry)
+    {
+        var newTaskXml = enable
+            ? NormalizeTaskXml(
+                BuildWindowsTaskXml(
+                    userId,
+                    runAsAdmin,
+                    Env.ProgramPath,
+                    Env.ProgramDirectory))
+            : null;
+
+        return new WindowsStartupMigrationManifest(
+            taskName,
+            newTaskXml,
+            enable && !runAsAdmin
+                ? BuildWindowsTaskSecurityDescriptor(userId)
+                : null,
+            DeleteNewTask: !enable && previousTaskXml is not null,
+            previousTaskXml is null ? null : NormalizeTaskXml(previousTaskXml),
+            previousTaskSecurityDescriptor,
+            legacyTaskName,
+            legacyTaskXml is null ? null : NormalizeTaskXml(legacyTaskXml),
+            legacyTaskSecurityDescriptor,
+            registryEntry?.Value,
+            registryEntry is null ? null : (int)registryEntry.ValueKind,
+            RunKeyPath,
+            Env.SoftName,
+            userId,
+            runAsAdmin ? TaskRunLevelHighest : TaskRunLevelLeastPrivilege,
+            Env.ProgramPath,
+            Env.ProgramDirectory);
+    }
+
+    private static bool RunElevatedWindowsStartupProcess(ProcessStartInfo startInfo)
+    {
+        if (startInfo.ArgumentList[^1].Length >= 30_000)
+        {
+            return false;
+        }
+
+        using var process = Process.Start(startInfo);
+        if (process is null)
+        {
+            return false;
+        }
+
+        process.WaitForExit();
+        return process.ExitCode == 0;
     }
 
     private static void WriteTaskXml(string path, string xml)
