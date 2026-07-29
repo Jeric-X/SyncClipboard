@@ -11,7 +11,7 @@ public class ClipboardChangingListenerBaseTest
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task NotificationWaitsForLocalClipboardWriteToFinish()
+    public async Task NotificationDoesNotWaitForBusinessLayerClipboardMutex()
     {
         var factory = new TestClipboardFactory();
         using var listener = new TestClipboardListener(factory);
@@ -22,17 +22,14 @@ public class ClipboardChangingListenerBaseTest
         try
         {
             listener.Trigger();
-            await Task.Delay(100, TestContext.CancellationTokenSource.Token);
+            await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
 
-            Assert.AreEqual(0, factory.GetMetaInfomationCallCount, "Clipboard reading must wait until the local write releases the semaphore.");
+            Assert.AreEqual(1, factory.GetMetaInfomationCallCount, "Native clipboard synchronization belongs in the platform factory, not the business-layer mutex.");
         }
         finally
         {
             LocalClipboard.Semaphore.Release();
         }
-
-        await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(1, factory.GetMetaInfomationCallCount);
     }
 
     [TestMethod]

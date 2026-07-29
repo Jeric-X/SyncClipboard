@@ -85,12 +85,6 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
 
         try
         {
-            // WinUI raises ContentChanged while Clipboard.Flush() is still running and
-            // pumps dispatcher callbacks during the native call. Wait for the local
-            // write to finish before reading to avoid re-entering WinRT clipboard APIs.
-            await LocalClipboard.Semaphore.WaitAsync(token);
-            using var localClipboardGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
-
             ClipboardChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept());
             meta ??= await ClipboardFactory.GetMetaInfomation(token);
             var profile = await ClipboardFactory.CreateProfileFromMeta(meta, token);
