@@ -50,11 +50,6 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         if (_progress.End)
         {
             _counter.Cancle();
-            if (UseToast)
-            {
-                ArgumentNullException.ThrowIfNull(_progressBar);
-                _progressBar.Remove();
-            }
             return;
         }
 

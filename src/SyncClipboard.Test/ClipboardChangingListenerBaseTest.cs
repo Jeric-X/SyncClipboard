@@ -11,7 +11,32 @@ public class ClipboardChangingListenerBaseTest
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task RapidNotificationsAreDeferredAndCoalesced()
+    public async Task NotificationWaitsForLocalClipboardWriteToFinish()
+    {
+        var factory = new TestClipboardFactory();
+        using var listener = new TestClipboardListener(factory);
+        TaskCompletionSource changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        listener.Changed += (_, _) => changed.TrySetResult();
+
+        await LocalClipboard.Semaphore.WaitAsync(TestContext.CancellationTokenSource.Token);
+        try
+        {
+            listener.Trigger();
+            await Task.Delay(100, TestContext.CancellationTokenSource.Token);
+
+            Assert.AreEqual(0, factory.GetMetaInfomationCallCount, "Clipboard reading must wait until the local write releases the semaphore.");
+        }
+        finally
+        {
+            LocalClipboard.Semaphore.Release();
+        }
+
+        await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(1, factory.GetMetaInfomationCallCount);
+    }
+
+    [TestMethod]
+    public async Task RapidNotificationsAreNotCoalesced()
     {
         var factory = new TestClipboardFactory();
         using var listener = new TestClipboardListener(factory);
@@ -19,21 +44,20 @@ public class ClipboardChangingListenerBaseTest
         int changedCount = 0;
         listener.Changed += (_, _) =>
         {
-            Interlocked.Increment(ref changedCount);
-            changed.TrySetResult();
+            if (Interlocked.Increment(ref changedCount) == 3)
+            {
+                changed.TrySetResult();
+            }
         };
 
         listener.Trigger();
         listener.Trigger();
         listener.Trigger();
 
-        Assert.AreEqual(0, factory.GetMetaInfomationCallCount, "Clipboard reading must not run inline in the native change callback.");
-
         await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
-        await Task.Delay(100, TestContext.CancellationTokenSource.Token);
 
-        Assert.AreEqual(1, factory.GetMetaInfomationCallCount);
-        Assert.AreEqual(1, changedCount);
+        Assert.AreEqual(3, factory.GetMetaInfomationCallCount);
+        Assert.AreEqual(3, changedCount);
     }
 
     private sealed class TestClipboardListener(IClipboardFactory clipboardFactory) : ClipboardChangingListenerBase
