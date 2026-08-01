@@ -12,7 +12,6 @@ using SyncClipboard.WinUI3.Utilities;
 using SyncClipboard.WinUI3.ValueConverters;
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics.Imaging;
@@ -239,7 +238,7 @@ public sealed partial class PreviewPanel : UserControl
         {
             e.Data.RequestedOperation = DataPackageOperation.Copy;
             await DragUiHelper.SetDragIconAsync(e.DragUI, record);
-            var success = await ViewModel.FillDragPackage(e.Data, record, CancellationToken.None);
+            var success = await ViewModel.FillDragPackage(e.Data, record);
 
             if (!success)
             {

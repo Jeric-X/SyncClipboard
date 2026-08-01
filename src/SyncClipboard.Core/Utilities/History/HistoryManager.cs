@@ -12,6 +12,8 @@ namespace SyncClipboard.Core.Utilities.History;
 
 public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 {
+    private const int HistoryKeyQueryBatchSize = 800;
+
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
     public event Action<HistoryRecord>? HistoryUpdated;
@@ -547,6 +549,30 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         _dbContext.Database.EnsureCreated();
     }
 
+    private IQueryable<HistoryRecord> BuildHistoryQuery(
+        ProfileTypeFilter typeFilter,
+        bool? starred,
+        string? searchText)
+    {
+        var query = _dbContext.HistoryRecords.Where(record => !record.IsDeleted);
+
+        if (typeFilter != ProfileTypeFilter.All)
+        {
+            var includedTypes = Enum.GetValues<ProfileType>()
+                .Where(t => (typeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
+                .ToArray();
+            query = query.Where(r => includedTypes.Contains(r.Type));
+        }
+
+        if (starred.HasValue)
+            query = query.Where(record => record.Stared == starred.Value);
+
+        if (!string.IsNullOrEmpty(searchText))
+            query = query.Where(record => EF.Functions.Like(record.Text, $"%{searchText}%"));
+
+        return query;
+    }
+
     public async Task<List<HistoryRecord>> GetHistoryAsync(
         ProfileTypeFilter typeFilter,
         bool? started = null,
@@ -559,22 +585,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = _dbContext.HistoryRecords.Where(r => r.IsDeleted == false);
-
-        if (typeFilter != ProfileTypeFilter.All)
-        {
-            var includedTypes = Enum.GetValues(typeof(ProfileType))
-                .Cast<ProfileType>()
-                .Where(t => (typeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
-                .ToList();
-
-            if (includedTypes.Count == 0)
-            {
-                return [];
-            }
-
-            query = query.Where(r => includedTypes.Contains(r.Type));
-        }
+        var query = BuildHistoryQuery(typeFilter, started, searchText);
 
         if (before.HasValue)
         {
@@ -582,15 +593,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             query = sortByLastAccessed
                 ? query.Where(r => r.LastAccessed < beforeUtc)
                 : query.Where(r => r.Timestamp < beforeUtc);
-        }
-        if (started.HasValue)
-        {
-            query = query.Where(r => r.Stared == started.Value);
-        }
-
-        if (!string.IsNullOrEmpty(searchText))
-        {
-            query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
         }
 
         query = sortByLastAccessed
@@ -628,6 +630,80 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         });
 
         return initialRecords;
+    }
+
+    public async Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
+        ProfileTypeFilter typeFilter,
+        bool? starred,
+        string? searchText,
+        IReadOnlyCollection<HistoryRecordKey> selectedKeys,
+        CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var query = BuildHistoryQuery(typeFilter, starred, searchText);
+
+        var totalCount = await query.CountAsync(token).ConfigureAwait(false);
+        var selectedCount = 0;
+        foreach (var typeGroup in selectedKeys.GroupBy(key => key.Type))
+        {
+            var type = typeGroup.Key;
+            var hashes = typeGroup.Select(key => key.Hash).Distinct().ToArray();
+            foreach (var hashBatch in hashes.Chunk(HistoryKeyQueryBatchSize))
+            {
+                selectedCount += await query
+                    .CountAsync(
+                        record => record.Type == type && hashBatch.Contains(record.Hash),
+                        token)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        return (totalCount, selectedCount);
+    }
+
+    public async Task SetStarredAsync(IEnumerable<HistoryRecordKey> keys, bool starred, CancellationToken token = default)
+    {
+        var lookup = keys.ToHashSet();
+        if (lookup.Count == 0) return;
+
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var records = await GetRecordsByKeysAsync(lookup, token).ConfigureAwait(false);
+        foreach (var record in records)
+        {
+            record.Stared = starred;
+            record.LastModified = DateTime.UtcNow;
+            record.Version++;
+            if (record.SyncStatus != HistorySyncStatus.LocalOnly)
+                record.SyncStatus = HistorySyncStatus.NeedSync;
+        }
+        await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        foreach (var record in records)
+            HistoryUpdated?.Invoke(record);
+    }
+
+    /// <summary>
+    /// Limits database work to the selected record types and hashes, then removes the small set of cross-product
+    /// candidates that are not an exact composite key match.
+    /// </summary>
+    private async Task<List<HistoryRecord>> GetRecordsByKeysAsync(
+        HashSet<HistoryRecordKey> lookup, CancellationToken token)
+    {
+        var types = lookup.Select(key => key.Type).Distinct().ToArray();
+        var hashes = lookup.Select(key => key.Hash).Distinct().ToArray();
+        var records = new List<HistoryRecord>();
+        foreach (var hashBatch in hashes.Chunk(HistoryKeyQueryBatchSize))
+        {
+            var candidates = await _dbContext.HistoryRecords
+                .Where(record => !record.IsDeleted && types.Contains(record.Type) && hashBatch.Contains(record.Hash))
+                .ToListAsync(token)
+                .ConfigureAwait(false);
+            records.AddRange(candidates.Where(record => lookup.Contains(HistoryRecordKey.From(record))));
+        }
+
+        return records;
     }
 
     public async Task ClearAllLocalAsync(CancellationToken token = default)

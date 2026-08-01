@@ -495,10 +495,16 @@ Esc：关闭面板</value>
     <value>单击：选择项目
 双击项目：复制到剪贴板
 双击图片：查看完整图片
-单击中键：复制并粘贴</value>
+单击中键：复制并粘贴
+长按：进入多选
+Ctrl + 左键：多选
+Shift + 左键：选中连续范围</value>
   </data>
   <data name="ClearLocalHistory" xml:space="preserve">
     <value>清空本地历史记录</value>
+  </data>
+  <data name="ClearLocalHistoryDescription" xml:space="preserve">
+    <value>清空本地历史记录和缓存，未同步记录将永久丢失</value>
   </data>
   <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
     <value>这将永久删除此设备上的所有历史记录和缓存文件，服务器上已同步的记录不会受到影响，是否继续？</value>
@@ -577,9 +583,11 @@ Esc：关闭面板</value>
   </data>
   <data name="IgnoreExcludeForSyncSuggestionDescription" xml:space="preserve">
     <value>部分应用会为剪贴板中的敏感信息设置“不建议同步”标记，启用此选项将忽略该标记</value>
-  </data>  <data name="NotifyFileSyncProgress" xml:space="preserve">
+  </data>
+  <data name="NotifyFileSyncProgress" xml:space="preserve">
     <value>同步文件时使用系统通知展示进度</value>
-  </data>  <data name="RetryTimes" xml:space="preserve">
+  </data>
+  <data name="RetryTimes" xml:space="preserve">
     <value>重试次数</value>
   </data>
   <data name="FileSyncFilter" xml:space="preserve">
@@ -620,6 +628,9 @@ Esc：关闭面板</value>
   </data>
   <data name="Operation" xml:space="preserve">
     <value>操作</value>
+  </data>
+  <data name="OperationInstructions" xml:space="preserve">
+    <value>操作说明</value>
   </data>
   <data name="ProcessName" xml:space="preserve">
     <value>进程名</value>
@@ -962,9 +973,6 @@ Esc：关闭面板</value>
   <data name="ShowSyncStatus" xml:space="preserve">
     <value>显示同步状态</value>
   </data>
-  <data name="OnlyShowLocal" xml:space="preserve">
-    <value>仅显示本地记录</value>
-  </data>
   <data name="OnlyShowStarred" xml:space="preserve">
     <value>仅显示收藏</value>
   </data>
@@ -1059,16 +1067,26 @@ Esc：关闭面板</value>
     <value>是否创建子文件夹？</value>
   </data>
   <data name="ChangeAppDataFolderConfirmMessage" xml:space="preserve">
-    <value>是否在选中的目录下创建 SyncClipboard 子文件夹？&#10;&#10;点击"是"将使用：{0}&#10;点击"否"将使用：{1}&#10;点击"取消"将放弃此次操作。</value>
+    <value>是否在选中的目录下创建 SyncClipboard 子文件夹？
+
+点击"是"将使用：{0}
+点击"否"将使用：{1}
+点击"取消"将放弃此次操作。</value>
   </data>
   <data name="SwitchAppDataFolderConfirmTitle" xml:space="preserve">
     <value>切换应用数据文件夹？</value>
   </data>
   <data name="SwitchAppDataFolderConfirmMessage" xml:space="preserve">
-    <value>切换应用数据文件夹需要将当前数据复制到新位置，并重新启动应用。&#10;&#10;新位置：{0}&#10;&#10;是否继续？</value>
+    <value>切换应用数据文件夹需要将当前数据复制到新位置，并重新启动应用。
+
+新位置：{0}
+
+是否继续？</value>
   </data>
   <data name="SwitchToIndependentAppDataFolderMessage" xml:space="preserve">
-    <value>切换到独立应用数据文件夹需要复制当前数据，并重新启动应用。&#10;&#10;请选择使用默认位置，或手动选择一个位置。</value>
+    <value>切换到独立应用数据文件夹需要复制当前数据，并重新启动应用。
+
+请选择使用默认位置，或手动选择一个位置。</value>
   </data>
   <data name="DefaultLocation" xml:space="preserve">
     <value>默认位置</value>
@@ -1123,5 +1141,32 @@ Esc：关闭面板</value>
   </data>
   <data name="Synced" xml:space="preserve">
     <value>已同步</value>
+  </data>
+  <data name="HistoryMultiSelectStatus" xml:space="preserve">
+    <value>已选择 {0} 项，当前页已选择 {1} 项</value>
+  </data>
+  <data name="HistoryMultiSelectAll" xml:space="preserve">
+    <value>全选</value>
+  </data>
+  <data name="HistoryMultiSelectDelete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="HistoryMultiSelectStar" xml:space="preserve">
+    <value>收藏</value>
+  </data>
+  <data name="HistoryMultiSelectUnstar" xml:space="preserve">
+    <value>取消收藏</value>
+  </data>
+  <data name="HistoryMultiSelectExit" xml:space="preserve">
+    <value>退出多选</value>
+  </data>
+  <data name="HistoryMultiSelectDeleteConfirmMessage" xml:space="preserve">
+    <value>将删除 {0} 条历史记录。</value>
+  </data>
+  <data name="HistoryMultiSelectStarConfirmMessage" xml:space="preserve">
+    <value>将收藏 {0} 条历史记录。</value>
+  </data>
+  <data name="HistoryMultiSelectUnstarConfirmMessage" xml:space="preserve">
+    <value>将取消收藏 {0} 条历史记录。</value>
   </data>
 </root>

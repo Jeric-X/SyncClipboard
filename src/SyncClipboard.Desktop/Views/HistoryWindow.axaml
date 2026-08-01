@@ -27,7 +27,49 @@
         mc:Ignorable="d">
     <Window.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="HistoryMultiSelectBarBackground" Color="#66CECECE" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="HistoryMultiSelectBarBackground" Color="#66252525" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
+            <ControlTheme x:Key="MultiSelectCommandBarButtonTheme" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Border x:Name="PART_Border"
+                                Margin="2,3"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter>
+                <Style Selector="^:pointerover">
+                    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}" />
+                </Style>
+                <Style Selector="^:pressed">
+                    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPressed}" />
+                </Style>
+            </ControlTheme>
             <Flyout x:Key="FontScaleFlyout">
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="4">
                     <TextBlock VerticalAlignment="Center" />
@@ -82,12 +124,15 @@
     </Window.DataTemplates>
     <Panel>
         <Panel.Styles>
-            <Style Selector="Button">
+            <Style Selector="Button:not(.MultiSelectAction)">
                 <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
                 <Setter Property="Height" Value="28" />
                 <Setter Property="Width" Value="28" />
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="Focusable" Value="False" />
+            </Style>
+            <Style Selector="Button.MultiSelectAction">
+                <Setter Property="Theme" Value="{StaticResource MultiSelectCommandBarButtonTheme}" />
             </Style>
             <Style Selector="ToggleButton">
                 <Setter Property="Focusable" Value="False" />
@@ -142,12 +187,13 @@
                     <ui:FontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     <Button.Flyout>
                         <ui:FAMenuFlyout>
+                            <ui:MenuFlyoutItem Text="{x:Static i18n:Strings.OperationInstructions}" Command="{Binding ShowOperationInstructionsCommand}" />
+                            <ui:MenuFlyoutSeparator />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
                             <ui:MenuFlyoutSeparator />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
-                            <!--<ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />-->
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
                             <ui:MenuFlyoutSeparator />
@@ -208,12 +254,18 @@
                    Stretch="None"
                    IsHitTestVisible="False"
                    Opacity="0" />
-            <Grid x:Name="_MainContentGrid" Grid.Row="2" ColumnDefinitions="Auto, Auto, Auto">
+            <Grid x:Name="_MainContentGrid"
+                  Grid.Row="2"
+                  ColumnDefinitions="*, Auto, 0"
+                  RowDefinitions="*, Auto">
                 <ListBox x:Name="_ListBox"
+                         Grid.Row="0"
                          Grid.Column="0"
                          ItemsSource="{Binding HistoryItems}"
                          SelectionMode="Single"
-                         SelectedIndex="{Binding SelectedIndex}"
+                         AutoScrollToSelectedItem="False"
+                         ContainerPrepared="ListBox_ContainerPrepared"
+                         ContainerClearing="ListBox_ContainerClearing"
                          DoubleTapped="ListBox_DoubleTapped"
                          HorizontalAlignment="Stretch">
                     <ListBox.ItemsPanel>
@@ -224,17 +276,22 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vms:HistoryRecordVM">
                             <Grid MinHeight="10"
-                                  ColumnDefinitions="Auto, *, Auto, Auto"
+                                  ColumnDefinitions="Auto, Auto, *, Auto, Auto"
                                   Background="Transparent"
                                   Opacity="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToOpacity}}"
-                                  PointerPressed="Grid_PointerPressed"
-                                  PointerMoved="Grid_PointerMoved"
-                                  PointerReleased="Grid_PointerReleased"
+                                  ContextRequested="HistoryItem_ContextRequested"
                                   IsHitTestVisible="True">
                                 <Grid.ContextFlyout>
                                     <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />
                                 </Grid.ContextFlyout>
-                                <Border Grid.Column="0"
+                                <CheckBox Grid.Column="0"
+                                          Margin="0"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          IsVisible="{Binding #_HistoryWindow.ViewModel.IsMultiSelecting}"
+                                          IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                          Click="RecordSelectionCheckBox_Click" />
+                                <Border Grid.Column="1"
                                         Height="40"
                                         Margin="0,0,0,0"
                                         VerticalAlignment="Top">
@@ -254,13 +311,13 @@
                                         </Path.Data>
                                     </Path>
                                 </Border>
-                                <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
                                     <ContentControl Padding="8,8,0,8"
                                                     VerticalAlignment="Center"
                                                     FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
                                                     Content="{Binding .}" />
                                 </StackPanel>
-                                <Border Grid.Column="2"
+                                <Border Grid.Column="3"
                                         Height="40"
                                         VerticalAlignment="Top"
                                         Padding="12,0,0,0">
@@ -275,7 +332,7 @@
                                         <views:RecordControlBar IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" Record="{Binding .}" ViewModel="{Binding #_HistoryWindow.ViewModel}" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="3"
+                                <Border Grid.Column="4"
                                         Width="2"
                                         Margin="4,0,4,0"
                                         Background="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToBrush}}"
@@ -292,6 +349,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <Border x:Name="_PreviewSplitter"
+                        Grid.Row="0"
                         Grid.Column="1"
                         Width="1"
                         HorizontalAlignment="Center"
@@ -305,10 +363,62 @@
                         PointerMoved="PreviewSplitter_PointerMoved"
                         PointerReleased="PreviewSplitter_PointerReleased" />
                 <controls:PreviewPanel x:Name="_PreviewPanel"
+                                       Grid.Row="0"
                                        Grid.Column="2"
                                        IsVisible="{Binding ShowPreviewPanel}"
                                        ViewModel="{Binding $parent[Window].DataContext, x:DataType=vm:HistoryViewModel}"
-                                       SelectedItem="{Binding #_ListBox.SelectedItem}" />
+                                       SelectedItem="{Binding PreviewedHistoryItem, Mode=OneWay}" />
+                <Border Grid.Row="1"
+                        Grid.ColumnSpan="3"
+                        MinHeight="48"
+                        Padding="8,4"
+                        Background="{DynamicResource HistoryMultiSelectBarBackground}"
+                        IsVisible="{Binding IsMultiSelecting}">
+                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                        <TextBlock Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{x:Static i18n:Strings.HistoryMultiSelectStatus}">
+                                    <Binding Path="SelectedHistoryCount" />
+                                    <Binding Path="SelectedInCurrentFilterCount" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <WrapPanel Grid.Column="1"
+                                   Orientation="Horizontal"
+                                   HorizontalAlignment="Right"
+                                   ItemHeight="40"
+                                   ItemSpacing="2"
+                                   LineSpacing="2">
+                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <ui:FontIcon x:Name="_SelectAllIcon"
+                                                 Glyph="&#xE739;"
+                                                 FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                                 FontSize="16" />
+                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectAll}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectDelete}" Command="{Binding ConfirmDeleteSelectedCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectDelete}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectStar}" Command="{Binding ConfirmToggleSelectedStarredCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <ui:FontIcon x:Name="_ToggleStarIcon" Glyph="&#xE734;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectStar}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectExit}" Command="{Binding ExitMultiSelectCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectExit}" />
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </Grid>
+                </Border>
             </Grid>
             <ui:InfoBar x:Name="_InfoBar"
                         Grid.Row="2"

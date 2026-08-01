@@ -1,10 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Services;
@@ -44,7 +45,17 @@ public class AvaloniaDialog : IMainWindowDialog
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = message,
+            Content = new ScrollViewer
+            {
+                MaxHeight = 480,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Content = new TextBlock
+                {
+                    Text = message,
+                    TextWrapping = TextWrapping.Wrap
+                }
+            },
             PrimaryButtonText = Strings.Confirm,
         };
 

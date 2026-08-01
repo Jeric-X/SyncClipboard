@@ -8,6 +8,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
         xmlns:i18n="using:SyncClipboard.Core.I18n"
+        xmlns:sys="using:System"
         xmlns:m="using:SyncClipboard.Core.Models"
         xmlns:vm="using:SyncClipboard.Core.ViewModels"
         xmlns:vms="using:SyncClipboard.Core.ViewModels.Sub"
@@ -40,7 +41,6 @@
                            HorizontalAlignment="Left"
                            Stretch="None"
                            ImageOpened="Image_ImageOpened"
-                           PointerPressed="Image_PointerPressed"
                            DragStarting="Item_DragStarting"
                            CanDrag="True"
                            Source="{x:Bind vc:ConvertMethod.CreateBitmap(PreviewImage), Mode=OneWay}"
@@ -95,12 +95,13 @@
                     <FontIcon Glyph="&#xE10C;" />
                     <Button.Flyout>
                         <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem Text="{x:Bind i18n:Strings.OperationInstructions}" Command="{x:Bind _viewModel.ShowOperationInstructionsCommand}" />
+                            <MenuFlyoutSeparator />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
                             <MenuFlyoutSeparator />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowSyncStatus}" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowStarredFilter}" IsChecked="{x:Bind _viewModel.ShowStarredFilter, Mode=TwoWay}" />
-                            <!--<ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.OnlyShowLocal}" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />-->
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.SortByLastAccessed}" IsChecked="{x:Bind _viewModel.SortByLastAccessed, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CompactListWhenPreview}" IsChecked="{x:Bind _viewModel.CompactListWhenPreview, Mode=TwoWay}" />
                             <MenuFlyoutSeparator />
@@ -154,79 +155,91 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="2" x:Name="_MainContentGrid" ColumnDefinitions="Auto, Auto, *">
+        <Grid Grid.Row="2"
+              x:Name="_MainContentGrid"
+              ColumnDefinitions="Auto, Auto, *"
+              RowDefinitions="*, Auto">
             <Image x:Name="_InvisualableImage"
                    MaxHeight="201"
                    Stretch="None"
                    IsHitTestVisible="False"
                    Opacity="0" />
-            <ListView x:Name="_ListView"
-                      Grid.Column="0"
-                      MinWidth="150"
-                      IsTabStop="False"
-                      ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
-                      SelectedIndex="{x:Bind _viewModel.SelectedIndex, Mode=TwoWay}"
-                      SelectionMode="Single">
-                <ListView.ItemTemplate>
+            <controls:HistoryListView x:Name="_ListView"
+                                      Grid.Row="0"
+                                      Grid.Column="0"
+                                      MinWidth="150"
+                                      IsTabStop="False"
+                                      ItemsSource="{x:Bind _viewModel.HistoryItems, Mode=OneWay}"
+                                      SelectionMode="Single"
+                                      IsMultiSelectCheckBoxEnabled="False"
+                                      SuppressPointerSelection="{x:Bind _viewModel.IsMultiSelecting, Mode=OneWay}"
+                                      ContainerContentChanging="ListView_ContainerContentChanging">
+                <controls:HistoryListView.ItemTemplate>
                     <DataTemplate x:DataType="vms:HistoryRecordVM">
-                        <ListViewItem IsTabStop="False">
-                            <ListViewItem.ContextFlyout>
-                                <MenuFlyout Opening="ItemContextFlyout_Opening" />
-                            </ListViewItem.ContextFlyout>
-                            <Grid MinHeight="10"
-                                  PointerPressed="Grid_PointerPressed"
-                                  DragStarting="Item_DragStarting"
-                                  CanDrag="True"
-                                  ColumnDefinitions="Auto, *, Auto, Auto"
-                                  Background="Transparent"
-                                  Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState), Mode=OneWay}">
-                                <Border Grid.Column="0" Height="40" VerticalAlignment="Top">
-                                    <Path Width="14"
-                                          Height="14"
-                                          VerticalAlignment="Center"
-                                          Stretch="Uniform"
-                                          Stroke="{ThemeResource TextFillColorPrimaryBrush}"
-                                          StrokeEndLineCap="Round"
-                                          StrokeLineJoin="Round"
-                                          StrokeStartLineCap="Round"
-                                          StrokeThickness="1"
-                                          Data="{x:Bind vc:ConvertMethod.HistoryRecordToHugeiconsGeometry(Type, FilePath), Mode=OneWay}" />
-                                </Border>
-                                <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-                                    <ContentControl Padding="8,8,0,8"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Center"
-                                                    FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
-                                                    Content="{x:Bind}"
-                                                    ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
+                        <Grid x:Name="HistoryItemContent"
+                              MinHeight="10"
+                              DragStarting="Item_DragStarting"
+                              CanDrag="True"
+                              ColumnDefinitions="Auto, Auto, *, Auto, Auto"
+                              Background="Transparent"
+                              Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState), Mode=OneWay}">
+                            <CheckBox Grid.Column="0"
+                                      Margin="0,0,8,0"
+                                      MinWidth="0"
+                                      Padding="0"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      IsTabStop="False"
+                                      IsChecked="{x:Bind IsSelected, Mode=OneWay}"
+                                      Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(local:HistoryListModeProxy.Current.IsMultiSelecting), Mode=OneWay}"
+                                      Click="RecordSelectionCheckBox_Click" />
+                            <Border Grid.Column="1" Height="40" VerticalAlignment="Top">
+                                <Path Width="14"
+                                      Height="14"
+                                      VerticalAlignment="Center"
+                                      Stretch="Uniform"
+                                      Stroke="{ThemeResource TextFillColorPrimaryBrush}"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      StrokeStartLineCap="Round"
+                                      StrokeThickness="1"
+                                      Data="{x:Bind vc:ConvertMethod.HistoryRecordToHugeiconsGeometry(Type, FilePath), Mode=OneWay}" />
+                            </Border>
+                            <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
+                                <ContentControl Padding="8,8,0,8"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
+                                                Content="{x:Bind}"
+                                                ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
+                            </StackPanel>
+                            <Border Grid.Column="3"
+                                    Height="40"
+                                    VerticalAlignment="Top"
+                                    Padding="12,0,0,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind RelativeTime, Mode=OneWay}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"
+                                               Opacity="0.6"
+                                               FontSize="12"
+                                               ToolTipService.ToolTip="{x:Bind FullDateTime, Mode=OneWay}" />
+                                    <!--  Control buttons - hidden when preview panel is open  -->
+                                    <local:RecordControlBar Record="{x:Bind}" Loaded="RecordControlBarLoaded" />
                                 </StackPanel>
-                                <Border Grid.Column="2"
-                                        Height="40"
-                                        VerticalAlignment="Top"
-                                        Padding="12,0,0,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="{x:Bind RelativeTime, Mode=OneWay}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0"
-                                                   Opacity="0.6"
-                                                   FontSize="12"
-                                                   ToolTipService.ToolTip="{x:Bind FullDateTime, Mode=OneWay}" />
-                                        <!--  Control buttons - hidden when preview panel is open  -->
-                                        <local:RecordControlBar Record="{x:Bind}" Loaded="RecordControlBarLoaded" />
-                                    </StackPanel>
-                                </Border>
-                                <Border Grid.Column="3"
-                                        Width="2"
-                                        Margin="4,0,4,0"
-                                        Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState), Mode=OneWay}"
-                                        Loaded="StatusBorderLoaded"
-                                        ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}" />
-                            </Grid>
-                        </ListViewItem>
+                            </Border>
+                            <Border Grid.Column="4"
+                                    Width="2"
+                                    Margin="4,0,4,0"
+                                    Background="{x:Bind vc:ConvertMethod.SyncStateToBrush(SyncState), Mode=OneWay}"
+                                    Loaded="StatusBorderLoaded"
+                                    ToolTipService.ToolTip="{x:Bind vc:ConvertMethod.SyncStateToText(SyncState)}" />
+                        </Grid>
                     </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                </controls:HistoryListView.ItemTemplate>
+            </controls:HistoryListView>
             <Border x:Name="_PreviewSplitter"
+                    Grid.Row="0"
                     Grid.Column="1"
                     Width="2"
                     HorizontalAlignment="Center"
@@ -239,10 +252,46 @@
                     PointerMoved="PreviewSplitter_PointerMoved"
                     PointerReleased="PreviewSplitter_PointerReleased" />
             <controls:PreviewPanel x:Name="_PreviewPanel"
+                                   Grid.Row="0"
                                    Grid.Column="2"
                                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowPreviewPanel), Mode=OneWay}"
                                    ViewModel="{x:Bind _viewModel, Mode=OneWay}"
-                                   SelectedItem="{Binding SelectedItem, ElementName=_ListView, Mode=OneWay}" />
+                                   SelectedItem="{x:Bind _viewModel.PreviewedHistoryItem, Mode=OneWay}" />
+            <Border Grid.Row="1"
+                    Grid.ColumnSpan="3"
+                    Padding="8,4"
+                    Background="{ThemeResource SystemControlBackgroundBaseLowBrush}"
+                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsMultiSelecting), Mode=OneWay}">
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBlock Text="{x:Bind sys:String.Format(i18n:Strings.HistoryMultiSelectStatus, _viewModel.SelectedHistoryCount, _viewModel.SelectedInCurrentFilterCount), Mode=OneWay}" VerticalAlignment="Center" Margin="8,0" />
+                    <CommandBar Grid.Column="1"
+                                MinHeight="40"
+                                DefaultLabelPosition="Right"
+                                IsOpen="True"
+                                IsDynamicOverflowEnabled="False"
+                                OverflowButtonVisibility="Collapsed"
+                                Background="Transparent">
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
+                            <AppBarButton.Icon>
+                                <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
+                            </AppBarButton.Icon>
+                        </AppBarButton>
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectDelete}"
+                                      LabelPosition="Default"
+                                      Icon="Delete"
+                                      Command="{x:Bind _viewModel.ConfirmDeleteSelectedCommand}" />
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}" LabelPosition="Default" Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
+                            <AppBarButton.Icon>
+                                <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
+                            </AppBarButton.Icon>
+                        </AppBarButton>
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectExit}"
+                                      LabelPosition="Default"
+                                      Icon="Cancel"
+                                      Command="{x:Bind _viewModel.ExitMultiSelectCommand}" />
+                    </CommandBar>
+                </Grid>
+            </Border>
         </Grid>
         <InfoBar x:Name="_InfoBar"
                  Grid.Row="2"

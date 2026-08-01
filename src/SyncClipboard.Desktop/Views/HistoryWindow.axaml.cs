@@ -4,6 +4,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
@@ -14,8 +16,11 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
+using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
+using AvaloniaDragDropEffects = Avalonia.Input.DragDropEffects;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -41,8 +46,16 @@ public partial class HistoryWindow : Window, IWindow
         InitializeComponent();
         InitializeScrollWatcher();
         SetWindowMinSize();
+        ((INotifyCollectionChanged)_viewModel.VisibleSelectedItems).CollectionChanged += OnVisibleSelectedItemsCollectionChanged;
+        ApplyListBoxSelectionMode();
+        UpdateSelectAllIcon();
+        UpdateToggleStarIcon();
 
-        this.Deactivated += (_, _) => _viewModel.OnLostFocus();
+        this.Deactivated += (_, _) =>
+        {
+            ResetPointerInteractionState();
+            _viewModel.OnLostFocus();
+        };
         this.Activated += (_, _) =>
         {
             _viewModel.OnGotFocus();
@@ -70,12 +83,29 @@ public partial class HistoryWindow : Window, IWindow
             {
                 UpdateListViewWidthForPreviewPanel();
             }
+            else if (e.PropertyName == nameof(HistoryViewModel.IsMultiSelecting))
+            {
+                ApplyListBoxSelectionMode();
+            }
+            else if (e.PropertyName == nameof(HistoryViewModel.SelectedIndex)
+                     && !_viewModel.IsMultiSelecting)
+            {
+                ApplySelectedIndex();
+            }
+            else if (e.PropertyName == nameof(HistoryViewModel.IsCurrentFilterFullySelected))
+            {
+                UpdateSelectAllIcon();
+            }
+            else if (e.PropertyName == nameof(HistoryViewModel.AreSelectedRecordsStarred))
+            {
+                UpdateToggleStarIcon();
+            }
         };
     }
 
     private void SetWindowMinSize()
     {
-        var infiniteSize = new Avalonia.Size(double.PositiveInfinity, double.PositiveInfinity);
+        var infiniteSize = new Size(double.PositiveInfinity, double.PositiveInfinity);
         _FilterSelectorBar.Measure(infiniteSize);
         _ButtonArea.Measure(infiniteSize);
         _SearchTextBox.Measure(infiniteSize);
@@ -86,6 +116,13 @@ public partial class HistoryWindow : Window, IWindow
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && _viewModel.IsMultiSelecting)
+        {
+            _viewModel.ExitMultiSelect();
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.F && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             _SearchTextBox.Focus();
@@ -119,6 +156,7 @@ public partial class HistoryWindow : Window, IWindow
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        ResetPointerInteractionState();
         if (e.CloseReason == WindowCloseReason.ApplicationShutdown || e.CloseReason == WindowCloseReason.OSShutdown)
         {
             base.OnClosing(e);
@@ -221,6 +259,89 @@ public partial class HistoryWindow : Window, IWindow
 
     private ScrollViewer? _scrollViewer = null;
 
+    private void ApplyListBoxSelectionMode()
+    {
+        var selectionMode = _viewModel.IsMultiSelecting
+            ? SelectionMode.Multiple
+            : SelectionMode.Single;
+        if (_ListBox.SelectionMode != selectionMode)
+            _ListBox.SelectionMode = selectionMode;
+
+        if (selectionMode == SelectionMode.Multiple)
+            ApplyVisibleSelectionSnapshot();
+        else
+            ApplySelectedIndex();
+    }
+
+    private void ApplySelectedIndex()
+    {
+        if (!_viewModel.IsMultiSelecting)
+            _ListBox.SelectedIndex = _viewModel.SelectedIndex;
+    }
+
+    private void ApplyVisibleSelectionSnapshot()
+    {
+        if (!_viewModel.IsMultiSelecting
+            || _ListBox.SelectedItems is not IList<object> selectedItems)
+            return;
+
+        selectedItems.Clear();
+        foreach (var record in _viewModel.VisibleSelectedItems)
+            SetVisibleRecordSelected(record, true);
+    }
+
+    private void SetVisibleRecordSelected(HistoryRecordVM record, bool selected)
+    {
+        if (_ListBox.SelectedItems is not IList<object> selectedItems)
+            return;
+
+        var current = selectedItems.OfType<HistoryRecordVM>()
+            .FirstOrDefault(item => ReferenceEquals(item, record));
+        if (selected && current is null)
+            selectedItems.Add(record);
+        else if (!selected && current is not null)
+            selectedItems.Remove(current);
+    }
+
+    private void OnVisibleSelectedItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        var removed = e.OldItems?.OfType<HistoryRecordVM>().ToArray() ?? [];
+        var added = e.NewItems?.OfType<HistoryRecordVM>().ToArray() ?? [];
+
+        ApplyVisibleSelectionRemovals(e.Action, removed);
+        ApplyVisibleSelectionAdditions(added);
+    }
+
+    private void ApplyVisibleSelectionRemovals(
+        NotifyCollectionChangedAction action,
+        HistoryRecordVM[] removed)
+    {
+        if (action == NotifyCollectionChangedAction.Reset
+            && _ListBox.SelectedItems is IList<object> selectedItems)
+            selectedItems.Clear();
+        else
+            foreach (var record in removed)
+                SetVisibleRecordSelected(record, false);
+    }
+
+    private void ApplyVisibleSelectionAdditions(HistoryRecordVM[] added)
+    {
+        if (added.Length == 0)
+            return;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_viewModel.IsMultiSelecting)
+                return;
+            foreach (var record in added)
+            {
+                if (_viewModel.VisibleSelectedItems.Any(item => ReferenceEquals(item, record))
+                    && _viewModel.HistoryItems.Any(item => ReferenceEquals(item, record)))
+                    SetVisibleRecordSelected(record, true);
+            }
+        });
+    }
+
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
         offsetY = 0; viewportHeight = 0; extentHeight = 0;
@@ -253,7 +374,7 @@ public partial class HistoryWindow : Window, IWindow
             flyout.Items.Clear();
             return;
         }
-        _ListBox.SelectedItem = record;
+        _viewModel.SelectSingleRecord(record);
 
         var actions = await _viewModel.BuildActionsAsync(record);
         flyout.Items.Clear();
@@ -268,7 +389,7 @@ public partial class HistoryWindow : Window, IWindow
         }
     }
 
-    private void PasteButtonClicked(object? sender, RoutedEventArgs e)
+    private async void PasteButtonClicked(object? sender, RoutedEventArgs e)
     {
         var history = ((Button?)sender)?.DataContext;
         if (history is not HistoryRecordVM record)
@@ -277,7 +398,7 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         e.Handled = true;
-        _ = _viewModel.CopyToClipboard(record, true, CancellationToken.None);
+        await _viewModel.HandleCopyButtonAsync(record, true);
     }
 
     private void FontScaleMenuItem_Click(object? sender, RoutedEventArgs e)
@@ -300,7 +421,7 @@ public partial class HistoryWindow : Window, IWindow
             _viewModel.FontScalePercent = (int)Math.Clamp((double)e.NewValue.Value, 25, 400);
     }
 
-    private void CopyButtonClicked(object? sender, RoutedEventArgs e)
+    private async void CopyButtonClicked(object? sender, RoutedEventArgs e)
     {
         var history = ((Button?)sender)?.DataContext;
         if (history is not HistoryRecordVM record)
@@ -309,59 +430,119 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         e.Handled = true;
-        _ = _viewModel.CopyToClipboard(record, false, CancellationToken.None);
+        await _viewModel.HandleCopyButtonAsync(record, false);
     }
 
     private void ListBox_DoubleTapped(object? sender, TappedEventArgs e)
     {
-        var history = ((ListBox?)sender)?.SelectedValue;
-        if (history is not HistoryRecordVM record)
+        if (_viewModel.PreviewedHistoryItem is not HistoryRecordVM record)
         {
             return;
         }
         _viewModel.HandleItemDoubleClick(record);
     }
 
-    private void Grid_PointerPressed(object? sender, PointerPressedEventArgs e)
+    private void ListBox_ContainerPrepared(object? sender, ContainerPreparedEventArgs e)
     {
-        if (OperatingSystem.IsLinux())
-        {
+        if (e.Container is not ListBoxItem item)
             return;
-        }
 
-        var clickedItem = ((Grid?)sender)?.DataContext as HistoryRecordVM;
-        if (clickedItem == null)
-        {
+        item.RemoveHandler(InputElement.PointerPressedEvent, ListBoxItem_PointerPressed);
+        item.AddHandler(
+            InputElement.PointerPressedEvent,
+            ListBoxItem_PointerPressed,
+            RoutingStrategies.Tunnel);
+        item.PointerMoved -= ListBoxItem_PointerMoved;
+        item.PointerMoved += ListBoxItem_PointerMoved;
+        item.PointerReleased -= ListBoxItem_PointerReleased;
+        item.PointerReleased += ListBoxItem_PointerReleased;
+    }
+
+    private void ListBox_ContainerClearing(object? sender, ContainerClearingEventArgs e)
+    {
+        if (e.Container is not ListBoxItem item)
             return;
-        }
 
-        // 鼠标中键：复制并粘贴
-        if (e.Pointer.Type == PointerType.Mouse)
+        item.RemoveHandler(InputElement.PointerPressedEvent, ListBoxItem_PointerPressed);
+        item.PointerMoved -= ListBoxItem_PointerMoved;
+        item.PointerReleased -= ListBoxItem_PointerReleased;
+        if (ReferenceEquals(_dragSource, item))
         {
-            var properties = e.GetCurrentPoint((Grid?)sender!).Properties;
-            if (properties.IsMiddleButtonPressed)
-            {
-                e.Handled = true;
-                _ = _viewModel.CopyToClipboard(clickedItem, true, CancellationToken.None);
-                return;
-            }
-
-            // 左键：记录起始位置，等待拖拽阈值
-            // 不设置 e.Handled = true，让 ListBox 正常处理选择
-            if (properties.IsLeftButtonPressed)
-            {
-                _isPendingDrag = true;
-                _dragStartPoint = e.GetPosition(null);
-                _pendingDragItem = clickedItem;
-                _dragSource = sender as Control;
-                e.Pointer.Capture((IInputElement)sender!);
-            }
+            _viewModel.CancelMultiSelectLongPress();
+            ResetPendingDrag();
         }
     }
 
-    private async void Grid_PointerMoved(object? sender, PointerEventArgs e)
+    private void ListBoxItem_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (sender is not ListBoxItem { DataContext: HistoryRecordVM clickedItem } item)
+            return;
+
+        var modifiers = e.KeyModifiers;
+        var isCtrlPressed = modifiers.HasFlag(KeyModifiers.Control);
+        var isShiftPressed = modifiers.HasFlag(KeyModifiers.Shift);
+
+        PointerPointProperties? properties = e.Pointer.Type == PointerType.Mouse
+            ? e.GetCurrentPoint(item).Properties
+            : null;
+        var isPrimaryPressed = e.Pointer.Type != PointerType.Mouse
+            || properties?.IsLeftButtonPressed == true;
+        var isMiddleButtonPressed = properties?.IsMiddleButtonPressed == true;
+        var isRightButtonPressed = properties?.IsRightButtonPressed == true;
+        if (!isRightButtonPressed && IsInteractiveItemChild(e.Source, item))
+            return;
+
+        e.Handled = _viewModel.HandleItemClick(
+            clickedItem,
+            isPrimaryPressed && isCtrlPressed,
+            isPrimaryPressed && isShiftPressed,
+            isPrimaryPressed,
+            isMiddleButtonPressed,
+            isRightButtonPressed);
+
+        if (e.Handled || !isPrimaryPressed)
+            return;
+
+        _viewModel.BeginMultiSelectLongPress(clickedItem);
         if (OperatingSystem.IsLinux())
+            return;
+
+        ResetPendingDrag();
+        _isPendingDrag = true;
+        _dragStartPoint = e.GetPosition(null);
+        _pendingDragItem = clickedItem;
+        _dragSource = item;
+        _dragPointer = e.Pointer;
+        e.Pointer.Capture(item);
+    }
+
+    private static bool IsInteractiveItemChild(object? source, ListBoxItem container)
+    {
+        for (var current = source as Visual;
+             current is not null && !ReferenceEquals(current, container);
+             current = current.GetVisualParent())
+        {
+            if (current is Button or CheckBox)
+                return true;
+        }
+
+        return false;
+    }
+
+    private async void ListBoxItem_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (sender is ListBoxItem container && e.Pointer.Type == PointerType.Mouse)
+        {
+            var point = e.GetCurrentPoint(container);
+            var position = point.Position;
+            if (point.Properties.IsLeftButtonPressed
+                && !new Rect(container.Bounds.Size).Contains(position))
+            {
+                _viewModel.CancelMultiSelectLongPress();
+            }
+        }
+
+        if (OperatingSystem.IsLinux() || _viewModel.IsMultiSelecting)
         {
             return;
         }
@@ -377,26 +558,22 @@ public partial class HistoryWindow : Window, IWindow
             return;
 
         // 开始拖拽，此时阻止默认行为
+        _viewModel.CancelMultiSelectLongPress();
         e.Handled = true;
-        _isPendingDrag = false;
         var item = _pendingDragItem;
-        _pendingDragItem = null;
-
-        // 释放指针捕获并清理状态
-        e.Pointer.Capture(null);
-        _dragSource = null;
+        ResetPendingDrag();
 
         try
         {
             // Avalonia 11.3+: 使用 DataTransfer API
             var dataTransfer = new DataTransfer();
-            var success = await _viewModel.FillDragPackage(dataTransfer, item, CancellationToken.None);
+            var success = await _viewModel.FillDragPackage(dataTransfer, item);
             if (success)
             {
                 var result = await DragDrop.DoDragDropAsync(
                     e,
                     dataTransfer,
-                    Avalonia.Input.DragDropEffects.Copy);
+                    AvaloniaDragDropEffects.Copy);
             }
         }
         catch
@@ -405,23 +582,32 @@ public partial class HistoryWindow : Window, IWindow
         }
     }
 
-    private void Grid_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    private void ListBoxItem_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (OperatingSystem.IsLinux())
-        {
-            return;
-        }
-
-        if (_isPendingDrag)
-        {
-            // 只是点击，没有触发拖拽，释放指针捕获，不阻止事件
-            _isPendingDrag = false;
-            _pendingDragItem = null;
-            _dragSource = null;
-            e.Pointer.Capture(null);
-            // 不设置 e.Handled = true，让 ListBox 正常处理选择
-        }
+        _viewModel.CancelMultiSelectLongPress();
+        ResetPendingDrag();
+        // 不设置 e.Handled = true，让 ListBox 正常处理选择
     }
+
+    private void RecordSelectionCheckBox_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: HistoryRecordVM record })
+            _viewModel.HandleSelectionCheckBoxClick(record);
+        e.Handled = true;
+    }
+
+    private void HistoryItem_ContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        e.Handled = _viewModel.IsMultiSelecting;
+    }
+
+    private void UpdateSelectAllIcon() => _SelectAllIcon.Glyph = _viewModel.IsCurrentFilterFullySelected == true
+        ? "\uE73A"
+        : "\uE739";
+
+    private void UpdateToggleStarIcon() => _ToggleStarIcon.Glyph = _viewModel.AreSelectedRecordsStarred
+        ? "\uE735"
+        : "\uE734";
 
     private void Image_DoubleTapped(object? sender, TappedEventArgs e)
     {
@@ -602,11 +788,28 @@ public partial class HistoryWindow : Window, IWindow
     private int _splitterStartWidth = 0;
 
     // 列表项拖拽相关
-    private const double DragThreshold = 4; // 拖拽阈值（像素）
+    private const double DragThreshold = 12; // 列表项拖拽阈值（Avalonia 逻辑像素）
     private bool _isPendingDrag = false;
     private Point _dragStartPoint;
     private HistoryRecordVM? _pendingDragItem;
     private Control? _dragSource;
+    private IPointer? _dragPointer;
+
+    private void ResetPointerInteractionState()
+    {
+        _viewModel.CancelMultiSelectLongPress();
+        ResetPendingDrag();
+        _PreviewPanel.ResetPendingDrag();
+    }
+
+    private void ResetPendingDrag()
+    {
+        _dragPointer?.Capture(null);
+        _dragPointer = null;
+        _isPendingDrag = false;
+        _pendingDragItem = null;
+        _dragSource = null;
+    }
 
     private void PreviewSplitter_PointerEntered(object sender, PointerEventArgs e)
     {

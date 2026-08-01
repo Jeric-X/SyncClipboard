@@ -9,6 +9,7 @@ public class HistoryListModeProxy : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private bool _isCompactListMode;
+    private bool _isMultiSelecting;
 
     public bool IsCompactListMode
     {
@@ -22,6 +23,21 @@ public class HistoryListModeProxy : INotifyPropertyChanged
 
             _isCompactListMode = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCompactListMode)));
+        }
+    }
+
+    public bool IsMultiSelecting
+    {
+        get => _isMultiSelecting;
+        set
+        {
+            if (_isMultiSelecting == value)
+            {
+                return;
+            }
+
+            _isMultiSelecting = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMultiSelecting)));
         }
     }
 }
