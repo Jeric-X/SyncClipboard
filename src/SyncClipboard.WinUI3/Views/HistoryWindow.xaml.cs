@@ -134,53 +134,47 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(HistoryViewModel.FontScalePercent))
+        switch (e.PropertyName)
         {
-            DispatcherQueue.TryEnqueue(() => ApplyFontScale(_viewModel.FontScalePercent));
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.ShowPreviewPanel))
-        {
-            DispatcherQueue.TryEnqueue(() => UpdateListViewWidthForPreview());
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.ListViewWidth) && _viewModel.ShowPreviewPanel)
-        {
-            DispatcherQueue.TryEnqueue(() => _ListView.Width = _viewModel.ListViewWidth);
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.IsCompactListMode))
-        {
-            DispatcherQueue.TryEnqueue(() => ApplyCompactListMode(_viewModel.IsCompactListMode));
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.FilterOptions))
-        {
-            DispatcherQueue.TryEnqueue(InitializeSelectorBar);
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.SelectedFilter))
-        {
-            DispatcherQueue.TryEnqueue(UpdateSelectorBarSelection);
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.IsMultiSelecting))
-        {
-            if (DispatcherQueue.HasThreadAccess)
+            case nameof(HistoryViewModel.FontScalePercent):
+                ApplyFontScale(_viewModel.FontScalePercent);
+                break;
+            case nameof(HistoryViewModel.ShowPreviewPanel):
+                UpdateListViewWidthForPreview();
+                break;
+            case nameof(HistoryViewModel.ListViewWidth):
+                ApplyListViewWidth();
+                break;
+            case nameof(HistoryViewModel.IsCompactListMode):
+                ApplyCompactListMode(_viewModel.IsCompactListMode);
+                break;
+            case nameof(HistoryViewModel.FilterOptions):
+                InitializeSelectorBar();
+                break;
+            case nameof(HistoryViewModel.SelectedFilter):
+                UpdateSelectorBarSelection();
+                break;
+            case nameof(HistoryViewModel.IsMultiSelecting):
                 ApplyListViewSelectionMode();
-            else
-                DispatcherQueue.TryEnqueue(ApplyListViewSelectionMode);
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.SelectedIndex)
-                 && !_viewModel.IsMultiSelecting)
-        {
-            if (DispatcherQueue.HasThreadAccess)
+                break;
+            case nameof(HistoryViewModel.SelectedIndex):
                 ApplySelectedIndex();
-            else
-                DispatcherQueue.TryEnqueue(ApplySelectedIndex);
+                break;
+            case nameof(HistoryViewModel.IsCurrentFilterFullySelected):
+                UpdateSelectAllIcon();
+                break;
+            case nameof(HistoryViewModel.AreSelectedRecordsStarred):
+                UpdateToggleStarIcon();
+                break;
+            default:
+                break;
         }
-        else if (e.PropertyName == nameof(HistoryViewModel.IsCurrentFilterFullySelected))
-        {
-            DispatcherQueue.TryEnqueue(UpdateSelectAllIcon);
-        }
-        else if (e.PropertyName == nameof(HistoryViewModel.AreSelectedRecordsStarred))
-        {
-            DispatcherQueue.TryEnqueue(UpdateToggleStarIcon);
-        }
+    }
+
+    private void ApplyListViewWidth()
+    {
+        if (_viewModel.ShowPreviewPanel)
+            _ListView.Width = _viewModel.ListViewWidth;
     }
 
     private void ApplyListViewSelectionMode()
@@ -504,13 +498,7 @@ public sealed partial class HistoryWindow : Window, IWindow
 
         var ctrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
         var shiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
-        var properties = e.Pointer.PointerDeviceType == PointerDeviceType.Mouse
-            ? e.GetCurrentPoint(container).Properties
-            : null;
-        var middleButtonClicked = properties?.IsMiddleButtonPressed == true;
-        var isPrimaryPressed = e.Pointer.PointerDeviceType != PointerDeviceType.Mouse
-            || properties?.IsLeftButtonPressed == true;
-        var isRightButtonPressed = properties?.IsRightButtonPressed == true;
+        var (isPrimaryPressed, middleButtonClicked, isRightButtonPressed) = GetPointerButtonState(e, container);
         if (!isRightButtonPressed && IsInteractiveItemChild(source, container))
             return;
 
@@ -525,14 +513,39 @@ public sealed partial class HistoryWindow : Window, IWindow
         if (!isPrimaryPressed)
             return;
 
+        HandlePrimaryPointerPressed(record, source, container, e.Handled);
+    }
+
+    private static (bool IsPrimaryPressed, bool MiddleButtonClicked, bool IsRightButtonPressed) GetPointerButtonState(
+        PointerRoutedEventArgs e,
+        ListViewItem container)
+    {
+        if (e.Pointer.PointerDeviceType != PointerDeviceType.Mouse)
+            return (true, false, false);
+
+        var properties = e.GetCurrentPoint(container).Properties;
+        return (properties.IsLeftButtonPressed, properties.IsMiddleButtonPressed, properties.IsRightButtonPressed);
+    }
+
+    private void HandlePrimaryPointerPressed(
+        HistoryRecordVM record,
+        DependencyObject source,
+        ListViewItem container,
+        bool handled)
+    {
         var dragSource = FindItemDragSource(source, container);
         if (dragSource is not null)
-            dragSource.CanDrag = !e.Handled;
+            dragSource.CanDrag = !handled;
 
-        if (!e.Handled && isPrimaryPressed)
+        if (!handled)
             _viewModel.BeginMultiSelectLongPress(record);
 
-        if (dragSource is Image)
+        TrackItemClick(record, dragSource is Image);
+    }
+
+    private void TrackItemClick(HistoryRecordVM record, bool isImage)
+    {
+        if (isImage)
         {
             if (!ReferenceEquals(_lastImageClickRecord, record))
             {

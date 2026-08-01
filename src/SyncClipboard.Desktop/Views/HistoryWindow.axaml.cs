@@ -85,26 +85,20 @@ public partial class HistoryWindow : Window, IWindow
             }
             else if (e.PropertyName == nameof(HistoryViewModel.IsMultiSelecting))
             {
-                if (Dispatcher.UIThread.CheckAccess())
-                    ApplyListBoxSelectionMode();
-                else
-                    Dispatcher.UIThread.Post(ApplyListBoxSelectionMode);
+                ApplyListBoxSelectionMode();
             }
             else if (e.PropertyName == nameof(HistoryViewModel.SelectedIndex)
                      && !_viewModel.IsMultiSelecting)
             {
-                if (Dispatcher.UIThread.CheckAccess())
-                    ApplySelectedIndex();
-                else
-                    Dispatcher.UIThread.Post(ApplySelectedIndex);
+                ApplySelectedIndex();
             }
             else if (e.PropertyName == nameof(HistoryViewModel.IsCurrentFilterFullySelected))
             {
-                Dispatcher.UIThread.Post(UpdateSelectAllIcon);
+                UpdateSelectAllIcon();
             }
             else if (e.PropertyName == nameof(HistoryViewModel.AreSelectedRecordsStarred))
             {
-                Dispatcher.UIThread.Post(UpdateToggleStarIcon);
+                UpdateToggleStarIcon();
             }
         };
     }
@@ -314,35 +308,38 @@ public partial class HistoryWindow : Window, IWindow
         var removed = e.OldItems?.OfType<HistoryRecordVM>().ToArray() ?? [];
         var added = e.NewItems?.OfType<HistoryRecordVM>().ToArray() ?? [];
 
-        void ApplyRemovals()
-        {
-            if (e.Action == NotifyCollectionChangedAction.Reset
-                && _ListBox.SelectedItems is IList<object> selectedItems)
-                selectedItems.Clear();
-            else
-                foreach (var record in removed)
-                    SetVisibleRecordSelected(record, false);
-        }
+        ApplyVisibleSelectionRemovals(e.Action, removed);
+        ApplyVisibleSelectionAdditions(added);
+    }
 
-        if (Dispatcher.UIThread.CheckAccess())
-            ApplyRemovals();
+    private void ApplyVisibleSelectionRemovals(
+        NotifyCollectionChangedAction action,
+        HistoryRecordVM[] removed)
+    {
+        if (action == NotifyCollectionChangedAction.Reset
+            && _ListBox.SelectedItems is IList<object> selectedItems)
+            selectedItems.Clear();
         else
-            Dispatcher.UIThread.Post(ApplyRemovals);
+            foreach (var record in removed)
+                SetVisibleRecordSelected(record, false);
+    }
 
-        if (added.Length > 0)
+    private void ApplyVisibleSelectionAdditions(HistoryRecordVM[] added)
+    {
+        if (added.Length == 0)
+            return;
+
+        Dispatcher.UIThread.Post(() =>
         {
-            Dispatcher.UIThread.Post(() =>
+            if (!_viewModel.IsMultiSelecting)
+                return;
+            foreach (var record in added)
             {
-                if (!_viewModel.IsMultiSelecting)
-                    return;
-                foreach (var record in added)
-                {
-                    if (_viewModel.VisibleSelectedItems.Any(item => ReferenceEquals(item, record))
-                        && _viewModel.HistoryItems.Any(item => ReferenceEquals(item, record)))
-                        SetVisibleRecordSelected(record, true);
-                }
-            });
-        }
+                if (_viewModel.VisibleSelectedItems.Any(item => ReferenceEquals(item, record))
+                    && _viewModel.HistoryItems.Any(item => ReferenceEquals(item, record)))
+                    SetVisibleRecordSelected(record, true);
+            }
+        });
     }
 
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)

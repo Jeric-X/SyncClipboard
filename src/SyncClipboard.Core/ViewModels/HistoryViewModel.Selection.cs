@@ -128,21 +128,27 @@ public partial class HistoryViewModel
     {
         if (IsMultiSelecting)
         {
-            if (shiftPressed && selectionAnchor is { } existingAnchor)
-            {
-                SelectRange(existingAnchor, record);
-                return;
-            }
-            ToggleRecordSelection(record);
+            HandleMultiSelectRecordClick(record, shiftPressed);
             return;
         }
 
         if (!ctrlPressed && !shiftPressed)
             return;
 
-        HistoryRecordVM? current = null;
-        if (SelectedIndex >= 0 && SelectedIndex < HistoryItemCount)
-            current = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
+        EnterMultiSelectFromRecordClick(record, shiftPressed);
+    }
+
+    private void HandleMultiSelectRecordClick(HistoryRecordVM record, bool shiftPressed)
+    {
+        if (shiftPressed && selectionAnchor is { } anchor)
+            SelectRange(anchor, record);
+        else
+            ToggleRecordSelection(record);
+    }
+
+    private void EnterMultiSelectFromRecordClick(HistoryRecordVM record, bool shiftPressed)
+    {
+        var current = SelectedItem;
 
         IsMultiSelecting = true;
         if (current is not null)
