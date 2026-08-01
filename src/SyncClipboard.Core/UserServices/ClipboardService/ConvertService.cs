@@ -70,7 +70,6 @@ public class ConvertService : ClipboardHander
 
     private static bool NeedAdjust(ClipboardMetaInfomation metaInfo)
     {
-
         if (metaInfo.Files is null)
         {
             return false;

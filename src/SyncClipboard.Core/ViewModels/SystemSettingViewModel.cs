@@ -483,7 +483,7 @@ public partial class SystemSettingViewModel : ObservableObject
         long availableBytes = drive.AvailableFreeSpace;
         if (availableBytes < sourceSize)
         {
-            long requiredMB = sourceSize / (1024 * 1024) + 1;
+            long requiredMB = (sourceSize / (1024 * 1024)) + 1;
             long availableMB = availableBytes / (1024 * 1024);
             return string.Format(Strings.NotEnoughDiskSpace, requiredMB, availableMB);
         }

@@ -1048,7 +1048,15 @@ public partial class HistoryViewModel : ObservableObject
 
     private bool IsMatchDbFilter(HistoryRecordVM vm, bool ignoreStarredFilter = false)
     {
-        bool filterMatch = SelectedFilter switch
+        return MatchesSelectedFilter(vm)
+            && MatchesStarredFilter(vm, ignoreStarredFilter)
+            && MatchesSearchFilter(vm)
+            && IsWithinLoadedTimeRange(vm);
+    }
+
+    private bool MatchesSelectedFilter(HistoryRecordVM vm)
+    {
+        return SelectedFilter switch
         {
             HistoryFilterType.All => true,
             HistoryFilterType.Text => vm.Type == ProfileType.Text,
@@ -1056,38 +1064,29 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.File => vm.Type == ProfileType.File || vm.Type == ProfileType.Group,
             _ => true
         };
+    }
 
-        if (!filterMatch)
-            return false;
+    private bool MatchesStarredFilter(HistoryRecordVM vm, bool ignoreStarredFilter)
+    {
+        return ignoreStarredFilter || !IsStarredScopeActive || vm.Stared;
+    }
 
-        if (IsStarredScopeActive && !ignoreStarredFilter)
+    private bool MatchesSearchFilter(HistoryRecordVM vm)
+    {
+        return string.IsNullOrEmpty(SearchText)
+            || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载
+    private bool IsWithinLoadedTimeRange(HistoryRecordVM vm)
+    {
+        if (_isLocalEnd || !_timeCursor.HasValue)
         {
-            if (!vm.Stared)
-            {
-                return false;
-            }
+            return true;
         }
 
-        if (!string.IsNullOrEmpty(SearchText))
-        {
-            if (!vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-        }
-
-        // 检查时间游标：只显示已加载范围内的记录
-        // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载
-        if (!_isLocalEnd && _timeCursor.HasValue)
-        {
-            var recordTime = SortByLastAccessed ? vm.LastAccessed : vm.Timestamp;
-            if (recordTime < _timeCursor.Value)
-            {
-                return false;
-            }
-        }
-
-        return true;
+        var recordTime = SortByLastAccessed ? vm.LastAccessed : vm.Timestamp;
+        return recordTime >= _timeCursor.Value;
     }
 
     private void InitVMTransferStatus(HistoryRecordVM vm)

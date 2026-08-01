@@ -7,8 +7,6 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-
-
 public partial class HotkeyViewModel : ObservableObject
 {
     [ObservableProperty]

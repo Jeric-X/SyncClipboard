@@ -51,17 +51,15 @@ public partial class AccountConfigEditViewModel(
 
     public void LoadProperties(AccountConfig accountConfig)
     {
-        TestResult = null;
-        ErrorMessage = null;
-        HasError = false;
-        NotifyTestResultPropertiesChanged();
-
+        ResetTestState();
         AccountType = accountConfig.AccountType;
         AccountId = accountConfig.AccountId;
         Properties.Clear();
 
         if (string.IsNullOrEmpty(accountConfig.AccountType))
+        {
             return;
+        }
 
         var registeredType = _accountManager.GetRegisteredType(accountConfig.AccountType);
         if (registeredType == null)
@@ -69,63 +67,93 @@ public partial class AccountConfigEditViewModel(
             return;
         }
 
+        var sourceConfig = GetSourceConfig(accountConfig, registeredType);
+        foreach (var property in GetEditableProperties(registeredType))
+        {
+            Properties.Add(CreatePropertyInput(property, sourceConfig));
+        }
+
+        ConfigureCustomName(sourceConfig);
+    }
+
+    private void ResetTestState()
+    {
+        TestResult = null;
+        ErrorMessage = null;
+        HasError = false;
+        NotifyTestResultPropertiesChanged();
+    }
+
+    private static IEnumerable<PropertyInfo> GetEditableProperties(Type registeredType)
+    {
         var supportedTypes = new[] {
             typeof(string), typeof(int), typeof(uint), typeof(double), typeof(decimal), typeof(float), typeof(long), typeof(ulong), typeof(short), typeof(ushort), typeof(bool),
             typeof(int?), typeof(uint?), typeof(double?), typeof(decimal?), typeof(float?), typeof(long?), typeof(ulong?), typeof(short?), typeof(ushort?), typeof(bool?)
         };
-        var properties = registeredType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanRead && p.CanWrite && supportedTypes.Contains(p.PropertyType))
-            .ToList();
 
-        object? sourceConfig = null;
+        return registeredType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(property => property.CanRead && property.CanWrite && supportedTypes.Contains(property.PropertyType));
+    }
+
+    private object? GetSourceConfig(AccountConfig accountConfig, Type registeredType)
+    {
         if (!string.IsNullOrEmpty(accountConfig.AccountId))
         {
-            sourceConfig = _accountManager.GetConfig(accountConfig.AccountType, accountConfig.AccountId);
+            var existingConfig = _accountManager.GetConfig(accountConfig.AccountType, accountConfig.AccountId);
+            if (existingConfig is not null)
+            {
+                return existingConfig;
+            }
         }
 
-        if (sourceConfig == null)
+        try
         {
-            try
-            {
-                sourceConfig = Activator.CreateInstance(registeredType);
-            }
-            catch
-            {
-            }
+            return Activator.CreateInstance(registeredType);
         }
-
-        foreach (var property in properties)
+        catch
         {
-            var displayAttribute = property.GetCustomAttribute<PropertyDisplayAttribute>();
+            return null;
+        }
+    }
 
-            var propertyInput = new PropertyInputViewModel
-            {
-                PropertyName = property.Name,
-                DisplayName = GetDisplayName(property, displayAttribute),
-                PropertyType = property.PropertyType,
-                InputType = GetPropertyInputType(property, displayAttribute),
-                Description = GetDescriptionText(displayAttribute),
-            };
+    private static PropertyInputViewModel CreatePropertyInput(PropertyInfo property, object? sourceConfig)
+    {
+        var displayAttribute = property.GetCustomAttribute<PropertyDisplayAttribute>();
+        var propertyInput = new PropertyInputViewModel
+        {
+            PropertyName = property.Name,
+            DisplayName = GetDisplayName(property, displayAttribute),
+            PropertyType = property.PropertyType,
+            InputType = GetPropertyInputType(property, displayAttribute),
+            Description = GetDescriptionText(displayAttribute),
+        };
 
-            if (sourceConfig != null)
-            {
-                try
-                {
-                    var value = property.GetValue(sourceConfig);
-                    if (value != null)
-                    {
-                        propertyInput.SetTypedValue(value);
-                    }
-                }
-                catch
-                {
-                }
-            }
+        SetPropertyInputValue(property, propertyInput, sourceConfig);
+        return propertyInput;
+    }
 
-            Properties.Add(propertyInput);
+    private static void SetPropertyInputValue(PropertyInfo property, PropertyInputViewModel propertyInput, object? sourceConfig)
+    {
+        if (sourceConfig is null)
+        {
+            return;
         }
 
-        // CustomName special handling: ensure it exists and set watermark to DisplayIdentify
+        try
+        {
+            var value = property.GetValue(sourceConfig);
+            if (value is not null)
+            {
+                propertyInput.SetTypedValue(value);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void ConfigureCustomName(object? sourceConfig)
+    {
         var customNameProp = Properties.FirstOrDefault(p => p.PropertyName == nameof(IAdapterConfig.CustomName));
         if (customNameProp != null && sourceConfig is IAdapterConfig)
         {

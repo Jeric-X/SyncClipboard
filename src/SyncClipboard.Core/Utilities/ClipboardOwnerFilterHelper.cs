@@ -55,5 +55,4 @@ public static class ClipboardOwnerFilterHelper
 
         return false;
     }
-
 }

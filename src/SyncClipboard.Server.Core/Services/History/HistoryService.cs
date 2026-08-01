@@ -298,42 +298,71 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         using var guard = new ScopeGuard(() => _sem.Release());
 
         var existing = await Query(userId, incoming.Type, incoming.Hash, token);
-
         if (existing is not null)
         {
-            if (existing.IsDeleted)
-            {
-                if (transferFileStream is not null)
-                {
-                    await SaveTransferDataAsync(existing, transferFileStream, token);
-                }
-                else
-                {
-                    var existProfile = existing.ToProfile(_persistentDir);
-                    if (await existProfile.IsLocalDataValid(true, token) is false)
-                    {
-                        throw new ArgumentException("Needs tranfer data.");
-                    }
-                }
-            }
-
-            var shouldUpdate = HistoryHelper.ShouldUpdate(
-                oldVersion: existing.Version,
-                newVersion: incoming.Version,
-                oldLastModified: new DateTimeOffset(existing.LastModified),
-                newLastModified: incoming.LastModified);
-            if (shouldUpdate || existing.IsDeleted)
-            {
-                incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
-                UpdateEntityFields(incoming.ToEntity(userId), existing);
-                await _dbContext.SaveChangesAsync(token);
-                await NotifyProfileChangeAsync(existing);
-                await DeleteProfileDataIfNeed(existing, token);
-            }
-
-            return HistoryRecordDto.FromEntity(existing);
+            return await UpdateExistingRecordDto(userId, incoming, existing, transferFileStream, token);
         }
 
+        return await AddNewRecordDto(userId, incoming, transferFileStream, token);
+    }
+
+    private async Task<HistoryRecordDto> UpdateExistingRecordDto(
+        string userId,
+        HistoryRecordDto incoming,
+        HistoryRecordEntity existing,
+        Stream? transferFileStream,
+        CancellationToken token)
+    {
+        if (existing.IsDeleted)
+        {
+            await EnsureExistingRecordData(existing, transferFileStream, token);
+        }
+
+        if (ShouldUpdateExistingRecord(existing, incoming))
+        {
+            incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
+            UpdateEntityFields(incoming.ToEntity(userId), existing);
+            await _dbContext.SaveChangesAsync(token);
+            await NotifyProfileChangeAsync(existing);
+            await DeleteProfileDataIfNeed(existing, token);
+        }
+
+        return HistoryRecordDto.FromEntity(existing);
+    }
+
+    private async Task EnsureExistingRecordData(
+        HistoryRecordEntity existing,
+        Stream? transferFileStream,
+        CancellationToken token)
+    {
+        if (transferFileStream is not null)
+        {
+            await SaveTransferDataAsync(existing, transferFileStream, token);
+            return;
+        }
+
+        var existingProfile = existing.ToProfile(_persistentDir);
+        if (await existingProfile.IsLocalDataValid(true, token) is false)
+        {
+            throw new ArgumentException("Needs tranfer data.");
+        }
+    }
+
+    private static bool ShouldUpdateExistingRecord(HistoryRecordEntity existing, HistoryRecordDto incoming)
+    {
+        return existing.IsDeleted || HistoryHelper.ShouldUpdate(
+            oldVersion: existing.Version,
+            newVersion: incoming.Version,
+            oldLastModified: new DateTimeOffset(existing.LastModified),
+            newLastModified: incoming.LastModified);
+    }
+
+    private async Task<HistoryRecordDto> AddNewRecordDto(
+        string userId,
+        HistoryRecordDto incoming,
+        Stream? transferFileStream,
+        CancellationToken token)
+    {
         var entity = incoming.ToEntity(userId);
         Profile? profile = null;
 
