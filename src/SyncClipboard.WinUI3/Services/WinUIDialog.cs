@@ -42,7 +42,17 @@ public class WinUIDialog : IMainWindowDialog
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = message,
+            Content = new ScrollViewer
+            {
+                MaxHeight = 480,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Content = new TextBlock
+                {
+                    Text = message,
+                    TextWrapping = TextWrapping.Wrap
+                }
+            },
             PrimaryButtonText = Strings.Confirm,
             XamlRoot = _xamlRoot ?? App.Current.MainWindow.Content.XamlRoot
         };

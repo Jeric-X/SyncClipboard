@@ -43,6 +43,9 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
 
     public string Hash { get; set; }
+    public HistoryRecordKey Key => new(Type, Hash);
+    [ObservableProperty]
+    private bool isSelected;
     public long Size { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RelativeTime))]

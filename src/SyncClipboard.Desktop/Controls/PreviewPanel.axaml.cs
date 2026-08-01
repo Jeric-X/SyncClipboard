@@ -10,8 +10,8 @@ using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
+using AvaloniaDragDropEffects = Avalonia.Input.DragDropEffects;
 
 namespace SyncClipboard.Desktop.Controls;
 
@@ -26,6 +26,7 @@ public sealed partial class PreviewPanel : UserControl
     private Point _dragStartPoint;
     private HistoryRecordVM? _pendingDragItem;
     private Control? _dragSource;
+    private IPointer? _dragPointer;
 
     /// <summary>
     /// ViewModel依赖属性
@@ -239,10 +240,12 @@ public sealed partial class PreviewPanel : UserControl
             var properties = e.GetCurrentPoint((Image?)sender!).Properties;
             if (properties.IsLeftButtonPressed)
             {
+                ResetPendingDrag();
                 _isPendingDrag = true;
                 _dragStartPoint = e.GetPosition(null);
                 _pendingDragItem = clickedItem;
                 _dragSource = sender as Control;
+                _dragPointer = e.Pointer;
                 e.Pointer.Capture((IInputElement)sender!);
             }
         }
@@ -267,25 +270,20 @@ public sealed partial class PreviewPanel : UserControl
 
         // 开始拖拽，此时阻止默认行为
         e.Handled = true;
-        _isPendingDrag = false;
         var item = _pendingDragItem;
-        _pendingDragItem = null;
-
-        // 释放指针捕获并清理状态
-        e.Pointer.Capture(null);
-        _dragSource = null;
+        ResetPendingDrag();
 
         try
         {
             // Avalonia 11.3+: 使用 DataTransfer API
             var dataTransfer = new DataTransfer();
-            var success = await ViewModel.FillDragPackage(dataTransfer, item, CancellationToken.None);
+            var success = await ViewModel.FillDragPackage(dataTransfer, item);
             if (success)
             {
                 var result = await DragDrop.DoDragDropAsync(
                     e,
                     dataTransfer,
-                    Avalonia.Input.DragDropEffects.Copy);
+                    AvaloniaDragDropEffects.Copy);
             }
         }
         catch
@@ -301,13 +299,15 @@ public sealed partial class PreviewPanel : UserControl
             return;
         }
 
-        if (_isPendingDrag)
-        {
-            // 只是点击，没有触发拖拽，释放指针捕获
-            _isPendingDrag = false;
-            _pendingDragItem = null;
-            _dragSource = null;
-            e.Pointer.Capture(null);
-        }
+        ResetPendingDrag();
+    }
+
+    internal void ResetPendingDrag()
+    {
+        _dragPointer?.Capture(null);
+        _dragPointer = null;
+        _isPendingDrag = false;
+        _pendingDragItem = null;
+        _dragSource = null;
     }
 }

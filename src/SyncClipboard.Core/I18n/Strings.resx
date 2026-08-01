@@ -495,10 +495,16 @@ Esc: Close panel</value>
     <value>Single click: Select item
 Double click item: Copy to clipboard
 Double click image: View full image
-Middle click: Copy and paste</value>
+Middle click: Copy and paste
+Long press: Enter multi-select
+Ctrl + left click: Multi-select
+Shift + left click: Select a continuous range</value>
   </data>
   <data name="ClearLocalHistory" xml:space="preserve">
     <value>Clear All Local History</value>
+  </data>
+  <data name="ClearLocalHistoryDescription" xml:space="preserve">
+    <value>Clear local history records and cached files. Unsynced records will be permanently lost.</value>
   </data>
   <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
     <value>This will permanently delete all local history records and cached files on this device. Synced records on the server will not be affected. Continue?</value>
@@ -622,6 +628,9 @@ Middle click: Copy and paste</value>
   </data>
   <data name="Operation" xml:space="preserve">
     <value>Operation</value>
+  </data>
+  <data name="OperationInstructions" xml:space="preserve">
+    <value>Operation Instructions</value>
   </data>
   <data name="ProcessName" xml:space="preserve">
     <value>Process Name</value>
@@ -1061,16 +1070,26 @@ This operation cannot be undone.</value>
     <value>Create Subfolder?</value>
   </data>
   <data name="ChangeAppDataFolderConfirmMessage" xml:space="preserve">
-    <value>Do you want to create a "SyncClipboard" subfolder in the selected directory?&#10;&#10;Click "Yes" to use: {0}&#10;Click "No" to use: {1}&#10;Click "Cancel" to abort the operation.</value>
+    <value>Do you want to create a "SyncClipboard" subfolder in the selected directory?
+
+Click "Yes" to use: {0}
+Click "No" to use: {1}
+Click "Cancel" to abort the operation.</value>
   </data>
   <data name="SwitchAppDataFolderConfirmTitle" xml:space="preserve">
     <value>Switch App Data Folder?</value>
   </data>
   <data name="SwitchAppDataFolderConfirmMessage" xml:space="preserve">
-    <value>Switching the app data folder requires copying current data to the new location and restarting the app.&#10;&#10;New location: {0}&#10;&#10;Do you want to continue?</value>
+    <value>Switching the app data folder requires copying current data to the new location and restarting the app.
+
+New location: {0}
+
+Do you want to continue?</value>
   </data>
   <data name="SwitchToIndependentAppDataFolderMessage" xml:space="preserve">
-    <value>Switching to an independent app data folder requires copying current data and restarting the app.&#10;&#10;Choose whether to use the default location or select another folder.</value>
+    <value>Switching to an independent app data folder requires copying current data and restarting the app.
+
+Choose whether to use the default location or select another folder.</value>
   </data>
   <data name="DefaultLocation" xml:space="preserve">
     <value>Default Location</value>
@@ -1125,5 +1144,32 @@ This operation cannot be undone.</value>
   </data>
   <data name="Synced" xml:space="preserve">
     <value>Synced</value>
+  </data>
+  <data name="HistoryMultiSelectStatus" xml:space="preserve">
+    <value>{0} selected, {1} selected on this page</value>
+  </data>
+  <data name="HistoryMultiSelectAll" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="HistoryMultiSelectDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="HistoryMultiSelectStar" xml:space="preserve">
+    <value>Star</value>
+  </data>
+  <data name="HistoryMultiSelectUnstar" xml:space="preserve">
+    <value>Unstar</value>
+  </data>
+  <data name="HistoryMultiSelectExit" xml:space="preserve">
+    <value>Exit selection</value>
+  </data>
+  <data name="HistoryMultiSelectDeleteConfirmMessage" xml:space="preserve">
+    <value>Delete {0} history record(s)?</value>
+  </data>
+  <data name="HistoryMultiSelectStarConfirmMessage" xml:space="preserve">
+    <value>Star {0} history record(s)?</value>
+  </data>
+  <data name="HistoryMultiSelectUnstarConfirmMessage" xml:space="preserve">
+    <value>Unstar {0} history record(s)?</value>
   </data>
 </root>

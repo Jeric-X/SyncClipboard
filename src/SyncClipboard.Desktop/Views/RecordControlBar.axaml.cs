@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 
@@ -30,7 +31,7 @@ public partial class RecordControlBar : UserControl
         InitializeComponent();
     }
 
-    private void DownloadButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void DownloadButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
@@ -38,7 +39,7 @@ public partial class RecordControlBar : UserControl
         }
     }
 
-    private void CancelDownloadButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void CancelDownloadButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
@@ -46,7 +47,7 @@ public partial class RecordControlBar : UserControl
         }
     }
 
-    private void UploadButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void UploadButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
@@ -54,7 +55,7 @@ public partial class RecordControlBar : UserControl
         }
     }
 
-    private void CancelUploadButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void CancelUploadButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
@@ -62,23 +63,23 @@ public partial class RecordControlBar : UserControl
         }
     }
 
-    private void CopyButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void CopyButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
-            _ = ViewModel.CopyToClipboard(Record, false, System.Threading.CancellationToken.None);
+            await ViewModel.HandleCopyButtonAsync(Record, false);
         }
     }
 
-    private void PasteButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void PasteButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
-            _ = ViewModel.CopyToClipboard(Record, true, System.Threading.CancellationToken.None);
+            await ViewModel.HandleCopyButtonAsync(Record, true);
         }
     }
 
-    private void StarButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void StarButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {
@@ -86,7 +87,7 @@ public partial class RecordControlBar : UserControl
         }
     }
 
-    private void DeleteButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void DeleteButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)
         {

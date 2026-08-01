@@ -33,7 +33,7 @@
                                SpinButtonPlacementMode="Inline"
                                SmallChange="1" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}" Description="{x:Bind i18n:Strings.ClearLocalHistoryDescription}">
                     <Button Content="{x:Bind i18n:Strings.ClearLocalHistory}" Command="{x:Bind _viewModel.ClearLocalHistoryCommand}" />
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>

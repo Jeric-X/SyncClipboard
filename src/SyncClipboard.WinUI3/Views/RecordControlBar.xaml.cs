@@ -62,19 +62,19 @@ public sealed partial class RecordControlBar : UserControl
         }
     }
 
-    private void CopyButtonClicked(object _, RoutedEventArgs _1)
+    private async void CopyButtonClicked(object _, RoutedEventArgs _1)
     {
         if (Record != null && ViewModel != null)
         {
-            _ = ViewModel.CopyToClipboard(Record, false, System.Threading.CancellationToken.None);
+            await ViewModel.HandleCopyButtonAsync(Record, false);
         }
     }
 
-    private void PasteButtonClicked(object _, RoutedEventArgs _1)
+    private async void PasteButtonClicked(object _, RoutedEventArgs _1)
     {
         if (Record != null && ViewModel != null)
         {
-            _ = ViewModel.CopyToClipboard(Record, true, System.Threading.CancellationToken.None);
+            await ViewModel.HandleCopyButtonAsync(Record, true);
         }
     }
 

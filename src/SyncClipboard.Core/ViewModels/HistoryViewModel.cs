@@ -2,7 +2,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using ObservableCollections;
-using System.Collections.Specialized;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -17,12 +16,15 @@ using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
 using System.Threading.Channels;
+using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
 using Timer = System.Timers.Timer;
 
 namespace SyncClipboard.Core.ViewModels;
 
 public partial class HistoryViewModel : ObservableObject
 {
+    private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(30);
+
     private IWindow window = null!;
 
     [ObservableProperty]
@@ -62,6 +64,54 @@ public partial class HistoryViewModel : ObservableObject
     private Task? _queueConsumerTask;
 
     private readonly Timer _relativeTimeTimer;
+
+    private async Task RunWithOperationTimeoutAsync(
+        string operationName,
+        Func<CancellationToken, Task> operation,
+        CancellationToken externalToken = default)
+    {
+        using var cancellation = externalToken.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(externalToken)
+            : new CancellationTokenSource();
+        cancellation.CancelAfter(OperationTimeout);
+
+        try
+        {
+            await operation(cancellation.Token);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            var reason = externalToken.IsCancellationRequested
+                ? "was canceled"
+                : $"timed out after {OperationTimeout.TotalSeconds:0} seconds";
+            await logger.WriteAsync($"History operation '{operationName}' {reason}.");
+        }
+    }
+
+    private async Task<T> RunWithOperationTimeoutAsync<T>(
+        string operationName,
+        Func<CancellationToken, Task<T>> operation,
+        T canceledResult,
+        CancellationToken externalToken = default)
+    {
+        using var cancellation = externalToken.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(externalToken)
+            : new CancellationTokenSource();
+        cancellation.CancelAfter(OperationTimeout);
+
+        try
+        {
+            return await operation(cancellation.Token);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            var reason = externalToken.IsCancellationRequested
+                ? "was canceled"
+                : $"timed out after {OperationTimeout.TotalSeconds:0} seconds";
+            await logger.WriteAsync($"History operation '{operationName}' {reason}.");
+            return canceledResult;
+        }
+    }
 
     public HistoryViewModel(
         HistoryManager historyManager,
@@ -111,7 +161,7 @@ public partial class HistoryViewModel : ObservableObject
         RefreshFilterOptions();
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
-        HistoryItems.CollectionChanged += OnHistoryItemsCollectionChanged;
+        InitializeSelection();
         ApplyFilter();
 
         _relativeTimeTimer = new Timer(60000); // 1分钟
@@ -138,19 +188,6 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    private async void OnHistoryItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        // 当集合从空变为有数据时，自动选中第一项
-        if (e.Action == NotifyCollectionChangedAction.Add && SelectedIndex == -1 && e.NewItems?.Count > 0)
-        {
-            if (SelectedIndex == -1 && HistoryItems.Any())
-            {
-                await Task.Delay(1);
-                SelectedIndex = 0;
-            }
-        }
-    }
-
     private void ApplyFilter()
     {
         viewController.AttachFilter(IsMatchUiFilter);
@@ -173,13 +210,11 @@ public partial class HistoryViewModel : ObservableObject
     private bool IsStarredScopeActive => OnlyShowStarred || SelectedFilter == HistoryFilterType.Starred;
 
     [ObservableProperty]
-    private int selectedIndex = -1;
-
-    [ObservableProperty]
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
     partial void OnSelectedFilterChanged(HistoryFilterType value)
     {
         _ = Reload();
+        RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         OnPropertyChanged(nameof(SelectedFilterOption));
     }
 
@@ -188,6 +223,7 @@ public partial class HistoryViewModel : ObservableObject
     partial void OnSearchTextChanged(string value)
     {
         _ = Reload();
+        RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
     }
 
     public LocaleString<HistoryFilterType> SelectedFilterOption
@@ -311,6 +347,7 @@ public partial class HistoryViewModel : ObservableObject
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowStarred = value });
             OnPropertyChanged(nameof(OnlyShowStarred));
             _ = Reload();
+            RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         }
     }
 
@@ -472,36 +509,6 @@ public partial class HistoryViewModel : ObservableObject
     public double ListItemFontSize => FontScalePercent / 100.0 * 12.0;
 
     [RelayCommand]
-    public async Task DeleteItem(HistoryRecordVM record)
-    {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
-        var currentIndex = SelectedIndex;
-
-        // 判断当前选中项是否是被删除的项
-        if (currentIndex >= 0 && currentIndex < count)
-        {
-            var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[currentIndex];
-            if (selectedItem == record)
-            {
-                // 先选择应该选中的条目
-                // 优先选择下一条，如果没有下一条则选择上一条
-                if (currentIndex < count - 1)
-                {
-                    // 有下一条，先选中下一条（删除后它会移动到当前索引位置）
-                    SelectedIndex = currentIndex + 1;
-                }
-                else if (currentIndex > 0)
-                {
-                    // 是最后一条且有上一条，先选中上一条
-                    SelectedIndex = currentIndex - 1;
-                }
-            }
-        }
-
-        await historyManager.DeleteHistory(record.ToHistoryRecord());
-    }
-
-    [RelayCommand]
     public Task ChangeStarStatus(HistoryRecordVM record)
     {
         var entity = record.ToHistoryRecord();
@@ -629,6 +636,7 @@ public partial class HistoryViewModel : ObservableObject
         _isLocalEnd = false;
 
         _transferringLoadingTcs = null;
+        ClearSelectedItem();
         allHistoryItems.Clear();
         _timeCursor = null;
         _lastViewportHeight = 0;
@@ -723,7 +731,10 @@ public partial class HistoryViewModel : ObservableObject
 
     public void NavigateDown()
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (IsMultiSelecting)
+            return;
+
+        var count = HistoryItemCount;
         if (count == 0) return;
 
         var maxIndex = count - 1;
@@ -736,7 +747,10 @@ public partial class HistoryViewModel : ObservableObject
 
     public void NavigateUp()
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        if (IsMultiSelecting)
+            return;
+
+        var count = HistoryItemCount;
         if (count == 0) return;
 
         if (SelectedIndex > 0)
@@ -748,7 +762,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void NavigateToFirst()
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        var count = HistoryItemCount;
         if (count == 0) return;
 
         SelectedIndex = 0;
@@ -765,7 +779,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void NavigateToLast()
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        var count = HistoryItemCount;
         if (count == 0) return;
 
         SelectedIndex = count - 1;
@@ -838,7 +852,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void ToggleStarForSelectedItem()
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        var count = HistoryItemCount;
         if (SelectedIndex < 0 || SelectedIndex >= count)
             return;
 
@@ -850,7 +864,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void DeleteSelectedItem()
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        var count = HistoryItemCount;
         if (SelectedIndex < 0 || SelectedIndex >= count)
             return;
 
@@ -862,7 +876,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void HandleEnterKey(bool isAltPressed)
     {
-        var count = ((ICollection<HistoryRecordVM>)HistoryItems).Count;
+        var count = HistoryItemCount;
         if (SelectedIndex < 0 || SelectedIndex >= count)
             return;
 
@@ -871,7 +885,7 @@ public partial class HistoryViewModel : ObservableObject
 
         // Alt键表示不粘贴到剪贴板，只是复制操作
         var paste = !isAltPressed;
-        await CopyToClipboard(selectedItem, paste, CancellationToken.None);
+        await HandleCopyButtonAsync(selectedItem, paste);
     }
 
     public void ViewImage(HistoryRecordVM record)
@@ -922,12 +936,16 @@ public partial class HistoryViewModel : ObservableObject
         {
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
+            RefreshSelectionSummaryForUpdatedRecord(newRecordVM);
         });
     }
 
     private void OnHistoryRemoved(HistoryRecord record)
     {
-        _threadDispatcher.RunOnMainThreadAsync(() => allHistoryItems.Remove(new HistoryRecordVM(record)));
+        _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            ApplyHistoryRecordRemoval(record);
+        });
     }
 
     private void OnCurrentServerChanged(object? sender, EventArgs e)
@@ -947,6 +965,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private void RecordUpdated(HistoryRecordVM newRecord)
     {
+        ApplySelectionToRecord(newRecord);
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
             UpdateTransferingRecord(newRecord);
@@ -1004,6 +1023,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         try
         {
+            ClearVisibleRecordSelection(oldR);
             allHistoryItems.Remove(oldR);
             if (newR != null)
                 InsertHistoryInOrder(newR);
@@ -1186,24 +1206,31 @@ public partial class HistoryViewModel : ObservableObject
     private async Task DownloadRemoteProfile(HistoryRecordVM vm)
     {
         if (historySyncServer is null)
-        {
             return;
-        }
 
-        var record = vm.ToHistoryRecord();
-        var profile = record.ToProfile();
-
-        if (await profile.IsLocalDataValid(false, CancellationToken.None))
+        await RunWithOperationTimeoutAsync("download remote history record", async operationToken =>
         {
-            record.IsLocalFileReady = true;
-            await historyManager.UpdateHistoryLocalInfo(record);
-            return;
-        }
+            var record = vm.ToHistoryRecord();
+            var profile = record.ToProfile();
 
-        _ = await _transferQueue.EnqueueDownload(profile, forceResume: true, ct: CancellationToken.None);
+            if (await profile.IsLocalDataValid(false, operationToken))
+            {
+                record.IsLocalFileReady = true;
+                await historyManager.UpdateHistoryLocalInfo(record, operationToken);
+                return;
+            }
+
+            _ = await _transferQueue.EnqueueDownload(profile, forceResume: true, ct: operationToken);
+        });
     }
 
-    public async Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record)
+    public Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record) =>
+        RunWithOperationTimeoutAsync(
+            "build history record actions",
+            token => BuildActionsCoreAsync(record, token),
+            []);
+
+    private async Task<List<MenuItem>> BuildActionsCoreAsync(HistoryRecordVM record, CancellationToken token)
     {
         var actions = new List<MenuItem>();
         var isDiagnoseMode = _configManager.GetConfig<ProgramConfig>().DiagnoseMode;
@@ -1214,63 +1241,78 @@ public partial class HistoryViewModel : ObservableObject
                 try
                 {
                     var profile = new TextProfile(record.Hash);
-                    await localClipboardSetter.Set(profile, CancellationToken.None);
+                    await RunWithOperationTimeoutAsync(
+                        "copy history hash",
+                        token => localClipboardSetter.Set(profile, token));
                 }
                 catch { }
             }));
         }
 
         var profile = record.ToHistoryRecord().ToProfile();
-        var valid = await profile.IsLocalDataValid(true, CancellationToken.None);
+        var valid = await profile.IsLocalDataValid(true, token);
 
         if (!valid)
         {
             var historyRecord = record.ToHistoryRecord();
             historyRecord.IsLocalFileReady = false;
-            await historyManager.UpdateHistoryLocalInfo(historyRecord);
-            actions.Add(new MenuItem(I18n.Strings.DeleteHistory, () => { _ = historyManager.DeleteHistory(historyRecord); }));
+            await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
+            actions.Add(new MenuItem(I18n.Strings.DeleteHistory, async () =>
+            {
+                await RunWithOperationTimeoutAsync(
+                    "delete history record",
+                    token => historyManager.DeleteHistory(historyRecord, token));
+            }));
         }
         else
         {
-            var menuItems = await profileActionBuilder.Build(profile, CancellationToken.None);
+            var menuItems = await profileActionBuilder.Build(profile, token);
             actions.AddRange(menuItems);
         }
         return actions;
     }
 
     [RelayCommand]
+    private Task ShowOperationInstructionsAsync()
+    {
+        var dialog = _serviceProvider.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
+        var message = $"{I18n.Strings.HistoryWindowKeyboardShortcuts}\n{I18n.Strings.HistoryWindowKeyboardList}\n\n" +
+            $"{I18n.Strings.HistoryWindowMouseOperations}\n{I18n.Strings.HistoryWindowMouseList}";
+        return dialog.ShowMessageAsync(I18n.Strings.HistoryWindowOperations, message);
+    }
+
+    [RelayCommand]
     private async Task UploadLocalHistoryAsync(HistoryRecordVM vm)
     {
         if (historySyncServer == null)
-        {
             return;
-        }
 
-        var record = vm.ToHistoryRecord();
-        var profile = record.ToProfile();
-        var valid = await profile.IsLocalDataValid(false, CancellationToken.None);
-        if (!valid)
+        await RunWithOperationTimeoutAsync("upload local history record", async operationToken =>
         {
-            ShowWindowToastInfo("Local file is missing or changed, this record will be removed.");
-            record.IsLocalFileReady = false;
-            await historyManager.UpdateHistoryLocalInfo(record);
-            return;
-        }
-
-        var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
-        if (validationError != null)
-        {
-            var dialog = AppCore.Current.Services.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
-            var confirmed = await dialog.ShowConfirmationAsync(
-                I18n.Strings.UploadWarning,
-                $"{validationError}\n\n{I18n.Strings.ContinueUpload}");
-            if (!confirmed)
+            var record = vm.ToHistoryRecord();
+            var profile = record.ToProfile();
+            var valid = await profile.IsLocalDataValid(false, operationToken);
+            if (!valid)
             {
+                ShowWindowToastInfo("Local file is missing or changed, this record will be removed.");
+                record.IsLocalFileReady = false;
+                await historyManager.UpdateHistoryLocalInfo(record, operationToken);
                 return;
             }
-        }
 
-        _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: CancellationToken.None);
+            var validationError = await ContentControlHelper.IsContentValid(profile, operationToken);
+            if (validationError != null)
+            {
+                var dialog = AppCore.Current.Services.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
+                var confirmed = await dialog.ShowConfirmationAsync(
+                    I18n.Strings.UploadWarning,
+                    $"{validationError}\n\n{I18n.Strings.ContinueUpload}");
+                if (!confirmed)
+                    return;
+            }
+
+            _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: operationToken);
+        });
     }
 
     [RelayCommand]
@@ -1296,7 +1338,7 @@ public partial class HistoryViewModel : ObservableObject
 
         if (paste || !IsTopmost)
         {
-            SelectedIndex = -1;
+            ClearSelectedItem();
             window.ScrollToTop();
             window.Close();
         }
@@ -1334,14 +1376,53 @@ public partial class HistoryViewModel : ObservableObject
         });
     }
 
-    private void OnRelativeTimeTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private void OnRelativeTimeTimerElapsed(object? sender, ElapsedEventArgs e)
     {
         UpdateAllRelativeTimes();
     }
 
+    /// <summary>
+    /// Applies the platform-independent effects of clicking a history record.
+    /// Returns whether the view should mark the pointer event as handled.
+    /// </summary>
+    public bool HandleItemClick(
+        HistoryRecordVM record,
+        bool ctrlPressed,
+        bool shiftPressed,
+        bool primaryButtonPressed,
+        bool middleButtonPressed,
+        bool rightButtonPressed)
+    {
+        if (rightButtonPressed)
+            return IsMultiSelecting;
+
+        if (!primaryButtonPressed && !middleButtonPressed)
+            return false;
+
+        if (primaryButtonPressed)
+            HandleRecordClick(record, ctrlPressed, shiftPressed);
+        SelectSingleRecord(record);
+
+        if (middleButtonPressed)
+            _ = HandleCopyButtonAsync(record, true);
+
+        return middleButtonPressed
+            || (primaryButtonPressed
+                && (IsMultiSelecting || ctrlPressed || shiftPressed));
+    }
+
+    public void HandleSelectionCheckBoxClick(HistoryRecordVM record)
+    {
+        ToggleRecordSelection(record);
+        SelectSingleRecord(record);
+    }
+
     public void HandleItemDoubleClick(HistoryRecordVM record)
     {
-        _ = CopyToClipboard(record, false, CancellationToken.None);
+        if (IsMultiSelecting)
+            return;
+
+        _ = HandleCopyButtonAsync(record, false);
     }
 
     public void HandleImageDoubleClick(HistoryRecordVM record)
@@ -1349,7 +1430,16 @@ public partial class HistoryViewModel : ObservableObject
         ViewImage(record);
     }
 
-    public async Task<bool> FillDragPackage(object package, HistoryRecordVM record, CancellationToken token)
+    public Task<bool> FillDragPackage(object package, HistoryRecordVM record) =>
+        RunWithOperationTimeoutAsync(
+            "fill history drag package",
+            token => FillDragPackageCoreAsync(package, record, token),
+            false);
+
+    private async Task<bool> FillDragPackageCoreAsync(
+        object package,
+        HistoryRecordVM record,
+        CancellationToken token)
     {
         var historyRecord = record.ToHistoryRecord();
         var profile = historyRecord.ToProfile();
@@ -1376,6 +1466,10 @@ public partial class HistoryViewModel : ObservableObject
             var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), false, token);
             await setter.FillPackage(package, localInfo.GetMetaInfomation());
             return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

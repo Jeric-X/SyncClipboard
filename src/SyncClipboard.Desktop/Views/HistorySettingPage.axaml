@@ -45,7 +45,7 @@
                                        ButtonSpinnerLocation="Right" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}">
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}" Description="{x:Static i18n:Strings.ClearLocalHistoryDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <Button Content="{x:Static i18n:Strings.ClearLocalHistory}" Command="{Binding ClearLocalHistoryCommand}" />
                     </ui:SettingsExpanderItem.Footer>

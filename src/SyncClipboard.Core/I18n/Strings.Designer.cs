@@ -407,6 +407,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Clear local history records and cached files. Unsynced records will be permanently lost. 的本地化字符串。
+        /// </summary>
+        public static string ClearLocalHistoryDescription {
+            get {
+                return ResourceManager.GetString("ClearLocalHistoryDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Client General 的本地化字符串。
         /// </summary>
         public static string ClientGeneral {
@@ -1345,6 +1354,87 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Select all 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectAll {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Delete 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectDelete {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Delete {0} history record(s)? 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectDeleteConfirmMessage {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectDeleteConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Exit selection 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectExit {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectExit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Star 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectStar {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectStar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Star {0} history record(s)? 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectStarConfirmMessage {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectStarConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} selected, {1} selected on this page 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectStatus {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Unstar 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectUnstar {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectUnstar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Unstar {0} history record(s)? 的本地化字符串。
+        /// </summary>
+        public static string HistoryMultiSelectUnstarConfirmMessage {
+            get {
+                return ResourceManager.GetString("HistoryMultiSelectUnstarConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 History Panel 的本地化字符串。
         /// </summary>
         public static string HistoryPanel {
@@ -1422,7 +1512,10 @@ namespace SyncClipboard.Core.I18n {
         ///   查找类似 Single click: Select item
         ///Double click item: Copy to clipboard
         ///Double click image: View full image
-        ///Middle click: Copy and paste 的本地化字符串。
+        ///Middle click: Copy and paste
+        ///Long press: Enter multi-select
+        ///Ctrl + left click: Multi-select
+        ///Shift + left click: Select a continuous range 的本地化字符串。
         /// </summary>
         public static string HistoryWindowMouseList {
             get {
@@ -1922,6 +2015,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Operation {
             get {
                 return ResourceManager.GetString("Operation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Operation Instructions 的本地化字符串。
+        /// </summary>
+        public static string OperationInstructions {
+            get {
+                return ResourceManager.GetString("OperationInstructions", resourceCulture);
             }
         }
         
