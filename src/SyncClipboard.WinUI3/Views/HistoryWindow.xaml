@@ -102,7 +102,6 @@
                             <MenuFlyoutSeparator />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowSyncStatus}" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowStarredFilter}" IsChecked="{x:Bind _viewModel.ShowStarredFilter, Mode=TwoWay}" />
-                            <!--<ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.OnlyShowLocal}" IsChecked="{x:Bind _viewModel.OnlyShowLocal, Mode=TwoWay}" />-->
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.SortByLastAccessed}" IsChecked="{x:Bind _viewModel.SortByLastAccessed, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CompactListWhenPreview}" IsChecked="{x:Bind _viewModel.CompactListWhenPreview, Mode=TwoWay}" />
                             <MenuFlyoutSeparator />

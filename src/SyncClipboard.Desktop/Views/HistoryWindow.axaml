@@ -194,7 +194,6 @@
                             <ui:MenuFlyoutSeparator />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
-                            <!--<ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.OnlyShowLocal}" IsChecked="{Binding OnlyShowLocal, Mode=TwoWay}" />-->
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
                             <ui:MenuFlyoutSeparator />

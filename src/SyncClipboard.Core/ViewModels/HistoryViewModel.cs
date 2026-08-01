@@ -201,9 +201,6 @@ public partial class HistoryViewModel : ObservableObject
             return record.IsDownloading || record.IsUploading;
         }
 
-        if (OnlyShowLocal && record.SyncState == SyncStatus.ServerOnly)
-            return false;
-
         return true;
     }
 
@@ -323,19 +320,6 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     private bool serverConnected = true;
-
-    public bool OnlyShowLocal
-    {
-        get => runtimeConfig.GetConfig<HistoryWindowConfig>().OnlyShowLocal;
-        set
-        {
-            if (value == OnlyShowLocal) return;
-
-            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowLocal = value });
-            OnPropertyChanged(nameof(OnlyShowLocal));
-            _ = Reload();
-        }
-    }
 
     public bool OnlyShowStarred
     {

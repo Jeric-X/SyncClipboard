@@ -107,6 +107,8 @@ public partial class HistoryViewModel
         if (IsMultiSelecting)
             RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
 
+        AdjustSelectedIndexForInsertedItems(e);
+
         if (IsMultiSelecting)
             return;
 
@@ -122,6 +124,18 @@ public partial class HistoryViewModel
         {
             SelectedIndex = 0;
         }
+    }
+
+    private void AdjustSelectedIndexForInsertedItems(NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != NotifyCollectionChangedAction.Add
+            || SelectedIndex < 0
+            || e.NewStartingIndex < 0
+            || e.NewStartingIndex > SelectedIndex
+            || e.NewItems?.Count is not > 0)
+            return;
+
+        SelectedIndex += e.NewItems.Count;
     }
 
     public void HandleRecordClick(HistoryRecordVM record, bool ctrlPressed, bool shiftPressed)
@@ -351,10 +365,20 @@ public partial class HistoryViewModel
         RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
     }
 
-    public Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste) =>
-        RunWithOperationTimeoutAsync(
-            paste ? "paste history record" : "copy history record",
-            token => CopyToClipboard(record, paste, token));
+    public async Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste)
+    {
+        var operationName = paste ? "paste history record" : "copy history record";
+        try
+        {
+            await RunWithOperationTimeoutAsync(
+                operationName,
+                token => CopyToClipboard(record, paste, token));
+        }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync($"Failed to {operationName}:", ex.Message);
+        }
+    }
 
     [RelayCommand]
     private async Task ToggleCurrentFilterSelectionAsync() =>

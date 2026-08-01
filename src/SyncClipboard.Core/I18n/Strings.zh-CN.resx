@@ -973,9 +973,6 @@ Shift + 左键：选中连续范围</value>
   <data name="ShowSyncStatus" xml:space="preserve">
     <value>显示同步状态</value>
   </data>
-  <data name="OnlyShowLocal" xml:space="preserve">
-    <value>仅显示本地记录</value>
-  </data>
   <data name="OnlyShowStarred" xml:space="preserve">
     <value>仅显示收藏</value>
   </data>

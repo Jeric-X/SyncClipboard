@@ -1893,15 +1893,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Show Local Records Only 的本地化字符串。
-        /// </summary>
-        public static string OnlyShowLocal {
-            get {
-                return ResourceManager.GetString("OnlyShowLocal", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Show Starred Only 的本地化字符串。
         /// </summary>
         public static string OnlyShowStarred {

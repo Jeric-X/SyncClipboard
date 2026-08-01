@@ -973,9 +973,6 @@ This operation cannot be undone.</value>
   <data name="ShowSyncStatus" xml:space="preserve">
     <value>Show Sync Status</value>
   </data>
-  <data name="OnlyShowLocal" xml:space="preserve">
-    <value>Show Local Records Only</value>
-  </data>
   <data name="OnlyShowStarred" xml:space="preserve">
     <value>Show Starred Only</value>
   </data>
