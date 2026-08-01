@@ -92,7 +92,8 @@ public partial class HistoryViewModel
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
             ClearVisibleSelectedItems();
-            RefreshTransferSelectionSummary();
+            if (IsMultiSelecting)
+                RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
             ClearSelectedItem();
             return;
         }
@@ -103,7 +104,8 @@ public partial class HistoryViewModel
         foreach (var record in e.NewItems?.OfType<HistoryRecordVM>() ?? [])
             SetVisibleRecordSelection(record, selectedHistoryRecords.ContainsKey(record.Key));
 
-        RefreshTransferSelectionSummary();
+        if (IsMultiSelecting)
+            RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
 
         if (IsMultiSelecting)
             return;
@@ -122,19 +124,13 @@ public partial class HistoryViewModel
         }
     }
 
-    private void RefreshTransferSelectionSummary()
-    {
-        if (IsMultiSelecting && SelectedFilter == HistoryFilterType.Transferring)
-            RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
-    }
-
     public void HandleRecordClick(HistoryRecordVM record, bool ctrlPressed, bool shiftPressed)
     {
         if (IsMultiSelecting)
         {
             if (shiftPressed && selectionAnchor is { } existingAnchor)
             {
-                _ = SelectRangeAsync(existingAnchor, record.Key);
+                SelectRange(existingAnchor, record);
                 return;
             }
             ToggleRecordSelection(record);
@@ -157,7 +153,7 @@ public partial class HistoryViewModel
         }
 
         if (shiftPressed && selectionAnchor is { } anchor)
-            _ = SelectRangeAsync(anchor, record.Key);
+            SelectRange(anchor, record);
         else if (current?.Key != record.Key)
             ToggleRecordSelection(record);
         else
@@ -290,18 +286,33 @@ public partial class HistoryViewModel
         RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
     }
 
-    private async Task SelectRangeAsync(HistoryRecordKey anchor, HistoryRecordKey target)
+    private void SelectRange(HistoryRecordKey anchor, HistoryRecordVM target)
     {
-        var records = await GetCurrentFilterRecordsAsync();
-        var start = records.FindIndex(record => record.Key == anchor);
-        var end = records.FindIndex(record => record.Key == target);
+        var items = (IList<HistoryRecordVM>)HistoryItems;
+        var start = -1;
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (items[i].Key == anchor)
+            {
+                start = i;
+                break;
+            }
+        }
+
+        var end = items.IndexOf(target);
         if (start < 0 || end < 0)
         {
-            ToggleRecordSelection(allHistoryItems.First(x => x.Key == target));
+            ToggleRecordSelection(target);
             return;
         }
-        foreach (var record in records.Skip(Math.Min(start, end)).Take(Math.Abs(end - start) + 1))
-            AddSelectedHistoryKey(record.Key, record.Starred);
+
+        var first = Math.Min(start, end);
+        var last = Math.Max(start, end);
+        for (var i = first; i <= last; i++)
+        {
+            var record = items[i];
+            AddSelectedHistoryKey(record.Key, record.Stared);
+        }
         selectionAnchor = anchor;
         RefreshVisibleSelectedItems();
         RequestSelectionSummaryRefresh();
@@ -412,15 +423,33 @@ public partial class HistoryViewModel
         if (parts.HasFlag(SelectionSummaryPart.Counts))
         {
             var selectedKeys = selectedHistoryRecords.Keys.ToArray();
-            var currentRecords = await GetCurrentFilterRecordsAsync(token);
+            int currentRecordCount;
+            int selectedInCurrentFilter;
+            if (SelectedFilter == HistoryFilterType.Transferring)
+            {
+                currentRecordCount = allHistoryItems.Count;
+                selectedInCurrentFilter = allHistoryItems.Count(
+                    record => selectedHistoryRecords.ContainsKey(record.Key));
+            }
+            else
+            {
+                var (types, starred, searchText) = BuildQueryParameters();
+                (currentRecordCount, selectedInCurrentFilter) =
+                    await historyManager.GetHistorySelectionCountsAsync(
+                        types,
+                        starred,
+                        searchText,
+                        selectedKeys,
+                        token);
+            }
+
             if (!HasSameSelectedHistoryKeys(selectedKeys))
                 return;
 
-            var selectedInCurrentFilter = currentRecords.Count(record => selectedHistoryRecords.ContainsKey(record.Key));
             SelectedInCurrentFilterCount = selectedInCurrentFilter;
-            IsCurrentFilterFullySelected = currentRecords.Count == 0 ? false :
+            IsCurrentFilterFullySelected = currentRecordCount == 0 ? false :
                 selectedInCurrentFilter == 0 ? false :
-                selectedInCurrentFilter == currentRecords.Count ? true : null;
+                selectedInCurrentFilter == currentRecordCount ? true : null;
         }
     }
 

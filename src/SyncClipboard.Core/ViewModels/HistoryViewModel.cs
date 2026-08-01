@@ -1257,12 +1257,11 @@ public partial class HistoryViewModel : ObservableObject
             var historyRecord = record.ToHistoryRecord();
             historyRecord.IsLocalFileReady = false;
             await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
-            actions.Add(new MenuItem(I18n.Strings.DeleteHistory, async () =>
-            {
-                await RunWithOperationTimeoutAsync(
+            actions.Add(new MenuItem(
+                I18n.Strings.DeleteHistory,
+                () => _ = RunWithOperationTimeoutAsync(
                     "delete history record",
-                    token => historyManager.DeleteHistory(historyRecord, token));
-            }));
+                    token => historyManager.DeleteHistory(historyRecord, token))));
         }
         else
         {
@@ -1287,32 +1286,29 @@ public partial class HistoryViewModel : ObservableObject
         if (historySyncServer == null)
             return;
 
-        await RunWithOperationTimeoutAsync("upload local history record", async operationToken =>
+        var record = vm.ToHistoryRecord();
+        var profile = record.ToProfile();
+        var valid = await profile.IsLocalDataValid(false, CancellationToken.None);
+        if (!valid)
         {
-            var record = vm.ToHistoryRecord();
-            var profile = record.ToProfile();
-            var valid = await profile.IsLocalDataValid(false, operationToken);
-            if (!valid)
-            {
-                ShowWindowToastInfo("Local file is missing or changed, this record will be removed.");
-                record.IsLocalFileReady = false;
-                await historyManager.UpdateHistoryLocalInfo(record, operationToken);
+            ShowWindowToastInfo("Local file is missing or changed, this record will be removed.");
+            record.IsLocalFileReady = false;
+            await historyManager.UpdateHistoryLocalInfo(record);
+            return;
+        }
+
+        var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
+        if (validationError != null)
+        {
+            var dialog = AppCore.Current.Services.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
+            var confirmed = await dialog.ShowConfirmationAsync(
+                I18n.Strings.UploadWarning,
+                $"{validationError}\n\n{I18n.Strings.ContinueUpload}");
+            if (!confirmed)
                 return;
-            }
+        }
 
-            var validationError = await ContentControlHelper.IsContentValid(profile, operationToken);
-            if (validationError != null)
-            {
-                var dialog = AppCore.Current.Services.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
-                var confirmed = await dialog.ShowConfirmationAsync(
-                    I18n.Strings.UploadWarning,
-                    $"{validationError}\n\n{I18n.Strings.ContinueUpload}");
-                if (!confirmed)
-                    return;
-            }
-
-            _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: operationToken);
-        });
+        _ = await _transferQueue.EnqueueUpload(profile, forceResume: true, ct: CancellationToken.None);
     }
 
     [RelayCommand]
