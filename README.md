@@ -38,11 +38,9 @@
     - [Android](#android)
       - [使用SyncClipboard Mobile](#使用syncclipboard-mobile)
       - [使用Sync Clipboard Flutter](#使用sync-clipboard-flutter)
-      - [使用HTTP Request Shortcuts](#使用http-request-shortcuts)
       - [使用AutoJs6脚本](#使用autojs6脚本)
-      - [使用SmsForwarder](#使用smsforwarder)
-      - [使用Tasker](#使用tasker)
       - [使用Fcitx5-SyncClipboard](#使用fcitx5-syncclipboard)
+      - [使用syncclipboard-xposed](#使用syncclipboard-xposed)
     - [鸿蒙OS (HarmonyOS Next)](#鸿蒙os-harmonyos-next)
       - [使用ClipLink](#使用cliplink)
     - [客户端配置说明](#客户端配置说明)
@@ -277,47 +275,9 @@ paru -Sy syncclipboard-desktop
 
 功能详情、使用步骤、系统要求等信息请查看该项目的 [README](https://github.com/bling-yshs/sync-clipboard-flutter)
 
-#### 使用[HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
-导入这个[配置文件](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/script/shortcuts.zip)，修改`变量`中的`UserName`，`UserToken`，`url`， `url`不要以斜线分隔符`/`结尾。`HTTP Request Shortcuts`支持从下拉菜单、桌面组件、桌面图标、分享菜单中使用
-
-<details>
-<summary>导入配置文件后修改配置图示</summary>
-
-- 通过`变量`修改账号、密码、网址
-  
-![](docs/image/android1.jpg)
-![](docs/image/android2.jpg)
-![](docs/image/android3.jpg)
-  
-  
-- 下载文件时，如果你希望自动将文件存储到文件系统，请根据下图修改储存位置  
-  
-![](docs/image/android4.jpg)
-![](docs/image/android5.jpg)
-  
-  
-- 下载文件时，如果你想修改默认行为（默认行为：弹出一个展示页面等待用户处理，并将文件保存到前面选择的位置），可以根据你的需求修改如下内容  
-  
-![](docs/image/android6.jpg)
-![](docs/image/android7.jpg)
-![](docs/image/android8.jpg)
-  
-
-</details>
-
 #### 使用[AutoJs6脚本](https://github.com/imgs/SyncAutojs6)
 
 此项目通过[AutoJs6](https://github.com/SuperMonster003/AutoJs6)基于悬浮窗的后台剪贴板获取方式，实现了Android 10+系统上的后台剪贴板同步能力
-
-#### 使用[SmsForwarder](https://github.com/pppscn/SmsForwarder)
-
-- 自动上传验证码， https://github.com/Jeric-X/SyncClipboard/discussions/109
-
-#### 使用[Tasker](https://tasker.joaoapps.com/)
-
-- https://github.com/forrestgao/taskerforSyncClipboard ，作者：[forrestgao](https://github.com/forrestgao)
-
-Tasker是一款安卓系统上非常强大的自动化工具软件，你可以根据SyncClipboard的API创建适合自己的配置文件，如果你认为你的配置文件非常通用并希望分享出来，欢迎联系我置于此处
 
 #### 使用[Fcitx5-SyncClipboard](https://github.com/qh7574/Fcitx5-SyncClipboard)
 

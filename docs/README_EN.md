@@ -36,7 +36,6 @@
       - [Use Shortcuts](#use-shortcuts)
     - [Android](#android)
       - [Use SyncClipboard Mobile](#use-syncclipboard-mobile)
-      - [Use HTTP Request Shortcuts](#use-http-request-shortcuts)
     - [HarmonyOS Next](#harmonyos-next)
       - [Use ClipLink](#use-cliplink)
     - [Notes for Clients](#notes-for-clients)
@@ -264,19 +263,6 @@ Multiple `--command-{command-name}` arguments are supported, multiple commands a
 - Limited background sync capability
 - Clipboard history and history sync
 - Auto-upload SMS verification codes
-
-#### Use [HTTP Request Shortcuts](https://github.com/Waboodoo/HTTP-Shortcuts)
-Import this [file](https://github.com/Jeric-X/SyncClipboard/raw/refs/heads/dev/script/en/shortcuts.zip), Change the `UserName`, `UserToken`, `url` in `Variables` to yours. Make sure no slash(/) at the end of url. `HTTP Request Shortcuts` supports using shortcuts from drop-down menu, home screen widgets, home screen icons and share sheet.
-
-<details>
-<summary>Screenshots</summary>
-
-![](image/android1_EN.jpg)
-![](image/android2_EN.jpg)
-![](image/android3_EN.jpg)
-
-</details>
-
 
 ### HarmonyOS Next
 #### Use [ClipLink](https://github.com/xiebaiyuan/ClipLink)
