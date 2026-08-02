@@ -793,10 +793,10 @@ public partial class HistoryViewModel : ObservableObject
                     ScrollToBottom();
                     return true;
                 case Key.S:
-                    ToggleStarForSelectedItem();
+                    HandleToggleStarShortcut();
                     return true;
                 case Key.D:
-                    DeleteSelectedItem();
+                    HandleDeleteShortcut();
                     return true;
                 case Key.P:
                     ShowPreviewPanel = !ShowPreviewPanel;
@@ -834,7 +834,15 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    private async void ToggleStarForSelectedItem()
+    private async void HandleToggleStarShortcut()
+    {
+        if (IsMultiSelecting)
+            await ConfirmToggleSelectedStarredAsync();
+        else
+            await ToggleStarForSelectedItemAsync();
+    }
+
+    private async Task ToggleStarForSelectedItemAsync()
     {
         var count = HistoryItemCount;
         if (SelectedIndex < 0 || SelectedIndex >= count)
@@ -846,7 +854,15 @@ public partial class HistoryViewModel : ObservableObject
         await ChangeStarStatus(selectedItem);
     }
 
-    private async void DeleteSelectedItem()
+    private async void HandleDeleteShortcut()
+    {
+        if (IsMultiSelecting)
+            await ConfirmDeleteSelectedAsync();
+        else
+            await DeleteSelectedItemAsync();
+    }
+
+    private async Task DeleteSelectedItemAsync()
     {
         var count = HistoryItemCount;
         if (SelectedIndex < 0 || SelectedIndex >= count)
