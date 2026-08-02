@@ -44,6 +44,9 @@
         <Style Selector="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
+        <Style Selector="ui|ContentDialog /template/ Button">
+            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+        </Style>
         <Style Selector="TextBox">
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
