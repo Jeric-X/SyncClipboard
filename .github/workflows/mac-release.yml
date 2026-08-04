@@ -47,3 +47,110 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'beta') }}
           artifacts: SyncClipboard_macos_${{ matrix.cpu }}.dmg
           bodyFile: feature.txt
+
+  update-homebrew-tap:
+    needs: release-macos
+    # 仅正式版 tag 触发，beta 版不更新 tap
+    if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, 'beta') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download x64 DMG
+        uses: actions/download-artifact@v8
+        with:
+          name: SyncClipboard_macos_x64.dmg
+          path: artifacts
+
+      - name: Download arm64 DMG
+        uses: actions/download-artifact@v8
+        with:
+          name: SyncClipboard_macos_arm64.dmg
+          path: artifacts
+
+      - name: Calculate SHA256
+        id: sha
+        working-directory: artifacts
+        run: |
+          echo "x64=$(sha256sum SyncClipboard_macos_x64.dmg | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "arm64=$(sha256sum SyncClipboard_macos_arm64.dmg | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout tap repo
+        uses: actions/checkout@v6
+        with:
+          repository: Jeric-X/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Update Cask file
+        run: |
+          mkdir -p tap/Casks
+          cat > tap/Casks/syncclipboard.rb <<CASK_EOF
+          cask "syncclipboard" do
+            version "${{ steps.version.outputs.version }}"
+
+            on_intel do
+              sha256 "${{ steps.sha.outputs.x64 }}"
+
+              url "https://github.com/Jeric-X/SyncClipboard/releases/download/v${{ steps.version.outputs.version }}/SyncClipboard_macos_x64.dmg"
+            end
+
+            on_arm do
+              sha256 "${{ steps.sha.outputs.arm64 }}"
+
+              url "https://github.com/Jeric-X/SyncClipboard/releases/download/v${{ steps.version.outputs.version }}/SyncClipboard_macos_arm64.dmg"
+            end
+
+            name "SyncClipboard"
+            desc "Cross-platform clipboard synchronization tool with clipboard history"
+            homepage "https://github.com/Jeric-X/SyncClipboard"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            depends_on macos: ">= :monterey"
+
+            app "SyncClipboard.app"
+
+            postflight do
+              require "digest"
+              program_dir = "/Applications/SyncClipboard.app/Contents/MacOS"
+              dir_hash = Digest::SHA256.hexdigest(program_dir)
+              config_dir = File.join(Dir.home, ".config", "SyncClipboard", "update_info", dir_hash)
+              FileUtils.mkdir_p(config_dir)
+              File.write(
+                File.join(config_dir, "update_info.json"),
+                <<~JSON
+                  {
+                    "UpdateInfo": {
+                      "manage_type": "market",
+                      "update_src": "homebrew",
+                      "package_name": "syncclipboard"
+                    }
+                  }
+                JSON
+              )
+            end
+
+            uninstall delete: "#{Dir.home}/.config/SyncClipboard/update_info"
+
+            zap trash: [
+              "#{Dir.home}/.config/SyncClipboard",
+              "#{Dir.home}/Library/Preferences/xyz.jericx.desktop.syncclipboard.plist",
+              "#{Dir.home}/Library/Saved Application State/xyz.jericx.desktop.syncclipboard.savedState",
+            ]
+          end
+          CASK_EOF
+
+      - name: Commit and push
+        run: |
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/syncclipboard.rb
+          git commit -m "bump syncclipboard to ${{ steps.version.outputs.version }}"
+          git push

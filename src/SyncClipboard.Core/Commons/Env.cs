@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using SyncClipboard.Core.Models.UserConfigs;
 
@@ -24,7 +26,6 @@ namespace SyncClipboard.Core.Commons
         public static readonly string ProgramPath = GetProgramPath();
         public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
         public static readonly string StaticConfigPath = Path.Combine(ProgramDirectory, "StaticConfig.json");
-        public static readonly string UpdateInfoPath = Path.Combine(ProgramDirectory, UpdateInfoFile);
         public static readonly string UserAppDataDirectory = GetUserAppDataDirectory();
         /// <summary>
         /// Path to the independent config file that stores the custom AppData directory.
@@ -44,8 +45,10 @@ namespace SyncClipboard.Core.Commons
         public static string ImageTemplateFolder => Path.Combine(TemplateFileFolder, "temp images");
         public static readonly string LogFolder = FullPath("log");
         public static readonly string UpdateFolder = GetOrCreateFolder(FullPath("update"));
+        public static readonly string UpdateInfoFolder = GetOrCreateFolder(FullPath("update_info"));
+        public static readonly string UpdateInfoPath = GetUpdateInfoPath();
 
-        public static readonly string[] AppDataCopyWhitelistFolders = ["data", "file", "log", "server", "update"];
+        public static readonly string[] AppDataCopyWhitelistFolders = ["data", "file", "log", "server", "update", "update_info"];
         public static readonly string[] AppDataCopyWhitelistFiles = [RuntimeConfigName, "SyncClipboard.json"];
 
         public static bool IsUsingCustomAppDataDirectory =>
@@ -190,6 +193,16 @@ namespace SyncClipboard.Core.Commons
             }
 
             return Environment.ProcessPath ?? throw new Exception("Can not get program path.");
+        }
+
+        private static string GetUpdateInfoPath()
+        {
+            // 优先读取外部配置（用于包管理器安装场景，如 Homebrew Cask）
+            // 路径基于程序所在文件夹的哈希，区分不同安装位置，避免修改 .app bundle 内部文件破坏代码签名
+            var programDir = Path.TrimEndingDirectorySeparator(ProgramDirectory);
+            var dirHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(programDir))).ToLowerInvariant();
+            var externalPath = Path.Combine(UpdateInfoFolder, dirHash, UpdateInfoFile);
+            return File.Exists(externalPath) ? externalPath : Path.Combine(ProgramDirectory, UpdateInfoFile);
         }
     }
 }
