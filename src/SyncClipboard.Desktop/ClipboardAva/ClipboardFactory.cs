@@ -30,7 +30,17 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         Clipboard = ServiceProvider.GetRequiredService<MultiSourceClipboardReader>();
     }
 
-    public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
+    public override Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
+    {
+        return GetMetaInfomation(false, null, ctk);
+    }
+
+    public Task<ClipboardMetaInfomation> GetMetaInfomation(int? fingerprint, CancellationToken ctk)
+    {
+        return GetMetaInfomation(true, fingerprint, ctk);
+    }
+
+    private async Task<ClipboardMetaInfomation> GetMetaInfomation(bool hasFingerprint, int? fingerprint, CancellationToken ctk)
     {
         bool hasClipboard = false;
 
@@ -55,7 +65,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
                     hasClipboard = true;
                     if (OperatingSystem.IsLinux())
                     {
-                        var meta = await HandleLinuxClipboard(formats, ctk);
+                        var meta = await HandleLinuxClipboard(formats, hasFingerprint, fingerprint, ctk);
                         return meta;
                     }
                     else if (OperatingSystem.IsMacOS())

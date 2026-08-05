@@ -21,14 +21,14 @@ internal class LinuxClipboardFingerprintProvider(
 
     public async Task<int?> GetClipboardFingerprint(CancellationToken ctk)
     {
-        if (Env.IsWayland)
-        {
-            return null;
-        }
-
         try
         {
-            var timeStampData = await _clipboardReader.GetDataAsync(Format.TimeStamp, ctk);
+            // On Wayland, retrieving the timestamp from a native Wayland clipboard owner can time out.
+            // https://github.com/Jeric-X/SyncClipboard/issues/391
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ctk);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(100));
+
+            var timeStampData = await _clipboardReader.GetDataAsync(Format.TimeStamp, timeout.Token);
             if (timeStampData is int timeStamp)
             {
                 return timeStamp;
@@ -38,6 +38,10 @@ internal class LinuxClipboardFingerprintProvider(
                 var str = Encoding.UTF8.GetString(bytes);
                 return int.TryParse(str, out var result) ? result : BitConverter.ToInt32(bytes);
             }
+            return null;
+        }
+        catch (OperationCanceledException) when (ctk.IsCancellationRequested is false)
+        {
             return null;
         }
         catch (Exception ex)

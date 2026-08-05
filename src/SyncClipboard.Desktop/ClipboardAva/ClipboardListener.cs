@@ -70,7 +70,7 @@ internal class ClipboardListener(
                 return;
             }
 
-            var meta = await ClipboardFactory.GetMetaInfomation(_cts.Token);
+            var meta = await ((ClipboardFactory)ClipboardFactory).GetMetaInfomation(currentFingerprint, _cts.Token);
             if (meta == _meta)
             {
                 return;

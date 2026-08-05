@@ -43,12 +43,19 @@ internal partial class ClipboardFactory
     ];
 
     [SupportedOSPlatform("linux")]
-    private async Task<ClipboardMetaInfomation> HandleLinuxClipboard(string[] formats, CancellationToken token)
+    private async Task<ClipboardMetaInfomation> HandleLinuxClipboard(string[] formats, bool hasFingerprint, int? fingerprint, CancellationToken token)
     {
         ClipboardMetaInfomation meta = new();
-        bool hasExcoption = false;
+        if (hasFingerprint)
+        {
+            meta.TimeStamp = fingerprint;
+        }
+        else
+        {
+            await HandleTimeStamp(formats, meta, token);
+        }
 
-        await HandleTimeStamp(formats, meta, token);
+        bool hasExcoption = false;
         if (meta.TimeStamp is not null && _metaCache.TimeStamp == meta.TimeStamp)
         {
             return _metaCache;
@@ -84,14 +91,22 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleTimeStamp(string[] formats, ClipboardMetaInfomation meta, CancellationToken token)
     {
-        if (Env.IsWayland || formats.Contains(Format.TimeStamp) is false)
+        if (formats.Contains(Format.TimeStamp) is false)
         {
             return;
         }
 
         try
         {
-            meta.TimeStamp = await Clipboard.GetTimeStamp(token);
+            // On Wayland, retrieving the timestamp from a native Wayland clipboard owner can time out.
+            // https://github.com/Jeric-X/SyncClipboard/issues/391
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(100));
+
+            meta.TimeStamp = await Clipboard.GetTimeStamp(timeout.Token);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested is false)
+        {
         }
         catch (Exception ex) when (token.IsCancellationRequested is false)
         {
