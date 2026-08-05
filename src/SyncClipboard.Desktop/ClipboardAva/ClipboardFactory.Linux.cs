@@ -84,7 +84,7 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleTimeStamp(string[] formats, ClipboardMetaInfomation meta, CancellationToken token)
     {
-        if (formats.Contains(Format.TimeStamp) is false)
+        if (Env.IsWayland || formats.Contains(Format.TimeStamp) is false)
         {
             return;
         }

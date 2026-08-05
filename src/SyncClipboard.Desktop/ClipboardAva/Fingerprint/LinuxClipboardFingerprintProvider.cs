@@ -21,6 +21,11 @@ internal class LinuxClipboardFingerprintProvider(
 
     public async Task<int?> GetClipboardFingerprint(CancellationToken ctk)
     {
+        if (Env.IsWayland)
+        {
+            return null;
+        }
+
         try
         {
             var timeStampData = await _clipboardReader.GetDataAsync(Format.TimeStamp, ctk);
