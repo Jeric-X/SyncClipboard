@@ -2323,6 +2323,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("RunAsAdministrator", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Run at startup as administrator failed 的本地化字符串。
+        /// </summary>
+        public static string RunAsAdministratorFailed {
+            get {
+                return ResourceManager.GetString("RunAsAdministratorFailed", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Run at System Startup 的本地化字符串。
@@ -2330,6 +2339,15 @@ namespace SyncClipboard.Core.I18n {
         public static string RunAtSystemStartup {
             get {
                 return ResourceManager.GetString("RunAtSystemStartup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Run at system startup failed 的本地化字符串。
+        /// </summary>
+        public static string RunAtSystemStartupFailed {
+            get {
+                return ResourceManager.GetString("RunAtSystemStartupFailed", resourceCulture);
             }
         }
         

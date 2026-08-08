@@ -236,7 +236,8 @@ public partial class SystemSettingViewModel : ObservableObject
         await UpdateStartUpSettingsAsync(
             updateTask: updateTask,
             enable: true,
-            runAsAdministrator: value);
+            runAsAdministrator: value,
+            errorTitle: Strings.RunAsAdministratorFailed);
     }
 
     public bool StartUpWithSystem
@@ -249,12 +250,13 @@ public partial class SystemSettingViewModel : ObservableObject
                 _ = UpdateStartUpSettingsAsync(
                     updateTask: true,
                     enable: value,
-                    runAsAdministrator: StartUpAsAdministrator);
+                    runAsAdministrator: StartUpAsAdministrator,
+                    errorTitle: Strings.RunAtSystemStartupFailed);
             }
         }
     }
 
-    private async Task UpdateStartUpSettingsAsync(bool updateTask, bool enable, bool runAsAdministrator)
+    private async Task UpdateStartUpSettingsAsync(bool updateTask, bool enable, bool runAsAdministrator, string errorTitle)
     {
         if (_isSynchronizingStartUpSettings)
         {
@@ -273,7 +275,7 @@ public partial class SystemSettingViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await ShowStartUpErrorAsync(ex);
+            await ShowStartUpErrorAsync(errorTitle, ex);
         }
         finally
         {
@@ -302,10 +304,10 @@ public partial class SystemSettingViewModel : ObservableObject
         }
     }
 
-    private async Task ShowStartUpErrorAsync(Exception ex)
+    private async Task ShowStartUpErrorAsync(string title, Exception ex)
     {
         _logger.Write(nameof(SystemSettingViewModel), ex.Message);
-        await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(Strings.RunAtSystemStartup, ex.Message);
+        await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(title, ex.Message);
     }
 
     /// <summary>

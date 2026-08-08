@@ -67,7 +67,7 @@ public partial class StartUpHelper
         const int AccessDeniedHResult = unchecked((int)0x80070005);
         return exception.HResult == AccessDeniedHResult ||
             exception is UnauthorizedAccessException ||
-            exception.InnerException is not null && IsAccessDenied(exception.InnerException);
+            (exception.InnerException is not null && IsAccessDenied(exception.InnerException));
     }
 
     public static bool TryUpdateWindowsStartupTaskFromArguments(string[] args, out int returnCode)
@@ -152,6 +152,9 @@ public partial class StartUpHelper
         taskDefinition.RegistrationInfo.Author = Env.SoftName;
         taskDefinition.Principal.LogonType = 3; // TASK_LOGON_INTERACTIVE_TOKEN
         taskDefinition.Principal.RunLevel = runAsAdministrator ? 1 : 0; // TASK_RUNLEVEL_HIGHEST / TASK_RUNLEVEL_LUA
+        taskDefinition.Settings.ExecutionTimeLimit = "PT0S";
+        taskDefinition.Settings.DisallowStartIfOnBatteries = false;
+        taskDefinition.Settings.StopIfGoingOnBatteries = false;
 
         using var identity = WindowsIdentity.GetCurrent();
         dynamic trigger = taskDefinition.Triggers.Create(9); // TASK_TRIGGER_LOGON
@@ -278,14 +281,17 @@ public partial class StartUpHelper
     private static (int ExitCode, string StandardOutput) RunSchtasks(ProcessStartInfo startInfo, bool ignoreFailure = false)
     {
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to start Windows Task Scheduler.");
-        var standardOutput = process.StandardOutput.ReadToEnd();
-        var standardError = process.StandardError.ReadToEnd();
+        var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+        var standardErrorTask = process.StandardError.ReadToEndAsync();
         process.WaitForExit();
+        Task.WaitAll(standardOutputTask, standardErrorTask);
+        var standardOutput = standardOutputTask.Result;
+        var standardError = standardErrorTask.Result;
 
         if (!ignoreFailure && process.ExitCode != 0)
         {
             var error = string.IsNullOrWhiteSpace(standardError) ? standardOutput : standardError;
-            throw new InvalidOperationException($"Unable to update Windows startup task: {error.Trim()}");
+            throw new InvalidOperationException($"{Strings.StartupTaskModificationFailed} {error.Trim()}");
         }
 
         return (process.ExitCode, standardOutput);
