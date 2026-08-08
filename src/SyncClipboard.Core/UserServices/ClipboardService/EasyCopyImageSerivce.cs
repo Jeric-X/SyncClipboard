@@ -52,8 +52,13 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     protected override CancellationToken StopPreviousAndGetNewToken()
     {
         TrayIcon.SetStatusString(SERVICE_NAME, RUNNING_STATUS);
-        _progress?.CancelSicent();
-        _progress = null;
+        ProgressToastReporter? progress;
+        lock (_progressLocker)
+        {
+            progress = _progress;
+            _progress = null;
+        }
+        progress?.CancelSicent();
         return base.StopPreviousAndGetNewToken();
     }
 
@@ -234,9 +239,10 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     private async Task<string> DownloadImage(Uri imageUri, CancellationToken token)
     {
         using var downloadingCts = new CancellationTokenSource();
-        var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(token, downloadingCts.Token).Token;
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, downloadingCts.Token);
 
         var filename = RegexFilename().Match(imageUri.LocalPath);
+        ProgressToastReporter progress;
         lock (_progressLocker)
         {
             _progress ??= new ProgressToastReporter(
@@ -245,11 +251,26 @@ public partial class EasyCopyImageSerivce : ClipboardHander
                 I18n.Strings.DownloadingWebImage,
                 buttons: new ActionButton(I18n.Strings.Cancel, downloadingCts.Cancel)
             );
+            progress = _progress;
         }
 
         var fullPath = Path.Combine(Env.TemplateFileFolder, filename.Value);
-        await Http.GetFile(imageUri.AbsoluteUri, fullPath, _progress, linkedToken);
-        return fullPath;
+        try
+        {
+            await Http.GetFile(imageUri.AbsoluteUri, fullPath, progress, linkedCts.Token);
+            return fullPath;
+        }
+        finally
+        {
+            lock (_progressLocker)
+            {
+                if (ReferenceEquals(_progress, progress))
+                {
+                    _progress = null;
+                }
+            }
+            progress.CancelSicent();
+        }
     }
 
     [GeneratedRegex("[^/]+(?!.*/)")]

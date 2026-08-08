@@ -47,6 +47,12 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
 
     private void UpdateProgress()
     {
+        if (_progress.End)
+        {
+            _counter.Cancle();
+            return;
+        }
+
         double? percentNullable = (double)_progress.BytesReceived / _progress.TotalBytesToReceive;
         if (!percentNullable.HasValue || double.IsNaN(percentNullable.Value) ||
             percentNullable.Value <= 0.01)
@@ -80,15 +86,7 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
         _progressBar.ProgressValueTip = percent.ToString("P");
         //_progressBar.ProgressTitle = percent.ToString("P");
 
-        if (_progress.End)
-        {
-            _counter.Cancle();
-            if (UseToast)
-            {
-                _progressBar.Remove();
-            }
-        }
-        else if (_progressBar.IsIndeterminate)
+        if (_progressBar.IsIndeterminate)
         {
             if (UseToast)
             {

@@ -67,7 +67,7 @@ namespace SyncClipboard.Core.Utilities.Web
             SetAuthHeader();
         }
 
-        private HttpClient CreateHttpClient()
+        protected virtual HttpClient CreateHttpClient()
         {
             var httpclientHandler = new HttpClientHandler();
             if (TrustInsecureCertificate)
@@ -102,85 +102,95 @@ namespace SyncClipboard.Core.Utilities.Web
                 = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
         }
 
-        public Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null)
+        public async Task GetFile(string url, string localFilePath, CancellationToken? cancelToken = null)
         {
-            return HttpClient.GetFile(url, localFilePath, AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            await HttpClient.GetFile(url, localFilePath, cancellationSource.Token);
         }
 
-        public Task GetFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress = null,
+        public async Task GetFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress = null,
             CancellationToken? cancelToken = null)
         {
-            return HttpClient.GetFile(url, localFilePath, progress, AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            await HttpClient.GetFile(url, localFilePath, progress, cancellationSource.Token);
         }
 
         public async Task PutFile(string url, string localFilePath, CancellationToken? cancelToken = null)
         {
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
             using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using var streamContent = new StreamContent(fileStream);
-            await HttpClient.PutAsync(url, streamContent, AdjustCancelToken(cancelToken));
+            using var response = await HttpClient.PutAsync(url, streamContent, cancellationSource.Token);
         }
 
         public async Task PutFile(string url, string localFilePath, IProgress<HttpDownloadProgress>? progress, CancellationToken? cancelToken = null)
         {
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
             using var fileStream = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using HttpContent streamContent = progress is null
                 ? new StreamContent(fileStream)
-                : new ProgressableStreamContent(fileStream, progress, AdjustCancelToken(cancelToken));
-            await HttpClient.PutAsync(url, streamContent, AdjustCancelToken(cancelToken));
+                : new ProgressableStreamContent(fileStream, progress, cancellationSource.Token);
+            using var response = await HttpClient.PutAsync(url, streamContent, cancellationSource.Token);
         }
 
-        public Task<string> GetText(string url, CancellationToken? cancelToken = null)
+        public async Task<string> GetText(string url, CancellationToken? cancelToken = null)
         {
-            return HttpClient.GetStringAsync(url, AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            return await HttpClient.GetStringAsync(url, cancellationSource.Token);
         }
 
         public async Task PutText(string url, string text, CancellationToken? cancelToken = null)
         {
-            var res = await HttpClient.PutAsync(url, new StringContent(text), AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var content = new StringContent(text);
+            using var res = await HttpClient.PutAsync(url, content, cancellationSource.Token);
             res.EnsureSuccessStatusCode();
         }
 
-        public Task<Type?> GetJson<Type>(string url, CancellationToken? cancelToken = null)
+        public async Task<Type?> GetJson<Type>(string url, CancellationToken? cancelToken = null)
         {
-            return HttpClient.GetFromJsonAsync<Type>(
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            return await HttpClient.GetFromJsonAsync<Type>(
                 url,
                 SerializerOptions,
-                AdjustCancelToken(cancelToken)
+                cancellationSource.Token
             );
         }
 
         public async Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null)
         {
-            var content = JsonContent.Create(jsonContent, null, SerializerOptions);
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var content = JsonContent.Create(jsonContent, null, SerializerOptions);
             await content.LoadIntoBufferAsync(); // avoid chunked encoding
-            await HttpClient.PutAsync(
+            using var response = await HttpClient.PutAsync(
                 url,
                 content,
-                AdjustCancelToken(cancelToken)
+                cancellationSource.Token
             );
         }
 
-        private CancellationToken AdjustCancelToken(CancellationToken? cancelToken = null)
+        private CancellationTokenSource CreateRequestCancellationSource(CancellationToken? cancelToken = null)
         {
-            return CancellationTokenSource.CreateLinkedTokenSource(
-                cancelToken ?? CancellationToken.None,
-                new CancellationTokenSource(TimeSpan.FromSeconds(Timeout)).Token
-            ).Token;
+            var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken ?? CancellationToken.None);
+            cancellationSource.CancelAfter(TimeSpan.FromSeconds(Timeout));
+            return cancellationSource;
         }
 
         public async Task<bool> Exist(string url, CancellationToken? cancelToken = null)
         {
-            var requestMessage = new HttpRequestMessage(new HttpMethod("HEAD"), url);
-            var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var requestMessage = new HttpRequestMessage(new HttpMethod("HEAD"), url);
+            using var res = await HttpClient.SendAsync(requestMessage, cancellationSource.Token);
             return EnsureExist(res);
         }
 
         public async Task<bool> DirectoryExist(string url, CancellationToken? cancelToken = null)
         {
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
             AdjustDirectoryUrl(ref url);
-            var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
+            using var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
             requestMessage.Headers.Add("Depth", "1");
-            var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            using var res = await HttpClient.SendAsync(requestMessage, cancellationSource.Token);
             return EnsureExist(res);
         }
 
@@ -196,34 +206,30 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public async Task CreateDirectory(string url, CancellationToken? cancelToken = null)
         {
-            var requestMessage = new HttpRequestMessage(new HttpMethod("MKCOL"), url);
-            var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var requestMessage = new HttpRequestMessage(new HttpMethod("MKCOL"), url);
+            using var res = await HttpClient.SendAsync(requestMessage, cancellationSource.Token);
             res.EnsureSuccessStatusCode();
         }
 
         public async Task Test(CancellationToken? cancelToken = null)
         {
-            HttpRequestMessage requestMessage = new()
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using HttpRequestMessage requestMessage = new()
             {
                 Method = new HttpMethod("PROPFIND")
             };
             requestMessage.Headers.Add("Depth", "1");
 
-            var res = await HttpClient.SendAsync(requestMessage, AdjustCancelToken(cancelToken));
+            using var res = await HttpClient.SendAsync(requestMessage, cancellationSource.Token);
             res.EnsureSuccessStatusCode();
         }
 
         public async Task<bool> TestAlive(CancellationToken? cancelToken = null)
         {
-            HttpRequestMessage requestMessage = new()
-            {
-                Method = new HttpMethod("PROPFIND")
-            };
-            requestMessage.Headers.Add("Depth", "1");
-
             try
             {
-                await Test();
+                await Test(cancelToken);
                 return true;
             }
             catch (Exception ex)
@@ -235,14 +241,16 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public async Task Delete(string url, CancellationToken? cancelToken = null)
         {
-            var res = await HttpClient.DeleteAsync(url, AdjustCancelToken(cancelToken));
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var res = await HttpClient.DeleteAsync(url, cancellationSource.Token);
             res.EnsureSuccessStatusCode();
         }
 
         public async Task DirectoryDelete(string url, CancellationToken? cancelToken = null)
         {
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
             AdjustDirectoryUrl(ref url);
-            var res = await HttpClient.DeleteAsync(url, AdjustCancelToken(cancelToken));
+            using var res = await HttpClient.DeleteAsync(url, cancellationSource.Token);
             res.EnsureSuccessStatusCode();
         }
 
@@ -256,10 +264,11 @@ namespace SyncClipboard.Core.Utilities.Web
 
         public async Task<List<WebDavNode>> GetFolderSubList(string url, CancellationToken? cancelToken = null)
         {
-            var token = AdjustCancelToken(cancelToken);
-            var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            var token = cancellationSource.Token;
+            using var requestMessage = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
             requestMessage.Headers.Add("Depth", "1");
-            var res = await HttpClient.SendAsync(requestMessage, token);
+            using var res = await HttpClient.SendAsync(requestMessage, token);
             res.EnsureSuccessStatusCode();
 
             List<WebDavNode> list = [];
