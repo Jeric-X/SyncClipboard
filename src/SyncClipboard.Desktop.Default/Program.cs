@@ -11,11 +11,16 @@ class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
+        if (StartUpHelper.TryUpdateWindowsStartupTaskFromArguments(args, out var returnCode))
+        {
+            return returnCode;
+        }
+
         if (AppInstance.EnsureSingleInstance(args) is false)
         {
-            return;
+            return (int)ReturnCode.Success;
         }
 
         try
@@ -28,7 +33,10 @@ class Program
             File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
             App.Current?.Logger?.Write($"UnhandledException {e.GetType()} {e.Message} \n {e.StackTrace}");
             App.Current?.AppCore?.Stop();
+            return (int)ReturnCode.UnhandledException;
         }
+
+        return (int)ReturnCode.Success;
     }
 
     private static string Font(string name)

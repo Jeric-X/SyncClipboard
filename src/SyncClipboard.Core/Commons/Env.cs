@@ -6,7 +6,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.Commons
 {
-    public static class Env
+    public static partial class Env
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
@@ -19,8 +19,6 @@ namespace SyncClipboard.Core.Commons
         public const string RuntimeConfigName = "RuntimeConfig.json";
         public const string UpdateInfoFile = "update_info.json";
         public const string PortableAppDataFolderName = "appdata";
-        public const string LinuxPackageAppId = "xyz.jericx.desktop.syncclipboard";
-        public static readonly string LinuxUserDesktopEntryFolder = UserPath(".local/share/applications");
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string PortableAppDataDirectory = Path.Combine(ProgramDirectory, PortableAppDataFolderName);
         public static readonly string ProgramPath = GetProgramPath();
@@ -166,20 +164,6 @@ namespace SyncClipboard.Core.Commons
                 Directory.CreateDirectory(_templateFileFolder);
             }
             return _templateFileFolder;
-        }
-
-        public static string? GetAppImageExecPath()
-        {
-            var ARGV0 = Environment.GetEnvironmentVariable("ARGV0");
-            var APPDIR = Environment.GetEnvironmentVariable("APPDIR");
-            var OWD = Environment.GetEnvironmentVariable("OWD");
-            if (string.IsNullOrEmpty(ARGV0) is false &&
-                string.IsNullOrEmpty(APPDIR) is false &&
-                string.IsNullOrEmpty(OWD) is false)
-            {
-                return Path.GetFullPath(ARGV0);
-            }
-            return null;
         }
 
         private static string GetProgramPath()

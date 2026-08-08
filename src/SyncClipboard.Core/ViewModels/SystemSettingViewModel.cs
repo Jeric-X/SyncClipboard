@@ -58,6 +58,10 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
         HideWindowOnStartUp = value.HideWindowOnStartup;
+        var isSynchronizingStartUpSettings = _isSynchronizingStartUpSettings;
+        _isSynchronizingStartUpSettings = true;
+        StartUpAsAdministrator = value.StartUpAsAdministrator;
+        _isSynchronizingStartUpSettings = isSynchronizingStartUpSettings;
         LogRemainDays = value.LogRemainDays;
         TempFileRemainDays = value.TempFileRemainDays;
         DiagnoseMode = value.DiagnoseMode;
@@ -158,6 +162,7 @@ public partial class SystemSettingViewModel : ObservableObject
     private readonly IServiceProvider _services;
     private readonly ILogger _logger;
     private bool _isInitializingPortableAppDataFolder = true;
+    private bool _isSynchronizingStartUpSettings;
     private bool _currentPortableAppDataFolder;
 
     public SystemSettingViewModel(ConfigManager configManager, StaticConfig staticConfig, IServiceProvider serviceProvider)
@@ -167,12 +172,20 @@ public partial class SystemSettingViewModel : ObservableObject
         _services = serviceProvider;
         _logger = serviceProvider.GetRequiredService<ILogger>();
 
-        _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
         programConfig = _configManager.GetConfig<ProgramConfig>();
+        var taskRunAsAdministrator = StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        if (taskRunAsAdministrator is bool runAsAdministrator && runAsAdministrator != programConfig.StartUpAsAdministrator)
+        {
+            programConfig = programConfig with { StartUpAsAdministrator = runAsAdministrator };
+            _configManager.SetConfig(programConfig);
+        }
+
+        _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
         language = Languages.FirstOrDefault(x => x.LocaleTag == programConfig.Language) ?? Languages[0];
         font = programConfig.Font;
         theme = Themes.FirstOrDefault(x => x.Key == programConfig.Theme) ?? Themes[0];
         hideWindowOnStartUp = programConfig.HideWindowOnStartup;
+        startUpAsAdministrator = taskRunAsAdministrator ?? programConfig.StartUpAsAdministrator;
         logRemainDays = programConfig.LogRemainDays;
         tempFileRemainDays = programConfig.TempFileRemainDays;
         diagnoseMode = programConfig.DiagnoseMode;
@@ -187,6 +200,8 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     public bool ShowStartUpSetting { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
+
+    public bool ShowStartUpAsAdministratorSetting { get; } = OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
 
     public bool ShowPortableLocationSetting { get; } = OperatingSystem.IsWindows();
 
@@ -213,14 +228,86 @@ public partial class SystemSettingViewModel : ObservableObject
     [ObservableProperty]
     private string appDataMoveProgress = string.Empty;
 
+    [ObservableProperty]
+    private bool startUpAsAdministrator;
+    async partial void OnStartUpAsAdministratorChanged(bool value)
+    {
+        var updateTask = OperatingSystem.IsWindows() && StartUpHelper.Status();
+        await UpdateStartUpSettingsAsync(
+            updateTask: updateTask,
+            enable: true,
+            runAsAdministrator: value,
+            errorTitle: Strings.RunAsAdministratorFailed);
+    }
+
     public bool StartUpWithSystem
     {
         get => StartUpHelper.Status();
         set
         {
-            StartUpHelper.Set(value);
+            if (!_isSynchronizingStartUpSettings)
+            {
+                _ = UpdateStartUpSettingsAsync(
+                    updateTask: true,
+                    enable: value,
+                    runAsAdministrator: StartUpAsAdministrator,
+                    errorTitle: Strings.RunAtSystemStartupFailed);
+            }
+        }
+    }
+
+    private async Task UpdateStartUpSettingsAsync(bool updateTask, bool enable, bool runAsAdministrator, string errorTitle)
+    {
+        if (_isSynchronizingStartUpSettings)
+        {
+            return;
+        }
+
+        var startUpAsAdministratorToSave = ProgramConfig.StartUpAsAdministrator;
+        try
+        {
+            if (updateTask)
+            {
+                await StartUpHelper.SetAsync(enable, runAsAdministrator);
+            }
+
+            startUpAsAdministratorToSave = runAsAdministrator;
+        }
+        catch (Exception ex)
+        {
+            await ShowStartUpErrorAsync(errorTitle, ex);
+        }
+        finally
+        {
+            RefreshStartUpSettings(startUpAsAdministratorToSave);
+        }
+    }
+
+    private void RefreshStartUpSettings(bool startUpAsAdministrator)
+    {
+        var taskRunAsAdministrator = StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var actualStartUpAsAdministrator = taskRunAsAdministrator ?? startUpAsAdministrator;
+        _isSynchronizingStartUpSettings = true;
+        try
+        {
+            if (actualStartUpAsAdministrator != ProgramConfig.StartUpAsAdministrator)
+            {
+                ProgramConfig = ProgramConfig with { StartUpAsAdministrator = actualStartUpAsAdministrator };
+            }
+
+            StartUpAsAdministrator = actualStartUpAsAdministrator;
             OnPropertyChanged(nameof(StartUpWithSystem));
         }
+        finally
+        {
+            _isSynchronizingStartUpSettings = false;
+        }
+    }
+
+    private async Task ShowStartUpErrorAsync(string title, Exception ex)
+    {
+        _logger.Write(nameof(SystemSettingViewModel), ex.Message);
+        await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(title, ex.Message);
     }
 
     /// <summary>
