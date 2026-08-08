@@ -133,6 +133,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Administrator permission request was cancelled. 的本地化字符串。
+        /// </summary>
+        public static string AdminStartupTaskElevationCancelled {
+            get {
+                return ResourceManager.GetString("AdminStartupTaskElevationCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Unable to request administrator permission. 的本地化字符串。
+        /// </summary>
+        public static string AdminStartupTaskElevationFailed {
+            get {
+                return ResourceManager.GetString("AdminStartupTaskElevationFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 App Data Folder 的本地化字符串。
         /// </summary>
         public static string AppDataFolder {
@@ -2298,6 +2316,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Run at startup as administrator 的本地化字符串。
+        /// </summary>
+        public static string RunAsAdministrator {
+            get {
+                return ResourceManager.GetString("RunAsAdministrator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Run at System Startup 的本地化字符串。
         /// </summary>
         public static string RunAtSystemStartup {
@@ -2591,6 +2618,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SortByLastAccessed {
             get {
                 return ResourceManager.GetString("SortByLastAccessed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Failed to update the startup task. 的本地化字符串。
+        /// </summary>
+        public static string StartupTaskModificationFailed {
+            get {
+                return ResourceManager.GetString("StartupTaskModificationFailed", resourceCulture);
             }
         }
         

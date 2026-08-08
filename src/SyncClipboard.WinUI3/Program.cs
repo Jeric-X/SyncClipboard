@@ -2,6 +2,7 @@
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Runtime.InteropServices;
@@ -16,11 +17,16 @@ public static partial class Program
     private static partial void XamlCheckProcessRequirements();
 
     [STAThread]
-    private static void Main(string[] args)
+    private static int Main(string[] args)
     {
+        if (StartUpHelper.TryUpdateWindowsStartupTaskFromArguments(args, out var returnCode))
+        {
+            return returnCode;
+        }
+
         if (AppInstance.EnsureSingleInstance(args) is false)
         {
-            return;
+            return (int)ReturnCode.Success;
         }
 
         try
@@ -37,7 +43,10 @@ public static partial class Program
         catch (Exception e)
         {
             App.Current?.LogUnhandledException(e);
+            return (int)ReturnCode.UnhandledException;
         }
+
+        return (int)ReturnCode.Success;
     }
 }
 

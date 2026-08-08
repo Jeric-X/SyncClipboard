@@ -264,6 +264,18 @@
   <data name="RunAtSystemStartup" xml:space="preserve">
     <value>Run at System Startup</value>
   </data>
+  <data name="RunAsAdministrator" xml:space="preserve">
+    <value>Run at startup as administrator</value>
+  </data>
+  <data name="AdminStartupTaskElevationCancelled" xml:space="preserve">
+    <value>Administrator permission request was cancelled.</value>
+  </data>
+  <data name="AdminStartupTaskElevationFailed" xml:space="preserve">
+    <value>Unable to request administrator permission.</value>
+  </data>
+  <data name="StartupTaskModificationFailed" xml:space="preserve">
+    <value>Failed to update the startup task.</value>
+  </data>
   <data name="Language" xml:space="preserve">
     <value>Language</value>
   </data>

@@ -264,6 +264,18 @@
   <data name="RunAtSystemStartup" xml:space="preserve">
     <value>开机启动</value>
   </data>
+  <data name="RunAsAdministrator" xml:space="preserve">
+    <value>以管理员模式开机启动</value>
+  </data>
+  <data name="AdminStartupTaskElevationCancelled" xml:space="preserve">
+    <value>已取消管理员权限请求。</value>
+  </data>
+  <data name="AdminStartupTaskElevationFailed" xml:space="preserve">
+    <value>无法请求管理员权限。</value>
+  </data>
+  <data name="StartupTaskModificationFailed" xml:space="preserve">
+    <value>更新开机启动任务失败。</value>
+  </data>
   <data name="Language" xml:space="preserve">
     <value>语言</value>
   </data>

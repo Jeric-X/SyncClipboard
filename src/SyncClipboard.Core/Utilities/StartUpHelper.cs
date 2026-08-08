@@ -1,10 +1,9 @@
 ﻿using System.Runtime.Versioning;
-using Microsoft.Win32;
 using SyncClipboard.Core.Commons;
 
 namespace SyncClipboard.Core.Utilities;
 
-public class StartUpHelper
+public partial class StartUpHelper
 {
     public static bool Status()
     {
@@ -22,11 +21,11 @@ public class StartUpHelper
         }
     }
 
-    public static void Set(bool enable)
+    public static void Set(bool enable, bool runAsAdministrator = false)
     {
         if (OperatingSystem.IsOSPlatform("windows"))
         {
-            SetWindows(enable);
+            SetWindows(enable, runAsAdministrator);
         }
         else if (OperatingSystem.IsOSPlatform("linux"))
         {
@@ -35,19 +34,6 @@ public class StartUpHelper
         else
         {
             throw new PlatformNotSupportedException("This method is only supported on Windows and Linux.");
-        }
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static void SetWindows(bool enable)
-    {
-        if (enable)
-        {
-            Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, Env.ProgramPath);
-        }
-        else
-        {
-            Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.DeleteValue(Env.SoftName, false);
         }
     }
 
@@ -68,13 +54,6 @@ public class StartUpHelper
         {
             DesktopEntryHelper.RemvoeLinuxDesktopEntry(autoStartFolder);
         }
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static bool CheckWindows()
-    {
-        var path = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Env.SoftName, null);
-        return path as string == Env.ProgramPath;
     }
 
     [SupportedOSPlatform("linux")]
