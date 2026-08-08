@@ -38,7 +38,7 @@ public partial class StartUpHelper
 
     public static async Task SetAsync(bool enable, bool runAsAdministrator = false)
     {
-        if (OperatingSystem.IsWindows() && !Env.IsRunningAsAdministrator())
+        if (OperatingSystem.IsWindows() && !Env.IsRunningAsAdministrator)
         {
             if (runAsAdministrator || GetWindowsTaskRunAsAdministrator() == true)
             {
@@ -68,6 +68,15 @@ public partial class StartUpHelper
         return exception.HResult == AccessDeniedHResult ||
             exception is UnauthorizedAccessException ||
             (exception.InnerException is not null && IsAccessDenied(exception.InnerException));
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void EnsureCurrentUserCanRequestElevation()
+    {
+        if (!Env.IsUserInAdministratorGroup)
+        {
+            throw new InvalidOperationException(Strings.AdministratorPermissionRequired);
+        }
     }
 
     public static bool TryUpdateWindowsStartupTaskFromArguments(string[] args, out int returnCode)
@@ -107,6 +116,7 @@ public partial class StartUpHelper
     [SupportedOSPlatform("windows")]
     private static async Task UpdateWindowsStartupTaskWithElevationAsync(bool enable, bool runAsAdministrator)
     {
+        EnsureCurrentUserCanRequestElevation();
         var arguments = $"{StartArguments.ModifyStartupTask} " +
             $"{StartArguments.StartupTaskEnabledPrefix}{enable} " +
             $"{StartArguments.StartupTaskRunAsAdministratorPrefix}{runAsAdministrator}";

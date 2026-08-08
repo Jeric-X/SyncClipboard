@@ -69,7 +69,10 @@ namespace SyncClipboard.Core
             Logger.Write(LOG_TAG, $"App core started, app name '{appConfig.AppStringId}', version '{appConfig.AppVersion}'");
             if (OperatingSystem.IsWindows())
             {
-                Logger.Write(LOG_TAG, $"Running as administrator: {Env.IsRunningAsAdministrator()}");
+                Logger.Write(
+                    LOG_TAG,
+                    $"Running as administrator: {Env.IsRunningAsAdministrator}, " +
+                    $"user in Administrators group: {Env.IsUserInAdministratorGroup}");
             }
 
             if (OperatingSystem.IsLinux())

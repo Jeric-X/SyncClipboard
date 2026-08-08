@@ -279,6 +279,9 @@
   <data name="AdminStartupTaskElevationFailed" xml:space="preserve">
     <value>无法请求管理员权限。</value>
   </data>
+  <data name="AdministratorPermissionRequired" xml:space="preserve">
+    <value>当前用户不属于管理员组，无法修改此开机启动任务。</value>
+  </data>
   <data name="StartupTaskModificationFailed" xml:space="preserve">
     <value>更新开机启动任务失败。</value>
   </data>

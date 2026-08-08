@@ -201,7 +201,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     public bool ShowStartUpSetting { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
 
-    public bool ShowStartUpAsAdministratorSetting { get; } = OperatingSystem.IsWindows();
+    public bool ShowStartUpAsAdministratorSetting { get; } = OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
 
     public bool ShowPortableLocationSetting { get; } = OperatingSystem.IsWindows();
 

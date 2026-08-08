@@ -133,6 +133,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 The current user is not in the Administrators group and cannot modify this startup task. 的本地化字符串。
+        /// </summary>
+        public static string AdministratorPermissionRequired {
+            get {
+                return ResourceManager.GetString("AdministratorPermissionRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Administrator permission request was cancelled. 的本地化字符串。
         /// </summary>
         public static string AdminStartupTaskElevationCancelled {
@@ -2323,7 +2332,7 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("RunAsAdministrator", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Run at startup as administrator failed 的本地化字符串。
         /// </summary>
@@ -2341,7 +2350,7 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("RunAtSystemStartup", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Run at system startup failed 的本地化字符串。
         /// </summary>
