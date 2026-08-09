@@ -35,12 +35,9 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
         if (this.TryGetPlatformHandle() is { HandleDescriptor: "NSWindow" } platformHandle)
         {
             var nsWindow = Runtime.GetNSObject<NSWindow>(platformHandle.Handle);
-            if (nsWindow != null)
-            {
-                // 设置窗口的 collectionBehavior，使其在所有虚拟桌面显示
-                // CanJoinAllSpaces: 窗口在所有 Space 中可见
-                nsWindow.CollectionBehavior = NSWindowCollectionBehavior.CanJoinAllSpaces;
-            }
+            // 设置窗口的 collectionBehavior，使其在所有虚拟桌面显示
+            // CanJoinAllSpaces: 窗口在所有 Space 中可见
+            nsWindow?.CollectionBehavior = NSWindowCollectionBehavior.CanJoinAllSpaces;
         }
     }
 }
