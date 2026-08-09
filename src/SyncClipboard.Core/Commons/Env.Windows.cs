@@ -26,7 +26,7 @@ public static partial class Env
     private static bool CheckIsUserInAdministratorGroup()
     {
         using var identity = WindowsIdentity.GetCurrent();
-        if (IsTokenInAdministratorGroup(identity.AccessToken.DangerousGetHandle()))
+        if (new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
         {
             return true;
         }
