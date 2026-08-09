@@ -4,23 +4,11 @@
 <dict>
 	<key>CFBundleIconFile</key>
 	<string>icon.icns</string>
-	<key>CFBundleIdentifier</key>
-	<string>xyz.jericx.desktop.syncclipboard</string>
 	<key>CFBundleName</key>
 	<string>SyncClipboard</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>10.15</string>
-	<key>CFBundleExecutable</key>
-	<string>SyncClipboard.Desktop.MacOS</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+	<key>CFBundleDisplayName</key>
+	<string>SyncClipboard</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
-	<key>CFBundleVersion</key>
-	<string>3.1.9</string>
-	<key>CFBundleShortVersionString</key>
-	<string>3.1.9</string>
 </dict>
 </plist>

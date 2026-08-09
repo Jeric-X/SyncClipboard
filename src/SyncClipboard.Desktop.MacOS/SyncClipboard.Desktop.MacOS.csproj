@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationId>xyz.jericx.desktop.syncclipboard</ApplicationId>
+    <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
+    <ApplicationVersion>$(VersionPrefix)</ApplicationVersion>
     <SelfContained>true</SelfContained>
     <SupportedOSPlatformVersion>12.7</SupportedOSPlatformVersion>
     <Platforms>x64;ARM64;AnyCPU</Platforms>
@@ -37,6 +39,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <Content Include="..\..\build\macos\icon.icns" Link="icon.icns" />
+    <PartialAppManifest Include="..\..\build\macos\Info.plist" />
   </ItemGroup>
 
 </Project>

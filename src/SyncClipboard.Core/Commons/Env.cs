@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.Commons
     {
         public const string SoftName = "SyncClipboard";
         public const string HomePage = "https://github.com/Jeric-X/SyncClipboard";
-        public const string AppVersion = SyncClipboardProperty.AppVersion;
+        public static string AppVersion => SyncClipboardProperty.AppVersion;
 
         public const string RequestServerVersion = "3.1.1";
         public const string UpdateApiUrl = "https://api.github.com/repos/Jeric-X/SyncClipboard/releases";

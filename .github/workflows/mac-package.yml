@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: | 
-            9.0.x
+            10.0.x
 
       - name: Select Xcode Version
         uses: maxim-lobanov/setup-xcode@v1
@@ -66,8 +66,8 @@ jobs:
 
       - name: Package app
         run: | 
-          chmod +x buildAppBundle.sh
-          ./buildAppBundle.sh 
+          chmod +x BundleTool.sh
+          ./BundleTool.sh --app-bundle SyncClipboard.app --architecture ${{ matrix.cpu }}
         working-directory: ./build/macos
 
       - name: Package dmg
