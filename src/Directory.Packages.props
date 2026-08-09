@@ -8,8 +8,8 @@
     <PackageVersion Include="Interop.UIAutomationClient" Version="10.19041.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
-    <PackageVersion Include="NativeNotification" Version="1.0.4" />
-    <PackageVersion Include="NativeNotification.Interface" Version="1.0.4" />
+    <PackageVersion Include="NativeNotification" Version="1.0.5" />
+    <PackageVersion Include="NativeNotification.Interface" Version="1.0.5" />
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.8" />

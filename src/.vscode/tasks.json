@@ -13,7 +13,7 @@
                 "-c",
                 "Debug",
                 "-r",
-                "osx-x64",
+                "osx-arm64",
                 //"--no-self-contained",
                 // Ask dotnet build to generate full paths for file names.
                 "/property:GenerateFullPaths=true",

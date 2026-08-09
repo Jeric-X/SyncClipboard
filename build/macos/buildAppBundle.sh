@@ -1,26 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-APP_NAME="SyncClipboard.app"
-# PUBLISH_OUTPUT_DIRECTORY="../../macos-bin/."
-# chmod +x "$PUBLISH_OUTPUT_DIRECTORY/SyncClipboard.Desktop"
+set -Eeuo pipefail
 
-# PUBLISH_OUTPUT_DIRECTORY should point to the output directory of your dotnet publish command.
-# One example is /path/to/your/csproj/bin/Release/netcoreapp3.1/osx-x64/publish/.
-# If you want to change output directories, add `--output /my/directory/path` to your `dotnet publish` command.
-INFO_PLIST="Info.plist"
-ICON_FILE="icon.icns"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_BUNDLE="${1:-$SCRIPT_DIR/SyncClipboard.app}"
+INFO_PLIST="$SCRIPT_DIR/Info.plist"
+ICON_FILE="$SCRIPT_DIR/icon.icns"
 
-# if [ -d "$APP_NAME" ]
-# then
-#     rm -rf "$APP_NAME"
-# fi
+[[ -d "$APP_BUNDLE/Contents" ]] || {
+    echo "错误: 无效的 app bundle: $APP_BUNDLE" >&2
+    exit 1
+}
+[[ -f "$INFO_PLIST" ]] || {
+    echo "错误: 找不到 Info.plist: $INFO_PLIST" >&2
+    exit 1
+}
+[[ -f "$ICON_FILE" ]] || {
+    echo "错误: 找不到应用图标: $ICON_FILE" >&2
+    exit 1
+}
 
-# mkdir "$APP_NAME"
-
-# mkdir "$APP_NAME/Contents"
-# mkdir "$APP_NAME/Contents/MacOS"
-mkdir "$APP_NAME/Contents/Resources"
-
-cp -f  "$INFO_PLIST" "$APP_NAME/Contents/Info.plist"
-cp "$ICON_FILE" "$APP_NAME/Contents/Resources/$ICON_FILE"
-# cp -a "$PUBLISH_OUTPUT_DIRECTORY" "$APP_NAME/Contents/MacOS"
+mkdir -p "$APP_BUNDLE/Contents/Resources"
+cp -f "$INFO_PLIST" "$APP_BUNDLE/Contents/Info.plist"
+cp -f "$ICON_FILE" "$APP_BUNDLE/Contents/Resources/icon.icns"
+plutil -lint "$APP_BUNDLE/Contents/Info.plist"

@@ -36,7 +36,7 @@ dotnet build src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csp
 
 ### macOS (Avalonia)
 
-macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net9.0-macos`). Requires the `macos` workload and only builds on macOS. CI runs from the project directory.
+macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. CI runs from the project directory.
 
 ```bash
 # Restore (from src/SyncClipboard.Desktop.MacOS/)
@@ -113,7 +113,7 @@ SyncClipboard.Core ───────────┘  — Core business logic
 SyncClipboard.Desktop         — Shared Avalonia desktop UI: clipboard factory, views, tray icon, hotkeys
     ↑
     ├── SyncClipboard.Desktop.Default   — Windows/Linux desktop executable (Avalonia, net8.0)
-    ├── SyncClipboard.Desktop.MacOS     — macOS desktop executable (Avalonia, net9.0-macos)
+    ├── SyncClipboard.Desktop.MacOS     — macOS desktop executable (Avalonia, net10.0-macos)
     └── SyncClipboard.WinUI3            — WinUI3 native Windows executable (net9.0-windows10.0.19041.0)
 
 SyncClipboard.Server           — Standalone server executable (wraps SyncClipboard.Server.Core)
@@ -149,7 +149,7 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 
 ## Code Conventions
 
-- Target framework: primarily `net8.0`, with `net9.0-macos` for the macOS project and `net9.0-windows10.0.19041.0` for WinUI3.
+- Target framework: primarily `net8.0`, with `net10.0-macos` for the macOS project and `net9.0-windows10.0.19041.0` for WinUI3.
 - Nullable reference types enabled project-wide (`<Nullable>enable</Nullable>`).
 - Central package management: add/update versions only in `Directory.Packages.props`.
 - The project uses MSTest with Moq for mocking. Test data source attributes (`PlatformServiceProviderDataSource`, `SystemServiceProviderDataSource`) drive DI validation tests.
