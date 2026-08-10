@@ -195,18 +195,21 @@ public sealed class NetworkAccountSwitchService(
                 return;
             }
 
+            Snapshot = await _networkContextProvider.GetCurrentAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
+
             if (_runtimeState.ManualOverride)
             {
-                Snapshot = await _networkContextProvider.GetCurrentAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
-                UpdateStatus(new()
+                if (!_runtimeState.ShouldClearManualOverride(Snapshot.Fingerprint))
                 {
-                    State = NetworkAccountSwitchState.ManualOverride,
-                    AccountName = GetAccountName(_configManager.GetConfig<AccountConfig>()),
-                });
-                return;
+                    UpdateStatus(new()
+                    {
+                        State = NetworkAccountSwitchState.ManualOverride,
+                        AccountName = GetAccountName(_configManager.GetConfig<AccountConfig>()),
+                    });
+                    return;
+                }
             }
 
-            Snapshot = await _networkContextProvider.GetCurrentAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
             var fingerprint = Snapshot.Fingerprint;
             if (!_runtimeState.ShouldEvaluate(fingerprint, force))
             {

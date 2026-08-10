@@ -77,11 +77,6 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
                 .Distinct()
                 .ToList();
 
-            if (addresses.Count == 0)
-            {
-                continue;
-            }
-
             var wifi = wifiResult.Networks.FirstOrDefault(item =>
                 InterfaceIdEquals(item.InterfaceId, networkInterface.Id)
                 || string.Equals(item.InterfaceName, networkInterface.Name, StringComparison.Ordinal));

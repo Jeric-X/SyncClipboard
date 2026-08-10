@@ -29,6 +29,19 @@ public sealed class NetworkAccountSwitchRuntimeState
         }
     }
 
+    public bool ShouldClearManualOverride(string fingerprint)
+    {
+        lock (_lock)
+        {
+            if (_manualOverride && !string.Equals(fingerprint, _lastNetworkFingerprint, StringComparison.Ordinal))
+            {
+                _manualOverride = false;
+                return true;
+            }
+            return false;
+        }
+    }
+
     public void OnConfigurationChanged()
     {
         lock (_lock)

@@ -41,9 +41,13 @@ internal sealed class MacWifiNetworkInfoProvider : IWifiNetworkInfoProvider
                 .Select(item => new WifiNetworkInfo(item.InterfaceName, item.InterfaceName, item.Ssid!))
                 .ToList();
 
-            var status = networks.Count > 0
-                ? WifiAccessStatus.Available
-                : requestAccess ? WifiAccessStatus.Denied : WifiAccessStatus.NotRequested;
+            var status = _locationManager.AuthorizationStatus switch
+            {
+                CLAuthorizationStatus.AuthorizedAlways => WifiAccessStatus.Available,
+                CLAuthorizationStatus.Denied or CLAuthorizationStatus.Restricted
+                    => WifiAccessStatus.Denied,
+                _ => requestAccess ? WifiAccessStatus.Denied : WifiAccessStatus.NotRequested,
+            };
             return Task.FromResult<(WifiAccessStatus, IReadOnlyList<WifiNetworkInfo>, string?)>((status, networks, null));
         }
         catch (Exception ex)
