@@ -70,6 +70,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 {0} automatic-switch rule(s) that use this account will also be removed. 的本地化字符串。
+        /// </summary>
+        public static string AccountRuleCleanup {
+            get {
+                return ResourceManager.GetString("AccountRuleCleanup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Account Type 的本地化字符串。
         /// </summary>
         public static string AccountType {
@@ -97,6 +106,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Actions 的本地化字符串。
+        /// </summary>
+        public static string Actions {
+            get {
+                return ResourceManager.GetString("Actions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Add Account 的本地化字符串。
         /// </summary>
         public static string AddAccount {
@@ -115,6 +133,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Add at least one Wi-Fi name or valid IP range. 的本地化字符串。
+        /// </summary>
+        public static string AddConditionFirst {
+            get {
+                return ResourceManager.GetString("AddConditionFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Add Item 的本地化字符串。
         /// </summary>
         public static string AddItem {
@@ -129,6 +156,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Address {
             get {
                 return ResourceManager.GetString("Address", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Add rule 的本地化字符串。
+        /// </summary>
+        public static string AddRule {
+            get {
+                return ResourceManager.GetString("AddRule", resourceCulture);
             }
         }
         
@@ -201,6 +237,33 @@ namespace SyncClipboard.Core.I18n {
         public static string AutoDownloadUpdates {
             get {
                 return ResourceManager.GetString("AutoDownloadUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Automatic 的本地化字符串。
+        /// </summary>
+        public static string AutomaticInterface {
+            get {
+                return ResourceManager.GetString("AutomaticInterface", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Automatic account switching 的本地化字符串。
+        /// </summary>
+        public static string AutoSwitchAccount {
+            get {
+                return ResourceManager.GetString("AutoSwitchAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch accounts according to Wi-Fi and local IP rules 的本地化字符串。
+        /// </summary>
+        public static string AutoSwitchAccountDescription {
+            get {
+                return ResourceManager.GetString("AutoSwitchAccountDescription", resourceCulture);
             }
         }
         
@@ -659,6 +722,33 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Current network 的本地化字符串。
+        /// </summary>
+        public static string CurrentNetwork {
+            get {
+                return ResourceManager.GetString("CurrentNetwork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Current network status 的本地化字符串。
+        /// </summary>
+        public static string CurrentNetworkStatus {
+            get {
+                return ResourceManager.GetString("CurrentNetworkStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 View network connections and IP addresses 的本地化字符串。
+        /// </summary>
+        public static string CurrentNetworkStatusDescription {
+            get {
+                return ResourceManager.GetString("CurrentNetworkStatusDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 . Current package is &apos;{0}&apos;, please download manually. 的本地化字符串。
         /// </summary>
         public static string CurrentPackageDownloadManually {
@@ -740,6 +830,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Default account 的本地化字符串。
+        /// </summary>
+        public static string DefaultAccount {
+            get {
+                return ResourceManager.GetString("DefaultAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Default outbound connection 的本地化字符串。
+        /// </summary>
+        public static string DefaultGatewayConnection {
+            get {
+                return ResourceManager.GetString("DefaultGatewayConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Auto detect 的本地化字符串。
         /// </summary>
         public static string DefaultLanguage {
@@ -796,6 +904,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Delete rule 的本地化字符串。
+        /// </summary>
+        public static string DeleteRule {
+            get {
+                return ResourceManager.GetString("DeleteRule", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Delete rule “{0}”? 的本地化字符串。
+        /// </summary>
+        public static string DeleteRuleConfirm {
+            get {
+                return ResourceManager.GetString("DeleteRuleConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Delete server&apos;s temporary file automatically 的本地化字符串。
         /// </summary>
         public static string DeleteServerTemporaryFileAutoly {
@@ -837,6 +963,15 @@ namespace SyncClipboard.Core.I18n {
         public static string DiagnoseMode {
             get {
                 return ResourceManager.GetString("DiagnoseMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Disabled 的本地化字符串。
+        /// </summary>
+        public static string Disabled {
+            get {
+                return ResourceManager.GetString("Disabled", resourceCulture);
             }
         }
         
@@ -1012,6 +1147,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Edit rule 的本地化字符串。
+        /// </summary>
+        public static string EditRule {
+            get {
+                return ResourceManager.GetString("EditRule", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Use Custom Configuration File 的本地化字符串。
         /// </summary>
         public static string EnableCustomConfigurationFile {
@@ -1111,11 +1255,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Enter a rule name. 的本地化字符串。
+        /// </summary>
+        public static string EnterRuleName {
+            get {
+                return ResourceManager.GetString("EnterRuleName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Error 的本地化字符串。
         /// </summary>
         public static string Error {
             get {
                 return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Checking the current network… 的本地化字符串。
+        /// </summary>
+        public static string Evaluating {
+            get {
+                return ResourceManager.GetString("Evaluating", resourceCulture);
             }
         }
         
@@ -1668,6 +1830,42 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Invalid IP address or CIDR: {0} 的本地化字符串。
+        /// </summary>
+        public static string InvalidIpRange {
+            get {
+                return ResourceManager.GetString("InvalidIpRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 IP addresses or CIDR ranges (one per line; comments after #) 的本地化字符串。
+        /// </summary>
+        public static string IpRanges {
+            get {
+                return ResourceManager.GetString("IpRanges", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 IPv4 addresses 的本地化字符串。
+        /// </summary>
+        public static string Ipv4Addresses {
+            get {
+                return ResourceManager.GetString("Ipv4Addresses", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 IPv6 addresses 的本地化字符串。
+        /// </summary>
+        public static string Ipv6Addresses {
+            get {
+                return ResourceManager.GetString("Ipv6Addresses", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 SyncClipboard is the latest version 的本地化字符串。
         /// </summary>
         public static string ItsLatestVersion {
@@ -1682,6 +1880,15 @@ namespace SyncClipboard.Core.I18n {
         public static string JustNow {
             get {
                 return ResourceManager.GetString("JustNow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Keep current account 的本地化字符串。
+        /// </summary>
+        public static string KeepCurrentAccount {
+            get {
+                return ResourceManager.GetString("KeepCurrentAccount", resourceCulture);
             }
         }
         
@@ -1776,6 +1983,51 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Using a manually selected account until the network changes 的本地化字符串。
+        /// </summary>
+        public static string ManualOverride {
+            get {
+                return ResourceManager.GetString("ManualOverride", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Match both the Wi-Fi name and IP address 的本地化字符串。
+        /// </summary>
+        public static string MatchAll {
+            get {
+                return ResourceManager.GetString("MatchAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Match the Wi-Fi name or IP address 的本地化字符串。
+        /// </summary>
+        public static string MatchAny {
+            get {
+                return ResourceManager.GetString("MatchAny", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Matched {0} → {1} 的本地化字符串。
+        /// </summary>
+        public static string Matched {
+            get {
+                return ResourceManager.GetString("Matched", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Match mode 的本地化字符串。
+        /// </summary>
+        public static string MatchMode {
+            get {
+                return ResourceManager.GetString("MatchMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Max File Size to Upload (MB) 的本地化字符串。
         /// </summary>
         public static string MaxFileSizeToUpload {
@@ -1830,11 +2082,56 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 The network connection “{0}” is no longer available. 的本地化字符串。
+        /// </summary>
+        public static string MissingNetworkInterface {
+            get {
+                return ResourceManager.GetString("MissingNetworkInterface", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 {0}mo 的本地化字符串。
         /// </summary>
         public static string MonthsAgo {
             get {
                 return ResourceManager.GetString("MonthsAgo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Move down 的本地化字符串。
+        /// </summary>
+        public static string MoveDown {
+            get {
+                return ResourceManager.GetString("MoveDown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Move up 的本地化字符串。
+        /// </summary>
+        public static string MoveUp {
+            get {
+                return ResourceManager.GetString("MoveUp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} network connection(s) detected 的本地化字符串。
+        /// </summary>
+        public static string NetworkConnectionCount {
+            get {
+                return ResourceManager.GetString("NetworkConnectionCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Network connection 的本地化字符串。
+        /// </summary>
+        public static string NetworkInterface {
+            get {
+                return ResourceManager.GetString("NetworkInterface", resourceCulture);
             }
         }
         
@@ -1848,11 +2145,56 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 None 的本地化字符串。
+        /// </summary>
+        public static string NoAccountSelected {
+            get {
+                return ResourceManager.GetString("NoAccountSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Cannot find server adapter implementation for this configuration type. Please contact the developer. 的本地化字符串。
         /// </summary>
         public static string NoAdapterFound {
             get {
                 return ResourceManager.GetString("NoAdapterFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No default gateway 的本地化字符串。
+        /// </summary>
+        public static string NoDefaultGateway {
+            get {
+                return ResourceManager.GetString("NoDefaultGateway", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No rule matched 的本地化字符串。
+        /// </summary>
+        public static string NoMatch {
+            get {
+                return ResourceManager.GetString("NoMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 When no rule matches 的本地化字符串。
+        /// </summary>
+        public static string NoMatchAction {
+            get {
+                return ResourceManager.GetString("NoMatchAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No rule matched; switching to default account → {0} 的本地化字符串。
+        /// </summary>
+        public static string NoMatchSwitchDefault {
+            get {
+                return ResourceManager.GetString("NoMatchSwitchDefault", resourceCulture);
             }
         }
         
@@ -1866,11 +2208,29 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 No available network connections were detected 的本地化字符串。
+        /// </summary>
+        public static string NoNetworkConnections {
+            get {
+                return ResourceManager.GetString("NoNetworkConnections", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Not enough free space on target. Required: {0} MB, available: {1} MB. 的本地化字符串。
         /// </summary>
         public static string NotEnoughDiskSpace {
             get {
                 return ResourceManager.GetString("NotEnoughDiskSpace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Notify after switching 的本地化字符串。
+        /// </summary>
+        public static string NotifyAfterSwitch {
+            get {
+                return ResourceManager.GetString("NotifyAfterSwitch", resourceCulture);
             }
         }
         
@@ -2019,6 +2379,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Open system settings 的本地化字符串。
+        /// </summary>
+        public static string OpenSystemSettings {
+            get {
+                return ResourceManager.GetString("OpenSystemSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Go to the Update Page 的本地化字符串。
         /// </summary>
         public static string OpenUpdatePage {
@@ -2127,6 +2496,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Prefer IP address rules. Use Wi-Fi names only when IP addresses cannot meet your needs. 的本地化字符串。
+        /// </summary>
+        public static string PreferIpHint {
+            get {
+                return ResourceManager.GetString("PreferIpHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Preparing 的本地化字符串。
         /// </summary>
         public static string Preparing {
@@ -2226,6 +2604,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Recheck 的本地化字符串。
+        /// </summary>
+        public static string RecheckNetwork {
+            get {
+                return ResourceManager.GetString("RecheckNetwork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Refresh 的本地化字符串。
         /// </summary>
         public static string Refresh {
@@ -2258,6 +2645,24 @@ namespace SyncClipboard.Core.I18n {
         public static string RemoveAppImageFromUserAppLauncher {
             get {
                 return ResourceManager.GetString("RemoveAppImageFromUserAppLauncher", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Remove sync account 的本地化字符串。
+        /// </summary>
+        public static string RemoveSyncAccount {
+            get {
+                return ResourceManager.GetString("RemoveSyncAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Request access 的本地化字符串。
+        /// </summary>
+        public static string RequestPermission {
+            get {
+                return ResourceManager.GetString("RequestPermission", resourceCulture);
             }
         }
         
@@ -2312,6 +2717,33 @@ namespace SyncClipboard.Core.I18n {
         public static string RetryTimes {
             get {
                 return ResourceManager.GetString("RetryTimes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enabled 的本地化字符串。
+        /// </summary>
+        public static string RuleEnabled {
+            get {
+                return ResourceManager.GetString("RuleEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Rule name 的本地化字符串。
+        /// </summary>
+        public static string RuleName {
+            get {
+                return ResourceManager.GetString("RuleName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Rules 的本地化字符串。
+        /// </summary>
+        public static string Rules {
+            get {
+                return ResourceManager.GetString("Rules", resourceCulture);
             }
         }
         
@@ -2478,6 +2910,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Save settings 的本地化字符串。
+        /// </summary>
+        public static string SaveSettings {
+            get {
+                return ResourceManager.GetString("SaveSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Scroll to top 的本地化字符串。
         /// </summary>
         public static string ScrollToTop {
@@ -2510,6 +2951,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SelectAccount {
             get {
                 return ResourceManager.GetString("SelectAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Select a target account. 的本地化字符串。
+        /// </summary>
+        public static string SelectAccountFirst {
+            get {
+                return ResourceManager.GetString("SelectAccountFirst", resourceCulture);
             }
         }
         
@@ -2600,6 +3050,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Settings {
             get {
                 return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Settings saved 的本地化字符串。
+        /// </summary>
+        public static string SettingsSaved {
+            get {
+                return ResourceManager.GetString("SettingsSaved", resourceCulture);
             }
         }
         
@@ -2770,6 +3229,15 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Switch to default account 的本地化字符串。
+        /// </summary>
+        public static string SwitchToDefaultAccount {
+            get {
+                return ResourceManager.GetString("SwitchToDefaultAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Switching to an independent app data folder requires copying current data and restarting the app.
         ///
         ///Choose whether to use the default location or select another folder. 的本地化字符串。
@@ -2786,6 +3254,24 @@ namespace SyncClipboard.Core.I18n {
         public static string SyncAccount {
             get {
                 return ResourceManager.GetString("SyncAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No sync account is selected. 的本地化字符串。
+        /// </summary>
+        public static string SyncAccountNotSelected {
+            get {
+                return ResourceManager.GetString("SyncAccountNotSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No rule matched; sync account removed 的本地化字符串。
+        /// </summary>
+        public static string SyncAccountRemoved {
+            get {
+                return ResourceManager.GetString("SyncAccountRemoved", resourceCulture);
             }
         }
         
@@ -2876,6 +3362,15 @@ namespace SyncClipboard.Core.I18n {
         public static string SystemStyle {
             get {
                 return ResourceManager.GetString("SystemStyle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Target account 的本地化字符串。
+        /// </summary>
+        public static string TargetAccount {
+            get {
+                return ResourceManager.GetString("TargetAccount", resourceCulture);
             }
         }
         
@@ -3114,6 +3609,24 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
+        ///   查找类似 Use current IP 的本地化字符串。
+        /// </summary>
+        public static string UseCurrentIp {
+            get {
+                return ResourceManager.GetString("UseCurrentIp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Use current Wi-Fi 的本地化字符串。
+        /// </summary>
+        public static string UseCurrentWifi {
+            get {
+                return ResourceManager.GetString("UseCurrentWifi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Use Nextcloud 的本地化字符串。
         /// </summary>
         public static string UseNextcloud {
@@ -3182,6 +3695,96 @@ namespace SyncClipboard.Core.I18n {
         public static string WhiteList {
             get {
                 return ResourceManager.GetString("WhiteList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Wi-Fi access was denied 的本地化字符串。
+        /// </summary>
+        public static string WifiDenied {
+            get {
+                return ResourceManager.GetString("WifiDenied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Access granted 的本地化字符串。
+        /// </summary>
+        public static string WifiGranted {
+            get {
+                return ResourceManager.GetString("WifiGranted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Access granted; no connected Wi-Fi was detected 的本地化字符串。
+        /// </summary>
+        public static string WifiGrantedNoNetwork {
+            get {
+                return ResourceManager.GetString("WifiGrantedNoNetwork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Access granted · Current Wi-Fi: {0} 的本地化字符串。
+        /// </summary>
+        public static string WifiGrantedWithName {
+            get {
+                return ResourceManager.GetString("WifiGrantedWithName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Wi-Fi name 的本地化字符串。
+        /// </summary>
+        public static string WifiName {
+            get {
+                return ResourceManager.GetString("WifiName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Wi-Fi names (one per line) 的本地化字符串。
+        /// </summary>
+        public static string WifiNames {
+            get {
+                return ResourceManager.GetString("WifiNames", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Wi-Fi access has not been requested 的本地化字符串。
+        /// </summary>
+        public static string WifiNotRequested {
+            get {
+                return ResourceManager.GetString("WifiNotRequested", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Wi-Fi name access 的本地化字符串。
+        /// </summary>
+        public static string WifiPermission {
+            get {
+                return ResourceManager.GetString("WifiPermission", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Requesting Wi-Fi access… 的本地化字符串。
+        /// </summary>
+        public static string WifiRequesting {
+            get {
+                return ResourceManager.GetString("WifiRequesting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Wi-Fi name detection is unavailable; IP rules still work 的本地化字符串。
+        /// </summary>
+        public static string WifiUnsupported {
+            get {
+                return ResourceManager.GetString("WifiUnsupported", resourceCulture);
             }
         }
         

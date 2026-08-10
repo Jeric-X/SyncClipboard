@@ -4,15 +4,26 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Reflection;
 using SyncClipboard.Core.RemoteServer.Adapter;
-using SyncClipboard.Core.Attributes;
 using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Commons;
 
 public class AccountManager
 {
+    public enum AccountSelectionOrigin
+    {
+        Automatic,
+        Manual,
+        External,
+        Deleted,
+    }
+
+    public sealed record AccountSelectionChangedEventArgs(AccountConfig Account, AccountSelectionOrigin Origin);
+
     public delegate void AccountChangedHandler(AccountConfig accountConfig, object? config);
     public event AccountChangedHandler? CurrentAccountChanged;
+
+    public event EventHandler<AccountSelectionChangedEventArgs>? AccountSelectionChanged;
 
     public delegate void SavedAccountsChangedHandler(IEnumerable<DisplayedAccountConfig> newAccounts);
     public event SavedAccountsChangedHandler? SavedAccountsChanged;
@@ -164,6 +175,27 @@ public class AccountManager
         return (maxId + 1).ToString();
     }
 
+    public void SelectAccount(AccountConfig accountConfig, AccountSelectionOrigin origin)
+    {
+        if (accountConfig.Equals(_accountConfig))
+        {
+            return;
+        }
+
+        var account = GetConfig(accountConfig.AccountType, accountConfig.AccountId);
+        _accountConfig = accountConfig;
+        _currentAccount = account;
+        _configManager.SetConfig(accountConfig);
+
+        if (!accountConfig.Equals(_configManager.GetConfig<AccountConfig>()))
+        {
+            return;
+        }
+
+        NotifyCurrentAccountChanged(accountConfig, account);
+        AccountSelectionChanged?.Invoke(this, new(accountConfig, origin));
+    }
+
     private void OnAccountConfigChanged()
     {
         var accountConfig = _configManager.GetConfig<AccountConfig>();
@@ -174,6 +206,7 @@ public class AccountManager
             _accountConfig = accountConfig;
             _currentAccount = account;
             NotifyCurrentAccountChanged(accountConfig, account);
+            AccountSelectionChanged?.Invoke(this, new(accountConfig, AccountSelectionOrigin.External));
         }
         else if (!Equals(account, _currentAccount))
         {
@@ -298,7 +331,7 @@ public class AccountManager
             if (_accountConfig?.AccountType == accountType && _accountConfig?.AccountId == accountId)
             {
                 var emptyConfig = new AccountConfig { AccountId = string.Empty, AccountType = string.Empty };
-                _configManager.SetConfig(emptyConfig);
+                SelectAccount(emptyConfig, AccountSelectionOrigin.Deleted);
             }
 
             return true;

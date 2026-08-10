@@ -7,6 +7,9 @@ jobs:
   code-style:
     uses: ./.github/workflows/code-style.yml
 
+  core-test:
+    uses: ./.github/workflows/core-test.yml
+
   prebuild:
     uses: ./.github/workflows/prebuild.yml
     with:

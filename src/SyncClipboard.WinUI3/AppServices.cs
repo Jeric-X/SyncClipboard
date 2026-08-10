@@ -6,6 +6,7 @@ using SyncClipboard.WinUI3.ClipboardWinUI;
 using SyncClipboard.WinUI3.Views;
 using SyncClipboard.WinUI3.Win32;
 using SyncClipboard.WinUI3.Utilities;
+using SyncClipboard.Core.Utilities.Network;
 
 namespace SyncClipboard.WinUI3;
 
@@ -42,6 +43,7 @@ public class AppServices
         services.AddSingleton<IForegroundWindowWatcher, WinEventForegroundWindowWatcher>();
         services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
         services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
+        services.AddSingleton<IWifiNetworkInfoProvider, WinUIWifiNetworkInfoProvider>();
 
         services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));
 

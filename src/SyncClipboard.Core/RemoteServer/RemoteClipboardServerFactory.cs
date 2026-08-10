@@ -3,7 +3,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter;
-using SyncClipboard.Core.RemoteServer.Adapter.Default;
 using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.RemoteServer;
@@ -11,10 +10,9 @@ namespace SyncClipboard.Core.RemoteServer;
 public class RemoteClipboardServerFactory
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
-    private readonly ITrayIcon _trayIcon;
     private readonly AccountManager _accountManager;
+    private readonly ILogger _logger;
 
     private IRemoteClipboardServer? _current;
     private AccountConfig? _currentAccount;
@@ -27,10 +25,9 @@ public class RemoteClipboardServerFactory
     public RemoteClipboardServerFactory(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
-        _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _accountManager = _serviceProvider.GetRequiredService<AccountManager>();
+        _logger = _serviceProvider.GetRequiredService<ILogger>();
         _accountManager.CurrentAccountChanged += OnAccountChanged;
 
         _syncConfig = _configManager.GetConfig<SyncConfig>();
@@ -39,19 +36,19 @@ public class RemoteClipboardServerFactory
 
     private void OnAccountChanged(AccountConfig accountConfig, object? config)
     {
-        if (config is null)
+        if (accountConfig.IsEmpty() || config is null)
         {
-            DisposeExistServer();
-            _currentAccount = accountConfig;
-            _configDetail = config;
+            SetEmptyServer(accountConfig);
             return;
         }
 
-        if (accountConfig.AccountType != _currentAccount?.AccountType || accountConfig.AccountId != _currentAccount?.AccountId)
+        if (_current is EmptyRemoteClipboardServer
+            || accountConfig.AccountType != _currentAccount?.AccountType
+            || accountConfig.AccountId != _currentAccount?.AccountId)
         {
             ResetCurrentServer(accountConfig, config);
         }
-        else if (Equals(config, _configDetail) == false)
+        else if (!Equals(config, _configDetail))
         {
             _configDetail = config;
             _currentAdapter?.SetConfig(_configDetail, _syncConfig);
@@ -69,12 +66,17 @@ public class RemoteClipboardServerFactory
         }
     }
 
+    public bool HasActiveServer => Current is not EmptyRemoteClipboardServer;
+
     public IRemoteClipboardServer Current
     {
         get
         {
             if (_current is null)
+            {
                 ResetCurrentServer();
+            }
+
             return _current;
         }
     }
@@ -82,44 +84,111 @@ public class RemoteClipboardServerFactory
     [MemberNotNull(nameof(_current))]
     public void ResetCurrentServer(AccountConfig? newConfig = null, object? configDetail = null)
     {
-        DisposeExistServer();
-        _currentAccount = newConfig ?? _configManager.GetConfig<AccountConfig>();
-        _currentAdapter = GetAdapter(_currentAccount.AccountType);
-
-        _currentAdapter ??= new DefaultStorageAdapter();
-        _configDetail = configDetail ?? _accountManager.GetConfig(_currentAccount.AccountType, _currentAccount.AccountId);
-        if (_configDetail is not null)
+        var account = newConfig ?? _configManager.GetConfig<AccountConfig>();
+        var detail = configDetail ?? _accountManager.GetConfig(account.AccountType, account.AccountId);
+        if (account.IsEmpty() || detail is null)
         {
-            _currentAdapter.SetConfig(_configDetail, _syncConfig);
+            SetEmptyServer(account);
+            return;
         }
 
-        if (_currentAdapter is IOfficialServerAdapter eventServerAdapter)
+        var adapter = GetAdapter(account.AccountType);
+        if (adapter is null)
         {
-            _current = new OfficialEventDrivenServer(_serviceProvider, eventServerAdapter);
+            SetEmptyServer(account);
+            return;
         }
-        else if (_currentAdapter is IStorageBasedServerAdapter pollingServerAdapter)
+
+        adapter.SetConfig(detail, _syncConfig);
+        IRemoteClipboardServer server;
+        if (adapter is IOfficialServerAdapter eventServerAdapter)
         {
-            _current = new PollingDrivenServer(_serviceProvider, pollingServerAdapter);
+            server = new OfficialEventDrivenServer(_serviceProvider, eventServerAdapter);
+        }
+        else if (adapter is IStorageBasedServerAdapter pollingServerAdapter)
+        {
+            server = new PollingDrivenServer(_serviceProvider, pollingServerAdapter);
         }
         else
         {
             throw new NotSupportedException("unsupported server type");
         }
-        _current.OnSyncConfigChanged(_syncConfig);
-        CurrentServerChanged?.Invoke(this, EventArgs.Empty);
+
+        server.OnSyncConfigChanged(_syncConfig);
+        ReplaceCurrentServer(server, account, adapter, detail);
     }
 
-    public IServerAdapter GetAdapter(string type)
+    public IServerAdapter? GetAdapter(string type) =>
+        _serviceProvider.GetKeyedService<IServerAdapter>(type);
+
+    [MemberNotNull(nameof(_current))]
+    private void SetEmptyServer(AccountConfig account)
     {
-        var adapter = _serviceProvider.GetKeyedService<IServerAdapter>(type);
-        adapter ??= new DefaultStorageAdapter();
-        return adapter;
+        if (_current is EmptyRemoteClipboardServer)
+        {
+            _currentAccount = account;
+            _currentAdapter = null;
+            _configDetail = null;
+            return;
+        }
+
+        ReplaceCurrentServer(EmptyRemoteClipboardServer.Instance, account, null, null);
     }
 
-    public void DisposeExistServer()
+    [MemberNotNull(nameof(_current))]
+    private void ReplaceCurrentServer(
+        IRemoteClipboardServer server,
+        AccountConfig account,
+        IServerAdapter? adapter,
+        object? configDetail)
     {
         var oldServer = _current;
-        oldServer?.Dispose();
-        _current = null;
+        _current = server;
+        _currentAccount = account;
+        _currentAdapter = adapter;
+        _configDetail = configDetail;
+
+        try
+        {
+            NotifyCurrentServerChanged();
+        }
+        finally
+        {
+            if (!ReferenceEquals(oldServer, server))
+            {
+                try
+                {
+                    oldServer?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logger.Write("RemoteServer", $"Failed to dispose the previous server: {ex}");
+                }
+            }
+        }
+    }
+
+    private void NotifyCurrentServerChanged()
+    {
+        var handlers = CurrentServerChanged;
+        if (handlers is null)
+        {
+            return;
+        }
+
+        foreach (EventHandler handler in handlers.GetInvocationList().Cast<EventHandler>())
+        {
+            try
+            {
+                handler(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                var subscriber = handler.Method.DeclaringType?.FullName ?? "Unknown subscriber";
+                _logger.Write(
+                    "RemoteServer",
+                    $"CurrentServerChanged subscriber {subscriber}.{handler.Method.Name} failed: {ex}");
+            }
+        }
     }
 }

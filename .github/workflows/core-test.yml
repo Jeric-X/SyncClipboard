@@ -1,0 +1,24 @@
+name: core-test
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: windows-2025-vs2026
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: |
+          8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj
+
+    - name: Run Core tests
+      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore

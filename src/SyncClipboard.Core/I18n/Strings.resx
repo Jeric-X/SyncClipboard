@@ -1190,4 +1190,71 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryMultiSelectUnstarConfirmMessage" xml:space="preserve">
     <value>Unstar {0} history record(s)?</value>
   </data>
+  <data name="AutoSwitchAccount" xml:space="preserve"><value>Automatic account switching</value></data>
+  <data name="AutoSwitchAccountDescription" xml:space="preserve"><value>Switch accounts according to Wi-Fi and local IP rules</value></data>
+  <data name="CurrentNetwork" xml:space="preserve"><value>Current network</value></data>
+  <data name="CurrentNetworkStatus" xml:space="preserve"><value>Current network status</value></data>
+  <data name="CurrentNetworkStatusDescription" xml:space="preserve"><value>View network connections and IP addresses</value></data>
+  <data name="RecheckNetwork" xml:space="preserve"><value>Recheck</value></data>
+  <data name="NetworkConnectionCount" xml:space="preserve"><value>{0} network connection(s) detected</value></data>
+  <data name="NoNetworkConnections" xml:space="preserve"><value>No available network connections were detected</value></data>
+  <data name="DefaultGatewayConnection" xml:space="preserve"><value>Default outbound connection</value></data>
+  <data name="NoDefaultGateway" xml:space="preserve"><value>No default gateway</value></data>
+  <data name="WifiName" xml:space="preserve"><value>Wi-Fi name</value></data>
+  <data name="Ipv4Addresses" xml:space="preserve"><value>IPv4 addresses</value></data>
+  <data name="Ipv6Addresses" xml:space="preserve"><value>IPv6 addresses</value></data>
+  <data name="WifiPermission" xml:space="preserve"><value>Wi-Fi name access</value></data>
+  <data name="RequestPermission" xml:space="preserve"><value>Request access</value></data>
+  <data name="OpenSystemSettings" xml:space="preserve"><value>Open system settings</value></data>
+  <data name="NoMatchAction" xml:space="preserve"><value>When no rule matches</value></data>
+  <data name="KeepCurrentAccount" xml:space="preserve"><value>Keep current account</value></data>
+  <data name="SwitchToDefaultAccount" xml:space="preserve"><value>Switch to default account</value></data>
+  <data name="RemoveSyncAccount" xml:space="preserve"><value>Remove sync account</value></data>
+  <data name="NoAccountSelected" xml:space="preserve"><value>None</value></data>
+  <data name="SyncAccountNotSelected" xml:space="preserve"><value>No sync account is selected.</value></data>
+  <data name="DefaultAccount" xml:space="preserve"><value>Default account</value></data>
+  <data name="NotifyAfterSwitch" xml:space="preserve"><value>Notify after switching</value></data>
+  <data name="Rules" xml:space="preserve"><value>Rules</value></data>
+  <data name="RuleEnabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="AddRule" xml:space="preserve"><value>Add rule</value></data>
+  <data name="DeleteRule" xml:space="preserve"><value>Delete rule</value></data>
+  <data name="MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="RuleName" xml:space="preserve"><value>Rule name</value></data>
+  <data name="EditRule" xml:space="preserve"><value>Edit rule</value></data>
+  <data name="EnterRuleName" xml:space="preserve"><value>Enter a rule name.</value></data>
+  <data name="TargetAccount" xml:space="preserve"><value>Target account</value></data>
+  <data name="NetworkInterface" xml:space="preserve"><value>Network connection</value></data>
+  <data name="AutomaticInterface" xml:space="preserve"><value>Automatic</value></data>
+  <data name="MissingNetworkInterface" xml:space="preserve"><value>The network connection “{0}” is no longer available.</value></data>
+  <data name="MatchMode" xml:space="preserve"><value>Match mode</value></data>
+  <data name="MatchAny" xml:space="preserve"><value>Match the Wi-Fi name or IP address</value></data>
+  <data name="MatchAll" xml:space="preserve"><value>Match both the Wi-Fi name and IP address</value></data>
+  <data name="WifiNames" xml:space="preserve"><value>Wi-Fi names (one per line)</value></data>
+  <data name="IpRanges" xml:space="preserve"><value>IP addresses or CIDR ranges (one per line; comments after #)</value></data>
+  <data name="PreferIpHint" xml:space="preserve"><value>Prefer IP address rules. Use Wi-Fi names only when IP addresses cannot meet your needs.</value></data>
+  <data name="UseCurrentWifi" xml:space="preserve"><value>Use current Wi-Fi</value></data>
+  <data name="UseCurrentIp" xml:space="preserve"><value>Use current IP</value></data>
+  <data name="SaveSettings" xml:space="preserve"><value>Save settings</value></data>
+  <data name="SelectAccountFirst" xml:space="preserve"><value>Select a target account.</value></data>
+  <data name="AddConditionFirst" xml:space="preserve"><value>Add at least one Wi-Fi name or valid IP range.</value></data>
+  <data name="InvalidIpRange" xml:space="preserve"><value>Invalid IP address or CIDR: {0}</value></data>
+  <data name="SettingsSaved" xml:space="preserve"><value>Settings saved</value></data>
+  <data name="DeleteRuleConfirm" xml:space="preserve"><value>Delete rule “{0}”?</value></data>
+  <data name="AccountRuleCleanup" xml:space="preserve"><value>{0} automatic-switch rule(s) that use this account will also be removed.</value></data>
+  <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Evaluating" xml:space="preserve"><value>Checking the current network…</value></data>
+  <data name="Matched" xml:space="preserve"><value>Matched {0} → {1}</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>No rule matched</value></data>
+  <data name="NoMatchSwitchDefault" xml:space="preserve"><value>No rule matched; switching to default account → {0}</value></data>
+  <data name="SyncAccountRemoved" xml:space="preserve"><value>No rule matched; sync account removed</value></data>
+  <data name="ManualOverride" xml:space="preserve"><value>Using a manually selected account until the network changes</value></data>
+  <data name="WifiNotRequested" xml:space="preserve"><value>Wi-Fi access has not been requested</value></data>
+  <data name="WifiRequesting" xml:space="preserve"><value>Requesting Wi-Fi access…</value></data>
+  <data name="WifiGranted" xml:space="preserve"><value>Access granted</value></data>
+  <data name="WifiGrantedWithName" xml:space="preserve"><value>Access granted · Current Wi-Fi: {0}</value></data>
+  <data name="WifiGrantedNoNetwork" xml:space="preserve"><value>Access granted; no connected Wi-Fi was detected</value></data>
+  <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi access was denied</value></data>
+  <data name="WifiUnsupported" xml:space="preserve"><value>Wi-Fi name detection is unavailable; IP rules still work</value></data>
 </root>

@@ -19,6 +19,8 @@ namespace SyncClipboard.WinUI3.Views
             this.InitializeComponent();
             _viewModel = App.Current.Services.GetRequiredService<SyncSettingViewModel>();
             this.DataContext = _viewModel;
+            Loaded += (_, _) => _viewModel.ActivateNetworkAccountSwitchStatus();
+            Unloaded += (_, _) => _viewModel.DeactivateNetworkAccountSwitchStatus();
         }
     }
 }

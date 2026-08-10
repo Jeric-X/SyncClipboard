@@ -14,6 +14,7 @@
     <NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>
     <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
     <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
+    <CodesignEntitlements>..\..\build\macos\SyncClipboard.entitlements</CodesignEntitlements>
   </PropertyGroup>
 
   <ItemGroup>

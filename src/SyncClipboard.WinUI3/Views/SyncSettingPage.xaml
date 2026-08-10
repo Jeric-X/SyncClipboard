@@ -58,8 +58,14 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.EditAccountConfig}"
                                  IsClickEnabled="True"
                                  Command="{x:Bind _viewModel.EditAccountCommand}"
-                                 Visibility="{x:Bind _viewModel.SelectedAccount, Mode=OneWay, Converter={StaticResource ObjectToVisibilityConverter}}">
+                                 Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.HasSelectedAccount), Mode=OneWay}">
                     <Button MinWidth="60" Content="{x:Bind i18n:Strings.DeleteAccount}" Command="{x:Bind _viewModel.RemoveAccountCommand}" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.AutoSwitchAccount}"
+                                 Description="{x:Bind _viewModel.AccountAutoSwitchDescription, Mode=OneWay}"
+                                 IsClickEnabled="True"
+                                 Command="{x:Bind _viewModel.OpenNetworkAccountSwitchCommand}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.AccountAutoSwitchEnabled, Mode=TwoWay}" />
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>

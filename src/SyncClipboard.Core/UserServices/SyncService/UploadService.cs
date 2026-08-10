@@ -51,7 +51,7 @@ public class UploadService : ClipboardHander
 
     protected override bool SwitchOn
     {
-        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn;
+        get => _syncConfig.PushSwitchOn && _syncConfig.SyncSwitchOn && _remoteClipboardServerFactory.HasActiveServer;
         set
         {
             _syncConfig.SyncSwitchOn = value;
@@ -119,14 +119,22 @@ public class UploadService : ClipboardHander
 
     protected override void StartService()
     {
+        _remoteClipboardServerFactory.CurrentServerChanged += OnCurrentServerChanged;
         DownloadService = _serviceProvider.GetRequiredService<DownloadService>();
         base.StartService();
     }
 
     protected override void StopSerivce()
     {
+        _remoteClipboardServerFactory.CurrentServerChanged -= OnCurrentServerChanged;
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Stopped.");
         base.StopSerivce();
+    }
+
+    private void OnCurrentServerChanged(object? sender, EventArgs e)
+    {
+        CancelProcess();
+        Load();
     }
 
     public override void RegistEvent()
@@ -371,6 +379,12 @@ public class UploadService : ClipboardHander
 
     private async void QuickUpload(bool contentControl)
     {
+        if (!_remoteClipboardServerFactory.HasActiveServer)
+        {
+            _notificationManager.ShowText("SyncClipboard", I18n.Strings.SyncAccountNotSelected);
+            return;
+        }
+
         var token = StopPreviousAndGetNewToken();
         try
         {

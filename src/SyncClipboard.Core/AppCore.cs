@@ -24,6 +24,7 @@ using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.Utilities.Network;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
@@ -262,6 +263,7 @@ namespace SyncClipboard.Core
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<AccountManager>();
+            services.AddSingleton<INetworkContextProvider, SystemNetworkContextProvider>();
             services.AddSingleton<StaticConfig>();
             services.AddKeyedTransient(Env.UpdateInfoFile, (sp, key) => new ConfigBase(Env.UpdateInfoPath, sp));
             services.AddKeyedSingleton(Env.RuntimeConfigName, (sp, key) => new ConfigBase(Env.RuntimeConfigPath, sp));
@@ -315,6 +317,8 @@ namespace SyncClipboard.Core
             services.AddTransient<NextCloudLogInViewModel>();
             services.AddTransient<AddAccountViewModel>();
             services.AddTransient<AccountConfigEditViewModel>();
+            services.AddTransient<NetworkAccountSwitchViewModel>();
+            services.AddTransient<CurrentNetworkStatusViewModel>();
             services.AddTransient<FileSyncFilterSettingViewModel>();
             services.AddSingleton<ClipboardOwnerFilterSettingViewModel>();
             services.AddTransient<ClipboardAcquisitionRulesViewModel>();
@@ -338,6 +342,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService, DownloadService>(sp => sp.GetRequiredService<DownloadService>());
             services.AddSingleton<HistoryService>();
             services.AddSingleton<IService, HistoryService>(sp => sp.GetRequiredService<HistoryService>());
+            services.AddSingleton<NetworkAccountSwitchService>();
+            services.AddSingleton<IService>(sp => sp.GetRequiredService<NetworkAccountSwitchService>());
             services.AddSingleton<HotkeyBlacklistService>();
             services.AddSingleton<IService>(sp => sp.GetRequiredService<HotkeyBlacklistService>());
         }

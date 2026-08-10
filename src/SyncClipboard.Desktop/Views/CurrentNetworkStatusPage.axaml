@@ -1,0 +1,101 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.CurrentNetworkStatusPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:CurrentNetworkStatusViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="700"
+             mc:Ignorable="d">
+    <StackPanel Spacing="12">
+        <Grid ColumnDefinitions="*,Auto">
+            <StackPanel VerticalAlignment="Center" Spacing="3">
+                <TextBlock FontSize="18" FontWeight="SemiBold" Text="{x:Static i18n:Strings.CurrentNetworkStatus}" />
+                <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding SummaryText}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Content="{x:Static i18n:Strings.RecheckNetwork}"
+                    Command="{Binding RefreshCommand}" />
+        </Grid>
+
+        <TextBlock Padding="12"
+                   HorizontalAlignment="Stretch"
+                   Text="{x:Static i18n:Strings.NoNetworkConnections}"
+                   TextAlignment="Center"
+                   IsVisible="{Binding ShowEmptyState}" />
+
+        <ItemsControl ItemsSource="{Binding Connections}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:NetworkConnectionStatusItem">
+                    <Border Margin="0,0,0,10"
+                            Padding="16"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding DisplayName}"
+                                           TextWrapping="Wrap" />
+                                <Border Grid.Column="1"
+                                        Margin="12,0,0,0"
+                                        Padding="8,3"
+                                        VerticalAlignment="Center"
+                                        Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                        CornerRadius="10">
+                                    <TextBlock FontSize="12" Text="{Binding GatewayStatusText}" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding HasWifi}">
+                                <TextBlock FontWeight="SemiBold" Text="{x:Static i18n:Strings.WifiName}" />
+                                <TextBlock Grid.Column="1"
+                                           Margin="12,0,0,0"
+                                           Text="{Binding WifiSsid}"
+                                           TextWrapping="Wrap" />
+                            </Grid>
+
+                            <StackPanel Spacing="5" IsVisible="{Binding HasIpv4}">
+                                <TextBlock FontWeight="SemiBold" Text="{x:Static i18n:Strings.Ipv4Addresses}" />
+                                <ItemsControl ItemsSource="{Binding Ipv4Addresses}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:NetworkAddressStatusItem">
+                                            <Border Margin="0,2,0,0"
+                                                    Padding="10,6"
+                                                    Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                                    CornerRadius="4">
+                                                <TextBlock FontFamily="Consolas" Text="{Binding Value}" TextWrapping="Wrap" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5" IsVisible="{Binding HasIpv6}">
+                                <TextBlock FontWeight="SemiBold" Text="{x:Static i18n:Strings.Ipv6Addresses}" />
+                                <ItemsControl ItemsSource="{Binding Ipv6Addresses}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:NetworkAddressStatusItem">
+                                            <Border Margin="0,2,0,0"
+                                                    Padding="10,6"
+                                                    Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                                    CornerRadius="4">
+                                                <TextBlock FontFamily="Consolas" Text="{Binding Value}" TextWrapping="Wrap" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>
