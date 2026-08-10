@@ -20,7 +20,7 @@
                     <ui:FontIconSource Glyph="&#xE701;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ui:SettingsExpander.IconSource>
                 <ui:SettingsExpander.Footer>
-                    <ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding Enabled, Mode=TwoWay}" />
                 </ui:SettingsExpander.Footer>
                 <ui:SettingsExpander.Items>
                     <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.NoMatchAction}">
@@ -41,17 +41,14 @@
                     </ui:SettingsExpanderItem>
                     <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.NotifyAfterSwitch}">
                         <ui:SettingsExpanderItem.Footer>
-                            <ToggleSwitch IsChecked="{Binding NotifyOnChange, Mode=TwoWay}" />
+                            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnChange, Mode=TwoWay}" />
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
-                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.WifiPermission}">
+                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.WifiPermission}" Description="{Binding WifiPermissionStatusText}">
                         <ui:SettingsExpanderItem.Footer>
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{Binding WifiPermissionStatusText}" TextWrapping="Wrap" />
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="{Binding WifiPermissionButtonText}" Command="{Binding RequestWifiAccessCommand}" IsEnabled="{Binding CanRequestWifiAccess}" />
-                                    <Button Content="{x:Static i18n:Strings.OpenSystemSettings}" Command="{Binding OpenWifiSettingsCommand}" IsVisible="{Binding CanOpenWifiSettings}" />
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="{Binding WifiPermissionButtonText}" Command="{Binding RequestWifiAccessCommand}" IsEnabled="{Binding CanRequestWifiAccess}" />
+                                <Button Content="{x:Static i18n:Strings.OpenSystemSettings}" Command="{Binding OpenWifiSettingsCommand}" IsVisible="{Binding CanOpenWifiSettings}" />
                             </StackPanel>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>

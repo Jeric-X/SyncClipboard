@@ -22,8 +22,8 @@
                     <Color x:Key="WindowBackgroudColor">Black</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
-            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简,$Default</FontFamily>
-            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,宋体-简,$Default</FontFamily>
+            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default</FontFamily>
+            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default</FontFamily>
             <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
             <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
             <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
@@ -44,11 +44,17 @@
         <Style Selector="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
+        <Style Selector="Button">
+            <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
+        </Style>
         <Style Selector="ui|ContentDialog /template/ Button">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
         <Style Selector="TextBox">
             <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox.spinRight /template/ Panel">
+            <Setter Property="Margin" Value="0,0,2,0" />
         </Style>
         <Style Selector="HyperlinkButton">
             <Setter Property="Padding" Value="0,0,0,-1" />
