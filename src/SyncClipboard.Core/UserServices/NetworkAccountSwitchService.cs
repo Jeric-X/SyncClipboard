@@ -134,40 +134,52 @@ public sealed class NetworkAccountSwitchService(
                 _config.Enabled,
                 _config.Rules.Any(rule => rule.Enabled && rule.WifiSsids.Count > 0),
                 _statusChanged is not null);
-            var shouldMonitor = _serviceStarted && demand.ListenForNetworkChanges;
-            var started = false;
-            if (shouldMonitor && !_isMonitoring)
-            {
-                _networkContextProvider.NetworkChanged += OnNetworkChanged;
-                _accountManager.AccountSelectionChanged += OnAccountSelectionChanged;
-                _isMonitoring = true;
-                started = true;
-            }
-            else if (!shouldMonitor && _isMonitoring)
-            {
-                _networkContextProvider.NetworkChanged -= OnNetworkChanged;
-                _accountManager.AccountSelectionChanged -= OnAccountSelectionChanged;
-                _debouncer.CancelPending();
-                _isMonitoring = false;
-            }
 
-            var shouldPollWifi = _serviceStarted && demand.PollWifi;
-            if (shouldPollWifi && _pollTimer is null)
-            {
-                _pollCancellation = new();
-                _pollTimer = new(PollInterval);
-                _ = PollAsync(_pollTimer, _pollCancellation.Token);
-            }
-            else if (!shouldPollWifi && _pollTimer is not null)
-            {
-                _pollCancellation?.Cancel();
-                _pollCancellation?.Dispose();
-                _pollCancellation = null;
-                _pollTimer.Dispose();
-                _pollTimer = null;
-            }
-
+            var started = UpdateNetworkChangeSubscription(demand);
+            UpdateWifiPolling(demand);
             return started;
+        }
+    }
+
+    // Caller must hold _monitoringLock.
+    private bool UpdateNetworkChangeSubscription(NetworkMonitoringDemand demand)
+    {
+        var shouldMonitor = _serviceStarted && demand.ListenForNetworkChanges;
+        if (shouldMonitor && !_isMonitoring)
+        {
+            _networkContextProvider.NetworkChanged += OnNetworkChanged;
+            _accountManager.AccountSelectionChanged += OnAccountSelectionChanged;
+            _isMonitoring = true;
+            return true;
+        }
+        if (!shouldMonitor && _isMonitoring)
+        {
+            _networkContextProvider.NetworkChanged -= OnNetworkChanged;
+            _accountManager.AccountSelectionChanged -= OnAccountSelectionChanged;
+            _debouncer.CancelPending();
+            _isMonitoring = false;
+        }
+        return false;
+    }
+
+    // Caller must hold _monitoringLock.
+    private void UpdateWifiPolling(NetworkMonitoringDemand demand)
+    {
+        var shouldPollWifi = _serviceStarted && demand.PollWifi;
+        if (shouldPollWifi && _pollTimer is null)
+        {
+            _pollCancellation = new();
+            _pollTimer = new(PollInterval);
+            _ = PollAsync(_pollTimer, _pollCancellation.Token);
+            return;
+        }
+        if (!shouldPollWifi && _pollTimer is not null)
+        {
+            _pollCancellation?.Cancel();
+            _pollCancellation?.Dispose();
+            _pollCancellation = null;
+            _pollTimer.Dispose();
+            _pollTimer = null;
         }
     }
 
@@ -212,7 +224,7 @@ public sealed class NetworkAccountSwitchService(
                     ApplyDefaultAccount(decision.TargetAccount);
                     break;
                 case NetworkAccountSwitchDecisionKind.RemoveSyncAccount:
-                    ApplyRemoveSyncAccount();
+                    ApplyRemoveSyncAccount(decision.Match);
                     break;
                 default:
                     ApplyKeepCurrent();
@@ -277,7 +289,7 @@ public sealed class NetworkAccountSwitchService(
         }
     }
 
-    private void ApplyRemoveSyncAccount()
+    private void ApplyRemoveSyncAccount(NetworkRuleMatchResult? match)
     {
         var current = _configManager.GetConfig<AccountConfig>();
         var changed = !current.IsEmpty();
@@ -286,10 +298,13 @@ public sealed class NetworkAccountSwitchService(
             _accountManager.SelectAccount(new(), AccountManager.AccountSelectionOrigin.Automatic);
         }
 
-        UpdateStatus(new() { State = NetworkAccountSwitchState.AccountRemoved });
+        var detail = match is not null
+            ? string.Format(Strings.RuleAccountMissing, match.Rule.Name)
+            : null;
+        UpdateStatus(new() { State = NetworkAccountSwitchState.AccountRemoved, RuleName = match?.Rule.Name, Detail = detail });
         if (changed && _config.NotifyOnChange)
         {
-            _notificationManager.ShowText("SyncClipboard", Strings.SyncAccountRemoved);
+            _notificationManager.ShowText("SyncClipboard", detail ?? Strings.SyncAccountRemoved);
         }
     }
 

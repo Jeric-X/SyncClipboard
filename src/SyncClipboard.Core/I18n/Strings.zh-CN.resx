@@ -1257,4 +1257,5 @@ Shift + 左键：选中连续范围</value>
   <data name="WifiGrantedNoNetwork" xml:space="preserve"><value>已授权，但未检测到已连接的 Wi-Fi</value></data>
   <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi 名称权限被拒绝</value></data>
   <data name="WifiUnsupported" xml:space="preserve"><value>当前环境无法检测 Wi-Fi 名称，IP 规则仍可使用</value></data>
+  <data name="RuleAccountMissing" xml:space="preserve"><value>规则“{0}”已匹配，但其目标账号不存在，已移除同步账号</value></data>
 </root>

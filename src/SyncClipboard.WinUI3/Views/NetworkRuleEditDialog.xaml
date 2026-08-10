@@ -15,7 +15,7 @@
     <ScrollViewer MaxHeight="600" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel MinWidth="520" MaxWidth="680" Spacing="12">
             <TextBox Header="{x:Bind i18n:Strings.RuleName}" Text="{x:Bind Editor.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <ToggleSwitch IsOn="{x:Bind Editor.Enabled, Mode=TwoWay}" />
+            <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind Editor.Enabled, Mode=TwoWay}" />
             <ComboBox Header="{x:Bind i18n:Strings.TargetAccount}"
                       ItemsSource="{x:Bind _viewModel.Accounts}"
                       SelectedItem="{x:Bind Editor.TargetAccount, Mode=TwoWay}"

@@ -188,34 +188,55 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     {
         availableInterfaces ??= Interfaces;
         if (string.IsNullOrWhiteSpace(editor.Name)) return Strings.EnterRuleName;
-        if (!editor.Enabled) return string.Empty;
         if (editor.TargetAccount is null) return Strings.SelectAccountFirst;
-        if (editor.SelectedInterface is { Id.Length: > 0 } selectedInterface
-            && !availableInterfaces.Any(item => string.Equals(item.Id, selectedInterface.Id, StringComparison.OrdinalIgnoreCase)))
+
+        if (FindMissingInterface(editor.SelectedInterface, availableInterfaces) is { } missingInterface)
         {
-            return string.Format(Strings.MissingNetworkInterface, selectedInterface.DisplayName);
+            return string.Format(Strings.MissingNetworkInterface, missingInterface.DisplayName);
         }
 
         var ssids = SplitLines(editor.WifiText);
-        var ipRanges = SplitLines(editor.IpText);
-        var hasIpRange = false;
-        foreach (var value in ipRanges)
-        {
-            if (NetworkRuleMatcher.RemoveRangeComment(value).Length == 0) continue;
-            if (!NetworkRuleMatcher.TryNormalizeRange(value, out _))
-            {
-                return string.Format(Strings.InvalidIpRange, value);
-            }
-            hasIpRange = true;
-        }
+        var (hasIpRange, ipError) = AnalyzeIpRanges(editor.IpText);
+        if (ipError is not null) return ipError;
         if (ssids.Count == 0 && !hasIpRange) return Strings.AddConditionFirst;
         return string.Empty;
     }
 
+    private static NetworkInterfaceChoice? FindMissingInterface(
+        NetworkInterfaceChoice? selected,
+        IReadOnlyCollection<NetworkInterfaceChoice> available)
+    {
+        if (selected is not { Id.Length: > 0 } iface) return null;
+        return available.Any(item => string.Equals(item.Id, iface.Id, StringComparison.OrdinalIgnoreCase))
+            ? null
+            : iface;
+    }
+
+    private static (bool HasIpRange, string? Error) AnalyzeIpRanges(string ipText)
+    {
+        var hasIpRange = false;
+        foreach (var value in SplitLines(ipText))
+        {
+            if (NetworkRuleMatcher.RemoveRangeComment(value).Length == 0) continue;
+            if (!NetworkRuleMatcher.TryNormalizeRange(value, out _))
+            {
+                return (false, string.Format(Strings.InvalidIpRange, value));
+            }
+            hasIpRange = true;
+        }
+        return (hasIpRange, null);
+    }
+
     public void UseCurrentWifi(NetworkRuleEditor editor)
     {
-        var ssid = _service.Snapshot.Interfaces.Select(item => item.WifiSsid).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
-        if (!string.IsNullOrWhiteSpace(ssid)) editor.WifiText = AppendLine(editor.WifiText, ssid);
+        foreach (var ssid in _service.Snapshot.Interfaces
+            .Select(item => item.WifiSsid)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .Distinct(StringComparer.Ordinal))
+        {
+            editor.WifiText = AppendLine(editor.WifiText, ssid);
+        }
     }
 
     public void UseCurrentIp(NetworkRuleEditor editor)

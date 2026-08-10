@@ -86,6 +86,29 @@ public static class NetworkRuleMatcher
         return !normalized.Equals(IPAddress.IPv6Any);
     }
 
+    /// <summary>
+    /// 判断地址是否可作为有效的默认网关。与 <see cref="IsAddressAllowed"/> 不同，
+    /// IPv6 链路本地地址（fe80::/10）被视为有效网关，因为 IPv6 默认路由器通常使用链路本地地址。
+    /// </summary>
+    public static bool IsValidGateway(IPAddress address)
+    {
+        if (IPAddress.IsLoopback(address) || address.IsIPv6Multicast)
+        {
+            return false;
+        }
+
+        var normalized = NormalizeAddress(address);
+        if (normalized.AddressFamily == AddressFamily.InterNetwork)
+        {
+            var bytes = normalized.GetAddressBytes();
+            return !(bytes[0] == 169 && bytes[1] == 254)
+                && bytes[0] is < 224 or > 239
+                && !normalized.Equals(IPAddress.Any);
+        }
+
+        return !normalized.Equals(IPAddress.IPv6Any);
+    }
+
     private static IEnumerable<NetworkInterfaceSnapshot> GetEligibleInterfaces(NetworkAccountSwitchRule rule, NetworkContextSnapshot snapshot)
     {
         if (!string.IsNullOrWhiteSpace(rule.NetworkInterfaceId))

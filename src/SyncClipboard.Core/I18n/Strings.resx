@@ -1257,4 +1257,5 @@ Choose whether to use the default location or select another folder.</value>
   <data name="WifiGrantedNoNetwork" xml:space="preserve"><value>Access granted; no connected Wi-Fi was detected</value></data>
   <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi access was denied</value></data>
   <data name="WifiUnsupported" xml:space="preserve"><value>Wi-Fi name detection is unavailable; IP rules still work</value></data>
+  <data name="RuleAccountMissing" xml:space="preserve"><value>Rule “{0}” matched but its target account no longer exists; sync account removed</value></data>
 </root>

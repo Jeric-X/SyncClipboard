@@ -91,7 +91,7 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
                 Id = networkInterface.Id,
                 Name = networkInterface.Name,
                 Description = networkInterface.Description,
-                HasDefaultGateway = properties.GatewayAddresses.Any(item => NetworkRuleMatcher.IsAddressAllowed(item.Address)),
+                HasDefaultGateway = properties.GatewayAddresses.Any(item => NetworkRuleMatcher.IsValidGateway(item.Address)),
                 Addresses = addresses,
                 WifiSsid = wifi?.Ssid,
             });

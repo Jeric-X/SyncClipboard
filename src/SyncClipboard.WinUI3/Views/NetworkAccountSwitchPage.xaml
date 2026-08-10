@@ -6,16 +6,13 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters">
-    <Page.Resources>
-        <vc:ObjectToVisibilityConverter x:Key="ObjectToVisibilityConverter" />
-    </Page.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
             <ui:SettingsExpander Header="{x:Bind i18n:Strings.AutoSwitchAccount}" Description="{x:Bind _viewModel.StatusText, Mode=OneWay}" IsExpanded="True">
                 <ui:SettingsExpander.HeaderIcon>
                     <FontIcon Glyph="&#xE701;" />
                 </ui:SettingsExpander.HeaderIcon>
-                <ToggleSwitch IsOn="{x:Bind _viewModel.Enabled, Mode=TwoWay}" />
+                <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.Enabled, Mode=TwoWay}" />
                 <ui:SettingsExpander.Items>
                     <ui:SettingsCard Header="{x:Bind i18n:Strings.NoMatchAction}">
                         <ComboBox ItemsSource="{x:Bind vm:NetworkAccountSwitchViewModel.NoMatchActions}" SelectedItem="{x:Bind _viewModel.SelectedNoMatchAction, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
@@ -27,7 +24,7 @@
                                   DisplayMemberPath="DisplayName" />
                     </ui:SettingsCard>
                     <ui:SettingsCard Header="{x:Bind i18n:Strings.NotifyAfterSwitch}">
-                        <ToggleSwitch IsOn="{x:Bind _viewModel.NotifyOnChange, Mode=TwoWay}" />
+                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnChange, Mode=TwoWay}" />
                     </ui:SettingsCard>
                     <ui:SettingsCard Header="{x:Bind i18n:Strings.WifiPermission}" Description="{x:Bind _viewModel.WifiPermissionStatusText, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="8">

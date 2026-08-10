@@ -18,6 +18,7 @@ public record NetworkAccountSwitchStatus
     public string? RuleName { get; init; }
     public string? AccountName { get; init; }
     public string? Error { get; init; }
+    public string? Detail { get; init; }
     public DateTimeOffset EvaluatedAt { get; init; } = DateTimeOffset.Now;
 }
 
