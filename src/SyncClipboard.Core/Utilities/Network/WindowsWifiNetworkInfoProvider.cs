@@ -21,31 +21,33 @@ public sealed class WindowsWifiNetworkInfoProvider : IWifiNetworkInfoProvider
 
     public bool CanOpenWifiSettings => OperatingSystem.IsWindows();
 
-    public Task<(WifiAccessStatus Status, IReadOnlyList<WifiNetworkInfo> Networks, string? Error)> GetConnectedNetworksAsync(
+    public async Task<(WifiAccessStatus Status, IReadOnlyList<WifiNetworkInfo> Networks, string? Error)> GetConnectedNetworksAsync(
         bool requestAccess,
         CancellationToken cancellationToken = default)
     {
         if (!OperatingSystem.IsWindows())
         {
-            return Task.FromResult<(WifiAccessStatus, IReadOnlyList<WifiNetworkInfo>, string?)>(
-                (WifiAccessStatus.Unsupported, [], null));
+            return (WifiAccessStatus.Unsupported, [], null);
         }
 
         try
         {
-            var result = QueryConnectedNetworks(cancellationToken);
-            return Task.FromResult<(WifiAccessStatus, IReadOnlyList<WifiNetworkInfo>, string?)>(
-                (WifiAccessStatus.Available, result, null));
+            var result = await Task.Run(
+                () => QueryConnectedNetworks(cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+            return (WifiAccessStatus.Available, result, null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Win32Exception ex) when ((uint)ex.NativeErrorCode == ErrorAccessDenied)
         {
-            return Task.FromResult<(WifiAccessStatus, IReadOnlyList<WifiNetworkInfo>, string?)>(
-                (WifiAccessStatus.Denied, [], ex.Message));
+            return (WifiAccessStatus.Denied, [], ex.Message);
         }
         catch (Exception ex)
         {
-            return Task.FromResult<(WifiAccessStatus, IReadOnlyList<WifiNetworkInfo>, string?)>(
-                (WifiAccessStatus.Error, [], ex.Message));
+            return (WifiAccessStatus.Error, [], ex.Message);
         }
     }
 

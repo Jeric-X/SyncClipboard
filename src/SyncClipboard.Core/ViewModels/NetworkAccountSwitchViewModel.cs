@@ -113,6 +113,7 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
         LoadConfig(_configManager.GetConfig<NetworkAccountSwitchConfig>());
         _autoSaveEnabled = true;
         _service.StatusChanged += OnServiceStatusChanged;
+        _service.AddNetworkMonitoringDemand();
         _accountManager.SavedAccountsChanged += OnSavedAccountsChanged;
         UpdateRuntimeState();
         _ = RefreshAsync();
@@ -122,6 +123,7 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     {
         if (!_active) return;
         _active = false;
+        _service.RemoveNetworkMonitoringDemand();
         _service.StatusChanged -= OnServiceStatusChanged;
         _accountManager.SavedAccountsChanged -= OnSavedAccountsChanged;
     }

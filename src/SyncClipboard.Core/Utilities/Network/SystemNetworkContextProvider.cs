@@ -51,6 +51,22 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
             wifiResult = await _wifiProvider.GetConnectedNetworksAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
         }
 
+        var interfaces = await Task.Run(
+            () => GetNetworkInterfaces(wifiResult.Networks, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+
+        return new NetworkContextSnapshot
+        {
+            Interfaces = interfaces,
+            WifiStatus = wifiResult.Status,
+            WifiError = wifiResult.Error,
+        };
+    }
+
+    private static List<NetworkInterfaceSnapshot> GetNetworkInterfaces(
+        IReadOnlyList<WifiNetworkInfo> wifiNetworks,
+        CancellationToken cancellationToken)
+    {
         var interfaces = new List<NetworkInterfaceSnapshot>();
         foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
         {
@@ -77,7 +93,7 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
                 .Distinct()
                 .ToList();
 
-            var wifi = wifiResult.Networks.FirstOrDefault(item =>
+            var wifi = wifiNetworks.FirstOrDefault(item =>
                 InterfaceIdEquals(item.InterfaceId, networkInterface.Id)
                 || string.Equals(item.InterfaceName, networkInterface.Name, StringComparison.Ordinal));
 
@@ -92,12 +108,7 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
             });
         }
 
-        return new NetworkContextSnapshot
-        {
-            Interfaces = interfaces,
-            WifiStatus = wifiResult.Status,
-            WifiError = wifiResult.Error,
-        };
+        return interfaces;
     }
 
     public void OpenWifiSettings() => _wifiProvider.OpenWifiSettings();

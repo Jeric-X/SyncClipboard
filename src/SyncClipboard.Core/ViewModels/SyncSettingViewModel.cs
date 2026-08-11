@@ -172,7 +172,10 @@ public partial class SyncSettingViewModel : ObservableObject
         });
 
     private void OnNetworkAccountSwitchConfigChanged(NetworkAccountSwitchConfig config) =>
-        _ = _threadDispatcher.RunOnMainThreadAsync(() => AccountAutoSwitchEnabled = config.Enabled);
+        _ = _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            AccountAutoSwitchEnabled = config.Enabled;
+        });
 
     private void SetSelectedAccount(AccountConfig accountConfig)
     {
@@ -394,8 +397,8 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager.ListenConfig<NetworkAccountSwitchConfig>(OnNetworkAccountSwitchConfigChanged);
         _accountManager.SavedAccountsChanged += OnSavedAccountsChanged;
         _accountManager.CurrentAccountChanged += OnCurrentAccountChanged;
-        accountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
         accountAutoSwitchEnabled = _configManager.GetConfig<NetworkAccountSwitchConfig>().Enabled;
+        accountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
 
         clientConfig = _configManager.GetConfig<SyncConfig>();
         intervalTime = clientConfig.IntervalTime;

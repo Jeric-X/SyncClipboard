@@ -31,6 +31,7 @@ public sealed class NetworkAccountSwitchService(
 
     private NetworkAccountSwitchConfig _config = configManager.GetConfig<NetworkAccountSwitchConfig>();
     private EventHandler? _statusChanged;
+    private int _networkMonitoringDemandCount;
     private bool _serviceStarted;
     private bool _isMonitoring;
     private PeriodicTimer? _pollTimer;
@@ -38,16 +39,8 @@ public sealed class NetworkAccountSwitchService(
 
     public event EventHandler? StatusChanged
     {
-        add
-        {
-            lock (_monitoringLock) _statusChanged += value;
-            if (UpdateMonitoringState()) ScheduleEvaluation(force: true, immediate: true);
-        }
-        remove
-        {
-            lock (_monitoringLock) _statusChanged -= value;
-            UpdateMonitoringState();
-        }
+        add { lock (_monitoringLock) _statusChanged += value; }
+        remove { lock (_monitoringLock) _statusChanged -= value; }
     }
     public NetworkAccountSwitchStatus Status { get; private set; } = new();
     public NetworkContextSnapshot Snapshot { get; private set; } = new();
@@ -83,6 +76,21 @@ public sealed class NetworkAccountSwitchService(
         EvaluateAsync(force: true, requestWifiAccess, cancellationToken);
 
     public void OpenWifiSettings() => _networkContextProvider.OpenWifiSettings();
+
+    public void AddNetworkMonitoringDemand()
+    {
+        lock (_monitoringLock) _networkMonitoringDemandCount++;
+        UpdateMonitoringState();
+    }
+
+    public void RemoveNetworkMonitoringDemand()
+    {
+        lock (_monitoringLock)
+        {
+            _networkMonitoringDemandCount = Math.Max(0, _networkMonitoringDemandCount - 1);
+        }
+        UpdateMonitoringState();
+    }
 
     private async Task PollAsync(PeriodicTimer timer, CancellationToken cancellationToken)
     {
@@ -133,7 +141,7 @@ public sealed class NetworkAccountSwitchService(
             var demand = NetworkMonitoringDemand.Calculate(
                 _config.Enabled,
                 _config.Rules.Any(rule => rule.Enabled && rule.WifiSsids.Count > 0),
-                _statusChanged is not null);
+                _networkMonitoringDemandCount > 0);
 
             var started = UpdateNetworkChangeSubscription(demand);
             UpdateWifiPolling(demand);

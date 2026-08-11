@@ -46,6 +46,7 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
         if (_active) return;
         _active = true;
         _service.StatusChanged += OnServiceStatusChanged;
+        _service.AddNetworkMonitoringDemand();
         UpdateSnapshot();
         _ = RefreshAsync();
     }
@@ -54,6 +55,7 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
     {
         if (!_active) return;
         _active = false;
+        _service.RemoveNetworkMonitoringDemand();
         _service.StatusChanged -= OnServiceStatusChanged;
     }
 
