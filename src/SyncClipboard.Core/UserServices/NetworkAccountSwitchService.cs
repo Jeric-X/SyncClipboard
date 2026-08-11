@@ -188,51 +188,7 @@ public sealed class NetworkAccountSwitchService(
         await _evaluationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!_config.Enabled)
-            {
-                Snapshot = await _networkContextProvider.GetCurrentAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
-                UpdateStatus(new() { State = NetworkAccountSwitchState.Disabled });
-                return;
-            }
-
-            Snapshot = await _networkContextProvider.GetCurrentAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
-
-            if (_runtimeState.ManualOverride)
-            {
-                if (!_runtimeState.ShouldClearManualOverride(Snapshot.Fingerprint))
-                {
-                    UpdateStatus(new()
-                    {
-                        State = NetworkAccountSwitchState.ManualOverride,
-                        AccountName = GetAccountName(_configManager.GetConfig<AccountConfig>()),
-                    });
-                    return;
-                }
-            }
-
-            var fingerprint = Snapshot.Fingerprint;
-            if (!_runtimeState.ShouldEvaluate(fingerprint, force))
-            {
-                return;
-            }
-            UpdateStatus(new() { State = NetworkAccountSwitchState.Evaluating });
-
-            var decision = NetworkAccountSwitchEvaluator.Evaluate(_config, Snapshot, AccountExists);
-            switch (decision.Kind)
-            {
-                case NetworkAccountSwitchDecisionKind.SwitchAccount when decision.Match is not null:
-                    ApplyMatch(decision.Match);
-                    break;
-                case NetworkAccountSwitchDecisionKind.SwitchAccount when decision.TargetAccount is not null:
-                    ApplyDefaultAccount(decision.TargetAccount);
-                    break;
-                case NetworkAccountSwitchDecisionKind.RemoveSyncAccount:
-                    ApplyRemoveSyncAccount(decision.Match);
-                    break;
-                default:
-                    ApplyKeepCurrent();
-                    break;
-            }
+            await EvaluateCurrentNetworkAsync(force, requestWifiAccess, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -246,6 +202,66 @@ public sealed class NetworkAccountSwitchService(
         finally
         {
             _evaluationLock.Release();
+        }
+    }
+
+    private async Task EvaluateCurrentNetworkAsync(
+        bool force,
+        bool requestWifiAccess,
+        CancellationToken cancellationToken)
+    {
+        Snapshot = await _networkContextProvider.GetCurrentAsync(requestWifiAccess, cancellationToken).ConfigureAwait(false);
+        if (!_config.Enabled)
+        {
+            UpdateStatus(new() { State = NetworkAccountSwitchState.Disabled });
+            return;
+        }
+
+        if (TryApplyManualOverrideStatus())
+        {
+            return;
+        }
+
+        if (!_runtimeState.ShouldEvaluate(Snapshot.Fingerprint, force))
+        {
+            return;
+        }
+
+        UpdateStatus(new() { State = NetworkAccountSwitchState.Evaluating });
+        ApplyDecision(NetworkAccountSwitchEvaluator.Evaluate(_config, Snapshot, AccountExists));
+    }
+
+    private bool TryApplyManualOverrideStatus()
+    {
+        if (!_runtimeState.ManualOverride || _runtimeState.ShouldClearManualOverride(Snapshot.Fingerprint))
+        {
+            return false;
+        }
+
+        UpdateStatus(new()
+        {
+            State = NetworkAccountSwitchState.ManualOverride,
+            AccountName = GetAccountName(_configManager.GetConfig<AccountConfig>()),
+        });
+        return true;
+    }
+
+    private void ApplyDecision(NetworkAccountSwitchDecision decision)
+    {
+        switch (decision.Kind)
+        {
+            case NetworkAccountSwitchDecisionKind.SwitchAccount when decision.Match is not null:
+                ApplyMatch(decision.Match);
+                break;
+            case NetworkAccountSwitchDecisionKind.SwitchAccount when decision.TargetAccount is not null:
+                ApplyDefaultAccount(decision.TargetAccount);
+                break;
+            case NetworkAccountSwitchDecisionKind.RemoveSyncAccount:
+                ApplyRemoveSyncAccount(decision.Match);
+                break;
+            default:
+                ApplyKeepCurrent();
+                break;
         }
     }
 
