@@ -98,6 +98,13 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     protected override void SetToolTip(string text)
     {
-        _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.ToolTipText = text).Wait();
+        if (_trayIcon.DispatcherQueue.HasThreadAccess)
+        {
+            _trayIcon.ToolTipText = text;
+        }
+        else
+        {
+            _ = _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.ToolTipText = text);
+        }
     }
 }

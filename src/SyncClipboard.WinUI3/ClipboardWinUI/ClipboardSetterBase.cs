@@ -14,12 +14,13 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
     private static async Task SetPackageToClipboard(DataPackage package, CancellationToken ctk)
     {
         ctk.ThrowIfCancellationRequested();
+        using var nativeClipboardAccessGuard = await NativeClipboardAccess.AcquireAsync(ctk);
         Clipboard.SetContent(package);
         // Clipboard.SetContent() still occupies the system clipboard after calling
         for (int i = 0; i < 5; i++)
         {
-            await Task.Delay(50, CancellationToken.None);
 #pragma warning disable CC0004 // Catch block cannot be empty
+            await Task.Delay(50, CancellationToken.None);
             try
             {
                 Clipboard.Flush();

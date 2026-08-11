@@ -24,7 +24,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override IServiceProvider ServiceProvider { get; set; }
 
     private readonly IThreadDispatcher _dispatcher;
-
     private const string LOG_TAG = nameof(ClipboardFactory);
 
     private delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
@@ -161,9 +160,10 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         _dispatcher = ServiceProvider.GetRequiredService<IThreadDispatcher>();
     }
 
-    public override Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
+    public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
     {
-        return _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(ctk));
+        using var nativeClipboardAccessGuard = await NativeClipboardAccess.AcquireAsync(ctk);
+        return await _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(ctk));
     }
 
     private async Task<ClipboardMetaInfomation> GetMetaInfomationCurrentThread(CancellationToken ctk)

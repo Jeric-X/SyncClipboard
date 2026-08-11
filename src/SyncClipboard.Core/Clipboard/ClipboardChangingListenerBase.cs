@@ -6,6 +6,8 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class ClipboardChangingListenerBase : IClipboardChangingListener, IClipboardMoniter, IDisposable
 {
+    private static readonly TimeSpan ClipboardReadTimeout = TimeSpan.FromSeconds(10);
+
     private bool _registed = false;
 
     protected delegate void MetaChanged(ClipboardMetaInfomation? meta);
@@ -18,8 +20,8 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
     {
         add
         {
-            AddRef();
             ChangedImpl += value;
+            AddRef();
         }
         remove
         {
@@ -33,8 +35,8 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
     {
         add
         {
-            AddRef();
             ClipboardChangedImpl += value;
+            AddRef();
         }
         remove
         {
@@ -76,12 +78,14 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
         return ClipboardChangedImpl?.GetInvocationList().Length > 0 || ChangedImpl?.GetInvocationList().Length > 0;
     }
 
-    private MetaChanged NotifyAll => async (meta) =>
+    private async void NotifyAll(ClipboardMetaInfomation? meta)
     {
+        using var cancellationSource = new CancellationTokenSource(ClipboardReadTimeout);
+        var token = cancellationSource.Token;
+
         try
         {
             ClipboardChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept());
-            var token = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token;
             meta ??= await ClipboardFactory.GetMetaInfomation(token);
             var profile = await ClipboardFactory.CreateProfileFromMeta(meta, token);
             ChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept(meta, profile));
@@ -90,7 +94,7 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
         {
             AppCore.Current?.Logger.Write($"Clipboard handler unhandled exception {ex.Message}\n{ex.StackTrace}");
         }
-    };
+    }
 
     ~ClipboardChangingListenerBase() => Dispose();
 

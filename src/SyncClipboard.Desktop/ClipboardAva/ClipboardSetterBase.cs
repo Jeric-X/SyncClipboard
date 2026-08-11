@@ -21,7 +21,7 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
             SetTimeStamp(transfer);
         }
 
-        await ClipboardFactory._semaphoreSlim.WaitAsync(ctk);
+        await NativeClipboardAccess.Semaphore.WaitAsync(ctk);
         try
         {
             await App.Current.Clipboard.SetDataAsync(transfer).WaitAsync(ctk);
@@ -29,7 +29,7 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
         catch { }
         finally
         {
-            ClipboardFactory._semaphoreSlim.Release();
+            NativeClipboardAccess.Semaphore.Release();
         }
 
         App.Current.Services.GetRequiredService<ClipboardListener>().TriggerClipboardChangedEvent();
