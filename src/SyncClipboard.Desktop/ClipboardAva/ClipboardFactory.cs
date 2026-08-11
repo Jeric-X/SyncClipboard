@@ -21,8 +21,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private readonly MultiSourceClipboardReader Clipboard;
 
     private const string LOG_TAG = nameof(ClipboardFactory);
-    public static readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
-
     public ClipboardFactory(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
@@ -36,7 +34,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
         for (int i = 0; i < MAX_RETRY_TIMES; i++)
         {
-            await _semaphoreSlim.WaitAsync(ctk);
+            await NativeClipboardAccess.Semaphore.WaitAsync(ctk);
             try
             {
                 if (OperatingSystem.IsWindows())
@@ -69,7 +67,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             {
                 await Logger.WriteAsync(ex.Message);
             }
-            finally { _semaphoreSlim.Release(); }
+            finally { NativeClipboardAccess.Semaphore.Release(); }
             await Task.Delay(200, ctk);
         }
 

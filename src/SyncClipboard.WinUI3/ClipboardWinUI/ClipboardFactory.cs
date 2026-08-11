@@ -24,10 +24,6 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override IServiceProvider ServiceProvider { get; set; }
 
     private readonly IThreadDispatcher _dispatcher;
-    // SetContent/Flush can raise ContentChanged while pumping the UI dispatcher.
-    // Serialize native reads and writes so the event cannot re-enter WinRT clipboard APIs.
-    internal static readonly SemaphoreSlim ClipboardAccessSemaphore = new(1, 1);
-
     private const string LOG_TAG = nameof(ClipboardFactory);
 
     private delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
@@ -166,15 +162,8 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
     {
-        await ClipboardAccessSemaphore.WaitAsync(ctk);
-        try
-        {
-            return await _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(ctk));
-        }
-        finally
-        {
-            ClipboardAccessSemaphore.Release();
-        }
+        using var nativeClipboardAccessGuard = await NativeClipboardAccess.AcquireAsync(ctk);
+        return await _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(ctk));
     }
 
     private async Task<ClipboardMetaInfomation> GetMetaInfomationCurrentThread(CancellationToken ctk)

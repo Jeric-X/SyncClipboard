@@ -53,14 +53,17 @@ public class ProgressToastReporter : IProgress<HttpDownloadProgress>
             return;
         }
 
-        double? percentNullable = (double)_progress.BytesReceived / _progress.TotalBytesToReceive;
-        if (!percentNullable.HasValue || double.IsNaN(percentNullable.Value) ||
-            percentNullable.Value <= 0.01)
+        if (!_progress.TotalBytesToReceive.HasValue || _progress.TotalBytesToReceive.Value == 0)
         {
             return;
         }
 
-        double percent = percentNullable.Value;
+        double percent = (double)_progress.BytesReceived / _progress.TotalBytesToReceive.Value;
+        if (percent <= 0.01)
+        {
+            return;
+        }
+
         if (UseTrayIcon)
         {
             UpdateTrayIcon(percent);
