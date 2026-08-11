@@ -12,6 +12,7 @@ using SyncClipboard.Desktop.Utilities.CaretPositionProvider;
 using SyncClipboard.Desktop.Utilities.ForegroundWindowInfoProvider;
 using SyncClipboard.Desktop.Utilities.MousePositionProvider;
 using SyncClipboard.Desktop.Views;
+using SyncClipboard.Core.Utilities.Network;
 
 namespace SyncClipboard.Desktop;
 
@@ -38,6 +39,7 @@ public class AppServices
         // 注册剪贴板指纹提供者
         if (OperatingSystem.IsLinux())
         {
+            services.AddSingleton<IWifiNetworkInfoProvider, LinuxWifiNetworkInfoProvider>();
             services.AddSingleton<IClipboardFingerprintProvider, LinuxClipboardFingerprintProvider>();
         }
         else if (OperatingSystem.IsMacOS())
@@ -74,6 +76,7 @@ public class AppServices
 
         if (OperatingSystem.IsWindows())
         {
+            services.AddSingleton<IWifiNetworkInfoProvider, WindowsWifiNetworkInfoProvider>();
             services.AddSingleton<ICaretPositionProvider, FakeCaretPositionProvider>();
             services.AddSingleton<IForegroundWindowInfoProvider, WindowsForegroundWindowInfoProvider>();
             services.AddSingleton<IMousePositionProvider, FakeMousePositionProvider>();

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.NetworkAccountSwitchPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="using:CommunityToolkit.WinUI.Controls"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="10">
+            <ui:SettingsExpander Header="{x:Bind i18n:Strings.AutoSwitchAccount}" Description="{x:Bind _viewModel.StatusText, Mode=OneWay}" IsExpanded="True">
+                <ui:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE701;" />
+                </ui:SettingsExpander.HeaderIcon>
+                <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.Enabled, Mode=TwoWay}" />
+                <ui:SettingsExpander.Items>
+                    <ui:SettingsCard Header="{x:Bind i18n:Strings.NoMatchAction}">
+                        <ComboBox ItemsSource="{x:Bind vm:NetworkAccountSwitchViewModel.NoMatchActions}" SelectedItem="{x:Bind _viewModel.SelectedNoMatchAction, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
+                    </ui:SettingsCard>
+                    <ui:SettingsCard Header="{x:Bind i18n:Strings.DefaultAccount}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowDefaultAccount), Mode=OneWay}">
+                        <ComboBox MinWidth="220"
+                                  ItemsSource="{x:Bind _viewModel.Accounts}"
+                                  SelectedItem="{x:Bind _viewModel.DefaultAccount, Mode=TwoWay}"
+                                  DisplayMemberPath="DisplayName" />
+                    </ui:SettingsCard>
+                    <ui:SettingsCard Header="{x:Bind i18n:Strings.NotifyAfterSwitch}">
+                        <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.NotifyOnChange, Mode=TwoWay}" />
+                    </ui:SettingsCard>
+                    <ui:SettingsCard Header="{x:Bind i18n:Strings.WifiPermission}" Description="{x:Bind _viewModel.WifiPermissionStatusText, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="{x:Bind _viewModel.WifiPermissionButtonText, Mode=OneWay}" Command="{x:Bind _viewModel.RequestWifiAccessCommand}" IsEnabled="{x:Bind _viewModel.CanRequestWifiAccess, Mode=OneWay}" />
+                            <Button Content="{x:Bind i18n:Strings.OpenSystemSettings}" Command="{x:Bind _viewModel.OpenWifiSettingsCommand}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.CanOpenWifiSettings), Mode=OneWay}" />
+                        </StackPanel>
+                    </ui:SettingsCard>
+                    <ui:SettingsCard Header="{x:Bind i18n:Strings.CurrentNetworkStatus}"
+                                     Description="{x:Bind i18n:Strings.CurrentNetworkStatusDescription}"
+                                     IsClickEnabled="True"
+                                     Click="CurrentNetworkStatusClick">
+                        <ui:SettingsCard.ActionIcon>
+                            <FontIcon Glyph="&#xE76C;" />
+                        </ui:SettingsCard.ActionIcon>
+                    </ui:SettingsCard>
+                </ui:SettingsExpander.Items>
+            </ui:SettingsExpander>
+
+            <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock VerticalAlignment="Center" Text="{x:Bind i18n:Strings.Rules}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Button Content="{x:Bind i18n:Strings.AddRule}" Click="AddRuleClick" />
+                </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled">
+                    <StackPanel MinWidth="100">
+                        <Grid Padding="12,8"
+                              Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                              BorderThickness="1"
+                              CornerRadius="8,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="152" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontWeight="SemiBold" Text="{x:Bind i18n:Strings.RuleEnabled}" />
+                            <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{x:Bind i18n:Strings.RuleName}" />
+                            <TextBlock Grid.Column="2" FontWeight="SemiBold" Text="{x:Bind i18n:Strings.TargetAccount}" />
+                            <TextBlock Grid.Column="3"
+                                       HorizontalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Text="{x:Bind i18n:Strings.Actions}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{x:Bind _viewModel.Rules, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NetworkRuleEditor">
+                                    <Grid Padding="12,8"
+                                          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                          BorderThickness="1,0,1,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="152" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox VerticalAlignment="Center" IsChecked="{x:Bind Enabled, Mode=TwoWay}" />
+                                        <TextBlock Grid.Column="1"
+                                                   VerticalAlignment="Center"
+                                                   Text="{x:Bind Name, Mode=OneWay}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Grid.Column="2"
+                                                   VerticalAlignment="Center"
+                                                   Text="{x:Bind TargetAccount.DisplayName, Mode=OneWay}"
+                                                   TextWrapping="Wrap" />
+                                        <StackPanel Grid.Column="3"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Orientation="Horizontal"
+                                                    Spacing="4">
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="MoveRuleUpClick"
+                                                    DataContext="{Binding}">
+                                                <FontIcon Glyph="&#xE74A;" FontSize="14" />
+                                            </Button>
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="MoveRuleDownClick"
+                                                    DataContext="{Binding}">
+                                                <FontIcon Glyph="&#xE74B;" FontSize="14" />
+                                            </Button>
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="EditRuleClick"
+                                                    DataContext="{Binding}">
+                                                <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                                            </Button>
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="DeleteRuleClick"
+                                                    DataContext="{Binding}">
+                                                <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

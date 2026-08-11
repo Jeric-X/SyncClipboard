@@ -15,6 +15,7 @@ abstract public class ClipboardHander : Service
 
     private readonly IServiceProvider sp = AppCore.Current.Services;
     private IClipboardChangingListener ClipboardChangingListener { get; }
+    private IThreadDispatcher ThreadDispatcher { get; }
     private IContextMenu ContextMenu => sp.GetRequiredService<IContextMenu>();
     private ToggleMenuItem? ToggleMenuItem { get; set; }
     protected virtual bool EnableToggleMenuItem => true;
@@ -25,6 +26,7 @@ abstract public class ClipboardHander : Service
         sp = AppCore.Current.Services;
         Logger = sp.GetRequiredService<ILogger>();
         ClipboardChangingListener = sp.GetRequiredService<IClipboardChangingListener>();
+        ThreadDispatcher = sp.GetRequiredService<IThreadDispatcher>();
     }
 
     protected override void StartService()
@@ -54,9 +56,11 @@ abstract public class ClipboardHander : Service
 
     public override void Load()
     {
-        if (ToggleMenuItem is not null)
+        var toggleMenuItem = ToggleMenuItem;
+        if (toggleMenuItem is not null)
         {
-            ToggleMenuItem.Checked = ToggleMenuSwitchOn;
+            var isChecked = ToggleMenuSwitchOn;
+            _ = ThreadDispatcher.RunOnMainThreadAsync(() => toggleMenuItem.Checked = isChecked);
         }
     }
 

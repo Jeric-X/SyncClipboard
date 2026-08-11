@@ -13,5 +13,7 @@ public partial class SyncSettingPage : UserControl
         this.InitializeComponent();
         _viewModel = App.Current.Services.GetRequiredService<SyncSettingViewModel>();
         this.DataContext = _viewModel;
+        AttachedToVisualTree += (_, _) => _viewModel.ActivateNetworkAccountSwitchStatus();
+        DetachedFromVisualTree += (_, _) => _viewModel.DeactivateNetworkAccountSwitchStatus();
     }
 }

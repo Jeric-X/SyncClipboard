@@ -1,0 +1,52 @@
+<ui:ContentDialog x:Class="SyncClipboard.Desktop.Views.NetworkRuleEditDialog"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:ui="using:FluentAvalonia.UI.Controls"
+                  xmlns:i18n="using:SyncClipboard.Core.I18n"
+                  xmlns:vm="using:SyncClipboard.Core.ViewModels"
+                  xmlns:models="using:SyncClipboard.Core.Models"
+                  xmlns:local="using:SyncClipboard.Desktop.Views"
+                  x:DataType="local:NetworkRuleEditDialog"
+                  Title="{x:Static i18n:Strings.EditRule}"
+                  PrimaryButtonText="{x:Static i18n:Strings.Confirm}"
+                  CloseButtonText="{x:Static i18n:Strings.Cancel}"
+                  DefaultButton="Primary">
+    <StackPanel MinWidth="520" MaxWidth="680" Spacing="12">
+        <TextBox Watermark="{x:Static i18n:Strings.RuleName}" Text="{Binding Editor.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding Editor.Enabled, Mode=TwoWay}" />
+        <TextBlock Text="{x:Static i18n:Strings.TargetAccount}" />
+        <ComboBox ItemsSource="{Binding ViewModel.Accounts}" SelectedItem="{Binding Editor.TargetAccount, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="models:DisplayedAccountConfig">
+                    <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Text="{x:Static i18n:Strings.NetworkInterface}" />
+        <ComboBox ItemsSource="{Binding Interfaces}" SelectedItem="{Binding Editor.SelectedInterface, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:NetworkInterfaceChoice">
+                    <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Text="{x:Static i18n:Strings.IpRanges}" />
+        <TextBox MinHeight="86"
+                 VerticalContentAlignment="Top"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Text="{Binding Editor.IpText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <Button HorizontalAlignment="Left" Content="{x:Static i18n:Strings.UseCurrentIp}" Click="UseCurrentIpClick" />
+        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{x:Static i18n:Strings.PreferIpHint}" TextWrapping="Wrap" />
+        <TextBlock Text="{x:Static i18n:Strings.WifiNames}" />
+        <TextBox MinHeight="86"
+                 VerticalContentAlignment="Top"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Text="{Binding Editor.WifiText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <Button HorizontalAlignment="Left" Content="{x:Static i18n:Strings.UseCurrentWifi}" Click="UseCurrentWifiClick" />
+        <TextBlock Text="{x:Static i18n:Strings.MatchMode}" />
+        <ComboBox ItemsSource="{x:Static vm:NetworkAccountSwitchViewModel.MatchModes}" SelectedItem="{Binding Editor.SelectedMatchMode, Mode=TwoWay}" />
+        <TextBlock x:Name="_ValidationMessage" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
+    </StackPanel>
+</ui:ContentDialog>

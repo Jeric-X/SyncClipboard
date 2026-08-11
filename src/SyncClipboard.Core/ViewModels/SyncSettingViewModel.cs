@@ -6,6 +6,8 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
+using SyncClipboard.Core.UserServices;
+using SyncClipboard.Core.Utilities.Network;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -13,6 +15,13 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class SyncSettingViewModel : ObservableObject
 {
     #region account management
+    private static readonly DisplayedAccountConfig NoAccountOption = new()
+    {
+        AccountId = string.Empty,
+        AccountType = string.Empty,
+        DisplayName = Strings.NoAccountSelected,
+    };
+
     [ObservableProperty]
     private DisplayedAccountConfig? selectedAccount;
 
@@ -25,7 +34,28 @@ public partial class SyncSettingViewModel : ObservableObject
     [ObservableProperty]
     private bool showQueryInterval = false;
 
+    [ObservableProperty]
+    private string accountAutoSwitchDescription = Strings.Disabled;
+
+    [ObservableProperty]
+    private bool accountAutoSwitchEnabled;
+
+    partial void OnAccountAutoSwitchEnabledChanged(bool value)
+    {
+        var config = _configManager.GetConfig<NetworkAccountSwitchConfig>();
+        if (config.Enabled != value)
+        {
+            _configManager.SetConfig(config with { Enabled = value });
+        }
+    }
+
+    private bool _isUpdatingSelectedAccount;
+
     public bool IsNotLoggedIn => !IsLoggedIn;
+
+    public bool HasSelectedAccount => SelectedAccount is not null
+        && !string.IsNullOrWhiteSpace(SelectedAccount.AccountId)
+        && !string.IsNullOrWhiteSpace(SelectedAccount.AccountType);
 
     public ObservableCollection<DisplayedAccountConfig> SavedAccounts { get; } = [];
 
@@ -36,7 +66,8 @@ public partial class SyncSettingViewModel : ObservableObject
 
     partial void OnSelectedAccountChanged(DisplayedAccountConfig? value)
     {
-        if (value != null)
+        OnPropertyChanged(nameof(HasSelectedAccount));
+        if (value != null && !_isUpdatingSelectedAccount)
         {
             var accountConfig = new AccountConfig
             {
@@ -44,8 +75,8 @@ public partial class SyncSettingViewModel : ObservableObject
                 AccountType = value.AccountType
             };
 
-            _configManager.SetConfig(accountConfig);
-            UpdateShowQueryInterval(value.AccountType);
+            _accountManager.SelectAccount(accountConfig, AccountManager.AccountSelectionOrigin.Manual);
+            ShowQueryInterval = !accountConfig.IsEmpty() && value.AccountType != OfficialConfig.ConfigTypeName;
         }
     }
 
@@ -58,25 +89,44 @@ public partial class SyncSettingViewModel : ObservableObject
     [RelayCommand]
     private async Task RemoveAccount()
     {
-        if (SelectedAccount != null)
+        var selectedAccount = SelectedAccount;
+        if (HasSelectedAccount && selectedAccount != null)
         {
-            // 显示确认对话框
-            var confirmed = await _dialog.ShowConfirmationAsync(
-                Strings.ConfirmDelete,
-                string.Format(Strings.DeleteAccountConfirmMessage, SelectedAccount.DisplayName));
+            var account = new AccountConfig
+            {
+                AccountId = selectedAccount.AccountId,
+                AccountType = selectedAccount.AccountType,
+            };
+            var switchConfig = _configManager.GetConfig<NetworkAccountSwitchConfig>();
+            var affectedRuleCount = switchConfig.Rules.Count(rule =>
+                rule.TargetAccount.AccountId == account.AccountId
+                && rule.TargetAccount.AccountType == account.AccountType);
+            var message = string.Format(Strings.DeleteAccountConfirmMessage, selectedAccount.DisplayName);
+            if (affectedRuleCount > 0)
+            {
+                message += Environment.NewLine + Environment.NewLine
+                    + string.Format(Strings.AccountRuleCleanup, affectedRuleCount);
+            }
+
+            var confirmed = await _dialog.ShowConfirmationAsync(Strings.ConfirmDelete, message);
 
             if (!confirmed)
             {
                 return;
             }
-            _ = _accountManager.RemoveConfig(SelectedAccount.AccountType, SelectedAccount.AccountId);
+            var cleanup = NetworkAccountSwitchConfigCleaner.RemoveAccount(switchConfig, account);
+            if (cleanup.RemovedRuleCount > 0 || cleanup.RemovedDefaultAccount)
+            {
+                _configManager.SetConfig(cleanup.Config);
+            }
+            _ = _accountManager.RemoveConfig(account.AccountType, account.AccountId);
         }
     }
 
     [RelayCommand]
     private void EditAccount()
     {
-        if (SelectedAccount != null)
+        if (HasSelectedAccount && SelectedAccount != null)
         {
             var accountConfig = new AccountConfig
             {
@@ -94,31 +144,64 @@ public partial class SyncSettingViewModel : ObservableObject
 
     private void LoadSavedAccounts(IEnumerable<DisplayedAccountConfig>? accounts = null)
     {
+        var actualAccounts = (accounts ?? _accountManager.GetSavedAccounts()).ToList();
         SavedAccounts.Clear();
-        var accountsToLoad = accounts ?? _accountManager.GetSavedAccounts();
-        foreach (var account in accountsToLoad)
+        SavedAccounts.Add(NoAccountOption);
+        foreach (var account in actualAccounts)
         {
             SavedAccounts.Add(account);
         }
 
-        HasMultipleAccounts = SavedAccounts.Count > 1;
-        IsLoggedIn = SavedAccounts.Count > 0;
+        HasMultipleAccounts = actualAccounts.Count > 1;
+        IsLoggedIn = actualAccounts.Count > 0;
 
         var currentConfig = _configManager.GetConfig<AccountConfig>();
-        SelectedAccount = SavedAccounts.FirstOrDefault(a =>
-            a.AccountId == currentConfig.AccountId &&
-            a.AccountType == currentConfig.AccountType);
+        SetSelectedAccount(currentConfig);
+    }
 
-        if (SelectedAccount != null)
+    [RelayCommand]
+    private void OpenNetworkAccountSwitch() => _mainVM.NavigateToNextLevel(PageDefinition.NetworkAccountSwitch);
+
+    private void OnNetworkAccountSwitchStatusChanged(object? sender, EventArgs e) =>
+        _ = _threadDispatcher.RunOnMainThreadAsync(() =>
         {
-            UpdateShowQueryInterval(SelectedAccount.AccountType);
+            if (_networkAccountSwitchStatusActive)
+            {
+                AccountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
+            }
+        });
+
+    private void OnNetworkAccountSwitchConfigChanged(NetworkAccountSwitchConfig config) =>
+        _ = _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            AccountAutoSwitchEnabled = config.Enabled;
+        });
+
+    private void SetSelectedAccount(AccountConfig accountConfig)
+    {
+        _isUpdatingSelectedAccount = true;
+        try
+        {
+            SelectedAccount = accountConfig.IsEmpty()
+                ? NoAccountOption
+                : SavedAccounts.FirstOrDefault(a =>
+                    a.AccountId == accountConfig.AccountId
+                    && a.AccountType == accountConfig.AccountType)
+                    ?? NoAccountOption;
+            ShowQueryInterval = HasSelectedAccount
+                && SelectedAccount.AccountType != OfficialConfig.ConfigTypeName;
+        }
+        finally
+        {
+            _isUpdatingSelectedAccount = false;
         }
     }
 
-    private void UpdateShowQueryInterval(string accountType)
+    private void OnCurrentAccountChanged(AccountConfig accountConfig, object? _)
     {
-        ShowQueryInterval = accountType != OfficialConfig.ConfigTypeName;
+        _ = _threadDispatcher.RunOnMainThreadAsync(() => SetSelectedAccount(accountConfig));
     }
+
     #endregion
 
     #region client
@@ -275,17 +358,47 @@ public partial class SyncSettingViewModel : ObservableObject
     private readonly MainViewModel _mainVM;
     private readonly AccountManager _accountManager;
     private readonly IMainWindowDialog _dialog;
+    private readonly IThreadDispatcher _threadDispatcher;
+    private readonly NetworkAccountSwitchService _networkAccountSwitchService;
+    private bool _networkAccountSwitchStatusActive;
 
-    public SyncSettingViewModel(ConfigManager configManager, MainViewModel mainViewModel, AccountManager accountManager, IMainWindowDialog dialog)
+    public void ActivateNetworkAccountSwitchStatus()
+    {
+        if (_networkAccountSwitchStatusActive) return;
+        _networkAccountSwitchStatusActive = true;
+        _networkAccountSwitchService.StatusChanged += OnNetworkAccountSwitchStatusChanged;
+        AccountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
+    }
+
+    public void DeactivateNetworkAccountSwitchStatus()
+    {
+        if (!_networkAccountSwitchStatusActive) return;
+        _networkAccountSwitchStatusActive = false;
+        _networkAccountSwitchService.StatusChanged -= OnNetworkAccountSwitchStatusChanged;
+    }
+
+    public SyncSettingViewModel(
+        ConfigManager configManager,
+        MainViewModel mainViewModel,
+        AccountManager accountManager,
+        IMainWindowDialog dialog,
+        IThreadDispatcher threadDispatcher,
+        NetworkAccountSwitchService networkAccountSwitchService)
     {
         _configManager = configManager;
         _mainVM = mainViewModel;
         _accountManager = accountManager;
         _dialog = dialog;
+        _threadDispatcher = threadDispatcher;
+        _networkAccountSwitchService = networkAccountSwitchService;
 
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
         _configManager.ListenConfig<ClipboardFactoryConfig>(LoadClipboardFactoryConfig);
+        _configManager.ListenConfig<NetworkAccountSwitchConfig>(OnNetworkAccountSwitchConfigChanged);
         _accountManager.SavedAccountsChanged += OnSavedAccountsChanged;
+        _accountManager.CurrentAccountChanged += OnCurrentAccountChanged;
+        accountAutoSwitchEnabled = _configManager.GetConfig<NetworkAccountSwitchConfig>().Enabled;
+        accountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
 
         clientConfig = _configManager.GetConfig<SyncConfig>();
         intervalTime = clientConfig.IntervalTime;

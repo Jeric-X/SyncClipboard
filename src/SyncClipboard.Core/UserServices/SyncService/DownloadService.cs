@@ -50,11 +50,12 @@ public class DownloadService : Service
     private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private readonly HistoryManager _historyManager;
     private readonly ProfileNotificationHelper _clipboardNotificationHelper;
+    private IRemoteClipboardServer? _subscribedRemoteServer;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
-    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn;
-    private bool ClientSwitchOn => _syncConfig.SyncSwitchOn;
+    private bool SwitchOn => _syncConfig.SyncSwitchOn && _syncConfig.PullSwitchOn && _remoteClipboardServerFactory.HasActiveServer;
+    private bool ClientSwitchOn => _syncConfig.SyncSwitchOn && _remoteClipboardServerFactory.HasActiveServer;
 
     #region Hotkey
     private static readonly string QuickDownloadAndPasteGuid = "8a4a033e-31da-1b87-76ea-548885866b66";
@@ -140,7 +141,6 @@ public class DownloadService : Service
         _clipboardNotificationHelper = clipboardNotificationHelper;
         _localClipboardSetter = localClipboardSetter;
 
-        _remoteClipboardServerFactory.CurrentServerChanged += OnCurrentServerChanged;
         _hotkeyManager.RegisterCommands(CommandCollection);
     }
 
@@ -190,6 +190,7 @@ public class DownloadService : Service
 
     protected override void StartService()
     {
+        _remoteClipboardServerFactory.CurrentServerChanged += OnCurrentServerChanged;
         ReLoad();
     }
 
@@ -215,6 +216,7 @@ public class DownloadService : Service
 
                 // 订阅远程剪贴板服务器的RemoteProfileChanged事件
                 var remoteServer = _remoteClipboardServerFactory.Current;
+                _subscribedRemoteServer = remoteServer;
                 remoteServer.PollStatusEvent -= OnPollStatusChanged;
                 remoteServer.PollStatusEvent += OnPollStatusChanged;
 
@@ -236,9 +238,13 @@ public class DownloadService : Service
                 _clipboardMoniter.ClipboardChanged -= StopAndReloadByNewClipboard;
                 _clipboardListener.Changed -= ClipboardProfileChanged;
 
-                var remoteServer = _remoteClipboardServerFactory.Current;
-                remoteServer.RemoteProfileChanged -= OnRemoteProfileChanged;
-                remoteServer.PollStatusEvent -= OnPollStatusChanged;
+                var remoteServer = _subscribedRemoteServer;
+                _subscribedRemoteServer = null;
+                if (remoteServer is not null)
+                {
+                    remoteServer.RemoteProfileChanged -= OnRemoteProfileChanged;
+                    remoteServer.PollStatusEvent -= OnPollStatusChanged;
+                }
 
                 _localProfileCache = null;
                 SetStopStatus();
@@ -546,6 +552,12 @@ public class DownloadService : Service
 
     private async void QuickDownload(bool paste)
     {
+        if (!_remoteClipboardServerFactory.HasActiveServer)
+        {
+            _notificationManager.ShowText("SyncClipboard", I18n.Strings.SyncAccountNotSelected);
+            return;
+        }
+
         _remoteProfileCache = null;
         _isQuickDownload = true;
         _isQuickDownloadAndPaste = paste;

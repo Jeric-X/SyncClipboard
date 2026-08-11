@@ -1,0 +1,154 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.NetworkAccountSwitchPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:NetworkAccountSwitchViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="700"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="10">
+            <ui:SettingsExpander Header="{x:Static i18n:Strings.AutoSwitchAccount}" Description="{Binding StatusText}" IsExpanded="True">
+                <ui:SettingsExpander.IconSource>
+                    <ui:FontIconSource Glyph="&#xE701;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </ui:SettingsExpander.IconSource>
+                <ui:SettingsExpander.Footer>
+                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                </ui:SettingsExpander.Footer>
+                <ui:SettingsExpander.Items>
+                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.NoMatchAction}">
+                        <ui:SettingsExpanderItem.Footer>
+                            <ComboBox ItemsSource="{x:Static vm:NetworkAccountSwitchViewModel.NoMatchActions}" SelectedItem="{Binding SelectedNoMatchAction, Mode=TwoWay}" />
+                        </ui:SettingsExpanderItem.Footer>
+                    </ui:SettingsExpanderItem>
+                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.DefaultAccount}" IsVisible="{Binding ShowDefaultAccount}">
+                        <ui:SettingsExpanderItem.Footer>
+                            <ComboBox MinWidth="220" ItemsSource="{Binding Accounts}" SelectedItem="{Binding DefaultAccount, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </ui:SettingsExpanderItem.Footer>
+                    </ui:SettingsExpanderItem>
+                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.NotifyAfterSwitch}">
+                        <ui:SettingsExpanderItem.Footer>
+                            <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnChange, Mode=TwoWay}" />
+                        </ui:SettingsExpanderItem.Footer>
+                    </ui:SettingsExpanderItem>
+                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.WifiPermission}" Description="{Binding WifiPermissionStatusText}">
+                        <ui:SettingsExpanderItem.Footer>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="{Binding WifiPermissionButtonText}" Command="{Binding RequestWifiAccessCommand}" IsEnabled="{Binding CanRequestWifiAccess}" />
+                                <Button Content="{x:Static i18n:Strings.OpenSystemSettings}" Command="{Binding OpenWifiSettingsCommand}" IsVisible="{Binding CanOpenWifiSettings}" />
+                            </StackPanel>
+                        </ui:SettingsExpanderItem.Footer>
+                    </ui:SettingsExpanderItem>
+                    <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CurrentNetworkStatus}"
+                                             Description="{x:Static i18n:Strings.CurrentNetworkStatusDescription}"
+                                             IsClickEnabled="True"
+                                             Click="CurrentNetworkStatusClick"
+                                             ActionIconSource="{StaticResource GoIcon}" />
+                </ui:SettingsExpander.Items>
+            </ui:SettingsExpander>
+
+            <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock VerticalAlignment="Center"
+                               Text="{x:Static i18n:Strings.Rules}"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+                    <Button Content="{x:Static i18n:Strings.AddRule}" Click="AddRuleClick" />
+                </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel MinWidth="100">
+                        <Border Padding="12,8"
+                                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8,8,0,0">
+                            <Grid ColumnDefinitions="100,2*,2*,152">
+                                <TextBlock FontWeight="SemiBold" Text="{x:Static i18n:Strings.RuleEnabled}" />
+                                <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{x:Static i18n:Strings.RuleName}" />
+                                <TextBlock Grid.Column="2" FontWeight="SemiBold" Text="{x:Static i18n:Strings.TargetAccount}" />
+                                <TextBlock Grid.Column="3"
+                                           HorizontalAlignment="Center"
+                                           FontWeight="SemiBold"
+                                           Text="{x:Static i18n:Strings.Actions}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Rules}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NetworkRuleEditor">
+                                    <Border Padding="12,8"
+                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                            BorderThickness="1,0,1,1">
+                                        <Grid ColumnDefinitions="100,2*,2*,152">
+                                            <CheckBox VerticalAlignment="Center" IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                            <TextBlock Grid.Column="1"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding Name}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="2"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding TargetAccount.DisplayName}"
+                                                       TextWrapping="Wrap" />
+                                            <StackPanel Grid.Column="3"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Orientation="Horizontal"
+                                                        Spacing="4">
+                                                <Button Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        Click="MoveRuleUpClick"
+                                                        DataContext="{Binding}"
+                                                        ToolTip.Tip="{x:Static i18n:Strings.MoveUp}">
+                                                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE74A;" />
+                                                </Button>
+                                                <Button Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        Click="MoveRuleDownClick"
+                                                        DataContext="{Binding}"
+                                                        ToolTip.Tip="{x:Static i18n:Strings.MoveDown}">
+                                                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE74B;" />
+                                                </Button>
+                                                <Button Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        Click="EditRuleClick"
+                                                        DataContext="{Binding}"
+                                                        ToolTip.Tip="{x:Static i18n:Strings.EditRule}">
+                                                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE70F;" />
+                                                </Button>
+                                                <Button Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        Click="DeleteRuleClick"
+                                                        DataContext="{Binding}"
+                                                        ToolTip.Tip="{x:Static i18n:Strings.DeleteRule}">
+                                                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE74D;" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

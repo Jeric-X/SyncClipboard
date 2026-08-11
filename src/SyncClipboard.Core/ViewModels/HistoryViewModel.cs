@@ -172,20 +172,23 @@ public partial class HistoryViewModel : ObservableObject
 
     private void OnHistoryConfigChanged(RuntimeHistoryConfig cfg)
     {
-        var newEnable = cfg.EnableSyncHistory;
-        if (newEnable == EnableSyncHistory)
-            return;
+        _ = _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            var newEnable = cfg.EnableSyncHistory;
+            if (newEnable == EnableSyncHistory)
+                return;
 
-        EnableSyncHistory = newEnable;
-        if (EnableSyncHistory)
-        {
-            historySyncServer = remoteServerFactory.Current as IOfficialSyncServer;
-            _ = Reload();
-        }
-        else
-        {
-            historySyncServer = null;
-        }
+            EnableSyncHistory = newEnable;
+            if (EnableSyncHistory)
+            {
+                historySyncServer = remoteServerFactory.Current as IOfficialSyncServer;
+                _ = Reload();
+            }
+            else
+            {
+                historySyncServer = null;
+            }
+        });
     }
 
     private void ApplyFilter()

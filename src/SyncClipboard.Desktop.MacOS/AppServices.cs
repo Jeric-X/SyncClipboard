@@ -22,6 +22,7 @@ public class AppServices
         services.AddSingleton<IMainWindow, MainWindow>();
         services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         services.AddSingleton<ITrayIcon, TrayIconImpl>();
+        services.AddSingleton<IWifiNetworkInfoProvider, MacWifiNetworkInfoProvider>();
         return services;
     }
 }

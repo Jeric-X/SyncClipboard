@@ -63,13 +63,22 @@
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EditAccountConfig}"
                                          IsClickEnabled="True"
                                          Command="{Binding EditAccountCommand}"
-                                         IsVisible="{Binding SelectedAccount, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                         IsVisible="{Binding HasSelectedAccount}"
                                          ActionIconSource="{StaticResource GoIcon}">
                     <ui:SettingsExpanderItem.Footer>
                         <Button MinWidth="60"
                                 Margin="0,0,10,0"
                                 Content="{x:Static i18n:Strings.DeleteAccount}"
                                 Command="{Binding RemoveAccountCommand}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AutoSwitchAccount}"
+                                         Description="{Binding AccountAutoSwitchDescription}"
+                                         IsClickEnabled="True"
+                                         Command="{Binding OpenNetworkAccountSwitchCommand}"
+                                         ActionIconSource="{StaticResource GoIcon}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AccountAutoSwitchEnabled, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
             </ui:SettingsExpander.Items>

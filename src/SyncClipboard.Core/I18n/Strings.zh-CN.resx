@@ -1190,4 +1190,72 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryMultiSelectUnstarConfirmMessage" xml:space="preserve">
     <value>将取消收藏 {0} 条历史记录。</value>
   </data>
+  <data name="AutoSwitchAccount" xml:space="preserve"><value>自动切换账号</value></data>
+  <data name="AutoSwitchAccountDescription" xml:space="preserve"><value>根据 Wi-Fi 和本机 IP 规则切换账号</value></data>
+  <data name="CurrentNetwork" xml:space="preserve"><value>当前网络</value></data>
+  <data name="CurrentNetworkStatus" xml:space="preserve"><value>当前网络状态</value></data>
+  <data name="CurrentNetworkStatusDescription" xml:space="preserve"><value>查看网络连接和 IP 地址</value></data>
+  <data name="RecheckNetwork" xml:space="preserve"><value>重新检测</value></data>
+  <data name="NetworkConnectionCount" xml:space="preserve"><value>检测到 {0} 个网络连接</value></data>
+  <data name="NoNetworkConnections" xml:space="preserve"><value>未检测到可用的网络连接</value></data>
+  <data name="DefaultGatewayConnection" xml:space="preserve"><value>默认出口连接</value></data>
+  <data name="NoDefaultGateway" xml:space="preserve"><value>无默认网关</value></data>
+  <data name="WifiName" xml:space="preserve"><value>Wi-Fi 名称</value></data>
+  <data name="Ipv4Addresses" xml:space="preserve"><value>IPv4 地址</value></data>
+  <data name="Ipv6Addresses" xml:space="preserve"><value>IPv6 地址</value></data>
+  <data name="WifiPermission" xml:space="preserve"><value>Wi-Fi 名称权限</value></data>
+  <data name="RequestPermission" xml:space="preserve"><value>请求权限</value></data>
+  <data name="OpenSystemSettings" xml:space="preserve"><value>打开系统设置</value></data>
+  <data name="NoMatchAction" xml:space="preserve"><value>无规则匹配时</value></data>
+  <data name="KeepCurrentAccount" xml:space="preserve"><value>保持当前账号</value></data>
+  <data name="SwitchToDefaultAccount" xml:space="preserve"><value>切换默认账号</value></data>
+  <data name="RemoveSyncAccount" xml:space="preserve"><value>移除同步账号</value></data>
+  <data name="NoAccountSelected" xml:space="preserve"><value>不选择</value></data>
+  <data name="SyncAccountNotSelected" xml:space="preserve"><value>未选择同步账号。</value></data>
+  <data name="DefaultAccount" xml:space="preserve"><value>默认账号</value></data>
+  <data name="NotifyAfterSwitch" xml:space="preserve"><value>切换后通知</value></data>
+  <data name="Rules" xml:space="preserve"><value>规则</value></data>
+  <data name="RuleEnabled" xml:space="preserve"><value>启用</value></data>
+  <data name="AddRule" xml:space="preserve"><value>添加规则</value></data>
+  <data name="DeleteRule" xml:space="preserve"><value>删除规则</value></data>
+  <data name="MoveUp" xml:space="preserve"><value>上移</value></data>
+  <data name="MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="RuleName" xml:space="preserve"><value>规则名称</value></data>
+  <data name="EditRule" xml:space="preserve"><value>编辑规则</value></data>
+  <data name="EnterRuleName" xml:space="preserve"><value>请输入规则名称。</value></data>
+  <data name="TargetAccount" xml:space="preserve"><value>目标账号</value></data>
+  <data name="NetworkInterface" xml:space="preserve"><value>网络连接</value></data>
+  <data name="AutomaticInterface" xml:space="preserve"><value>自动</value></data>
+  <data name="MissingNetworkInterface" xml:space="preserve"><value>网络连接“{0}”已不存在，请重新选择。</value></data>
+  <data name="MatchMode" xml:space="preserve"><value>匹配模式</value></data>
+  <data name="MatchAny" xml:space="preserve"><value>Wi-Fi 名称或 IP 地址任一匹配</value></data>
+  <data name="MatchAll" xml:space="preserve"><value>Wi-Fi 名称和 IP 地址都匹配</value></data>
+  <data name="WifiNames" xml:space="preserve"><value>Wi-Fi 名称（每行一个）</value></data>
+  <data name="IpRanges" xml:space="preserve"><value>IP 地址或 CIDR 网段（每行一个，# 后可添加注释）</value></data>
+  <data name="PreferIpHint" xml:space="preserve"><value>建议优先使用 IP 地址规则；只有 IP 地址无法满足需求时，再使用 Wi-Fi 名称。</value></data>
+  <data name="UseCurrentWifi" xml:space="preserve"><value>使用当前 Wi-Fi</value></data>
+  <data name="UseCurrentIp" xml:space="preserve"><value>使用当前 IP</value></data>
+  <data name="SaveSettings" xml:space="preserve"><value>保存设置</value></data>
+  <data name="SelectAccountFirst" xml:space="preserve"><value>请选择目标账号。</value></data>
+  <data name="AddConditionFirst" xml:space="preserve"><value>请至少添加一个 Wi-Fi 名称或有效 IP 网段。</value></data>
+  <data name="InvalidIpRange" xml:space="preserve"><value>无效的 IP 地址或 CIDR：{0}</value></data>
+  <data name="SettingsSaved" xml:space="preserve"><value>设置已保存</value></data>
+  <data name="DeleteRuleConfirm" xml:space="preserve"><value>确定删除规则“{0}”吗？</value></data>
+  <data name="AccountRuleCleanup" xml:space="preserve"><value>同时会删除使用此账号的 {0} 条自动切换规则。</value></data>
+  <data name="Disabled" xml:space="preserve"><value>未启用</value></data>
+  <data name="Evaluating" xml:space="preserve"><value>正在检测当前网络…</value></data>
+  <data name="Matched" xml:space="preserve"><value>已匹配 {0} → {1}</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>无规则匹配</value></data>
+  <data name="NoMatchSwitchDefault" xml:space="preserve"><value>无规则匹配，切换默认账号 → {0}</value></data>
+  <data name="SyncAccountRemoved" xml:space="preserve"><value>无规则匹配，已移除同步账号</value></data>
+  <data name="ManualOverride" xml:space="preserve"><value>正在使用手动选择的账号，网络变化后恢复自动切换</value></data>
+  <data name="WifiNotRequested" xml:space="preserve"><value>尚未请求 Wi-Fi 名称权限</value></data>
+  <data name="WifiRequesting" xml:space="preserve"><value>正在请求 Wi-Fi 名称权限…</value></data>
+  <data name="WifiGranted" xml:space="preserve"><value>已授权</value></data>
+  <data name="WifiGrantedWithName" xml:space="preserve"><value>已授权 · 当前 Wi-Fi：{0}</value></data>
+  <data name="WifiGrantedNoNetwork" xml:space="preserve"><value>已授权，但未检测到已连接的 Wi-Fi</value></data>
+  <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi 名称权限被拒绝</value></data>
+  <data name="WifiUnsupported" xml:space="preserve"><value>当前环境无法检测 Wi-Fi 名称，IP 规则仍可使用</value></data>
+  <data name="RuleAccountMissing" xml:space="preserve"><value>规则“{0}”已匹配，但其目标账号不存在，已移除同步账号</value></data>
 </root>

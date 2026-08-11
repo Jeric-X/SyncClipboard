@@ -10,5 +10,7 @@
 	<string>SyncClipboard</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SyncClipboard uses the connected Wi-Fi name to select the configured synchronization account.</string>
 </dict>
 </plist>

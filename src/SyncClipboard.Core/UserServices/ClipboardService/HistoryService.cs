@@ -88,6 +88,7 @@ public class HistoryService : ClipboardHander
 
     private void OnServerChanged(object? sender, EventArgs e)
     {
+        _syncingTask.Cancel();
         UnsubscribeFromServer();
 
         var currentServer = remoteServerFactory.Current;
@@ -102,14 +103,23 @@ public class HistoryService : ClipboardHander
         }
 
         _lastSyncTime = null;
-        TriggerSyncTask();
+        if (remoteServerFactory.HasActiveServer)
+        {
+            TriggerSyncTask();
+        }
+        else
+        {
+            trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
+        }
     }
 
     private void SetRuntimeConfig()
     {
         var runtimeHistoryConfig = new RuntimeHistoryConfig
         {
-            EnableSyncHistory = _currentServer is IOfficialSyncServer && _historyConfig.EnableSyncHistory && _historyConfig.EnableHistory,
+            EnableSyncHistory = _currentServer is IOfficialSyncServer
+                && _historyConfig.EnableSyncHistory
+                && _historyConfig.EnableHistory,
         };
 
         runTimeConfig.SetConfig(runtimeHistoryConfig);
