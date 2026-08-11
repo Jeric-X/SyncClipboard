@@ -37,8 +37,8 @@ internal sealed class MacWifiNetworkInfoProvider : IWifiNetworkInfoProvider
         try
         {
             var networks = (_wifiClient.Interfaces ?? [])
-                .Where(item => !string.IsNullOrEmpty(item.Ssid))
-                .Select(item => new WifiNetworkInfo(item.InterfaceName, item.InterfaceName, item.Ssid!))
+                .Where(item => !string.IsNullOrEmpty(item.InterfaceName) && !string.IsNullOrEmpty(item.Ssid))
+                .Select(item => new WifiNetworkInfo(item.InterfaceName!, item.InterfaceName!, item.Ssid!))
                 .ToList();
 
             var status = _locationManager.AuthorizationStatus switch
