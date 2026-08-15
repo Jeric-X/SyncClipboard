@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- The single source of truth for the application version. -->
-    <VersionPrefix>3.1.9</VersionPrefix>
+    <VersionPrefix>3.2.0</VersionPrefix>
     <!-- Leave empty for stable builds, or use a value such as beta1 -->
     <VersionSuffix></VersionSuffix>
   </PropertyGroup>
