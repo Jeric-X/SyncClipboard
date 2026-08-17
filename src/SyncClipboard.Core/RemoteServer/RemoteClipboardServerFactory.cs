@@ -32,6 +32,14 @@ public class RemoteClipboardServerFactory
 
         _syncConfig = _configManager.GetConfig<SyncConfig>();
         _configManager.ListenConfig<SyncConfig>(OnSyncConfigChanged);
+
+        ProxyManager.GlobalProxyChanged += OnProxyChanged;
+    }
+
+    private void OnProxyChanged()
+    {
+        // 不调 SetProxy+ApplyConfig 的轻量重建，直接走 ResetCurrentServer 与账号切换语义一致。
+        ResetCurrentServer();
     }
 
     private void OnAccountChanged(AccountConfig accountConfig, object? config)
@@ -52,6 +60,7 @@ public class RemoteClipboardServerFactory
         {
             _configDetail = config;
             _currentAdapter?.SetConfig(_configDetail, _syncConfig);
+            _currentAdapter?.SetProxy(ProxyManager.CurrentProxy);
             _current?.OnSyncConfigChanged(_syncConfig);
         }
     }
@@ -62,6 +71,7 @@ public class RemoteClipboardServerFactory
         if (_currentAdapter is not null && _configDetail is not null)
         {
             _currentAdapter.SetConfig(_configDetail, _syncConfig);
+            _currentAdapter.SetProxy(ProxyManager.CurrentProxy); // ApplyConfig 之前 push 最新代理
             _current?.OnSyncConfigChanged(_syncConfig);
         }
     }
@@ -100,6 +110,7 @@ public class RemoteClipboardServerFactory
         }
 
         adapter.SetConfig(detail, _syncConfig);
+        adapter.SetProxy(ProxyManager.CurrentProxy);
         IRemoteClipboardServer server;
         if (adapter is IOfficialServerAdapter eventServerAdapter)
         {

@@ -33,6 +33,7 @@ public sealed class OfficialAdapter(
     private HubConnection? _hubConnection;
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
+    private IWebProxy _proxy = new WebProxy();
 
     public event Action<ProfileDto>? ProfileDtoChanged;
     public event Action<HistoryRecordDto>? HistoryChanged;
@@ -49,6 +50,12 @@ public sealed class OfficialAdapter(
             Password = config.Password,
             DeletePreviousFilesOnPush = config.DeletePreviousFilesOnPush
         }, syncConfig);
+    }
+
+    public void SetProxy(IWebProxy proxy)
+    {
+        _proxy = proxy;
+        _webDavAdapter.SetProxy(proxy);
     }
 
     public void ApplyConfig()
@@ -85,6 +92,7 @@ public sealed class OfficialAdapter(
                 {
                     var base64 = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_officialConfig.UserName}:{_officialConfig.Password}"));
                     config.Headers.Add("Authorization", "Basic " + base64);
+                    config.Proxy = _proxy;
                 })
                 .Build();
         }
@@ -463,7 +471,10 @@ public sealed class OfficialAdapter(
         {
             _httpClient.Dispose();
 
-            var handler = new HttpClientHandler();
+            var handler = new HttpClientHandler
+            {
+                Proxy = _proxy // 显式应用代理
+            };
             _httpClient = new HttpClient(handler)
             {
                 BaseAddress = new Uri(_officialConfig.RemoteURL.TrimEnd('/') + '/')
