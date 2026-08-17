@@ -339,6 +339,7 @@ public partial class AccountConfigEditViewModel(
             var configInstance = CreateConfigInstance() ?? throw new InvalidOperationException(Strings.CannotCreateConfigInstance);
             var syncConfig = _configManager.GetConfig<SyncConfig>();
             adapter.SetConfig(configInstance, syncConfig);
+            adapter.SetProxy(ProxyManager.CurrentProxy);
             adapter.ApplyConfig();
 
             await adapter.TestConnectionAsync(cancellationToken);
