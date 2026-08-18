@@ -43,7 +43,12 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
 
                 foreach (var record in batch)
                 {
-                    await repository.DeleteHistoryByOverCount(record, token);
+                    await repository.MarkForDeletionAsync(record, token);
+                }
+                await repository.SaveChangesAsync(token);
+                foreach (var record in batch)
+                {
+                    await repository.OnRecordDeletedAsync(record, token);
                 }
                 deleted += (uint)batch.Count;
             }
@@ -78,7 +83,12 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
 
                 foreach (var record in batch)
                 {
-                    await repository.DeleteHistoryByOverCount(record, token);
+                    await repository.MarkForDeletionAsync(record, token);
+                }
+                await repository.SaveChangesAsync(token);
+                foreach (var record in batch)
+                {
+                    await repository.OnRecordDeletedAsync(record, token);
                 }
                 deleted += (uint)batch.Count;
             }
