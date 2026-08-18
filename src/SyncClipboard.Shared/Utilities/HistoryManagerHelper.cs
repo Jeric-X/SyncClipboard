@@ -21,15 +21,15 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
 
         while (!token.IsCancellationRequested)
         {
-            uint count = (uint)await records.Where(repository.QueryCount).CountAsync(token);
-            if (count <= maxCount)
-            {
-                break;
-            }
-
             await repository.OnBatchStartAsync(token);
             try
             {
+                uint count = (uint)await records.Where(repository.QueryCount).CountAsync(token);
+                if (count <= maxCount)
+                {
+                    break;
+                }
+
                 var take = (int)Math.Min(BatchSize, count - maxCount);
                 var batch = await records.Where(repository.QueryToDeleteByOverCount)
                     .OrderBy(repository.QueryDeleteOrderBy)

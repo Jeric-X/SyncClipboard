@@ -552,6 +552,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public async Task OnBatchEndAsync(CancellationToken token)
     {
+        _dbContext.ChangeTracker.Clear();
         _sem.Release();
         await Task.Delay(TimeSpan.FromSeconds(10), token);
     }
