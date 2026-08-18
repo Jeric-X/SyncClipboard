@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Encodings.Web;
@@ -39,6 +40,8 @@ namespace SyncClipboard.Core.Utilities.Web
             }
         }
 
+        private IWebProxy _proxy = new WebProxy();
+
         private HttpClient? httpClient;
         private HttpClient HttpClient
         {
@@ -67,9 +70,23 @@ namespace SyncClipboard.Core.Utilities.Web
             SetAuthHeader();
         }
 
+        public void SetProxy(IWebProxy proxy)
+        {
+            _proxy = proxy;
+            // 如果 HttpClient 已经懒加载过，立即重建以应用新代理；
+            // 如果还未创建，下次懒加载时自然会使用新 _proxy，无需主动重建。
+            if (httpClient is not null)
+            {
+                ReInitHttpClient();
+            }
+        }
+
         protected virtual HttpClient CreateHttpClient()
         {
-            var httpclientHandler = new HttpClientHandler();
+            var httpclientHandler = new HttpClientHandler
+            {
+                Proxy = _proxy // 显式应用代理
+            };
             if (TrustInsecureCertificate)
             {
                 httpclientHandler.ServerCertificateCustomValidationCallback = delegate { return true; };

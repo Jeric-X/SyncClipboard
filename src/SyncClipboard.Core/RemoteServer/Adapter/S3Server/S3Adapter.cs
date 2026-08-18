@@ -6,6 +6,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.S3Server;
@@ -22,6 +23,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
     private S3Config _s3Config = new();
     private SyncConfig _syncConfig = new();
     private AmazonS3Client _s3Client;
+    private IWebProxy _proxy = new WebProxy();
     private bool IsCustomEndpoint => !string.IsNullOrWhiteSpace(_s3Config.ServiceURL);
 
     public S3Adapter(ILogger logger)
@@ -34,6 +36,11 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
     {
         _s3Config = config;
         _syncConfig = syncConfig;
+    }
+
+    public void SetProxy(IWebProxy proxy)
+    {
+        _proxy = proxy;
     }
 
     public void ApplyConfig()
@@ -293,7 +300,27 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
             config.RegionEndpoint = RegionEndpoint.USEast1;
         }
 
+        config.HttpClientFactory = new S3ProxyHttpClientFactory(_proxy);
+
         return new AmazonS3Client(credentials, config);
+    }
+
+    /// <summary>
+    /// AWS SDK 的 HttpClientFactory 实现：每次 CreateHttpClient 返回带 _proxy 的 HttpClient。
+    /// SDK 负责释放 HttpClient；本工厂 Dispose 是空操作。
+    /// </summary>
+    private sealed class S3ProxyHttpClientFactory(IWebProxy proxy) : Amazon.Runtime.HttpClientFactory
+    {
+        private readonly IWebProxy _proxy = proxy;
+
+        public override HttpClient CreateHttpClient(IClientConfig clientConfig)
+        {
+            var handler = new HttpClientHandler
+            {
+                Proxy = _proxy
+            };
+            return new HttpClient(handler);
+        }
     }
 
     private void ApplyCompatibilityForPut(PutObjectRequest request)

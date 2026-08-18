@@ -17,6 +17,8 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
     private readonly ILogger _logger;
     private readonly IAppConfig _appConfig;
 
+    private IWebProxy _proxy = new WebProxy();
+
     private WebDavConfig _webDavConfig;
     private SyncConfig? _syncConfig;
 
@@ -34,6 +36,12 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
     {
         _webDavConfig = config;
         _syncConfig = syncConfig;
+    }
+
+    public void SetProxy(IWebProxy proxy)
+    {
+        _proxy = proxy;
+        _webDav.SetProxy(proxy); // 透传给当前 WebDav 实例（如果 HttpClient 已懒加载会立即重建）
     }
 
     public void ApplyConfig()
@@ -54,7 +62,7 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         var timeout = _syncConfig?.TimeOut != 0 ? _syncConfig?.TimeOut ?? 100u : 100u; // 默认100秒
         var trustInsecureCertificate = _syncConfig?.IgnoreCertificateErrors ?? false;
         var webDav = new WebDav(credential, _appConfig, trustInsecureCertificate, _logger) { Timeout = timeout };
-
+        webDav.SetProxy(_proxy);
         return webDav;
     }
 

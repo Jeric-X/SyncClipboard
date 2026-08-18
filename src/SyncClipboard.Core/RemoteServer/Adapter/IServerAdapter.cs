@@ -1,3 +1,4 @@
+using System.Net;
 using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter;
@@ -7,6 +8,7 @@ public interface IServerAdapter
     Task TestConnectionAsync(CancellationToken cancellationToken = default);
     void SetConfig(object config, SyncConfig syncConfig);
     void ApplyConfig();
+    void SetProxy(IWebProxy proxy);
 }
 
 public interface IServerAdapter<T> : IServerAdapter where T : IAdapterConfig<T>
