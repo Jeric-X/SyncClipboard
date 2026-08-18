@@ -13,4 +13,7 @@ public interface IHistoryEntityRepository<TEntity, TDeleteOrderKey> where TEntit
     public Expression<Func<TEntity, TDeleteOrderKey>> QueryDeleteOrderBy { get; }
 
     public Task DeleteHistoryByOverCount(TEntity entity, CancellationToken token);
+
+    public Task OnBatchStartAsync(CancellationToken token) => Task.CompletedTask;
+    public Task OnBatchEndAsync(CancellationToken token) => Task.CompletedTask;
 }

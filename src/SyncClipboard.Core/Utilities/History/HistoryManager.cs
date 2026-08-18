@@ -457,18 +457,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-            var expiredRecords = _dbContext.HistoryRecords
-                .Where(r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly)
-                .ToList();
+            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
+                r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
 
-            foreach (var record in expiredRecords)
+            if (deleted > 0)
             {
-                await RemoveHistory(record, token);
-            }
-
-            if (expiredRecords.Count > 0)
-            {
-                _logger.Write("HistoryManager", $"Cleaned up {expiredRecords.Count} expired history records");
+                _logger.Write("HistoryManager", $"Cleaned up {deleted} expired history records");
             }
         }
         catch (Exception ex)

@@ -492,34 +492,11 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return;
         }
 
-        var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
+        var cutoff = DateTime.UtcNow - TimeSpan.FromMinutes(retentionMinutes);
 
-        await _sem.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _sem.Release());
-
-        var batch = await _dbContext.HistoryRecords
-            .Where(r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
-                        && r.LastModified < cutoff && r.LastAccessed < cutoff)
-            .OrderBy(r => r.LastModified > r.LastAccessed ? r.LastModified : r.LastAccessed)
-            .ToListAsync(token);
-
-        if (batch.Count == 0)
-        {
-            return;
-        }
-
-        foreach (var rec in batch)
-        {
-            rec.IsDeleted = true;
-            rec.LastModified = DateTime.UtcNow;
-        }
-        await _dbContext.SaveChangesAsync(token);
-
-        foreach (var rec in batch)
-        {
-            await NotifyProfileChangeAsync(rec);
-            await DeleteProfileDataIfNeed(rec, token);
-        }
+        await _historyManagerHelper.RemoveExpiredInBatchesAsync(
+            r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
+                 && r.LastModified < cutoff && r.LastAccessed < cutoff, token);
     }
 
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
@@ -550,13 +527,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted;
-    public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastAccessed;
+    public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
     public async Task DeleteHistoryByOverCount(HistoryRecordEntity entity, CancellationToken token)
     {
-        await _sem.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _sem.Release());
-
         var existing = await Query(entity.UserId, entity.Type, entity.Hash, token);
         if (existing is null)
         {
@@ -565,9 +539,21 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         existing.IsDeleted = true;
         existing.LastModified = DateTime.UtcNow;
+        existing.Version++;
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(existing);
         await DeleteProfileDataIfNeed(existing, token);
+    }
+
+    public async Task OnBatchStartAsync(CancellationToken token)
+    {
+        await _sem.WaitAsync(token);
+    }
+
+    public async Task OnBatchEndAsync(CancellationToken token)
+    {
+        _sem.Release();
+        await Task.Delay(TimeSpan.FromSeconds(10), token);
     }
 
     public Task<uint> SetRecordsMaxCount(uint maxCount, CancellationToken token = default)

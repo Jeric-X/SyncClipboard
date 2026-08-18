@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace SyncClipboard.Shared.Utilities;
@@ -15,22 +16,78 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
             return 0;
         }
 
-        uint count = (uint)await records.Where(repository.QueryCount).CountAsync(token);
+        const int BatchSize = 500;
+        uint deleted = 0;
 
-        if (count > maxCount)
+        while (!token.IsCancellationRequested)
         {
-            var toDeletes = records.Where(repository.QueryToDeleteByOverCount);
-            toDeletes = toDeletes.OrderBy(repository.QueryDeleteOrderBy);
-            toDeletes = toDeletes.Take((int)(count - maxCount));
-            var toDeletesList = toDeletes.ToList();
-
-            foreach (var record in toDeletesList)
+            uint count = (uint)await records.Where(repository.QueryCount).CountAsync(token);
+            if (count <= maxCount)
             {
-                await repository.DeleteHistoryByOverCount(record, token);
+                break;
             }
 
-            return count - maxCount;
+            await repository.OnBatchStartAsync(token);
+            try
+            {
+                var take = (int)Math.Min(BatchSize, count - maxCount);
+                var batch = await records.Where(repository.QueryToDeleteByOverCount)
+                    .OrderBy(repository.QueryDeleteOrderBy)
+                    .Take(take)
+                    .ToListAsync(token);
+
+                if (batch.Count == 0)
+                {
+                    break;
+                }
+
+                foreach (var record in batch)
+                {
+                    await repository.DeleteHistoryByOverCount(record, token);
+                }
+                deleted += (uint)batch.Count;
+            }
+            finally
+            {
+                await repository.OnBatchEndAsync(token);
+            }
         }
-        return 0;
+
+        return deleted;
+    }
+
+    public async Task<uint> RemoveExpiredInBatchesAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken token = default)
+    {
+        const int BatchSize = 500;
+        uint deleted = 0;
+
+        while (!token.IsCancellationRequested)
+        {
+            await repository.OnBatchStartAsync(token);
+            try
+            {
+                var batch = await records.Where(predicate)
+                    .OrderBy(repository.QueryDeleteOrderBy)
+                    .Take(BatchSize)
+                    .ToListAsync(token);
+
+                if (batch.Count == 0)
+                {
+                    break;
+                }
+
+                foreach (var record in batch)
+                {
+                    await repository.DeleteHistoryByOverCount(record, token);
+                }
+                deleted += (uint)batch.Count;
+            }
+            finally
+            {
+                await repository.OnBatchEndAsync(token);
+            }
+        }
+
+        return deleted;
     }
 }
