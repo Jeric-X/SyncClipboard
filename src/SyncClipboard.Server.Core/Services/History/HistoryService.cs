@@ -484,6 +484,44 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
     }
 
+    public async Task RemoveOutOfRetentionRecords(uint retentionMinutes, CancellationToken token = default)
+    {
+        // 0 means no limit
+        if (retentionMinutes == 0)
+        {
+            return;
+        }
+
+        var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
+
+        await _sem.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _sem.Release());
+
+        var batch = await _dbContext.HistoryRecords
+            .Where(r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
+                        && r.LastModified < cutoff && r.LastAccessed < cutoff)
+            .OrderBy(r => r.LastModified > r.LastAccessed ? r.LastModified : r.LastAccessed)
+            .ToListAsync(token);
+
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var rec in batch)
+        {
+            rec.IsDeleted = true;
+            rec.LastModified = DateTime.UtcNow;
+        }
+        await _dbContext.SaveChangesAsync(token);
+
+        foreach (var rec in batch)
+        {
+            await NotifyProfileChangeAsync(rec);
+            await DeleteProfileDataIfNeed(rec, token);
+        }
+    }
+
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);

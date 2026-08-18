@@ -12,5 +12,6 @@ public record class ServerPara(
     string CustomConfigurationFilePath,
     bool DiagnoseMode,
     uint MaxSavedHistoryCount,
+    uint HistoryRetentionMinutes,
     IServiceProvider Services
 );

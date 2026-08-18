@@ -989,7 +989,13 @@ This operation cannot be undone.</value>
     <value>History Limit</value>
   </data>
   <data name="MaxHistoryCountDescription" xml:space="preserve">
-    <value>Maximum number of history records saved by the server</value>
+    <value>Maximum number of history records saved by the server. Set to 0 for unlimited count.</value>
+  </data>
+  <data name="ServerHistoryRetentionMinutes" xml:space="preserve">
+    <value>History retention time (minutes)</value>
+  </data>
+  <data name="ServerHistoryRetentionDescription" xml:space="preserve">
+    <value>Retention period for server history records. Set to 0 for unlimited.</value>
   </data>
   <data name="ShowSyncStatus" xml:space="preserve">
     <value>Show Sync Status</value>
