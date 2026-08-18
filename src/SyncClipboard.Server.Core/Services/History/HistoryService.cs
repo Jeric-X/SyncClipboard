@@ -484,6 +484,21 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
     }
 
+    public async Task RemoveOutOfRetentionRecords(uint retentionMinutes, CancellationToken token = default)
+    {
+        // 0 means no limit
+        if (retentionMinutes == 0)
+        {
+            return;
+        }
+
+        var cutoff = DateTime.UtcNow - TimeSpan.FromMinutes(retentionMinutes);
+
+        await _historyManagerHelper.RemoveExpiredInBatchesAsync(
+            r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
+                 && r.LastModified < cutoff && r.LastAccessed < cutoff, token);
+    }
+
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
     {
         await _sem.WaitAsync(token);
@@ -512,24 +527,55 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted;
-    public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastAccessed;
+    public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
-    public async Task DeleteHistoryByOverCount(HistoryRecordEntity entity, CancellationToken token)
+    public async Task MarkForDeletionAsync(HistoryRecordEntity entity, CancellationToken token)
     {
-        await _sem.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _sem.Release());
-
-        var existing = await Query(entity.UserId, entity.Type, entity.Hash, token);
-        if (existing is null)
+        if (_dbContext.Entry(entity).State == EntityState.Detached)
         {
+            // 外部单独调用：Query 拿到被跟踪的 existing，改 existing 字段（会被 SaveChanges 持久化）
+            var existing = await Query(entity.UserId, entity.Type, entity.Hash, token);
+            if (existing is null)
+            {
+                return;
+            }
+            existing.IsDeleted = true;
+            existing.LastModified = DateTime.UtcNow;
+            existing.Version++;
+            // 同步到原 entity 用于后续 OnRecordDeletedAsync 的广播/删文件
+            entity.IsDeleted = existing.IsDeleted;
+            entity.LastModified = existing.LastModified;
+            entity.Version = existing.Version;
             return;
         }
 
-        existing.IsDeleted = true;
-        existing.LastModified = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync(token);
-        await NotifyProfileChangeAsync(existing);
-        await DeleteProfileDataIfNeed(existing, token);
+        // helper 路径：entity 已被 ToListAsync 跟踪，直接改字段
+        entity.IsDeleted = true;
+        entity.LastModified = DateTime.UtcNow;
+        entity.Version++;
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken token)
+    {
+        return _dbContext.SaveChangesAsync(token);
+    }
+
+    public async Task OnRecordDeletedAsync(HistoryRecordEntity entity, CancellationToken token)
+    {
+        await NotifyProfileChangeAsync(entity);
+        await DeleteProfileDataIfNeed(entity, token);
+    }
+
+    public async Task OnBatchStartAsync(CancellationToken token)
+    {
+        await _sem.WaitAsync(token);
+    }
+
+    public async Task OnBatchEndAsync(CancellationToken token)
+    {
+        _dbContext.ChangeTracker.Clear();
+        _sem.Release();
+        await Task.Delay(TimeSpan.FromSeconds(10), token);
     }
 
     public Task<uint> SetRecordsMaxCount(uint maxCount, CancellationToken token = default)

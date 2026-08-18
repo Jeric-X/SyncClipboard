@@ -92,6 +92,7 @@ public class ServerService : Service
                         _serverConfig.CustomConfigurationFilePath,
                         _programConfig.DiagnoseMode,
                         _serverConfig.MaxHistoryCount,
+                        _serverConfig.HistoryRetentionMinutes,
                         _serviceProvider
                     )
                 );

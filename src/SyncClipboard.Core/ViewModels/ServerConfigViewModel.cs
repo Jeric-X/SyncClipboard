@@ -40,6 +40,10 @@ public partial class ServerConfigViewModel : ObservableObject
     private uint maxHistoryCount;
     partial void OnMaxHistoryCountChanged(uint value) => ServerConfig = ServerConfig with { MaxHistoryCount = value };
 
+    [ObservableProperty]
+    private uint historyRetentionMinutes;
+    partial void OnHistoryRetentionMinutesChanged(uint value) => ServerConfig = ServerConfig with { HistoryRetentionMinutes = value };
+
     [RelayCommand]
     private static void OpenCustomConfigDescLink()
     {
@@ -58,6 +62,7 @@ public partial class ServerConfigViewModel : ObservableObject
         EnableCustomConfigurationFile = value.EnableCustomConfigurationFile;
         CustomConfigurationFilePath = value.CustomConfigurationFilePath;
         MaxHistoryCount = value.MaxHistoryCount;
+        HistoryRetentionMinutes = value.HistoryRetentionMinutes;
         _configManager.SetConfig(value);
 
         OnPropertyChanged(nameof(ShowHttpsConfig));
@@ -100,6 +105,7 @@ public partial class ServerConfigViewModel : ObservableObject
         enableCustomConfigurationFile = serverConfig.EnableCustomConfigurationFile;
         customConfigurationFilePath = serverConfig.CustomConfigurationFilePath;
         maxHistoryCount = serverConfig.MaxHistoryCount;
+        historyRetentionMinutes = serverConfig.HistoryRetentionMinutes;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

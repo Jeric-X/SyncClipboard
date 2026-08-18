@@ -989,7 +989,13 @@ Shift + 左键：选中连续范围</value>
     <value>历史记录上限</value>
   </data>
   <data name="MaxHistoryCountDescription" xml:space="preserve">
-    <value>服务器保存的最大历史记录条数</value>
+    <value>服务器保存的最大历史记录条数，0表示不限制数量</value>
+  </data>
+  <data name="ServerHistoryRetentionMinutes" xml:space="preserve">
+    <value>历史记录保留时长(分钟)</value>
+  </data>
+  <data name="ServerHistoryRetentionDescription" xml:space="preserve">
+    <value>服务器历史记录的保留时长，0表示不限制时长</value>
   </data>
   <data name="ShowSyncStatus" xml:space="preserve">
     <value>显示同步状态</value>

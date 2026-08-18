@@ -84,9 +84,19 @@
             <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxHistoryCount}" Description="{x:Static i18n:Strings.MaxHistoryCountDescription}">
                 <ui:SettingsExpanderItem.Footer>
                     <NumericUpDown Value="{Binding MaxHistoryCount, Mode=TwoWay}"
-                                   Minimum="1"
+                                   Minimum="0"
                                    Maximum="10000"
                                    Increment="100"
+                                   ButtonSpinnerLocation="Right"
+                                   FormatString="F0" />
+                </ui:SettingsExpanderItem.Footer>
+            </ui:SettingsExpanderItem>
+            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ServerHistoryRetentionMinutes}" Description="{x:Static i18n:Strings.ServerHistoryRetentionDescription}">
+                <ui:SettingsExpanderItem.Footer>
+                    <NumericUpDown Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
+                                   Minimum="0"
+                                   Maximum="525600"
+                                   Increment="1440"
                                    ButtonSpinnerLocation="Right"
                                    FormatString="F0" />
                 </ui:SettingsExpanderItem.Footer>

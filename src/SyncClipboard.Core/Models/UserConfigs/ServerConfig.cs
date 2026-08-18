@@ -1,4 +1,4 @@
-﻿namespace SyncClipboard.Core.Models.UserConfigs;
+namespace SyncClipboard.Core.Models.UserConfigs;
 
 public record class ServerConfig
 {
@@ -12,4 +12,5 @@ public record class ServerConfig
     public bool EnableCustomConfigurationFile { get; set; } = false;
     public string CustomConfigurationFilePath { get; set; } = string.Empty;
     public uint MaxHistoryCount { get; set; } = 1000;
+    public uint HistoryRetentionMinutes { get; set; } = 10080;
 }

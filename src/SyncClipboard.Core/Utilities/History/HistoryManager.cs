@@ -457,18 +457,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-            var expiredRecords = _dbContext.HistoryRecords
-                .Where(r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly)
-                .ToList();
+            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
+                r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
 
-            foreach (var record in expiredRecords)
+            if (deleted > 0)
             {
-                await RemoveHistory(record, token);
-            }
-
-            if (expiredRecords.Count > 0)
-            {
-                _logger.Write("HistoryManager", $"Cleaned up {expiredRecords.Count} expired history records");
+                _logger.Write("HistoryManager", $"Cleaned up {deleted} expired history records");
             }
         }
         catch (Exception ex)
@@ -775,9 +769,33 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return _dbContext.HistoryRecords.FirstOrDefaultAsync(r => EF.Functions.Like(r.Hash, hash) && r.Type == type, token);
     }
 
-    public Task DeleteHistoryByOverCount(HistoryRecord entity, CancellationToken token)
+    public async Task MarkForDeletionAsync(HistoryRecord entity, CancellationToken token)
     {
-        return RemoveHistory(entity, token);
+        if (_dbContext.Entry(entity).State == EntityState.Detached)
+        {
+            // 外部单独调用：Query 拿到被跟踪的 existing 再 Remove
+            var existing = await Query(entity.Type, entity.Hash, token);
+            if (existing is null)
+            {
+                return;
+            }
+            _dbContext.HistoryRecords.Remove(existing);
+            return;
+        }
+
+        // helper 路径：entity 已被 ToListAsync 跟踪，直接 Remove
+        _dbContext.HistoryRecords.Remove(entity);
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken token)
+    {
+        return _dbContext.SaveChangesAsync(token);
+    }
+
+    public async Task OnRecordDeletedAsync(HistoryRecord entity, CancellationToken token)
+    {
+        await DeleteWorkingDirAsync(entity, token);
+        HistoryRemoved?.Invoke(entity);
     }
 
     public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared &&

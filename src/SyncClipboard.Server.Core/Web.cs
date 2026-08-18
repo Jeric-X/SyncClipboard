@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Server.Core.Controllers;
 using SyncClipboard.Server.Core.CredentialChecker;
@@ -120,6 +120,7 @@ public class Web
         builder.Services.Configure<AppSettings>(option =>
         {
             option.MaxSavedHistoryCount = serverConfig.MaxSavedHistoryCount;
+            option.HistoryRetentionMinutes = serverConfig.HistoryRetentionMinutes;
         });
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);

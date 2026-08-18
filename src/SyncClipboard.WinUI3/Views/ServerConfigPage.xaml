@@ -73,11 +73,19 @@
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.MaxHistoryCount}" Description="{x:Bind i18n:Strings.MaxHistoryCountDescription}">
                     <NumberBox Value="{x:Bind _viewModel.MaxHistoryCount, Mode=TwoWay}"
-                               Minimum="1"
+                               Minimum="0"
                                Maximum="10000"
                                SpinButtonPlacementMode="Inline"
                                SmallChange="100"
                                LargeChange="1000" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ServerHistoryRetentionMinutes}" Description="{x:Bind i18n:Strings.ServerHistoryRetentionDescription}">
+                    <NumberBox Value="{x:Bind _viewModel.HistoryRetentionMinutes, Mode=TwoWay}"
+                               Minimum="0"
+                               Maximum="525600"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1440"
+                               LargeChange="10080" />
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
