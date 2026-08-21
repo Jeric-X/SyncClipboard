@@ -2,7 +2,6 @@ using NativeNotification.Interface;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities;
-using System.Text.RegularExpressions;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -40,6 +39,33 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
         return actions;
     }
 
+    public async Task<MenuItem?> GetPrimaryAction(Profile profile, CancellationToken token)
+    {
+        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), true, token);
+
+        if (profile is TextProfile && HasUrl(localInfo.Text, out var url) && url is not null)
+        {
+            return new MenuItem(Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url));
+        }
+
+        if (profile is FileProfile && localInfo.FilePaths.Length == 1)
+        {
+            var fullPath = localInfo.FilePaths[0];
+            return new MenuItem(Strings.Open, () => Sys.OpenWithDefaultApp(fullPath));
+        }
+
+        if (profile is GroupProfile && localInfo.FilePaths.Length > 0)
+        {
+            var folder = Path.GetDirectoryName(localInfo.FilePaths[0]);
+            if (!string.IsNullOrEmpty(folder))
+            {
+                return new MenuItem(Strings.OpenFolder, () => Sys.OpenFolderInFileManager(folder));
+            }
+        }
+
+        return null;
+    }
+
     private static bool HasUrl(string str, out string? url)
     {
         url = null;
@@ -67,5 +93,3 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
             .ToList();
     }
 }
-
-

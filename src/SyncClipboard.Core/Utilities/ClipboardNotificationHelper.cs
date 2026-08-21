@@ -27,6 +27,7 @@ public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")
         notification.Message = profile.ShortDisplayText;
         var actions = await profileActionBuilder.Build(profile, token);
         notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
+        notification.ContentAction = (await profileActionBuilder.GetPrimaryAction(profile, token))?.Action;
         notification.Show();
     }
 
