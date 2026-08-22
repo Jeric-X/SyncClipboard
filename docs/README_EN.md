@@ -109,7 +109,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
   "AppSettings": {
     "UserName": "your_username",
     "Password": "your_password",
-    "MaxSavedHistoryCount": 1000
+    "MaxSavedHistoryCount": 1000,
+    "HistoryRetentionMinutes": 10080
   }
 }
 ```
@@ -253,7 +254,11 @@ Multiple `--command-{command-name}` arguments are supported, multiple commands a
 ### IOS 
 #### Use [Shortcuts](https://apps.apple.com/us/app/shortcuts/id1462947752)  
 
-- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/34404963b512432cb5672c8a95001b19)
+> [!WARNING]
+> When importing the shortcut, you may be unable to edit the server information ([#306](https://github.com/Jeric-X/SyncClipboard/issues/306)). You can import it without changing the server information first, then edit the server information in the shortcut afterward.
+>
+
+- Sync manually, import this [Shortcut](https://www.icloud.com/shortcuts/321944d62831416f9d2ba7917917686a)
 - Sync Automatically, import this [Shortcut](https://www.icloud.com/shortcuts/05e7ac5aca5f4f588b776117cf740587). This shortcut keeps running in the background forever, you need to stop it manually. You can also change whether to send notifications and querying interval time manullay.
 
 ### Android
