@@ -70,12 +70,14 @@ public class UploadService : ClipboardHander
     private readonly ILogger _logger;
     private readonly ConfigManager _configManager;
     private readonly IClipboardFactory _clipboardFactory;
+    private readonly LocalClipboardSetter _localClipboardSetter;
     private readonly IServiceProvider _serviceProvider;
     private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
     private readonly IEventSimulator _keyEventSimulator;
     private readonly HotkeyManager _hotkeyManager;
+    private readonly Lazy<ICurrentSelectedContentProvider?> _currentSelectedContentProvider;
     private SyncConfig _syncConfig;
     private ServerConfig _serverConfig;
 
@@ -90,6 +92,7 @@ public class UploadService : ClipboardHander
         _logger = _serviceProvider.GetRequiredService<ILogger>();
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _clipboardFactory = _serviceProvider.GetRequiredService<IClipboardFactory>();
+        _localClipboardSetter = _serviceProvider.GetRequiredService<LocalClipboardSetter>();
         _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
@@ -97,6 +100,8 @@ public class UploadService : ClipboardHander
         _serverConfig = _configManager.GetConfig<ServerConfig>();
         _keyEventSimulator = keyEventSimulator;
         _hotkeyManager = hotkeyManager;
+        _currentSelectedContentProvider = new(
+            () => _serviceProvider.GetService<ICurrentSelectedContentProvider>());
         _remoteClipboardServerFactory = remoteClipboardServerFactory;
 
         ContextMenuGroupName = SyncService.ContextMenuGroupName;
@@ -377,7 +382,9 @@ public class UploadService : ClipboardHander
         await _logger.WriteAsync(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
     }
 
-    private async void QuickUpload(bool contentControl)
+    private async void QuickUpload(bool contentControl) => await QuickUploadAsync(contentControl, null, null);
+
+    private async Task QuickUploadAsync(bool contentControl, ClipboardMetaInfomation? meta, Profile? profile)
     {
         if (!_remoteClipboardServerFactory.HasActiveServer)
         {
@@ -388,8 +395,8 @@ public class UploadService : ClipboardHander
         var token = StopPreviousAndGetNewToken();
         try
         {
-            var meta = await _clipboardFactory.GetMetaInfomation(token);
-            var profile = await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
+            meta ??= await _clipboardFactory.GetMetaInfomation(token);
+            profile ??= await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
             await CheckAndUpload(meta, profile, contentControl, token);
             if (NotifyOnManualUpload)
             {
@@ -401,13 +408,7 @@ public class UploadService : ClipboardHander
         }
         catch (Exception ex)
         {
-            if (NotifyOnManualUpload)
-            {
-                var notification = _notificationManager.Shared;
-                notification.Title = "Failed to upload manually";
-                notification.Message = ex.Message;
-                notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
-            }
+            ShowManualUploadFailure(ex);
         }
     }
 
@@ -416,23 +417,77 @@ public class UploadService : ClipboardHander
 
     private async void CopyAndQuickUpload(bool contentControl, string cmdId)
     {
-        await Task.Run(() =>
+        try
         {
-            if (_hotkeyManager.HotkeyStatusMap.TryGetValue(cmdId, out var status))
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var token = timeoutCts.Token;
+
+            var selectedContent = await Task.Run(
+                () => _currentSelectedContentProvider.Value?.GetCurrentSelectedContent(),
+                token).WaitAsync(token);
+
+            Profile? selectedProfile = null;
+            if (selectedContent is not null)
             {
-                status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
+                selectedProfile = await SetContentToClipboard(selectedContent, contentControl, token);
+                await _logger.WriteAsync(LOG_TAG, "Using content read directly from the current selection.");
+            }
+            else
+            {
+                await _logger.WriteAsync(LOG_TAG, "Current selection could not be read directly; falling back to the copy shortcut.");
+                await Task.Run(() =>
+                {
+                    ReleaseHotkeyKeys(cmdId);
+                    SimulateCopyShortcut();
+                }, token).WaitAsync(token);
             }
 
-            KeyCode modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
+            await Task.Delay(200);
+            await QuickUploadAsync(contentControl, selectedContent, selectedProfile);
+        }
+        catch (Exception ex)
+        {
+            ShowManualUploadFailure(ex);
+        }
+    }
 
-            _keyEventSimulator.SimulateKeyPress(modifier);
-            _keyEventSimulator.SimulateKeyPress(KeyCode.VcC);
+    private async Task<Profile> SetContentToClipboard(ClipboardMetaInfomation selectedContent, bool contentControl, CancellationToken token)
+    {
+        var profile = await _clipboardFactory.CreateProfileFromMeta(selectedContent, contentControl, token);
+        await _localClipboardSetter.Set(profile, token);
+        return profile;
+    }
 
-            _keyEventSimulator.SimulateKeyRelease(KeyCode.VcC);
-            _keyEventSimulator.SimulateKeyRelease(modifier);
-        });
-        await Task.Delay(200);
-        QuickUpload(contentControl);
+    private void ShowManualUploadFailure(Exception ex)
+    {
+        if (!NotifyOnManualUpload)
+        {
+            return;
+        }
+
+        var notification = _notificationManager.Shared;
+        notification.Title = "Failed to upload manually";
+        notification.Message = ex.Message;
+        notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
+    }
+
+    private void ReleaseHotkeyKeys(string cmdId)
+    {
+        if (_hotkeyManager.HotkeyStatusMap.TryGetValue(cmdId, out var status))
+        {
+            status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
+        }
+    }
+
+    private void SimulateCopyShortcut()
+    {
+        KeyCode modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
+
+        _keyEventSimulator.SimulateKeyPress(modifier);
+        _keyEventSimulator.SimulateKeyPress(KeyCode.VcC);
+
+        _keyEventSimulator.SimulateKeyRelease(KeyCode.VcC);
+        _keyEventSimulator.SimulateKeyRelease(modifier);
     }
 
     private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true, CopyAndQuickUploadGuid);
