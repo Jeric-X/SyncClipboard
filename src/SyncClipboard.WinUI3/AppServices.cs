@@ -43,6 +43,7 @@ public class AppServices
         services.AddSingleton<IForegroundWindowWatcher, WinEventForegroundWindowWatcher>();
         services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
         services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
+        services.AddTransient<ICurrentSelectedContentProvider, CurrentSelectedContentProvider>();
         services.AddSingleton<IWifiNetworkInfoProvider, WinUIWifiNetworkInfoProvider>();
 
         services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));
