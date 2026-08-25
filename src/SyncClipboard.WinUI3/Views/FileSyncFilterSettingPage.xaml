@@ -14,7 +14,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:SettingsCard Grid.Row="0" Header="{x:Bind i18n:Strings.FilterMode}" Description="{x:Bind _viewModel.Description, Mode=OneWay}">
+        <ui:SettingsCard Grid.Row="0" Header="{x:Bind i18n:Strings.FilterMode}">
             <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE71C;" />
             </ui:SettingsCard.HeaderIcon>

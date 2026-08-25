@@ -626,9 +626,6 @@ Shift + 左键：选中连续范围</value>
   <data name="None" xml:space="preserve">
     <value>无</value>
   </data>
-  <data name="FileFilterDescription" xml:space="preserve">
-    <value>每条规则可独立选择文件名结尾或正则表达式匹配</value>
-  </data>
   <data name="FileFilterPattern" xml:space="preserve">
     <value>匹配内容</value>
   </data>
@@ -640,6 +637,12 @@ Shift + 左键：选中连续范围</value>
   </data>
   <data name="RegularExpression" xml:space="preserve">
     <value>正则表达式</value>
+  </data>
+  <data name="RegularExpressionQuickReference" xml:space="preserve">
+    <value>.NET 正则表达式快速参考</value>
+  </data>
+  <data name="RegularExpressionQuickReferenceLink" xml:space="preserve">
+    <value>https://learn.microsoft.com/zh-cn/dotnet/standard/base-types/regular-expression-language-quick-reference</value>
   </data>
   <data name="InvalidRegularExpression" xml:space="preserve">
     <value>无效的正则表达式：{0}</value>

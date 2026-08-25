@@ -1,5 +1,7 @@
 using FluentAvalonia.UI.Controls;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Shared.Models;
 using System;
@@ -31,6 +33,11 @@ public partial class FileFilterRuleEditDialog : ContentDialog
     }
 
     private void EditorPropertyChanged(object? sender, PropertyChangedEventArgs e) => UpdateValidation();
+
+    private void RegularExpressionQuickReference_Click(object? _, Avalonia.Interactivity.RoutedEventArgs __)
+    {
+        Sys.OpenWithDefaultApp(Strings.RegularExpressionQuickReferenceLink);
+    }
 
     private void UpdateValidation()
     {

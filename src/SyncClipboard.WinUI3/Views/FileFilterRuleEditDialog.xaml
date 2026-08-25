@@ -18,6 +18,10 @@
                   SelectedItem="{x:Bind Editor.MatchMode, Mode=TwoWay}"
                   DisplayMemberPath="ShownString" />
         <TextBox Header="{x:Bind i18n:Strings.FileFilterPattern}" PlaceholderText="{x:Bind i18n:Strings.FileFilterPattern}" Text="{x:Bind Editor.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <HyperlinkButton HorizontalAlignment="Left"
+                         Padding="0"
+                         Content="{x:Bind i18n:Strings.RegularExpressionQuickReference}"
+                         Click="RegularExpressionQuickReference_Click" />
         <TextBlock x:Name="_ValidationMessage" Foreground="{ThemeResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
     </StackPanel>
 </ContentDialog>

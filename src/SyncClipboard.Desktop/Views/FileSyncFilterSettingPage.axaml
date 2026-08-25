@@ -18,7 +18,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}" Description="{Binding Description}">
+        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>

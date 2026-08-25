@@ -1372,15 +1372,6 @@ namespace SyncClipboard.Core.I18n {
         }
         
         /// <summary>
-        ///   查找类似 Each file extension per line 的本地化字符串。
-        /// </summary>
-        public static string FileFilterDescription {
-            get {
-                return ResourceManager.GetString("FileFilterDescription", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 Pattern 的本地化字符串。
         /// </summary>
         public static string FileFilterPattern {
@@ -1413,6 +1404,24 @@ namespace SyncClipboard.Core.I18n {
         public static string RegularExpression {
             get {
                 return ResourceManager.GetString("RegularExpression", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 .NET regular expression quick reference 的本地化字符串。
+        /// </summary>
+        public static string RegularExpressionQuickReference {
+            get {
+                return ResourceManager.GetString("RegularExpressionQuickReference", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference 的本地化字符串。
+        /// </summary>
+        public static string RegularExpressionQuickReferenceLink {
+            get {
+                return ResourceManager.GetString("RegularExpressionQuickReferenceLink", resourceCulture);
             }
         }
 

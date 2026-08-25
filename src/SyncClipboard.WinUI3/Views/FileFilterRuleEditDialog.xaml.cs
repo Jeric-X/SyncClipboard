@@ -1,4 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
+using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using System.ComponentModel;
 
@@ -18,6 +20,11 @@ public sealed partial class FileFilterRuleEditDialog : ContentDialog
     }
 
     private void EditorPropertyChanged(object? sender, PropertyChangedEventArgs e) => UpdateValidation();
+
+    private void RegularExpressionQuickReference_Click(object _, Microsoft.UI.Xaml.RoutedEventArgs __)
+    {
+        Sys.OpenWithDefaultApp(Strings.RegularExpressionQuickReferenceLink);
+    }
 
     private void UpdateValidation()
     {

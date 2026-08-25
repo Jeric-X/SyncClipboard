@@ -626,9 +626,6 @@ Shift + left click: Select a continuous range</value>
   <data name="None" xml:space="preserve">
     <value>None</value>
   </data>
-  <data name="FileFilterDescription" xml:space="preserve">
-    <value>Each rule independently selects filename ending or regular expression matching</value>
-  </data>
   <data name="FileFilterPattern" xml:space="preserve">
     <value>Pattern</value>
   </data>
@@ -640,6 +637,12 @@ Shift + left click: Select a continuous range</value>
   </data>
   <data name="RegularExpression" xml:space="preserve">
     <value>Regular expression</value>
+  </data>
+  <data name="RegularExpressionQuickReference" xml:space="preserve">
+    <value>.NET regular expression quick reference</value>
+  </data>
+  <data name="RegularExpressionQuickReferenceLink" xml:space="preserve">
+    <value>https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference</value>
   </data>
   <data name="InvalidRegularExpression" xml:space="preserve">
     <value>Invalid regular expression: {0}</value>

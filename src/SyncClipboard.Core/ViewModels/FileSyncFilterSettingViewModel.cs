@@ -56,8 +56,6 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     [ObservableProperty]
     private bool enableList;
 
-    public string? Description => EnableList ? Strings.FileFilterDescription : null;
-
     public ObservableCollection<EditableFileFilterRule> FilterList { get; } = [];
 
     private bool _isUpdating;
@@ -163,7 +161,6 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
         }
 
         EnableList = FilterConfig.FileFilterMode != "";
-        OnPropertyChanged(nameof(Description));
     }
 
     private void SaveFilterConfig(FileFilterConfig value)
