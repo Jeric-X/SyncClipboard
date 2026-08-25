@@ -1379,58 +1379,13 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("FileFilterPattern", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Pattern cannot be empty 的本地化字符串。
         /// </summary>
         public static string FileFilterPatternRequired {
             get {
                 return ResourceManager.GetString("FileFilterPatternRequired", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Invalid regular expression: {0} 的本地化字符串。
-        /// </summary>
-        public static string InvalidRegularExpression {
-            get {
-                return ResourceManager.GetString("InvalidRegularExpression", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Regular expression 的本地化字符串。
-        /// </summary>
-        public static string RegularExpression {
-            get {
-                return ResourceManager.GetString("RegularExpression", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 .NET regular expression quick reference 的本地化字符串。
-        /// </summary>
-        public static string RegularExpressionQuickReference {
-            get {
-                return ResourceManager.GetString("RegularExpressionQuickReference", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference 的本地化字符串。
-        /// </summary>
-        public static string RegularExpressionQuickReferenceLink {
-            get {
-                return ResourceManager.GetString("RegularExpressionQuickReferenceLink", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Filename ending 的本地化字符串。
-        /// </summary>
-        public static string SuffixMatch {
-            get {
-                return ResourceManager.GetString("SuffixMatch", resourceCulture);
             }
         }
         
@@ -1889,6 +1844,15 @@ namespace SyncClipboard.Core.I18n {
         public static string InvalidIpRange {
             get {
                 return ResourceManager.GetString("InvalidIpRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Invalid regular expression: {0} 的本地化字符串。
+        /// </summary>
+        public static string InvalidRegularExpression {
+            get {
+                return ResourceManager.GetString("InvalidRegularExpression", resourceCulture);
             }
         }
         
@@ -2674,7 +2638,34 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("Refresh", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 Regular expression 的本地化字符串。
+        /// </summary>
+        public static string RegularExpression {
+            get {
+                return ResourceManager.GetString("RegularExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 .NET regular expression quick reference 的本地化字符串。
+        /// </summary>
+        public static string RegularExpressionQuickReference {
+            get {
+                return ResourceManager.GetString("RegularExpressionQuickReference", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference 的本地化字符串。
+        /// </summary>
+        public static string RegularExpressionQuickReferenceLink {
+            get {
+                return ResourceManager.GetString("RegularExpressionQuickReferenceLink", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 Failed to reload configuration 的本地化字符串。
         /// </summary>
@@ -3212,6 +3203,15 @@ namespace SyncClipboard.Core.I18n {
         public static string Status {
             get {
                 return ResourceManager.GetString("Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Filename ending 的本地化字符串。
+        /// </summary>
+        public static string SuffixMatch {
+            get {
+                return ResourceManager.GetString("SuffixMatch", resourceCulture);
             }
         }
         
