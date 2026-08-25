@@ -57,6 +57,26 @@ public class FileFilterHelperTests
     }
 
     [TestMethod]
+    public void SuffixRules_MatchFullPathAndTrimPattern()
+    {
+        var config = new FileFilterConfig
+        {
+            FileFilterMode = "BlackList",
+            BlackList =
+            [
+                new FileFilterRule
+                {
+                    Pattern = " private/secret.txt ",
+                    MatchMode = FileFilterMatchMode.Suffix,
+                },
+            ],
+        };
+
+        Assert.IsFalse(FileFilterHelper.IsFileAvailableAfterFilter("root/private/secret.txt", config));
+        Assert.IsTrue(FileFilterHelper.IsFileAvailableAfterFilter("root/public/secret.txt", config));
+    }
+
+    [TestMethod]
     public void TryValidateRule_RejectsEmptyAndInvalidRegexPatterns()
     {
         Assert.IsFalse(FileFilterHelper.TryValidateRule(

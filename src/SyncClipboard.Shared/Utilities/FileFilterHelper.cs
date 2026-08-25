@@ -11,18 +11,18 @@ public static class FileFilterHelper
 
     public static bool IsFileAvailableAfterFilter(string fileName, FileFilterConfig filterConfig)
     {
-        var normalizedFileName = GetFileName(fileName);
+        var baseFileName = GetFileName(fileName);
 
         try
         {
             if (filterConfig.FileFilterMode == "BlackList")
             {
-                return !filterConfig.BlackList.Any(rule => IsMatch(normalizedFileName, rule));
+                return !filterConfig.BlackList.Any(rule => IsMatch(fileName, baseFileName, rule));
             }
 
             if (filterConfig.FileFilterMode == "WhiteList")
             {
-                return filterConfig.WhiteList.Any(rule => IsMatch(normalizedFileName, rule));
+                return filterConfig.WhiteList.Any(rule => IsMatch(fileName, baseFileName, rule));
             }
 
             return true;
@@ -66,11 +66,11 @@ public static class FileFilterHelper
         }
     }
 
-    private static bool IsMatch(string fileName, FileFilterRule rule)
+    private static bool IsMatch(string path, string fileName, FileFilterRule rule)
     {
         return rule.MatchMode switch
         {
-            FileFilterMatchMode.Suffix => fileName.EndsWith(rule.Pattern, StringComparison.OrdinalIgnoreCase),
+            FileFilterMatchMode.Suffix => path.EndsWith(rule.Pattern.Trim(), StringComparison.OrdinalIgnoreCase),
             FileFilterMatchMode.Regex => GetRegex(rule.Pattern).IsMatch(fileName),
             _ => throw new InvalidOperationException($"Unsupported file filter match mode '{rule.MatchMode}'."),
         };
