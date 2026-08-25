@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Utilities;
 using SyncClipboard.Core.ViewModels;
@@ -65,6 +68,22 @@ public class FileFilterHelperTests
         Assert.IsTrue(FileFilterHelper.TryValidateRule(
             new FileFilterRule { Pattern = @"^file\.txt$", MatchMode = FileFilterMatchMode.Regex },
             out _));
+    }
+
+    [TestMethod]
+    public void TryValidateRule_DoesNotPopulateCompiledRegexCache()
+    {
+        var cacheField = typeof(FileFilterHelper).GetField("RegexCache", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.IsNotNull(cacheField);
+        var cache = cacheField.GetValue(null) as ConcurrentDictionary<string, Regex>;
+        Assert.IsNotNull(cache);
+        var pattern = $"^validation-{Guid.NewGuid():N}$";
+
+        Assert.IsTrue(FileFilterHelper.TryValidateRule(
+            new FileFilterRule { Pattern = pattern, MatchMode = FileFilterMatchMode.Regex },
+            out _));
+
+        Assert.IsFalse(cache.ContainsKey(pattern));
     }
 
     [TestMethod]

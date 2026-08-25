@@ -55,7 +55,7 @@ public static class FileFilterHelper
 
         try
         {
-            _ = GetRegex(rule.Pattern);
+            _ = new Regex(rule.Pattern, RegexOptions.CultureInvariant, RegexTimeout);
             error = null;
             return true;
         }

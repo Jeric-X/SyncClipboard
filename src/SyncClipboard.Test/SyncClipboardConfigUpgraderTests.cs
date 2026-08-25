@@ -111,6 +111,23 @@ public class SyncClipboardConfigUpgraderTests
     }
 
     [TestMethod]
+    public void Upgrade_PrunesBackupsWhenConfigurationIsInvalid()
+    {
+        var upgrader = new SyncClipboardConfigUpgrader();
+        for (var index = 0; index < 25; index++)
+        {
+            File.WriteAllText(_configPath, $"{{ invalid {index}");
+            Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(() => upgrader.Upgrade(_configPath));
+        }
+
+        var backups = Directory
+            .EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json")
+            .ToArray();
+        Assert.AreEqual(20, backups.Length);
+        Assert.IsTrue(backups.Any(path => File.ReadAllText(path) == "{ invalid 24"));
+    }
+
+    [TestMethod]
     public void Upgrade_RejectsInvalidRegexInCurrentConfiguration()
     {
         const string json = """

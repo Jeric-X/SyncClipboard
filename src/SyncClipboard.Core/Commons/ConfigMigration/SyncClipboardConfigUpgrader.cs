@@ -60,7 +60,8 @@ public sealed class SyncClipboardConfigUpgrader
             return;
         }
 
-        CreateBackup(configPath);
+        var backupPath = CreateBackup(configPath);
+        PruneBackups(configPath, backupPath);
 
         JsonObject root;
         try
@@ -118,8 +119,6 @@ public sealed class SyncClipboardConfigUpgrader
         {
             AtomicWrite(configPath, root);
         }
-
-        PruneBackups(configPath);
     }
 
     private static int ReadVersion(JsonObject root)
@@ -225,7 +224,7 @@ public sealed class SyncClipboardConfigUpgrader
         }
     }
 
-    private static void CreateBackup(string configPath)
+    private static string CreateBackup(string configPath)
     {
         try
         {
@@ -237,6 +236,7 @@ public sealed class SyncClipboardConfigUpgrader
                 backupDirectory,
                 $"{Path.GetFileNameWithoutExtension(configPath)}.v{sourceVersion}.{timestamp}.{Environment.ProcessId}.{Guid.NewGuid():N}.json");
             File.Copy(configPath, backupPath, overwrite: false);
+            return backupPath;
         }
         catch (Exception exception)
         {
@@ -265,7 +265,7 @@ public sealed class SyncClipboardConfigUpgrader
         Path.GetDirectoryName(configPath)!,
         "config_backup");
 
-    private static void PruneBackups(string configPath)
+    private static void PruneBackups(string configPath, string backupToPreserve)
     {
         try
         {
@@ -277,7 +277,8 @@ public sealed class SyncClipboardConfigUpgrader
 
             var files = Directory
                 .EnumerateFiles(backupDirectory, $"{Path.GetFileNameWithoutExtension(configPath)}.v*.json")
-                .OrderByDescending(File.GetCreationTimeUtc)
+                .OrderByDescending(file => string.Equals(file, backupToPreserve, StringComparison.Ordinal))
+                .ThenByDescending(File.GetCreationTimeUtc)
                 .Skip(BackupRetentionCount);
 
             foreach (var file in files)
@@ -287,7 +288,7 @@ public sealed class SyncClipboardConfigUpgrader
         }
         catch
         {
-            // Backup cleanup must not prevent startup after a successful backup and migration.
+            // Backup cleanup must not prevent startup or mask an upgrade validation failure.
         }
     }
 
@@ -298,8 +299,8 @@ public sealed class SyncClipboardConfigUpgrader
         {
             var json = root.ToJsonString(JsonOptions);
             using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
             {
+                using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 writer.Write(json);
                 writer.Flush();
                 stream.Flush(flushToDisk: true);

@@ -60,9 +60,14 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
 
     private bool _isUpdating;
     private bool _isSavingList;
-    private readonly ConfigManager _configManager;
+    private readonly ConfigBase _configManager;
 
     public FileSyncFilterSettingViewModel(ConfigManager configManager)
+        : this((ConfigBase)configManager)
+    {
+    }
+
+    internal FileSyncFilterSettingViewModel(ConfigBase configManager)
     {
         _configManager = configManager;
         configManager.GetAndListenConfig<FileFilterConfig>(config => FilterConfig = config);
@@ -88,7 +93,10 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
 
     public void AddItem(FileFilterRule rule)
     {
-        if (FilterConfig.FileFilterMode == "" || !FileFilterHelper.TryValidateRule(rule, out _))
+        rule = NormalizeRule(rule);
+        if (FilterConfig.FileFilterMode == ""
+            || !FileFilterHelper.TryValidateRule(rule, out _)
+            || ContainsRule(rule))
         {
             return;
         }
@@ -99,7 +107,8 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
 
     public void UpdateItem(EditableFileFilterRule item, FileFilterRule rule)
     {
-        if (!FileFilterHelper.TryValidateRule(rule, out _))
+        rule = NormalizeRule(rule);
+        if (!FileFilterHelper.TryValidateRule(rule, out _) || ContainsRule(rule, item))
         {
             return;
         }
@@ -127,6 +136,8 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
             .Select(item => item.ToRule())
             .Distinct()
             .ToList();
+
+        SynchronizeFilterList(list);
 
         if (FilterConfig.FileFilterMode == "BlackList")
         {
@@ -177,6 +188,29 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
 
         _configManager.SetConfig(value);
     }
+
+    private bool ContainsRule(FileFilterRule rule, EditableFileFilterRule? itemToIgnore = null) => FilterList.Any(
+        item => !ReferenceEquals(item, itemToIgnore) && item.ToRule() == rule);
+
+    private void SynchronizeFilterList(IReadOnlyList<FileFilterRule> rules)
+    {
+        if (FilterList.Select(item => item.ToRule()).SequenceEqual(rules))
+        {
+            return;
+        }
+
+        FilterList.Clear();
+        foreach (var rule in rules)
+        {
+            FilterList.Add(new EditableFileFilterRule(rule));
+        }
+    }
+
+    private static FileFilterRule NormalizeRule(FileFilterRule rule) => new()
+    {
+        Pattern = rule.MatchMode == FileFilterMatchMode.Regex ? rule.Pattern : rule.Pattern.Trim(),
+        MatchMode = rule.MatchMode,
+    };
 }
 
 public partial class EditableFileFilterRule : ObservableObject
