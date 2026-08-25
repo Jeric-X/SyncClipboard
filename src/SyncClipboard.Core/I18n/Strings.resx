@@ -342,6 +342,9 @@
   <data name="ReloadConfigFile" xml:space="preserve">
     <value>Reload Config File</value>
   </data>
+  <data name="ReloadConfigFailed" xml:space="preserve">
+    <value>Failed to reload configuration</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>Downloading web image</value>
   </data>

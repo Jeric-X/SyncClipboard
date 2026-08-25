@@ -12,6 +12,7 @@ using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Options;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using SyncClipboard.Core.RemoteServer.Adapter.S3Server;
@@ -50,9 +51,24 @@ namespace SyncClipboard.Core
         public AppCore(IServiceProvider serviceProvider)
         {
             Services = serviceProvider;
-            _current = this;
             Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
-            ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
+            try
+            {
+                ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
+                var loggerOption = serviceProvider.GetRequiredService<LoggerOption>();
+                ConfigManager.GetAndListenConfig<ProgramConfig>(config =>
+                {
+                    loggerOption.FlushImmediately = config.DiagnoseMode;
+                });
+            }
+            catch (Exception exception)
+            {
+                Logger.Write(LOG_TAG, $"Failed to load configuration during startup: {exception}");
+                Logger.Flush();
+                throw;
+            }
+
+            _current = this;
         }
 
         private static void InitLanguage(ConfigManager configManager)
@@ -180,13 +196,26 @@ namespace SyncClipboard.Core
             MenuItem[] menu =
             [
                 new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
-                new MenuItem(I18n.Strings.ReloadConfigFile, ConfigManager.Reload),
+                new MenuItem(I18n.Strings.ReloadConfigFile, ReloadConfig),
 #if !MACOS
                 new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
 #endif
                 new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
             ];
             contextMenu.AddMenuItemGroup(menu);
+        }
+
+        private void ReloadConfig()
+        {
+            try
+            {
+                ConfigManager.Reload();
+            }
+            catch (Exception exception)
+            {
+                Logger.Write(LOG_TAG, $"Failed to reload configuration: {exception}");
+                NotificationManager.ShowText(Strings.ReloadConfigFailed, exception.Message);
+            }
         }
 
         private void RegisterForSystemHotkey(IMainWindow mainWindow)
@@ -270,6 +299,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<StaticConfig>();
             services.AddKeyedTransient(Env.UpdateInfoFile, (sp, key) => new ConfigBase(Env.UpdateInfoPath, sp));
             services.AddKeyedSingleton(Env.RuntimeConfigName, (sp, key) => new ConfigBase(Env.RuntimeConfigPath, sp));
+            services.AddSingleton<LoggerOption>();
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             services.AddSingleton<IEventSimulator, EventSimulator>();

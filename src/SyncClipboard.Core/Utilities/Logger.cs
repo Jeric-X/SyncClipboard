@@ -1,24 +1,16 @@
-﻿using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.UserConfigs;
+﻿using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Options;
 using System.Diagnostics;
 
 namespace SyncClipboard.Core.Utilities
 {
-    public class Logger : ILogger, IDisposable
+    public class Logger(LoggerOption option) : ILogger, IDisposable
     {
-        private readonly string LOG_FOLDER;
+        private readonly string LOG_FOLDER = option.Path;
+        private readonly LoggerOption _option = option;
         private static readonly object LOCKER = new();
         private StreamWriter? _fileWriter;
         private string? _logFile;
-        private bool _diagnose;
-
-        public Logger(ConfigManager config)
-        {
-            LOG_FOLDER = Env.LogFolder;
-            _diagnose = config.GetConfig<ProgramConfig>().DiagnoseMode;
-            config.ListenConfig<ProgramConfig>((config) => _diagnose = config.DiagnoseMode);
-        }
 
         public void Write(string? tag, string str, StackFrame? stackFrame = null)
         {
@@ -71,19 +63,14 @@ namespace SyncClipboard.Core.Utilities
 
         private void WriteToFile(string logStr, string logFile)
         {
-            //判断文件夹是否存在
-            if (!Directory.Exists(LOG_FOLDER))
-            {
-                Directory.CreateDirectory(LOG_FOLDER);
-            }
-
             lock (LOCKER)
             {
                 try
                 {
+                    Directory.CreateDirectory(LOG_FOLDER);
                     var fileWriter = GetFileWriter(logFile);
                     fileWriter.WriteLine(logStr);
-                    if (_diagnose)
+                    if (_option.FlushImmediately)
                     {
                         fileWriter.Flush();
                     }

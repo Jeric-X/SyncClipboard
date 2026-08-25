@@ -2674,6 +2674,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("Refresh", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Failed to reload configuration 的本地化字符串。
+        /// </summary>
+        public static string ReloadConfigFailed {
+            get {
+                return ResourceManager.GetString("ReloadConfigFailed", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Reload Config File 的本地化字符串。
