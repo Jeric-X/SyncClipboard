@@ -46,7 +46,7 @@ namespace SyncClipboard.Core.Commons
         public static readonly string UpdateInfoFolder = GetOrCreateFolder(FullPath("update_info"));
         public static readonly string UpdateInfoPath = GetUpdateInfoPath();
 
-        public static readonly string[] AppDataCopyWhitelistFolders = ["data", "file", "log", "server", "update", "update_info"];
+        public static readonly string[] AppDataCopyWhitelistFolders = ["config_backup", "data", "file", "log", "server", "update", "update_info"];
         public static readonly string[] AppDataCopyWhitelistFiles = [RuntimeConfigName, "SyncClipboard.json"];
 
         public static bool IsUsingCustomAppDataDirectory =>

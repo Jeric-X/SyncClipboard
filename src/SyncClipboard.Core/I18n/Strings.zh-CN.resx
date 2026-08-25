@@ -627,7 +627,22 @@ Shift + 左键：选中连续范围</value>
     <value>无</value>
   </data>
   <data name="FileFilterDescription" xml:space="preserve">
-    <value>每行一个文件扩展名</value>
+    <value>每条规则可独立选择文件名结尾或正则表达式匹配</value>
+  </data>
+  <data name="FileFilterPattern" xml:space="preserve">
+    <value>匹配内容</value>
+  </data>
+  <data name="FileFilterPatternRequired" xml:space="preserve">
+    <value>匹配内容不能为空</value>
+  </data>
+  <data name="SuffixMatch" xml:space="preserve">
+    <value>文件名结尾</value>
+  </data>
+  <data name="RegularExpression" xml:space="preserve">
+    <value>正则表达式</value>
+  </data>
+  <data name="InvalidRegularExpression" xml:space="preserve">
+    <value>无效的正则表达式：{0}</value>
   </data>
   <data name="ClipboardOwnerFilter" xml:space="preserve">
     <value>剪贴板来源程序过滤</value>

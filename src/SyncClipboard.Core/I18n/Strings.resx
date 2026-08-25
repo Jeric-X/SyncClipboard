@@ -627,7 +627,22 @@ Shift + left click: Select a continuous range</value>
     <value>None</value>
   </data>
   <data name="FileFilterDescription" xml:space="preserve">
-    <value>Each file extension per line</value>
+    <value>Each rule independently selects filename ending or regular expression matching</value>
+  </data>
+  <data name="FileFilterPattern" xml:space="preserve">
+    <value>Pattern</value>
+  </data>
+  <data name="FileFilterPatternRequired" xml:space="preserve">
+    <value>Pattern cannot be empty</value>
+  </data>
+  <data name="SuffixMatch" xml:space="preserve">
+    <value>Filename ending</value>
+  </data>
+  <data name="RegularExpression" xml:space="preserve">
+    <value>Regular expression</value>
+  </data>
+  <data name="InvalidRegularExpression" xml:space="preserve">
+    <value>Invalid regular expression: {0}</value>
   </data>
   <data name="ClipboardOwnerFilter" xml:space="preserve">
     <value>Clipboard Source App Filter</value>

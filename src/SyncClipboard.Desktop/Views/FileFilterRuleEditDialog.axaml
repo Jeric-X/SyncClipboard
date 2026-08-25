@@ -1,0 +1,18 @@
+<ui:ContentDialog x:Class="SyncClipboard.Desktop.Views.FileFilterRuleEditDialog"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:ui="using:FluentAvalonia.UI.Controls"
+                  xmlns:i18n="using:SyncClipboard.Core.I18n"
+                  xmlns:local="using:SyncClipboard.Desktop.Views"
+                  x:DataType="local:FileFilterRuleEditDialog"
+                  Title="{x:Static i18n:Strings.EditRule}"
+                  PrimaryButtonText="{x:Static i18n:Strings.Confirm}"
+                  CloseButtonText="{x:Static i18n:Strings.Cancel}"
+                  DefaultButton="Primary">
+    <StackPanel MinWidth="420" MaxWidth="620" Spacing="12">
+        <TextBlock Text="{x:Static i18n:Strings.MatchMode}" />
+        <ComboBox ItemsSource="{Binding MatchModes}" SelectedItem="{Binding Editor.MatchMode, Mode=TwoWay}" ItemTemplate="{StaticResource LocaleStringTemplate}" />
+        <TextBox Watermark="{x:Static i18n:Strings.FileFilterPattern}" Text="{Binding Editor.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBlock x:Name="_ValidationMessage" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
+    </StackPanel>
+</ui:ContentDialog>

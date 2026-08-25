@@ -7,6 +7,7 @@ using Quartz;
 using SharpHook;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -179,7 +180,7 @@ namespace SyncClipboard.Core
             MenuItem[] menu =
             [
                 new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
-                new MenuItem(I18n.Strings.ReloadConfigFile, ConfigManager.Load),
+                new MenuItem(I18n.Strings.ReloadConfigFile, ConfigManager.Reload),
 #if !MACOS
                 new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
 #endif
@@ -262,6 +263,8 @@ namespace SyncClipboard.Core
             });
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
+            services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV0ToV1>();
+            services.AddSingleton<SyncClipboardConfigUpgrader>();
             services.AddSingleton<AccountManager>();
             services.AddSingleton<INetworkContextProvider, SystemNetworkContextProvider>();
             services.AddSingleton<StaticConfig>();

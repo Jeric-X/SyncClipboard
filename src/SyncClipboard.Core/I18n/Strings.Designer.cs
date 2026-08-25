@@ -1379,6 +1379,51 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("FileFilterDescription", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Pattern 的本地化字符串。
+        /// </summary>
+        public static string FileFilterPattern {
+            get {
+                return ResourceManager.GetString("FileFilterPattern", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Pattern cannot be empty 的本地化字符串。
+        /// </summary>
+        public static string FileFilterPatternRequired {
+            get {
+                return ResourceManager.GetString("FileFilterPatternRequired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Invalid regular expression: {0} 的本地化字符串。
+        /// </summary>
+        public static string InvalidRegularExpression {
+            get {
+                return ResourceManager.GetString("InvalidRegularExpression", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Regular expression 的本地化字符串。
+        /// </summary>
+        public static string RegularExpression {
+            get {
+                return ResourceManager.GetString("RegularExpression", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Filename ending 的本地化字符串。
+        /// </summary>
+        public static string SuffixMatch {
+            get {
+                return ResourceManager.GetString("SuffixMatch", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Uploading File Filter 的本地化字符串。
