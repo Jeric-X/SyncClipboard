@@ -60,9 +60,6 @@ public sealed class SyncClipboardConfigUpgrader
             return;
         }
 
-        var backupPath = CreateBackup(configPath);
-        PruneBackups(configPath, backupPath);
-
         JsonObject root;
         try
         {
@@ -117,6 +114,8 @@ public sealed class SyncClipboardConfigUpgrader
 
         if (version != originalVersion)
         {
+            var backupPath = CreateBackup(configPath, originalVersion);
+            PruneBackups(configPath, backupPath);
             AtomicWrite(configPath, root);
         }
     }
@@ -224,13 +223,12 @@ public sealed class SyncClipboardConfigUpgrader
         }
     }
 
-    private static string CreateBackup(string configPath)
+    private static string CreateBackup(string configPath, int sourceVersion)
     {
         try
         {
             var backupDirectory = GetBackupDirectory(configPath);
             Directory.CreateDirectory(backupDirectory);
-            var sourceVersion = GetVersionForBackupName(configPath);
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd'T'HHmmss.fffffff'Z'");
             var backupPath = Path.Combine(
                 backupDirectory,
@@ -241,23 +239,6 @@ public sealed class SyncClipboardConfigUpgrader
         catch (Exception exception)
         {
             throw new SyncClipboardConfigUpgradeException("Cannot back up SyncClipboard.json.", exception);
-        }
-    }
-
-    private static string GetVersionForBackupName(string configPath)
-    {
-        try
-        {
-            if (JsonNode.Parse(File.ReadAllText(configPath)) is not JsonObject root)
-            {
-                return "unknown";
-            }
-
-            return ReadVersion(root).ToString();
-        }
-        catch
-        {
-            return "unknown";
         }
     }
 

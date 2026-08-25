@@ -42,7 +42,7 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_MigratesLegacyFileFilterRulesToSuffixRules()
     {
-        File.WriteAllText(_configPath, """
+        const string json = """
             {
               "FileFilter": {
                 "FileFilterMode": "BlackList",
@@ -50,7 +50,8 @@ public class SyncClipboardConfigUpgraderTests
                 "BlackList": [".tmp", ".log"]
               }
             }
-            """);
+            """;
+        File.WriteAllText(_configPath, json);
 
         new SyncClipboardConfigUpgrader().Upgrade(_configPath);
 
@@ -64,10 +65,13 @@ public class SyncClipboardConfigUpgraderTests
             ExpectedLegacyBlackList,
             config.BlackList.Select(rule => rule.Pattern).ToArray());
         Assert.IsTrue(config.BlackList.All(rule => rule.MatchMode == FileFilterMatchMode.Suffix));
+
+        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
+        Assert.AreEqual(json, File.ReadAllText(backup));
     }
 
     [TestMethod]
-    public void Upgrade_BacksUpCurrentConfigurationWithoutRewritingIt()
+    public void Upgrade_DoesNotBackUpOrRewriteCurrentConfiguration()
     {
         const string json = """
             {
@@ -82,8 +86,7 @@ public class SyncClipboardConfigUpgraderTests
         new SyncClipboardConfigUpgrader().Upgrade(_configPath);
 
         Assert.AreEqual(json, File.ReadAllText(_configPath));
-        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
-        Assert.AreEqual(json, File.ReadAllText(backup));
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
 
     [TestMethod]
@@ -95,11 +98,11 @@ public class SyncClipboardConfigUpgraderTests
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
             () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
-        Assert.AreEqual(1, Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Count());
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
 
     [TestMethod]
-    public void Upgrade_RejectsMalformedJsonAfterBackingItUp()
+    public void Upgrade_RejectsMalformedJsonWithoutBackingItUp()
     {
         const string json = "{ invalid";
         File.WriteAllText(_configPath, json);
@@ -107,24 +110,24 @@ public class SyncClipboardConfigUpgraderTests
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
             () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
-        Assert.AreEqual(1, Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Count());
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
 
     [TestMethod]
-    public void Upgrade_PrunesBackupsWhenConfigurationIsInvalid()
+    public void Upgrade_PrunesMigrationBackups()
     {
         var upgrader = new SyncClipboardConfigUpgrader();
         for (var index = 0; index < 25; index++)
         {
-            File.WriteAllText(_configPath, $"{{ invalid {index}");
-            Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(() => upgrader.Upgrade(_configPath));
+            File.WriteAllText(_configPath, $"{{ \"Marker\": {index} }}");
+            upgrader.Upgrade(_configPath);
         }
 
         var backups = Directory
             .EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json")
             .ToArray();
         Assert.AreEqual(20, backups.Length);
-        Assert.IsTrue(backups.Any(path => File.ReadAllText(path) == "{ invalid 24"));
+        Assert.IsTrue(backups.Any(path => File.ReadAllText(path) == "{ \"Marker\": 24 }"));
     }
 
     [TestMethod]
@@ -150,6 +153,7 @@ public class SyncClipboardConfigUpgraderTests
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
             () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
 
     private JsonObject ReadRoot() => JsonNode.Parse(File.ReadAllText(_configPath))!.AsObject();
