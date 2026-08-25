@@ -342,6 +342,9 @@
   <data name="ReloadConfigFile" xml:space="preserve">
     <value>Reload Config File</value>
   </data>
+  <data name="ReloadConfigFailed" xml:space="preserve">
+    <value>Failed to reload configuration</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>Downloading web image</value>
   </data>
@@ -626,8 +629,26 @@ Shift + left click: Select a continuous range</value>
   <data name="None" xml:space="preserve">
     <value>None</value>
   </data>
-  <data name="FileFilterDescription" xml:space="preserve">
-    <value>Each file extension per line</value>
+  <data name="FileFilterPattern" xml:space="preserve">
+    <value>Pattern</value>
+  </data>
+  <data name="FileFilterPatternRequired" xml:space="preserve">
+    <value>Pattern cannot be empty</value>
+  </data>
+  <data name="SuffixMatch" xml:space="preserve">
+    <value>Filename ending</value>
+  </data>
+  <data name="RegularExpression" xml:space="preserve">
+    <value>Regular expression</value>
+  </data>
+  <data name="RegularExpressionQuickReference" xml:space="preserve">
+    <value>.NET regular expression quick reference</value>
+  </data>
+  <data name="RegularExpressionQuickReferenceLink" xml:space="preserve">
+    <value>https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference</value>
+  </data>
+  <data name="InvalidRegularExpression" xml:space="preserve">
+    <value>Invalid regular expression: {0}</value>
   </data>
   <data name="ClipboardOwnerFilter" xml:space="preserve">
     <value>Clipboard Source App Filter</value>

@@ -5,8 +5,8 @@ namespace SyncClipboard.Shared.Models;
 public record FileFilterConfig
 {
     public string FileFilterMode { get; set; } = "";
-    public List<string> WhiteList { get; set; } = [];
-    public List<string> BlackList { get; set; } = [];
+    public List<FileFilterRule> WhiteList { get; set; } = [];
+    public List<FileFilterRule> BlackList { get; set; } = [];
 
     public virtual bool Equals(FileFilterConfig? other)
     {
@@ -15,8 +15,8 @@ public record FileFilterConfig
         if (FileFilterMode != other.FileFilterMode) return false;
         if (WhiteList.Count != other.WhiteList.Count) return false;
         if (BlackList.Count != other.BlackList.Count) return false;
-        if (WhiteList.Except(other.WhiteList).Any()) return false;
-        if (BlackList.Except(other.BlackList).Any()) return false;
+        if (!WhiteList.SequenceEqual(other.WhiteList)) return false;
+        if (!BlackList.SequenceEqual(other.BlackList)) return false;
 
         return true;
     }

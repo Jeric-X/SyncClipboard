@@ -6,7 +6,6 @@
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
-             xmlns:m="using:SyncClipboard.Core.Models"
              x:DataType="vm:FileSyncFilterSettingViewModel"
              d:DesignWidth="800"
              d:DesignHeight="450"
@@ -19,7 +18,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}" Description="{Binding Description}">
+        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.FilterMode}">
             <ui:SettingsExpander.IconSource>
                 <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:SettingsExpander.IconSource>
@@ -27,27 +26,91 @@
                 <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}" ItemTemplate="{StaticResource LocaleStringTemplate}" />
             </ui:SettingsExpander.Footer>
         </ui:SettingsExpander>
-        <Grid Grid.Row="1" Margin="0,10,0,0" IsVisible="{Binding EnableText, Mode=OneWay}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <ScrollViewer x:Name="_ScrollViewer" Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                <TextBox Grid.Column="0"
-                         VerticalContentAlignment="Top"
-                         Text="{Binding ShownText, Mode=TwoWay}"
-                         TextWrapping="Wrap"
-                         FontSize="16"
-                         AcceptsReturn="True"
-                         CornerRadius="{DynamicResource ControlCornerRadius}" />
+        <Grid Grid.Row="1" Margin="0,10,0,0" IsVisible="{Binding EnableList, Mode=OneWay}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0"
+                    Margin="0,0,0,10"
+                    HorizontalAlignment="Left"
+                    Click="AddItemClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="12" Text="&#xE710;" />
+                    <TextBlock Text="{x:Static i18n:Strings.AddItem}" />
+                </StackPanel>
+            </Button>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Padding="12,8"
+                            Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8,8,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="80" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" FontWeight="SemiBold" Text="{x:Static i18n:Strings.FileFilterPattern}" />
+                            <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{x:Static i18n:Strings.MatchMode}" />
+                            <TextBlock Grid.Column="2"
+                                       HorizontalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Text="{x:Static i18n:Strings.Operation}" />
+                        </Grid>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding FilterList}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:EditableFileFilterRule">
+                                <Border Padding="12,8"
+                                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1,0,1,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="1*" />
+                                            <ColumnDefinition Width="80" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding Pattern}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Grid.Column="1"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding MatchMode.ShownString}"
+                                                   TextWrapping="Wrap" />
+                                        <StackPanel Grid.Column="2"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Orientation="Horizontal"
+                                                    Spacing="4">
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="EditItemClick"
+                                                    DataContext="{Binding}"
+                                                    ToolTip.Tip="{x:Static i18n:Strings.EditRule}">
+                                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE70F;" />
+                                            </Button>
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="DeleteItemClick"
+                                                    DataContext="{Binding}"
+                                                    ToolTip.Tip="{x:Static i18n:Strings.DeleteRule}">
+                                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE74D;" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
             </ScrollViewer>
-            <StackPanel Grid.Column="1"
-                        MinWidth="80"
-                        Margin="16,0,0,0"
-                        Orientation="Vertical"
-                        Spacing="10">
-                <Button HorizontalAlignment="Stretch" Content="{x:Static i18n:Strings.SaveList}" Command="{Binding ApplyCommand}" />
-            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

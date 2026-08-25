@@ -342,6 +342,9 @@
   <data name="ReloadConfigFile" xml:space="preserve">
     <value>重新载入配置文件</value>
   </data>
+  <data name="ReloadConfigFailed" xml:space="preserve">
+    <value>重新载入配置文件失败</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>正在从网站下载原图</value>
   </data>
@@ -626,8 +629,26 @@ Shift + 左键：选中连续范围</value>
   <data name="None" xml:space="preserve">
     <value>无</value>
   </data>
-  <data name="FileFilterDescription" xml:space="preserve">
-    <value>每行一个文件扩展名</value>
+  <data name="FileFilterPattern" xml:space="preserve">
+    <value>匹配内容</value>
+  </data>
+  <data name="FileFilterPatternRequired" xml:space="preserve">
+    <value>匹配内容不能为空</value>
+  </data>
+  <data name="SuffixMatch" xml:space="preserve">
+    <value>文件名结尾</value>
+  </data>
+  <data name="RegularExpression" xml:space="preserve">
+    <value>正则表达式</value>
+  </data>
+  <data name="RegularExpressionQuickReference" xml:space="preserve">
+    <value>.NET 正则表达式快速参考</value>
+  </data>
+  <data name="RegularExpressionQuickReferenceLink" xml:space="preserve">
+    <value>https://learn.microsoft.com/zh-cn/dotnet/standard/base-types/regular-expression-language-quick-reference</value>
+  </data>
+  <data name="InvalidRegularExpression" xml:space="preserve">
+    <value>无效的正则表达式：{0}</value>
   </data>
   <data name="ClipboardOwnerFilter" xml:space="preserve">
     <value>剪贴板来源程序过滤</value>

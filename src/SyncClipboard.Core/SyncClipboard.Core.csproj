@@ -63,6 +63,10 @@
     <ProjectReference Include="..\SyncClipboard.Shared\SyncClipboard.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SyncClipboard.Test" />
+  </ItemGroup>
+
   <Target Name="Print Message" BeforeTargets="Build">
     <Message Text="RuntimeIdentifier $(RuntimeIdentifier)" />
   </Target>
