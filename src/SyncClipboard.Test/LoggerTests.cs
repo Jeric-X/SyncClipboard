@@ -35,14 +35,14 @@ public class LoggerTests
 
         logger.Write("Test", "startup failure");
         var logPath = Directory.EnumerateFiles(_directory, "*.txt").Single();
-        Assert.Contains("startup failure", File.ReadAllText(logPath));
+        Assert.Contains("startup failure", ReadLog(logPath));
 
         option.FlushImmediately = false;
         logger.Write("Test", "buffered message");
         option.FlushImmediately = true;
         logger.Write("Test", "flush trigger");
 
-        var log = File.ReadAllText(logPath);
+        var log = ReadLog(logPath);
         Assert.Contains("buffered message", log);
         Assert.Contains("flush trigger", log);
     }
@@ -57,8 +57,16 @@ public class LoggerTests
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(() => new AppCore(serviceProvider));
 
         var logPath = Directory.EnumerateFiles(_directory, "*.txt").Single();
-        Assert.Contains("Failed to load configuration during startup", File.ReadAllText(logPath));
-        Assert.Contains("configuration load failed", File.ReadAllText(logPath));
+        var log = ReadLog(logPath);
+        Assert.Contains("Failed to load configuration during startup", log);
+        Assert.Contains("configuration load failed", log);
+    }
+
+    private static string ReadLog(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     private sealed class FailingConfigServiceProvider(ILogger logger) : IServiceProvider
