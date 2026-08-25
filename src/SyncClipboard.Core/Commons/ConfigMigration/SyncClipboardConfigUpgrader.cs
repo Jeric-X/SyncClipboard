@@ -7,7 +7,6 @@ namespace SyncClipboard.Core.Commons.ConfigMigration;
 public sealed class SyncClipboardConfigUpgrader
 {
     public const string VersionPropertyName = "ConfigVersion";
-    public const int CurrentVersion = 1;
 
     private const int BackupRetentionCount = 20;
 
@@ -55,7 +54,7 @@ public sealed class SyncClipboardConfigUpgrader
         {
             AtomicWrite(configPath, new JsonObject
             {
-                [VersionPropertyName] = CurrentVersion,
+                [VersionPropertyName] = Env.SyncClipboardConfigVersion,
             });
             return;
         }
@@ -76,14 +75,14 @@ public sealed class SyncClipboardConfigUpgrader
         }
 
         var originalVersion = ReadVersion(root);
-        if (originalVersion > CurrentVersion)
+        if (originalVersion > Env.SyncClipboardConfigVersion)
         {
             throw new SyncClipboardConfigUpgradeException(
-                $"Configuration version {originalVersion} is newer than supported version {CurrentVersion}.");
+                $"Configuration version {originalVersion} is newer than supported version {Env.SyncClipboardConfigVersion}.");
         }
 
         var version = originalVersion;
-        while (version < CurrentVersion)
+        while (version < Env.SyncClipboardConfigVersion)
         {
             if (!_migrations.TryGetValue(version, out var migration))
             {
@@ -139,7 +138,7 @@ public sealed class SyncClipboardConfigUpgrader
 
     private static void ValidateCurrentConfig(JsonObject root)
     {
-        if (ReadVersion(root) != CurrentVersion)
+        if (ReadVersion(root) != Env.SyncClipboardConfigVersion)
         {
             throw new SyncClipboardConfigUpgradeException("Configuration migration did not reach the current version.");
         }

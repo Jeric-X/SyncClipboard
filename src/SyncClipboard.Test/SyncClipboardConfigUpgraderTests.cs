@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Shared.Models;
 using System.Text.Json;
@@ -36,7 +37,7 @@ public class SyncClipboardConfigUpgraderTests
         new SyncClipboardConfigUpgrader().Upgrade(_configPath);
 
         var root = ReadRoot();
-        Assert.AreEqual(SyncClipboardConfigUpgrader.CurrentVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
+        Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
     }
 
     [TestMethod]

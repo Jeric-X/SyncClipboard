@@ -17,6 +17,7 @@ namespace SyncClipboard.Core.Commons
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases";
 
         public const string RuntimeConfigName = "RuntimeConfig.json";
+        public const int SyncClipboardConfigVersion = 1;
         public const string UpdateInfoFile = "update_info.json";
         public const string PortableAppDataFolderName = "appdata";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
