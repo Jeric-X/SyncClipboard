@@ -212,7 +212,7 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("AppDataFolderCopySuccess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Application Startup Failed 的本地化字符串。
         /// </summary>
@@ -639,16 +639,22 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("Config", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 SyncClipboard could not load or upgrade the configuration file. 的本地化字符串。
+        ///   查找类似 SyncClipboard could not load or upgrade the configuration file.
+        ///
+        ///File: {0}
+        ///
+        ///Error: {1}
+        ///
+        ///Overwrite it with default settings and continue? The original file will be backed up. 的本地化字符串。
         /// </summary>
         public static string ConfigurationErrorMessage {
             get {
                 return ResourceManager.GetString("ConfigurationErrorMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Configuration Error 的本地化字符串。
         /// </summary>
@@ -657,9 +663,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("ConfigurationErrorTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 SyncClipboard could not back up and replace the configuration file. 的本地化字符串。
+        ///   查找类似 SyncClipboard could not back up and replace the configuration file.
+        ///
+        ///File: {0}
+        ///
+        ///Error: {1}
+        ///
+        ///Retry the operation or exit the application. 的本地化字符串。
         /// </summary>
         public static string ConfigurationResetFailedMessage {
             get {
@@ -2458,9 +2470,13 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("Operation", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 The operation failed. 的本地化字符串。
+        ///   查找类似 The operation failed.
+        ///
+        ///Error: {0}
+        ///
+        ///Retry the operation or exit the application. 的本地化字符串。
         /// </summary>
         public static string OperationFailedRetryMessage {
             get {
@@ -2476,7 +2492,7 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("OperationInstructions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Overwrite Configuration 的本地化字符串。
         /// </summary>
@@ -2818,7 +2834,7 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("RestoreDefaultFolderConfirmMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Retry 的本地化字符串。
         /// </summary>
