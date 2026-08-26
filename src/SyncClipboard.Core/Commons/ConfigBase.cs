@@ -125,6 +125,14 @@ namespace SyncClipboard.Core.Commons
             return _jsonNode[key];
         }
 
+        protected JsonNode CaptureConfigSnapshot() => _jsonNode.DeepClone();
+
+        protected void RestoreConfigSnapshot(JsonNode snapshot)
+        {
+            _jsonNode = snapshot.DeepClone();
+            _jsonNodeBackUp = _jsonNode.DeepClone();
+        }
+
         public void SetNode(string key, JsonNode? node)
         {
             _jsonNode[key] = node;
@@ -160,6 +168,12 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
+        protected void NotifyCurrentConfigChanged()
+        {
+            NotifyAllRegistedHandler();
+            ConfigChanged?.Invoke();
+        }
+
         protected virtual void Save()
         {
             try
@@ -190,8 +204,7 @@ namespace SyncClipboard.Core.Commons
                 _jsonNodeBackUp = _jsonNode.DeepClone();
                 //Save();
             }
-            NotifyAllRegistedHandler();
-            ConfigChanged?.Invoke();
+            NotifyCurrentConfigChanged();
         }
     }
 }

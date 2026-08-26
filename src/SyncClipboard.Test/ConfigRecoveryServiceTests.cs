@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using System.Text.Json.Nodes;
 
@@ -98,10 +99,29 @@ public class ConfigRecoveryServiceTests
         Assert.AreEqual(1, dialog.ConfirmationCount);
     }
 
+    [TestMethod]
+    public async Task TryRestoreCurrentConfigAsync_WhenConfirmed_RestoresActiveConfiguration()
+    {
+        var restored = false;
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var service = new ConfigRecoveryService(dialog, new FakeLogger());
+
+        var result = await service.TryRestoreCurrentConfigAsync(
+            _configPath,
+            () => restored = true,
+            new InvalidOperationException("reload failed"));
+
+        Assert.IsTrue(result);
+        Assert.IsTrue(restored);
+        Assert.AreEqual(1, dialog.ConfirmationCount);
+        Assert.AreEqual(Strings.RestoreCurrentConfig, dialog.PrimaryButtonTexts.Single());
+    }
+
     private sealed class FakeGlobalDialog(bool confirmationResult) : IGlobalDialog
     {
         public int ConfirmationCount { get; private set; }
         public int MessageCount { get; private set; }
+        public List<string> PrimaryButtonTexts { get; } = [];
 
         public Task<bool> ShowConfirmationAsync(
             string title,
@@ -110,6 +130,7 @@ public class ConfigRecoveryServiceTests
             string closeButtonText)
         {
             ConfirmationCount++;
+            PrimaryButtonTexts.Add(primaryButtonText);
             return Task.FromResult(confirmationResult);
         }
 

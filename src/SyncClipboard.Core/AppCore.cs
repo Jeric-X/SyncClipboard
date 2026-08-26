@@ -77,26 +77,24 @@ namespace SyncClipboard.Core
                 "Application startup");
         }
 
-        private async Task<bool> ReloadConfigAsync()
-        {
-            var recoveryService = Services.GetRequiredService<ConfigRecoveryService>();
-            var result = await recoveryService.ExecuteWithRecoveryAsync(
-                () =>
-                {
-                    ConfigManager.Reload();
-                    return true;
-                },
-                () => ConfigManager.Path,
-                Strings.ReloadConfigFailed,
-                "Configuration reload");
-            return result;
-        }
-
         private async void ReloadConfig()
         {
-            if (!await ReloadConfigAsync())
+            try
             {
-                Services.GetRequiredService<IMainWindow>().ExitApp();
+                ConfigManager.Reload();
+            }
+            catch (Exception exception)
+            {
+                var restored = await Services
+                    .GetRequiredService<ConfigRecoveryService>()
+                    .TryRestoreCurrentConfigAsync(
+                        ConfigManager.Path,
+                        ConfigManager.RestoreCurrentConfig,
+                        exception);
+                if (!restored)
+                {
+                    Services.GetRequiredService<IMainWindow>().ExitApp();
+                }
             }
         }
 

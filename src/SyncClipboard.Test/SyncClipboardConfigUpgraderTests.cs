@@ -157,5 +157,26 @@ public class SyncClipboardConfigUpgraderTests
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
 
+    [TestMethod]
+    public void ReplaceWithConfig_BacksUpFailedFileAndWritesActiveConfiguration()
+    {
+        const string failedJson = "{ \"ConfigVersion\": 99 }";
+        File.WriteAllText(_configPath, failedJson);
+        var activeConfig = JsonNode.Parse("""
+            {
+              "ConfigVersion": 1,
+              "Program": {
+                "Language": "en-US"
+              }
+            }
+            """)!.AsObject();
+
+        SyncClipboardConfigUpgrader.ReplaceWithConfig(_configPath, activeConfig);
+
+        Assert.IsTrue(JsonNode.DeepEquals(activeConfig, ReadRoot()));
+        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
+        Assert.AreEqual(failedJson, File.ReadAllText(backup));
+    }
+
     private JsonObject ReadRoot() => JsonNode.Parse(File.ReadAllText(_configPath))!.AsObject();
 }

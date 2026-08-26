@@ -22,8 +22,23 @@ public class ConfigManager : ConfigBase
 
     public void Reload()
     {
-        _configUpgrader.Upgrade(Path);
-        Load();
+        var snapshot = CaptureConfigSnapshot();
+        try
+        {
+            _configUpgrader.Upgrade(Path);
+            Load();
+        }
+        catch
+        {
+            RestoreConfigSnapshot(snapshot);
+            throw;
+        }
+    }
+
+    public void RestoreCurrentConfig()
+    {
+        SyncClipboardConfigUpgrader.ReplaceWithConfig(Path, CaptureConfigSnapshot().AsObject());
+        NotifyCurrentConfigChanged();
     }
 
     private void EnvConfigChanged(EnvConfig envConfig)

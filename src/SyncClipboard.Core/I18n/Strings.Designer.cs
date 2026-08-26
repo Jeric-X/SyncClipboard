@@ -31,7 +31,7 @@ namespace SyncClipboard.Core.I18n {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Strings() {
         }
-        
+
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -2744,6 +2744,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("ReloadConfigFailed", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 SyncClipboard could not reload the configuration file. 的本地化字符串。
+        /// </summary>
+        public static string ReloadConfigRecoveryMessage {
+            get {
+                return ResourceManager.GetString("ReloadConfigRecoveryMessage", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Reload Config File 的本地化字符串。
@@ -2835,6 +2844,15 @@ namespace SyncClipboard.Core.I18n {
             }
         }
         
+        /// <summary>
+        ///   查找类似 Restore Current Configuration 的本地化字符串。
+        /// </summary>
+        public static string RestoreCurrentConfig {
+            get {
+                return ResourceManager.GetString("RestoreCurrentConfig", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Retry 的本地化字符串。
         /// </summary>

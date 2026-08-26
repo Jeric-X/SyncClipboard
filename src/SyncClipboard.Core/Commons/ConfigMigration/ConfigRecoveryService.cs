@@ -53,6 +53,52 @@ public sealed class ConfigRecoveryService(
     public static bool IsConfigurationError(Exception exception) =>
         GetConfigurationError(exception) is not null;
 
+    public async Task<bool> TryRestoreCurrentConfigAsync(
+        string configPath,
+        Action restoreCurrentConfig,
+        Exception reloadException)
+    {
+        logger.Write(LogTag, $"Configuration reload failed: {reloadException}");
+        logger.Flush();
+
+        var restore = await globalDialog.ShowConfirmationAsync(
+            Strings.ReloadConfigFailed,
+            string.Format(Strings.ReloadConfigRecoveryMessage, configPath, reloadException.Message),
+            Strings.RestoreCurrentConfig,
+            Strings.Exit);
+        if (!restore)
+        {
+            logger.Write(LogTag, "Configuration restore declined.");
+            logger.Flush();
+            return false;
+        }
+
+        while (true)
+        {
+            try
+            {
+                restoreCurrentConfig();
+                logger.Write(LogTag, $"Restored the active configuration to '{configPath}'.");
+                logger.Flush();
+                return true;
+            }
+            catch (Exception restoreException)
+            {
+                logger.Write(LogTag, $"Failed to restore the active configuration to '{configPath}': {restoreException}");
+                logger.Flush();
+                var retry = await globalDialog.ShowConfirmationAsync(
+                    Strings.ReloadConfigFailed,
+                    string.Format(Strings.OperationFailedRetryMessage, restoreException.Message),
+                    Strings.Retry,
+                    Strings.Exit);
+                if (!retry)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
     public async Task<bool> TryRecoverAsync(string configPath, Exception exception)
     {
         var configError = GetConfigurationError(exception)

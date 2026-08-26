@@ -116,9 +116,13 @@ public sealed class SyncClipboardConfigUpgrader
         }
     }
 
-    public static void ReplaceWithDefault(string configPath)
+    public static void ReplaceWithDefault(string configPath) =>
+        ReplaceWithConfig(configPath, CreateDefaultConfig());
+
+    public static void ReplaceWithConfig(string configPath, JsonObject config)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
+        ArgumentNullException.ThrowIfNull(config);
 
         var directory = Path.GetDirectoryName(configPath)
             ?? throw new SyncClipboardConfigUpgradeException($"Cannot determine the configuration directory for '{configPath}'.");
@@ -132,7 +136,7 @@ public sealed class SyncClipboardConfigUpgrader
             PruneBackups(configPath, backupPath);
         }
 
-        AtomicWrite(configPath, CreateDefaultConfig());
+        AtomicWrite(configPath, config);
     }
 
     private static JsonObject CreateDefaultConfig() => new()
