@@ -11,15 +11,13 @@ public class StaticConfig : ConfigBase
         Load();
     }
 
-    protected override void Save()
+    protected override bool Save()
     {
         if (GetConfig<EnvConfig>() == new EnvConfig() && !File.Exists(Path))
         {
-            return;
+            return true;
         }
-        else
-        {
-            base.Save();
-        }
+
+        return base.Save();
     }
 }

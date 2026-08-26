@@ -55,7 +55,7 @@ public sealed class ConfigRecoveryService(
 
     public async Task<bool> TryRestoreCurrentConfigAsync(
         string configPath,
-        Action restoreCurrentConfig,
+        Func<bool> restoreCurrentConfig,
         Exception reloadException)
     {
         logger.Write(LogTag, $"Configuration reload failed: {reloadException}");
@@ -73,28 +73,58 @@ public sealed class ConfigRecoveryService(
             return false;
         }
 
+        var configBackedUp = false;
         while (true)
         {
-            try
+            if (!configBackedUp)
             {
-                restoreCurrentConfig();
+                try
+                {
+                    var backupPath = SyncClipboardConfigUpgrader.BackupConfig(configPath);
+                    configBackedUp = true;
+                    if (backupPath is not null)
+                    {
+                        logger.Write(LogTag, $"Backed up invalid configuration '{configPath}' to '{backupPath}'.");
+                        logger.Flush();
+                    }
+                }
+                catch (Exception backupException)
+                {
+                    logger.Write(LogTag, $"Failed to back up invalid configuration '{configPath}': {backupException}");
+                    logger.Flush();
+                    var retryBackup = await globalDialog.ShowConfirmationAsync(
+                        Strings.ReloadConfigFailed,
+                        string.Format(Strings.OperationFailedRetryMessage, backupException.Message),
+                        Strings.Retry,
+                        Strings.Exit);
+                    if (!retryBackup)
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+            }
+
+            if (restoreCurrentConfig())
+            {
                 logger.Write(LogTag, $"Restored the active configuration to '{configPath}'.");
                 logger.Flush();
                 return true;
             }
-            catch (Exception restoreException)
+
+            logger.Write(LogTag, $"Failed to restore the active configuration to '{configPath}'.");
+            logger.Flush();
+            var retry = await globalDialog.ShowConfirmationAsync(
+                Strings.ReloadConfigFailed,
+                string.Format(
+                    Strings.OperationFailedRetryMessage,
+                    string.Format(Strings.SaveConfigFailed, configPath)),
+                Strings.Retry,
+                Strings.Exit);
+            if (!retry)
             {
-                logger.Write(LogTag, $"Failed to restore the active configuration to '{configPath}': {restoreException}");
-                logger.Flush();
-                var retry = await globalDialog.ShowConfirmationAsync(
-                    Strings.ReloadConfigFailed,
-                    string.Format(Strings.OperationFailedRetryMessage, restoreException.Message),
-                    Strings.Retry,
-                    Strings.Exit);
-                if (!retry)
-                {
-                    return false;
-                }
+                return false;
             }
         }
     }

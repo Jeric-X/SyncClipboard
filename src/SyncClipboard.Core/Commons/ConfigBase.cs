@@ -125,14 +125,6 @@ namespace SyncClipboard.Core.Commons
             return _jsonNode[key];
         }
 
-        protected JsonNode CaptureConfigSnapshot() => _jsonNode.DeepClone();
-
-        protected void RestoreConfigSnapshot(JsonNode snapshot)
-        {
-            _jsonNode = snapshot.DeepClone();
-            _jsonNodeBackUp = _jsonNode.DeepClone();
-        }
-
         public void SetNode(string key, JsonNode? node)
         {
             _jsonNode[key] = node;
@@ -168,25 +160,21 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
-        protected void NotifyCurrentConfigChanged()
-        {
-            NotifyAllRegistedHandler();
-            ConfigChanged?.Invoke();
-        }
-
-        protected virtual void Save()
+        protected virtual bool Save()
         {
             try
             {
                 var jsonString = _jsonNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(Path, jsonString);
                 _jsonNodeBackUp = _jsonNode.DeepClone();
+                return true;
             }
             catch (Exception e)
             {
                 NotificationManager?.ShowText("Failed to write config file", e.Message);
                 AppCore.TryGetCurrent()?.Logger.Write($"Failed to write config file to {Path}, err message: {e.Message}");
                 _jsonNode = _jsonNodeBackUp.DeepClone();
+                return false;
             }
         }
 
@@ -204,7 +192,8 @@ namespace SyncClipboard.Core.Commons
                 _jsonNodeBackUp = _jsonNode.DeepClone();
                 //Save();
             }
-            NotifyCurrentConfigChanged();
+            NotifyAllRegistedHandler();
+            ConfigChanged?.Invoke();
         }
     }
 }

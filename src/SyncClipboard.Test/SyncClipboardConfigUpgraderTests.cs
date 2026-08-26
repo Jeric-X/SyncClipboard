@@ -158,24 +158,16 @@ public class SyncClipboardConfigUpgraderTests
     }
 
     [TestMethod]
-    public void ReplaceWithConfig_BacksUpFailedFileAndWritesActiveConfiguration()
+    public void BackupConfig_CopiesInvalidConfigurationToBackupDirectory()
     {
-        const string failedJson = "{ \"ConfigVersion\": 99 }";
-        File.WriteAllText(_configPath, failedJson);
-        var activeConfig = JsonNode.Parse("""
-            {
-              "ConfigVersion": 1,
-              "Program": {
-                "Language": "en-US"
-              }
-            }
-            """)!.AsObject();
+        const string invalidJson = "{ invalid";
+        File.WriteAllText(_configPath, invalidJson);
 
-        SyncClipboardConfigUpgrader.ReplaceWithConfig(_configPath, activeConfig);
+        var backupPath = SyncClipboardConfigUpgrader.BackupConfig(_configPath);
 
-        Assert.IsTrue(JsonNode.DeepEquals(activeConfig, ReadRoot()));
-        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
-        Assert.AreEqual(failedJson, File.ReadAllText(backup));
+        Assert.IsNotNull(backupPath);
+        Assert.AreEqual(invalidJson, File.ReadAllText(backupPath));
+        Assert.AreEqual(invalidJson, File.ReadAllText(_configPath));
     }
 
     private JsonObject ReadRoot() => JsonNode.Parse(File.ReadAllText(_configPath))!.AsObject();

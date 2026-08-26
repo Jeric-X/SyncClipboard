@@ -367,7 +367,7 @@
     <value>Retry</value>
   </data>
   <data name="ReloadConfigRecoveryMessage" xml:space="preserve">
-    <value>SyncClipboard could not reload the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}&#xA;&#xA;Restore the currently active configuration to this file and continue? The failed file will be backed up.</value>
+    <value>SyncClipboard could not reload the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}&#xA;&#xA;Back up the invalid file, restore the currently active configuration to it, and continue?</value>
   </data>
   <data name="RestoreCurrentConfig" xml:space="preserve">
     <value>Restore Current Configuration</value>

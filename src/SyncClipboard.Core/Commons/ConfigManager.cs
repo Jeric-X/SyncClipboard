@@ -22,24 +22,11 @@ public class ConfigManager : ConfigBase
 
     public void Reload()
     {
-        var snapshot = CaptureConfigSnapshot();
-        try
-        {
-            _configUpgrader.Upgrade(Path);
-            Load();
-        }
-        catch
-        {
-            RestoreConfigSnapshot(snapshot);
-            throw;
-        }
+        _configUpgrader.Upgrade(Path);
+        Load();
     }
 
-    public void RestoreCurrentConfig()
-    {
-        SyncClipboardConfigUpgrader.ReplaceWithConfig(Path, CaptureConfigSnapshot().AsObject());
-        NotifyCurrentConfigChanged();
-    }
+    public bool RestoreCurrentConfig() => Save();
 
     private void EnvConfigChanged(EnvConfig envConfig)
     {

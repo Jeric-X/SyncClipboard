@@ -102,19 +102,51 @@ public class ConfigRecoveryServiceTests
     [TestMethod]
     public async Task TryRestoreCurrentConfigAsync_WhenConfirmed_RestoresActiveConfiguration()
     {
+        const string invalidJson = "{ invalid";
+        File.WriteAllText(_configPath, invalidJson);
         var restored = false;
         var dialog = new FakeGlobalDialog(confirmationResult: true);
         var service = new ConfigRecoveryService(dialog, new FakeLogger());
 
         var result = await service.TryRestoreCurrentConfigAsync(
             _configPath,
-            () => restored = true,
+            () =>
+            {
+                restored = true;
+                return true;
+            },
             new InvalidOperationException("reload failed"));
 
         Assert.IsTrue(result);
         Assert.IsTrue(restored);
         Assert.AreEqual(1, dialog.ConfirmationCount);
         Assert.AreEqual(Strings.RestoreCurrentConfig, dialog.PrimaryButtonTexts.Single());
+        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
+        Assert.AreEqual(invalidJson, File.ReadAllText(backup));
+    }
+
+    [TestMethod]
+    public async Task TryRestoreCurrentConfigAsync_WhenSaveFails_RetriesUntilSuccess()
+    {
+        File.WriteAllText(_configPath, "{ invalid");
+        var attempts = 0;
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var service = new ConfigRecoveryService(dialog, new FakeLogger());
+
+        var result = await service.TryRestoreCurrentConfigAsync(
+            _configPath,
+            () => ++attempts == 2,
+            new InvalidOperationException("reload failed"));
+
+        Assert.IsTrue(result);
+        Assert.AreEqual(2, attempts);
+        Assert.AreEqual(2, dialog.ConfirmationCount);
+        CollectionAssert.AreEqual(
+            new[] { Strings.RestoreCurrentConfig, Strings.Retry },
+            dialog.PrimaryButtonTexts);
+        Assert.AreEqual(
+            1,
+            Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Count());
     }
 
     private sealed class FakeGlobalDialog(bool confirmationResult) : IGlobalDialog
