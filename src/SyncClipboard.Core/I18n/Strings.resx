@@ -345,6 +345,27 @@
   <data name="ReloadConfigFailed" xml:space="preserve">
     <value>Failed to reload configuration</value>
   </data>
+  <data name="ConfigurationErrorTitle" xml:space="preserve">
+    <value>Configuration Error</value>
+  </data>
+  <data name="ConfigurationErrorMessage" xml:space="preserve">
+    <value>SyncClipboard could not load or upgrade the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}&#xA;&#xA;Overwrite it with default settings and continue? The original file will be backed up.</value>
+  </data>
+  <data name="ConfigurationResetFailedMessage" xml:space="preserve">
+    <value>SyncClipboard could not back up and replace the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}&#xA;&#xA;Retry the operation or exit the application.</value>
+  </data>
+  <data name="OverwriteConfig" xml:space="preserve">
+    <value>Overwrite Configuration</value>
+  </data>
+  <data name="ApplicationStartupFailed" xml:space="preserve">
+    <value>Application Startup Failed</value>
+  </data>
+  <data name="OperationFailedRetryMessage" xml:space="preserve">
+    <value>The operation failed.&#xA;&#xA;Error: {0}&#xA;&#xA;Retry the operation or exit the application.</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>Downloading web image</value>
   </data>

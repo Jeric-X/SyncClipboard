@@ -52,23 +52,52 @@ namespace SyncClipboard.Core
         {
             Services = serviceProvider;
             Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
-            try
+            ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
+            var loggerOption = serviceProvider.GetRequiredService<LoggerOption>();
+            ConfigManager.GetAndListenConfig<ProgramConfig>(config =>
             {
-                ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
-                var loggerOption = serviceProvider.GetRequiredService<LoggerOption>();
-                ConfigManager.GetAndListenConfig<ProgramConfig>(config =>
-                {
-                    loggerOption.FlushImmediately = config.DiagnoseMode;
-                });
-            }
-            catch (Exception exception)
-            {
-                Logger.Write(LOG_TAG, $"Failed to load configuration during startup: {exception}");
-                Logger.Flush();
-                throw;
-            }
+                loggerOption.FlushImmediately = config.DiagnoseMode;
+            });
 
             _current = this;
+        }
+
+        public static async Task<AppCore?> CreateAsync(IServiceProvider serviceProvider)
+        {
+            var recoveryService = serviceProvider.GetRequiredService<ConfigRecoveryService>();
+            return await recoveryService.ExecuteWithRecoveryAsync(
+                () => new AppCore(serviceProvider),
+                () =>
+                {
+                    var staticConfig = serviceProvider.GetRequiredService<StaticConfig>();
+                    var portableUserConfig = staticConfig.GetConfig<EnvConfig>().PortableUserConfig;
+                    return ConfigManager.GetConfigPath(portableUserConfig);
+                },
+                Strings.ApplicationStartupFailed,
+                "Application startup");
+        }
+
+        private async Task<bool> ReloadConfigAsync()
+        {
+            var recoveryService = Services.GetRequiredService<ConfigRecoveryService>();
+            var result = await recoveryService.ExecuteWithRecoveryAsync(
+                () =>
+                {
+                    ConfigManager.Reload();
+                    return true;
+                },
+                () => ConfigManager.Path,
+                Strings.ReloadConfigFailed,
+                "Configuration reload");
+            return result;
+        }
+
+        private async void ReloadConfig()
+        {
+            if (!await ReloadConfigAsync())
+            {
+                Services.GetRequiredService<IMainWindow>().ExitApp();
+            }
         }
 
         private static void InitLanguage(ConfigManager configManager)
@@ -205,19 +234,6 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup(menu);
         }
 
-        private void ReloadConfig()
-        {
-            try
-            {
-                ConfigManager.Reload();
-            }
-            catch (Exception exception)
-            {
-                Logger.Write(LOG_TAG, $"Failed to reload configuration: {exception}");
-                NotificationManager.ShowText(Strings.ReloadConfigFailed, exception.Message);
-            }
-        }
-
         private void RegisterForSystemHotkey(IMainWindow mainWindow)
         {
             var hotkeyManager = Services.GetService<HotkeyManager>();
@@ -294,6 +310,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV0ToV1>();
             services.AddSingleton<SyncClipboardConfigUpgrader>();
+            services.AddSingleton<ConfigRecoveryService>();
             services.AddSingleton<AccountManager>();
             services.AddSingleton<INetworkContextProvider, SystemNetworkContextProvider>();
             services.AddSingleton<StaticConfig>();

@@ -22,6 +22,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
 
+        services.AddSingleton<IGlobalDialog, Services.WinUIGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.WinUIDialog>();
         services.AddKeyedSingleton<IMainWindowDialog>(nameof(HistoryWindow), (sp, key) =>
         {

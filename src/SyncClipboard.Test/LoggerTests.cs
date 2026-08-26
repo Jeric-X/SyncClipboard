@@ -1,5 +1,3 @@
-using SyncClipboard.Core;
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Options;
@@ -48,17 +46,22 @@ public class LoggerTests
     }
 
     [TestMethod]
-    public void AppCore_LogsConfigurationLoadFailureBeforeRethrowing()
+    public async Task ConfigRecoveryService_LogsStartupFailureBeforePrompting()
     {
         var option = new LoggerOption { Path = _directory };
         using var logger = new Logger(option);
-        var serviceProvider = new FailingConfigServiceProvider(logger);
+        var service = new ConfigRecoveryService(new DecliningGlobalDialog(), logger);
 
-        Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(() => new AppCore(serviceProvider));
+        var result = await service.ExecuteWithRecoveryAsync<object>(
+            () => throw new SyncClipboardConfigUpgradeException("configuration load failed"),
+            () => Path.Combine(_directory, "SyncClipboard.json"),
+            "Application startup failed",
+            "Application startup");
 
+        Assert.IsNull(result);
         var logPath = Directory.EnumerateFiles(_directory, "*.txt").Single();
         var log = ReadLog(logPath);
-        Assert.Contains("Failed to load configuration during startup", log);
+        Assert.Contains("Application startup failed", log);
         Assert.Contains("configuration load failed", log);
     }
 
@@ -69,21 +72,14 @@ public class LoggerTests
         return reader.ReadToEnd();
     }
 
-    private sealed class FailingConfigServiceProvider(ILogger logger) : IServiceProvider
+    private sealed class DecliningGlobalDialog : IGlobalDialog
     {
-        public object? GetService(Type serviceType)
-        {
-            if (serviceType == typeof(ILogger))
-            {
-                return logger;
-            }
+        public Task<bool> ShowConfirmationAsync(
+            string title,
+            string message,
+            string primaryButtonText,
+            string closeButtonText) => Task.FromResult(false);
 
-            if (serviceType == typeof(ConfigManager))
-            {
-                throw new SyncClipboardConfigUpgradeException("configuration load failed");
-            }
-
-            return null;
-        }
+        public Task ShowMessageAsync(string title, string message, string closeButtonText) => Task.CompletedTask;
     }
 }

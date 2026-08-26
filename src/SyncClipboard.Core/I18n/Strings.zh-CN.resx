@@ -345,6 +345,27 @@
   <data name="ReloadConfigFailed" xml:space="preserve">
     <value>重新载入配置文件失败</value>
   </data>
+  <data name="ConfigurationErrorTitle" xml:space="preserve">
+    <value>配置文件错误</value>
+  </data>
+  <data name="ConfigurationErrorMessage" xml:space="preserve">
+    <value>SyncClipboard 无法加载或升级配置文件。&#xA;&#xA;文件：{0}&#xA;&#xA;错误：{1}&#xA;&#xA;是否使用默认配置覆盖并继续启动？原文件会先进行备份。</value>
+  </data>
+  <data name="ConfigurationResetFailedMessage" xml:space="preserve">
+    <value>SyncClipboard 无法备份并覆盖配置文件。&#xA;&#xA;文件：{0}&#xA;&#xA;错误：{1}&#xA;&#xA;请选择重试操作或退出应用。</value>
+  </data>
+  <data name="OverwriteConfig" xml:space="preserve">
+    <value>覆盖配置</value>
+  </data>
+  <data name="ApplicationStartupFailed" xml:space="preserve">
+    <value>应用启动失败</value>
+  </data>
+  <data name="OperationFailedRetryMessage" xml:space="preserve">
+    <value>操作失败。&#xA;&#xA;错误：{0}&#xA;&#xA;请选择重试操作或退出应用。</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>重试</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>正在从网站下载原图</value>
   </data>

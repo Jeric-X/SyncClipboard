@@ -26,6 +26,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
 
+        services.AddSingleton<IGlobalDialog, Services.AvaloniaGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.AvaloniaDialog>();
         services.AddKeyedSingleton<IMainWindowDialog>("HistoryWindow", (sp, key) =>
         {

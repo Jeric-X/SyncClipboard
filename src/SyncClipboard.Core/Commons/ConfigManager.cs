@@ -15,7 +15,7 @@ public class ConfigManager : ConfigBase
     {
         _configUpgrader = configUpgrader;
         bool portableUserConfig = staticConfig.GetConfig<EnvConfig>().PortableUserConfig;
-        SetPath(portableUserConfig);
+        Path = GetConfigPath(portableUserConfig);
         Reload();
         staticConfig.ListenConfig<EnvConfig>(EnvConfigChanged);
     }
@@ -28,12 +28,10 @@ public class ConfigManager : ConfigBase
 
     private void EnvConfigChanged(EnvConfig envConfig)
     {
-        SetPath(envConfig.PortableUserConfig);
+        Path = GetConfigPath(envConfig.PortableUserConfig);
         Save();
     }
 
-    private void SetPath(bool portableUserConfig)
-    {
-        Path = portableUserConfig ? Env.PortableUserConfigFile : Env.UserConfigFile;
-    }
+    public static string GetConfigPath(bool portableUserConfig) =>
+        portableUserConfig ? Env.PortableUserConfigFile : Env.UserConfigFile;
 }

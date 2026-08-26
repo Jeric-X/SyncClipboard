@@ -52,10 +52,7 @@ public sealed class SyncClipboardConfigUpgrader
 
         if (!File.Exists(configPath))
         {
-            AtomicWrite(configPath, new JsonObject
-            {
-                [VersionPropertyName] = Env.SyncClipboardConfigVersion,
-            });
+            AtomicWrite(configPath, CreateDefaultConfig());
             return;
         }
 
@@ -113,11 +110,35 @@ public sealed class SyncClipboardConfigUpgrader
 
         if (version != originalVersion)
         {
-            var backupPath = CreateBackup(configPath, originalVersion);
+            var backupPath = CreateBackup(configPath, originalVersion.ToString());
             PruneBackups(configPath, backupPath);
             AtomicWrite(configPath, root);
         }
     }
+
+    public static void ReplaceWithDefault(string configPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
+
+        var directory = Path.GetDirectoryName(configPath)
+            ?? throw new SyncClipboardConfigUpgradeException($"Cannot determine the configuration directory for '{configPath}'.");
+        Directory.CreateDirectory(directory);
+
+        using var migrationLock = AcquireMigrationLock(configPath);
+
+        if (File.Exists(configPath))
+        {
+            var backupPath = CreateBackup(configPath, GetVersionForBackupName(configPath));
+            PruneBackups(configPath, backupPath);
+        }
+
+        AtomicWrite(configPath, CreateDefaultConfig());
+    }
+
+    private static JsonObject CreateDefaultConfig() => new()
+    {
+        [VersionPropertyName] = Env.SyncClipboardConfigVersion,
+    };
 
     private static int ReadVersion(JsonObject root)
     {
@@ -222,7 +243,7 @@ public sealed class SyncClipboardConfigUpgrader
         }
     }
 
-    private static string CreateBackup(string configPath, int sourceVersion)
+    private static string CreateBackup(string configPath, string sourceVersion)
     {
         try
         {
@@ -238,6 +259,23 @@ public sealed class SyncClipboardConfigUpgrader
         catch (Exception exception)
         {
             throw new SyncClipboardConfigUpgradeException("Cannot back up SyncClipboard.json.", exception);
+        }
+    }
+
+    private static string GetVersionForBackupName(string configPath)
+    {
+        try
+        {
+            if (JsonNode.Parse(File.ReadAllText(configPath)) is not JsonObject root)
+            {
+                return "unknown";
+            }
+
+            return ReadVersion(root).ToString();
+        }
+        catch
+        {
+            return "unknown";
         }
     }
 
