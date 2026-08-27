@@ -1,7 +1,12 @@
-﻿namespace SyncClipboard.Core.Models.UserConfigs;
+﻿using SyncClipboard.Shared.Attributes;
 
+namespace SyncClipboard.Core.Models.UserConfigs;
+
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record class HistoryConfig
 {
+    public const string ConfigKey = "History";
+
     public bool EnableHistory { get; set; } = false;
     public bool EnableSyncHistory { get; set; } = false;
     public uint MaxItemCount { get; set; } = 100;

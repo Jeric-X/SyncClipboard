@@ -26,6 +26,15 @@ public sealed class ConfigRecoveryService(
                 logger.Write(LogTag, $"{operationName} failed: {exception}");
                 logger.Flush();
 
+                if (IsRegistrationError(exception))
+                {
+                    logger.Write(
+                        LogTag,
+                        $"{operationName} cannot continue because configuration registration failed. The application will exit.");
+                    logger.Flush();
+                    return default;
+                }
+
                 if (IsConfigurationError(exception))
                 {
                     if (!await TryRecoverAsync(configPathProvider(), exception))
@@ -53,6 +62,9 @@ public sealed class ConfigRecoveryService(
     public static bool IsConfigurationError(Exception exception) =>
         GetConfigurationError(exception) is not null;
 
+    public static bool IsRegistrationError(Exception exception) =>
+        GetRegistrationError(exception) is not null;
+
     public async Task<bool> TryRestoreCurrentConfigAsync(
         string configPath,
         Func<bool> restoreCurrentConfig,
@@ -60,6 +72,15 @@ public sealed class ConfigRecoveryService(
     {
         logger.Write(LogTag, $"Configuration reload failed: {reloadException}");
         logger.Flush();
+
+        if (IsRegistrationError(reloadException))
+        {
+            logger.Write(
+                LogTag,
+                "Configuration reload cannot continue because configuration registration failed. The application will exit.");
+            logger.Flush();
+            return false;
+        }
 
         var restore = await globalDialog.ShowConfirmationAsync(
             Strings.ReloadConfigFailed,
@@ -179,6 +200,19 @@ public sealed class ConfigRecoveryService(
             if (current is SyncClipboardConfigUpgradeException configException)
             {
                 return configException;
+            }
+        }
+
+        return null;
+    }
+
+    private static ConfigRegistrationException? GetRegistrationError(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is ConfigRegistrationException registrationException)
+            {
+                return registrationException;
             }
         }
 

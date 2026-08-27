@@ -14,6 +14,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Options;
 using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using SyncClipboard.Core.RemoteServer.Adapter.S3Server;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
@@ -52,6 +53,8 @@ namespace SyncClipboard.Core
         {
             Services = serviceProvider;
             Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
+            SyncClipboardConfigRegistry.EnsureInitialized();
+            AccountConfigRegistry.EnsureInitialized();
             ConfigManager = serviceProvider.GetRequiredService<ConfigManager>();
             var loggerOption = serviceProvider.GetRequiredService<LoggerOption>();
             ConfigManager.GetAndListenConfig<ProgramConfig>(config =>

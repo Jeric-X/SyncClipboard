@@ -1,7 +1,12 @@
+using SyncClipboard.Shared.Attributes;
+
 namespace SyncClipboard.Core.Models.UserConfigs;
 
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record HotkeyBlacklistConfig
 {
+    public const string ConfigKey = "HotkeyBlacklist";
+
     public bool Enabled { get; set; }
     public List<ForegroundWindowInfo> BlackList { get; set; } = [];
 

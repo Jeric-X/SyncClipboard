@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Shared.Models;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -38,6 +39,15 @@ public class SyncClipboardConfigUpgraderTests
 
         var root = ReadRoot();
         Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
+    }
+
+    [TestMethod]
+    public void Upgrade_UsesDotPrefixedLockFile()
+    {
+        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+
+        Assert.IsTrue(File.Exists(Path.Combine(_directory, ".SyncClipboard.json.upgrade.lock")));
+        Assert.IsFalse(File.Exists(_configPath + ".upgrade.lock"));
     }
 
     [TestMethod]
@@ -112,6 +122,77 @@ public class SyncClipboardConfigUpgraderTests
             () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
+    }
+
+    [TestMethod]
+    public void Upgrade_RejectsMalformedKnownConfigurationSection()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "Program": "bad"
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
+            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+
+        Assert.Contains("Program", exception.Message);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
+    }
+
+    [TestMethod]
+    public void Reload_InvalidSectionPreservesAndRestoresActiveConfiguration()
+    {
+        const string validJson = """
+            {
+              "ConfigVersion": 1,
+              "Program": {
+                "Language": "en-US"
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, validJson);
+        var manager = new ConfigManager(_configPath, new SyncClipboardConfigUpgrader());
+
+        const string invalidJson = """
+            {
+              "ConfigVersion": 1,
+              "Program": "bad"
+            }
+            """;
+        File.WriteAllText(_configPath, invalidJson);
+
+        Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(manager.Reload);
+        Assert.AreEqual("en-US", manager.GetConfig<ProgramConfig>().Language);
+
+        Assert.IsTrue(manager.RestoreCurrentConfig());
+        var restored = JsonNode.Parse(File.ReadAllText(_configPath))!.AsObject();
+        Assert.AreEqual("en-US", restored[ProgramConfig.ConfigKey]!["Language"]!.GetValue<string>());
+    }
+
+    [TestMethod]
+    public void Upgrade_RejectsMalformedSavedAccountConfiguration()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "SavedAccounts": {
+                "WebDAV": {
+                  "1": "bad"
+                }
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
+            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+
+        Assert.Contains("SavedAccounts.WebDAV.1", exception.Message);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
     }
 
     [TestMethod]

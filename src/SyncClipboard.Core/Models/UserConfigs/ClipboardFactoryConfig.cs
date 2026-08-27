@@ -1,9 +1,13 @@
 ﻿using SyncClipboard.Core.Utilities;
+using SyncClipboard.Shared.Attributes;
 
 namespace SyncClipboard.Core.Models.UserConfigs;
 
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record class ClipboardFactoryConfig
 {
+    public const string ConfigKey = "ClipboardFactory";
+
     public List<string> ProhibitSources { get; set; } = [];
 
     public virtual bool Equals(ClipboardFactoryConfig? other)

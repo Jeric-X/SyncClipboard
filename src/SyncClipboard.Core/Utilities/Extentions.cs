@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.RemoteServer.LogInHelper;
-using System.Reflection;
 
 namespace SyncClipboard.Core.Utilities;
 
@@ -36,8 +36,7 @@ public static class Extentions
         where TConfig : IAdapterConfig<TConfig>
         where TAdapter : class, IServerAdapter<TConfig>
     {
-        var typeNameProperty = typeof(IAdapterConfig<TConfig>).GetProperty("TypeName", BindingFlags.Static | BindingFlags.Public);
-        var key = (string)typeNameProperty!.GetValue(null)!;
+        var key = AccountConfigRegistry.GetRegistration(typeof(TConfig)).TypeName;
         services.AddKeyedTransient<IServerAdapter, TAdapter>(key);
     }
 

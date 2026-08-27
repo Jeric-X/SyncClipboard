@@ -184,6 +184,8 @@ public sealed class SyncClipboardConfigUpgrader
             throw new SyncClipboardConfigUpgradeException("Configuration migration did not reach the current version.");
         }
 
+        ConfigManager.ValidateConfig(root);
+
         var fileFilterNode = root["FileFilter"];
         if (fileFilterNode is null)
         {
@@ -251,8 +253,11 @@ public sealed class SyncClipboardConfigUpgrader
     {
         try
         {
+            var lockPath = Path.Combine(
+                Path.GetDirectoryName(configPath)!,
+                $".{Path.GetFileName(configPath)}.upgrade.lock");
             return new FileStream(
-                configPath + ".upgrade.lock",
+                lockPath,
                 FileMode.OpenOrCreate,
                 FileAccess.ReadWrite,
                 FileShare.None);

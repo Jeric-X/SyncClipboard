@@ -1,10 +1,9 @@
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.RemoteServer.Adapter;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Reflection;
-using SyncClipboard.Core.RemoteServer.Adapter;
-using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Commons;
 
@@ -28,76 +27,34 @@ public class AccountManager
     public delegate void SavedAccountsChangedHandler(IEnumerable<DisplayedAccountConfig> newAccounts);
     public event SavedAccountsChangedHandler? SavedAccountsChanged;
 
-    private const string Accounts = "SavedAccounts";
     private AccountConfig? _accountConfig;
     private object? _currentAccount;
     private List<DisplayedAccountConfig> _lastSavedAccounts = [];
 
+    private readonly IReadOnlyList<AdapterConfigRegistration> _registeredConfigTypes =
+        AccountConfigRegistry.Configurations;
     private readonly ConfigManager _configManager;
-    private readonly Dictionary<string, Type> _registedTypeList = [];
     private readonly ILogger _logger;
 
     public AccountManager(ConfigManager configManager, ILogger logger)
     {
         _configManager = configManager;
         _logger = logger;
-        ScanAdapterConfigTypes();
 
         OnAccountConfigChanged();
         _configManager.ConfigChanged += OnAccountConfigChanged;
     }
 
-    /// <summary>
-    /// 扫描程序集中所有继承自IAdapterConfig<T>的类并注册
-    /// </summary>
-    private void ScanAdapterConfigTypes()
-    {
-        try
-        {
-            var currentAssembly = Assembly.GetExecutingAssembly();
-            var types = currentAssembly.GetTypes();
-            var adapterConfigInterface = typeof(IAdapterConfig<>);
-
-            foreach (var type in types)
-            {
-                // 检查类型是否实现了IAdapterConfig<T>接口
-                var interfaceType = type.GetInterfaces()
-                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == adapterConfigInterface);
-
-                if (interfaceType != null)
-                {
-                    // 通过反射调用静态属性TypeName
-                    var typeNameProperty = interfaceType.GetProperty("TypeName", BindingFlags.Static | BindingFlags.Public);
-                    if (typeNameProperty != null)
-                    {
-                        var typeName = (string?)typeNameProperty.GetValue(null);
-                        if (!string.IsNullOrEmpty(typeName))
-                        {
-                            RegistConfigType(typeName, type);
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Write("AccountManager", $"Error scanning IAdapterConfig types: {ex.Message}");
-        }
-    }
-
     public Type? GetRegisteredType(string typeName)
     {
-        return _registedTypeList.GetValueOrDefault(typeName);
-    }
-
-    public IEnumerable<string> GetRegisteredTypeNames()
-    {
-        return _registedTypeList.Keys;
+        return _registeredConfigTypes
+            .FirstOrDefault(config => config.TypeName == typeName)?
+            .ConfigType;
     }
 
     public object? GetConfig(string type, string accountId)
     {
-        var accountsNode = _configManager.GetNode(Accounts);
+        var accountsNode = _configManager.GetNode(AccountConfig.SavedAccountsConfigKey);
         if (accountsNode is null)
             return null;
 
@@ -109,20 +66,21 @@ public class AccountManager
         if (accountNode is null)
             return null;
 
-        return accountNode.Deserialize(_registedTypeList[type]);
+        var registeredType = GetRegisteredType(type);
+        return registeredType is null ? null : accountNode.Deserialize(registeredType);
     }
 
     public void SetConfig(string accountId, string type, object config)
     {
         var registeredType = GetRegisteredType(type) ?? throw new ArgumentException($"Type '{type}' is not registered.", nameof(type));
 
-        var accountsNode = _configManager.GetNode(Accounts) ?? new JsonObject();
+        var accountsNode = _configManager.GetNode(AccountConfig.SavedAccountsConfigKey) ?? new JsonObject();
         if (accountsNode[type] is null)
         {
             accountsNode[type] = new JsonObject();
         }
         accountsNode[type]![accountId] = JsonSerializer.SerializeToNode(config, registeredType);
-        _configManager.SetNode(Accounts, accountsNode);
+        _configManager.SetNode(AccountConfig.SavedAccountsConfigKey, accountsNode);
 
         if (accountId == _accountConfig?.AccountId && type == _accountConfig?.AccountType)
         {
@@ -132,21 +90,9 @@ public class AccountManager
         }
     }
 
-    public void RegistConfigType(string key, Type type)
-    {
-        if (_registedTypeList.Contains(new KeyValuePair<string, Type>(key, type)))
-        {
-            return;
-        }
-        else if (!_registedTypeList.TryAdd(key, type))
-        {
-            _registedTypeList[key] = type;
-        }
-    }
-
     public string CreateAccountId(string type)
     {
-        var accountsNode = _configManager.GetNode(Accounts);
+        var accountsNode = _configManager.GetNode(AccountConfig.SavedAccountsConfigKey);
         if (accountsNode is null)
         {
             return "1";
@@ -237,7 +183,7 @@ public class AccountManager
 
     public IEnumerable<DisplayedAccountConfig> GetSavedAccounts()
     {
-        var accountsNode = _configManager.GetNode(Accounts);
+        var accountsNode = _configManager.GetNode(AccountConfig.SavedAccountsConfigKey);
         if (accountsNode is null)
             yield break;
 
@@ -267,7 +213,8 @@ public class AccountManager
     {
         try
         {
-            if (!_registedTypeList.TryGetValue(accountType, out var configType) || configNode is null)
+            var configType = GetRegisteredType(accountType);
+            if (configType is null || configNode is null)
             {
                 return $"{accountId} - {accountType}";
             }
@@ -307,7 +254,7 @@ public class AccountManager
     {
         try
         {
-            var accountsNode = _configManager.GetNode(Accounts);
+            var accountsNode = _configManager.GetNode(AccountConfig.SavedAccountsConfigKey);
             if (accountsNode is null)
                 return false;
 
@@ -326,7 +273,7 @@ public class AccountManager
                 accountsNode.AsObject().Remove(accountType);
             }
 
-            _configManager.SetNode(Accounts, accountsNode);
+            _configManager.SetNode(AccountConfig.SavedAccountsConfigKey, accountsNode);
 
             if (_accountConfig?.AccountType == accountType && _accountConfig?.AccountId == accountId)
             {

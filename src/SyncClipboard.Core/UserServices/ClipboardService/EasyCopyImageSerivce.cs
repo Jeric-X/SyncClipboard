@@ -105,7 +105,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         _configManager = _serviceProvider.GetRequiredService<ConfigManager>();
         _notificationManager = _serviceProvider.GetRequiredService<INotificationManager>();
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
-        _easyCopyImageFilterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>(ConfigKey.EasyCopyImageFilter) ?? new();
+        _easyCopyImageFilterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>(ClipboardOwnerFilterConfig.EasyCopyImageFilterConfigKey) ?? new();
         _localClipboardSetter = localClipboardSetter;
 
         serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
@@ -114,7 +114,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     public override void Load()
     {
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
-        _easyCopyImageFilterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>(ConfigKey.EasyCopyImageFilter) ?? new();
+        _easyCopyImageFilterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>(ClipboardOwnerFilterConfig.EasyCopyImageFilterConfigKey) ?? new();
         var status = SwitchOn ? RUNNING_STATUS : STOPPED_STATUS;
         TrayIcon.SetStatusString(SERVICE_NAME, status);
         base.Load();

@@ -1,9 +1,13 @@
+using SyncClipboard.Shared.Attributes;
 using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Shared.Models;
 
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record FileFilterConfig
 {
+    public const string ConfigKey = "FileFilter";
+
     public string FileFilterMode { get; set; } = "";
     public List<FileFilterRule> WhiteList { get; set; } = [];
     public List<FileFilterRule> BlackList { get; set; } = [];

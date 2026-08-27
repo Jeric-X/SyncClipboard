@@ -82,6 +82,36 @@ public class ConfigRecoveryServiceTests
     }
 
     [TestMethod]
+    public void IsRegistrationError_RecognizesWrappedRegistrationException()
+    {
+        var exception = new TypeInitializationException(
+            "ConfigRegistry",
+            new ConfigRegistrationException("duplicate key"));
+
+        Assert.IsTrue(ConfigRecoveryService.IsRegistrationError(exception));
+        Assert.IsFalse(ConfigRecoveryService.IsRegistrationError(new InvalidOperationException("other failure")));
+    }
+
+    [TestMethod]
+    public async Task ExecuteWithRecoveryAsync_WhenRegistrationFails_LogsAndExitsWithoutPrompt()
+    {
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var logger = new FakeLogger();
+        var service = new ConfigRecoveryService(dialog, logger);
+
+        var result = await service.ExecuteWithRecoveryAsync<object>(
+            () => throw new ConfigRegistrationException("duplicate key"),
+            () => _configPath,
+            "Operation failed",
+            "Test operation");
+
+        Assert.IsNull(result);
+        Assert.AreEqual(0, dialog.ConfirmationCount);
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("duplicate key")));
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("application will exit")));
+    }
+
+    [TestMethod]
     public async Task ExecuteWithRecoveryAsync_WhenOtherFailureIsRetried_RepeatsUntilSuccess()
     {
         var attempts = 0;
@@ -147,6 +177,29 @@ public class ConfigRecoveryServiceTests
         Assert.AreEqual(
             1,
             Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Count());
+    }
+
+    [TestMethod]
+    public async Task TryRestoreCurrentConfigAsync_WhenRegistrationFails_LogsAndExitsWithoutPrompt()
+    {
+        var restoreCalled = false;
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var logger = new FakeLogger();
+        var service = new ConfigRecoveryService(dialog, logger);
+
+        var result = await service.TryRestoreCurrentConfigAsync(
+            _configPath,
+            () =>
+            {
+                restoreCalled = true;
+                return true;
+            },
+            new ConfigRegistrationException("duplicate key"));
+
+        Assert.IsFalse(result);
+        Assert.IsFalse(restoreCalled);
+        Assert.AreEqual(0, dialog.ConfirmationCount);
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("application will exit")));
     }
 
     private sealed class FakeGlobalDialog(bool confirmationResult) : IGlobalDialog

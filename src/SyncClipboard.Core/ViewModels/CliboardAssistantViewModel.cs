@@ -35,7 +35,7 @@ public partial class CliboardAssistantViewModel : ObservableObject
     [RelayCommand]
     private void SetEasyCopyImageFilter()
     {
-        _mainVM.NavigateToNextLevel(PageDefinition.ClipboardOwnerFilterSetting, ConfigKey.EasyCopyImageFilter);
+        _mainVM.NavigateToNextLevel(PageDefinition.ClipboardOwnerFilterSetting, ClipboardOwnerFilterConfig.EasyCopyImageFilterConfigKey);
     }
 
     public CliboardAssistantViewModel(ConfigManager configManager, MainViewModel mainVM)
