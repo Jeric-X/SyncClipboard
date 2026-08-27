@@ -112,6 +112,25 @@ public class ConfigRecoveryServiceTests
     }
 
     [TestMethod]
+    public async Task ExecuteWithRecoveryAsync_WhenConfigPathProviderFails_LogsAndExitsWithoutPrompt()
+    {
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var logger = new FakeLogger();
+        var service = new ConfigRecoveryService(dialog, logger);
+
+        var result = await service.ExecuteWithRecoveryAsync<object>(
+            () => throw new SyncClipboardConfigUpgradeException("invalid configuration"),
+            () => throw new InvalidOperationException("path unavailable"),
+            "Operation failed",
+            "Test operation");
+
+        Assert.IsNull(result);
+        Assert.AreEqual(0, dialog.ConfirmationCount);
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("path unavailable")));
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("Failed to determine the configuration path")));
+    }
+
+    [TestMethod]
     public async Task ExecuteWithRecoveryAsync_WhenOtherFailureIsRetried_RepeatsUntilSuccess()
     {
         var attempts = 0;

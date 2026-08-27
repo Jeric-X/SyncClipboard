@@ -37,7 +37,21 @@ public sealed class ConfigRecoveryService(
 
                 if (IsConfigurationError(exception))
                 {
-                    if (!await TryRecoverAsync(configPathProvider(), exception))
+                    string configPath;
+                    try
+                    {
+                        configPath = configPathProvider();
+                    }
+                    catch (Exception pathException)
+                    {
+                        logger.Write(
+                            LogTag,
+                            $"Failed to determine the configuration path while handling '{operationName}': {pathException}");
+                        logger.Flush();
+                        return default;
+                    }
+
+                    if (!await TryRecoverAsync(configPath, exception))
                     {
                         return default;
                     }

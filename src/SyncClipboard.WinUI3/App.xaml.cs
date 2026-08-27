@@ -43,7 +43,7 @@ namespace SyncClipboard.WinUI3
             AppCore.Stop();
             UnhandledException -= App_UnhandledException;
             Console.WriteLine("Exited");
-            Environment.Exit(0);
+            Exit();
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -82,7 +82,7 @@ namespace SyncClipboard.WinUI3
             var appCore = await AppCore.CreateAsync(Services);
             if (appCore is null)
             {
-                Environment.Exit(0);
+                Exit();
                 return;
             }
             AppCore = appCore;
