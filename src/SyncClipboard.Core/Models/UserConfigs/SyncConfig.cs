@@ -1,7 +1,12 @@
-﻿namespace SyncClipboard.Core.Models.UserConfigs;
+﻿using SyncClipboard.Shared.Attributes;
 
+namespace SyncClipboard.Core.Models.UserConfigs;
+
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record class SyncConfig
 {
+    public const string ConfigKey = "SyncService";
+
     public bool SyncSwitchOn { get; set; } = false;
     public bool PullSwitchOn { get; set; } = true;
     public bool PushSwitchOn { get; set; } = true;

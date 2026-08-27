@@ -1,3 +1,5 @@
+using SyncClipboard.Shared.Attributes;
+
 namespace SyncClipboard.Core.Models.UserConfigs;
 
 public enum NetworkRuleMatchMode
@@ -52,8 +54,11 @@ public record NetworkAccountSwitchRule
     }
 }
 
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record NetworkAccountSwitchConfig
 {
+    public const string ConfigKey = "NetworkAccountSwitch";
+
     public bool Enabled { get; set; }
     public bool NotifyOnChange { get; set; } = true;
     public bool WifiAccessRequested { get; set; }

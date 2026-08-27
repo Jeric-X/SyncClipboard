@@ -1,9 +1,15 @@
+using SyncClipboard.Shared.Attributes;
 using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Core.Models.UserConfigs;
 
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
+[OptionalConfigKey(EasyCopyImageFilterConfigKey, ConfigStorage.SyncClipboard)]
 public record ClipboardOwnerFilterConfig
 {
+    public const string ConfigKey = "ClipboardOwnerFilter";
+    public const string EasyCopyImageFilterConfigKey = "EasyCopyImageFilter";
+
     public string FilterMode { get; set; } = "";
     public List<ForegroundWindowInfo> WhiteList { get; set; } = [];
     public List<ForegroundWindowInfo> BlackList { get; set; } = [];

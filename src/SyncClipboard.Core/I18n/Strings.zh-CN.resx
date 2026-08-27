@@ -345,6 +345,45 @@
   <data name="ReloadConfigFailed" xml:space="preserve">
     <value>重新载入配置文件失败</value>
   </data>
+  <data name="ConfigurationErrorTitle" xml:space="preserve">
+    <value>配置文件错误</value>
+  </data>
+  <data name="ConfigurationErrorMessage" xml:space="preserve">
+    <value>SyncClipboard 无法加载或升级配置文件。&#xA;&#xA;文件：{0}&#xA;&#xA;错误：{1}&#xA;&#xA;是否使用默认配置覆盖并继续启动？</value>
+  </data>
+  <data name="ConfigurationSectionErrorMessage" xml:space="preserve">
+    <value>SyncClipboard 无法加载或升级配置模块。&#xA;&#xA;文件：{0}&#xA;&#xA;模块：{1}&#xA;&#xA;错误：{2}&#xA;&#xA;是否仅使用默认配置覆盖此模块并继续启动？</value>
+  </data>
+  <data name="ConfigurationResetFailedMessage" xml:space="preserve">
+    <value>SyncClipboard 无法重置配置文件。&#xA;&#xA;文件：{0}&#xA;&#xA;错误：{1}</value>
+  </data>
+  <data name="OverwriteConfig" xml:space="preserve">
+    <value>覆盖配置</value>
+  </data>
+  <data name="OverwriteConfigSection" xml:space="preserve">
+    <value>覆盖此模块</value>
+  </data>
+  <data name="ApplicationStartupFailed" xml:space="preserve">
+    <value>应用启动失败</value>
+  </data>
+  <data name="OperationFailedRetryMessage" xml:space="preserve">
+    <value>操作失败。&#xA;&#xA;错误：{0}</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="ReloadConfigRecoveryMessage" xml:space="preserve">
+    <value>SyncClipboard 无法重新加载配置文件。&#xA;&#xA;文件：{0}&#xA;&#xA;错误：{1}&#xA;&#xA;是否将当前正在使用的配置恢复到该文件并继续运行？</value>
+  </data>
+  <data name="ReloadConfigSectionRecoveryMessage" xml:space="preserve">
+    <value>SyncClipboard 无法重新加载配置模块。&#xA;&#xA;文件：{0}&#xA;&#xA;模块：{1}&#xA;&#xA;错误：{2}&#xA;&#xA;是否仅将当前正在使用的此模块恢复到文件并继续运行？</value>
+  </data>
+  <data name="RestoreCurrentConfig" xml:space="preserve">
+    <value>恢复当前配置</value>
+  </data>
+  <data name="RestoreCurrentConfigSection" xml:space="preserve">
+    <value>恢复此模块</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>正在从网站下载原图</value>
   </data>

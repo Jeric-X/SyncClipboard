@@ -345,6 +345,45 @@
   <data name="ReloadConfigFailed" xml:space="preserve">
     <value>Failed to reload configuration</value>
   </data>
+  <data name="ConfigurationErrorTitle" xml:space="preserve">
+    <value>Configuration Error</value>
+  </data>
+  <data name="ConfigurationErrorMessage" xml:space="preserve">
+    <value>SyncClipboard could not load or upgrade the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}&#xA;&#xA;Overwrite it with default settings and continue?</value>
+  </data>
+  <data name="ConfigurationSectionErrorMessage" xml:space="preserve">
+    <value>SyncClipboard could not load or upgrade a configuration section.&#xA;&#xA;File: {0}&#xA;&#xA;Section: {1}&#xA;&#xA;Error: {2}&#xA;&#xA;Overwrite only this section with its default settings and continue?</value>
+  </data>
+  <data name="ConfigurationResetFailedMessage" xml:space="preserve">
+    <value>SyncClipboard could not reset the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}</value>
+  </data>
+  <data name="OverwriteConfig" xml:space="preserve">
+    <value>Overwrite Configuration</value>
+  </data>
+  <data name="OverwriteConfigSection" xml:space="preserve">
+    <value>Overwrite This Section</value>
+  </data>
+  <data name="ApplicationStartupFailed" xml:space="preserve">
+    <value>Application Startup Failed</value>
+  </data>
+  <data name="OperationFailedRetryMessage" xml:space="preserve">
+    <value>The operation failed.&#xA;&#xA;Error: {0}</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="ReloadConfigRecoveryMessage" xml:space="preserve">
+    <value>SyncClipboard could not reload the configuration file.&#xA;&#xA;File: {0}&#xA;&#xA;Error: {1}&#xA;&#xA;Restore the currently active configuration to it and continue?</value>
+  </data>
+  <data name="ReloadConfigSectionRecoveryMessage" xml:space="preserve">
+    <value>SyncClipboard could not reload a configuration section.&#xA;&#xA;File: {0}&#xA;&#xA;Section: {1}&#xA;&#xA;Error: {2}&#xA;&#xA;Restore only the currently active section to the file and continue?</value>
+  </data>
+  <data name="RestoreCurrentConfig" xml:space="preserve">
+    <value>Restore Current Configuration</value>
+  </data>
+  <data name="RestoreCurrentConfigSection" xml:space="preserve">
+    <value>Restore This Section</value>
+  </data>
   <data name="DownloadingWebImage" xml:space="preserve">
     <value>Downloading web image</value>
   </data>

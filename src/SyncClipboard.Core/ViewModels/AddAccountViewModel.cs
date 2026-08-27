@@ -3,7 +3,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Core.RemoteServer.LogInHelper;
 using System.Collections.ObjectModel;
-using System.Reflection;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -12,14 +11,12 @@ public partial class AddAccountViewModel : ObservableObject
     public record NavigationInfoType(string PageName, string Parameter);
 
     private readonly ConfigManager _configManager;
-    private readonly AccountManager _accountManager;
     private readonly MainViewModel _mainVM;
     private readonly IEnumerable<ILoginHelper> _logInHelpers;
 
-    public AddAccountViewModel(ConfigManager configManager, AccountManager accountManager, MainViewModel mainViewModel, IEnumerable<ILoginHelper> logInHelpers)
+    public AddAccountViewModel(ConfigManager configManager, MainViewModel mainViewModel, IEnumerable<ILoginHelper> logInHelpers)
     {
         _configManager = configManager;
-        _accountManager = accountManager;
         _mainVM = mainViewModel;
         _logInHelpers = logInHelpers;
         LoadAvailableTypes();
@@ -76,30 +73,10 @@ public partial class AddAccountViewModel : ObservableObject
         // 收集所有账号类型及其优先级
         var typeWithPriority = new Dictionary<string, int>();
 
-        // 从 AccountManager 获取已注册的适配器类型
-        foreach (var typeName in _accountManager.GetRegisteredTypeNames())
+        // 从共享的账号配置扫描结果获取适配器类型
+        foreach (var config in AccountConfigRegistry.Configurations)
         {
-            if (!typeWithPriority.ContainsKey(typeName))
-            {
-                var registeredType = _accountManager.GetRegisteredType(typeName);
-                if (registeredType != null)
-                {
-                    // 通过反射获取Priority属性
-                    var adapterConfigInterface = registeredType.GetInterfaces()
-                        .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAdapterConfig<>));
-
-                    if (adapterConfigInterface != null)
-                    {
-                        var priorityProperty = adapterConfigInterface.GetProperty("Priority", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-                        var priority = (int?)priorityProperty?.GetValue(null) ?? int.MaxValue;
-                        typeWithPriority[typeName] = priority;
-                    }
-                    else
-                    {
-                        typeWithPriority[typeName] = int.MaxValue;
-                    }
-                }
-            }
+            typeWithPriority.TryAdd(config.TypeName, config.Priority);
         }
 
         // 从 ILogInHelper 获取登录助手类型

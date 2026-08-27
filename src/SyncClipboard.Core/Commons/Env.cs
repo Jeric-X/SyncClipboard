@@ -105,7 +105,7 @@ namespace SyncClipboard.Core.Commons
                 if (!File.Exists(StaticConfigPath)) return new();
                 var text = File.ReadAllText(StaticConfigPath);
                 var jsonNode = JsonNode.Parse(text);
-                return jsonNode?[ConfigKey.GetKeyFromType<EnvConfig>()]?.Deserialize<EnvConfig>() ?? new();
+                return jsonNode?[EnvConfig.ConfigKey]?.Deserialize<EnvConfig>() ?? new();
             }
             catch
             {

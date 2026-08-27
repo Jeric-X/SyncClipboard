@@ -15,7 +15,8 @@ public class PlatformServiceProviderDataSource : ServiceProviderDataSourceBase
             typeof(IClipboardChangingListener),
             typeof(IClipboardSetter<TextProfile>),
             typeof(IClipboardSetter<FileProfile>),
-            typeof(IClipboardSetter<ImageProfile>)
+            typeof(IClipboardSetter<ImageProfile>),
+            typeof(IGlobalDialog)
         ];
 
         List<object[]> res = [];

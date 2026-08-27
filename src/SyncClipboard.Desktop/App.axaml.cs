@@ -33,7 +33,6 @@ public partial class App : Application
     {
         Services = AppServices.ConfigureServices().BuildServiceProvider();
         Logger = Services.GetRequiredService<ILogger>();
-        AppCore = new AppCore(Services);
     }
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
@@ -42,7 +41,6 @@ public partial class App : Application
     {
         Services = serviceCollection.BuildServiceProvider();
         Logger = Services.GetRequiredService<ILogger>();
-        AppCore = new AppCore(Services);
     }
 
     public override void Initialize()
@@ -50,7 +48,7 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
-    public override void OnFrameworkInitializationCompleted()
+    public override async void OnFrameworkInitializationCompleted()
     {
         // Line below is needed to remove Avalonia data validation.
         // Without this line you will get duplicate validations from both Avalonia and CT
@@ -68,6 +66,14 @@ public partial class App : Application
 #endif
         }
         base.OnFrameworkInitializationCompleted();
+
+        var appCore = await AppCore.CreateAsync(Services);
+        if (appCore is null)
+        {
+            _appLife.Shutdown();
+            return;
+        }
+        AppCore = appCore;
 
         ConfigManager.GetAndListenConfig<ProgramConfig>(config =>
         {

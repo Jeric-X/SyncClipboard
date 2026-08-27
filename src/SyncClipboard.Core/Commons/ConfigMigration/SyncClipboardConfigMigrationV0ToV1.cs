@@ -18,7 +18,9 @@ public sealed class SyncClipboardConfigMigrationV0ToV1 : ISyncClipboardConfigMig
 
         if (root[FileFilterKey] is not JsonObject fileFilter)
         {
-            throw new SyncClipboardConfigUpgradeException("FileFilter must be a JSON object.");
+            throw new SyncClipboardConfigUpgradeException(
+                "FileFilter must be a JSON object.",
+                FileFilterKey);
         }
 
         MigrateList(fileFilter, nameof(FileFilterConfig.WhiteList));
@@ -34,7 +36,9 @@ public sealed class SyncClipboardConfigMigrationV0ToV1 : ISyncClipboardConfigMig
 
         if (fileFilter[propertyName] is not JsonArray legacyList)
         {
-            throw new SyncClipboardConfigUpgradeException($"FileFilter.{propertyName} must be a JSON array.");
+            throw new SyncClipboardConfigUpgradeException(
+                $"FileFilter.{propertyName} must be a JSON array.",
+                FileFilterKey);
         }
 
         var migratedList = new JsonArray();
@@ -43,7 +47,8 @@ public sealed class SyncClipboardConfigMigrationV0ToV1 : ISyncClipboardConfigMig
             if (item is not JsonValue value || !value.TryGetValue<string>(out var pattern))
             {
                 throw new SyncClipboardConfigUpgradeException(
-                    $"FileFilter.{propertyName} contains a rule that cannot be upgraded from version 0.");
+                    $"FileFilter.{propertyName} contains a rule that cannot be upgraded from version 0.",
+                    FileFilterKey);
             }
 
             migratedList.Add(new JsonObject

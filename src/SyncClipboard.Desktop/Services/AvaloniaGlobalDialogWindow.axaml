@@ -1,0 +1,43 @@
+<Window x:Class="SyncClipboard.Desktop.Services.AvaloniaGlobalDialogWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="640"
+        Height="360"
+        MinWidth="480"
+        MinHeight="260"
+        MaxWidth="900"
+        MaxHeight="640"
+        CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
+        ShowInTaskbar="True">
+    <Grid Margin="24" RowDefinitions="Auto,*,Auto">
+        <TextBlock x:Name="_DialogTitle"
+                   FontSize="22"
+                   FontWeight="SemiBold"
+                   TextWrapping="Wrap" />
+
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,20"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <TextBlock x:Name="_DialogMessage"
+                       VerticalAlignment="Top"
+                       TextWrapping="Wrap" />
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal"
+                    Spacing="12">
+            <Button x:Name="_PrimaryButton"
+                    MinWidth="120"
+                    HorizontalContentAlignment="Center"
+                    Click="PrimaryButtonClick" />
+            <Button x:Name="_CloseButton"
+                    MinWidth="100"
+                    HorizontalContentAlignment="Center"
+                    Click="CloseButtonClick" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -46,7 +46,7 @@ namespace SyncClipboard.Core.Commons
 
         public T GetConfig<T>() where T : IEquatable<T>, new()
         {
-            return GetConfig<T>(ConfigKey.GetKeyFromType<T>()) ?? new();
+            return GetConfig<T>(SyncClipboardConfigRegistry.GetDefaultKey<T>()) ?? new();
         }
 
         public void RegistConfigType(string key, Type type)
@@ -79,18 +79,18 @@ namespace SyncClipboard.Core.Commons
 
         public void ListenConfig<T>(MessageHandler<T> action)
         {
-            ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
+            ListenConfig(SyncClipboardConfigRegistry.GetDefaultKey<T>(), action);
         }
 
         public void GetAndListenConfig<T>(MessageHandler<T> action) where T : IEquatable<T>, new()
         {
-            ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
+            ListenConfig(SyncClipboardConfigRegistry.GetDefaultKey<T>(), action);
             action?.Invoke(GetConfig<T>());
         }
 
         public T GetListenConfig<T>(MessageHandler<T> action) where T : IEquatable<T>, new()
         {
-            ListenConfig(ConfigKey.GetKeyFromType<T>(), action);
+            ListenConfig(SyncClipboardConfigRegistry.GetDefaultKey<T>(), action);
             return GetConfig<T>();
         }
 
@@ -117,7 +117,7 @@ namespace SyncClipboard.Core.Commons
 
         public void SetConfig<T>(T newValue) where T : IEquatable<T>
         {
-            SetConfig(ConfigKey.GetKeyFromType<T>(), newValue);
+            SetConfig(SyncClipboardConfigRegistry.GetDefaultKey<T>(), newValue);
         }
 
         public JsonNode? GetNode(string key)
@@ -160,19 +160,21 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
-        protected virtual void Save()
+        protected virtual bool Save()
         {
             try
             {
                 var jsonString = _jsonNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(Path, jsonString);
                 _jsonNodeBackUp = _jsonNode.DeepClone();
+                return true;
             }
             catch (Exception e)
             {
                 NotificationManager?.ShowText("Failed to write config file", e.Message);
                 AppCore.TryGetCurrent()?.Logger.Write($"Failed to write config file to {Path}, err message: {e.Message}");
                 _jsonNode = _jsonNodeBackUp.DeepClone();
+                return false;
             }
         }
 

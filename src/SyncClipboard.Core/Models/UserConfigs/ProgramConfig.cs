@@ -1,7 +1,12 @@
-﻿namespace SyncClipboard.Core.Models.UserConfigs;
+﻿using SyncClipboard.Shared.Attributes;
 
+namespace SyncClipboard.Core.Models.UserConfigs;
+
+[ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record ProgramConfig
 {
+    public const string ConfigKey = "Program";
+
     public bool DeleteTempFilesOnStartUp { get; set; } = true;
     public uint TempFileRemainDays { get; set; } = 1;
     public uint LogRemainDays { get; set; } = 8;

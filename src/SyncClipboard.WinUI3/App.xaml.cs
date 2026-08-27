@@ -43,7 +43,7 @@ namespace SyncClipboard.WinUI3
             AppCore.Stop();
             UnhandledException -= App_UnhandledException;
             Console.WriteLine("Exited");
-            Environment.Exit(0);
+            Exit();
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -75,11 +75,17 @@ namespace SyncClipboard.WinUI3
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs args)
+        protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
             Services = AppServices.ConfigureServices().BuildServiceProvider();
             Logger = Services.GetRequiredService<ILogger>();
-            AppCore = new AppCore(Services);
+            var appCore = await AppCore.CreateAsync(Services);
+            if (appCore is null)
+            {
+                Exit();
+                return;
+            }
+            AppCore = appCore;
             Logger.Write("App started");
             AppCore.Run();
         }
