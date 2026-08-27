@@ -7,7 +7,9 @@
         MinHeight="260"
         MaxWidth="900"
         MaxHeight="640"
-        CanResize="True"
+        CanResize="False"
+        CanMinimize="False"
+        CanMaximize="False"
         ShowInTaskbar="True">
     <Grid Margin="24" RowDefinitions="Auto,*,Auto">
         <TextBlock x:Name="_DialogTitle"
