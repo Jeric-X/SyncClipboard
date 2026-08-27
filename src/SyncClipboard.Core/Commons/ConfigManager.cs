@@ -228,52 +228,85 @@ public class ConfigManager : ConfigBase
     {
         if (value is null)
         {
-            if (nullability?.ReadState == NullabilityState.NotNull)
-            {
-                throw new JsonException($"Configuration value '{path}' cannot be null.");
-            }
-
+            ValidateNullValue(nullability, path);
             return;
         }
 
-        if (IsTerminalType(value.GetType()))
+        var valueType = value.GetType();
+        ValidateEnumValue(value, valueType, path);
+        if (IsTerminalType(valueType))
         {
             return;
         }
 
         if (value is IDictionary dictionary)
         {
-            var genericArguments = nullability?.GenericTypeArguments;
-            var keyNullability = genericArguments is { Length: 2 } ? genericArguments[0] : null;
-            var valueNullability = genericArguments is { Length: 2 } ? genericArguments[1] : null;
-
-            foreach (DictionaryEntry entry in dictionary)
-            {
-                var itemPath = $"{path}[{entry.Key}]";
-                ValidateValue(entry.Key, keyNullability, $"{itemPath}.Key", nullabilityContext, visited);
-                ValidateValue(entry.Value, valueNullability, itemPath, nullabilityContext, visited);
-            }
-
+            ValidateDictionary(dictionary, nullability, path, nullabilityContext, visited);
             return;
         }
 
         if (value is IEnumerable enumerable)
         {
-            var elementNullability = nullability?.ElementType
-                ?? (nullability?.GenericTypeArguments is { Length: 1 } genericArguments
-                    ? genericArguments[0]
-                    : null);
-            var index = 0;
-            foreach (var item in enumerable)
-            {
-                ValidateValue(item, elementNullability, $"{path}[{index}]", nullabilityContext, visited);
-                index++;
-            }
-
+            ValidateEnumerable(enumerable, nullability, path, nullabilityContext, visited);
             return;
         }
 
         ValidateObject(value, path, nullabilityContext, visited);
+    }
+
+    private static void ValidateNullValue(NullabilityInfo? nullability, string path)
+    {
+        if (nullability?.ReadState == NullabilityState.NotNull)
+        {
+            throw new JsonException($"Configuration value '{path}' cannot be null.");
+        }
+    }
+
+    private static void ValidateEnumValue(object value, Type valueType, string path)
+    {
+        if (valueType.IsEnum && !Enum.IsDefined(valueType, value))
+        {
+            throw new JsonException(
+                $"Configuration value '{path}' contains undefined {valueType.Name} value '{value}'.");
+        }
+    }
+
+    private static void ValidateDictionary(
+        IDictionary dictionary,
+        NullabilityInfo? nullability,
+        string path,
+        NullabilityInfoContext nullabilityContext,
+        HashSet<object> visited)
+    {
+        var genericArguments = nullability?.GenericTypeArguments;
+        var keyNullability = genericArguments is { Length: 2 } ? genericArguments[0] : null;
+        var valueNullability = genericArguments is { Length: 2 } ? genericArguments[1] : null;
+
+        foreach (DictionaryEntry entry in dictionary)
+        {
+            var itemPath = $"{path}[{entry.Key}]";
+            ValidateValue(entry.Key, keyNullability, $"{itemPath}.Key", nullabilityContext, visited);
+            ValidateValue(entry.Value, valueNullability, itemPath, nullabilityContext, visited);
+        }
+    }
+
+    private static void ValidateEnumerable(
+        IEnumerable enumerable,
+        NullabilityInfo? nullability,
+        string path,
+        NullabilityInfoContext nullabilityContext,
+        HashSet<object> visited)
+    {
+        var elementNullability = nullability?.ElementType
+            ?? (nullability?.GenericTypeArguments is { Length: 1 } genericArguments
+                ? genericArguments[0]
+                : null);
+        var index = 0;
+        foreach (var item in enumerable)
+        {
+            ValidateValue(item, elementNullability, $"{path}[{index}]", nullabilityContext, visited);
+            index++;
+        }
     }
 
     private static bool IsTerminalType(Type type) =>

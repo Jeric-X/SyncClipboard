@@ -232,6 +232,26 @@ public class SyncClipboardConfigUpgraderTests
     }
 
     [TestMethod]
+    public void Upgrade_RejectsUndefinedEnumValue()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "NetworkAccountSwitch": {
+                "NoMatchAction": 99
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
+            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+
+        Assert.AreEqual(NetworkAccountSwitchConfig.ConfigKey, exception.RecoverableSectionKey);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
+    }
+
+    [TestMethod]
     public void Upgrade_AcceptsEmptyHotkeyCollection()
     {
         const string json = """

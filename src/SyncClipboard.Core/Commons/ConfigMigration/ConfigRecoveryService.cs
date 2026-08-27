@@ -98,6 +98,26 @@ public sealed class ConfigRecoveryService(
 
         var configError = GetConfigurationError(reloadException);
         var sectionKey = configError?.RecoverableSectionKey;
+        if (!await ConfirmRestoreAsync(configPath, sectionKey, reloadException))
+        {
+            logger.Write(LogTag, "Configuration restore declined.");
+            logger.Flush();
+            return false;
+        }
+
+        if (!await TryBackupInvalidConfigAsync(configPath))
+        {
+            return false;
+        }
+
+        return await TryRestoreConfigAsync(configPath, sectionKey, restoreCurrentConfig);
+    }
+
+    private Task<bool> ConfirmRestoreAsync(
+        string configPath,
+        string? sectionKey,
+        Exception reloadException)
+    {
         var recoveryMessage = sectionKey is null
             ? string.Format(Strings.ReloadConfigRecoveryMessage, configPath, reloadException.Message)
             : string.Format(
@@ -105,68 +125,64 @@ public sealed class ConfigRecoveryService(
                 configPath,
                 sectionKey,
                 reloadException.Message);
+        var primaryButtonText = sectionKey is null
+            ? Strings.RestoreCurrentConfig
+            : Strings.RestoreCurrentConfigSection;
 
-        var restore = await globalDialog.ShowConfirmationAsync(
+        return globalDialog.ShowConfirmationAsync(
             Strings.ReloadConfigFailed,
             recoveryMessage,
-            sectionKey is null ? Strings.RestoreCurrentConfig : Strings.RestoreCurrentConfigSection,
+            primaryButtonText,
             Strings.Exit);
-        if (!restore)
-        {
-            logger.Write(LogTag, "Configuration restore declined.");
-            logger.Flush();
-            return false;
-        }
+    }
 
-        var configBackedUp = false;
+    private async Task<bool> TryBackupInvalidConfigAsync(string configPath)
+    {
         while (true)
         {
-            if (!configBackedUp)
+            try
             {
-                try
+                var backupPath = SyncClipboardConfigUpgrader.BackupConfig(configPath);
+                if (backupPath is not null)
                 {
-                    var backupPath = SyncClipboardConfigUpgrader.BackupConfig(configPath);
-                    configBackedUp = true;
-                    if (backupPath is not null)
-                    {
-                        logger.Write(LogTag, $"Backed up invalid configuration '{configPath}' to '{backupPath}'.");
-                        logger.Flush();
-                    }
-                }
-                catch (Exception backupException)
-                {
-                    logger.Write(LogTag, $"Failed to back up invalid configuration '{configPath}': {backupException}");
+                    logger.Write(LogTag, $"Backed up invalid configuration '{configPath}' to '{backupPath}'.");
                     logger.Flush();
-                    var retryBackup = await globalDialog.ShowConfirmationAsync(
-                        Strings.ReloadConfigFailed,
-                        string.Format(Strings.OperationFailedRetryMessage, backupException.Message),
-                        Strings.Retry,
-                        Strings.Exit);
-                    if (!retryBackup)
-                    {
-                        return false;
-                    }
+                }
 
-                    continue;
+                return true;
+            }
+            catch (Exception backupException)
+            {
+                logger.Write(LogTag, $"Failed to back up invalid configuration '{configPath}': {backupException}");
+                logger.Flush();
+                var retry = await globalDialog.ShowConfirmationAsync(
+                    Strings.ReloadConfigFailed,
+                    string.Format(Strings.OperationFailedRetryMessage, backupException.Message),
+                    Strings.Retry,
+                    Strings.Exit);
+                if (!retry)
+                {
+                    return false;
                 }
             }
+        }
+    }
 
+    private async Task<bool> TryRestoreConfigAsync(
+        string configPath,
+        string? sectionKey,
+        Func<string?, bool> restoreCurrentConfig)
+    {
+        while (true)
+        {
             if (restoreCurrentConfig(sectionKey))
             {
-                logger.Write(
-                    LogTag,
-                    sectionKey is null
-                        ? $"Restored the active configuration to '{configPath}'."
-                        : $"Restored active configuration section '{sectionKey}' to '{configPath}'.");
+                logger.Write(LogTag, GetRestoreLogMessage(configPath, sectionKey, succeeded: true));
                 logger.Flush();
                 return true;
             }
 
-            logger.Write(
-                LogTag,
-                sectionKey is null
-                    ? $"Failed to restore the active configuration to '{configPath}'."
-                    : $"Failed to restore active configuration section '{sectionKey}' to '{configPath}'.");
+            logger.Write(LogTag, GetRestoreLogMessage(configPath, sectionKey, succeeded: false));
             logger.Flush();
             var retry = await globalDialog.ShowConfirmationAsync(
                 Strings.ReloadConfigFailed,
@@ -180,6 +196,23 @@ public sealed class ConfigRecoveryService(
                 return false;
             }
         }
+    }
+
+    private static string GetRestoreLogMessage(
+        string configPath,
+        string? sectionKey,
+        bool succeeded)
+    {
+        if (sectionKey is null)
+        {
+            return succeeded
+                ? $"Restored the active configuration to '{configPath}'."
+                : $"Failed to restore the active configuration to '{configPath}'.";
+        }
+
+        return succeeded
+            ? $"Restored active configuration section '{sectionKey}' to '{configPath}'."
+            : $"Failed to restore active configuration section '{sectionKey}' to '{configPath}'.";
     }
 
     public async Task<bool> TryRecoverAsync(string configPath, Exception exception)
