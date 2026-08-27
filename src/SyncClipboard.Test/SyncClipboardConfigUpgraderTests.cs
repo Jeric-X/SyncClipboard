@@ -51,6 +51,29 @@ public class SyncClipboardConfigUpgraderTests
     }
 
     [TestMethod]
+    public void Upgrade_SupportsConfigPathWithoutDirectoryPart()
+    {
+        var fileName = $"SyncClipboardConfigUpgraderTests-{Guid.NewGuid():N}.json";
+        var fullPath = Path.GetFullPath(fileName);
+        var lockPath = Path.Combine(
+            Path.GetDirectoryName(fullPath)!,
+            $".{fileName}.upgrade.lock");
+
+        try
+        {
+            new SyncClipboardConfigUpgrader().Upgrade(fileName);
+
+            Assert.IsTrue(File.Exists(fullPath));
+            Assert.IsTrue(File.Exists(lockPath));
+        }
+        finally
+        {
+            File.Delete(fullPath);
+            File.Delete(lockPath);
+        }
+    }
+
+    [TestMethod]
     public void Upgrade_MigratesLegacyFileFilterRulesToSuffixRules()
     {
         const string json = """
@@ -139,6 +162,46 @@ public class SyncClipboardConfigUpgraderTests
             () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
 
         Assert.Contains("Program", exception.Message);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
+    }
+
+    [TestMethod]
+    public void Upgrade_RejectsNullHotkeyCollection()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "Hotkey": {
+                "Hotkeys": null
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
+            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+
+        Assert.Contains(HotkeyConfig.ConfigKey, exception.Message);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
+        Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
+    }
+
+    [TestMethod]
+    public void Upgrade_AcceptsEmptyHotkeyCollection()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "Hotkey": {
+                "Hotkeys": {}
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }

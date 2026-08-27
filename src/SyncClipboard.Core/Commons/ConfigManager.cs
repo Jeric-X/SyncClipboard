@@ -1,5 +1,6 @@
 using NativeNotification.Interface;
 using SyncClipboard.Core.Commons.ConfigMigration;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Shared.Attributes;
@@ -127,8 +128,13 @@ public class ConfigManager : ConfigBase
     {
         try
         {
-            _ = node.Deserialize(configType)
+            var config = node.Deserialize(configType)
                 ?? throw new JsonException("The configuration section cannot be null.");
+
+            if (config is IConfigValidator validator)
+            {
+                validator.Validate();
+            }
         }
         catch (Exception exception)
         {

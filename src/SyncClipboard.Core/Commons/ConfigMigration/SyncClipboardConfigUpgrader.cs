@@ -42,10 +42,8 @@ public sealed class SyncClipboardConfigUpgrader
 
     public void Upgrade(string configPath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
-
-        var directory = Path.GetDirectoryName(configPath)
-            ?? throw new SyncClipboardConfigUpgradeException($"Cannot determine the configuration directory for '{configPath}'.");
+        configPath = ResolveConfigPath(configPath);
+        var directory = GetConfigDirectory(configPath);
         Directory.CreateDirectory(directory);
 
         using var migrationLock = AcquireMigrationLock(configPath);
@@ -118,10 +116,8 @@ public sealed class SyncClipboardConfigUpgrader
 
     public static void ReplaceWithDefault(string configPath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
-
-        var directory = Path.GetDirectoryName(configPath)
-            ?? throw new SyncClipboardConfigUpgradeException($"Cannot determine the configuration directory for '{configPath}'.");
+        configPath = ResolveConfigPath(configPath);
+        var directory = GetConfigDirectory(configPath);
         Directory.CreateDirectory(directory);
 
         using var migrationLock = AcquireMigrationLock(configPath);
@@ -137,10 +133,8 @@ public sealed class SyncClipboardConfigUpgrader
 
     public static string? BackupConfig(string configPath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
-
-        var directory = Path.GetDirectoryName(configPath)
-            ?? throw new SyncClipboardConfigUpgradeException($"Cannot determine the configuration directory for '{configPath}'.");
+        configPath = ResolveConfigPath(configPath);
+        var directory = GetConfigDirectory(configPath);
         Directory.CreateDirectory(directory);
 
         using var migrationLock = AcquireMigrationLock(configPath);
@@ -254,7 +248,7 @@ public sealed class SyncClipboardConfigUpgrader
         try
         {
             var lockPath = Path.Combine(
-                Path.GetDirectoryName(configPath)!,
+                GetConfigDirectory(configPath),
                 $".{Path.GetFileName(configPath)}.upgrade.lock");
             return new FileStream(
                 lockPath,
@@ -304,9 +298,35 @@ public sealed class SyncClipboardConfigUpgrader
         }
     }
 
-    private static string GetBackupDirectory(string configPath) => Path.Combine(
-        Path.GetDirectoryName(configPath)!,
-        "config_backup");
+    private static string GetBackupDirectory(string configPath) =>
+        Path.Combine(GetConfigDirectory(configPath), "config_backup");
+
+    private static string ResolveConfigPath(string configPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configPath);
+
+        try
+        {
+            var fullPath = Path.GetFullPath(configPath);
+            _ = GetConfigDirectory(fullPath);
+            return fullPath;
+        }
+        catch (SyncClipboardConfigUpgradeException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new SyncClipboardConfigUpgradeException(
+                $"Cannot resolve the configuration path '{configPath}'.",
+                exception);
+        }
+    }
+
+    private static string GetConfigDirectory(string configPath) =>
+        Path.GetDirectoryName(configPath)
+        ?? throw new SyncClipboardConfigUpgradeException(
+            $"Cannot determine the configuration directory for '{configPath}'.");
 
     private static void PruneBackups(string configPath, string backupToPreserve)
     {
