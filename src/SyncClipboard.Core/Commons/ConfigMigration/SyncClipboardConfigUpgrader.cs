@@ -149,10 +149,71 @@ public sealed class SyncClipboardConfigUpgrader
         return backupPath;
     }
 
+    public static void ReplaceSectionWithDefault(string configPath, string sectionKey)
+    {
+        UpdateSection(configPath, sectionKey, replacement: null, createBackup: true);
+    }
+
+    public static void RestoreSection(string configPath, string sectionKey, JsonNode? section)
+    {
+        UpdateSection(configPath, sectionKey, section, createBackup: false);
+    }
+
     private static JsonObject CreateDefaultConfig() => new()
     {
         [VersionPropertyName] = Env.SyncClipboardConfigVersion,
     };
+
+    private static void UpdateSection(
+        string configPath,
+        string sectionKey,
+        JsonNode? replacement,
+        bool createBackup)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sectionKey);
+
+        configPath = ResolveConfigPath(configPath);
+        var directory = GetConfigDirectory(configPath);
+        Directory.CreateDirectory(directory);
+
+        using var migrationLock = AcquireMigrationLock(configPath);
+
+        if (!File.Exists(configPath))
+        {
+            throw new SyncClipboardConfigUpgradeException(
+                $"Cannot replace configuration section '{sectionKey}' because '{configPath}' does not exist.");
+        }
+
+        if (createBackup)
+        {
+            var backupPath = CreateBackup(configPath, GetVersionForBackupName(configPath));
+            PruneBackups(configPath, backupPath);
+        }
+
+        JsonObject root;
+        try
+        {
+            root = JsonNode.Parse(File.ReadAllText(configPath)) as JsonObject
+                ?? throw new JsonException("The root of SyncClipboard.json must be a JSON object.");
+        }
+        catch (Exception exception)
+        {
+            throw new SyncClipboardConfigUpgradeException(
+                $"Cannot parse configuration file '{configPath}' while replacing section '{sectionKey}'.",
+                exception);
+        }
+
+        if (replacement is null)
+        {
+            root.Remove(sectionKey);
+        }
+        else
+        {
+            root[sectionKey] = replacement.DeepClone();
+        }
+
+        AtomicWrite(configPath, root);
+    }
 
     private static int ReadVersion(JsonObject root)
     {
@@ -179,68 +240,6 @@ public sealed class SyncClipboardConfigUpgrader
         }
 
         ConfigManager.ValidateConfig(root);
-
-        var fileFilterNode = root["FileFilter"];
-        if (fileFilterNode is null)
-        {
-            return;
-        }
-
-        var config = DeserializeFileFilter(fileFilterNode);
-        ValidateFileFilterMode(config.FileFilterMode);
-        ValidateFileFilterRules(config);
-    }
-
-    private static FileFilterConfig DeserializeFileFilter(JsonNode fileFilterNode)
-    {
-        try
-        {
-            return fileFilterNode.Deserialize<FileFilterConfig>()
-                ?? throw new SyncClipboardConfigUpgradeException("FileFilter cannot be deserialized.");
-        }
-        catch (SyncClipboardConfigUpgradeException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            throw new SyncClipboardConfigUpgradeException("FileFilter is invalid.", exception);
-        }
-    }
-
-    private static void ValidateFileFilterMode(string filterMode)
-    {
-        if (filterMode is not ("" or "BlackList" or "WhiteList"))
-        {
-            throw new SyncClipboardConfigUpgradeException(
-                $"FileFilter contains an unsupported filter mode '{filterMode}'.");
-        }
-    }
-
-    private static void ValidateFileFilterRules(FileFilterConfig config)
-    {
-        if (config.WhiteList is null || config.BlackList is null)
-        {
-            throw new SyncClipboardConfigUpgradeException("FileFilter lists cannot be null.");
-        }
-
-        foreach (var rule in config.WhiteList.Concat(config.BlackList))
-        {
-            ValidateFileFilterRule(rule);
-        }
-    }
-
-    private static void ValidateFileFilterRule(FileFilterRule? rule)
-    {
-        if (rule is null)
-        {
-            throw new SyncClipboardConfigUpgradeException("FileFilter cannot contain a null rule.");
-        }
-
-        if (!FileFilterHelper.TryValidateRule(rule, out var error))
-        {
-            throw new SyncClipboardConfigUpgradeException($"FileFilter contains an invalid rule: {error}");
-        }
     }
 
     private static FileStream AcquireMigrationLock(string configPath)

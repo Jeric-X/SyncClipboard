@@ -82,21 +82,26 @@ namespace SyncClipboard.Core
 
         private async void ReloadConfig()
         {
-            try
+            while (true)
             {
-                ConfigManager.Reload();
-            }
-            catch (Exception exception)
-            {
-                var restored = await Services
-                    .GetRequiredService<ConfigRecoveryService>()
-                    .TryRestoreCurrentConfigAsync(
-                        ConfigManager.Path,
-                        ConfigManager.RestoreCurrentConfig,
-                        exception);
-                if (!restored)
+                try
                 {
-                    Services.GetRequiredService<IMainWindow>().ExitApp();
+                    ConfigManager.Reload();
+                    return;
+                }
+                catch (Exception exception)
+                {
+                    var restored = await Services
+                        .GetRequiredService<ConfigRecoveryService>()
+                        .TryRestoreCurrentConfigAsync(
+                            ConfigManager.Path,
+                            ConfigManager.RestoreCurrentConfig,
+                            exception);
+                    if (!restored)
+                    {
+                        Services.GetRequiredService<IMainWindow>().ExitApp();
+                        return;
+                    }
                 }
             }
         }

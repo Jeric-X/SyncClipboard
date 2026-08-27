@@ -1,4 +1,4 @@
-namespace SyncClipboard.Core.Interfaces;
+namespace SyncClipboard.Shared.Interfaces;
 
 public interface IConfigValidator
 {

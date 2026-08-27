@@ -81,7 +81,7 @@ public sealed class ConfigRecoveryService(
 
     public async Task<bool> TryRestoreCurrentConfigAsync(
         string configPath,
-        Func<bool> restoreCurrentConfig,
+        Func<string?, bool> restoreCurrentConfig,
         Exception reloadException)
     {
         logger.Write(LogTag, $"Configuration reload failed: {reloadException}");
@@ -96,10 +96,20 @@ public sealed class ConfigRecoveryService(
             return false;
         }
 
+        var configError = GetConfigurationError(reloadException);
+        var sectionKey = configError?.RecoverableSectionKey;
+        var recoveryMessage = sectionKey is null
+            ? string.Format(Strings.ReloadConfigRecoveryMessage, configPath, reloadException.Message)
+            : string.Format(
+                Strings.ReloadConfigSectionRecoveryMessage,
+                configPath,
+                sectionKey,
+                reloadException.Message);
+
         var restore = await globalDialog.ShowConfirmationAsync(
             Strings.ReloadConfigFailed,
-            string.Format(Strings.ReloadConfigRecoveryMessage, configPath, reloadException.Message),
-            Strings.RestoreCurrentConfig,
+            recoveryMessage,
+            sectionKey is null ? Strings.RestoreCurrentConfig : Strings.RestoreCurrentConfigSection,
             Strings.Exit);
         if (!restore)
         {
@@ -141,14 +151,22 @@ public sealed class ConfigRecoveryService(
                 }
             }
 
-            if (restoreCurrentConfig())
+            if (restoreCurrentConfig(sectionKey))
             {
-                logger.Write(LogTag, $"Restored the active configuration to '{configPath}'.");
+                logger.Write(
+                    LogTag,
+                    sectionKey is null
+                        ? $"Restored the active configuration to '{configPath}'."
+                        : $"Restored active configuration section '{sectionKey}' to '{configPath}'.");
                 logger.Flush();
                 return true;
             }
 
-            logger.Write(LogTag, $"Failed to restore the active configuration to '{configPath}'.");
+            logger.Write(
+                LogTag,
+                sectionKey is null
+                    ? $"Failed to restore the active configuration to '{configPath}'."
+                    : $"Failed to restore active configuration section '{sectionKey}' to '{configPath}'.");
             logger.Flush();
             var retry = await globalDialog.ShowConfirmationAsync(
                 Strings.ReloadConfigFailed,
@@ -168,11 +186,19 @@ public sealed class ConfigRecoveryService(
     {
         var configError = GetConfigurationError(exception)
             ?? throw new ArgumentException("The exception is not a configuration upgrade error.", nameof(exception));
+        var sectionKey = configError.RecoverableSectionKey;
+        var recoveryMessage = sectionKey is null
+            ? string.Format(Strings.ConfigurationErrorMessage, configPath, configError.Message)
+            : string.Format(
+                Strings.ConfigurationSectionErrorMessage,
+                configPath,
+                sectionKey,
+                configError.Message);
 
         var overwrite = await globalDialog.ShowConfirmationAsync(
             Strings.ConfigurationErrorTitle,
-            string.Format(Strings.ConfigurationErrorMessage, configPath, configError.Message),
-            Strings.OverwriteConfig,
+            recoveryMessage,
+            sectionKey is null ? Strings.OverwriteConfig : Strings.OverwriteConfigSection,
             Strings.Exit);
         if (!overwrite)
         {
@@ -185,8 +211,20 @@ public sealed class ConfigRecoveryService(
         {
             try
             {
-                SyncClipboardConfigUpgrader.ReplaceWithDefault(configPath);
-                logger.Write(LogTag, $"Replaced invalid configuration '{configPath}' with defaults after backing it up.");
+                if (sectionKey is null)
+                {
+                    SyncClipboardConfigUpgrader.ReplaceWithDefault(configPath);
+                    logger.Write(
+                        LogTag,
+                        $"Replaced invalid configuration '{configPath}' with defaults after backing it up.");
+                }
+                else
+                {
+                    SyncClipboardConfigUpgrader.ReplaceSectionWithDefault(configPath, sectionKey);
+                    logger.Write(
+                        LogTag,
+                        $"Replaced invalid configuration section '{sectionKey}' in '{configPath}' with defaults after backing it up.");
+                }
                 logger.Flush();
                 return true;
             }

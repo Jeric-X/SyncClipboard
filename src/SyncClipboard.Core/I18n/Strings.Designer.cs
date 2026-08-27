@@ -663,6 +663,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("ConfigurationErrorTitle", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 SyncClipboard could not load or upgrade a configuration section. 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationSectionErrorMessage {
+            get {
+                return ResourceManager.GetString("ConfigurationSectionErrorMessage", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 SyncClipboard could not back up and replace the configuration file.
@@ -2501,6 +2510,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("OverwriteConfig", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Overwrite This Section 的本地化字符串。
+        /// </summary>
+        public static string OverwriteConfigSection {
+            get {
+                return ResourceManager.GetString("OverwriteConfigSection", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Password 的本地化字符串。
@@ -2753,6 +2771,15 @@ namespace SyncClipboard.Core.I18n {
                 return ResourceManager.GetString("ReloadConfigRecoveryMessage", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 SyncClipboard could not reload a configuration section. 的本地化字符串。
+        /// </summary>
+        public static string ReloadConfigSectionRecoveryMessage {
+            get {
+                return ResourceManager.GetString("ReloadConfigSectionRecoveryMessage", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Reload Config File 的本地化字符串。
@@ -2850,6 +2877,15 @@ namespace SyncClipboard.Core.I18n {
         public static string RestoreCurrentConfig {
             get {
                 return ResourceManager.GetString("RestoreCurrentConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Restore This Section 的本地化字符串。
+        /// </summary>
+        public static string RestoreCurrentConfigSection {
+            get {
+                return ResourceManager.GetString("RestoreCurrentConfigSection", resourceCulture);
             }
         }
 

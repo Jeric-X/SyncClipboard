@@ -1,24 +1,15 @@
-﻿using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.Keyboard;
+﻿using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Shared.Attributes;
 
 namespace SyncClipboard.Core.Models.UserConfigs;
 
 [ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
-public record HotkeyConfig : IConfigValidator
+public record HotkeyConfig
 {
     public const string ConfigKey = "Hotkey";
 
     public Dictionary<string, Hotkey> Hotkeys { get; set; } = [];
-
-    public void Validate()
-    {
-        if (Hotkeys is null)
-        {
-            throw new InvalidDataException("Hotkeys cannot be null.");
-        }
-    }
 
     public virtual bool Equals(HotkeyConfig? other)
     {

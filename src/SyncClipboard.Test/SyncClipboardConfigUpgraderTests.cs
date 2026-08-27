@@ -153,7 +153,10 @@ public class SyncClipboardConfigUpgraderTests
         const string json = """
             {
               "ConfigVersion": 1,
-              "Program": "bad"
+              "Program": "bad",
+              "History": {
+                "EnableHistory": true
+              }
             }
             """;
         File.WriteAllText(_configPath, json);
@@ -162,6 +165,7 @@ public class SyncClipboardConfigUpgraderTests
             () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
 
         Assert.Contains("Program", exception.Message);
+        Assert.AreEqual(ProgramConfig.ConfigKey, exception.RecoverableSectionKey);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
@@ -185,6 +189,46 @@ public class SyncClipboardConfigUpgraderTests
         Assert.Contains(HotkeyConfig.ConfigKey, exception.Message);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
+    }
+
+    [TestMethod]
+    public void Upgrade_RejectsNullStringInRegisteredConfiguration()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "Program": {
+                "Language": null
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
+            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+
+        Assert.Contains(ProgramConfig.ConfigKey, exception.Message);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
+    }
+
+    [TestMethod]
+    public void Upgrade_RejectsNullNestedCollectionItem()
+    {
+        const string json = """
+            {
+              "ConfigVersion": 1,
+              "NetworkAccountSwitch": {
+                "Rules": [null]
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, json);
+
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
+            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+
+        Assert.Contains(NetworkAccountSwitchConfig.ConfigKey, exception.Message);
+        Assert.AreEqual(json, File.ReadAllText(_configPath));
     }
 
     [TestMethod]
@@ -214,6 +258,9 @@ public class SyncClipboardConfigUpgraderTests
               "ConfigVersion": 1,
               "Program": {
                 "Language": "en-US"
+              },
+              "History": {
+                "EnableHistory": false
               }
             }
             """;
@@ -223,17 +270,24 @@ public class SyncClipboardConfigUpgraderTests
         const string invalidJson = """
             {
               "ConfigVersion": 1,
-              "Program": "bad"
+              "Program": "bad",
+              "History": {
+                "EnableHistory": true
+              }
             }
             """;
         File.WriteAllText(_configPath, invalidJson);
 
-        Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(manager.Reload);
+        var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(manager.Reload);
         Assert.AreEqual("en-US", manager.GetConfig<ProgramConfig>().Language);
 
-        Assert.IsTrue(manager.RestoreCurrentConfig());
+        Assert.IsTrue(manager.RestoreCurrentConfig(exception.RecoverableSectionKey));
         var restored = JsonNode.Parse(File.ReadAllText(_configPath))!.AsObject();
         Assert.AreEqual("en-US", restored[ProgramConfig.ConfigKey]!["Language"]!.GetValue<string>());
+        Assert.IsTrue(restored[HistoryConfig.ConfigKey]!["EnableHistory"]!.GetValue<bool>());
+
+        manager.Reload();
+        Assert.IsTrue(manager.GetConfig<HistoryConfig>().EnableHistory);
     }
 
     [TestMethod]

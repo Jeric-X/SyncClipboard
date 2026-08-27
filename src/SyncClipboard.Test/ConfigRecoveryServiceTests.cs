@@ -71,6 +71,38 @@ public class ConfigRecoveryServiceTests
     }
 
     [TestMethod]
+    public async Task TryRecoverAsync_WhenSectionKnown_OnlyResetsInvalidSection()
+    {
+        const string invalidJson = """
+            {
+              "ConfigVersion": 1,
+              "Program": "bad",
+              "History": {
+                "EnableHistory": true
+              }
+            }
+            """;
+        File.WriteAllText(_configPath, invalidJson);
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var service = new ConfigRecoveryService(dialog, new FakeLogger());
+
+        var recovered = await service.TryRecoverAsync(
+            _configPath,
+            new SyncClipboardConfigUpgradeException(
+                "configuration section failed",
+                "Program"));
+
+        Assert.IsTrue(recovered);
+        var root = JsonNode.Parse(File.ReadAllText(_configPath))!.AsObject();
+        Assert.IsNull(root["Program"]);
+        Assert.IsTrue(root["History"]!["EnableHistory"]!.GetValue<bool>());
+        Assert.Contains("Program", dialog.Messages.Single());
+        Assert.AreEqual(Strings.OverwriteConfigSection, dialog.PrimaryButtonTexts.Single());
+        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
+        Assert.AreEqual(invalidJson, File.ReadAllText(backup));
+    }
+
+    [TestMethod]
     public void IsConfigurationError_RecognizesWrappedUpgradeException()
     {
         var exception = new InvalidOperationException(
@@ -159,7 +191,7 @@ public class ConfigRecoveryServiceTests
 
         var result = await service.TryRestoreCurrentConfigAsync(
             _configPath,
-            () =>
+            _ =>
             {
                 restored = true;
                 return true;
@@ -184,7 +216,7 @@ public class ConfigRecoveryServiceTests
 
         var result = await service.TryRestoreCurrentConfigAsync(
             _configPath,
-            () => ++attempts == 2,
+            _ => ++attempts == 2,
             new InvalidOperationException("reload failed"));
 
         Assert.IsTrue(result);
@@ -208,7 +240,7 @@ public class ConfigRecoveryServiceTests
 
         var result = await service.TryRestoreCurrentConfigAsync(
             _configPath,
-            () =>
+            _ =>
             {
                 restoreCalled = true;
                 return true;
@@ -221,11 +253,37 @@ public class ConfigRecoveryServiceTests
         Assert.IsTrue(logger.Messages.Any(message => message.Contains("application will exit")));
     }
 
+    [TestMethod]
+    public async Task TryRestoreCurrentConfigAsync_WhenSectionKnown_RestoresOnlyThatSection()
+    {
+        File.WriteAllText(_configPath, "{ invalid");
+        string? restoredSection = null;
+        var dialog = new FakeGlobalDialog(confirmationResult: true);
+        var service = new ConfigRecoveryService(dialog, new FakeLogger());
+
+        var result = await service.TryRestoreCurrentConfigAsync(
+            _configPath,
+            sectionKey =>
+            {
+                restoredSection = sectionKey;
+                return true;
+            },
+            new SyncClipboardConfigUpgradeException(
+                "configuration section failed",
+                "Hotkey"));
+
+        Assert.IsTrue(result);
+        Assert.AreEqual("Hotkey", restoredSection);
+        Assert.Contains("Hotkey", dialog.Messages.Single());
+        Assert.AreEqual(Strings.RestoreCurrentConfigSection, dialog.PrimaryButtonTexts.Single());
+    }
+
     private sealed class FakeGlobalDialog(bool confirmationResult) : IGlobalDialog
     {
         public int ConfirmationCount { get; private set; }
         public int MessageCount { get; private set; }
         public List<string> PrimaryButtonTexts { get; } = [];
+        public List<string> Messages { get; } = [];
 
         public Task<bool> ShowConfirmationAsync(
             string title,
@@ -235,6 +293,7 @@ public class ConfigRecoveryServiceTests
         {
             ConfirmationCount++;
             PrimaryButtonTexts.Add(primaryButtonText);
+            Messages.Add(message);
             return Task.FromResult(confirmationResult);
         }
 
