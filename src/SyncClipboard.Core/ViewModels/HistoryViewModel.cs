@@ -27,7 +27,6 @@ public partial class HistoryViewModel : ObservableObject
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan ForegroundActivationTimeout = TimeSpan.FromMilliseconds(300);
     private static readonly TimeSpan ForegroundCheckInterval = TimeSpan.FromMilliseconds(20);
-    private static readonly TimeSpan FocusFallbackDelay = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan PasteDispatchDelay = TimeSpan.FromMilliseconds(150);
 
     private IWindow window = null!;
@@ -1446,7 +1445,7 @@ public partial class HistoryViewModel : ObservableObject
         await using (hideScope)
         {
             logger.Write("History window hidden for Linux paste.");
-            await Task.Delay(FocusFallbackDelay, token);
+            await Task.Delay(GetPasteDelayAfterWindowHidden(), token);
             keyboard.Paste();
             await Task.Delay(PasteDispatchDelay, CancellationToken.None);
             logger.Write("Linux paste dispatch delay completed.");
@@ -1456,7 +1455,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task PasteAfterHistoryWindowLosesForegroundAsync(CancellationToken token)
     {
-        await Task.Delay(FocusFallbackDelay, token);
+        await Task.Delay(GetPasteDelayAfterWindowHidden(), token);
         if (_foregroundWindowTrackingService.IsHistoryWindowForeground()
             && !await WaitForConditionAsync(
                 () => !_foregroundWindowTrackingService.IsHistoryWindowForeground(),
@@ -1474,6 +1473,14 @@ public partial class HistoryViewModel : ObservableObject
         // has had enough time to consume the complete key-down/key-up sequence.
         await Task.Delay(PasteDispatchDelay, CancellationToken.None);
         logger.Write("Fallback paste dispatch delay completed.");
+    }
+
+    private TimeSpan GetPasteDelayAfterWindowHidden()
+    {
+        var milliseconds = runtimeConfig
+            .GetConfig<HistoryWindowConfig>()
+            .PasteDelayAfterWindowHiddenMilliseconds;
+        return TimeSpan.FromMilliseconds(Math.Max(0, milliseconds));
     }
 
     private static async Task<bool> WaitForConditionAsync(

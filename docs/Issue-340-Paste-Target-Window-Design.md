@@ -504,6 +504,7 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 - Linux provider 的 `TryActivateWindow` 固定返回 `false`，X11 Window ID 不用于恢复粘贴目标。
 - 删除 `_NET_ACTIVE_WINDOW`、`XSendEvent`、`XFlush` 及相关 ClientMessage 结构。
 - “复制并粘贴”固定临时隐藏历史窗口，等待系统把焦点交给下层窗口，模拟粘贴并等待按键派发完成，最后恢复历史窗口原有状态。
+- 隐藏历史窗口到发送粘贴快捷键之间的等待时间从 runtime `HistoryWindow` 配置的 `PasteDelayAfterWindowHiddenMilliseconds` 读取，默认 50ms；该内部调节项不在设置界面展示。
 
 ## 5. 预计代码改动
 
