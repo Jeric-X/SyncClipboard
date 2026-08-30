@@ -9,7 +9,7 @@ using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using SyncClipboard.Desktop.ClipboardAva.Fingerprint;
 using SyncClipboard.Desktop.Utilities;
 using SyncClipboard.Desktop.Utilities.CaretPositionProvider;
-using SyncClipboard.Desktop.Utilities.ForegroundWindowInfoProvider;
+using SyncClipboard.Desktop.Utilities.NativeWindowController;
 using SyncClipboard.Desktop.Utilities.MousePositionProvider;
 using SyncClipboard.Desktop.Views;
 using SyncClipboard.Core.Utilities.Network;
@@ -71,8 +71,8 @@ public class AppServices
             services.AddSingleton<IClipboardReader, XClipReader>();
             services.AddSingleton<IClipboardReader, WlClipboardReader>();
             services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
-            services.AddSingleton<IForegroundWindowInfoProvider, LinuxForegroundWindowInfoProvider>();
-            services.AddSingleton<IForegroundWindowWatcher, PollingForegroundWindowWatcher>();
+            services.AddSingleton<INativeWindowController, LinuxNativeWindowController>();
+            services.AddSingleton<INativeForegroundWindowWatcher, PollingForegroundWindowWatcher>();
             services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
         }
 
@@ -80,8 +80,8 @@ public class AppServices
         {
             services.AddSingleton<IWifiNetworkInfoProvider, WindowsWifiNetworkInfoProvider>();
             services.AddSingleton<ICaretPositionProvider, FakeCaretPositionProvider>();
-            services.AddSingleton<IForegroundWindowInfoProvider, WindowsForegroundWindowInfoProvider>();
-            services.AddSingleton<IForegroundWindowWatcher, WindowsForegroundWindowWatcher>();
+            services.AddSingleton<INativeWindowController, WindowsNativeWindowController>();
+            services.AddSingleton<INativeForegroundWindowWatcher, WindowsForegroundWindowWatcher>();
             services.AddSingleton<IMousePositionProvider, FakeMousePositionProvider>();
         }
 

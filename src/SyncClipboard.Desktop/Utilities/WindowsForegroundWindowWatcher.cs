@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace SyncClipboard.Desktop.Utilities;
 
 [SupportedOSPlatform("windows")]
-internal sealed class WindowsForegroundWindowWatcher : IForegroundWindowWatcher
+internal sealed class WindowsForegroundWindowWatcher : INativeForegroundWindowWatcher
 {
     private const uint EventSystemForeground = 0x0003;
     private const uint WinEventOutOfContext = 0;

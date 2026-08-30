@@ -10,13 +10,13 @@ namespace SyncClipboard.WinUI3.Win32;
 
 internal sealed class CurrentSelectedContentProvider(
     ILogger logger,
-    IForegroundWindowInfoProvider foregroundWindowInfoProvider) : ICurrentSelectedContentProvider
+    INativeWindowController foregroundWindowInfoProvider) : ICurrentSelectedContentProvider
 {
     private const string Tag = "CurrentSelectedContent";
     private const int MaxAncestorDepth = 8;
 
     private readonly ILogger _logger = logger;
-    private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider = foregroundWindowInfoProvider;
+    private readonly INativeWindowController _foregroundWindowInfoProvider = foregroundWindowInfoProvider;
     private IUIAutomation? _uiAutomation;
 
     public ClipboardMetaInfomation? GetCurrentSelectedContent()

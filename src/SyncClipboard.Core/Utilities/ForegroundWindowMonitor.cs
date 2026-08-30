@@ -3,18 +3,18 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Utilities;
 
-public sealed class ForegroundWindowMonitorService(
-    IForegroundWindowWatcher watcher,
-    IForegroundWindowInfoProvider provider,
+public sealed class ForegroundWindowMonitor(
+    INativeForegroundWindowWatcher watcher,
+    INativeWindowController provider,
     ILogger logger) : IForegroundWindowMonitor, IDisposable
 {
     private const string Tag = "ForegroundWindowMonitor";
     private readonly object _syncRoot = new();
-    private Action<ForegroundWindowDetail?>? _foregroundWindowChanged;
+    private Action<WindowDetail?>? _foregroundWindowChanged;
     private bool _isWatching;
     private bool _disposed;
 
-    public event Action<ForegroundWindowDetail?>? ForegroundWindowChanged
+    public event Action<WindowDetail?>? ForegroundWindowChanged
     {
         add
         {
@@ -52,7 +52,7 @@ public sealed class ForegroundWindowMonitorService(
         }
     }
 
-    public ForegroundWindowDetail? GetCurrentForegroundWindow()
+    public WindowDetail? GetCurrentForegroundWindow()
     {
         try
         {
@@ -91,7 +91,7 @@ public sealed class ForegroundWindowMonitorService(
 
     private void OnNativeForegroundWindowChanged(NativeWindowInfo? nativeWindow)
     {
-        ForegroundWindowDetail? snapshot;
+        WindowDetail? snapshot;
         try
         {
             snapshot = nativeWindow is null
@@ -114,7 +114,7 @@ public sealed class ForegroundWindowMonitorService(
         {
             try
             {
-                ((Action<ForegroundWindowDetail?>)callback)(snapshot);
+                ((Action<WindowDetail?>)callback)(snapshot);
             }
             catch (Exception ex)
             {

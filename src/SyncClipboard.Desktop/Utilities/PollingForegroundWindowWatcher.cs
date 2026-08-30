@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace SyncClipboard.Desktop.Utilities;
 
-internal sealed class PollingForegroundWindowWatcher(IForegroundWindowInfoProvider foregroundWindowInfoProvider) : IForegroundWindowWatcher
+internal sealed class PollingForegroundWindowWatcher(INativeWindowController foregroundWindowInfoProvider) : INativeForegroundWindowWatcher
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(1);
 

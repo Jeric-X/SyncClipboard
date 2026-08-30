@@ -134,6 +134,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         UpdateSelectAllIcon();
         UpdateToggleStarIcon();
         UpdateListViewWidthForPreview(); // 初始化时设置ListView宽度
+        _ = _viewModel.Init(this);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -284,26 +285,26 @@ public sealed partial class HistoryWindow : Window, IWindow
         args.Handled = true;
     }
 
-    private void ShowWindow()
-    {
-        _viewModel.CapturePasteTargetBeforeShowingHistory();
+    bool IWindow.IsVisible => Visible;
 
+    bool IWindow.IsActive => _isActive;
+
+    public void Show(bool activate)
+    {
         if (!_windowLoaded)
         {
             SetWindowMinSize();
-            _ = _viewModel.Init(this);
         }
 
-        if (!_viewModel.RepositionWindow() && !_windowLoaded)
+        if (activate)
         {
-            this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
+            this.Activate();
+            this.SetForegroundWindow();
         }
-        this.Activate();
-        this.SetForegroundWindow();
-
-        _viewModel.OnWindowShown();
-        _SearchTextBox.Focus(FocusState.Programmatic);
-        _SearchTextBox.SelectAll();
+        else
+        {
+            AppWindow.Show(false);
+        }
 
         if (!_windowLoaded)
         {
@@ -311,40 +312,21 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
-    public void Focus()
+    public void Hide()
     {
-        if (!this.Visible)
-        {
-            ShowWindow();
-        }
-        else
-        {
-            _viewModel.CapturePasteTargetBeforeShowingHistory();
-            _viewModel.RepositionWindow();
-            this.SetForegroundWindow();
-        }
+        ResetPointerInteractionState();
+        AppWindow.Hide();
     }
 
-    public void RestoreFocus()
+    public void CenterOnScreen(int width, int height)
     {
-        if (this.Visible)
-        {
-            this.Activate();
-            this.SetForegroundWindow();
-        }
+        this.CenterOnScreenDip(width, height);
     }
 
-    public void SwitchVisible()
+    public void FocusSearch()
     {
-        if (!this.Visible)
-        {
-            ShowWindow();
-        }
-        else
-        {
-            ResetPointerInteractionState();
-            this.AppWindow.Hide();
-        }
+        _SearchTextBox.Focus(FocusState.Programmatic);
+        _SearchTextBox.SelectAll();
     }
 
     private void ResetPointerInteractionState()
@@ -1011,62 +993,6 @@ public sealed partial class HistoryWindow : Window, IWindow
                 ProcessId = (int)processId,
                 WindowHandle = hWnd
             };
-    }
-
-    public ValueTask<IAsyncDisposable?> HideTemporarilyAsync(CancellationToken token = default)
-    {
-        token.ThrowIfCancellationRequested();
-        if (!Visible)
-        {
-            return ValueTask.FromResult<IAsyncDisposable?>(null);
-        }
-
-        var wasActive = _isActive;
-        var wasTopmost = _viewModel.IsTopmost;
-        var position = AppWindow.Position;
-        var size = AppWindow.Size;
-        var presenter = AppWindow.Presenter as OverlappedPresenter;
-        var presenterState = presenter?.State;
-
-        AppWindow.Hide();
-        return ValueTask.FromResult<IAsyncDisposable?>(new TemporaryHideScope(() =>
-        {
-            AppWindow.Move(position);
-            AppWindow.Resize(size);
-            if (presenter is not null && presenterState.HasValue)
-            {
-                switch (presenterState.Value)
-                {
-                    case OverlappedPresenterState.Maximized:
-                        presenter.Maximize();
-                        break;
-                    case OverlappedPresenterState.Minimized:
-                        presenter.Minimize();
-                        break;
-                    default:
-                        presenter.Restore();
-                        break;
-                }
-            }
-            this.SetIsAlwaysOnTop(wasTopmost);
-            AppWindow.Show(wasActive);
-            return ValueTask.CompletedTask;
-        }));
-    }
-
-    private sealed class TemporaryHideScope : IAsyncDisposable
-    {
-        private readonly Func<ValueTask> _restore;
-        private int _restored;
-
-        public TemporaryHideScope(Func<ValueTask> restore)
-        {
-            ArgumentNullException.ThrowIfNull(restore);
-            _restore = restore;
-        }
-
-        public ValueTask DisposeAsync() =>
-            Interlocked.Exchange(ref _restored, 1) == 0 ? _restore() : ValueTask.CompletedTask;
     }
 
     public bool SetNearCaretPosition(ScreenPosition caretPosition)

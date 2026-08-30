@@ -19,7 +19,7 @@ public sealed class HotkeyBlacklistService : Service
     private readonly HotkeyManager _hotkeyManager;
     private readonly ILogger _logger;
 
-    public event Action<ForegroundWindowInfo?>? ForegroundWindowChanged;
+    public event Action<WindowInfo?>? ForegroundWindowChanged;
 
     public HotkeyBlacklistService(
         ConfigManager configManager,
@@ -54,7 +54,7 @@ public sealed class HotkeyBlacklistService : Service
         EnsureWatcherState();
     }
 
-    private void OnForegroundWindowChanged(ForegroundWindowDetail? _) => QueueForegroundWindowCheck();
+    private void OnForegroundWindowChanged(WindowDetail? _) => QueueForegroundWindowCheck();
 
     private void QueueForegroundWindowCheck()
     {

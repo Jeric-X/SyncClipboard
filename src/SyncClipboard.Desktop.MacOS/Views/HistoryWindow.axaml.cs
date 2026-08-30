@@ -16,7 +16,7 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
         base.OnClosing(e);
     }
 
-    protected override void FocusOnScreen()
+    public override void Show(bool activate)
     {
         // 只在第一次显示时设置窗口的 collectionBehavior，使其在所有虚拟桌面显示
         if (!_collectionBehaviorSet)
@@ -27,7 +27,13 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
 
         this.AddWindow();
         // this.FocusMenuBar();
-        base.FocusOnScreen();
+        base.Show(activate);
+    }
+
+    public override void Hide()
+    {
+        this.RemoveWindow();
+        base.Hide();
     }
 
     public override NativeWindowInfo? GetNativeWindowInfo()

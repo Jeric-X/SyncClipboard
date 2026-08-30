@@ -10,7 +10,7 @@ using SyncClipboard.Core.Models;
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 [SupportedOSPlatform("macos")]
-internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDispatcher threadDispatcher) : IForegroundWindowInfoProvider
+internal sealed class MacNativeWindowController(ILogger logger, IThreadDispatcher threadDispatcher) : INativeWindowController
 {
     private readonly ILogger _logger = logger;
     private readonly IThreadDispatcher _threadDispatcher = threadDispatcher;
@@ -29,7 +29,7 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
     private static readonly IntPtr kAXFocusedAttribute = MacInteropHelper.CreateCFString("AXFocused");
     private static readonly IntPtr kAXWindowNumberAttribute = MacInteropHelper.CreateCFString("AXWindowNumber");
 
-    public ForegroundWindowDetail? GetForegroundWindowDetail()
+    public WindowDetail? GetForegroundWindowDetail()
     {
         try
         {
@@ -48,7 +48,7 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
             var (title, bounds, windowNumber) = GetWindowInfo(pid);
             var windowTitle = title ?? string.Empty;
 
-            var windowInfo = new ForegroundWindowInfo
+            var windowInfo = new WindowInfo
             {
                 ProcessName = processName,
                 WindowTitle = windowTitle,
@@ -56,7 +56,7 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
             };
 
             var screenBounds = ToScreenPosition(bounds);
-            var result = new ForegroundWindowDetail
+            var result = new WindowDetail
             {
                 WindowInfo = windowInfo,
                 Bounds = screenBounds,
@@ -79,12 +79,12 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
         }
     }
 
-    public ForegroundWindowInfo? GetForegroundWindowInfo()
+    public WindowInfo? GetForegroundWindowInfo()
     {
         return GetForegroundWindowDetail()?.WindowInfo;
     }
 
-    public ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window)
+    public WindowDetail? GetWindowDetail(NativeWindowInfo window)
     {
         if (window is not MacNativeWindowInfo macWindow)
         {
@@ -107,9 +107,9 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
                 Bounds = screenBounds,
                 WindowNumber = windowNumber ?? macWindow.WindowNumber
             };
-            return new ForegroundWindowDetail
+            return new WindowDetail
             {
-                WindowInfo = new ForegroundWindowInfo
+                WindowInfo = new WindowInfo
                 {
                     ProcessName = application.LocalizedName ?? string.Empty,
                     WindowTitle = currentWindow.WindowTitle,

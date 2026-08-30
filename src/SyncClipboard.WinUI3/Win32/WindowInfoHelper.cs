@@ -8,7 +8,7 @@ namespace SyncClipboard.WinUI3.Win32;
 
 internal static class WindowInfoHelper
 {
-    public static ForegroundWindowInfo? GetWindowInfoFromHwnd(IntPtr hWnd, ILogger logger, string tag)
+    public static WindowInfo? GetWindowInfoFromHwnd(IntPtr hWnd, ILogger logger, string tag)
     {
         _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
         if (processId == 0)
@@ -50,7 +50,7 @@ internal static class WindowInfoHelper
             return null;
         }
 
-        return new ForegroundWindowInfo
+        return new WindowInfo
         {
             ProcessName = processName,
             WindowTitle = windowTitle,

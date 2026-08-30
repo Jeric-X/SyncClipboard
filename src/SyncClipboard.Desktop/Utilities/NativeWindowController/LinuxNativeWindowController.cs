@@ -4,15 +4,15 @@ using SyncClipboard.Desktop.Utilities;
 using System;
 using System.Runtime.Versioning;
 
-namespace SyncClipboard.Desktop.Utilities.ForegroundWindowInfoProvider;
+namespace SyncClipboard.Desktop.Utilities.NativeWindowController;
 
 [SupportedOSPlatform("linux")]
-internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForegroundWindowInfoProvider
+internal sealed class LinuxNativeWindowController(ILogger logger) : INativeWindowController
 {
     private readonly ILogger _logger = logger;
-    private const string Tag = "ForegroundWindowInfo";
+    private const string Tag = "WindowInfo";
 
-    public ForegroundWindowDetail? GetForegroundWindowDetail()
+    public WindowDetail? GetForegroundWindowDetail()
     {
         if (!X11Interop.IsAvailable)
         {
@@ -71,12 +71,12 @@ internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForeg
         }
     }
 
-    public ForegroundWindowInfo? GetForegroundWindowInfo()
+    public WindowInfo? GetForegroundWindowInfo()
     {
         return GetForegroundWindowDetail()?.WindowInfo;
     }
 
-    public ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window)
+    public WindowDetail? GetWindowDetail(NativeWindowInfo window)
     {
         if (window is not X11NativeWindowInfo x11Window || !X11Interop.IsAvailable)
         {
@@ -105,7 +105,7 @@ internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForeg
 
     public bool TryActivateWindow(NativeWindowInfo window) => false;
 
-    private static ForegroundWindowDetail? BuildWindowDetail(nint display, X11NativeWindowInfo nativeWindow)
+    private static WindowDetail? BuildWindowDetail(nint display, X11NativeWindowInfo nativeWindow)
     {
         var window = (nint)nativeWindow.WindowId;
         if (X11Interop.XGetWindowAttributes(display, window, out var attributes) == 0)
@@ -120,7 +120,7 @@ internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForeg
         }
 
         var normalizedNativeWindow = nativeWindow with { ProcessId = currentPid };
-        return new ForegroundWindowDetail
+        return new WindowDetail
         {
             WindowInfo = WindowInfoHelper.GetWindowInfo(display, window),
             Bounds = new ScreenPosition

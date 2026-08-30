@@ -8,7 +8,7 @@ public record HotkeyBlacklistConfig
     public const string ConfigKey = "HotkeyBlacklist";
 
     public bool Enabled { get; set; }
-    public List<ForegroundWindowInfo> BlackList { get; set; } = [];
+    public List<WindowInfo> BlackList { get; set; } = [];
 
     public virtual bool Equals(HotkeyBlacklistConfig? other)
     {

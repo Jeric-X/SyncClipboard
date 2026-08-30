@@ -7,15 +7,15 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
-namespace SyncClipboard.Desktop.Utilities.ForegroundWindowInfoProvider;
+namespace SyncClipboard.Desktop.Utilities.NativeWindowController;
 
 [SupportedOSPlatform("windows")]
-internal sealed class WindowsForegroundWindowInfoProvider(ILogger logger) : IForegroundWindowInfoProvider
+internal sealed class WindowsNativeWindowController(ILogger logger) : INativeWindowController
 {
     private const string Tag = "ForegroundWindow";
     private const int SwRestore = 9;
 
-    public ForegroundWindowDetail? GetForegroundWindowDetail()
+    public WindowDetail? GetForegroundWindowDetail()
     {
         try
         {
@@ -30,12 +30,12 @@ internal sealed class WindowsForegroundWindowInfoProvider(ILogger logger) : IFor
         }
     }
 
-    public ForegroundWindowInfo? GetForegroundWindowInfo()
+    public WindowInfo? GetForegroundWindowInfo()
     {
         return GetForegroundWindowDetail()?.WindowInfo;
     }
 
-    public ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window)
+    public WindowDetail? GetWindowDetail(NativeWindowInfo window)
     {
         if (window is not WindowsNativeWindowInfo windowsWindow)
         {
@@ -78,9 +78,9 @@ internal sealed class WindowsForegroundWindowInfoProvider(ILogger logger) : IFor
                 };
             }
 
-            return new ForegroundWindowDetail
+            return new WindowDetail
             {
-                WindowInfo = new ForegroundWindowInfo
+                WindowInfo = new WindowInfo
                 {
                     ProcessName = processName,
                     WindowTitle = title.ToString(),

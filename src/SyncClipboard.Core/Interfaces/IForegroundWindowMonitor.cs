@@ -4,7 +4,7 @@ namespace SyncClipboard.Core.Interfaces;
 
 public interface IForegroundWindowMonitor
 {
-    event Action<ForegroundWindowDetail?>? ForegroundWindowChanged;
+    event Action<WindowDetail?>? ForegroundWindowChanged;
 
-    ForegroundWindowDetail? GetCurrentForegroundWindow();
+    WindowDetail? GetCurrentForegroundWindow();
 }

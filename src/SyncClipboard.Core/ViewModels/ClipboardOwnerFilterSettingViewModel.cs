@@ -48,7 +48,7 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
 
     public ObservableCollection<EditableWindowInfo> FilterList { get; } = [];
 
-    public event Action<ForegroundWindowInfo>? OnClipboardOwnerCaptured;
+    public event Action<WindowInfo>? OnClipboardOwnerCaptured;
 
     private bool _isUpdating = false;
 
@@ -99,14 +99,14 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
         _isUpdating = false;
     }
 
-    public void AddItem(ForegroundWindowInfo info)
+    public void AddItem(WindowInfo info)
     {
         if (FilterConfig.FilterMode == "") return;
         FilterList.Add(new EditableWindowInfo(info));
         SaveToConfig();
     }
 
-    public void UpdateItem(EditableWindowInfo item, ForegroundWindowInfo newInfo)
+    public void UpdateItem(EditableWindowInfo item, WindowInfo newInfo)
     {
         item.ProcessName = newInfo.ProcessName ?? "";
         item.WindowTitle = newInfo.WindowTitle ?? "";
@@ -186,7 +186,7 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
         }
         else
         {
-            OnClipboardOwnerCaptured?.Invoke(new ForegroundWindowInfo());
+            OnClipboardOwnerCaptured?.Invoke(new WindowInfo());
         }
     }
 
@@ -207,14 +207,14 @@ public partial class EditableWindowInfo : ObservableObject
 
     public bool IsEmpty => string.IsNullOrWhiteSpace(ProcessName) && string.IsNullOrWhiteSpace(WindowTitle) && string.IsNullOrWhiteSpace(ExecutableName);
 
-    public EditableWindowInfo(ForegroundWindowInfo info)
+    public EditableWindowInfo(WindowInfo info)
     {
         ProcessName = info.ProcessName ?? "";
         WindowTitle = info.WindowTitle ?? "";
         ExecutableName = info.ExecutableName ?? "";
     }
 
-    public ForegroundWindowInfo ToWindowInfo() => new()
+    public WindowInfo ToWindowInfo() => new()
     {
         ProcessName = ProcessName,
         WindowTitle = WindowTitle,

@@ -31,7 +31,6 @@ public partial class HistoryWindow : Window, IWindow
     private readonly ICaretPositionProvider _caretPositionProvider;
     private readonly ILogger _logger;
     public HistoryViewModel ViewModel => _viewModel;
-    private bool _firstShow = true;
     public HistoryWindow()
     {
         _viewModel = App.Current.Services.GetRequiredService<HistoryViewModel>();
@@ -167,57 +166,40 @@ public partial class HistoryWindow : Window, IWindow
         e.Cancel = true;
     }
 
-    public void SwitchVisible()
+    public virtual void Show(bool activate)
     {
-        if (!this.IsVisible)
+        var previousShowActivated = ShowActivated;
+        ShowActivated = activate;
+        if (!IsVisible)
         {
-            FocusOnScreen();
+            Show();
         }
-        else
+        if (WindowState == WindowState.Minimized)
         {
-            this.Close();
+            WindowState = WindowState.Normal;
         }
-    }
-
-    protected virtual void FocusOnScreen()
-    {
-        _viewModel.CapturePasteTargetBeforeShowingHistory();
-
-        if (!this.IsVisible)
-        {
-            if (!_viewModel.RepositionWindow() && _firstShow)
-            {
-                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            }
-            _firstShow = false;
-        }
-        else
-        {
-            _viewModel.RepositionWindow();
-        }
-        this.Show();
-        if (this.WindowState == WindowState.Minimized)
-        {
-            this.WindowState = WindowState.Normal;
-        }
-        this.Activate();
-
-        _SearchTextBox.Focus();
-        _SearchTextBox.SelectAll();
-        _viewModel.OnWindowShown();
-    }
-
-    void IWindow.Focus()
-    {
-        FocusOnScreen();
-    }
-
-    void IWindow.RestoreFocus()
-    {
-        if (IsVisible)
+        if (activate)
         {
             Activate();
         }
+        ShowActivated = previousShowActivated;
+    }
+
+    public new virtual void Hide()
+    {
+        ResetPointerInteractionState();
+        base.Hide();
+    }
+
+    public void CenterOnScreen(int width, int height)
+    {
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+    }
+
+    public void FocusSearch()
+    {
+        _SearchTextBox.Focus();
+        _SearchTextBox.SelectAll();
     }
 
     public void ScrollToSelectedItem()
@@ -717,54 +699,6 @@ public partial class HistoryWindow : Window, IWindow
         };
     }
 
-    public async ValueTask<IAsyncDisposable?> HideTemporarilyAsync(CancellationToken token = default)
-    {
-        return await Dispatcher.UIThread.InvokeAsync<IAsyncDisposable?>(() =>
-        {
-            token.ThrowIfCancellationRequested();
-            if (!IsVisible)
-            {
-                return null;
-            }
-
-            var wasActive = IsActive;
-            var wasTopmost = Topmost;
-            var previousShowActivated = ShowActivated;
-            var windowState = WindowState;
-            var position = Position;
-            var width = Width;
-            var height = Height;
-
-            Hide();
-            return new TemporaryHideScope(async () =>
-            {
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    Topmost = wasTopmost;
-                    WindowState = windowState;
-                    Position = position;
-                    Width = width;
-                    Height = height;
-                    ShowActivated = wasActive;
-                    Show();
-                    if (wasActive)
-                    {
-                        Activate();
-                    }
-                    ShowActivated = previousShowActivated;
-                });
-            });
-        });
-    }
-
-    private sealed class TemporaryHideScope(Func<ValueTask> restore) : IAsyncDisposable
-    {
-        private int _restored;
-
-        public ValueTask DisposeAsync() =>
-            Interlocked.Exchange(ref _restored, 1) == 0 ? restore() : ValueTask.CompletedTask;
-    }
-
     // 在 macOS 上，ViewModel 的 Width 和 Height 已经是物理像素值，不需要再乘以 RenderScaling
     private (int Width, int Height) GetPhysicalPixelSize()
     {
@@ -831,16 +765,6 @@ public partial class HistoryWindow : Window, IWindow
         if (targetScreen == null)
         {
             return false;
-        }
-
-        if (!_firstShow)
-        {
-            var currentScreen = screens.FirstOrDefault(s => s.Bounds.Contains(this.Position))
-                                ?? Screens.Primary;
-            if (currentScreen != null && currentScreen == targetScreen)
-            {
-                return true;
-            }
         }
 
         var workArea = targetScreen.WorkingArea;

@@ -8,13 +8,13 @@ namespace SyncClipboard.WinUI3.Win32;
 [SupportedOSPlatform("windows")]
 internal sealed class ClipboardOwnerProvider(
     ILogger logger,
-    IForegroundWindowInfoProvider foregroundWindowInfoProvider) : IClipboardOwnerProvider
+    INativeWindowController foregroundWindowInfoProvider) : IClipboardOwnerProvider
 {
     private readonly ILogger _logger = logger;
-    private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider = foregroundWindowInfoProvider;
+    private readonly INativeWindowController _foregroundWindowInfoProvider = foregroundWindowInfoProvider;
     private const string Tag = "ClipboardOwner";
 
-    public ForegroundWindowInfo? GetClipboardOwner()
+    public WindowInfo? GetClipboardOwner()
     {
         try
         {

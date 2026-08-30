@@ -57,7 +57,7 @@ public partial class HotkeyBlacklistPage : UserControl
         _viewModel.StopCaptureCommand.Execute(null);
     }
 
-    private void OnWindowCaptured(ForegroundWindowInfo info)
+    private void OnWindowCaptured(WindowInfo info)
     {
         _ = Dispatcher.UIThread.InvokeAsync(async () =>
         {

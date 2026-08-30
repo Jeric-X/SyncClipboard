@@ -2,7 +2,7 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.Interfaces;
 
-public interface IForegroundWindowWatcher : IDisposable
+public interface INativeForegroundWindowWatcher : IDisposable
 {
     event Action<NativeWindowInfo?>? ForegroundWindowChanged;
 

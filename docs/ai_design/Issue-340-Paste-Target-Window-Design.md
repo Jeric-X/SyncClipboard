@@ -30,9 +30,9 @@ Linux 的历史记录粘贴功能不启用前台窗口监听和恢复。Linux �
 
 设计分为五层：
 
-1. `IForegroundWindowInfoProvider` 负责读取当前前台窗口，并提供平台原生的窗口级引用；同时负责使用该引用重新激活窗口。
-2. `IForegroundWindowWatcher` 保持平台 native 职责和 `Start/Stop` 接口，但事件升级为窗口级识别，尽可能携带发生变化的原生窗口引用。
-3. `ForegroundWindowMonitorService` 是通用中间层，统一控制 watcher 的启停、通过 provider 主动查询当前前台窗口，并向业务服务提供变化事件。
+1. `INativeWindowController` 负责读取当前前台窗口，并提供平台原生的窗口级引用；同时负责使用该引用重新激活窗口。
+2. `INativeForegroundWindowWatcher` 保持平台 native 职责和 `Start/Stop` 接口，但事件升级为窗口级识别，尽可能携带发生变化的原生窗口引用。
+3. `ForegroundWindowMonitor` 是通用中间层，统一控制 watcher 的启停、通过 provider 主动查询当前前台窗口，并向业务服务提供变化事件。
 4. Windows 和 macOS 上，`ForegroundWindowTrackingService` 订阅中间层，持续保存最近一个可用的非历史窗口，供复制并粘贴功能使用；Linux 上该 tracking service 不订阅。`HotkeyBlacklistService` 在所有平台仍按配置独立订阅中间层。
 5. `HistoryViewModel.CopyToClipboard` 负责粘贴流程编排：设置剪贴板、决定历史窗口是否保持显示、恢复目标窗口、发送粘贴快捷键，以及执行临时隐藏兜底。
 
@@ -40,7 +40,7 @@ Linux 的历史记录粘贴功能不启用前台窗口监听和恢复。Linux �
 
 ### 1.1 平台原生窗口引用
 
-现有 `ForegroundWindowInfo` 只包含进程名、窗口标题和可执行文件名。这些字段适合匹配规则，但不能可靠地定位并重新激活一个具体窗口。应增加只在本次进程运行期间有效、不可序列化的平台原生窗口引用。
+现有 `WindowInfo` 只包含进程名、窗口标题和可执行文件名。这些字段适合匹配规则，但不能可靠地定位并重新激活一个具体窗口。应增加只在本次进程运行期间有效、不可序列化的平台原生窗口引用。
 
 建议定义一个不暴露平台实现细节的基类：
 
@@ -76,12 +76,12 @@ public sealed record MacNativeWindowInfo : NativeWindowInfo
 
 Windows 可以保存精确的窗口句柄。macOS 应优先使用 `NSWindow.WindowNumber`/`AXWindowNumber` 作为窗口级身份，并使用 Accessibility API 重新定位具体窗口；如果目标应用（例如部分 Electron 应用）不提供窗口身份，则以应用 PID 激活和前台确认作为降级结果。不要长期保存裸的 `AXUIElementRef`，避免所有权、释放和窗口失效问题；可以保存 PID、窗口编号、标题、窗口位置等信息，在恢复时重新枚举并匹配窗口。Linux 的 X11 Window ID 仅用于前台程序监听和快捷键黑名单，不用于历史记录粘贴目标恢复。
 
-### 1.2 扩展 `ForegroundWindowDetail`
+### 1.2 扩展 `WindowDetail`
 
 ```csharp
-public readonly struct ForegroundWindowDetail
+public readonly struct WindowDetail
 {
-    public ForegroundWindowInfo? WindowInfo { get; init; }
+    public WindowInfo? WindowInfo { get; init; }
     public ScreenPosition? Bounds { get; init; }
     public NativeWindowInfo? NativeWindowInfo { get; init; }
 }
@@ -100,11 +100,11 @@ public readonly struct ForegroundWindowDetail
 原生信息的解释和操作应留在平台 provider 内，调用者不直接判断 `HWND` 或 macOS 窗口信息。
 
 ```csharp
-public interface IForegroundWindowInfoProvider
+public interface INativeWindowController
 {
-    ForegroundWindowDetail? GetForegroundWindowDetail();
-    ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window);
-    ForegroundWindowInfo? GetForegroundWindowInfo();
+    WindowDetail? GetForegroundWindowDetail();
+    WindowDetail? GetWindowDetail(NativeWindowInfo window);
+    WindowInfo? GetForegroundWindowInfo();
 
     bool TryActivateWindow(NativeWindowInfo window);
 }
@@ -118,10 +118,10 @@ public interface IForegroundWindowInfoProvider
 
 ### 2.1 watcher 保持 native 职责并升级为窗口级事件
 
-`IForegroundWindowWatcher` 仍只负责平台 native 监听和启停，但允许调整接口以提供窗口级识别：
+`INativeForegroundWindowWatcher` 仍只负责平台 native 监听和启停，但允许调整接口以提供窗口级识别：
 
 ```csharp
-public interface IForegroundWindowWatcher : IDisposable
+public interface INativeForegroundWindowWatcher : IDisposable
 {
     event Action<NativeWindowInfo?>? ForegroundWindowChanged;
 
@@ -145,17 +145,17 @@ public interface IForegroundWindowWatcher : IDisposable
 
 ### 2.2 新增通用中间层
 
-新增 `ForegroundWindowMonitorService`，作为 `IForegroundWindowWatcher` 和业务服务之间的唯一入口：
+新增 `ForegroundWindowMonitor`，作为 `INativeForegroundWindowWatcher` 和业务服务之间的唯一入口：
 
 ```csharp
 public interface IForegroundWindowMonitor
 {
-    ForegroundWindowDetail? GetCurrentForegroundWindow();
+    WindowDetail? GetCurrentForegroundWindow();
 
-    event Action<ForegroundWindowDetail?>? ForegroundWindowChanged;
+    event Action<WindowDetail?>? ForegroundWindowChanged;
 }
 
-public sealed class ForegroundWindowMonitorService
+public sealed class ForegroundWindowMonitor
     : IForegroundWindowMonitor, IDisposable
 {
     // 具体实现省略
@@ -164,7 +164,7 @@ public sealed class ForegroundWindowMonitorService
 
 中间层职责：
 
-- 持有 singleton `IForegroundWindowWatcher` 和 `IForegroundWindowInfoProvider`。
+- 持有 singleton `INativeForegroundWindowWatcher` 和 `INativeWindowController`。
 - 统一订阅 watcher 的原始变化事件。
 - 每次收到通知时只调用一次 provider：有 native 事件窗口时调用 `GetWindowDetail`，没有时调用 `GetForegroundWindowDetail`，生成完整快照。
 - 提供 `GetCurrentForegroundWindow()`，供新订阅者主动读取当前快照。
@@ -173,7 +173,7 @@ public sealed class ForegroundWindowMonitorService
 
 订阅事件本身不立即向新订阅者推送当前窗口。需要初始化状态的业务服务必须采用“先订阅，再主动调用 `GetCurrentForegroundWindow()`”的方式；之后只处理新的变化事件。主动读取时 monitor 调用 provider，读取失败或 provider 抛出异常时记录日志并返回 `null`，且不因此触发变化事件。
 
-其他服务只能注入 `IForegroundWindowMonitor`，不能直接注入 `IForegroundWindowWatcher`。native watcher 的 `Start/Stop` 使用方式保持不变，但事件可以升级为携带窗口级原生信息；其使用范围被限制在中间层内部。
+其他服务只能注入 `IForegroundWindowMonitor`，不能直接注入 `INativeForegroundWindowWatcher`。native watcher 的 `Start/Stop` 使用方式保持不变，但事件可以升级为携带窗口级原生信息；其使用范围被限制在中间层内部。
 
 ### 2.3 中间层根据业务订阅状态控制 watcher
 
@@ -188,10 +188,10 @@ public sealed class ForegroundWindowMonitorService
 
 ```csharp
 private readonly object _syncRoot = new();
-private Action<ForegroundWindowDetail?>? _foregroundWindowChanged;
+private Action<WindowDetail?>? _foregroundWindowChanged;
 private bool _isWatching;
 
-public event Action<ForegroundWindowDetail?>? ForegroundWindowChanged
+public event Action<WindowDetail?>? ForegroundWindowChanged
 {
     add
     {
@@ -262,7 +262,7 @@ private void StopWatchingLocked()
 ```csharp
 private void OnNativeForegroundWindowChanged(NativeWindowInfo? nativeWindow)
 {
-    ForegroundWindowDetail? snapshot;
+    WindowDetail? snapshot;
     try
     {
         snapshot = nativeWindow is null
@@ -286,7 +286,7 @@ private void OnNativeForegroundWindowChanged(NativeWindowInfo? nativeWindow)
     {
         try
         {
-            ((Action<ForegroundWindowDetail?>)callback)(snapshot);
+            ((Action<WindowDetail?>)callback)(snapshot);
         }
         catch (Exception ex)
         {
@@ -303,13 +303,13 @@ private void OnNativeForegroundWindowChanged(NativeWindowInfo? nativeWindow)
 ```csharp
 public sealed class ForegroundWindowTrackingService : Service
 {
-    public ForegroundWindowDetail? LastExternalWindow { get; }
+    public WindowDetail? LastExternalWindow { get; }
 
     public bool TryActivateLastExternalWindow();
 }
 ```
 
-它只依赖 `IForegroundWindowMonitor` 和 `IForegroundWindowInfoProvider`：
+它只依赖 `IForegroundWindowMonitor` 和 `INativeWindowController`：
 
 - 服务启动时先订阅中间层，再主动调用 `GetCurrentForegroundWindow()` 初始化目标；停止时退订。
 - 每次变化时判断窗口是否为 SyncClipboard 历史窗口。
@@ -398,7 +398,7 @@ private async Task PasteToLastExternalWindowAsync(CancellationToken token)
     {
         ClearSelectedItem();
         window.ScrollToTop();
-        window.Close();
+        window.Hide();
     }
 
     if (foregroundWindowTrackingService
@@ -440,29 +440,28 @@ private async Task PasteToLastExternalWindowAsync(CancellationToken token)
 
 兜底步骤：
 
-1. 记录历史窗口是否可见、是否置顶，以及必要的选择和滚动状态。
-2. 临时隐藏历史窗口，而不是执行用户语义上的永久关闭。
-3. 给系统一次焦点回退机会，并确认历史窗口已经不再持有前台；可以不确认具体目标，但如果仍明确识别为历史窗口则不能发送粘贴键。
+1. ViewModel 读取历史窗口是否可见、是否处于活动状态。
+2. ViewModel 调用基础 `Hide()` 隐藏历史窗口。
+3. 给系统一次焦点回退机会；允许无法确认具体目标，但不能在历史窗口仍然可见时发送粘贴键。
 4. 发送 `Ctrl+V` / `Cmd+V`。
 5. 等待模拟键盘事件发送完成。
-6. 如果操作前历史窗口应保持显示，则在 `finally` 中恢复历史窗口。
-7. 尽量恢复临时隐藏前的可见性、置顶、窗口状态、位置、尺寸和激活状态；无法完全恢复的平台按能力尽力恢复。
+6. ViewModel 在 `finally` 中调用 `Show(wasActive)` 恢复历史窗口及其原有激活状态。
 
-`IWindow.Close()` 当前在不同 UI 实现中实际会转换成隐藏，但它表达的是用户关闭语义，也可能触发选择清理和失焦逻辑。建议增加明确的临时隐藏 API：
+窗口的显示编排属于 ViewModel。`IWindow` 只提供 UI 框架层的基础能力：
 
 ```csharp
 public interface IWindow
 {
-    // 现有成员省略
-
-    ValueTask<IAsyncDisposable?> HideTemporarilyAsync(
-        CancellationToken token = default);
+    bool IsVisible { get; }
+    bool IsActive { get; }
+    void Show(bool activate);
+    void Hide();
 }
 ```
 
-返回的 scope 保存平台需要的原始窗口状态，`DisposeAsync()` 负责恢复且必须幂等。恢复动作放在 `finally` 中，保证粘贴发送或取消过程中发生异常也不会让历史窗口永久消失。
+`HistoryViewModel.RunTemporarilyHiddenAsync` 负责检查窗口是否可见、记录原有激活状态、隐藏、执行操作，并在内部的 `finally` 中恢复。返回 `false` 表示窗口当时不可见；粘贴发送或取消过程中发生异常也不会让历史窗口永久消失。
 
-恢复时应以临时隐藏前的状态为准，而不是固定使用“显示但不激活”：如果历史窗口原本处于活动状态，可在所有模拟按键释放后重新激活；如果原本没有激活，则只恢复显示。窗口最大化、最小化、普通状态、位置、尺寸和 `Topmost` 均按平台能力尽量保持。
+恢复时应以临时隐藏前的激活状态为准，而不是固定使用“显示但不激活”：如果历史窗口原本处于活动状态，可在所有模拟按键释放后重新激活；如果原本没有激活，则只恢复显示。窗口实例没有销毁，因此位置、尺寸、`Topmost` 和窗口状态由底层 UI 框架自然保留，不在业务层重复记录。
 
 Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，则不执行恢复步骤。Linux 的复制并粘贴路径始终是临时隐藏，因此完成后恢复隐藏前状态。
 
@@ -512,47 +511,49 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 
 ### Core
 
-- `Models/ForegroundWindowDetail.cs`
+- `Models/WindowDetail.cs`
   - 增加 `NativeWindowInfo`。
 - `Models/NativeWindowInfo.cs`
   - 新增运行时平台窗口引用基类。
-- `Interfaces/IForegroundWindowInfoProvider.cs`
+- `Interfaces/INativeWindowController.cs`
   - 增加返回 `bool` 的窗口激活方法，失败日志由 provider 自己记录。
-- `Interfaces/IForegroundWindowWatcher.cs` 及平台实现
+- `Interfaces/INativeForegroundWindowWatcher.cs` 及平台实现
   - 保持 native 监听职责和 `Start/Stop`。
   - 事件增加窗口级 `NativeWindowInfo`，native 事件直接转发不去重，轮询按窗口级身份去重。
-- 新增 `IForegroundWindowMonitor` 和 `ForegroundWindowMonitorService`
+- 新增 `IForegroundWindowMonitor` 和 `ForegroundWindowMonitor`
   - 统一控制 watcher 的 `Start/Stop`。
   - 提供主动读取当前前台窗口快照的方法及变化事件。
   - 保持原始回调线程，读取失败广播 `null`，并隔离每个业务回调的异常。
 - `Interfaces/IWindow.cs`
-  - 提供保存原状态的临时隐藏 scope，并在释放 scope 时尽力恢复。
+  - 只提供 `Show(bool activate)`、`Hide()`、可见性/激活状态和定位等 UI 框架基础能力。
 - 新增 `ForegroundWindowTrackingService`。
 - `HotkeyBlacklistService`
   - 独立订阅 foreground window monitor，不再直接操作 watcher 或 provider。
 - `HistoryViewModel`
   - 注入 tracking service。
   - 重构 `CopyToClipboard` 的窗口恢复和兜底流程。
+  - 提供 `ShowWithAutoPosition` 和 `SwitchVisible`，统一编排显示、自动定位、搜索框聚焦和显示前目标捕获。
+  - 负责临时隐藏操作，并在 `finally` 中按原激活状态恢复窗口。
   - 保留 `CloseWhenLostFocus` 和现有 `OnLostFocus` 判断。
 - `AppCore.ConfigCommonService`
-  - 将 `ForegroundWindowMonitorService` 注册为 singleton `IForegroundWindowMonitor`。
+  - 将 `ForegroundWindowMonitor` 注册为 singleton `IForegroundWindowMonitor`。
 - `AppCore.ConfigurateUserService`
   - 注册并启动 `ForegroundWindowTrackingService`。
 
 ### 平台项目
 
-- WinUI3 `ForegroundWindowInfoProvider`
+- WinUI3 `Win32NativeWindowController`
   - 返回 `HWND` 原生信息，实现验证和激活。
-- Avalonia Windows `WindowsForegroundWindowInfoProvider`
+- Avalonia Windows `WindowsNativeWindowController`
   - 同上。
-- Avalonia Linux `LinuxForegroundWindowInfoProvider`
+- Avalonia Linux `LinuxNativeWindowController`
   - 保留前台窗口身份、描述和边界读取供快捷键黑名单使用，但不实现窗口激活。
 - Avalonia Linux `PollingForegroundWindowWatcher`
   - 仍可由快捷键黑名单通过 monitor 启停；历史记录粘贴目标 tracking 不订阅。
-- macOS `MacForegroundWindowInfoProvider`
+- macOS `MacNativeWindowController`
   - 返回 PID 和窗口级匹配信息，实现应用/窗口激活。
 - Avalonia、WinUI3、macOS 历史窗口
-  - 实现临时隐藏 scope，并尽量恢复隐藏前的完整窗口状态。
+  - 仅实现 `Show(bool activate)`、`Hide()`、定位和搜索框聚焦等底层窗口能力。
 
 ## 6. 测试方案
 
@@ -574,14 +575,14 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 12. monitor 的第一个业务订阅者加入时只启动一次 native watcher，最后一个业务订阅者移除时只停止一次。
 13. 多个业务服务独立退订 monitor 时，不会提前停止 native watcher。
 14. monitor 的事件回调内部退订不会死锁，也不会破坏其他订阅者。
-15. 每次 native 变化只读取一次 provider，所有业务订阅者收到同一个 `ForegroundWindowDetail` 快照。
+15. 每次 native 变化只读取一次 provider，所有业务订阅者收到同一个 `WindowDetail` 快照。
 16. 新订阅者不会立即收到事件；主动调用 `GetCurrentForegroundWindow()` 才获得当前快照。
 17. provider 读取失败时所有订阅者收到 `null`。
 18. 一个订阅者抛出异常时，其余订阅者仍能收到相同事件。
 19. monitor 不切换线程，业务回调运行在 native watcher 的原始回调线程。
 20. native watcher 连续报告同一个窗口时，monitor 仍逐次转发；轮询 watcher 只过滤窗口身份完全相同的轮询结果。
 21. 只排除历史窗口；同进程内其他 SyncClipboard 窗口仍可被记录。
-22. 临时隐藏 scope 在正常、异常和取消路径上都恢复原有窗口状态，恢复操作可重复调用。
+22. ViewModel 的临时隐藏流程在正常、异常和取消路径上都恢复原有窗口可见性和激活状态。
 23. Linux 的历史记录粘贴 tracking 不订阅 monitor，复制并粘贴始终按“隐藏、粘贴、恢复”执行；快捷键黑名单仍能按需启动 watcher。
 
 建议为 `VirtualKeyboard` 增加接口或将粘贴发送器抽象化，以便测试调用顺序、直接激活路径和“目标无法确认但临时隐藏成功时仍发送粘贴键”的兜底路径。
@@ -607,5 +608,5 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 7. 仅历史窗口自身被排除，同一进程的其他窗口不被误排除。
 8. monitor 不切换线程、不串行化事件、不对 native 事件额外去重；读取失败广播 `null`，并隔离订阅者异常。
 9. provider 激活接口只返回 `bool`，失败原因由平台 provider 写入日志。
-10. 临时隐藏后的恢复尽量保持原有可见性、置顶、窗口状态、位置、尺寸和激活状态。
+10. 临时隐藏后恢复原有可见性和激活状态；同一窗口实例的位置、尺寸、置顶和窗口状态由 UI 框架自然保留。
 11. Linux 的历史记录粘贴功能不监听或激活前台窗口；复制并粘贴始终临时隐藏历史窗口，完成模拟粘贴后恢复。全局快捷键黑名单仍可独立监听前台程序。

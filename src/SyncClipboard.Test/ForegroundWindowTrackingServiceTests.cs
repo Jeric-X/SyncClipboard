@@ -1,7 +1,7 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.UserServices;
-using static SyncClipboard.Test.ForegroundWindowMonitorServiceTests;
+using static SyncClipboard.Test.ForegroundWindowMonitorTests;
 
 namespace SyncClipboard.Test;
 
@@ -271,29 +271,29 @@ public class ForegroundWindowTrackingServiceTests
 
     private sealed class FakeMonitor : IForegroundWindowMonitor
     {
-        private Action<ForegroundWindowDetail?>? _foregroundWindowChanged;
+        private Action<WindowDetail?>? _foregroundWindowChanged;
 
-        public ForegroundWindowDetail? Current { get; set; }
+        public WindowDetail? Current { get; set; }
         public int CurrentReadCount { get; private set; }
         public int SubscriberCount => _foregroundWindowChanged?.GetInvocationList().Length ?? 0;
 
-        public event Action<ForegroundWindowDetail?>? ForegroundWindowChanged
+        public event Action<WindowDetail?>? ForegroundWindowChanged
         {
             add => _foregroundWindowChanged += value;
             remove => _foregroundWindowChanged -= value;
         }
 
-        public ForegroundWindowDetail? GetCurrentForegroundWindow()
+        public WindowDetail? GetCurrentForegroundWindow()
         {
             CurrentReadCount++;
             return Current;
         }
 
-        public void Raise(ForegroundWindowDetail? detail) => _foregroundWindowChanged?.Invoke(detail);
+        public void Raise(WindowDetail? detail) => _foregroundWindowChanged?.Invoke(detail);
     }
 
     private static ForegroundWindowTrackingService CreateService(
         IForegroundWindowMonitor monitor,
-        IForegroundWindowInfoProvider provider) =>
+        INativeWindowController provider) =>
         new(monitor, provider, new FakeLogger(), trackingEnabled: true);
 }

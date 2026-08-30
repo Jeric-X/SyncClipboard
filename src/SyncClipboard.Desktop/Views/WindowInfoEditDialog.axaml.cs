@@ -28,14 +28,14 @@ public partial class WindowInfoEditDialog : ContentDialog
         set => _ExecutableName.Text = value;
     }
 
-    public ForegroundWindowInfo GetWindowInfo() => new()
+    public WindowInfo GetWindowInfo() => new()
     {
         ProcessName = ProcessName,
         WindowTitle = WindowTitle,
         ExecutableName = ExecutableName
     };
 
-    public void SetWindowInfo(ForegroundWindowInfo info)
+    public void SetWindowInfo(WindowInfo info)
     {
         ProcessName = info.ProcessName ?? "";
         WindowTitle = info.WindowTitle ?? "";

@@ -7,18 +7,18 @@ public sealed class ForegroundWindowTrackingService : Service
 {
     private const string Tag = "ForegroundWindowTracking";
     private readonly IForegroundWindowMonitor _monitor;
-    private readonly IForegroundWindowInfoProvider _provider;
+    private readonly INativeWindowController _provider;
     private readonly ILogger _logger;
     private readonly bool _trackingEnabled;
     private readonly object _syncRoot = new();
-    private ForegroundWindowDetail? _lastExternalWindow;
-    private ForegroundWindowDetail? _previousExternalWindow;
+    private WindowDetail? _currentPasteTargetWindow;
+    private WindowDetail? _previousPasteTargetWindow;
     private NativeWindowInfo? _historyWindow;
     private NativeWindowInfo? _lastActivationTarget;
 
     public ForegroundWindowTrackingService(
         IForegroundWindowMonitor monitor,
-        IForegroundWindowInfoProvider provider,
+        INativeWindowController provider,
         ILogger logger)
         : this(monitor, provider, logger, !OperatingSystem.IsLinux())
     {
@@ -26,7 +26,7 @@ public sealed class ForegroundWindowTrackingService : Service
 
     internal ForegroundWindowTrackingService(
         IForegroundWindowMonitor monitor,
-        IForegroundWindowInfoProvider provider,
+        INativeWindowController provider,
         ILogger logger,
         bool trackingEnabled)
     {
@@ -36,13 +36,13 @@ public sealed class ForegroundWindowTrackingService : Service
         _trackingEnabled = trackingEnabled;
     }
 
-    public ForegroundWindowDetail? LastExternalWindow
+    public WindowDetail? LastExternalWindow
     {
         get
         {
             lock (_syncRoot)
             {
-                return _lastExternalWindow;
+                return _currentPasteTargetWindow;
             }
         }
     }
@@ -91,11 +91,11 @@ public sealed class ForegroundWindowTrackingService : Service
         lock (_syncRoot)
         {
             _historyWindow = historyWindow;
-            if (_lastExternalWindow?.NativeWindowInfo is { } last
+            if (_currentPasteTargetWindow?.NativeWindowInfo is { } last
                 && IsHistoryWindow(historyWindow, last))
             {
-                _lastExternalWindow = _previousExternalWindow;
-                _previousExternalWindow = null;
+                _currentPasteTargetWindow = _previousPasteTargetWindow;
+                _previousPasteTargetWindow = null;
             }
         }
 
@@ -107,7 +107,7 @@ public sealed class ForegroundWindowTrackingService : Service
         NativeWindowInfo? target;
         lock (_syncRoot)
         {
-            target = _lastExternalWindow?.NativeWindowInfo;
+            target = _currentPasteTargetWindow?.NativeWindowInfo;
             _lastActivationTarget = target;
         }
 
@@ -199,7 +199,7 @@ public sealed class ForegroundWindowTrackingService : Service
         }
     }
 
-    private void OnForegroundWindowChanged(ForegroundWindowDetail? detail)
+    private void OnForegroundWindowChanged(WindowDetail? detail)
     {
         if (detail?.NativeWindowInfo is not { } nativeWindow)
         {
@@ -215,12 +215,12 @@ public sealed class ForegroundWindowTrackingService : Service
                 return;
             }
 
-            if (_lastExternalWindow?.NativeWindowInfo is { } previous
+            if (_currentPasteTargetWindow?.NativeWindowInfo is { } previous
                 && !previous.IsSameWindow(nativeWindow))
             {
-                _previousExternalWindow = _lastExternalWindow;
+                _previousPasteTargetWindow = _currentPasteTargetWindow;
             }
-            _lastExternalWindow = detail;
+            _currentPasteTargetWindow = detail;
         }
 
         _logger.Write(Tag, $"Recorded paste target: {DescribeWindow(nativeWindow)}.");

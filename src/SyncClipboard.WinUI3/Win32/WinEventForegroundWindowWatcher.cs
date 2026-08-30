@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace SyncClipboard.WinUI3.Win32;
 
-internal sealed class WinEventForegroundWindowWatcher : IForegroundWindowWatcher
+internal sealed class WinEventForegroundWindowWatcher : INativeForegroundWindowWatcher
 {
     private const uint EventSystemForeground = 0x0003;
     private const uint WineventOutOfContext = 0;

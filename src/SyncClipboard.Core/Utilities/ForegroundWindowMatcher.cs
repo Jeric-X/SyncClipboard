@@ -4,7 +4,7 @@ namespace SyncClipboard.Core.Utilities;
 
 public static class ForegroundWindowMatcher
 {
-    public static bool Matches(ForegroundWindowInfo filter, ForegroundWindowInfo target)
+    public static bool Matches(WindowInfo filter, WindowInfo target)
     {
         if (!string.IsNullOrEmpty(filter.ProcessName) && filter.ProcessName != target.ProcessName)
         {

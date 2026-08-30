@@ -5,7 +5,7 @@ using SyncClipboard.Core.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
-public class ForegroundWindowMonitorServiceTests
+public class ForegroundWindowMonitorTests
 {
     [TestMethod]
     public void Subscribers_ControlNativeWatcherLifetime()
@@ -13,8 +13,8 @@ public class ForegroundWindowMonitorServiceTests
         var watcher = new FakeWatcher();
         using var monitor = CreateMonitor(watcher, new FakeProvider());
 
-        static void First(ForegroundWindowDetail? _) { }
-        static void Second(ForegroundWindowDetail? _) { }
+        static void First(WindowDetail? _) { }
+        static void Second(WindowDetail? _) { }
 
         monitor.ForegroundWindowChanged += First;
         monitor.ForegroundWindowChanged += Second;
@@ -78,8 +78,8 @@ public class ForegroundWindowMonitorServiceTests
         var watcher = new FakeWatcher();
         var provider = new FakeProvider { ThrowWhenReadingNativeWindow = true };
         var logger = new FakeLogger();
-        using var monitor = new ForegroundWindowMonitorService(watcher, provider, logger);
-        ForegroundWindowDetail? received = CreateDetail(1, (nint)1, "sentinel");
+        using var monitor = new ForegroundWindowMonitor(watcher, provider, logger);
+        WindowDetail? received = CreateDetail(1, (nint)1, "sentinel");
         monitor.ForegroundWindowChanged += _ => throw new InvalidOperationException("subscriber failed");
         monitor.ForegroundWindowChanged += detail => received = detail;
 
@@ -90,7 +90,7 @@ public class ForegroundWindowMonitorServiceTests
         Assert.IsTrue(logger.Messages.Any(message => message.Contains("subscriber failed")));
     }
 
-    private static ForegroundWindowMonitorService CreateMonitor(FakeWatcher watcher, FakeProvider provider) =>
+    private static ForegroundWindowMonitor CreateMonitor(FakeWatcher watcher, FakeProvider provider) =>
         new(watcher, provider, new FakeLogger());
 
     internal static WindowsNativeWindowInfo CreateNativeWindow(int processId, nint handle) => new()
@@ -99,13 +99,13 @@ public class ForegroundWindowMonitorServiceTests
         WindowHandle = handle
     };
 
-    internal static ForegroundWindowDetail CreateDetail(int processId, nint handle, string title) =>
+    internal static WindowDetail CreateDetail(int processId, nint handle, string title) =>
         CreateDetail(CreateNativeWindow(processId, handle), title);
 
-    internal static ForegroundWindowDetail CreateDetail(NativeWindowInfo nativeWindow, string title) => new()
+    internal static WindowDetail CreateDetail(NativeWindowInfo nativeWindow, string title) => new()
     {
         NativeWindowInfo = nativeWindow,
-        WindowInfo = new ForegroundWindowInfo
+        WindowInfo = new WindowInfo
         {
             ProcessName = "test",
             ExecutableName = "test.exe",
@@ -113,7 +113,7 @@ public class ForegroundWindowMonitorServiceTests
         }
     };
 
-    internal sealed class FakeWatcher : IForegroundWindowWatcher
+    internal sealed class FakeWatcher : INativeForegroundWindowWatcher
     {
         public int StartCount { get; private set; }
         public int StopCount { get; private set; }
@@ -125,19 +125,19 @@ public class ForegroundWindowMonitorServiceTests
         public void Dispose() { }
     }
 
-    internal sealed class FakeProvider : IForegroundWindowInfoProvider
+    internal sealed class FakeProvider : INativeWindowController
     {
-        public ForegroundWindowDetail? Current { get; set; }
-        public ForegroundWindowDetail? DetailForNativeWindow { get; set; }
+        public WindowDetail? Current { get; set; }
+        public WindowDetail? DetailForNativeWindow { get; set; }
         public bool ThrowWhenReadingNativeWindow { get; set; }
         public int NativeReadCount { get; private set; }
         public NativeWindowInfo? ActivatedWindow { get; private set; }
         public bool ActivationResult { get; set; } = true;
 
-        public ForegroundWindowDetail? GetForegroundWindowDetail() => Current;
-        public ForegroundWindowInfo? GetForegroundWindowInfo() => Current?.WindowInfo;
+        public WindowDetail? GetForegroundWindowDetail() => Current;
+        public WindowInfo? GetForegroundWindowInfo() => Current?.WindowInfo;
 
-        public ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window)
+        public WindowDetail? GetWindowDetail(NativeWindowInfo window)
         {
             NativeReadCount++;
             if (ThrowWhenReadingNativeWindow)

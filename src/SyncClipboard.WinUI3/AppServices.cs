@@ -40,8 +40,8 @@ public class AppServices
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<INativeHotkeyRegistry>(sp => new NativeHotkeyRegistry((MainWindow)sp.GetRequiredService<IMainWindow>()));
         services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
-        services.AddSingleton<IForegroundWindowInfoProvider, ForegroundWindowInfoProvider>();
-        services.AddSingleton<IForegroundWindowWatcher, WinEventForegroundWindowWatcher>();
+        services.AddSingleton<INativeWindowController, Win32NativeWindowController>();
+        services.AddSingleton<INativeForegroundWindowWatcher, WinEventForegroundWindowWatcher>();
         services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
         services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
         services.AddTransient<ICurrentSelectedContentProvider, CurrentSelectedContentProvider>();

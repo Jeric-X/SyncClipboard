@@ -9,7 +9,7 @@ namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 internal sealed class MacForegroundWindowWatcher(
     IThreadDispatcher threadDispatcher,
-    IForegroundWindowInfoProvider foregroundWindowInfoProvider) : IForegroundWindowWatcher
+    INativeWindowController foregroundWindowInfoProvider) : INativeForegroundWindowWatcher
 {
     private readonly IThreadDispatcher _threadDispatcher = threadDispatcher;
     private NSObject? _observer;

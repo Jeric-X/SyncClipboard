@@ -25,11 +25,9 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class HistoryViewModel : ObservableObject
 {
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan ForegroundActivationTimeout = TimeSpan.FromMilliseconds(300);
-    private static readonly TimeSpan ForegroundCheckInterval = TimeSpan.FromMilliseconds(20);
-    private static readonly TimeSpan PasteDispatchDelay = TimeSpan.FromMilliseconds(150);
 
     private IWindow window = null!;
+    private bool _hasShownWindow;
 
     [ObservableProperty]
     private bool showInfoBar = false;
@@ -51,7 +49,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly IProfileEnv profileEnv;
     private readonly HistoryService _historyService;
     private readonly ICaretPositionProvider _caretPositionProvider;
-    private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider;
+    private readonly INativeWindowController _foregroundWindowInfoProvider;
     private readonly IMousePositionProvider _mousePositionProvider;
     private readonly IServiceProvider _serviceProvider;
     private readonly ForegroundWindowTrackingService _foregroundWindowTrackingService;
@@ -133,7 +131,7 @@ public partial class HistoryViewModel : ObservableObject
         HistoryTransferQueue transferQueue,
         IThreadDispatcher threadDispatcher,
         ICaretPositionProvider caretPositionProvider,
-        IForegroundWindowInfoProvider foregroundWindowInfoProvider,
+        INativeWindowController foregroundWindowInfoProvider,
         IMousePositionProvider mousePositionProvider,
         ForegroundWindowTrackingService foregroundWindowTrackingService,
         IServiceProvider serviceProvider)
@@ -456,7 +454,7 @@ public partial class HistoryViewModel : ObservableObject
         return _caretPositionProvider.GetCaretPosition();
     }
 
-    public ForegroundWindowDetail? GetForegroundWindowInfo()
+    public WindowDetail? GetForegroundWindowInfo()
     {
         return _foregroundWindowInfoProvider.GetForegroundWindowDetail();
     }
@@ -539,7 +537,7 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public void Close()
     {
-        window?.Close();
+        window?.Hide();
     }
 
     private int _isLoadTaskRunning = 0;
@@ -775,9 +773,45 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    public void CapturePasteTargetBeforeShowingHistory()
+    public void OnBeforeShownWindow()
+    {
+        CapturePasteTargetBeforeShowingHistory();
+    }
+
+    private void CapturePasteTargetBeforeShowingHistory()
     {
         _foregroundWindowTrackingService.CaptureCurrentForegroundWindow();
+    }
+
+    public void ShowWithAutoPosition()
+    {
+        OnBeforeShownWindow();
+
+        var wasVisible = window.IsVisible;
+        if (wasVisible)
+        {
+            RepositionWindow();
+        }
+        else if (!RepositionWindow() && !_hasShownWindow)
+        {
+            window.CenterOnScreen(Width, Height);
+        }
+
+        window.Show(activate: true);
+        window.FocusSearch();
+        OnWindowShown();
+        _hasShownWindow = true;
+    }
+
+    public void SwitchVisible()
+    {
+        if (window.IsVisible)
+        {
+            window.Hide();
+            return;
+        }
+
+        ShowWithAutoPosition();
     }
 
     public void NavigateToLast()
@@ -845,7 +879,7 @@ public partial class HistoryViewModel : ObservableObject
                 return true;
 
             case Key.Esc:
-                window?.Close();
+                window?.Hide();
                 return true;
 
             default:
@@ -1340,164 +1374,6 @@ public partial class HistoryViewModel : ObservableObject
         _transferQueue.CancelUpload(profileId);
     }
 
-    public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
-    {
-        var historyRecord = record.ToHistoryRecord();
-        var profile = historyRecord.ToProfile();
-        var valid = await profile.IsLocalDataValid(true, token);
-        if (!valid)
-        {
-            historyRecord.IsLocalFileReady = false;
-            await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
-
-            ShowWindowToastInfo(I18n.Strings.UnableToCopyByMissingFile);
-            return;
-        }
-
-        if (!paste)
-        {
-            CloseHistoryWindowAfterCopyIfNeeded();
-            await localClipboardSetter.Set(profile, token);
-            return;
-        }
-
-        await localClipboardSetter.Set(profile, token);
-        await PasteToLastExternalWindowAsync(token);
-    }
-
-    private void CloseHistoryWindowAfterCopyIfNeeded()
-    {
-        if (IsTopmost)
-        {
-            return;
-        }
-
-        ClearSelectedItem();
-        window.ScrollToTop();
-        window.Close();
-    }
-
-    private async Task PasteToLastExternalWindowAsync(CancellationToken token)
-    {
-        if (OperatingSystem.IsLinux())
-        {
-            await PasteWithTemporarilyHiddenHistoryWindowOnLinuxAsync(token);
-            return;
-        }
-
-        var keepHistoryVisible = IsTopmost;
-        if (!keepHistoryVisible)
-        {
-            ClearSelectedItem();
-            window.ScrollToTop();
-            window.Close();
-        }
-
-        var activationRequested = _foregroundWindowTrackingService.TryActivateLastExternalWindow();
-        if (activationRequested)
-        {
-            if (await WaitForConditionAsync(
-                _foregroundWindowTrackingService.IsLastActivationTargetForeground,
-                ForegroundActivationTimeout,
-                token))
-            {
-                logger.Write("Paste target became foreground; sending paste shortcut.");
-                keyboard.Paste();
-                if (keepHistoryVisible)
-                {
-                    // Native key events are consumed asynchronously on macOS. Do not
-                    // take focus back until the target has received the full shortcut.
-                    await Task.Delay(PasteDispatchDelay, CancellationToken.None);
-                    window.RestoreFocus();
-                    logger.Write("History window focus restored after paste.");
-                }
-                return;
-            }
-
-            logger.Write("Foreground window activation was accepted but could not be confirmed; using paste fallback.");
-        }
-
-        if (!keepHistoryVisible)
-        {
-            await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
-            return;
-        }
-
-        var hideScope = await window.HideTemporarilyAsync(token);
-        if (hideScope is null)
-        {
-            logger.Write("Paste fallback was canceled because the history window could not be hidden.");
-            return;
-        }
-
-        await using (hideScope)
-        {
-            logger.Write("History window hidden for paste fallback.");
-            await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
-        }
-        logger.Write("History window restored after paste fallback.");
-    }
-
-    private async Task PasteWithTemporarilyHiddenHistoryWindowOnLinuxAsync(CancellationToken token)
-    {
-        var hideScope = await window.HideTemporarilyAsync(token);
-        if (hideScope is null)
-        {
-            logger.Write("Linux paste was canceled because the history window could not be hidden.");
-            return;
-        }
-
-        await using (hideScope)
-        {
-            logger.Write("History window hidden for Linux paste.");
-            await Task.Delay(GetPasteDelayAfterWindowHidden(), token);
-            keyboard.Paste();
-            await Task.Delay(PasteDispatchDelay, CancellationToken.None);
-            logger.Write("Linux paste dispatch delay completed.");
-        }
-        logger.Write("History window restored after Linux paste.");
-    }
-
-    private async Task PasteAfterHistoryWindowHiddenOrClosedAsync(CancellationToken token)
-    {
-        await Task.Delay(GetPasteDelayAfterWindowHidden(), token);
-        logger.Write("History window hidden or closed; sending fallback paste shortcut.");
-        keyboard.Paste();
-        // SharpHook posts native keyboard events synchronously, but macOS handles
-        // them asynchronously. Keep the history window hidden until the target
-        // has had enough time to consume the complete key-down/key-up sequence.
-        await Task.Delay(PasteDispatchDelay, CancellationToken.None);
-        logger.Write("Fallback paste dispatch delay completed.");
-    }
-
-    private TimeSpan GetPasteDelayAfterWindowHidden()
-    {
-        var milliseconds = runtimeConfig
-            .GetConfig<HistoryWindowConfig>()
-            .PasteDelayAfterWindowHiddenMilliseconds;
-        return TimeSpan.FromMilliseconds(Math.Max(0, milliseconds));
-    }
-
-    private static async Task<bool> WaitForConditionAsync(
-        Func<bool> condition,
-        TimeSpan timeout,
-        CancellationToken token)
-    {
-        var deadline = DateTime.UtcNow + timeout;
-        do
-        {
-            if (condition())
-            {
-                return true;
-            }
-
-            await Task.Delay(ForegroundCheckInterval, token);
-        }
-        while (DateTime.UtcNow < deadline);
-
-        return condition();
-    }
-
     public void OnGotFocus()
     {
         _remainWindowForViewDetail = false;
@@ -1509,7 +1385,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         if (!_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
-            window.Close();
+            window.Hide();
         }
     }
 

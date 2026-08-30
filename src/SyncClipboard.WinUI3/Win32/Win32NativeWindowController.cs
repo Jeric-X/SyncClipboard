@@ -5,13 +5,13 @@ using System.Threading;
 
 namespace SyncClipboard.WinUI3.Win32;
 
-internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForegroundWindowInfoProvider
+internal sealed class Win32NativeWindowController(ILogger logger) : INativeWindowController
 {
     private readonly ILogger _logger = logger;
     private const string Tag = "ForegroundWindow";
     private const int SwRestore = 9;
 
-    public ForegroundWindowDetail? GetForegroundWindowDetail()
+    public WindowDetail? GetForegroundWindowDetail()
     {
         try
         {
@@ -36,12 +36,12 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
         }
     }
 
-    public ForegroundWindowInfo? GetForegroundWindowInfo()
+    public WindowInfo? GetForegroundWindowInfo()
     {
         return GetForegroundWindowDetail()?.WindowInfo;
     }
 
-    public ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window)
+    public WindowDetail? GetWindowDetail(NativeWindowInfo window)
     {
         if (window is not WindowsNativeWindowInfo windowsWindow)
         {
@@ -62,7 +62,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
                 return null;
             }
 
-            var result = new ForegroundWindowDetail
+            var result = new WindowDetail
             {
                 WindowInfo = WindowInfoHelper.GetWindowInfoFromHwnd(hWnd, _logger, Tag),
                 NativeWindowInfo = windowsWindow
@@ -70,7 +70,7 @@ internal sealed class ForegroundWindowInfoProvider(ILogger logger) : IForeground
 
             if (User32Interop.GetWindowRect(hWnd, out var rect))
             {
-                result = new ForegroundWindowDetail
+                result = new WindowDetail
                 {
                     WindowInfo = result.WindowInfo,
                     NativeWindowInfo = windowsWindow,

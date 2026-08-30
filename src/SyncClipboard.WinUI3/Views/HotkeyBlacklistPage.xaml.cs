@@ -54,7 +54,7 @@ public sealed partial class HotkeyBlacklistPage : Page
         _viewModel.StopCaptureCommand.Execute(null);
     }
 
-    private void OnWindowCaptured(ForegroundWindowInfo info)
+    private void OnWindowCaptured(WindowInfo info)
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
