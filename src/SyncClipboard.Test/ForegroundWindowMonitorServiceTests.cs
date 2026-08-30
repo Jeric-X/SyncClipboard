@@ -12,19 +12,20 @@ public class ForegroundWindowMonitorServiceTests
     {
         var watcher = new FakeWatcher();
         using var monitor = CreateMonitor(watcher, new FakeProvider());
-        Action<ForegroundWindowDetail?> first = _ => { };
-        Action<ForegroundWindowDetail?> second = _ => { };
 
-        monitor.ForegroundWindowChanged += first;
-        monitor.ForegroundWindowChanged += second;
+        static void First(ForegroundWindowDetail? _) { }
+        static void Second(ForegroundWindowDetail? _) { }
+
+        monitor.ForegroundWindowChanged += First;
+        monitor.ForegroundWindowChanged += Second;
 
         Assert.AreEqual(1, watcher.StartCount);
         Assert.AreEqual(0, watcher.StopCount);
 
-        monitor.ForegroundWindowChanged -= first;
+        monitor.ForegroundWindowChanged -= First;
         Assert.AreEqual(0, watcher.StopCount);
 
-        monitor.ForegroundWindowChanged -= second;
+        monitor.ForegroundWindowChanged -= Second;
         Assert.AreEqual(1, watcher.StopCount);
     }
 

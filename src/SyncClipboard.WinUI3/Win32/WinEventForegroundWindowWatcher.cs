@@ -41,7 +41,7 @@ internal sealed class WinEventForegroundWindowWatcher : IForegroundWindowWatcher
         _hook = IntPtr.Zero;
     }
 
-    private void OnWinEvent(IntPtr _, uint __, IntPtr hWnd, int ____, int _____, uint ______, uint _______)
+    private void OnWinEvent(IntPtr hook, uint eventType, IntPtr hWnd, int objectId, int childId, uint eventThread, uint eventTime)
     {
         _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
         ForegroundWindowChanged?.Invoke(processId == 0

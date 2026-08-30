@@ -1051,12 +1051,19 @@ public sealed partial class HistoryWindow : Window, IWindow
         }));
     }
 
-    private sealed class TemporaryHideScope(Func<ValueTask> restore) : IAsyncDisposable
+    private sealed class TemporaryHideScope : IAsyncDisposable
     {
+        private readonly Func<ValueTask> _restore;
         private int _restored;
 
+        public TemporaryHideScope(Func<ValueTask> restore)
+        {
+            ArgumentNullException.ThrowIfNull(restore);
+            _restore = restore;
+        }
+
         public ValueTask DisposeAsync() =>
-            Interlocked.Exchange(ref _restored, 1) == 0 ? restore() : ValueTask.CompletedTask;
+            Interlocked.Exchange(ref _restored, 1) == 0 ? _restore() : ValueTask.CompletedTask;
     }
 
     public bool SetNearCaretPosition(ScreenPosition caretPosition)
