@@ -75,6 +75,9 @@ internal static class MacInterop
     [DllImport(ApplicationServicesLib)]
     public static extern int AXUIElementCopyActionNames(IntPtr element, out IntPtr names);
 
+    [DllImport(ApplicationServicesLib)]
+    public static extern int AXUIElementPerformAction(IntPtr element, IntPtr action);
+
     #endregion
 
     #region AXValue Functions
@@ -115,6 +118,12 @@ internal static class MacInterop
 
     [DllImport(ApplicationServicesLib)]
     public static extern void CFRelease(IntPtr cf);
+
+    [DllImport(ApplicationServicesLib)]
+    public static extern nint CFArrayGetCount(IntPtr array);
+
+    [DllImport(ApplicationServicesLib)]
+    public static extern IntPtr CFArrayGetValueAtIndex(IntPtr array, nint index);
 
     #endregion
 

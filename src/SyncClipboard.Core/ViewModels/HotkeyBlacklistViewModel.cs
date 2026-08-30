@@ -37,7 +37,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
 
     public ObservableCollection<EditableWindowInfo> BlackList { get; } = [];
 
-    public event Action<ForegroundWindowInfo>? WindowCaptured;
+    public event Action<WindowInfo>? WindowCaptured;
 
     public HotkeyBlacklistViewModel(
         ConfigManager configManager,
@@ -67,13 +67,13 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
         _isLoading = false;
     }
 
-    public void AddItem(ForegroundWindowInfo info)
+    public void AddItem(WindowInfo info)
     {
         BlackList.Add(new EditableWindowInfo(info));
         SaveConfig();
     }
 
-    public void UpdateItem(EditableWindowInfo item, ForegroundWindowInfo info)
+    public void UpdateItem(EditableWindowInfo item, WindowInfo info)
     {
         item.ProcessName = info.ProcessName ?? string.Empty;
         item.WindowTitle = info.WindowTitle ?? string.Empty;
@@ -109,7 +109,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
         CaptureHint = string.Empty;
     }
 
-    private void OnWindowCaptured(ForegroundWindowInfo info)
+    private void OnWindowCaptured(WindowInfo info)
     {
         IsCapturing = false;
         CaptureHint = string.Empty;

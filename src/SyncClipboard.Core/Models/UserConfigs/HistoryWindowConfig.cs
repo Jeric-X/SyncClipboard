@@ -23,4 +23,5 @@ public record class HistoryWindowConfig
     public bool ShowPreviewPanel { get; set; } = false;
     public int ListViewWidth { get; set; } = 550;
     public bool CompactListWhenPreview { get; set; } = true;
+    public int PasteDelayAfterWindowHiddenMilliseconds { get; set; } = 200;
 }

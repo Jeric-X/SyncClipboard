@@ -11,8 +11,8 @@ public record ClipboardOwnerFilterConfig
     public const string EasyCopyImageFilterConfigKey = "EasyCopyImageFilter";
 
     public string FilterMode { get; set; } = "";
-    public List<ForegroundWindowInfo> WhiteList { get; set; } = [];
-    public List<ForegroundWindowInfo> BlackList { get; set; } = [];
+    public List<WindowInfo> WhiteList { get; set; } = [];
+    public List<WindowInfo> BlackList { get; set; } = [];
 
     public virtual bool Equals(ClipboardOwnerFilterConfig? other)
     {

@@ -365,21 +365,6 @@ public partial class HistoryViewModel
         RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
     }
 
-    public async Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste)
-    {
-        var operationName = paste ? "paste history record" : "copy history record";
-        try
-        {
-            await RunWithOperationTimeoutAsync(
-                operationName,
-                token => CopyToClipboard(record, paste, token));
-        }
-        catch (Exception ex)
-        {
-            await logger.WriteAsync($"Failed to {operationName}:", ex.Message);
-        }
-    }
-
     [RelayCommand]
     private async Task ToggleCurrentFilterSelectionAsync() =>
         await SetCurrentFilterSelectionAsync(IsCurrentFilterFullySelected != true);

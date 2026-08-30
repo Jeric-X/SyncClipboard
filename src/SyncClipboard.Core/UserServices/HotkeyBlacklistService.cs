@@ -13,24 +13,21 @@ public sealed class HotkeyBlacklistService : Service
     private CancellationTokenSource? _debounceCancellation;
     private HotkeyBlacklistConfig _config = new();
     private bool _isBlacklisted;
-    private bool _isWatcherRunning;
+    private bool _isMonitoring;
 
-    private readonly IForegroundWindowInfoProvider _foregroundWindowInfoProvider;
-    private readonly IForegroundWindowWatcher _foregroundWindowWatcher;
+    private readonly IForegroundWindowMonitor _foregroundWindowMonitor;
     private readonly HotkeyManager _hotkeyManager;
     private readonly ILogger _logger;
 
-    public event Action<ForegroundWindowInfo?>? ForegroundWindowChanged;
+    public event Action<WindowInfo?>? ForegroundWindowChanged;
 
     public HotkeyBlacklistService(
         ConfigManager configManager,
-        IForegroundWindowInfoProvider foregroundWindowInfoProvider,
-        IForegroundWindowWatcher foregroundWindowWatcher,
+        IForegroundWindowMonitor foregroundWindowMonitor,
         HotkeyManager hotkeyManager,
         ILogger logger)
     {
-        _foregroundWindowInfoProvider = foregroundWindowInfoProvider;
-        _foregroundWindowWatcher = foregroundWindowWatcher;
+        _foregroundWindowMonitor = foregroundWindowMonitor;
         _hotkeyManager = hotkeyManager;
         _logger = logger;
         configManager.GetAndListenConfig<HotkeyBlacklistConfig>(ConfigChanged);
@@ -43,7 +40,7 @@ public sealed class HotkeyBlacklistService : Service
 
     protected override void StopSerivce()
     {
-        StopForegroundWindowWatcher();
+        StopForegroundWindowMonitoring();
     }
 
     public override void Load()
@@ -57,7 +54,7 @@ public sealed class HotkeyBlacklistService : Service
         EnsureWatcherState();
     }
 
-    private void OnForegroundWindowChanged() => QueueForegroundWindowCheck();
+    private void OnForegroundWindowChanged(WindowDetail? _) => QueueForegroundWindowCheck();
 
     private void QueueForegroundWindowCheck()
     {
@@ -82,11 +79,11 @@ public sealed class HotkeyBlacklistService : Service
     {
         if (ShouldWatchForegroundWindow())
         {
-            StartForegroundWindowWatcher();
+            StartForegroundWindowMonitoring();
         }
         else
         {
-            StopForegroundWindowWatcher();
+            StopForegroundWindowMonitoring();
         }
     }
 
@@ -95,25 +92,23 @@ public sealed class HotkeyBlacklistService : Service
         return Enabled && _config.Enabled && _config.BlackList.Count > 0;
     }
 
-    private void StartForegroundWindowWatcher()
+    private void StartForegroundWindowMonitoring()
     {
-        if (!_isWatcherRunning)
+        if (!_isMonitoring)
         {
-            _foregroundWindowWatcher.ForegroundWindowChanged += OnForegroundWindowChanged;
-            _foregroundWindowWatcher.Start();
-            _isWatcherRunning = true;
+            _foregroundWindowMonitor.ForegroundWindowChanged += OnForegroundWindowChanged;
+            _isMonitoring = true;
         }
 
         QueueForegroundWindowCheck();
     }
 
-    private void StopForegroundWindowWatcher()
+    private void StopForegroundWindowMonitoring()
     {
-        if (_isWatcherRunning)
+        if (_isMonitoring)
         {
-            _foregroundWindowWatcher.ForegroundWindowChanged -= OnForegroundWindowChanged;
-            _foregroundWindowWatcher.Stop();
-            _isWatcherRunning = false;
+            _foregroundWindowMonitor.ForegroundWindowChanged -= OnForegroundWindowChanged;
+            _isMonitoring = false;
         }
 
         CancelDebounce();
@@ -155,7 +150,7 @@ public sealed class HotkeyBlacklistService : Service
             return;
         }
 
-        var window = _foregroundWindowInfoProvider.GetForegroundWindowInfo();
+        var window = _foregroundWindowMonitor.GetCurrentForegroundWindow()?.WindowInfo;
         ForegroundWindowChanged?.Invoke(window);
 
         var isBlacklisted = _config.Enabled

@@ -9,7 +9,7 @@ namespace SyncClipboard.Desktop.Utilities;
 [SupportedOSPlatform("linux")]
 internal static class WindowInfoHelper
 {
-    public static ForegroundWindowInfo? GetWindowInfo(IntPtr display, IntPtr window)
+    public static WindowInfo? GetWindowInfo(IntPtr display, IntPtr window)
     {
         try
         {
@@ -23,7 +23,7 @@ internal static class WindowInfoHelper
                 return null;
             }
 
-            return new ForegroundWindowInfo
+            return new WindowInfo
             {
                 ProcessName = processName ?? string.Empty,
                 WindowTitle = windowTitle ?? string.Empty,
@@ -74,7 +74,7 @@ internal static class WindowInfoHelper
         }
     }
 
-    private static int? GetWindowPid(IntPtr display, IntPtr window)
+    internal static int? GetWindowPid(IntPtr display, IntPtr window)
     {
         try
         {

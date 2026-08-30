@@ -5,7 +5,7 @@ namespace SyncClipboard.Core.Utilities;
 
 public static class ClipboardOwnerFilterHelper
 {
-    public static bool ShouldFilter(ClipboardOwnerFilterConfig config, ForegroundWindowInfo? owner)
+    public static bool ShouldFilter(ClipboardOwnerFilterConfig config, WindowInfo? owner)
     {
         if (string.IsNullOrEmpty(config.FilterMode))
         {

@@ -6,12 +6,12 @@ namespace SyncClipboard.Core.Commons;
 
 public sealed class ForegroundWindowCapture(
     INativeHotkeyRegistry nativeHotkeyRegistry,
-    IForegroundWindowInfoProvider foregroundWindowInfoProvider)
+    INativeWindowController foregroundWindowInfoProvider)
 {
     private readonly object _syncRoot = new();
     private Hotkey? _registeredHotkey;
 
-    public event Action<ForegroundWindowInfo>? WindowCaptured;
+    public event Action<WindowInfo>? WindowCaptured;
 
     public bool TryStart(out Hotkey? hotkey)
     {
@@ -48,7 +48,7 @@ public sealed class ForegroundWindowCapture(
 
     private void CaptureForegroundWindow()
     {
-        var window = foregroundWindowInfoProvider.GetForegroundWindowInfo() ?? new ForegroundWindowInfo();
+        var window = foregroundWindowInfoProvider.GetForegroundWindowInfo() ?? new WindowInfo();
         Stop();
         WindowCaptured?.Invoke(window);
     }

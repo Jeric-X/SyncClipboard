@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
@@ -59,6 +60,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly PointerEventHandler _listViewItemPointerReleasedHandler;
     private readonly PointerEventHandler _listViewItemPointerExitedHandler;
     private readonly TypedEventHandler<UIElement, ContextRequestedEventArgs> _listViewItemContextRequestedHandler;
+    private bool _isActive;
 
     public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel, ICaretPositionProvider caretPositionProvider, ILogger logger)
     {
@@ -91,11 +93,13 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             if (args.WindowActivationState == WindowActivationState.Deactivated)
             {
+                _isActive = false;
                 ResetPointerInteractionState();
                 _viewModel.OnLostFocus();
             }
             else
             {
+                _isActive = true;
                 _viewModel.OnGotFocus();
                 _SearchTextBox.Focus(FocusState.Programmatic);
             }
@@ -130,6 +134,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         UpdateSelectAllIcon();
         UpdateToggleStarIcon();
         UpdateListViewWidthForPreview(); // 初始化时设置ListView宽度
+        _ = _viewModel.Init(this);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -280,24 +285,26 @@ public sealed partial class HistoryWindow : Window, IWindow
         args.Handled = true;
     }
 
-    private void ShowWindow()
+    bool IWindow.IsVisible => Visible;
+
+    bool IWindow.IsActive => _isActive;
+
+    public void Show(bool activate)
     {
         if (!_windowLoaded)
         {
             SetWindowMinSize();
-            _ = _viewModel.Init(this);
         }
 
-        if (!_viewModel.RepositionWindow() && !_windowLoaded)
+        if (activate)
         {
-            this.CenterOnScreenDip(_viewModel.Width, _viewModel.Height);
+            this.Activate();
+            this.SetForegroundWindow();
         }
-        this.Activate();
-        this.SetForegroundWindow();
-
-        _viewModel.OnWindowShown();
-        _SearchTextBox.Focus(FocusState.Programmatic);
-        _SearchTextBox.SelectAll();
+        else
+        {
+            AppWindow.Show(false);
+        }
 
         if (!_windowLoaded)
         {
@@ -305,30 +312,21 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
     }
 
-    public void Focus()
+    public void Hide()
     {
-        if (!this.Visible)
-        {
-            ShowWindow();
-        }
-        else
-        {
-            _viewModel.RepositionWindow();
-            this.SetForegroundWindow();
-        }
+        ResetPointerInteractionState();
+        AppWindow.Hide();
     }
 
-    public void SwitchVisible()
+    public void CenterOnScreen(int width, int height)
     {
-        if (!this.Visible)
-        {
-            ShowWindow();
-        }
-        else
-        {
-            ResetPointerInteractionState();
-            this.AppWindow.Hide();
-        }
+        this.CenterOnScreenDip(width, height);
+    }
+
+    public void FocusSearch()
+    {
+        _SearchTextBox.Focus(FocusState.Programmatic);
+        _SearchTextBox.SelectAll();
     }
 
     private void ResetPointerInteractionState()
@@ -982,6 +980,19 @@ public sealed partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.SetIsAlwaysOnTop(topmost);
+    }
+
+    public NativeWindowInfo? GetNativeWindowInfo()
+    {
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
+        return hWnd == IntPtr.Zero || processId == 0
+            ? null
+            : new WindowsNativeWindowInfo
+            {
+                ProcessId = (int)processId,
+                WindowHandle = hWnd
+            };
     }
 
     public bool SetNearCaretPosition(ScreenPosition caretPosition)

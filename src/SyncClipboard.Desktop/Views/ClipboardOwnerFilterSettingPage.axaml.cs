@@ -73,7 +73,7 @@ public partial class ClipboardOwnerFilterSettingPage : UserControl
         _viewModel.StartListening();
     }
 
-    private async void OnClipboardOwnerCaptured(ForegroundWindowInfo info)
+    private async void OnClipboardOwnerCaptured(WindowInfo info)
     {
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {

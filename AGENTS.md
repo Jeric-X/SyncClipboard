@@ -147,6 +147,11 @@ Compile-time constants (`WINDOWS`, `MACOS`, `LINUX`) are defined via `RuntimeIde
 
 Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.Designer.cs`). Supports Chinese and English. Language is set via `I18nHelper.SetProgramLanguage()` from the `ProgramConfig.Language` setting.
 
+## Documentation
+
+- AI-generated or AI-maintained design documents must be stored in `docs/ai_design/`.
+- Keep `AGENTS.md` and `CLAUDE.md` synchronized. Any applicable instruction change in either file must be reflected in the other.
+
 ## Code Conventions
 
 - Target framework: primarily `net8.0`, with `net10.0-macos` for the macOS project and `net9.0-windows10.0.19041.0` for WinUI3.

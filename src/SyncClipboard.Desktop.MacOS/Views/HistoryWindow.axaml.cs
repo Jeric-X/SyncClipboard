@@ -1,6 +1,7 @@
 ﻿using AppKit;
 using Avalonia.Controls;
 using ObjCRuntime;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Desktop.MacOS.Utilities;
 
 namespace SyncClipboard.Desktop.MacOS.Views;
@@ -15,7 +16,7 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
         base.OnClosing(e);
     }
 
-    protected override void FocusOnScreen()
+    public override void Show(bool activate)
     {
         // 只在第一次显示时设置窗口的 collectionBehavior，使其在所有虚拟桌面显示
         if (!_collectionBehaviorSet)
@@ -26,7 +27,27 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
 
         this.AddWindow();
         // this.FocusMenuBar();
-        base.FocusOnScreen();
+        base.Show(activate);
+    }
+
+    public override void Hide()
+    {
+        this.RemoveWindow();
+        base.Hide();
+    }
+
+    public override NativeWindowInfo? GetNativeWindowInfo()
+    {
+        if (base.GetNativeWindowInfo() is not MacNativeWindowInfo nativeWindow
+            || this.TryGetPlatformHandle() is not { HandleDescriptor: "NSWindow" } platformHandle)
+        {
+            return null;
+        }
+
+        var nsWindow = Runtime.GetNSObject<NSWindow>(platformHandle.Handle);
+        return nsWindow is null
+            ? nativeWindow
+            : nativeWindow with { WindowNumber = nsWindow.WindowNumber };
     }
 
     private void SetWindowCollectionBehaviorForAllSpaces()

@@ -1,10 +1,11 @@
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using System;
 using System.Runtime.InteropServices;
 
 namespace SyncClipboard.WinUI3.Win32;
 
-internal sealed class WinEventForegroundWindowWatcher : IForegroundWindowWatcher
+internal sealed class WinEventForegroundWindowWatcher : INativeForegroundWindowWatcher
 {
     private const uint EventSystemForeground = 0x0003;
     private const uint WineventOutOfContext = 0;
@@ -12,7 +13,7 @@ internal sealed class WinEventForegroundWindowWatcher : IForegroundWindowWatcher
     private IntPtr _hook;
     private readonly WinEventDelegate _callback;
 
-    public event Action? ForegroundWindowChanged;
+    public event Action<NativeWindowInfo?>? ForegroundWindowChanged;
 
     public WinEventForegroundWindowWatcher()
     {
@@ -40,9 +41,16 @@ internal sealed class WinEventForegroundWindowWatcher : IForegroundWindowWatcher
         _hook = IntPtr.Zero;
     }
 
-    private void OnWinEvent(IntPtr _, uint __, IntPtr ___, int ____, int _____, uint ______, uint _______)
+    private void OnWinEvent(IntPtr hook, uint eventType, IntPtr hWnd, int objectId, int childId, uint eventThread, uint eventTime)
     {
-        ForegroundWindowChanged?.Invoke();
+        _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
+        ForegroundWindowChanged?.Invoke(processId == 0
+            ? null
+            : new WindowsNativeWindowInfo
+            {
+                ProcessId = (int)processId,
+                WindowHandle = hWnd
+            });
     }
 
     public void Dispose() => Stop();

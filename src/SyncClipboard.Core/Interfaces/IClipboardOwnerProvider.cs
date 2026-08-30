@@ -4,5 +4,5 @@ namespace SyncClipboard.Core.Interfaces;
 
 public interface IClipboardOwnerProvider
 {
-    ForegroundWindowInfo? GetClipboardOwner();
+    WindowInfo? GetClipboardOwner();
 }

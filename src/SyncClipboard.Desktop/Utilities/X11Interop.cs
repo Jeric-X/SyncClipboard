@@ -21,6 +21,9 @@ internal static class X11Interop
     [DllImport(LibX11)]
     internal static extern nint XOpenDisplay(nint display);
 
+    [DllImport(LibX11, EntryPoint = "XOpenDisplay", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+    internal static extern nint XOpenDisplay(string? displayName);
+
     [DllImport(LibX11)]
     internal static extern int XCloseDisplay(nint display);
 

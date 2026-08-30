@@ -4,12 +4,16 @@ namespace SyncClipboard.Core.Interfaces;
 
 public interface IWindow
 {
-    void SwitchVisible();
-    void Focus();
-    void Close();
+    bool IsVisible { get; }
+    bool IsActive { get; }
+    void Show(bool activate);
+    void Hide();
+    void CenterOnScreen(int width, int height);
+    void FocusSearch();
     void ScrollToTop() { }
     void ScrollToSelectedItem() { }
     void SetTopmost(bool topmost) { }
+    NativeWindowInfo? GetNativeWindowInfo() => null;
     bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
         offsetY = 0; viewportHeight = 0; extentHeight = 0;

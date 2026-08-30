@@ -78,7 +78,7 @@ public sealed partial class ClipboardOwnerFilterSettingPage : Page
         _viewModel.StartListening();
     }
 
-    private void OnClipboardOwnerCaptured(ForegroundWindowInfo info)
+    private void OnClipboardOwnerCaptured(WindowInfo info)
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
