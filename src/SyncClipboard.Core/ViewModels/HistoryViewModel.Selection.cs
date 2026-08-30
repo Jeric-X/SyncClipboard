@@ -79,7 +79,6 @@ public partial class HistoryViewModel
 
     private void InitializeSelection()
     {
-        HistoryItems.CollectionChanged += OnHistoryItemsCollectionChanged;
         VisibleSelectedItems = new ReadOnlyObservableCollection<HistoryRecordVM>(visibleSelectedItems);
         selectionSummaryRefreshTask = new(
             (pending, next) => pending | next,
@@ -135,7 +134,9 @@ public partial class HistoryViewModel
             || e.NewItems?.Count is not > 0)
             return;
 
-        SelectedIndex += e.NewItems.Count;
+        var adjustedIndex = SelectedIndex + e.NewItems.Count;
+        if (adjustedIndex < HistoryItemCount)
+            SelectedIndex = adjustedIndex;
     }
 
     public void HandleRecordClick(HistoryRecordVM record, bool ctrlPressed, bool shiftPressed)

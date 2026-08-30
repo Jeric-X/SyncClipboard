@@ -973,6 +973,10 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
+        // Both desktop views bind HistoryItems before calling Init. Subscribe here
+        // so the controls process collection changes before selection is adjusted.
+        HistoryItems.CollectionChanged -= OnHistoryItemsCollectionChanged;
+        HistoryItems.CollectionChanged += OnHistoryItemsCollectionChanged;
         if (!OperatingSystem.IsLinux())
         {
             _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
