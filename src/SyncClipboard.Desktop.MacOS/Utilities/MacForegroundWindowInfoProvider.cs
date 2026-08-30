@@ -2,6 +2,8 @@ using System;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using AppKit;
+using Foundation;
+using ObjCRuntime;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 
@@ -16,9 +18,16 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
 
     // Pre-create CFString attributes using NSString (managed by .NET runtime)
     private static readonly IntPtr kAXMainWindowAttribute = MacInteropHelper.CreateCFString("AXMainWindow");
+    private static readonly IntPtr kAXFocusedWindowAttribute = MacInteropHelper.CreateCFString("AXFocusedWindow");
     private static readonly IntPtr kAXTitleAttribute = MacInteropHelper.CreateCFString("AXTitle");
     private static readonly IntPtr kAXPositionAttribute = MacInteropHelper.CreateCFString("AXPosition");
     private static readonly IntPtr kAXSizeAttribute = MacInteropHelper.CreateCFString("AXSize");
+    private static readonly IntPtr kAXWindowsAttribute = MacInteropHelper.CreateCFString("AXWindows");
+    private static readonly IntPtr kAXRaiseAction = MacInteropHelper.CreateCFString("AXRaise");
+    private static readonly IntPtr kAXFrontmostAttribute = MacInteropHelper.CreateCFString("AXFrontmost");
+    private static readonly IntPtr kAXMainAttribute = MacInteropHelper.CreateCFString("AXMain");
+    private static readonly IntPtr kAXFocusedAttribute = MacInteropHelper.CreateCFString("AXFocused");
+    private static readonly IntPtr kAXWindowNumberAttribute = MacInteropHelper.CreateCFString("AXWindowNumber");
 
     public ForegroundWindowDetail? GetForegroundWindowDetail()
     {
@@ -36,7 +45,7 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
             var executableName = GetExecutableName(pid);
 
             // Get window title and bounds using Accessibility API
-            var (title, bounds) = GetWindowInfo(pid);
+            var (title, bounds, windowNumber) = GetWindowInfo(pid);
             var windowTitle = title ?? string.Empty;
 
             var windowInfo = new ForegroundWindowInfo
@@ -46,22 +55,20 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
                 ExecutableName = executableName ?? processName
             };
 
+            var screenBounds = ToScreenPosition(bounds);
             var result = new ForegroundWindowDetail
             {
                 WindowInfo = windowInfo,
-                Bounds = bounds.HasValue
-                    ? new ScreenPosition
-                    {
-                        X = (int)bounds.Value.X,
-                        Y = (int)bounds.Value.Y,
-                        Width = (int)bounds.Value.Width,
-                        Height = (int)bounds.Value.Height
-                    }
-                    : null
+                Bounds = screenBounds,
+                NativeWindowInfo = new MacNativeWindowInfo
+                {
+                    ProcessId = pid,
+                    BundleIdentifier = executableName ?? processName,
+                    WindowNumber = windowNumber,
+                    WindowTitle = windowTitle,
+                    Bounds = screenBounds
+                }
             };
-
-            // Print all information before returning
-            _logger.Write(Tag, $"Window: {processName}, Title: {windowTitle}, Bounds: {(bounds.HasValue ? $"({bounds.Value.X},{bounds.Value.Y}) {bounds.Value.Width}x{bounds.Value.Height}" : "null")}");
 
             return result;
         }
@@ -74,28 +81,42 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
 
     public ForegroundWindowInfo? GetForegroundWindowInfo()
     {
+        return GetForegroundWindowDetail()?.WindowInfo;
+    }
+
+    public ForegroundWindowDetail? GetWindowDetail(NativeWindowInfo window)
+    {
+        if (window is not MacNativeWindowInfo macWindow)
+        {
+            return null;
+        }
+
         try
         {
-            var frontmostApp = GetFrontmostApplication();
-            if (frontmostApp == null)
+            var application = NSRunningApplication.GetRunningApplication(macWindow.ProcessId);
+            if (application is null || application.Terminated)
             {
-                _logger.Write(Tag, "FrontmostApplication is null");
                 return null;
             }
 
-            var pid = frontmostApp.ProcessIdentifier;
-            var processName = frontmostApp.LocalizedName ?? string.Empty;
-            var executableName = GetExecutableName(pid);
-
-            // Get window title using Accessibility API
-            var (title, _) = GetWindowInfo(pid);
-            var windowTitle = title ?? string.Empty;
-
-            return new ForegroundWindowInfo
+            var (title, bounds, windowNumber) = GetWindowInfo(macWindow.ProcessId);
+            var screenBounds = ToScreenPosition(bounds) ?? macWindow.Bounds;
+            var currentWindow = macWindow with
             {
-                ProcessName = processName,
-                WindowTitle = windowTitle,
-                ExecutableName = executableName ?? processName
+                WindowTitle = title ?? macWindow.WindowTitle,
+                Bounds = screenBounds,
+                WindowNumber = windowNumber ?? macWindow.WindowNumber
+            };
+            return new ForegroundWindowDetail
+            {
+                WindowInfo = new ForegroundWindowInfo
+                {
+                    ProcessName = application.LocalizedName ?? string.Empty,
+                    WindowTitle = currentWindow.WindowTitle,
+                    ExecutableName = application.BundleIdentifier ?? currentWindow.BundleIdentifier
+                },
+                Bounds = screenBounds,
+                NativeWindowInfo = currentWindow
             };
         }
         catch (Exception ex)
@@ -105,9 +126,128 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
         }
     }
 
+    public bool TryActivateWindow(NativeWindowInfo window)
+    {
+        if (window is not MacNativeWindowInfo macWindow)
+        {
+            _logger.Write(Tag, $"Unsupported native window type: {window.GetType().Name}");
+            return false;
+        }
+
+        try
+        {
+            _logger.Write(Tag, $"macOS activation requested: {DescribeWindow(macWindow)}.");
+            return _threadDispatcher.RunOnMainThreadAsync(() =>
+            {
+                var application = NSRunningApplication.GetRunningApplication(macWindow.ProcessId);
+                if (application is null || application.Terminated)
+                {
+                    _logger.Write(Tag, $"Target process {macWindow.ProcessId} is no longer running.");
+                    return Task.FromResult(false);
+                }
+
+                var activated = application.Activate(NSApplicationActivationOptions.ActivateIgnoringOtherWindows);
+                if (!activated)
+                {
+                    _logger.Write(Tag, $"Failed to activate process {macWindow.ProcessId} ({macWindow.BundleIdentifier}).");
+                    return Task.FromResult(false);
+                }
+
+                if (!HasWindowIdentity(macWindow))
+                {
+                    _logger.Write(Tag, $"Activated application without a precise window identity: {DescribeWindow(macWindow)}.");
+                    return Task.FromResult(true);
+                }
+
+                var raised = TryRaiseCapturedWindow(macWindow);
+                if (!raised)
+                {
+                    _logger.Write(Tag, $"Failed to raise the captured window in process {macWindow.ProcessId}.");
+                }
+                else
+                {
+                    _logger.Write(Tag, $"Raised captured macOS window: {DescribeWindow(macWindow)}.");
+                }
+                return Task.FromResult(raised);
+            }).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(Tag, $"Failed to activate macOS window: {ex.Message}");
+            return false;
+        }
+    }
+
     private NSRunningApplication? GetFrontmostApplication()
     {
         return _threadDispatcher.RunOnMainThreadAsync(() => Task.FromResult(NSWorkspace.SharedWorkspace.FrontmostApplication)).GetAwaiter().GetResult();
+    }
+
+    private static ScreenPosition? ToScreenPosition(MacInterop.CGRect? bounds) => bounds.HasValue
+        ? new ScreenPosition
+        {
+            X = (int)bounds.Value.X,
+            Y = (int)bounds.Value.Y,
+            Width = (int)bounds.Value.Width,
+            Height = (int)bounds.Value.Height
+        }
+        : null;
+
+    private static bool HasWindowIdentity(MacNativeWindowInfo window) =>
+        window.WindowNumber.HasValue || !string.IsNullOrEmpty(window.WindowTitle);
+
+    private static string DescribeWindow(MacNativeWindowInfo window)
+    {
+        var bounds = window.Bounds is null
+            ? "null"
+            : $"{window.Bounds.X},{window.Bounds.Y},{window.Bounds.Width}x{window.Bounds.Height}";
+        return $"pid={window.ProcessId}, window={window.WindowNumber?.ToString() ?? "null"}, title='{window.WindowTitle}', bounds={bounds}";
+    }
+
+    private bool TryRaiseCapturedWindow(MacNativeWindowInfo capturedWindow)
+    {
+        using var appElement = MacInteropHelper.CreateApplication(capturedWindow.ProcessId);
+        if (appElement.IsInvalid)
+        {
+            return false;
+        }
+
+        using var windows = MacInteropHelper.CopyAttributeValue(appElement.Handle, kAXWindowsAttribute);
+        if (windows is null)
+        {
+            return false;
+        }
+
+        var count = MacInterop.CFArrayGetCount(windows.Handle);
+        for (nint index = 0; index < count; index++)
+        {
+            var windowElement = MacInterop.CFArrayGetValueAtIndex(windows.Handle, index);
+            if (windowElement == IntPtr.Zero)
+            {
+                continue;
+            }
+
+            var candidate = new MacNativeWindowInfo
+            {
+                ProcessId = capturedWindow.ProcessId,
+                BundleIdentifier = capturedWindow.BundleIdentifier,
+                WindowNumber = GetWindowNumber(windowElement),
+                WindowTitle = MacInteropHelper.GetWindowTitle(windowElement, kAXTitleAttribute) ?? string.Empty,
+                Bounds = ToScreenPosition(GetWindowBounds(windowElement))
+            };
+            if (!capturedWindow.IsSameWindow(candidate))
+            {
+                continue;
+            }
+
+            using var trueValue = NSNumber.FromBoolean(true);
+            _ = MacInterop.AXUIElementSetAttributeValue(appElement.Handle, kAXFrontmostAttribute, trueValue.Handle);
+            _ = MacInterop.AXUIElementSetAttributeValue(windowElement, kAXMainAttribute, trueValue.Handle);
+            _ = MacInterop.AXUIElementSetAttributeValue(windowElement, kAXFocusedAttribute, trueValue.Handle);
+            return MacInterop.AXUIElementPerformAction(windowElement, kAXRaiseAction) == MacInterop.errAXSuccess;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -129,30 +269,44 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
     /// <summary>
     /// Get window title and bounds using Accessibility API.
     /// </summary>
-    private (string? Title, MacInterop.CGRect? Bounds) GetWindowInfo(int pid)
+    private (string? Title, MacInterop.CGRect? Bounds, long? WindowNumber) GetWindowInfo(int pid)
     {
+        if (!MacInterop.AXIsProcessTrusted())
+        {
+            return (null, null, null);
+        }
+
         using var appElement = MacInteropHelper.CreateApplication(pid);
         if (appElement.IsInvalid)
         {
             _logger.Write(Tag, $"AXUIElementCreateApplication failed for pid={pid}");
-            return (null, null);
+            return (null, null, null);
         }
 
-        // Get main window
-        using var mainWindow = MacInteropHelper.GetMainWindow(appElement.Handle, kAXMainWindowAttribute);
-        if (mainWindow == null)
+        // Some applications (including Codex/Electron builds) don't expose
+        // AXMainWindow, but do expose AXFocusedWindow while they are frontmost.
+        using var activeWindow = MacInteropHelper.CopyAttributeValue(appElement.Handle, kAXFocusedWindowAttribute)
+            ?? MacInteropHelper.GetMainWindow(appElement.Handle, kAXMainWindowAttribute);
+        if (activeWindow == null)
         {
-            _logger.Write(Tag, "Failed to get main window");
-            return (null, null);
+            return (null, null, null);
         }
 
         // Get window title
-        var title = MacInteropHelper.GetWindowTitle(mainWindow.Handle, kAXTitleAttribute);
+        var title = MacInteropHelper.GetWindowTitle(activeWindow.Handle, kAXTitleAttribute);
 
         // Get window position and size
-        var bounds = GetWindowBounds(mainWindow.Handle);
+        var bounds = GetWindowBounds(activeWindow.Handle);
 
-        return (title, bounds);
+        return (title, bounds, GetWindowNumber(activeWindow.Handle));
+    }
+
+    private static long? GetWindowNumber(IntPtr windowElement)
+    {
+        using var numberValue = MacInteropHelper.CopyAttributeValue(windowElement, kAXWindowNumberAttribute);
+        return numberValue is null
+            ? null
+            : Runtime.GetNSObject<NSNumber>(numberValue.Handle)?.Int64Value;
     }
 
     /// <summary>

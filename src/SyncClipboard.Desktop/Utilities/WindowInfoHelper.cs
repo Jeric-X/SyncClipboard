@@ -74,7 +74,7 @@ internal static class WindowInfoHelper
         }
     }
 
-    private static int? GetWindowPid(IntPtr display, IntPtr window)
+    internal static int? GetWindowPid(IntPtr display, IntPtr window)
     {
         try
         {

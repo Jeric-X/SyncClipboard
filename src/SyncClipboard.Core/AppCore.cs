@@ -338,6 +338,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<RemoteClipboardServerFactory>();
             services.AddSingleton<ServiceManager>();
             services.AddSingleton<HotkeyManager>();
+            services.AddSingleton<ForegroundWindowMonitorService>();
+            services.AddSingleton<IForegroundWindowMonitor>(sp => sp.GetRequiredService<ForegroundWindowMonitorService>());
             services.AddTransient<ForegroundWindowCapture>();
             services.AddTransient<GithubUpdater>();
             services.AddQuartz();
@@ -401,6 +403,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IService>(sp => sp.GetRequiredService<NetworkAccountSwitchService>());
             services.AddSingleton<HotkeyBlacklistService>();
             services.AddSingleton<IService>(sp => sp.GetRequiredService<HotkeyBlacklistService>());
+            services.AddSingleton<ForegroundWindowTrackingService>();
+            services.AddSingleton<IService>(sp => sp.GetRequiredService<ForegroundWindowTrackingService>());
         }
     }
 }

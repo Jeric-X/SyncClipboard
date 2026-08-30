@@ -6,10 +6,14 @@ public interface IWindow
 {
     void SwitchVisible();
     void Focus();
+    void RestoreFocus() => Focus();
     void Close();
     void ScrollToTop() { }
     void ScrollToSelectedItem() { }
     void SetTopmost(bool topmost) { }
+    NativeWindowInfo? GetNativeWindowInfo() => null;
+    ValueTask<IAsyncDisposable?> HideTemporarilyAsync(CancellationToken token = default) =>
+        ValueTask.FromResult<IAsyncDisposable?>(null);
     bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
         offsetY = 0; viewportHeight = 0; extentHeight = 0;

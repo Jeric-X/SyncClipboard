@@ -19,6 +19,7 @@ using System;
 using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AvaloniaDragDropEffects = Avalonia.Input.DragDropEffects;
 
@@ -207,6 +208,14 @@ public partial class HistoryWindow : Window, IWindow
     void IWindow.Focus()
     {
         FocusOnScreen();
+    }
+
+    void IWindow.RestoreFocus()
+    {
+        if (IsVisible)
+        {
+            Activate();
+        }
     }
 
     public void ScrollToSelectedItem()
@@ -672,6 +681,92 @@ public partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.Topmost = topmost;
+    }
+
+    public virtual NativeWindowInfo? GetNativeWindowInfo()
+    {
+        var handle = this.TryGetPlatformHandle();
+        if (handle is null || handle.Handle == nint.Zero)
+        {
+            return null;
+        }
+
+        return handle.HandleDescriptor switch
+        {
+            "HWND" => new WindowsNativeWindowInfo
+            {
+                ProcessId = Environment.ProcessId,
+                WindowHandle = handle.Handle
+            },
+            "XID" => new X11NativeWindowInfo
+            {
+                ProcessId = Environment.ProcessId,
+                DisplayName = Environment.GetEnvironmentVariable("DISPLAY") ?? string.Empty,
+                WindowId = (nuint)handle.Handle
+            },
+            "NSWindow" => new MacNativeWindowInfo
+            {
+                ProcessId = Environment.ProcessId,
+                BundleIdentifier = Environment.ProcessPath ?? string.Empty,
+                WindowTitle = Title ?? string.Empty,
+                Bounds = new ScreenPosition
+                {
+                    X = Position.X,
+                    Y = Position.Y,
+                    Width = (int)Width,
+                    Height = (int)Height
+                }
+            },
+            _ => null
+        };
+    }
+
+    public async ValueTask<IAsyncDisposable?> HideTemporarilyAsync(CancellationToken token = default)
+    {
+        return await Dispatcher.UIThread.InvokeAsync<IAsyncDisposable?>(() =>
+        {
+            token.ThrowIfCancellationRequested();
+            if (!IsVisible)
+            {
+                return null;
+            }
+
+            var wasActive = IsActive;
+            var wasTopmost = Topmost;
+            var previousShowActivated = ShowActivated;
+            var windowState = WindowState;
+            var position = Position;
+            var width = Width;
+            var height = Height;
+
+            Hide();
+            return new TemporaryHideScope(async () =>
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    Topmost = wasTopmost;
+                    WindowState = windowState;
+                    Position = position;
+                    Width = width;
+                    Height = height;
+                    ShowActivated = wasActive;
+                    Show();
+                    if (wasActive)
+                    {
+                        Activate();
+                    }
+                    ShowActivated = previousShowActivated;
+                });
+            });
+        });
+    }
+
+    private sealed class TemporaryHideScope(Func<ValueTask> restore) : IAsyncDisposable
+    {
+        private int _restored;
+
+        public ValueTask DisposeAsync() =>
+            Interlocked.Exchange(ref _restored, 1) == 0 ? restore() : ValueTask.CompletedTask;
     }
 
     // 在 macOS 上，ViewModel 的 Width 和 Height 已经是物理像素值，不需要再乘以 RenderScaling

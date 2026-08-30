@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
@@ -59,6 +60,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly PointerEventHandler _listViewItemPointerReleasedHandler;
     private readonly PointerEventHandler _listViewItemPointerExitedHandler;
     private readonly TypedEventHandler<UIElement, ContextRequestedEventArgs> _listViewItemContextRequestedHandler;
+    private bool _isActive;
 
     public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel, ICaretPositionProvider caretPositionProvider, ILogger logger)
     {
@@ -91,11 +93,13 @@ public sealed partial class HistoryWindow : Window, IWindow
         {
             if (args.WindowActivationState == WindowActivationState.Deactivated)
             {
+                _isActive = false;
                 ResetPointerInteractionState();
                 _viewModel.OnLostFocus();
             }
             else
             {
+                _isActive = true;
                 _viewModel.OnGotFocus();
                 _SearchTextBox.Focus(FocusState.Programmatic);
             }
@@ -314,6 +318,15 @@ public sealed partial class HistoryWindow : Window, IWindow
         else
         {
             _viewModel.RepositionWindow();
+            this.SetForegroundWindow();
+        }
+    }
+
+    public void RestoreFocus()
+    {
+        if (this.Visible)
+        {
+            this.Activate();
             this.SetForegroundWindow();
         }
     }
@@ -982,6 +995,68 @@ public sealed partial class HistoryWindow : Window, IWindow
     public void SetTopmost(bool topmost)
     {
         this.SetIsAlwaysOnTop(topmost);
+    }
+
+    public NativeWindowInfo? GetNativeWindowInfo()
+    {
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
+        return hWnd == IntPtr.Zero || processId == 0
+            ? null
+            : new WindowsNativeWindowInfo
+            {
+                ProcessId = (int)processId,
+                WindowHandle = hWnd
+            };
+    }
+
+    public ValueTask<IAsyncDisposable?> HideTemporarilyAsync(CancellationToken token = default)
+    {
+        token.ThrowIfCancellationRequested();
+        if (!Visible)
+        {
+            return ValueTask.FromResult<IAsyncDisposable?>(null);
+        }
+
+        var wasActive = _isActive;
+        var wasTopmost = _viewModel.IsTopmost;
+        var position = AppWindow.Position;
+        var size = AppWindow.Size;
+        var presenter = AppWindow.Presenter as OverlappedPresenter;
+        var presenterState = presenter?.State;
+
+        AppWindow.Hide();
+        return ValueTask.FromResult<IAsyncDisposable?>(new TemporaryHideScope(() =>
+        {
+            AppWindow.Move(position);
+            AppWindow.Resize(size);
+            if (presenter is not null && presenterState.HasValue)
+            {
+                switch (presenterState.Value)
+                {
+                    case OverlappedPresenterState.Maximized:
+                        presenter.Maximize();
+                        break;
+                    case OverlappedPresenterState.Minimized:
+                        presenter.Minimize();
+                        break;
+                    default:
+                        presenter.Restore();
+                        break;
+                }
+            }
+            this.SetIsAlwaysOnTop(wasTopmost);
+            AppWindow.Show(wasActive);
+            return ValueTask.CompletedTask;
+        }));
+    }
+
+    private sealed class TemporaryHideScope(Func<ValueTask> restore) : IAsyncDisposable
+    {
+        private int _restored;
+
+        public ValueTask DisposeAsync() =>
+            Interlocked.Exchange(ref _restored, 1) == 0 ? restore() : ValueTask.CompletedTask;
     }
 
     public bool SetNearCaretPosition(ScreenPosition caretPosition)
