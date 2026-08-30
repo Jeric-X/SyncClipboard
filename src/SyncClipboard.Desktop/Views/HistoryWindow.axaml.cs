@@ -181,6 +181,8 @@ public partial class HistoryWindow : Window, IWindow
 
     protected virtual void FocusOnScreen()
     {
+        _viewModel.CapturePasteTargetBeforeShowingHistory();
+
         if (!this.IsVisible)
         {
             if (!_viewModel.RepositionWindow() && _firstShow)

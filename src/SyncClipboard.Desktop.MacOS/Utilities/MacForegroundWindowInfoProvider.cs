@@ -63,7 +63,7 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
                 NativeWindowInfo = new MacNativeWindowInfo
                 {
                     ProcessId = pid,
-                    BundleIdentifier = executableName ?? processName,
+                    BundleIdentifier = frontmostApp.BundleIdentifier ?? string.Empty,
                     WindowNumber = windowNumber,
                     WindowTitle = windowTitle,
                     Bounds = screenBounds
@@ -143,6 +143,19 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
                 if (application is null || application.Terminated)
                 {
                     _logger.Write(Tag, $"Target process {macWindow.ProcessId} is no longer running.");
+                    return Task.FromResult(false);
+                }
+
+                if (!string.IsNullOrEmpty(macWindow.BundleIdentifier)
+                    && !string.Equals(
+                        application.BundleIdentifier,
+                        macWindow.BundleIdentifier,
+                        StringComparison.Ordinal))
+                {
+                    _logger.Write(
+                        Tag,
+                        $"Target process {macWindow.ProcessId} bundle identifier changed from "
+                        + $"'{macWindow.BundleIdentifier}' to '{application.BundleIdentifier ?? string.Empty}'.");
                     return Task.FromResult(false);
                 }
 

@@ -286,6 +286,8 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void ShowWindow()
     {
+        _viewModel.CapturePasteTargetBeforeShowingHistory();
+
         if (!_windowLoaded)
         {
             SetWindowMinSize();
@@ -317,6 +319,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         }
         else
         {
+            _viewModel.CapturePasteTargetBeforeShowingHistory();
             _viewModel.RepositionWindow();
             this.SetForegroundWindow();
         }

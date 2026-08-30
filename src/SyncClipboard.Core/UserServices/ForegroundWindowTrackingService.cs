@@ -47,6 +47,18 @@ public sealed class ForegroundWindowTrackingService : Service
         }
     }
 
+    public void CaptureCurrentForegroundWindow()
+    {
+        if (!_trackingEnabled)
+        {
+            return;
+        }
+
+        var current = _monitor.GetCurrentForegroundWindow();
+        _logger.Write(Tag, $"Foreground window captured on demand: {DescribeWindow(current?.NativeWindowInfo)}.");
+        OnForegroundWindowChanged(current);
+    }
+
     protected override void StartService()
     {
         if (!_trackingEnabled)

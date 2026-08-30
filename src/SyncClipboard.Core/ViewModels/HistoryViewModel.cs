@@ -775,6 +775,11 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public void CapturePasteTargetBeforeShowingHistory()
+    {
+        _foregroundWindowTrackingService.CaptureCurrentForegroundWindow();
+    }
+
     public void NavigateToLast()
     {
         var count = HistoryItemCount;
@@ -1414,7 +1419,7 @@ public partial class HistoryViewModel : ObservableObject
 
         if (!keepHistoryVisible)
         {
-            await PasteAfterHistoryWindowLosesForegroundAsync(token);
+            await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
             return;
         }
 
@@ -1428,7 +1433,7 @@ public partial class HistoryViewModel : ObservableObject
         await using (hideScope)
         {
             logger.Write("History window hidden for paste fallback.");
-            await PasteAfterHistoryWindowLosesForegroundAsync(token);
+            await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
         }
         logger.Write("History window restored after paste fallback.");
     }
@@ -1453,20 +1458,10 @@ public partial class HistoryViewModel : ObservableObject
         logger.Write("History window restored after Linux paste.");
     }
 
-    private async Task PasteAfterHistoryWindowLosesForegroundAsync(CancellationToken token)
+    private async Task PasteAfterHistoryWindowHiddenOrClosedAsync(CancellationToken token)
     {
         await Task.Delay(GetPasteDelayAfterWindowHidden(), token);
-        if (_foregroundWindowTrackingService.IsHistoryWindowForeground()
-            && !await WaitForConditionAsync(
-                () => !_foregroundWindowTrackingService.IsHistoryWindowForeground(),
-                ForegroundActivationTimeout,
-                token))
-        {
-            logger.Write("Paste fallback was canceled because the history window still owns the foreground.");
-            return;
-        }
-
-        logger.Write("History window no longer owns the foreground; sending fallback paste shortcut.");
+        logger.Write("History window hidden or closed; sending fallback paste shortcut.");
         keyboard.Paste();
         // SharpHook posts native keyboard events synchronously, but macOS handles
         // them asynchronously. Keep the history window hidden until the target

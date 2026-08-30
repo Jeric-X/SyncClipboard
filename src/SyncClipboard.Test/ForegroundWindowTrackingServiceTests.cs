@@ -251,11 +251,29 @@ public class ForegroundWindowTrackingServiceTests
         service.Stop();
     }
 
+    [TestMethod]
+    public void CaptureCurrentForegroundWindow_RefreshesTargetImmediately()
+    {
+        var first = CreateNativeWindow(215, (nint)2151);
+        var second = CreateNativeWindow(215, (nint)2152);
+        var monitor = new FakeMonitor { Current = CreateDetail(first, "first") };
+        var service = CreateService(monitor, new FakeProvider());
+        service.Start();
+        monitor.Current = CreateDetail(second, "second");
+
+        service.CaptureCurrentForegroundWindow();
+
+        Assert.IsNotNull(service.LastExternalWindow);
+        Assert.IsTrue(second.IsSameWindow(service.LastExternalWindow.Value.NativeWindowInfo!));
+        Assert.AreEqual(2, monitor.CurrentReadCount);
+        service.Stop();
+    }
+
     private sealed class FakeMonitor : IForegroundWindowMonitor
     {
         private Action<ForegroundWindowDetail?>? _foregroundWindowChanged;
 
-        public ForegroundWindowDetail? Current { get; init; }
+        public ForegroundWindowDetail? Current { get; set; }
         public int CurrentReadCount { get; private set; }
         public int SubscriberCount => _foregroundWindowChanged?.GetInvocationList().Length ?? 0;
 

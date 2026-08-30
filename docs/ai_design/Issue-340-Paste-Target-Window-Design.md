@@ -489,12 +489,14 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 - 捕获应用：`NSWorkspace.SharedWorkspace.FrontmostApplication`。
 - 捕获窗口：通过 Accessibility API 读取主窗口或焦点窗口的标题和边界。
 - watcher：native 激活通知直接转发；另以轻量轮询识别同一应用内的主窗口变化。能获得焦点窗口时携带窗口级信息，否则允许应用级信息或 `null`。
+- 在历史窗口显示或重新激活之前同步读取一次当前前台窗口，补足同一应用内窗口切换发生在下一次轮询之前的竞态。
 - 恢复应用：`NSRunningApplication.Activate`。
 - 恢复窗口：重新枚举目标应用窗口，匹配捕获时的信息，设置 AX frontmost/main/focused 属性并执行 `AXRaise`；如果捕获时没有可用窗口身份则退化为应用级恢复，存在身份但无法精确恢复时返回失败并进入隐藏兜底。
 - 捕获窗口时优先读取 `AXFocusedWindow`，再回退到 `AXMainWindow`；历史窗口使用原生 `NSWindow.WindowNumber` 注册身份，避免标题或坐标系差异导致误识别。
 - `NSRunningApplication.Activate`/`AXRaise` 返回成功只代表请求已被接受。业务层异步等待并再次读取前台窗口，确认具体目标已获得前台后才发送粘贴键；这段等待不能阻塞 macOS 主线程。
 - 隐藏兜底发送 SharpHook 按键后不能立即恢复历史窗口；需要保留短暂派发窗口，让 macOS 消费完整的按下/释放事件序列后再恢复。
 - 恢复失败由 provider 记录日志并返回 `false`。
+- 根据 PID 取得运行中应用后必须核对捕获时的 Bundle Identifier，拒绝已经被其他应用复用的 PID。
 - UI 操作必须通过主线程 dispatcher。
 
 ### Linux（X11/Wayland）
