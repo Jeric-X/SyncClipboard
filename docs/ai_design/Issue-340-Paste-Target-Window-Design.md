@@ -7,11 +7,11 @@
 因此，该功能的核心不是单纯改变历史窗口的关闭条件，而是：
 
 1. Windows 和 macOS 持续记录最近使用的、非历史窗口的前台窗口。
-2. Windows 和 macOS 在“复制并粘贴”前将该窗口恢复为前台窗口。
+2. Windows 和 macOS 仅在历史窗口置顶时，才在“复制并粘贴”前将该窗口恢复为前台窗口。
 3. 历史窗口需要保持显示时，粘贴后仍保持显示和置顶状态。
-4. 平台不支持记录窗口，或者目标窗口激活失败时，临时隐藏历史窗口完成粘贴，再恢复历史窗口。
+4. 平台不支持记录窗口，或者目标窗口激活失败时，隐藏历史窗口完成粘贴；非置顶时保持隐藏，置顶时再恢复。
 
-Linux 的历史记录粘贴功能不启用前台窗口监听和恢复。Linux 上的“复制并粘贴”固定采用“临时隐藏历史窗口 → 模拟粘贴 → 恢复历史窗口”，X11 和 Wayland 行为一致；全局快捷键黑名单仍独立监听前台程序。
+Linux 的历史记录粘贴功能不启用前台窗口监听和目标窗口恢复。Linux 上的“复制并粘贴”固定依赖隐藏历史窗口后的系统焦点回退：非置顶时隐藏后不恢复，置顶时临时隐藏并在粘贴后恢复，X11 和 Wayland 行为一致；全局快捷键黑名单仍独立监听前台程序。
 
 `CloseWhenLostFocus` 继续保留。它仍用于控制未置顶的历史窗口是否在失焦时关闭，不属于本功能的替代项。
 
@@ -21,10 +21,10 @@ Linux 的历史记录粘贴功能不启用前台窗口监听和恢复。Linux �
 | --- | --- | --- |
 | 未置顶，普通复制 | 按现有逻辑关闭 | 不发送粘贴快捷键 |
 | 已置顶，普通复制 | 保持显示 | 不发送粘贴快捷键 |
-| 未置顶，复制并粘贴 | 按现有逻辑关闭 | 恢复最近的外部窗口后粘贴；无法恢复时依赖关闭后的系统焦点回退 |
+| 未置顶，复制并粘贴 | 按现有逻辑关闭 | 所有平台统一依赖关闭后的系统焦点回退，不主动激活目标窗口 |
 | 已置顶，复制并粘贴，目标可恢复 | 保持显示和置顶，但不占有键盘焦点 | 激活目标窗口，确认成功后粘贴 |
 | 已置顶，复制并粘贴，目标不可记录或激活失败 | 临时隐藏，粘贴后恢复显示和置顶 | 让系统回退到原窗口后粘贴 |
-| Linux，复制并粘贴 | 无论是否置顶都临时隐藏，粘贴后恢复原状态 | 不记录或激活目标窗口，依赖窗口隐藏后的系统焦点回退 |
+| Linux，复制并粘贴 | 非置顶时隐藏后不恢复；置顶时临时隐藏并恢复 | 不记录或激活目标窗口，依赖窗口隐藏后的系统焦点回退 |
 
 ## 总体设计
 
@@ -33,8 +33,8 @@ Linux 的历史记录粘贴功能不启用前台窗口监听和恢复。Linux �
 1. `INativeWindowController` 负责读取当前前台窗口，并提供平台原生的窗口级引用；同时负责使用该引用重新激活窗口。
 2. `INativeForegroundWindowWatcher` 保持平台 native 职责和 `Start/Stop` 接口，但事件升级为窗口级识别，尽可能携带发生变化的原生窗口引用。
 3. `ForegroundWindowMonitor` 是通用中间层，统一控制 watcher 的启停、通过 provider 主动查询当前前台窗口，并向业务服务提供变化事件。
-4. Windows 和 macOS 上，`ForegroundWindowTrackingService` 订阅中间层，持续保存最近一个可用的非历史窗口，供复制并粘贴功能使用；Linux 上该 tracking service 不订阅。`HotkeyBlacklistService` 在所有平台仍按配置独立订阅中间层。
-5. `HistoryViewModel.CopyToClipboard` 负责粘贴流程编排：设置剪贴板、决定历史窗口是否保持显示、恢复目标窗口、发送粘贴快捷键，以及执行临时隐藏兜底。
+4. Windows 和 macOS 上，`ForegroundWindowTrackingService` 订阅中间层，持续保存最近一个可用的非历史窗口，供置顶模式的复制并粘贴功能使用；Linux 上该 tracking service 不订阅。`HotkeyBlacklistService` 在所有平台仍按配置独立订阅中间层。
+5. `HistoryViewModel.CopyToClipboard` 负责粘贴流程编排：设置剪贴板、决定历史窗口是否保持显示；非置顶时统一隐藏后粘贴，置顶时再按平台决定恢复目标窗口或执行临时隐藏兜底。
 
 ## 1. 扩展前台窗口信息
 
@@ -392,13 +392,19 @@ public async Task CopyToClipboard(
 ```csharp
 private async Task PasteToLastExternalWindowAsync(CancellationToken token)
 {
-    var keepHistoryVisible = IsTopmost;
-
-    if (!keepHistoryVisible)
+    if (!IsTopmost)
     {
         ClearSelectedItem();
         window.ScrollToTop();
         window.Hide();
+        await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
+        return;
+    }
+
+    if (OperatingSystem.IsLinux())
+    {
+        await PasteWithTemporarilyHiddenHistoryWindowAsync(token);
+        return;
     }
 
     if (foregroundWindowTrackingService
@@ -408,9 +414,7 @@ private async Task PasteToLastExternalWindowAsync(CancellationToken token)
         return;
     }
 
-    await PasteWithHistoryWindowHiddenAsync(
-        restoreHistoryWindow: keepHistoryVisible,
-        token);
+    await PasteWithTemporarilyHiddenHistoryWindowAsync(token);
 }
 ```
 
@@ -418,7 +422,7 @@ private async Task PasteToLastExternalWindowAsync(CancellationToken token)
 
 ### 3.2 激活成功的判定
 
-以 Windows 为例：
+以下激活流程只用于置顶模式。以 Windows 为例：
 
 1. 验证 `HWND` 仍有效，且所属 PID 与捕获时一致。
 2. 若窗口最小化，按平台策略决定是否恢复。
@@ -463,7 +467,7 @@ public interface IWindow
 
 恢复时应以临时隐藏前的激活状态为准，而不是固定使用“显示但不激活”：如果历史窗口原本处于活动状态，可在所有模拟按键释放后重新激活；如果原本没有激活，则只恢复显示。窗口实例没有销毁，因此位置、尺寸、`Topmost` 和窗口状态由底层 UI 框架自然保留，不在业务层重复记录。
 
-Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，则不执行恢复步骤。Linux 的复制并粘贴路径始终是临时隐藏，因此完成后恢复隐藏前状态。
+所有平台上，如果历史窗口非置顶，则隐藏并在粘贴后保持隐藏。Linux 不尝试激活目标窗口；历史窗口置顶时才走临时隐藏并恢复路径。
 
 ### 3.4 兜底允许无法确认目标
 
@@ -504,7 +508,7 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 - `HotkeyBlacklistService` 仍按配置订阅 monitor；X11 provider 和轮询 watcher 保留窗口身份与描述读取，供该功能使用。
 - Linux provider 的 `TryActivateWindow` 固定返回 `false`，X11 Window ID 不用于恢复粘贴目标。
 - 删除 `_NET_ACTIVE_WINDOW`、`XSendEvent`、`XFlush` 及相关 ClientMessage 结构。
-- “复制并粘贴”固定临时隐藏历史窗口，等待系统把焦点交给下层窗口，模拟粘贴并等待按键派发完成，最后恢复历史窗口原有状态。
+- “复制并粘贴”固定先隐藏历史窗口并等待系统把焦点交给下层窗口；非置顶时粘贴后保持隐藏，置顶时在按键派发完成后恢复历史窗口。
 - 隐藏历史窗口到发送粘贴快捷键之间的等待时间从 runtime `HistoryWindow` 配置的 `PasteDelayAfterWindowHiddenMilliseconds` 读取，默认 200ms；该内部调节项不在设置界面展示。
 
 ## 5. 预计代码改动
@@ -561,12 +565,12 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 
 使用 mock watcher、monitor、provider、tracking service、`IWindow` 和键盘发送器覆盖：
 
-1. provider 返回可恢复窗口时，先设置剪贴板，再激活窗口，最后发送粘贴键。
+1. 已置顶且 provider 返回可恢复窗口时，先设置剪贴板，再激活窗口，最后发送粘贴键。
 2. 已置顶且激活成功时，历史窗口不关闭、不临时隐藏。
 3. 已置顶但平台不支持原生窗口时，临时隐藏、粘贴，并尽量恢复原有窗口状态。
 4. 已置顶但激活超时时，进入相同兜底流程。
 5. 临时隐藏后即使无法确认有效目标，也继续发送粘贴键并恢复历史窗口。
-6. 未置顶时保持原来的关闭行为。
+6. 未置顶时所有平台都保持原来的关闭行为，隐藏后直接等待并粘贴，不调用目标窗口激活。
 7. `CloseWhenLostFocus = false` 时，失焦仍不关闭。
 8. `CloseWhenLostFocus = true` 且未置顶时，失焦关闭。
 9. tracking service 不会用历史窗口覆盖最近的外部窗口，但允许记录同进程的其他窗口。
@@ -583,7 +587,7 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 20. native watcher 连续报告同一个窗口时，monitor 仍逐次转发；轮询 watcher 只过滤窗口身份完全相同的轮询结果。
 21. 只排除历史窗口；同进程内其他 SyncClipboard 窗口仍可被记录。
 22. ViewModel 的临时隐藏流程在正常、异常和取消路径上都恢复原有窗口可见性和激活状态。
-23. Linux 的历史记录粘贴 tracking 不订阅 monitor，复制并粘贴始终按“隐藏、粘贴、恢复”执行；快捷键黑名单仍能按需启动 watcher。
+23. Linux 的历史记录粘贴 tracking 不订阅 monitor；复制并粘贴在非置顶时按“隐藏、粘贴”执行，置顶时按“隐藏、粘贴、恢复”执行；快捷键黑名单仍能按需启动 watcher。
 
 建议为 `VirtualKeyboard` 增加接口或将粘贴发送器抽象化，以便测试调用顺序、直接激活路径和“目标无法确认但临时隐藏成功时仍发送粘贴键”的兜底路径。
 
@@ -593,20 +597,20 @@ Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，�
 - 历史窗口置顶时连续从多条记录交替粘贴，窗口始终显示。
 - 目标窗口最小化、关闭或切换桌面时验证降级行为。
 - 验证鼠标点击历史记录、键盘回车、快捷键打开历史窗口三种入口。
-- 验证 Windows UAC/不同完整性级别导致激活失败时进入临时隐藏兜底，并在粘贴后恢复历史窗口。
+- 验证 Windows UAC/不同完整性级别导致激活失败时进入隐藏兜底；非置顶时保持隐藏，置顶时在粘贴后恢复历史窗口。
 - 验证 macOS 没有辅助功能权限时的应用级恢复和隐藏兜底。
-- 验证 X11 与 Wayland 的历史记录粘贴功能不监听或激活前台窗口，并固定进入“隐藏、粘贴、恢复”路径；同时验证全局快捷键黑名单监听不回归。
+- 验证 X11 与 Wayland 的历史记录粘贴功能不监听或激活前台窗口；非置顶时隐藏后不恢复，置顶时粘贴后恢复；同时验证全局快捷键黑名单监听不回归。
 
 ## 7. 验收标准
 
 1. `CloseWhenLostFocus` 配置及其 UI 保持存在，行为不回归。
 2. 历史窗口置顶时执行“复制并粘贴”，历史窗口保持显示。
 3. Windows 和 macOS 上，内容被粘贴到最近使用的具体外部窗口。
-4. 无法记录或激活目标窗口时，临时隐藏历史窗口仍能完成粘贴，并恢复历史窗口显示。
+4. 无法记录或激活目标窗口时，隐藏历史窗口仍能完成粘贴；非置顶时保持隐藏，置顶时恢复显示。
 5. 兜底路径无法确认具体目标时，只要历史窗口已成功隐藏，仍按 best-effort 方式发送粘贴快捷键。
 6. native watcher 保持平台监听职责和 `Start/Stop`，事件升级为窗口级识别；由 foreground window monitor 根据业务订阅状态统一启停，任一业务服务的退订都不会中断仍在使用 monitor 的其他服务。
 7. 仅历史窗口自身被排除，同一进程的其他窗口不被误排除。
 8. monitor 不切换线程、不串行化事件、不对 native 事件额外去重；读取失败广播 `null`，并隔离订阅者异常。
 9. provider 激活接口只返回 `bool`，失败原因由平台 provider 写入日志。
 10. 临时隐藏后恢复原有可见性和激活状态；同一窗口实例的位置、尺寸、置顶和窗口状态由 UI 框架自然保留。
-11. Linux 的历史记录粘贴功能不监听或激活前台窗口；复制并粘贴始终临时隐藏历史窗口，完成模拟粘贴后恢复。全局快捷键黑名单仍可独立监听前台程序。
+11. Linux 的历史记录粘贴功能不监听或激活前台窗口；复制并粘贴在非置顶时隐藏后保持隐藏，置顶时临时隐藏并在粘贴后恢复。全局快捷键黑名单仍可独立监听前台程序。

@@ -66,18 +66,19 @@ public partial class HistoryViewModel
 
     private async Task PasteToLastExternalWindowAsync(CancellationToken token)
     {
-        if (OperatingSystem.IsLinux())
-        {
-            await PasteWithTemporarilyHiddenHistoryWindowAsync(token);
-            return;
-        }
-
-        var keepHistoryVisible = IsTopmost;
-        if (!keepHistoryVisible)
+        if (!IsTopmost)
         {
             ClearSelectedItem();
             window.ScrollToTop();
             window.Hide();
+            await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
+            return;
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            await PasteWithTemporarilyHiddenHistoryWindowAsync(token);
+            return;
         }
 
         var activationRequested = _foregroundWindowTrackingService.TryActivateLastExternalWindow();
@@ -91,24 +92,15 @@ public partial class HistoryViewModel
             {
                 logger.Write("Paste target became foreground; sending paste shortcut.");
                 keyboard.Paste();
-                if (keepHistoryVisible)
-                {
-                    // Native key events are consumed asynchronously on macOS. Do not
-                    // take focus back until the target has received the full shortcut.
-                    await Task.Delay(PasteDispatchDelay, CancellationToken.None);
-                    window.Show(activate: true);
-                    logger.Write("History window focus restored after paste.");
-                }
+                // Native key events are consumed asynchronously on macOS. Do not
+                // take focus back until the target has received the full shortcut.
+                await Task.Delay(PasteDispatchDelay, CancellationToken.None);
+                window.Show(activate: true);
+                logger.Write("History window focus restored after paste.");
                 return;
             }
 
             logger.Write("Foreground window activation was accepted but could not be confirmed; using paste fallback.");
-        }
-
-        if (!keepHistoryVisible)
-        {
-            await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
-            return;
         }
 
         await PasteWithTemporarilyHiddenHistoryWindowAsync(token);
