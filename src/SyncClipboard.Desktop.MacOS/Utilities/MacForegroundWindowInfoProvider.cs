@@ -137,58 +137,61 @@ internal sealed class MacForegroundWindowInfoProvider(ILogger logger, IThreadDis
         try
         {
             _logger.Write(Tag, $"macOS activation requested: {DescribeWindow(macWindow)}.");
-            return _threadDispatcher.RunOnMainThreadAsync(() =>
-            {
-                var application = NSRunningApplication.GetRunningApplication(macWindow.ProcessId);
-                if (application is null || application.Terminated)
-                {
-                    _logger.Write(Tag, $"Target process {macWindow.ProcessId} is no longer running.");
-                    return Task.FromResult(false);
-                }
-
-                if (!string.IsNullOrEmpty(macWindow.BundleIdentifier)
-                    && !string.Equals(
-                        application.BundleIdentifier,
-                        macWindow.BundleIdentifier,
-                        StringComparison.Ordinal))
-                {
-                    _logger.Write(
-                        Tag,
-                        $"Target process {macWindow.ProcessId} bundle identifier changed from "
-                        + $"'{macWindow.BundleIdentifier}' to '{application.BundleIdentifier ?? string.Empty}'.");
-                    return Task.FromResult(false);
-                }
-
-                var activated = application.Activate(NSApplicationActivationOptions.ActivateIgnoringOtherWindows);
-                if (!activated)
-                {
-                    _logger.Write(Tag, $"Failed to activate process {macWindow.ProcessId} ({macWindow.BundleIdentifier}).");
-                    return Task.FromResult(false);
-                }
-
-                if (!HasWindowIdentity(macWindow))
-                {
-                    _logger.Write(Tag, $"Activated application without a precise window identity: {DescribeWindow(macWindow)}.");
-                    return Task.FromResult(true);
-                }
-
-                var raised = TryRaiseCapturedWindow(macWindow);
-                if (!raised)
-                {
-                    _logger.Write(Tag, $"Failed to raise the captured window in process {macWindow.ProcessId}.");
-                }
-                else
-                {
-                    _logger.Write(Tag, $"Raised captured macOS window: {DescribeWindow(macWindow)}.");
-                }
-                return Task.FromResult(raised);
-            }).GetAwaiter().GetResult();
+            return _threadDispatcher.RunOnMainThreadAsync(
+                () => Task.FromResult(TryActivateWindowOnMainThread(macWindow))).GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
             _logger.Write(Tag, $"Failed to activate macOS window: {ex.Message}");
             return false;
         }
+    }
+
+    private bool TryActivateWindowOnMainThread(MacNativeWindowInfo macWindow)
+    {
+        var application = NSRunningApplication.GetRunningApplication(macWindow.ProcessId);
+        if (application is null || application.Terminated)
+        {
+            _logger.Write(Tag, $"Target process {macWindow.ProcessId} is no longer running.");
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(macWindow.BundleIdentifier)
+            && !string.Equals(
+                application.BundleIdentifier,
+                macWindow.BundleIdentifier,
+                StringComparison.Ordinal))
+        {
+            _logger.Write(
+                Tag,
+                $"Target process {macWindow.ProcessId} bundle identifier changed from "
+                + $"'{macWindow.BundleIdentifier}' to '{application.BundleIdentifier ?? string.Empty}'.");
+            return false;
+        }
+
+        var activated = application.Activate(NSApplicationActivationOptions.ActivateIgnoringOtherWindows);
+        if (!activated)
+        {
+            _logger.Write(Tag, $"Failed to activate process {macWindow.ProcessId} ({macWindow.BundleIdentifier}).");
+            return false;
+        }
+
+        if (!HasWindowIdentity(macWindow))
+        {
+            _logger.Write(Tag, $"Activated application without a precise window identity: {DescribeWindow(macWindow)}.");
+            return true;
+        }
+
+        var raised = TryRaiseCapturedWindow(macWindow);
+        if (!raised)
+        {
+            _logger.Write(Tag, $"Failed to raise the captured window in process {macWindow.ProcessId}.");
+        }
+        else
+        {
+            _logger.Write(Tag, $"Raised captured macOS window: {DescribeWindow(macWindow)}.");
+        }
+        return raised;
     }
 
     private NSRunningApplication? GetFrontmostApplication()
