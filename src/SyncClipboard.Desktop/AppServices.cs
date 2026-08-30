@@ -72,6 +72,7 @@ public class AppServices
             services.AddSingleton<IClipboardReader, WlClipboardReader>();
             services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
             services.AddSingleton<IForegroundWindowInfoProvider, LinuxForegroundWindowInfoProvider>();
+            services.AddSingleton<IForegroundWindowWatcher, PollingForegroundWindowWatcher>();
             services.AddSingleton<IMousePositionProvider, MousePositionProvider>();
         }
 
@@ -80,6 +81,7 @@ public class AppServices
             services.AddSingleton<IWifiNetworkInfoProvider, WindowsWifiNetworkInfoProvider>();
             services.AddSingleton<ICaretPositionProvider, FakeCaretPositionProvider>();
             services.AddSingleton<IForegroundWindowInfoProvider, WindowsForegroundWindowInfoProvider>();
+            services.AddSingleton<IForegroundWindowWatcher, WindowsForegroundWindowWatcher>();
             services.AddSingleton<IMousePositionProvider, FakeMousePositionProvider>();
         }
 
@@ -87,7 +89,6 @@ public class AppServices
         {
             services.AddSingleton<IMainWindow, MainWindow>();
             services.AddSingleton<INativeHotkeyRegistry, SharpHookHotkeyRegistry>();
-            services.AddSingleton<IForegroundWindowWatcher, PollingForegroundWindowWatcher>();
             services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
             services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
         }
