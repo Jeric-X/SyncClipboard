@@ -766,7 +766,10 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnWindowShown()
     {
-        _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
+        if (!OperatingSystem.IsLinux())
+        {
+            _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
+        }
         if (ScrollToTopOnReopen)
         {
             ScrollToTop();
@@ -932,7 +935,10 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
+        if (!OperatingSystem.IsLinux())
+        {
+            _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
+        }
         historyManager.HistoryAdded += RecordEntityUpdated;
         historyManager.HistoryUpdated += RecordEntityUpdated;
         historyManager.HistoryRemoved += OnHistoryRemoved;
@@ -1369,6 +1375,12 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task PasteToLastExternalWindowAsync(CancellationToken token)
     {
+        if (OperatingSystem.IsLinux())
+        {
+            await PasteWithTemporarilyHiddenHistoryWindowOnLinuxAsync(token);
+            return;
+        }
+
         var keepHistoryVisible = IsTopmost;
         if (!keepHistoryVisible)
         {
@@ -1420,6 +1432,26 @@ public partial class HistoryViewModel : ObservableObject
             await PasteAfterHistoryWindowLosesForegroundAsync(token);
         }
         logger.Write("History window restored after paste fallback.");
+    }
+
+    private async Task PasteWithTemporarilyHiddenHistoryWindowOnLinuxAsync(CancellationToken token)
+    {
+        var hideScope = await window.HideTemporarilyAsync(token);
+        if (hideScope is null)
+        {
+            logger.Write("Linux paste was canceled because the history window could not be hidden.");
+            return;
+        }
+
+        await using (hideScope)
+        {
+            logger.Write("History window hidden for Linux paste.");
+            await Task.Delay(FocusFallbackDelay, token);
+            keyboard.Paste();
+            await Task.Delay(PasteDispatchDelay, CancellationToken.None);
+            logger.Write("Linux paste dispatch delay completed.");
+        }
+        logger.Write("History window restored after Linux paste.");
     }
 
     private async Task PasteAfterHistoryWindowLosesForegroundAsync(CancellationToken token)

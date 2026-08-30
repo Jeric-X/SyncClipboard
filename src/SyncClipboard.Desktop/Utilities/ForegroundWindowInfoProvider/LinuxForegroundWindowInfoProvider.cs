@@ -11,9 +11,6 @@ internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForeg
 {
     private readonly ILogger _logger = logger;
     private const string Tag = "ForegroundWindowInfo";
-    private const int ClientMessage = 33;
-    private const long SubstructureNotifyMask = 1L << 19;
-    private const long SubstructureRedirectMask = 1L << 20;
 
     public ForegroundWindowDetail? GetForegroundWindowDetail()
     {
@@ -33,7 +30,7 @@ internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForeg
             }
 
             // 获取焦点窗口
-            _ = X11Interop.XGetInputFocus(display, out var window, out var revertTo);
+            _ = X11Interop.XGetInputFocus(display, out var window, out _);
 
             if (window == nint.Zero)
             {
@@ -106,69 +103,7 @@ internal sealed class LinuxForegroundWindowInfoProvider(ILogger logger) : IForeg
         }
     }
 
-    public bool TryActivateWindow(NativeWindowInfo window)
-    {
-        if (window is not X11NativeWindowInfo x11Window || !X11Interop.IsAvailable)
-        {
-            _logger.Write(Tag, $"Unsupported native window type: {window.GetType().Name}");
-            return false;
-        }
-
-        nint display = nint.Zero;
-        try
-        {
-            display = X11Interop.XOpenDisplay(string.IsNullOrEmpty(x11Window.DisplayName) ? null : x11Window.DisplayName);
-            var target = (nint)x11Window.WindowId;
-            if (display == nint.Zero || X11Interop.XGetWindowAttributes(display, target, out _) == 0)
-            {
-                _logger.Write(Tag, $"X11 target window {x11Window.WindowId} is no longer valid.");
-                return false;
-            }
-
-            var root = X11Interop.XDefaultRootWindow(display);
-            var activeWindowAtom = X11Interop.XInternAtom(display, "_NET_ACTIVE_WINDOW", false);
-            if (root == nint.Zero || activeWindowAtom == nint.Zero)
-            {
-                _logger.Write(Tag, "Failed to resolve X11 root window or _NET_ACTIVE_WINDOW atom.");
-                return false;
-            }
-
-            var message = new XEvent
-            {
-                ClientMessage = new XClientMessageEvent
-                {
-                    type = ClientMessage,
-                    send_event = 1,
-                    display = display,
-                    window = target,
-                    message_type = activeWindowAtom,
-                    format = 32,
-                    data = new XClientMessageData { l0 = 2 }
-                }
-            };
-
-            var eventMask = (nint)(SubstructureNotifyMask | SubstructureRedirectMask);
-            var sent = X11Interop.XSendEvent(display, root, false, eventMask, ref message) != 0;
-            _ = X11Interop.XFlush(display);
-            if (!sent)
-            {
-                _logger.Write(Tag, $"Failed to send _NET_ACTIVE_WINDOW for X11 window {x11Window.WindowId}.");
-            }
-            return sent;
-        }
-        catch (Exception ex)
-        {
-            _logger.Write(Tag, $"Failed to activate X11 window: {ex.Message}");
-            return false;
-        }
-        finally
-        {
-            if (display != nint.Zero)
-            {
-                _ = X11Interop.XCloseDisplay(display);
-            }
-        }
-    }
+    public bool TryActivateWindow(NativeWindowInfo window) => false;
 
     private static ForegroundWindowDetail? BuildWindowDetail(nint display, X11NativeWindowInfo nativeWindow)
     {

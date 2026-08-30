@@ -110,47 +110,6 @@ internal static class X11Interop
         out int win_x_return,
         out int win_y_return,
         out uint mask_return);
-
-    [DllImport(LibX11)]
-    internal static extern int XSendEvent(
-        nint display,
-        nint window,
-        bool propagate,
-        nint eventMask,
-        ref XEvent sendEvent);
-
-    [DllImport(LibX11)]
-    internal static extern int XFlush(nint display);
-}
-
-[StructLayout(LayoutKind.Explicit, Size = 192)]
-internal struct XEvent
-{
-    [FieldOffset(0)]
-    internal XClientMessageEvent ClientMessage;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct XClientMessageEvent
-{
-    internal int type;
-    internal nuint serial;
-    internal int send_event;
-    internal nint display;
-    internal nint window;
-    internal nint message_type;
-    internal int format;
-    internal XClientMessageData data;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct XClientMessageData
-{
-    internal nint l0;
-    internal nint l1;
-    internal nint l2;
-    internal nint l3;
-    internal nint l4;
 }
 
 [SupportedOSPlatform("linux")]

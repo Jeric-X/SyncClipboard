@@ -3,17 +3,38 @@ using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.UserServices;
 
-public sealed class ForegroundWindowTrackingService(
-    IForegroundWindowMonitor monitor,
-    IForegroundWindowInfoProvider provider,
-    ILogger logger) : Service
+public sealed class ForegroundWindowTrackingService : Service
 {
     private const string Tag = "ForegroundWindowTracking";
+    private readonly IForegroundWindowMonitor _monitor;
+    private readonly IForegroundWindowInfoProvider _provider;
+    private readonly ILogger _logger;
+    private readonly bool _trackingEnabled;
     private readonly object _syncRoot = new();
     private ForegroundWindowDetail? _lastExternalWindow;
     private ForegroundWindowDetail? _previousExternalWindow;
     private NativeWindowInfo? _historyWindow;
     private NativeWindowInfo? _lastActivationTarget;
+
+    public ForegroundWindowTrackingService(
+        IForegroundWindowMonitor monitor,
+        IForegroundWindowInfoProvider provider,
+        ILogger logger)
+        : this(monitor, provider, logger, !OperatingSystem.IsLinux())
+    {
+    }
+
+    internal ForegroundWindowTrackingService(
+        IForegroundWindowMonitor monitor,
+        IForegroundWindowInfoProvider provider,
+        ILogger logger,
+        bool trackingEnabled)
+    {
+        _monitor = monitor;
+        _provider = provider;
+        _logger = logger;
+        _trackingEnabled = trackingEnabled;
+    }
 
     public ForegroundWindowDetail? LastExternalWindow
     {
@@ -28,15 +49,24 @@ public sealed class ForegroundWindowTrackingService(
 
     protected override void StartService()
     {
-        monitor.ForegroundWindowChanged += OnForegroundWindowChanged;
-        var current = monitor.GetCurrentForegroundWindow();
-        logger.Write(Tag, $"Tracking started; current={DescribeWindow(current?.NativeWindowInfo)}.");
+        if (!_trackingEnabled)
+        {
+            _logger.Write(Tag, "Foreground window tracking is disabled on this platform.");
+            return;
+        }
+
+        _monitor.ForegroundWindowChanged += OnForegroundWindowChanged;
+        var current = _monitor.GetCurrentForegroundWindow();
+        _logger.Write(Tag, $"Tracking started; current={DescribeWindow(current?.NativeWindowInfo)}.");
         OnForegroundWindowChanged(current);
     }
 
     protected override void StopSerivce()
     {
-        monitor.ForegroundWindowChanged -= OnForegroundWindowChanged;
+        if (_trackingEnabled)
+        {
+            _monitor.ForegroundWindowChanged -= OnForegroundWindowChanged;
+        }
     }
 
     public void SetHistoryWindow(NativeWindowInfo? historyWindow)
@@ -57,7 +87,7 @@ public sealed class ForegroundWindowTrackingService(
             }
         }
 
-        logger.Write(Tag, $"History window registered: {DescribeWindow(historyWindow)}.");
+        _logger.Write(Tag, $"History window registered: {DescribeWindow(historyWindow)}.");
     }
 
     public bool TryActivateLastExternalWindow()
@@ -71,13 +101,13 @@ public sealed class ForegroundWindowTrackingService(
 
         if (target is null)
         {
-            logger.Write(Tag, "No restorable foreground window has been recorded.");
+            _logger.Write(Tag, "No restorable foreground window has been recorded.");
             return false;
         }
 
-        logger.Write(Tag, $"Activating recorded target: {DescribeWindow(target)}.");
-        var activated = provider.TryActivateWindow(target);
-        logger.Write(Tag, $"Activation request result={activated}: {DescribeWindow(target)}.");
+        _logger.Write(Tag, $"Activating recorded target: {DescribeWindow(target)}.");
+        var activated = _provider.TryActivateWindow(target);
+        _logger.Write(Tag, $"Activation request result={activated}: {DescribeWindow(target)}.");
         return activated;
     }
 
@@ -148,11 +178,11 @@ public sealed class ForegroundWindowTrackingService(
     {
         try
         {
-            return provider.GetForegroundWindowDetail()?.NativeWindowInfo;
+            return _provider.GetForegroundWindowDetail()?.NativeWindowInfo;
         }
         catch (Exception ex)
         {
-            logger.Write(Tag, $"Failed to verify the foreground window: {ex.Message}");
+            _logger.Write(Tag, $"Failed to verify the foreground window: {ex.Message}");
             return null;
         }
     }
@@ -161,7 +191,7 @@ public sealed class ForegroundWindowTrackingService(
     {
         if (detail?.NativeWindowInfo is not { } nativeWindow)
         {
-            logger.Write(Tag, "Foreground change could not be identified; keeping the previous target.");
+            _logger.Write(Tag, "Foreground change could not be identified; keeping the previous target.");
             return;
         }
 
@@ -169,7 +199,7 @@ public sealed class ForegroundWindowTrackingService(
         {
             if (_historyWindow is not null && IsHistoryWindow(_historyWindow, nativeWindow))
             {
-                logger.Write(Tag, $"Foreground change identified as history window and ignored: {DescribeWindow(nativeWindow)}.");
+                _logger.Write(Tag, $"Foreground change identified as history window and ignored: {DescribeWindow(nativeWindow)}.");
                 return;
             }
 
@@ -181,7 +211,7 @@ public sealed class ForegroundWindowTrackingService(
             _lastExternalWindow = detail;
         }
 
-        logger.Write(Tag, $"Recorded paste target: {DescribeWindow(nativeWindow)}.");
+        _logger.Write(Tag, $"Recorded paste target: {DescribeWindow(nativeWindow)}.");
     }
 
     private static bool IsHistoryWindow(NativeWindowInfo historyWindow, NativeWindowInfo candidate)

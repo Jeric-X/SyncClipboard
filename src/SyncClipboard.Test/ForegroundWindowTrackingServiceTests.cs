@@ -60,7 +60,7 @@ public class ForegroundWindowTrackingServiceTests
         var sameProcessOtherWindow = CreateNativeWindow(200, (nint)2002);
         var monitor = new FakeMonitor { Current = CreateDetail(historyWindow, "history") };
         var provider = new FakeProvider();
-        var service = new ForegroundWindowTrackingService(monitor, provider, new FakeLogger());
+        var service = CreateService(monitor, provider);
 
         service.SetHistoryWindow(historyWindow);
         service.Start();
@@ -79,7 +79,7 @@ public class ForegroundWindowTrackingServiceTests
         var externalWindow = CreateNativeWindow(207, (nint)2071);
         var historyWindow = CreateNativeWindow(208, (nint)2081);
         var monitor = new FakeMonitor { Current = CreateDetail(externalWindow, "editor") };
-        var service = new ForegroundWindowTrackingService(monitor, new FakeProvider(), new FakeLogger());
+        var service = CreateService(monitor, new FakeProvider());
         service.Start();
 
         monitor.Raise(CreateDetail(historyWindow, "history"));
@@ -96,7 +96,7 @@ public class ForegroundWindowTrackingServiceTests
         var externalWindow = CreateNativeWindow(201, (nint)2011);
         var monitor = new FakeMonitor { Current = CreateDetail(externalWindow, "editor") };
         var provider = new FakeProvider();
-        var service = new ForegroundWindowTrackingService(monitor, provider, new FakeLogger());
+        var service = CreateService(monitor, provider);
 
         service.Start();
         var result = service.TryActivateLastExternalWindow();
@@ -112,7 +112,7 @@ public class ForegroundWindowTrackingServiceTests
     {
         var externalWindow = CreateNativeWindow(202, (nint)2021);
         var monitor = new FakeMonitor { Current = CreateDetail(externalWindow, "terminal") };
-        var service = new ForegroundWindowTrackingService(monitor, new FakeProvider(), new FakeLogger());
+        var service = CreateService(monitor, new FakeProvider());
         service.Start();
 
         monitor.Raise(null);
@@ -129,7 +129,7 @@ public class ForegroundWindowTrackingServiceTests
         var history = CreateNativeWindow(204, (nint)2041);
         var monitor = new FakeMonitor { Current = CreateDetail(target, "editor") };
         var provider = new FakeProvider { Current = CreateDetail(history, "history") };
-        var service = new ForegroundWindowTrackingService(monitor, provider, new FakeLogger());
+        var service = CreateService(monitor, provider);
         service.SetHistoryWindow(history);
         service.Start();
 
@@ -150,7 +150,7 @@ public class ForegroundWindowTrackingServiceTests
         var history = CreateNativeWindow(205, (nint)2051);
         var settings = CreateNativeWindow(205, (nint)2052);
         var provider = new FakeProvider { Current = CreateDetail(settings, "settings") };
-        var service = new ForegroundWindowTrackingService(new FakeMonitor(), provider, new FakeLogger());
+        var service = CreateService(new FakeMonitor(), provider);
         service.SetHistoryWindow(history);
 
         Assert.IsFalse(service.IsHistoryWindowForeground());
@@ -175,7 +175,7 @@ public class ForegroundWindowTrackingServiceTests
         {
             Current = CreateDetail(unidentifiableCurrentWindow, string.Empty)
         };
-        var service = new ForegroundWindowTrackingService(new FakeMonitor(), provider, new FakeLogger());
+        var service = CreateService(new FakeMonitor(), provider);
         service.SetHistoryWindow(history);
 
         Assert.IsTrue(service.IsHistoryWindowForeground());
@@ -201,7 +201,7 @@ public class ForegroundWindowTrackingServiceTests
         };
         var external = CreateNativeWindow(212, (nint)2121);
         var monitor = new FakeMonitor { Current = CreateDetail(external, "editor") };
-        var service = new ForegroundWindowTrackingService(monitor, new FakeProvider(), new FakeLogger());
+        var service = CreateService(monitor, new FakeProvider());
         service.SetHistoryWindow(history);
         service.Start();
 
@@ -222,7 +222,7 @@ public class ForegroundWindowTrackingServiceTests
         };
         var monitor = new FakeMonitor { Current = CreateDetail(target, string.Empty) };
         var provider = new FakeProvider { Current = CreateDetail(target, string.Empty) };
-        var service = new ForegroundWindowTrackingService(monitor, provider, new FakeLogger());
+        var service = CreateService(monitor, provider);
         service.Start();
 
         Assert.IsTrue(service.TryActivateLastExternalWindow());
@@ -230,11 +230,52 @@ public class ForegroundWindowTrackingServiceTests
         service.Stop();
     }
 
+    [TestMethod]
+    public void DisabledTracking_DoesNotSubscribeOrReadCurrentWindow()
+    {
+        var monitor = new FakeMonitor
+        {
+            Current = CreateDetail(CreateNativeWindow(214, (nint)2141), "editor")
+        };
+        var service = new ForegroundWindowTrackingService(
+            monitor,
+            new FakeProvider(),
+            new FakeLogger(),
+            trackingEnabled: false);
+
+        service.Start();
+
+        Assert.AreEqual(0, monitor.SubscriberCount);
+        Assert.AreEqual(0, monitor.CurrentReadCount);
+        Assert.IsNull(service.LastExternalWindow);
+        service.Stop();
+    }
+
     private sealed class FakeMonitor : IForegroundWindowMonitor
     {
+        private Action<ForegroundWindowDetail?>? _foregroundWindowChanged;
+
         public ForegroundWindowDetail? Current { get; init; }
-        public event Action<ForegroundWindowDetail?>? ForegroundWindowChanged;
-        public ForegroundWindowDetail? GetCurrentForegroundWindow() => Current;
-        public void Raise(ForegroundWindowDetail? detail) => ForegroundWindowChanged?.Invoke(detail);
+        public int CurrentReadCount { get; private set; }
+        public int SubscriberCount => _foregroundWindowChanged?.GetInvocationList().Length ?? 0;
+
+        public event Action<ForegroundWindowDetail?>? ForegroundWindowChanged
+        {
+            add => _foregroundWindowChanged += value;
+            remove => _foregroundWindowChanged -= value;
+        }
+
+        public ForegroundWindowDetail? GetCurrentForegroundWindow()
+        {
+            CurrentReadCount++;
+            return Current;
+        }
+
+        public void Raise(ForegroundWindowDetail? detail) => _foregroundWindowChanged?.Invoke(detail);
     }
+
+    private static ForegroundWindowTrackingService CreateService(
+        IForegroundWindowMonitor monitor,
+        IForegroundWindowInfoProvider provider) =>
+        new(monitor, provider, new FakeLogger(), trackingEnabled: true);
 }

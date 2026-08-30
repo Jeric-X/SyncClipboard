@@ -698,12 +698,6 @@ public partial class HistoryWindow : Window, IWindow
                 ProcessId = Environment.ProcessId,
                 WindowHandle = handle.Handle
             },
-            "XID" => new X11NativeWindowInfo
-            {
-                ProcessId = Environment.ProcessId,
-                DisplayName = Environment.GetEnvironmentVariable("DISPLAY") ?? string.Empty,
-                WindowId = (nuint)handle.Handle
-            },
             "NSWindow" => new MacNativeWindowInfo
             {
                 ProcessId = Environment.ProcessId,

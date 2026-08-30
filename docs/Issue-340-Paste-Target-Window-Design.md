@@ -6,10 +6,12 @@
 
 因此，该功能的核心不是单纯改变历史窗口的关闭条件，而是：
 
-1. 持续记录最近使用的、非历史窗口的前台窗口。
-2. 在“复制并粘贴”前将该窗口恢复为前台窗口。
+1. Windows 和 macOS 持续记录最近使用的、非历史窗口的前台窗口。
+2. Windows 和 macOS 在“复制并粘贴”前将该窗口恢复为前台窗口。
 3. 历史窗口需要保持显示时，粘贴后仍保持显示和置顶状态。
 4. 平台不支持记录窗口，或者目标窗口激活失败时，临时隐藏历史窗口完成粘贴，再恢复历史窗口。
+
+Linux 的历史记录粘贴功能不启用前台窗口监听和恢复。Linux 上的“复制并粘贴”固定采用“临时隐藏历史窗口 → 模拟粘贴 → 恢复历史窗口”，X11 和 Wayland 行为一致；全局快捷键黑名单仍独立监听前台程序。
 
 `CloseWhenLostFocus` 继续保留。它仍用于控制未置顶的历史窗口是否在失焦时关闭，不属于本功能的替代项。
 
@@ -22,6 +24,7 @@
 | 未置顶，复制并粘贴 | 按现有逻辑关闭 | 恢复最近的外部窗口后粘贴；无法恢复时依赖关闭后的系统焦点回退 |
 | 已置顶，复制并粘贴，目标可恢复 | 保持显示和置顶，但不占有键盘焦点 | 激活目标窗口，确认成功后粘贴 |
 | 已置顶，复制并粘贴，目标不可记录或激活失败 | 临时隐藏，粘贴后恢复显示和置顶 | 让系统回退到原窗口后粘贴 |
+| Linux，复制并粘贴 | 无论是否置顶都临时隐藏，粘贴后恢复原状态 | 不记录或激活目标窗口，依赖窗口隐藏后的系统焦点回退 |
 
 ## 总体设计
 
@@ -30,7 +33,7 @@
 1. `IForegroundWindowInfoProvider` 负责读取当前前台窗口，并提供平台原生的窗口级引用；同时负责使用该引用重新激活窗口。
 2. `IForegroundWindowWatcher` 保持平台 native 职责和 `Start/Stop` 接口，但事件升级为窗口级识别，尽可能携带发生变化的原生窗口引用。
 3. `ForegroundWindowMonitorService` 是通用中间层，统一控制 watcher 的启停、通过 provider 主动查询当前前台窗口，并向业务服务提供变化事件。
-4. `ForegroundWindowTrackingService` 订阅中间层，持续保存最近一个可用的非历史窗口，供复制并粘贴功能使用；`HotkeyBlacklistService` 也独立订阅中间层。
+4. Windows 和 macOS 上，`ForegroundWindowTrackingService` 订阅中间层，持续保存最近一个可用的非历史窗口，供复制并粘贴功能使用；Linux 上该 tracking service 不订阅。`HotkeyBlacklistService` 在所有平台仍按配置独立订阅中间层。
 5. `HistoryViewModel.CopyToClipboard` 负责粘贴流程编排：设置剪贴板、决定历史窗口是否保持显示、恢复目标窗口、发送粘贴快捷键，以及执行临时隐藏兜底。
 
 ## 1. 扩展前台窗口信息
@@ -71,7 +74,7 @@ public sealed record MacNativeWindowInfo : NativeWindowInfo
 }
 ```
 
-Windows 和 X11 可以保存精确的窗口句柄。macOS 应优先使用 `NSWindow.WindowNumber`/`AXWindowNumber` 作为窗口级身份，并使用 Accessibility API 重新定位具体窗口；如果目标应用（例如部分 Electron 应用）不提供窗口身份，则以应用 PID 激活和前台确认作为降级结果。不要长期保存裸的 `AXUIElementRef`，避免所有权、释放和窗口失效问题；可以保存 PID、窗口编号、标题、窗口位置等信息，在恢复时重新枚举并匹配窗口。
+Windows 可以保存精确的窗口句柄。macOS 应优先使用 `NSWindow.WindowNumber`/`AXWindowNumber` 作为窗口级身份，并使用 Accessibility API 重新定位具体窗口；如果目标应用（例如部分 Electron 应用）不提供窗口身份，则以应用 PID 激活和前台确认作为降级结果。不要长期保存裸的 `AXUIElementRef`，避免所有权、释放和窗口失效问题；可以保存 PID、窗口编号、标题、窗口位置等信息，在恢复时重新枚举并匹配窗口。Linux 的 X11 Window ID 仅用于前台程序监听和快捷键黑名单，不用于历史记录粘贴目标恢复。
 
 ### 1.2 扩展 `ForegroundWindowDetail`
 
@@ -94,7 +97,7 @@ public readonly struct ForegroundWindowDetail
 
 ### 1.3 由 provider 恢复窗口
 
-原生信息的解释和操作应留在平台 provider 内，调用者不直接判断 `HWND`、X11 Window ID 或 macOS 窗口信息。
+原生信息的解释和操作应留在平台 provider 内，调用者不直接判断 `HWND` 或 macOS 窗口信息。
 
 ```csharp
 public interface IForegroundWindowInfoProvider
@@ -133,8 +136,8 @@ public interface IForegroundWindowWatcher : IDisposable
 
 - Windows `WinEvent` 直接使用回调提供的 `HWND` 构造 `WindowsNativeWindowInfo`，实现窗口级而不是进程级识别。
 - macOS 尽可能从激活应用和 Accessibility API 获得焦点窗口信息；只能识别应用时允许退化为应用级引用。
-- X11 使用顶层 Window ID。
-- Wayland 或读取失败时允许传入 `null`。
+- Linux/X11 watcher 按顶层 Window ID 识别变化，供全局快捷键黑名单使用；历史记录粘贴目标 tracking service 在 Linux 不订阅 monitor。
+- 读取失败时允许传入 `null`。
 
 基于系统 native 事件的 watcher 收到一次事件就直接转发一次，即使连续事件指向同一个窗口也不去重。上层业务可能需要知道同一窗口重新激活或焦点重新确认。
 
@@ -314,7 +317,7 @@ public sealed class ForegroundWindowTrackingService : Service
 - 对外提供线程安全的目标快照。
 - 调用 provider 验证并恢复目标窗口，只向调用方返回成功或失败；具体失败原因由 provider 记录。
 
-由于该服务需要持续记录最近的外部窗口，它在应用正常运行期间始终订阅中间层，因此中间层会保持 native watcher 运行。
+Windows 和 macOS 上，该服务在应用正常运行期间始终订阅中间层，因此中间层会保持 native watcher 运行。Linux 上服务不订阅中间层。
 
 `HotkeyBlacklistService` 仍是独立业务服务：
 
@@ -323,6 +326,7 @@ public sealed class ForegroundWindowTrackingService : Service
 - 功能关闭时只解除自己的中间层订阅。
 - 保留现有防抖和黑名单匹配逻辑。
 - 不直接依赖 provider 或 native watcher，也不调用 watcher 的 `Start/Stop`。
+- Linux 上仍按配置订阅 monitor，保证前台程序黑名单继续动态生效；这不代表历史记录粘贴功能会订阅或使用这些事件。
 
 ### 2.5 排除历史窗口
 
@@ -342,7 +346,7 @@ foregroundWindowTrackingService.SetHistoryWindow(
 
 原生句柄可能只有窗口真正创建或显示后才能获得，因此每次历史窗口完成创建或重新创建 native handle 时都要刷新注册值。如果注册的新身份与当前 `LastExternalWindow` 相同，立即清除该错误目标。
 
-窗口比较使用平台 `NativeWindowInfo` 的窗口级身份：Windows 比较 `HWND` 并核对 PID，X11 比较 display 与 Window ID，macOS 优先比较 Window Number。部分应用无法从 AX 侧读取 Window Number，此时退化为 PID 与窗口标题；如果两边都没有窗口级信息，才退化为应用 PID。窗口位置和尺寸只作为描述信息，任何情况下都不能参与窗口身份判断，因为所有应用都允许移动和调整窗口大小。
+粘贴目标比较使用平台 `NativeWindowInfo` 的窗口级身份：Windows 比较 `HWND` 并核对 PID，macOS 优先比较 Window Number。部分应用无法从 AX 侧读取 Window Number，此时退化为 PID 与窗口标题；如果两边都没有窗口级信息，才退化为应用 PID。窗口位置和尺寸只作为描述信息，任何情况下都不能参与窗口身份判断，因为所有应用都允许移动和调整窗口大小。Linux 的 X11 Window ID 比较只用于 watcher 轮询去重和快捷键黑名单，不用于粘贴目标。
 
 即使平台无法提供 `NativeWindowInfo`，monitor 仍可向 `ForegroundWindowChanged` 广播描述性的窗口详情供黑名单功能使用，但不能将它作为可直接恢复的目标。
 
@@ -352,7 +356,7 @@ foregroundWindowTrackingService.SetHistoryWindow(
 - 激活开始时先复制一份目标快照，避免激活期间被中间层事件更新。
 - 窗口关闭、进程退出或句柄被复用时，由 provider 在 `TryActivateWindow` 内验证并返回 `false`。
 - 激活历史窗口本身触发的中间层事件不能覆盖 `LastExternalWindow`。
-- 不应依赖固定的一秒轮询来捕获快速切换；Windows 和 macOS 使用系统事件。X11 watcher 应提高精度或使用窗口属性事件，轮询仅作为兼容方案。
+- 历史记录粘贴目标不应依赖固定的一秒轮询来捕获快速切换；Windows 和 macOS 使用系统事件。Linux 的轮询只服务于全局快捷键黑名单。
 
 ## 3. 复制并粘贴流程
 
@@ -460,7 +464,7 @@ public interface IWindow
 
 恢复时应以临时隐藏前的状态为准，而不是固定使用“显示但不激活”：如果历史窗口原本处于活动状态，可在所有模拟按键释放后重新激活；如果原本没有激活，则只恢复显示。窗口最大化、最小化、普通状态、位置、尺寸和 `Topmost` 均按平台能力尽量保持。
 
-如果历史窗口原本就应该在粘贴后关闭，则不执行恢复步骤。
+Windows 和 macOS 上，如果历史窗口原本就应该在粘贴后关闭，则不执行恢复步骤。Linux 的复制并粘贴路径始终是临时隐藏，因此完成后恢复隐藏前状态。
 
 ### 3.4 兜底允许无法确认目标
 
@@ -493,17 +497,13 @@ public interface IWindow
 - 恢复失败由 provider 记录日志并返回 `false`。
 - UI 操作必须通过主线程 dispatcher。
 
-### Linux/X11
+### Linux（X11/Wayland）
 
-- 捕获：保存顶层 X11 Window ID 和 PID。
-- watcher：按顶层 Window ID 识别不同窗口；轮询实现只过滤完全相同的窗口 ID。
-- 激活：向 root window 发送 `_NET_ACTIVE_WINDOW` ClientMessage，并 `XFlush`。
-- 不建议只调用 `XSetInputFocus`，因为它绕过窗口管理器且兼容性较差。
-- 恢复前验证窗口仍存在；失败时由 provider 记录日志并返回 `false`。
-
-### Linux/Wayland
-
-Wayland 通常禁止应用任意激活其他应用窗口。若没有可用的桌面门户或 compositor activation token，应明确返回“不支持”，直接走临时隐藏兜底。不要用进程名或窗口标题猜测并调用外部命令。
+- `ForegroundWindowTrackingService` 不订阅 monitor；历史记录复制并粘贴功能不监听前台窗口。
+- `HotkeyBlacklistService` 仍按配置订阅 monitor；X11 provider 和轮询 watcher 保留窗口身份与描述读取，供该功能使用。
+- Linux provider 的 `TryActivateWindow` 固定返回 `false`，X11 Window ID 不用于恢复粘贴目标。
+- 删除 `_NET_ACTIVE_WINDOW`、`XSendEvent`、`XFlush` 及相关 ClientMessage 结构。
+- “复制并粘贴”固定临时隐藏历史窗口，等待系统把焦点交给下层窗口，模拟粘贴并等待按键派发完成，最后恢复历史窗口原有状态。
 
 ## 5. 预计代码改动
 
@@ -543,7 +543,9 @@ Wayland 通常禁止应用任意激活其他应用窗口。若没有可用的桌
 - Avalonia Windows `WindowsForegroundWindowInfoProvider`
   - 同上。
 - Avalonia Linux `LinuxForegroundWindowInfoProvider`
-  - 返回 X11 Window ID，实现 `_NET_ACTIVE_WINDOW`；Wayland 返回不支持。
+  - 保留前台窗口身份、描述和边界读取供快捷键黑名单使用，但不实现窗口激活。
+- Avalonia Linux `PollingForegroundWindowWatcher`
+  - 仍可由快捷键黑名单通过 monitor 启停；历史记录粘贴目标 tracking 不订阅。
 - macOS `MacForegroundWindowInfoProvider`
   - 返回 PID 和窗口级匹配信息，实现应用/窗口激活。
 - Avalonia、WinUI3、macOS 历史窗口
@@ -577,6 +579,7 @@ Wayland 通常禁止应用任意激活其他应用窗口。若没有可用的桌
 20. native watcher 连续报告同一个窗口时，monitor 仍逐次转发；轮询 watcher 只过滤窗口身份完全相同的轮询结果。
 21. 只排除历史窗口；同进程内其他 SyncClipboard 窗口仍可被记录。
 22. 临时隐藏 scope 在正常、异常和取消路径上都恢复原有窗口状态，恢复操作可重复调用。
+23. Linux 的历史记录粘贴 tracking 不订阅 monitor，复制并粘贴始终按“隐藏、粘贴、恢复”执行；快捷键黑名单仍能按需启动 watcher。
 
 建议为 `VirtualKeyboard` 增加接口或将粘贴发送器抽象化，以便测试调用顺序、直接激活路径和“目标无法确认但临时隐藏成功时仍发送粘贴键”的兜底路径。
 
@@ -588,13 +591,13 @@ Wayland 通常禁止应用任意激活其他应用窗口。若没有可用的桌
 - 验证鼠标点击历史记录、键盘回车、快捷键打开历史窗口三种入口。
 - 验证 Windows UAC/不同完整性级别导致激活失败时进入临时隐藏兜底，并在粘贴后恢复历史窗口。
 - 验证 macOS 没有辅助功能权限时的应用级恢复和隐藏兜底。
-- 验证 X11 与 Wayland 会进入各自预期路径。
+- 验证 X11 与 Wayland 的历史记录粘贴功能不监听或激活前台窗口，并固定进入“隐藏、粘贴、恢复”路径；同时验证全局快捷键黑名单监听不回归。
 
 ## 7. 验收标准
 
 1. `CloseWhenLostFocus` 配置及其 UI 保持存在，行为不回归。
 2. 历史窗口置顶时执行“复制并粘贴”，历史窗口保持显示。
-3. 在支持窗口恢复的平台上，内容被粘贴到最近使用的具体外部窗口。
+3. Windows 和 macOS 上，内容被粘贴到最近使用的具体外部窗口。
 4. 无法记录或激活目标窗口时，临时隐藏历史窗口仍能完成粘贴，并恢复历史窗口显示。
 5. 兜底路径无法确认具体目标时，只要历史窗口已成功隐藏，仍按 best-effort 方式发送粘贴快捷键。
 6. native watcher 保持平台监听职责和 `Start/Stop`，事件升级为窗口级识别；由 foreground window monitor 根据业务订阅状态统一启停，任一业务服务的退订都不会中断仍在使用 monitor 的其他服务。
@@ -602,3 +605,4 @@ Wayland 通常禁止应用任意激活其他应用窗口。若没有可用的桌
 8. monitor 不切换线程、不串行化事件、不对 native 事件额外去重；读取失败广播 `null`，并隔离订阅者异常。
 9. provider 激活接口只返回 `bool`，失败原因由平台 provider 写入日志。
 10. 临时隐藏后的恢复尽量保持原有可见性、置顶、窗口状态、位置、尺寸和激活状态。
+11. Linux 的历史记录粘贴功能不监听或激活前台窗口；复制并粘贴始终临时隐藏历史窗口，完成模拟粘贴后恢复。全局快捷键黑名单仍可独立监听前台程序。
