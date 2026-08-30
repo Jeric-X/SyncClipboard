@@ -191,6 +191,41 @@ public partial class HistoryViewModel
         return true;
     }
 
+    internal static int GetSelectionTargetIndexBeforeRemoval(
+        int itemCount,
+        int selectedIndex,
+        int removedIndex)
+    {
+        if (selectedIndex < 0 || selectedIndex >= itemCount)
+            return -1;
+
+        if (selectedIndex != removedIndex)
+            return selectedIndex;
+
+        if (removedIndex + 1 < itemCount)
+            return removedIndex + 1;
+
+        return removedIndex - 1;
+    }
+
+    private HistoryRecordVM? PrepareSelectionForRecordReplacement(HistoryRecordVM removedRecord)
+    {
+        if (IsMultiSelecting || SelectedItem is null)
+            return null;
+
+        var items = (IList<HistoryRecordVM>)HistoryItems;
+        var targetIndex = GetSelectionTargetIndexBeforeRemoval(
+            items.Count,
+            SelectedIndex,
+            items.IndexOf(removedRecord));
+        var target = targetIndex >= 0 ? items[targetIndex] : null;
+
+        // Reset the UI selection before the collection emits remove/add events.
+        // The target is restored by identity after the record has been repositioned.
+        ClearSelectedItem();
+        return target;
+    }
+
     [RelayCommand]
     public async Task DeleteItem(HistoryRecordVM record)
     {

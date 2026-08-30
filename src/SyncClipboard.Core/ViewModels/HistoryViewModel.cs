@@ -1080,10 +1080,13 @@ public partial class HistoryViewModel : ObservableObject
     {
         try
         {
+            var selectionAfterReplacement = PrepareSelectionForRecordReplacement(oldR);
             ClearVisibleRecordSelection(oldR);
             allHistoryItems.Remove(oldR);
             if (newR != null)
                 InsertHistoryInOrder(newR);
+            if (selectionAfterReplacement is not null)
+                SelectSingleRecord(selectionAfterReplacement);
         }
         catch
         {
