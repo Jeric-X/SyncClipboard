@@ -58,10 +58,22 @@ internal sealed class WindowsNativeWindowController(ILogger logger) : INativeWin
 
             string processName = string.Empty;
             string executableName = string.Empty;
-            using (var process = Process.GetProcessById((int)processId))
+            try
             {
+                using var process = Process.GetProcessById((int)processId);
                 processName = process.ProcessName;
-                executableName = process.MainModule?.ModuleName ?? string.Empty;
+                try
+                {
+                    executableName = process.MainModule?.ModuleName ?? string.Empty;
+                }
+                catch (Exception ex)
+                {
+                    logger.Write(Tag, $"Failed to get MainModule for process {processId}: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Write(Tag, $"Failed to get metadata for process {processId}: {ex.Message}");
             }
 
             var title = new StringBuilder(256);
