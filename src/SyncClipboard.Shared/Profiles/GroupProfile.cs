@@ -319,6 +319,10 @@ public class GroupProfile : Profile
         {
             return false;
         }
+        catch (InvalidDataException) when (!token.IsCancellationRequested)
+        {
+            return false;
+        }
     }
 
     private static async Task VerifyExistingTransferArchiveAsync(

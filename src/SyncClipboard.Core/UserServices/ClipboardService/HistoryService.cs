@@ -176,6 +176,7 @@ public class HistoryService : ClipboardHander
     {
         if (runTimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory is false || _historySyncServer is null)
         {
+            _lastSyncTime = null;
             trayIcon.SetStatusString(SERVICE_NAME, "Organizing local history records...", false);
             await historySyncer.RemoveRemoteHistorys(token).ConfigureAwait(false);
             trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);

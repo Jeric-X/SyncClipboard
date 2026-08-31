@@ -382,6 +382,34 @@ public class GroupProfileTransferTests
         }
     }
 
+    [TestMethod]
+    public async Task PrepareTransferData_MalformedCachedArchiveRegeneratesFromFiles()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(file, "source", token);
+            var expectedHash = await new GroupProfile([file]).GetHash(token);
+            var archivePath = Path.Combine(testDirectory, "malformed.zip");
+            await File.WriteAllTextAsync(archivePath, "not a zip archive", token);
+            var profile = new GroupProfile([file], expectedHash, archivePath);
+
+            var regeneratedPath = await profile.PrepareTransferData(persistentDirectory, token);
+
+            Assert.IsNotNull(regeneratedPath);
+            Assert.AreNotEqual(archivePath, regeneratedPath);
+            var verifiedProfile = new GroupProfile([], expectedHash);
+            await verifiedProfile.SetTransferData(regeneratedPath, verify: true, token);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
     private static string CreateTestDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"SyncClipboard-GroupProfileTests-{Guid.NewGuid():N}");
