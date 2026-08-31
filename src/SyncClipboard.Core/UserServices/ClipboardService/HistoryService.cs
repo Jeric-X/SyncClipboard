@@ -103,14 +103,11 @@ public class HistoryService : ClipboardHander
         }
 
         _lastSyncTime = null;
-        if (remoteServerFactory.HasActiveServer)
-        {
-            TriggerSyncTask();
-        }
-        else
+        if (!remoteServerFactory.HasActiveServer)
         {
             trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
         }
+        TriggerSyncTask();
     }
 
     private void SetRuntimeConfig()
