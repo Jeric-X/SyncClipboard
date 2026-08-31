@@ -298,8 +298,11 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().IsTopmost;
         set
         {
+            if (value == IsTopmost) return;
+
             window?.SetTopmost(value);
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { IsTopmost = value });
+            OnPropertyChanged(nameof(IsTopmost));
         }
     }
 
@@ -823,14 +826,28 @@ public partial class HistoryViewModel : ObservableObject
         window?.ScrollToSelectedItem();
     }
 
-    public bool HandleKeyPress(Key key, bool isShiftPressed = false, bool isAltPressed = false, bool isCtrlPressed = false)
+    public bool HandleKeyPress(
+        Key key,
+        bool isShiftPressed = false,
+        bool isAltPressed = false,
+        bool isCtrlPressed = false,
+        bool isMetaPressed = false)
     {
+        if (IsCloseShortcut(key, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed))
+        {
+            Close();
+            return true;
+        }
+
         if (isCtrlPressed && isShiftPressed && !isAltPressed)
         {
             switch (key)
             {
                 case Key.S:
                     OnlyShowStarred = !OnlyShowStarred;
+                    return true;
+                case Key.T:
+                    IsTopmost = !IsTopmost;
                     return true;
             }
         }
@@ -885,6 +902,21 @@ public partial class HistoryViewModel : ObservableObject
             default:
                 return false;
         }
+    }
+
+    private static bool IsCloseShortcut(
+        Key key,
+        bool isShiftPressed,
+        bool isAltPressed,
+        bool isCtrlPressed,
+        bool isMetaPressed)
+    {
+        if (key != Key.W || isShiftPressed || isAltPressed)
+            return false;
+
+        return OperatingSystem.IsMacOS()
+            ? isMetaPressed && !isCtrlPressed
+            : isCtrlPressed && !isMetaPressed;
     }
 
     private async void HandleToggleStarShortcut()

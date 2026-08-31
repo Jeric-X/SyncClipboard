@@ -546,6 +546,7 @@ Ctrl+Home: Scroll to top
 Ctrl+End: Scroll to bottom
 Ctrl+S: Toggle star
 Ctrl+Shift+S: Toggle starred only
+Ctrl+Shift+T: Toggle always on top
 Ctrl+D: Delete item
 Ctrl+P: Toggle preview panel
 ↑/↓: Navigate items

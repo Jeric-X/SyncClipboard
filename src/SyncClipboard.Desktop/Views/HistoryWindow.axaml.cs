@@ -134,6 +134,7 @@ public partial class HistoryWindow : Window, IWindow
         var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         var isCtrlPressed = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        var isMetaPressed = e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
         var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
 
@@ -143,7 +144,7 @@ public partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed);
+        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
 
         if (handled)
         {
