@@ -833,10 +833,7 @@ public partial class HistoryViewModel : ObservableObject
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
     {
-        var isCloseModifierPressed = OperatingSystem.IsMacOS()
-            ? isMetaPressed && !isCtrlPressed
-            : isCtrlPressed && !isMetaPressed;
-        if (key == Key.W && isCloseModifierPressed && !isShiftPressed && !isAltPressed)
+        if (IsCloseShortcut(key, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed))
         {
             Close();
             return true;
@@ -905,6 +902,21 @@ public partial class HistoryViewModel : ObservableObject
             default:
                 return false;
         }
+    }
+
+    private static bool IsCloseShortcut(
+        Key key,
+        bool isShiftPressed,
+        bool isAltPressed,
+        bool isCtrlPressed,
+        bool isMetaPressed)
+    {
+        if (key != Key.W || isShiftPressed || isAltPressed)
+            return false;
+
+        return OperatingSystem.IsMacOS()
+            ? isMetaPressed && !isCtrlPressed
+            : isCtrlPressed && !isMetaPressed;
     }
 
     private async void HandleToggleStarShortcut()
