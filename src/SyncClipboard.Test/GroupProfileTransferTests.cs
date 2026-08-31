@@ -1,0 +1,223 @@
+using System.IO.Compression;
+using SyncClipboard.Shared.Models;
+using SyncClipboard.Shared.Profiles;
+
+namespace SyncClipboard.Test;
+
+[TestClass]
+public class GroupProfileTransferTests
+{
+    public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    public async Task PrepareTransferData_AllFilesMissing_DoesNotCreateArchive()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var missingFile = Path.Combine(testDirectory, "missing.txt");
+            var profile = new GroupProfile([missingFile], new string('A', 64));
+
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(persistentDirectory, token));
+
+            AssertNoTransferFiles(persistentDirectory);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_OneFileMissing_DoesNotCreatePartialArchive()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var existingFile = Path.Combine(testDirectory, "existing.txt");
+            var missingFile = Path.Combine(testDirectory, "missing.txt");
+            await File.WriteAllTextAsync(existingFile, "existing", token);
+            var profile = new GroupProfile([existingFile, missingFile], new string('A', 64));
+
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(persistentDirectory, token));
+
+            AssertNoTransferFiles(persistentDirectory);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_FileChangedAfterHash_DoesNotCreateArchive()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "changed.txt");
+            await File.WriteAllTextAsync(file, "before", token);
+            var profile = new GroupProfile([file]);
+            await profile.GetHash(token);
+            await File.WriteAllTextAsync(file, "after", token);
+
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(persistentDirectory, token));
+
+            AssertNoTransferFiles(persistentDirectory);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_AllEntriesFiltered_DoesNotCreateEmptyArchive()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "filtered.txt");
+            await File.WriteAllTextAsync(file, "filtered", token);
+            var profile = new GroupProfile(
+                [file],
+                new FileFilterConfig { FileFilterMode = "WhiteList" });
+
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(persistentDirectory, token));
+
+            AssertNoTransferFiles(persistentDirectory);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_EmptyDirectory_CreatesDirectoryEntry()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var emptyDirectory = Directory.CreateDirectory(Path.Combine(testDirectory, "empty"));
+            var profile = new GroupProfile([emptyDirectory.FullName]);
+
+            var archivePath = await profile.PrepareTransferData(persistentDirectory, token);
+
+            Assert.IsNotNull(archivePath);
+            using var archive = ZipFile.OpenRead(archivePath);
+            Assert.HasCount(1, archive.Entries);
+            Assert.AreEqual("empty/", archive.Entries[0].FullName);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_ZeroLengthFile_CreatesFileEntry()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var emptyFile = Path.Combine(testDirectory, "empty.txt");
+            await File.WriteAllBytesAsync(emptyFile, [], token);
+            var profile = new GroupProfile([emptyFile]);
+
+            var archivePath = await profile.PrepareTransferData(persistentDirectory, token);
+
+            Assert.IsNotNull(archivePath);
+            using var archive = ZipFile.OpenRead(archivePath);
+            Assert.HasCount(1, archive.Entries);
+            Assert.AreEqual("empty.txt", archive.Entries[0].FullName);
+            Assert.AreEqual(0, archive.Entries[0].Length);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SetTransferData_EmptyArchiveWithEmptyHash_IsRejectedAndExtractionIsCleaned()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var archivePath = Path.Combine(testDirectory, "empty.zip");
+            using (ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            { }
+            var profile = new GroupProfile(
+                [],
+                "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855");
+
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => profile.SetTransferData(archivePath, verify: true, token));
+
+            Assert.IsFalse(Directory.Exists(Path.Combine(testDirectory, "empty")));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_EmptyCachedArchiveIsNotReused()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var archivePath = Path.Combine(testDirectory, "empty.zip");
+            using (ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            { }
+            var profile = new GroupProfile(
+                [],
+                "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                archivePath);
+
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    private static string CreateTestDirectory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"SyncClipboard-GroupProfileTests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    private static void AssertNoTransferFiles(string persistentDirectory)
+    {
+        if (!Directory.Exists(persistentDirectory))
+        {
+            return;
+        }
+
+        Assert.IsEmpty(Directory.EnumerateFiles(persistentDirectory, "*", SearchOption.AllDirectories));
+    }
+}

@@ -242,7 +242,7 @@ public class GroupProfile : Profile
 
     public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
-        if (File.Exists(_transferDataPath))
+        if (HasUsableTransferDataFile())
         {
             return _transferDataPath;
         }
@@ -250,65 +250,133 @@ public class GroupProfile : Profile
         await _transferDataLock.WaitAsync(token);
         using var guard = new ScopeGuard(() => _transferDataLock.Release());
 
-        if (File.Exists(_transferDataPath))
+        if (HasUsableTransferDataFile())
         {
             return _transferDataPath;
+        }
+
+        _transferDataName = null;
+        _transferDataPath = null;
+
+        if (!await IsLocalDataValid(false, token).ConfigureAwait(false))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Local data is missing or changed for Group profile {Hash ?? "<unknown>"}.");
         }
 
         ArgumentNullException.ThrowIfNull(_files);
         var fileName = _transferDataName ?? CreateNewDataFileName();
         var filePath = Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), fileName);
+        var tempFilePath = $"{filePath}.{Guid.NewGuid():N}.tmp";
 
-        await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
-        using var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
-
-        foreach (var path in _files)
+        try
         {
-            token.ThrowIfCancellationRequested();
-            if (Directory.Exists(path))
+            var entryCount = 0;
+            await using (var fs = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+            using (var archive = new ZipArchive(fs, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                var dirName = Path.GetFileName(path);
-                archive.CreateEntry(dirName + "/");
-
-                var subDirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
-                foreach (var subDir in subDirs)
+                foreach (var path in _files)
                 {
                     token.ThrowIfCancellationRequested();
-                    var relativeDir = Path.GetRelativePath(path, subDir).Replace(Path.DirectorySeparatorChar, '/');
-                    var dirEntryName = string.Join('/', [dirName, relativeDir]) + "/";
-                    archive.CreateEntry(dirEntryName);
+                    if (Directory.Exists(path))
+                    {
+                        var dirName = Path.GetFileName(path);
+                        archive.CreateEntry(dirName + "/");
+                        entryCount++;
+
+                        var subDirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+                        foreach (var subDir in subDirs)
+                        {
+                            token.ThrowIfCancellationRequested();
+                            var relativeDir = Path.GetRelativePath(path, subDir).Replace(Path.DirectorySeparatorChar, '/');
+                            var dirEntryName = string.Join('/', [dirName, relativeDir]) + "/";
+                            archive.CreateEntry(dirEntryName);
+                            entryCount++;
+                        }
+
+                        var subFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+                        foreach (var subFile in subFiles)
+                        {
+                            token.ThrowIfCancellationRequested();
+                            var relativePath = Path.GetRelativePath(path, subFile).Replace(Path.DirectorySeparatorChar, '/');
+                            var entryName = string.Join('/', [dirName, relativePath]);
+                            if (await AddFileToArchiveAsync(archive, entryName, subFile, token).ConfigureAwait(false))
+                            {
+                                entryCount++;
+                            }
+                        }
+                    }
+                    else if (File.Exists(path))
+                    {
+                        var entryName = Path.GetFileName(path);
+                        if (await AddFileToArchiveAsync(archive, entryName, path, token).ConfigureAwait(false))
+                        {
+                            entryCount++;
+                        }
+                    }
+                    else
+                    {
+                        throw new LocalProfileDataUnavailableException($"Local Group entry no longer exists: {path}");
+                    }
                 }
 
-                var subFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
-                foreach (var subFile in subFiles)
+                if (entryCount == 0)
                 {
-                    token.ThrowIfCancellationRequested();
-                    var relativePath = Path.GetRelativePath(path, subFile).Replace(Path.DirectorySeparatorChar, '/');
-                    var entryName = string.Join('/', [dirName, relativePath]);
-                    await AddFileToArchiveAsync(archive, entryName, subFile, token).ConfigureAwait(false);
+                    throw new LocalProfileDataUnavailableException("No transferable entries were found in the Group profile.");
                 }
             }
-            else if (File.Exists(path))
-            {
-                var entryName = Path.GetFileName(path);
-                await AddFileToArchiveAsync(archive, entryName, path, token).ConfigureAwait(false);
-            }
+
+            File.Move(tempFilePath, filePath);
+            _transferDataName = fileName;
+            _transferDataPath = filePath;
+            return filePath;
         }
-
-        _transferDataName = fileName;
-        _transferDataPath = filePath;
-        return filePath;
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
+                                   ex is not LocalProfileDataUnavailableException &&
+                                   !token.IsCancellationRequested)
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to read local data for Group profile {Hash ?? "<unknown>"}.", ex);
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(tempFilePath);
+            }
+            catch
+            { }
+        }
     }
 
-    private async Task AddFileToArchiveAsync(ZipArchive archive, string entryName, string sourcePath, CancellationToken token)
+    private bool HasUsableTransferDataFile()
+    {
+        if (!File.Exists(_transferDataPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var archive = ZipFile.OpenRead(_transferDataPath);
+            return archive.Entries.Count > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<bool> AddFileToArchiveAsync(ZipArchive archive, string entryName, string sourcePath, CancellationToken token)
     {
         if (!FileFilterHelper.IsFileAvailableAfterFilter(entryName, _fileFilterConfig))
-            return;
+            return false;
 
         var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
         await using var entryStream = entry.Open();
         await using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         await sourceStream.CopyToAsync(entryStream, 81920, token).ConfigureAwait(false);
+        return true;
     }
 
     public override async Task<ProfileDto> ToProfileDto(CancellationToken token)
@@ -390,6 +458,10 @@ public class GroupProfile : Profile
         using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
         var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractDir, token).ConfigureAwait(false);
         _files = topLevelFiles;
+        if (_files.Length == 0)
+        {
+            throw new InvalidDataException("Group transfer data contains no entries.");
+        }
 
         var (hash, size) = await Task.Run(() => CaclHashAndSize(_files, token), token).WaitAsync(token);
         if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
@@ -403,7 +475,7 @@ public class GroupProfile : Profile
         _transferDataName = Path.GetFileName(path);
     }
 
-    public override Task SetTransferData(string path, bool verify, CancellationToken token)
+    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
         if (!File.Exists(path))
         {
@@ -419,13 +491,34 @@ public class GroupProfile : Profile
         {
             _transferDataPath = path;
             _transferDataName = Path.GetFileName(path);
-            return Task.CompletedTask;
+            return;
         }
 
         var extractDir = path[..^4];
+        var createdExtractDirectory = false;
         if (!Directory.Exists(extractDir))
+        {
             Directory.CreateDirectory(extractDir);
-        return ExtractAndVerifyTransferData(extractDir, path, token);
+            createdExtractDirectory = true;
+        }
+
+        try
+        {
+            await ExtractAndVerifyTransferData(extractDir, path, token);
+        }
+        catch
+        {
+            if (createdExtractDirectory)
+            {
+                try
+                {
+                    Directory.Delete(extractDir, recursive: true);
+                }
+                catch
+                { }
+            }
+            throw;
+        }
     }
 
     public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
@@ -479,7 +572,7 @@ public class GroupProfile : Profile
             var (hash, _) = await Task.Run(() => CaclHashAndSize(_files, token), token).WaitAsync(token);
             return string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch when (!token.IsCancellationRequested)
         {
             return false;
         }

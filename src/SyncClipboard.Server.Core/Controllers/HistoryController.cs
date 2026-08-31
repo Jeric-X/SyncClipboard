@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using SyncClipboard.Server.Core.Attributes;
+using SyncClipboard.Server.Core.Exceptions;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services.History;
 
@@ -153,9 +154,20 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+        catch (HistoryTransferDataException ex)
+        {
+            var problem = new ProblemDetails
+            {
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Title = "History transfer data is invalid",
+                Detail = ex.Message,
+            };
+            problem.Extensions["code"] = "history_data_invalid";
+            return UnprocessableEntity(problem);
+        }
         catch (Exception ex) when (token.IsCancellationRequested == false)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}\n{ex.StackTrace}");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 

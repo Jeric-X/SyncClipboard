@@ -482,20 +482,20 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             }
 
             using var _dbContext = new HistoryDbContext();
-            var existingHashes = _dbContext.HistoryRecords
-                .Select(r => r.Hash)
-                .ToHashSet();
+            var existingDirectories = _dbContext.HistoryRecords
+                .Select(r => new { r.Type, r.Hash })
+                .AsEnumerable()
+                .Select(r => Path.GetFullPath(Profile.QueryGetWorkingDir(historyFolder, r.Type, r.Hash)))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var directories = Directory.GetDirectories(historyFolder);
             var cutoffTime = DateTime.Now.AddDays(-7); // 7天前的时间点
 
             foreach (var dir in directories)
             {
-                var dirName = Path.GetFileName(dir);
-
                 try
                 {
-                    if (existingHashes.Contains(dirName))
+                    if (existingDirectories.Contains(Path.GetFullPath(dir)))
                     {
                         continue;
                     }

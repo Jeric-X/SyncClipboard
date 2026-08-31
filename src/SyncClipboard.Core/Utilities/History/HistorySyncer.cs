@@ -352,8 +352,7 @@ public class HistorySyncer
                 break;
 
             var profile = record.ToProfile();
-            var validationError = await ContentControlHelper.IsContentValid(profile, token);
-            if (validationError != null)
+            if (!await CanUploadLocalProfileAsync(profile, token))
             {
                 continue;
             }
@@ -395,12 +394,8 @@ public class HistorySyncer
             }
 
             var profile = record.ToProfile();
-            // 使用 ContentControlHelper 过滤被 content control 过滤的记录
-            var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
-            if (validationError != null)
+            if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
             {
-                // 记录被过滤，跳过上传
-                // _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
                 return;
             }
 
@@ -411,6 +406,20 @@ public class HistorySyncer
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
         }
+    }
+
+    private async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
+    {
+        if (!await profile.IsLocalDataValid(true, token))
+        {
+            _logger.Write(
+                "HistorySyncer",
+                $"HISTORY_UPLOAD_SKIPPED_LOCAL_DATA_MISSING [{await profile.GetProfileId(token)}]");
+            return false;
+        }
+
+        var validationError = await ContentControlHelper.IsContentValid(profile, token);
+        return validationError is null;
     }
 
     private async void OnHistoryRemoved(HistoryRecord record)
@@ -431,4 +440,3 @@ public class HistorySyncer
         }
     }
 }
-

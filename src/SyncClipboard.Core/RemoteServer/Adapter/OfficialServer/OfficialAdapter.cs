@@ -392,6 +392,11 @@ public sealed class OfficialAdapter(
                 throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
             }
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity)
+            {
+                throw new RemoteHistoryDataRejectedException(
+                    $"History data was rejected for {dto.Type}/{dto.Hash}. Code {response.StatusCode}: {responseBody}");
+            }
             throw new RemoteServerException($"Code {response.StatusCode}: {response.ReasonPhrase}. Response body: {responseBody}");
         }
         catch (Exception ex)
