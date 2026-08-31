@@ -416,6 +416,9 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
     {
+        if (e.Key == VirtualKey.None)
+            return;
+
         if (e.Key == VirtualKey.Escape && _viewModel.IsMultiSelecting)
         {
             _viewModel.ExitMultiSelect();
