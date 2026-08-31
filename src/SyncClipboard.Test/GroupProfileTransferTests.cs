@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Test;
 
@@ -225,6 +226,118 @@ public class GroupProfileTransferTests
 
             await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
                 () => profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_NonEmptyCachedArchiveIsTrustedAndReused()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var archivePath = Path.Combine(testDirectory, "unverified.zip");
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("unexpected.txt");
+                await using var writer = new StreamWriter(entry.Open());
+                await writer.WriteAsync("unexpected");
+            }
+            var profile = new GroupProfile([], new string('A', 64), archivePath);
+
+            var reusedPath = await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token);
+
+            Assert.AreEqual(archivePath, reusedPath);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_PersistentCachedArchiveIsTrustedAndReused()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var archivePath = Path.Combine(testDirectory, "persistent.zip");
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("unexpected.txt");
+                await using var writer = new StreamWriter(entry.Open());
+                await writer.WriteAsync("unexpected");
+            }
+            var profile = new GroupProfile(new ProfilePersistentInfo
+            {
+                Type = ProfileType.Group,
+                Text = "unexpected.txt",
+                Size = 10,
+                Hash = new string('A', 64),
+                TransferDataFile = archivePath,
+            });
+
+            var reusedPath = await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token);
+
+            Assert.AreEqual(archivePath, reusedPath);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task IsLocalDataValid_NonEmptyCachedArchiveWithoutSourceFiles_ReturnsFalse()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var archivePath = Path.Combine(testDirectory, "cached.zip");
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("cached.txt");
+                await using var writer = new StreamWriter(entry.Open());
+                await writer.WriteAsync("cached");
+            }
+            var profile = new GroupProfile([], new string('A', 64), archivePath);
+
+            Assert.IsFalse(await profile.IsLocalDataValid(true, token));
+            Assert.IsFalse(await profile.IsLocalDataValid(false, token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_TrustedCachedArchiveIsReused()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(file, "source", token);
+            var sourceProfile = new GroupProfile([file]);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+
+            var cachedProfile = new GroupProfile([file], await sourceProfile.GetHash(token));
+            await cachedProfile.SetTransferData(archivePath, verify: false, token);
+            File.Delete(file);
+
+            var reusedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
+
+            Assert.AreEqual(archivePath, reusedPath);
         }
         finally
         {

@@ -27,6 +27,11 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
                     </ui:SettingsExpanderItem.Footer>
                 </ui:SettingsExpanderItem>
+                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AutoDeleteMissingLocalFiles}" Description="{x:Static i18n:Strings.AutoDeleteMissingLocalFilesDescription}">
+                    <ui:SettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDeleteMissingLocalFiles, Mode=TwoWay}" />
+                    </ui:SettingsExpanderItem.Footer>
+                </ui:SettingsExpanderItem>
                 <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}" Description="{x:Static i18n:Strings.MaxItemCountDescription}">
                     <ui:SettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"

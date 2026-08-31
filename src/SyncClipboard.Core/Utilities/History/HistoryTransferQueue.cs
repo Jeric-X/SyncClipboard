@@ -474,13 +474,30 @@ public class HistoryTransferQueue : IDisposable
             RemoveTask(task);
             return TransferTaskStatus.Cancelled;
         }
-        catch (Exception ex) when (ex is LocalProfileDataUnavailableException or RemoteHistoryDataRejectedException)
+        catch (LocalProfileDataUnavailableException ex)
         {
+            if (task.Type == TransferType.Upload &&
+                Profile.ParseProfileId(task.ProfileId, out var type, out var hash))
+            {
+                try
+                {
+                    await _historyManager.HandleLocalFileUnavailableAsync(
+                        type,
+                        hash,
+                        CancellationToken.None);
+                }
+                catch (Exception persistException)
+                {
+                    _logger.Write(
+                        $"任务 {task.TaskId} 标记本地文件不可用失败: {persistException.Message}");
+                }
+            }
+
             task.ErrorMessage = ex.Message;
             task.FailureCount++;
             task.Status = TransferTaskStatus.Failed;
             task.CompletedTime = DateTime.Now;
-            _logger.Write($"任务 {task.TaskId} 因不可重试错误失败: {ex.Message}");
+            _logger.Write($"任务 {task.TaskId} 因本地文件缺失失败: {ex.Message}");
             NotifyStatusChanged(task);
             task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
             RemoveTask(task);
@@ -591,7 +608,6 @@ public class HistoryTransferQueue : IDisposable
 
         // 服务器不存在，执行上传
         string? transferFilePath = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
-
         var recordDto = record.ToHistoryRecordDto();
 
         try

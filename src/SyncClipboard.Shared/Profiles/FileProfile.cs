@@ -119,7 +119,8 @@ public class FileProfile : Profile
             return Task.FromResult<string?>(FullPath);
         }
 
-        throw new FileNotFoundException("File not found for transfer", FullPath);
+        throw new LocalProfileDataUnavailableException(
+            $"Transfer data is unavailable for File profile {Hash ?? "<unknown>"}.");
     }
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)

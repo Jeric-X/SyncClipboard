@@ -223,9 +223,10 @@ public class TextProfile : Profile
         }
 
         await WriteFullTextToFile(persistentDir, token);
-        if (_transferDataPath is null)
+        if (_transferDataPath is null || !File.Exists(_transferDataPath))
         {
-            throw new Exception($"Can not prepare transfer data for {_text}");
+            throw new LocalProfileDataUnavailableException(
+                $"Transfer data is unavailable for Text profile {Hash ?? "<unknown>"}.");
         }
 
         return _transferDataPath;

@@ -25,6 +25,7 @@ public partial class HistorySettingViewModel : ObservableObject
         var config = configManager.GetConfig<HistoryConfig>();
         enableHistory = config.EnableHistory;
         enableSyncHistory = config.EnableSyncHistory;
+        autoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
         maxItemCount = config.MaxItemCount;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
 
@@ -38,6 +39,7 @@ public partial class HistorySettingViewModel : ObservableObject
     {
         EnableHistory = config.EnableHistory;
         EnableSyncHistory = config.EnableSyncHistory;
+        AutoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
         MaxItemCount = config.MaxItemCount;
         HistoryRetentionMinutes = config.HistoryRetentionMinutes;
     }
@@ -58,6 +60,7 @@ public partial class HistorySettingViewModel : ObservableObject
         {
             EnableHistory = EnableHistory,
             EnableSyncHistory = EnableSyncHistory,
+            AutoDeleteMissingLocalFiles = AutoDeleteMissingLocalFiles,
             MaxItemCount = MaxItemCount,
             HistoryRetentionMinutes = HistoryRetentionMinutes
         };
@@ -70,6 +73,10 @@ public partial class HistorySettingViewModel : ObservableObject
     [ObservableProperty]
     private bool enableSyncHistory;
     partial void OnEnableSyncHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
+
+    [ObservableProperty]
+    private bool autoDeleteMissingLocalFiles;
+    partial void OnAutoDeleteMissingLocalFilesChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { AutoDeleteMissingLocalFiles = value });
 
     [ObservableProperty]
     private uint maxItemCount;
