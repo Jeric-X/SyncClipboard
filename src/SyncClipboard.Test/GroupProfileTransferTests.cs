@@ -81,6 +81,34 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
+    public async Task PrepareTransferData_ArchiveHashDiffersFromProfile_DoesNotPublishArchive()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var firstDirectory = Directory.CreateDirectory(Path.Combine(testDirectory, "first"));
+            var secondDirectory = Directory.CreateDirectory(Path.Combine(testDirectory, "second"));
+            var firstFile = Path.Combine(firstDirectory.FullName, "first.txt");
+            var secondFile = Path.Combine(secondDirectory.FullName, "second.txt");
+            await File.WriteAllTextAsync(firstFile, "first", token);
+            await File.WriteAllTextAsync(secondFile, "second", token);
+            var profile = new GroupProfile([firstFile, secondFile]);
+            await profile.GetHash(token);
+
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(persistentDirectory, token));
+
+            AssertNoTransferFiles(persistentDirectory);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task PrepareTransferData_AllEntriesFiltered_DoesNotCreateEmptyArchive()
     {
         var token = TestContext.CancellationTokenSource.Token;

@@ -121,6 +121,11 @@ public class GroupProfile : Profile
         SearchDirEntries(dirs, rootPath, ref totalSize, entries, token);
         AddEntries(files, rootPath, ref totalSize, entries, token);
 
+        return (await CalculateEntriesHashAsync(entries, token).ConfigureAwait(false), totalSize);
+    }
+
+    private static async Task<string> CalculateEntriesHashAsync(IEnumerable<GroupEntry> entries, CancellationToken token)
+    {
         var orderedEntries = entries
             .Select(e => new { Entry = e, Key = EntryEncoding.GetBytes(e.EntryName) })
             .OrderBy(k => k.Key, ByteArrayComparer.Instance);
@@ -136,7 +141,7 @@ public class GroupProfile : Profile
         }
 
         var finalBytes = incremental.GetHashAndReset();
-        return (Convert.ToHexString(finalBytes), totalSize);
+        return Convert.ToHexString(finalBytes);
     }
 
     private void SearchDirEntries(IEnumerable<string> dirs, string root, ref long totalSize, List<GroupEntry> entries, CancellationToken token)
@@ -266,12 +271,14 @@ public class GroupProfile : Profile
 
         ArgumentNullException.ThrowIfNull(_files);
         var fileName = _transferDataName ?? CreateNewDataFileName();
-        var filePath = Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), fileName);
+        var expectedHash = await GetHash(token);
+        var filePath = Path.Combine(CreateWorkingDir(persistentDir, Type, expectedHash), fileName);
         var tempFilePath = $"{filePath}.{Guid.NewGuid():N}.tmp";
 
         try
         {
             await CreateTransferArchiveAsync(tempFilePath, _files, token).ConfigureAwait(false);
+            await VerifyTransferArchiveAsync(tempFilePath, expectedHash, token).ConfigureAwait(false);
 
             File.Move(tempFilePath, filePath);
             _transferDataName = fileName;
@@ -286,6 +293,57 @@ public class GroupProfile : Profile
         finally
         {
             TryDeleteFile(tempFilePath);
+        }
+    }
+
+    private static async Task VerifyTransferArchiveAsync(
+        string archivePath,
+        string expectedHash,
+        CancellationToken token)
+    {
+        var entries = new List<GroupEntry>();
+        await using var fs = new FileStream(
+            archivePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            81920,
+            useAsync: true);
+        using var archive = new ZipArchive(
+            fs,
+            ZipArchiveMode.Read,
+            leaveOpen: false,
+            entryNameEncoding: Encoding.UTF8);
+
+        foreach (var entry in archive.Entries)
+        {
+            token.ThrowIfCancellationRequested();
+            var entryName = entry.FullName.Replace('\\', '/');
+            if (entryName.EndsWith('/'))
+            {
+                entries.Add(new GroupEntry(entryName, isDirectory: true, length: 0, hashTask: null));
+                continue;
+            }
+
+            await using var entryStream = entry.Open();
+            var hashBytes = await SHA256.HashDataAsync(entryStream, token).ConfigureAwait(false);
+            entries.Add(new GroupEntry(
+                entryName,
+                isDirectory: false,
+                entry.Length,
+                Task.FromResult(Convert.ToHexString(hashBytes))));
+        }
+
+        if (entries.Count == 0)
+        {
+            throw new LocalProfileDataUnavailableException("Group transfer archive contains no entries.");
+        }
+
+        var archiveHash = await CalculateEntriesHashAsync(entries, token).ConfigureAwait(false);
+        if (!string.Equals(archiveHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Group transfer archive hash mismatch. Expected: {expectedHash}, Actual: {archiveHash}.");
         }
     }
 
