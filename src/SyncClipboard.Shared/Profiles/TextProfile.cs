@@ -220,13 +220,7 @@ public class TextProfile : Profile
         var expectedHash = await GetHash(token);
         if (HasTransferData is false)
         {
-            var actualHash = await Utility.CalculateSHA256(_text, token);
-            if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new LocalProfileDataUnavailableException(
-                    $"Text profile hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
-            }
-
+            await ValidateInlineTextHashAsync(expectedHash, token);
             return null;
         }
 
@@ -240,13 +234,7 @@ public class TextProfile : Profile
 
         try
         {
-            var actualHash = await Utility.CalculateFileSHA256(path, token);
-            if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new LocalProfileDataUnavailableException(
-                    $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
-            }
-
+            await ValidateTransferDataHashAsync(path, expectedHash, token);
             return path;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
@@ -255,6 +243,29 @@ public class TextProfile : Profile
         {
             throw new LocalProfileDataUnavailableException(
                 $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
+        }
+    }
+
+    private async Task ValidateInlineTextHashAsync(string expectedHash, CancellationToken token)
+    {
+        var actualHash = await Utility.CalculateSHA256(_text, token);
+        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Text profile hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+        }
+    }
+
+    private static async Task ValidateTransferDataHashAsync(
+        string path,
+        string expectedHash,
+        CancellationToken token)
+    {
+        var actualHash = await Utility.CalculateFileSHA256(path, token);
+        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
         }
     }
 

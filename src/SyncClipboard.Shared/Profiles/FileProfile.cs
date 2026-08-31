@@ -123,14 +123,7 @@ public class FileProfile : Profile
 
         try
         {
-            var expectedHash = await GetHash(token);
-            var actualHash = await GetSHA256HashFromFile(path, token);
-            if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new LocalProfileDataUnavailableException(
-                    $"File transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
-            }
-
+            await ValidateTransferDataHashAsync(path, token);
             return path;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
@@ -139,6 +132,17 @@ public class FileProfile : Profile
         {
             throw new LocalProfileDataUnavailableException(
                 $"Failed to validate transfer data for File profile {Hash ?? "<unknown>"}.", ex);
+        }
+    }
+
+    private async Task ValidateTransferDataHashAsync(string path, CancellationToken token)
+    {
+        var expectedHash = await GetHash(token);
+        var actualHash = await GetSHA256HashFromFile(path, token);
+        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"File transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
         }
     }
 
