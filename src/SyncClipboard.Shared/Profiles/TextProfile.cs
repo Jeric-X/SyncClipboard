@@ -224,7 +224,31 @@ public class TextProfile : Profile
             return null;
         }
 
+        return await PrepareTransferFileAsync(persistentDir, expectedHash, token);
+    }
+
+    private async Task<string> PrepareTransferFileAsync(
+        string persistentDir,
+        string expectedHash,
+        CancellationToken token)
+    {
         await WriteFullTextToFile(persistentDir, token);
+        var path = GetAvailableTransferDataPath();
+
+        try
+        {
+            await ValidateTransferDataHashAsync(path, expectedHash, token);
+            return path;
+        }
+        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
+        }
+    }
+
+    private string GetAvailableTransferDataPath()
+    {
         var path = _transferDataPath;
         if (path is null || !File.Exists(path))
         {
@@ -232,18 +256,7 @@ public class TextProfile : Profile
                 $"Transfer data is unavailable for Text profile {Hash ?? "<unknown>"}.");
         }
 
-        try
-        {
-            await ValidateTransferDataHashAsync(path, expectedHash, token);
-            return path;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
-                                   ex is not LocalProfileDataUnavailableException &&
-                                   !token.IsCancellationRequested)
-        {
-            throw new LocalProfileDataUnavailableException(
-                $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
-        }
+        return path;
     }
 
     private async Task ValidateInlineTextHashAsync(string expectedHash, CancellationToken token)
@@ -267,6 +280,13 @@ public class TextProfile : Profile
             throw new LocalProfileDataUnavailableException(
                 $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
         }
+    }
+
+    private static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
+    {
+        return ex is IOException or UnauthorizedAccessException &&
+               ex is not LocalProfileDataUnavailableException &&
+               !token.IsCancellationRequested;
     }
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)
