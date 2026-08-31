@@ -234,7 +234,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task PrepareTransferData_NonEmptyCachedArchiveIsTrustedAndReused()
+    public async Task PrepareTransferData_NonEmptyCachedArchiveWithMismatchedHashThrows()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -249,9 +249,8 @@ public class GroupProfileTransferTests
             }
             var profile = new GroupProfile([], new string('A', 64), archivePath);
 
-            var reusedPath = await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token);
-
-            Assert.AreEqual(archivePath, reusedPath);
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token));
         }
         finally
         {
@@ -260,7 +259,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task PrepareTransferData_PersistentCachedArchiveIsTrustedAndReused()
+    public async Task PrepareTransferData_PersistentCachedArchiveWithMismatchedHashThrows()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -282,9 +281,8 @@ public class GroupProfileTransferTests
                 TransferDataFile = archivePath,
             });
 
-            var reusedPath = await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token);
-
-            Assert.AreEqual(archivePath, reusedPath);
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token));
         }
         finally
         {
@@ -338,6 +336,45 @@ public class GroupProfileTransferTests
             var reusedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
 
             Assert.AreEqual(archivePath, reusedPath);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PrepareTransferData_VerifiedCachedArchiveChangedAfterSetRegeneratesFromFiles()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(file, "source", token);
+            var sourceProfile = new GroupProfile([file]);
+            var expectedHash = await sourceProfile.GetHash(token);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+
+            var cachedProfile = new GroupProfile([file], expectedHash);
+            await cachedProfile.SetTransferData(archivePath, verify: true, token);
+
+            File.Delete(archivePath);
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("source.txt");
+                await using var writer = new StreamWriter(entry.Open());
+                await writer.WriteAsync("changed");
+            }
+
+            var regeneratedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
+
+            Assert.IsNotNull(regeneratedPath);
+            Assert.AreNotEqual(archivePath, regeneratedPath);
+            var verifiedProfile = new GroupProfile([], expectedHash);
+            await verifiedProfile.SetTransferData(regeneratedPath, verify: true, token);
         }
         finally
         {

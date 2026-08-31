@@ -217,19 +217,45 @@ public class TextProfile : Profile
 
     public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
+        var expectedHash = await GetHash(token);
         if (HasTransferData is false)
         {
+            var actualHash = await Utility.CalculateSHA256(_text, token);
+            if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new LocalProfileDataUnavailableException(
+                    $"Text profile hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+            }
+
             return null;
         }
 
         await WriteFullTextToFile(persistentDir, token);
-        if (_transferDataPath is null || !File.Exists(_transferDataPath))
+        var path = _transferDataPath;
+        if (path is null || !File.Exists(path))
         {
             throw new LocalProfileDataUnavailableException(
                 $"Transfer data is unavailable for Text profile {Hash ?? "<unknown>"}.");
         }
 
-        return _transferDataPath;
+        try
+        {
+            var actualHash = await Utility.CalculateFileSHA256(path, token);
+            if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new LocalProfileDataUnavailableException(
+                    $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+            }
+
+            return path;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
+                                   ex is not LocalProfileDataUnavailableException &&
+                                   !token.IsCancellationRequested)
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
+        }
     }
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)

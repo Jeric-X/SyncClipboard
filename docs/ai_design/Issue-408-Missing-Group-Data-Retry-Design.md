@@ -18,7 +18,7 @@ Issue 描述的故障链在当前 `master` 上成立。
 
 建议一次修复以下四层，形成完整闭环：
 
-1. `GroupProfile` 在创建任何输出文件前校验源数据，并使用临时文件原子生成 ZIP；失败时不留下文件。
+1. `GroupProfile` 在流式打包过程中同步校验实际写入内容，并使用临时文件原子生成 ZIP；失败时不留下文件。
 2. 上传边界发现本地数据无效后持久化不可用状态；后续自动同步不再重复入队，队列也不把此类错误计入全局连续失败数。
 3. 服务端把无效归档、哈希不符等数据错误返回为可识别的 422，并清理暂存文件；客户端将所有远端拒绝交给普通重试和连续失败熔断处理。
 4. 孤儿目录清理按 `{Type}_{Hash}` 或规范化完整路径匹配数据库记录，避免主动删除仍被引用的历史目录。
@@ -100,13 +100,13 @@ ZIP 生成改为临时文件加原子提交：
 5. 只有最终移动成功后才设置 `_transferDataName` 和 `_transferDataPath`。
 6. 任何异常或取消都在 `finally` 中删除临时文件；不得覆盖或暴露半成品。
 
-当前不维护传输数据的可信状态。构造函数、`ProfilePersistentInfo` 或 `SetTransferData(..., verify: false)` 提供的文件路径默认可信；Group 的既有 ZIP 只做“文件存在、ZIP 可打开且至少包含一个条目”的基本可用性检查，满足后直接复用。更细粒度的来源可信机制留待后续统一设计。
+当前不维护通用的传输数据可信状态，也不提供跳过准备阶段校验的标志。每次直接调用 `PrepareTransferData()` 都必须重新计算待返回数据的 Hash 并与 Profile Hash 比较；Group 的既有 ZIP 也要逐条读取并按 GroupEntry 规则重新计算。既有 ZIP 校验失败时不再复用它，而是回退到 `_files` 重新生成并校验新 ZIP；只有 `_files` 同样缺失或 Hash 不匹配时才抛出本地数据异常。失败的既有 ZIP 可能来自外部路径，因此回退时只解除引用，不主动删除原文件。生产代码中没有 `SetTransferData(..., verify: true)` 后立刻调用 `PrepareTransferData()` 的路径，因此暂不增加“不强制验证”参数。`PrepareDataWithCache()` 是明确例外：`GetCachedFilePathAsync()` 已核对缓存文件的大小和原始 SHA-256，缓存命中后调用 `SetTransferData(..., verify: false)` 并直接返回路径，不重复执行 Profile 语义 Hash 校验。
 
 这层是最后一道本地防线，必须独立成立。即使调用方忘记预检，也不能生成空 ZIP。
 
 ### 2. 在上传边界持久化本地不可用状态
 
-本地数据检查由各个 Profile 的 `PrepareTransferData()` 在真正准备上传数据时负责：`HasTransferData == true` 时必须返回当前可读取的文件路径，准备阶段确认无法恢复时抛出 `LocalProfileDataUnavailableException`。`HistoryTransferQueue.ExecuteUploadAsync()` 不再额外执行快速预检、路径存在性检查或本地异常捕获；上传适配器也会直接打开传入路径，不会静默省略已经丢失的文件。若文件在准备完成后、适配器打开前临时消失，原始 `FileNotFoundException`/`DirectoryNotFoundException` 进入普通重试，不立即修改记录；下一次重试重新执行 `PrepareTransferData()`，仍无法恢复时才抛出本地不可重试异常。`ExecuteTaskAsync()` 捕获该异常后，通过 `HistoryManager.HandleLocalFileUnavailableAsync()` 将上传记录的 `IsLocalFileReady` 置为 `false`；持久化失败只记录日志，不影响当前任务按不可重试错误结束。该方法只标记状态，不读取自动删除配置，也不直接删除记录。
+本地数据检查由各个 Profile 的 `PrepareTransferData()` 在真正准备上传数据时负责：File/Image 重新计算文件名与内容组合 Hash，Text 重新计算内联文本或传输文件 Hash，Group 对既有 ZIP 重新读取条目计算 Hash、对新 ZIP 则复用打包时同步得到的条目 Hash。`HasTransferData == true` 时必须返回当前可读取且 Hash 匹配的文件路径，准备阶段确认缺失或 Hash 变化时抛出 `LocalProfileDataUnavailableException`。`HistoryTransferQueue.ExecuteUploadAsync()` 不再额外执行快速预检、路径存在性检查或本地异常捕获；上传适配器也会直接打开传入路径，不会静默省略已经丢失的文件。若文件在准备完成后、适配器打开前临时消失，原始 `FileNotFoundException`/`DirectoryNotFoundException` 进入普通重试，不立即修改记录；下一次重试重新执行 `PrepareTransferData()`，仍无法恢复时才抛出本地不可重试异常。`ExecuteTaskAsync()` 捕获该异常后，通过 `HistoryManager.HandleLocalFileUnavailableAsync()` 将上传记录的 `IsLocalFileReady` 置为 `false`；持久化失败只记录日志，不影响当前任务按不可重试错误结束。该方法只标记状态，不读取自动删除配置，也不直接删除记录。
 
 `IsLocalFileReady == false` 不再单独表示“服务器有数据”。相关扫描必须同时参考 `SyncStatus`：
 
@@ -311,7 +311,7 @@ curl -i -u '<用户名>:<密码>' '<服务器地址>/api/history' \
 - 响应不包含服务器堆栈；
 - 服务端 DB 没有新增记录；
 - 服务端持久化目录没有留下 ZIP、解压目录或空工作目录；
-- 新客户端识别该响应后只失败一次，不进入 3 秒重试，也不停止其他传输。
+- 客户端把该响应作为远端失败进入普通重试；连续失败达到阈值后按既有逻辑停止队列，但不得把记录反向标记为本地文件缺失。
 
 再补充一个“ZIP 含条目但元数据 Hash 错误”的请求，预期结果相同。最后上传一个真实有效的 Group，确认正常路径仍返回 200。
 
@@ -346,13 +346,15 @@ curl -i -u '<用户名>:<密码>' '<服务器地址>/api/history' \
 手动验证通过后，应补充回归测试，防止将来从其他入口绕过预检：
 
 1. `GroupProfile.PrepareTransferData`：空 `_files`、全部缺失、部分缺失、内容变更均抛出本地数据异常且目录无 ZIP/临时文件。
-2. `GroupProfile.PrepareTransferData`：空目录和零字节文件能够生成非零条目归档。
-3. `HistoryTransferQueue`：首次发现无效 `LocalOnly` 后将 `IsLocalFileReady` 置为 `false`；`HistorySyncer` 信任该状态并跳过记录，只有用户点击历史记录窗口右键菜单的“重新读取本地文件”并通过完整校验后才恢复状态。
-4. `HistoryManager`：本地数据不可用时只把 `IsLocalFileReady` 标为 `false`，不直接删除记录。
-5. `HistorySyncer`：关闭同步后先将全部 `Synced/NeedSync` 转为 `LocalOnly`，再根据 `AutoDeleteMissingLocalFiles` 统一决定是否删除本地数据不可用记录；同步开启时在远端合并后执行同一规则。
-6. `HistoryTransferQueue`：本地不可重试异常只执行一次且不增加全局连续失败数；远端 422 进入普通重试并参与连续失败熔断。
-7. `HistoryController`/`HistoryService`：空 ZIP、损坏 ZIP和哈希不符返回 422，DB 与文件系统无残留。
-8. `CleanupOrphanedHistoryFolders`：引用目录不会删除，超过保护期的真实孤儿会删除。
+2. `GroupProfile.PrepareTransferData`：空目录和零字节文件能够生成非零条目归档；既有 ZIP 每次重算 Hash，校验失败但 `_files` 有效时重新生成，`_files` 也无效时抛出本地数据异常。
+3. `FileProfile`/`ImageProfile`/`TextProfile.PrepareTransferData`：本地内容在 Profile Hash 建立后发生变化时抛出本地数据异常。
+4. 缓存入口：`GetCachedFilePathAsync()` 拒绝文件大小或原始 SHA-256 已变化的缓存；命中后可直接设置并返回路径，不重复调用 `PrepareTransferData()`。
+5. `HistoryTransferQueue`：首次发现无效 `LocalOnly` 后将 `IsLocalFileReady` 置为 `false`；`HistorySyncer` 信任该状态并跳过记录，只有用户点击历史记录窗口右键菜单的“重新读取本地文件”并通过完整校验后才恢复状态。
+6. `HistoryManager`：本地数据不可用时只把 `IsLocalFileReady` 标为 `false`，不直接删除记录。
+7. `HistorySyncer`：关闭同步后先将全部 `Synced/NeedSync` 转为 `LocalOnly`，再根据 `AutoDeleteMissingLocalFiles` 统一决定是否删除本地数据不可用记录；同步开启时在远端合并后执行同一规则。
+8. `HistoryTransferQueue`：本地不可重试异常只执行一次且不增加全局连续失败数；远端 422 进入普通重试并参与连续失败熔断。
+9. `HistoryController`/`HistoryService`：空 ZIP、损坏 ZIP和哈希不符返回 422，DB 与文件系统无残留。
+10. `CleanupOrphanedHistoryFolders`：引用目录不会删除，超过保护期的真实孤儿会删除。
 
 测试使用 MSTest；涉及文件系统的用例全部使用独立临时目录，并在测试结束后清理。服务端接口测试应使用临时 SQLite 数据库和临时持久化目录，不能读取开发者真实应用数据。
 
