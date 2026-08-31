@@ -17,11 +17,10 @@
         </Button>
         <!--  Sync buttons container  -->
         <StackPanel Orientation="Horizontal" Spacing="4" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ViewModel.EnableSyncHistory), Mode=OneWay}">
-            <Button Click="DownloadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.ShowDownloadButton), Mode=OneWay}">
+            <Button Click="DownloadButtonClicked" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.ShowDownloadButton), Mode=OneWay}">
                 <FontIcon Glyph="&#xE896;" />
             </Button>
             <Button Click="CancelDownloadButtonClicked"
-                    IsTabStop="False"
                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.ShowDownloadProgress), Mode=OneWay}"
                     ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelDownload}">
                 <ProgressRing Width="16"
@@ -30,12 +29,11 @@
                               Value="{x:Bind Record.DownloadProgress, Mode=OneWay}" />
             </Button>
             <!--  Upload button  -->
-            <Button Click="UploadButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.ShowUploadButton), Mode=OneWay}">
+            <Button Click="UploadButtonClicked" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.ShowUploadButton), Mode=OneWay}">
                 <FontIcon Glyph="&#xE898;" />
             </Button>
             <!--  Cancel upload button with progress ring  -->
             <Button Click="CancelUploadButtonClicked"
-                    IsTabStop="False"
                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.ShowUploadProgress), Mode=OneWay}"
                     ToolTipService.ToolTip="{x:Bind i18n:Strings.CancelUpload}">
                 <ProgressRing Width="16"
@@ -44,16 +42,16 @@
                               Value="{x:Bind Record.UploadProgress, Mode=OneWay}" />
             </Button>
         </StackPanel>
-        <Button Click="CopyButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.IsLocalFileReady), Mode=OneWay}">
+        <Button Click="CopyButtonClicked" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.IsLocalFileReady), Mode=OneWay}">
             <FontIcon Glyph="&#xE8C8;" />
         </Button>
-        <Button Click="PasteButtonClicked" IsTabStop="False" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.IsLocalFileReady), Mode=OneWay}">
+        <Button Click="PasteButtonClicked" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Record.IsLocalFileReady), Mode=OneWay}">
             <FontIcon Glyph="&#xE77F;" />
         </Button>
-        <Button Click="StarButtonClicked" IsTabStop="False">
+        <Button Click="StarButtonClicked">
             <FontIcon Glyph="{x:Bind vc:ConvertMethod.ToStarIcon(Record.Stared), Mode=OneWay}" />
         </Button>
-        <Button Click="DeleteButtonClicked" IsTabStop="False">
+        <Button Click="DeleteButtonClicked">
             <FontIcon Glyph="&#xE74D;" />
         </Button>
     </StackPanel>
