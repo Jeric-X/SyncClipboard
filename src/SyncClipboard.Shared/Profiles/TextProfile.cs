@@ -84,7 +84,20 @@ public class TextProfile : Profile
     {
         if (!HasTransferData)
         {
-            return true;
+            if (quick)
+            {
+                return true;
+            }
+
+            try
+            {
+                await ValidateInlineTextHashAsync(await GetHash(token), token);
+                return true;
+            }
+            catch when (token.IsCancellationRequested is false)
+            {
+                return false;
+            }
         }
 
         if (File.Exists(_transferDataPath) is false)

@@ -410,6 +410,52 @@ public class GroupProfileTransferTests
         }
     }
 
+    [TestMethod]
+    public async Task PrepareTransferData_OutputFailureIsNotReportedAsLocalDataUnavailable()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        {
+            return;
+        }
+
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        var workingDirectory = string.Empty;
+        UnixFileMode originalMode = default;
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(file, "source", token);
+            var profile = new GroupProfile([file]);
+            var expectedHash = await profile.GetHash(token);
+            workingDirectory = Profile.CreateWorkingDir(persistentDirectory, ProfileType.Group, expectedHash);
+            originalMode = File.GetUnixFileMode(workingDirectory);
+            File.SetUnixFileMode(workingDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            try
+            {
+                await profile.PrepareTransferData(persistentDirectory, token);
+                Assert.Fail("Expected archive output creation to fail.");
+            }
+            catch (LocalProfileDataUnavailableException ex)
+            {
+                Assert.Fail($"Output failure must remain retryable: {ex}");
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+        finally
+        {
+            if (!string.IsNullOrEmpty(workingDirectory) && Directory.Exists(workingDirectory))
+            {
+                File.SetUnixFileMode(workingDirectory, originalMode);
+            }
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
     private static string CreateTestDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"SyncClipboard-GroupProfileTests-{Guid.NewGuid():N}");

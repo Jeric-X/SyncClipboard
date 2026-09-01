@@ -96,6 +96,22 @@ public class ProfileTransferValidationTests
             () => profile.PrepareTransferData(Path.GetTempPath(), token));
     }
 
+    [TestMethod]
+    public async Task TextIsLocalDataValid_InlineTextDiffersFromStoredHashReturnsFalse()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var expectedHash = await new TextProfile("before").GetHash(token);
+        var profile = new TextProfile(new ProfilePersistentInfo
+        {
+            Type = ProfileType.Text,
+            Text = "after",
+            Size = "after".Length,
+            Hash = expectedHash,
+        });
+
+        Assert.IsFalse(await profile.IsLocalDataValid(false, token));
+    }
+
     private static string CreateTestDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"SyncClipboard-ProfileTransferValidationTests-{Guid.NewGuid():N}");

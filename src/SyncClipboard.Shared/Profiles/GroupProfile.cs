@@ -294,11 +294,6 @@ public class GroupProfile : Profile
             _transferDataPath = filePath;
             return filePath;
         }
-        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
-        {
-            throw new LocalProfileDataUnavailableException(
-                $"Failed to read local data for Group profile {Hash ?? "<unknown>"}.", ex);
-        }
         finally
         {
             TryDeleteFile(tempFilePath);
@@ -454,12 +449,24 @@ public class GroupProfile : Profile
         List<GroupEntry> entries,
         CancellationToken token)
     {
+        string[] subDirectories;
+        string[] subFiles;
+        try
+        {
+            subDirectories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+            subFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+        }
+        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        {
+            throw new LocalProfileDataUnavailableException($"Failed to read local Group directory: {path}", ex);
+        }
+
         var dirName = Path.GetFileName(path);
         var rootEntryName = dirName + "/";
         archive.CreateEntry(rootEntryName);
         entries.Add(new GroupEntry(rootEntryName, isDirectory: true, length: 0, hashTask: null));
 
-        foreach (var subDir in Directory.GetDirectories(path, "*", SearchOption.AllDirectories))
+        foreach (var subDir in subDirectories)
         {
             token.ThrowIfCancellationRequested();
             var relativeDir = Path.GetRelativePath(path, subDir).Replace(Path.DirectorySeparatorChar, '/');
@@ -468,7 +475,7 @@ public class GroupProfile : Profile
             entries.Add(new GroupEntry(entryName, isDirectory: true, length: 0, hashTask: null));
         }
 
-        foreach (var subFile in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+        foreach (var subFile in subFiles)
         {
             token.ThrowIfCancellationRequested();
             var relativePath = Path.GetRelativePath(path, subFile).Replace(Path.DirectorySeparatorChar, '/');
@@ -507,17 +514,47 @@ public class GroupProfile : Profile
         if (!FileFilterHelper.IsFileAvailableAfterFilter(entryName, _fileFilterConfig))
             return null;
 
+        FileStream sourceStream;
+        try
+        {
+            sourceStream = new FileStream(
+                sourcePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                81920,
+                useAsync: true);
+        }
+        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        {
+            throw new LocalProfileDataUnavailableException($"Failed to open local Group file: {sourcePath}", ex);
+        }
+
+        await using var sourceStreamGuard = sourceStream.ConfigureAwait(false);
         var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
         await using var entryStream = entry.Open();
-        await using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         using var incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var buffer = ArrayPool<byte>.Shared.Rent(81920);
         long length = 0;
         try
         {
             int read;
-            while ((read = await sourceStream.ReadAsync(buffer.AsMemory(0, 81920), token).ConfigureAwait(false)) > 0)
+            while (true)
             {
+                try
+                {
+                    read = await sourceStream.ReadAsync(buffer.AsMemory(0, 81920), token).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+                {
+                    throw new LocalProfileDataUnavailableException($"Failed to read local Group file: {sourcePath}", ex);
+                }
+
+                if (read == 0)
+                {
+                    break;
+                }
+
                 await entryStream.WriteAsync(buffer.AsMemory(0, read), token).ConfigureAwait(false);
                 incrementalHash.AppendData(buffer, 0, read);
                 length += read;
