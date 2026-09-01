@@ -17,6 +17,11 @@ public class FileProfile : Profile
 
     protected const string HASH_FOR_OVERSIZED_FILE = "HASH_FOR_OVERSIZED_FILE";
 
+    public static bool IsOversizedFileHash(string? hash)
+    {
+        return string.Equals(hash, HASH_FOR_OVERSIZED_FILE, StringComparison.Ordinal);
+    }
+
     public FileProfile(ProfilePersistentInfo entity)
     {
         if (entity.FilePaths.Length > 0)

@@ -34,7 +34,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        var remoteProfileWithoutHash = await GetRemoteFileProfileWithoutHash(profile, cancellationToken);
+        var remoteSnapshotWithoutHash = await GetRemoteFileProfileWithoutHash(profile, cancellationToken);
         var persistentDir = _profileEnv.GetPersistentDir();
         var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
         if (dataPath is null)
@@ -47,7 +47,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
             await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
-            await BackfillRemoteProfileHash(remoteProfileWithoutHash, profile, cancellationToken);
+            await BackfillRemoteProfileHash(remoteSnapshotWithoutHash, profile, cancellationToken);
             _logger.Write($"[PULL] Downloaded {fileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
@@ -64,7 +64,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
         }
     }
 
-    private static async Task<ProfileDto?> GetRemoteFileProfileWithoutHash(
+    private async Task<StorageProfileSnapshot?> GetRemoteFileProfileWithoutHash(
         Profile profile,
         CancellationToken cancellationToken)
     {
@@ -74,15 +74,23 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             return null;
         }
 
-        return await profile.ToProfileDto(cancellationToken);
+        var normalizedProfile = await profile.ToProfileDto(cancellationToken);
+        var remoteSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
+        if (remoteSnapshot is null ||
+            !MatchesNormalizedFileProfile(normalizedProfile, remoteSnapshot.Profile))
+        {
+            return null;
+        }
+
+        return remoteSnapshot;
     }
 
     private async Task BackfillRemoteProfileHash(
-        ProfileDto? originalProfile,
+        StorageProfileSnapshot? originalSnapshot,
         Profile downloadedProfile,
         CancellationToken cancellationToken)
     {
-        if (originalProfile is null)
+        if (originalSnapshot is null)
         {
             return;
         }
@@ -91,14 +99,16 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
         {
             var currentSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
             if (currentSnapshot is null ||
-                !CanBackfillRemoteProfileHash(originalProfile, currentSnapshot.Profile))
+                !string.Equals(currentSnapshot.Version, originalSnapshot.Version, StringComparison.Ordinal) ||
+                !CanBackfillRemoteProfileHash(originalSnapshot.Profile, currentSnapshot.Profile))
             {
                 _logger.Write("[PULL] Remote profile does not meet hash backfill preconditions, skipped metadata update.");
                 return;
             }
 
             var calculatedHash = await downloadedProfile.GetHash(cancellationToken);
-            if (string.IsNullOrEmpty(calculatedHash))
+            if (string.IsNullOrEmpty(calculatedHash) ||
+                FileProfile.IsOversizedFileHash(calculatedHash))
             {
                 return;
             }
@@ -130,6 +140,18 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             currentProfile.HasData == originalProfile.HasData &&
             string.Equals(currentProfile.DataName, originalProfile.DataName, StringComparison.Ordinal) &&
             currentProfile.Size == originalProfile.Size;
+    }
+
+    private static bool MatchesNormalizedFileProfile(ProfileDto normalizedProfile, ProfileDto remoteProfile)
+    {
+        var typeMatches = remoteProfile.Type == normalizedProfile.Type ||
+            remoteProfile.Type == ProfileType.File && normalizedProfile.Type == ProfileType.Image;
+        return typeMatches &&
+            string.IsNullOrEmpty(remoteProfile.Hash) &&
+            string.Equals(remoteProfile.Text, normalizedProfile.Text, StringComparison.Ordinal) &&
+            remoteProfile.HasData == normalizedProfile.HasData &&
+            string.Equals(remoteProfile.DataName, normalizedProfile.DataName, StringComparison.Ordinal) &&
+            remoteProfile.Size == normalizedProfile.Size;
     }
 
     public void SetErrorStatus(string message, Exception? innerException = null)

@@ -190,6 +190,85 @@ public class StorageBasedServerHelperTests
         }
     }
 
+    [TestMethod]
+    public async Task DownloadLegacyFileImageProfile_BackfillsOriginalWireType()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var fileName = "image.png";
+            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
+            await File.WriteAllBytesAsync(remoteFile, [1, 2, 3, 4], token);
+
+            var remoteProfile = new ProfileDto
+            {
+                Type = ProfileType.File,
+                Hash = string.Empty,
+                Text = fileName,
+                HasData = true,
+                DataName = fileName,
+                Size = new FileInfo(remoteFile).Length,
+            };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
+            var helper = CreateHelper(testDirectory, adapter);
+            var profile = Profile.Create(remoteProfile);
+
+            Assert.IsInstanceOfType<ImageProfile>(profile);
+            await helper.DownloadProfileDataAsync(profile, cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.AreEqual(ProfileType.File, adapter.CurrentProfile?.Type);
+            Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
+    [TestMethod]
+    public async Task DownloadOversizedFileProfile_DoesNotBackfillSharedHashSentinel()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var fileName = "oversized.bin";
+            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
+            await File.WriteAllBytesAsync(remoteFile, [1], token);
+            var oversizedLength = (long)int.MaxValue + 1;
+
+            var remoteProfile = new ProfileDto
+            {
+                Type = ProfileType.File,
+                Hash = string.Empty,
+                Text = fileName,
+                HasData = true,
+                DataName = fileName,
+                Size = oversizedLength,
+            };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile)
+            {
+                DownloadedFileLength = oversizedLength,
+            };
+            var helper = CreateHelper(testDirectory, adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(remoteProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(string.Empty, adapter.CurrentProfile?.Hash);
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
     private static StorageBasedServerHelper CreateHelper(
         string persistentDirectory,
         IStorageBasedServerAdapter adapter)
@@ -225,6 +304,7 @@ public class StorageBasedServerHelperTests
         public ProfileDto? CurrentProfile { get; private set; } = currentProfile;
         public ProfileDto? ProfileAfterDownload { get; init; }
         public ProfileDto? ProfileBeforeConditionalSet { get; init; }
+        public long? DownloadedFileLength { get; init; }
         public int DownloadCount { get; private set; }
         public int UploadCount { get; private set; }
         public int SetProfileCount { get; private set; }
@@ -297,7 +377,15 @@ public class StorageBasedServerHelperTests
         {
             DownloadCount++;
             Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
-            File.Copy(remoteFile, localPath, overwrite: true);
+            if (DownloadedFileLength is not null)
+            {
+                using var stream = new FileStream(localPath, FileMode.Create, FileAccess.Write);
+                stream.SetLength(DownloadedFileLength.Value);
+            }
+            else
+            {
+                File.Copy(remoteFile, localPath, overwrite: true);
+            }
             if (ProfileAfterDownload is not null)
             {
                 CurrentProfile = ProfileAfterDownload;
