@@ -918,6 +918,15 @@ Shift + 左键：选中连续范围</value>
   <data name="UnableToCopyByMissingFile" xml:space="preserve">
     <value>文件丢失无法复制</value>
   </data>
+  <data name="SourceFileMissingUnableToUpload" xml:space="preserve">
+    <value>源文件丢失，无法上传</value>
+  </data>
+  <data name="FileMissing" xml:space="preserve">
+    <value>文件丢失</value>
+  </data>
+  <data name="CopyContainingFolderPath" xml:space="preserve">
+    <value>复制所在路径</value>
+  </data>
   <data name="ReloadLocalFile" xml:space="preserve">
     <value>重新读取本地文件</value>
   </data>

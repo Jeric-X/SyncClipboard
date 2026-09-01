@@ -918,6 +918,15 @@ Shift + left click: Select a continuous range</value>
   <data name="UnableToCopyByMissingFile" xml:space="preserve">
     <value>Unable to copy because of missing files</value>
   </data>
+  <data name="SourceFileMissingUnableToUpload" xml:space="preserve">
+    <value>Source file is missing. Unable to upload</value>
+  </data>
+  <data name="FileMissing" xml:space="preserve">
+    <value>File missing</value>
+  </data>
+  <data name="CopyContainingFolderPath" xml:space="preserve">
+    <value>Copy containing folder path</value>
+  </data>
   <data name="ReloadLocalFile" xml:space="preserve">
     <value>Reload local files</value>
   </data>

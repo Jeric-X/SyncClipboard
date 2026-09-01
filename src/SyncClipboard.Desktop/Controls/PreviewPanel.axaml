@@ -41,7 +41,7 @@
                            Margin="0,0,8,0"
                            ToolTip.Tip="{Binding #_PreviewPanel.SelectedItem.FullDateTime}" />
                 <TextBlock Grid.Column="3"
-                           x:Name="_SyncedText"
+                           x:Name="_StatusText"
                            VerticalAlignment="Center"
                            Text="{x:Static i18n:Strings.Synced}"
                            FontSize="12"

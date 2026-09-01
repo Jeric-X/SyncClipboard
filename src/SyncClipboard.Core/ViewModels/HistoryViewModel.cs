@@ -1370,6 +1370,16 @@ public partial class HistoryViewModel : ObservableObject
 
     private void AddMissingLocalFileActions(List<MenuItem> actions, HistoryRecord record)
     {
+        if (record.FilePath.FirstOrDefault() is { } filePath &&
+            Path.GetDirectoryName(filePath) is { Length: > 0 } containingFolder)
+        {
+            actions.Add(new MenuItem(
+                I18n.Strings.CopyContainingFolderPath,
+                () => _ = RunWithOperationTimeoutAsync(
+                    "copy missing history file containing folder",
+                    token => localClipboardSetter.Set(new TextProfile(containingFolder), token))));
+        }
+
         actions.Add(new MenuItem(
             I18n.Strings.ReloadLocalFile,
             () => _ = RunWithOperationTimeoutAsync(

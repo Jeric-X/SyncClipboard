@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
@@ -79,7 +80,7 @@ public sealed partial class PreviewPanel : UserControl
                 }
                 else if (args.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
                 {
-                    panel.UpdateSyncedTextVisibility();
+                    panel.UpdateStatusText();
                 }
             };
         }
@@ -102,7 +103,7 @@ public sealed partial class PreviewPanel : UserControl
             }
 
             _ = panel.UpdatePreviewImageContent();
-            panel.UpdateSyncedTextVisibility();
+            panel.UpdateStatusText();
         }
     }
 
@@ -112,22 +113,32 @@ public sealed partial class PreviewPanel : UserControl
         {
             _ = UpdatePreviewImageContent();
         }
+
+        if (e.PropertyName is nameof(HistoryRecordVM.SyncState) or nameof(HistoryRecordVM.IsLocalFileReady))
+        {
+            UpdateStatusText();
+        }
     }
 
-    internal void SyncedTextLoaded(object _, RoutedEventArgs _1)
+    internal void StatusTextLoaded(object _, RoutedEventArgs _1)
     {
-        UpdateSyncedTextVisibility();
+        UpdateStatusText();
     }
 
-    private void UpdateSyncedTextVisibility()
+    private void UpdateStatusText()
     {
-        if (ViewModel == null || _SyncedText == null)
+        if (ViewModel == null || _StatusText == null)
             return;
 
-        var enableSync = ViewModel.EnableSyncHistory;
-        var isSynced = SelectedItem?.SyncState == SyncStatus.Synced;
+        var isLocalFileMissing = SelectedItem is
+        {
+            SyncState: SyncStatus.LocalOnly,
+            IsLocalFileReady: false
+        };
+        var isSynced = ViewModel.EnableSyncHistory && SelectedItem?.SyncState == SyncStatus.Synced;
 
-        _SyncedText.Visibility = enableSync && isSynced ? Visibility.Visible : Visibility.Collapsed;
+        _StatusText.Text = isLocalFileMissing ? Strings.FileMissing : Strings.Synced;
+        _StatusText.Visibility = isLocalFileMissing || isSynced ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>

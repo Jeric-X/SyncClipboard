@@ -493,7 +493,7 @@ public class HistoryTransferQueue : IDisposable
                 }
             }
 
-            task.ErrorMessage = ex.Message;
+            task.ErrorMessage = I18n.Strings.SourceFileMissingUnableToUpload;
             task.FailureCount++;
             task.Status = TransferTaskStatus.Failed;
             task.CompletedTime = DateTime.Now;
