@@ -82,9 +82,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#SourceFolder}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs uninsrestartdelete
 
-[UninstallDelete]
-Type: files; Name: "{app}\update_info.json"
-
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
@@ -194,26 +191,6 @@ begin
     Result := 1; // Overwrite
 end;
 
-function IsWingetDistribution(): Boolean;
-begin
-  Result := UpperCase(ExpandConstant('{param:SYNC_CLIPBOARD_DISTRIBUTION|}')) = 'WINGET';
-end;
-
-procedure WriteWingetUpdateInfo();
-var
-  Json: String;
-begin
-  Json :=
-    '{' + #13#10 +
-    '    "UpdateInfo": {' + #13#10 +
-    '        "manage_type": "market",' + #13#10 +
-    '        "update_src": "winget",' + #13#10 +
-    '        "package_name": "JericX.SyncClipboard"' + #13#10 +
-    '    }' + #13#10 +
-    '}';
-  SaveStringToFile(ExpandConstant('{app}\update_info.json'), Json, False);
-end;
-
 function InitializeSetup(): Boolean;
 var
   InstalledVersion, InstallPath: String;
@@ -279,12 +256,6 @@ begin
   Result := False;
   if (PageID = wpSelectDir) and GOverwriteInstall and (GExistingInstallPath <> '') then
     Result := True;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-begin
-  if (CurStep = ssPostInstall) and IsWingetDistribution() then
-    WriteWingetUpdateInfo();
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

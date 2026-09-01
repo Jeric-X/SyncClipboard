@@ -1,0 +1,44 @@
+name: winget-release
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    secrets:
+      WINGET_CREATE_GITHUB_TOKEN:
+        required: true
+
+jobs:
+  submit-winget:
+    runs-on: windows-latest
+    steps:
+      - name: Download WingetCreate
+        shell: pwsh
+        run: Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+
+      - name: Submit Winget update
+        shell: pwsh
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+        run: |
+          $version = $env:RELEASE_TAG -replace '^v', ''
+          $releaseBaseUrl = "https://github.com/$env:RELEASE_REPOSITORY/releases/download/$env:RELEASE_TAG"
+          $arguments = @(
+            'update'
+            'JericX.SyncClipboard'
+            '--version'
+            $version
+            '--urls'
+            "$releaseBaseUrl/SyncClipboard_win_x64_installer.exe|x64"
+            "$releaseBaseUrl/SyncClipboard_win_arm64_installer.exe|arm64"
+            '--submit'
+            '--no-open'
+          )
+
+          & .\wingetcreate.exe @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "WingetCreate failed with exit code $LASTEXITCODE."
+          }

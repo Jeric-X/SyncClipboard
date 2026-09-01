@@ -52,3 +52,17 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     needs: [create-gh-release-draft, build-win, build-server, build-linux, build-mac]
     uses: ./.github/workflows/release-formal.yml
+
+  update-homebrew:
+    if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, 'beta') && github.repository == 'Jeric-X/SyncClipboard' }}
+    needs: create-gh-release-formal
+    uses: ./.github/workflows/homebrew-release.yml
+    secrets:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+  submit-winget:
+    if: ${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, 'beta') && github.repository == 'Jeric-X/SyncClipboard' }}
+    needs: create-gh-release-formal
+    uses: ./.github/workflows/winget-release.yml
+    secrets:
+      WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
