@@ -108,28 +108,31 @@ public class HistorySyncer
     // 关闭历史记录同步功能后，将所有记录转为纯本地语义，再按本地记录清理规则处理。
     public async Task RemoveRemoteHistorys(CancellationToken token)
     {
-        var records = await _historyManager.GetHistory(token);
+        var records = await _historyManager.GetHistory(token).ConfigureAwait(false);
         var autoDeleteMissingLocalFiles = _configManager.GetConfig<HistoryConfig>().AutoDeleteMissingLocalFiles;
 
-        foreach (var record in records)
+        await Task.Run(async () =>
         {
-            var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
-            if (syncStatusChanged)
+            foreach (var record in records)
             {
-                record.SyncStatus = HistorySyncStatus.LocalOnly;
-            }
+                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
+                if (syncStatusChanged)
+                {
+                    record.SyncStatus = HistorySyncStatus.LocalOnly;
+                }
 
-            if (ShouldDeleteLocalRecord(record, autoDeleteMissingLocalFiles))
-            {
-                await _historyManager.RemoveHistory(record, token);
-                continue;
-            }
+                if (ShouldDeleteLocalRecord(record, autoDeleteMissingLocalFiles))
+                {
+                    await _historyManager.RemoveHistory(record, token).ConfigureAwait(false);
+                    continue;
+                }
 
-            if (syncStatusChanged)
-            {
-                await _historyManager.PersistServerSyncedAsync(record, token);
+                if (syncStatusChanged)
+                {
+                    await _historyManager.PersistServerSyncedAsync(record, token).ConfigureAwait(false);
+                }
             }
-        }
+        }, token).ConfigureAwait(false);
     }
 
     private async Task CleanupLocalRecordsAsync(CancellationToken token)

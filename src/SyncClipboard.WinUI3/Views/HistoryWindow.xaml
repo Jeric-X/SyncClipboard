@@ -200,7 +200,7 @@
                               CanDrag="True"
                               ColumnDefinitions="Auto, Auto, *, Auto, Auto"
                               Background="Transparent"
-                              Opacity="{x:Bind vc:ConvertMethod.SyncStateToOpacity(SyncState), Mode=OneWay}">
+                              Opacity="{x:Bind vc:ConvertMethod.LocalFileReadyToOpacity(IsLocalFileReady), Mode=OneWay}">
                             <CheckBox Grid.Column="0"
                                       Margin="0,0,8,0"
                                       MinWidth="0"

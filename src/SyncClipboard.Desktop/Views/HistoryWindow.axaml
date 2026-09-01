@@ -278,7 +278,7 @@
                             <Grid MinHeight="10"
                                   ColumnDefinitions="Auto, Auto, *, Auto, Auto"
                                   Background="Transparent"
-                                  Opacity="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToOpacity}}"
+                                  Opacity="{Binding IsLocalFileReady, Converter={x:Static vc:FuncConverter.LocalFileReadyToOpacity}}"
                                   ContextRequested="HistoryItem_ContextRequested"
                                   IsHitTestVisible="True">
                                 <Grid.ContextFlyout>
