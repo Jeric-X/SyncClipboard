@@ -34,6 +34,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
+        var remoteProfileWithoutHash = await GetRemoteFileProfileWithoutHash(profile, cancellationToken);
         var persistentDir = _profileEnv.GetPersistentDir();
         var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
         if (dataPath is null)
@@ -46,6 +47,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
             await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
+            await BackfillRemoteProfileHash(remoteProfileWithoutHash, profile, cancellationToken);
             _logger.Write($"[PULL] Downloaded {fileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
@@ -60,6 +62,66 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             SetErrorStatus("Failed to download profile data", ex);
             throw new ProfileDataDownloadException("Failed to download profile data", ex);
         }
+    }
+
+    private static async Task<ProfileDto?> GetRemoteFileProfileWithoutHash(
+        Profile profile,
+        CancellationToken cancellationToken)
+    {
+        if (profile is not FileProfile ||
+            !string.IsNullOrEmpty(await profile.GetHash(cancellationToken)))
+        {
+            return null;
+        }
+
+        return await profile.ToProfileDto(cancellationToken);
+    }
+
+    private async Task BackfillRemoteProfileHash(
+        ProfileDto? originalProfile,
+        Profile downloadedProfile,
+        CancellationToken cancellationToken)
+    {
+        if (originalProfile is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var currentProfile = await _serverAdapter.GetProfileAsync(cancellationToken);
+            if (!CanBackfillRemoteProfileHash(originalProfile, currentProfile))
+            {
+                _logger.Write("[PULL] Remote profile changed before hash backfill, skipped metadata update.");
+                return;
+            }
+
+            var calculatedHash = await downloadedProfile.GetHash(cancellationToken);
+            if (string.IsNullOrEmpty(calculatedHash))
+            {
+                return;
+            }
+
+            await _serverAdapter.SetProfileAsync(
+                currentProfile! with { Hash = calculatedHash },
+                cancellationToken);
+            _logger.Write($"[PULL] Backfilled remote profile hash: {calculatedHash}");
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.Write($"[PULL] Failed to backfill remote profile hash: {ex.Message}");
+        }
+    }
+
+    private static bool CanBackfillRemoteProfileHash(ProfileDto originalProfile, ProfileDto? currentProfile)
+    {
+        return currentProfile is not null &&
+            string.IsNullOrEmpty(currentProfile.Hash) &&
+            currentProfile.Type == originalProfile.Type &&
+            string.Equals(currentProfile.Text, originalProfile.Text, StringComparison.Ordinal) &&
+            currentProfile.HasData == originalProfile.HasData &&
+            string.Equals(currentProfile.DataName, originalProfile.DataName, StringComparison.Ordinal) &&
+            currentProfile.Size == originalProfile.Size;
     }
 
     public void SetErrorStatus(string message, Exception? innerException = null)
