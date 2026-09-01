@@ -153,7 +153,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
     private static bool MatchesNormalizedFileProfile(ProfileDto normalizedProfile, ProfileDto remoteProfile)
     {
         var typeMatches = remoteProfile.Type == normalizedProfile.Type ||
-            remoteProfile.Type == ProfileType.File && normalizedProfile.Type == ProfileType.Image;
+            (remoteProfile.Type == ProfileType.File && normalizedProfile.Type == ProfileType.Image);
         return typeMatches &&
             string.IsNullOrEmpty(remoteProfile.Hash) &&
             string.Equals(remoteProfile.Text, normalizedProfile.Text, StringComparison.Ordinal) &&
