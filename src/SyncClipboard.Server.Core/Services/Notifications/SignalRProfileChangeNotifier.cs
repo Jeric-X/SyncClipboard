@@ -7,9 +7,9 @@ public class SignalRProfileChangeNotifier(
     IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext) : IProfileChangeNotifier
 {
     public Task NotifyProfileChanged(
-        ProfileDto profile,
+        ProfileChangeNotification notification,
         CancellationToken cancellationToken = default)
     {
-        return hubContext.Clients.All.RemoteProfileChanged(profile);
+        return hubContext.Clients.All.RemoteProfileChanged(notification.Profile);
     }
 }

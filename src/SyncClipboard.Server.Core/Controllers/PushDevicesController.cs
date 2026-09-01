@@ -22,7 +22,8 @@ public class PushDevicesController(IPushDeviceRegistry registry) : ControllerBas
         [FromBody] PushDeviceRegistrationRequest? request,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeDeviceId(deviceId, out var normalizedDeviceId))
+        var normalizedDeviceId = SyncDeviceIdentity.Normalize(deviceId);
+        if (normalizedDeviceId is null)
         {
             return BadRequest("deviceId must be a valid UUID");
         }
@@ -71,24 +72,13 @@ public class PushDevicesController(IPushDeviceRegistry registry) : ControllerBas
         string deviceId,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeDeviceId(deviceId, out var normalizedDeviceId))
+        var normalizedDeviceId = SyncDeviceIdentity.Normalize(deviceId);
+        if (normalizedDeviceId is null)
         {
             return BadRequest("deviceId must be a valid UUID");
         }
 
         await registry.RemoveAsync(normalizedDeviceId, cancellationToken);
         return NoContent();
-    }
-
-    private static bool TryNormalizeDeviceId(string deviceId, out string normalizedDeviceId)
-    {
-        if (Guid.TryParse(deviceId, out var parsedDeviceId))
-        {
-            normalizedDeviceId = parsedDeviceId.ToString("D");
-            return true;
-        }
-
-        normalizedDeviceId = string.Empty;
-        return false;
     }
 }

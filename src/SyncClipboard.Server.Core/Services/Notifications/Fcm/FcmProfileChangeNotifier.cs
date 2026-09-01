@@ -9,7 +9,7 @@ public sealed class FcmProfileChangeNotifier(
     ILogger<FcmProfileChangeNotifier> logger) : IProfileChangeNotifier
 {
     public async Task NotifyProfileChanged(
-        ProfileDto profile,
+        ProfileChangeNotification notification,
         CancellationToken cancellationToken = default)
     {
         if (!fcmClient.IsAvailable)
@@ -21,11 +21,29 @@ public sealed class FcmProfileChangeNotifier(
         try
         {
             var registrations = await registry.GetByProviderAsync("fcm", cancellationToken);
-            await Task.WhenAll(registrations.Select(registration =>
-                SendToDeviceAsync(registration, profile.Hash, cancellationToken)));
+            var recipients = registrations
+                .Where(registration => !string.Equals(
+                    registration.DeviceId,
+                    notification.OriginDeviceId,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var excludedDeviceCount = registrations.Count - recipients.Count;
+            if (excludedDeviceCount > 0)
+            {
+                logger.LogDebug(
+                    "Excluded originating device {OriginDeviceId} from FCM profile change hint",
+                    notification.OriginDeviceId);
+            }
+
+            await Task.WhenAll(recipients.Select(registration =>
+                SendToDeviceAsync(
+                    registration,
+                    notification.Profile.Hash,
+                    cancellationToken)));
             logger.LogDebug(
-                "FCM profile change hint processed for {DeviceCount} registered devices",
-                registrations.Count);
+                "FCM profile change hint processed for {DeviceCount} devices; {ExcludedDeviceCount} origin devices excluded",
+                recipients.Count,
+                excludedDeviceCount);
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {

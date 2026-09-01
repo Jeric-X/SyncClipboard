@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Services.Notifications;
+using SyncClipboard.Server.Core.Services.PushDevices;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -153,7 +154,10 @@ public class SyncClipboardController(
     }
 
     [HttpPut("SyncClipboard.json")]
-    public async Task<IActionResult> PutSyncProfile([FromBody] ProfileDto dto, CancellationToken token)
+    public async Task<IActionResult> PutSyncProfile(
+        [FromBody] ProfileDto dto,
+        [FromHeader(Name = SyncDeviceIdentity.HeaderName)] string? originDeviceId,
+        CancellationToken token)
     {
         if (dto is null)
         {
@@ -167,12 +171,12 @@ public class SyncClipboardController(
 
             if (profile != null)
             {
-                await SaveAndNotifyCurrentProfile(profile, token);
+                await SaveAndNotifyCurrentProfile(profile, originDeviceId, token);
                 return Ok();
             }
         }
 
-        return await CreateAndSaveNewProfile(dto, token);
+        return await CreateAndSaveNewProfile(dto, originDeviceId, token);
     }
 
     [HttpGet("")]
@@ -182,7 +186,10 @@ public class SyncClipboardController(
         return Ok("Server is running.");
     }
 
-    private async Task<IActionResult> CreateAndSaveNewProfile(ProfileDto dto, CancellationToken token)
+    private async Task<IActionResult> CreateAndSaveNewProfile(
+        ProfileDto dto,
+        string? originDeviceId,
+        CancellationToken token)
     {
         var newProfile = Profile.Create(dto);
 
@@ -212,11 +219,14 @@ public class SyncClipboardController(
         }
 
         await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, newProfile, token);
-        await SaveAndNotifyCurrentProfile(newProfile, token);
+        await SaveAndNotifyCurrentProfile(newProfile, originDeviceId, token);
         return Ok();
     }
 
-    private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)
+    private async Task SaveAndNotifyCurrentProfile(
+        Profile profile,
+        string? originDeviceId,
+        CancellationToken token)
     {
         var profileDto = await profile.ToProfileDto(token);
         var dataRoot = _serverEnv.GetDataRootPath();
@@ -226,7 +236,11 @@ public class SyncClipboardController(
         var profileText = JsonSerializer.Serialize(profileDto);
         await System.IO.File.WriteAllTextAsync(profilePath, profileText, token);
 
-        await _profileChangeNotifier.NotifyProfileChanged(profileDto, token);
+        await _profileChangeNotifier.NotifyProfileChanged(
+            new ProfileChangeNotification(
+                profileDto,
+                SyncDeviceIdentity.Normalize(originDeviceId)),
+            token);
     }
 
     private async Task<IActionResult> GetFileInternal(string? path)

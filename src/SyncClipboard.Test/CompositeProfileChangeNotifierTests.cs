@@ -14,10 +14,13 @@ public class CompositeProfileChangeNotifierTests
         var fcm = new Mock<IProfileChangeNotifier>();
         var notifier = new CompositeProfileChangeNotifier([signalR.Object, fcm.Object]);
         var profile = new ProfileDto { Hash = "profile-hash" };
+        var notification = new ProfileChangeNotification(profile, "origin-device-id");
 
-        await notifier.NotifyProfileChanged(profile, CancellationToken.None);
+        await notifier.NotifyProfileChanged(notification, CancellationToken.None);
 
-        signalR.Verify(value => value.NotifyProfileChanged(profile, CancellationToken.None), Times.Once);
-        fcm.Verify(value => value.NotifyProfileChanged(profile, CancellationToken.None), Times.Once);
+        signalR.Verify(value => value.NotifyProfileChanged(
+            notification, CancellationToken.None), Times.Once);
+        fcm.Verify(value => value.NotifyProfileChanged(
+            notification, CancellationToken.None), Times.Once);
     }
 }

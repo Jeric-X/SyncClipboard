@@ -26,7 +26,9 @@ public class SignalRProfileChangeNotifierTests
         hubContext.SetupGet(value => value.Clients).Returns(clients.Object);
         var notifier = new SignalRProfileChangeNotifier(hubContext.Object);
 
-        await notifier.NotifyProfileChanged(profile, CancellationToken.None);
+        await notifier.NotifyProfileChanged(
+            new ProfileChangeNotification(profile, "origin-device-id"),
+            CancellationToken.None);
 
         client.Verify(value => value.RemoteProfileChanged(profile), Times.Once);
     }
