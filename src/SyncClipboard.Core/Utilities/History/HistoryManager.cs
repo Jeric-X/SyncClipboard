@@ -63,6 +63,17 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
+    internal async Task EnforceMaxItemCountAsync(CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        if (EnableCleanup)
+        {
+            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount, token);
+        }
+    }
+
     public string? GetRecordWorkingDir(HistoryRecord record)
     {
         if (string.IsNullOrEmpty(record.Hash))

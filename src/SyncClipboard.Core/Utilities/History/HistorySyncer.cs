@@ -133,6 +133,8 @@ public class HistorySyncer
                 }
             }
         }, token).ConfigureAwait(false);
+
+        await _historyManager.EnforceMaxItemCountAsync(token).ConfigureAwait(false);
     }
 
     private async Task CleanupLocalRecordsAsync(CancellationToken token)
