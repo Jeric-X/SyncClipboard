@@ -7,6 +7,7 @@ using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services.Notifications;
+using SyncClipboard.Server.Core.Services.PushDevices;
 using SyncClipboard.Server.Core.Swagger;
 using SyncClipboard.Server.Core.Utilities;
 using SyncClipboard.Server.Core.Utilities.History;
@@ -41,6 +42,7 @@ public class Web
 
         services.AddDbContext<HistoryDbContext>();
         services.AddScoped<HistoryService>();
+        services.AddScoped<IPushDeviceRegistry, PushDeviceRegistry>();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();

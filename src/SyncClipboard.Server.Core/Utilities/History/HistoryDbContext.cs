@@ -26,6 +26,7 @@ public class HistoryDbContext : DbContext
     }
 
     public DbSet<HistoryRecordEntity> HistoryRecords { get; set; } = null!;
+    public DbSet<PushDeviceRegistrationEntity> PushDeviceRegistrations { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
@@ -50,6 +51,10 @@ public class HistoryDbContext : DbContext
         modelBuilder.Entity<HistoryRecordEntity>()
             .HasIndex(e => new { e.UserId, e.Stared, e.Type, e.CreateTime, e.ID })
             .HasDatabaseName("IX_History_User_Stared_Type_CreateTime_ID");
+
+        modelBuilder.Entity<PushDeviceRegistrationEntity>()
+            .HasIndex(e => new { e.Provider, e.LastUpdated })
+            .HasDatabaseName("IX_PushDeviceRegistrations_Provider_LastUpdated");
 
         base.OnModelCreating(modelBuilder);
     }
