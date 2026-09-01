@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using SyncClipboard.Server.Core.Hubs;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services;
+using SyncClipboard.Server.Core.Services.Notifications;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -14,7 +13,7 @@ namespace SyncClipboard.Server.Core.Controllers;
 [Authorize]
 [Tags("SyncClipboard")]
 public class SyncClipboardController(
-    IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext,
+    IProfileChangeNotifier _profileChangeNotifier,
     IMemoryCache _cache,
     ServerEnvProvider _serverEnv,
     HistoryService _historyService) : ControllerBase
@@ -227,7 +226,7 @@ public class SyncClipboardController(
         var profileText = JsonSerializer.Serialize(profileDto);
         await System.IO.File.WriteAllTextAsync(profilePath, profileText, token);
 
-        await _hubContext.Clients.All.RemoteProfileChanged(profileDto);
+        await _profileChangeNotifier.NotifyProfileChanged(profileDto, token);
     }
 
     private async Task<IActionResult> GetFileInternal(string? path)

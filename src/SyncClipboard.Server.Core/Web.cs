@@ -6,6 +6,7 @@ using SyncClipboard.Server.Core.Hubs;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Server.Core.Services.Notifications;
 using SyncClipboard.Server.Core.Swagger;
 using SyncClipboard.Server.Core.Utilities;
 using SyncClipboard.Server.Core.Utilities.History;
@@ -36,6 +37,7 @@ public class Web
             .AddApplicationPart(typeof(SyncClipboardController).Assembly);
         services.AddMemoryCache();
         services.AddSignalR();
+        services.AddSingleton<IProfileChangeNotifier, SignalRProfileChangeNotifier>();
 
         services.AddDbContext<HistoryDbContext>();
         services.AddScoped<HistoryService>();
