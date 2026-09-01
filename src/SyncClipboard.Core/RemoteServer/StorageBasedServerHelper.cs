@@ -74,15 +74,23 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             return null;
         }
 
-        var normalizedProfile = await profile.ToProfileDto(cancellationToken);
-        var remoteSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
-        if (remoteSnapshot is null ||
-            !MatchesNormalizedFileProfile(normalizedProfile, remoteSnapshot.Profile))
+        try
         {
+            var normalizedProfile = await profile.ToProfileDto(cancellationToken);
+            var remoteSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
+            if (remoteSnapshot is null ||
+                !MatchesNormalizedFileProfile(normalizedProfile, remoteSnapshot.Profile))
+            {
+                return null;
+            }
+
+            return remoteSnapshot;
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.Write($"[PULL] Failed to capture remote profile for optional hash backfill: {ex}");
             return null;
         }
-
-        return remoteSnapshot;
     }
 
     private async Task BackfillRemoteProfileHash(

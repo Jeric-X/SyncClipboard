@@ -269,6 +269,46 @@ public class StorageBasedServerHelperTests
         }
     }
 
+    [TestMethod]
+    public async Task DownloadFileProfile_BackfillSnapshotFailureStillDownloadsFile()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var fileName = "video.mov";
+            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
+            await File.WriteAllBytesAsync(remoteFile, [1, 2, 3, 4], token);
+
+            var remoteProfile = new ProfileDto
+            {
+                Type = ProfileType.File,
+                Hash = string.Empty,
+                Text = fileName,
+                HasData = true,
+                DataName = fileName,
+                Size = new FileInfo(remoteFile).Length,
+            };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile)
+            {
+                SnapshotException = new HttpRequestException("temporary failure"),
+            };
+            var helper = CreateHelper(testDirectory, adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(remoteProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.DownloadCount);
+            Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
     private static StorageBasedServerHelper CreateHelper(
         string persistentDirectory,
         IStorageBasedServerAdapter adapter)
@@ -305,6 +345,7 @@ public class StorageBasedServerHelperTests
         public ProfileDto? ProfileAfterDownload { get; init; }
         public ProfileDto? ProfileBeforeConditionalSet { get; init; }
         public long? DownloadedFileLength { get; init; }
+        public Exception? SnapshotException { get; init; }
         public int DownloadCount { get; private set; }
         public int UploadCount { get; private set; }
         public int SetProfileCount { get; private set; }
@@ -320,6 +361,11 @@ public class StorageBasedServerHelperTests
 
         public Task<StorageProfileSnapshot?> GetProfileSnapshotAsync(CancellationToken cancellationToken = default)
         {
+            if (SnapshotException is not null)
+            {
+                throw SnapshotException;
+            }
+
             var snapshot = CurrentProfile is null
                 ? null
                 : new StorageProfileSnapshot(CurrentProfile, _profileVersion.ToString());
