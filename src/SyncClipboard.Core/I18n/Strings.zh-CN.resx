@@ -907,7 +907,7 @@ Shift + 左键：选中连续范围</value>
     <value>已同步记录的自动删除将遵循服务器配置</value>
   </data>
   <data name="AutoDeleteMissingLocalFiles" xml:space="preserve">
-    <value>本地文件丢失时自动删除未同步记录</value>
+    <value>本地文件丢失时自动删除记录</value>
   </data>
   <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
     <value>本地文件不存在或不完整时，自动删除纯本地记录</value>

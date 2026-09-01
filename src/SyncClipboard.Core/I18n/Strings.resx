@@ -907,7 +907,7 @@ Shift + left click: Select a continuous range</value>
     <value>Synced records will follow server settings for automatic deletion.</value>
   </data>
   <data name="AutoDeleteMissingLocalFiles" xml:space="preserve">
-    <value>Delete unsynced records with missing local files automatically</value>
+    <value>Delete records with missing local files automatically</value>
   </data>
   <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
     <value>Automatically delete local-only records when their files are missing or incomplete.</value>
