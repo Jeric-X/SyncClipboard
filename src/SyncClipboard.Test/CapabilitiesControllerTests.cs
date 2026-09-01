@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Moq;
 using SyncClipboard.Server.Core.Controllers;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Server.Core.Services.Notifications.Fcm;
 
 namespace SyncClipboard.Test;
 
@@ -12,7 +14,9 @@ public class CapabilitiesControllerTests
     [TestMethod]
     public void Get_ReturnsCurrentRealtimeTransportCapabilities()
     {
-        var controller = new CapabilitiesController();
+        var fcmClient = new Mock<IFcmPushClient>();
+        fcmClient.SetupGet(value => value.IsAvailable).Returns(false);
+        var controller = new CapabilitiesController(fcmClient.Object);
 
         var result = controller.Get();
 
@@ -22,6 +26,21 @@ public class CapabilitiesControllerTests
         Assert.IsNotNull(capabilities);
         Assert.IsTrue(capabilities.SignalR);
         Assert.IsFalse(capabilities.Push.Fcm);
+    }
+
+    [TestMethod]
+    public void Get_AdvertisesFcmOnlyWhenProviderIsAvailable()
+    {
+        var fcmClient = new Mock<IFcmPushClient>();
+        fcmClient.SetupGet(value => value.IsAvailable).Returns(true);
+        var controller = new CapabilitiesController(fcmClient.Object);
+
+        var result = controller.Get();
+
+        var ok = result.Result as OkObjectResult;
+        var capabilities = ok?.Value as RealtimeCapabilitiesDto;
+        Assert.IsNotNull(capabilities);
+        Assert.IsTrue(capabilities.Push.Fcm);
     }
 
     [TestMethod]

@@ -7,6 +7,7 @@ using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services.Notifications;
+using SyncClipboard.Server.Core.Services.Notifications.Fcm;
 using SyncClipboard.Server.Core.Services.PushDevices;
 using SyncClipboard.Server.Core.Swagger;
 using SyncClipboard.Server.Core.Utilities;
@@ -38,7 +39,14 @@ public class Web
             .AddApplicationPart(typeof(SyncClipboardController).Assembly);
         services.AddMemoryCache();
         services.AddSignalR();
-        services.AddSingleton<IProfileChangeNotifier, SignalRProfileChangeNotifier>();
+        services.AddSingleton<SignalRProfileChangeNotifier>();
+        services.AddSingleton<IFcmPushClient, FirebaseAdminFcmPushClient>();
+        services.AddScoped<FcmProfileChangeNotifier>();
+        services.AddScoped<IProfileChangeNotifier>(provider =>
+            new CompositeProfileChangeNotifier([
+                provider.GetRequiredService<SignalRProfileChangeNotifier>(),
+                provider.GetRequiredService<FcmProfileChangeNotifier>()
+            ]));
 
         services.AddDbContext<HistoryDbContext>();
         services.AddScoped<HistoryService>();

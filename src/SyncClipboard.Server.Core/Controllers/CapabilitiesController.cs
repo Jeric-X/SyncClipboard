@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Server.Core.Services.Notifications.Fcm;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -8,17 +9,15 @@ namespace SyncClipboard.Server.Core.Controllers;
 [Route("api/capabilities")]
 [Authorize]
 [Tags("SyncClipboard")]
-public class CapabilitiesController : ControllerBase
+public class CapabilitiesController(IFcmPushClient fcmClient) : ControllerBase
 {
-    private static readonly RealtimeCapabilitiesDto CurrentCapabilities = new()
-    {
-        SignalR = true,
-        Push = new PushCapabilitiesDto { Fcm = false }
-    };
-
     [HttpGet]
     public ActionResult<RealtimeCapabilitiesDto> Get()
     {
-        return Ok(CurrentCapabilities);
+        return Ok(new RealtimeCapabilitiesDto
+        {
+            SignalR = true,
+            Push = new PushCapabilitiesDto { Fcm = fcmClient.IsAvailable }
+        });
     }
 }

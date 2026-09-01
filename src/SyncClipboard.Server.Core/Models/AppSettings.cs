@@ -6,4 +6,6 @@ public sealed class AppSettings
     public string Password { get; set; } = "admin";
     public uint MaxSavedHistoryCount { get; set; } = 1000;
     public uint HistoryRetentionMinutes { get; set; } = 10080;
+    public bool EnableFcmPush { get; set; }
+    public string? FirebaseProjectId { get; set; }
 }
