@@ -50,7 +50,7 @@ public class StorageBasedServerHelperTests
         }
         finally
         {
-            Directory.Delete(testDirectory, recursive: true);
+            DeleteTestDirectory(testDirectory);
         }
     }
 
@@ -99,7 +99,7 @@ public class StorageBasedServerHelperTests
         }
         finally
         {
-            Directory.Delete(testDirectory, recursive: true);
+            DeleteTestDirectory(testDirectory);
         }
     }
 
@@ -137,7 +137,56 @@ public class StorageBasedServerHelperTests
         }
         finally
         {
-            Directory.Delete(testDirectory, recursive: true);
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
+    [TestMethod]
+    public async Task DownloadFileProfile_RemoteProfileChangedDuringConditionalBackfillDoesNotOverwriteMetadata()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var fileName = "video.mov";
+            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
+            await File.WriteAllBytesAsync(remoteFile, [1, 2, 3, 4], token);
+
+            var originalProfile = new ProfileDto
+            {
+                Type = ProfileType.File,
+                Hash = string.Empty,
+                Text = fileName,
+                HasData = true,
+                DataName = fileName,
+                Size = new FileInfo(remoteFile).Length,
+            };
+            var newerProfile = new ProfileDto
+            {
+                Type = ProfileType.Text,
+                Hash = "NEW_REMOTE_HASH",
+                Text = "new clipboard",
+                HasData = false,
+                Size = "new clipboard".Length,
+            };
+            var adapter = new TestStorageAdapter(remoteFile, originalProfile)
+            {
+                ProfileBeforeConditionalSet = newerProfile,
+            };
+            var helper = CreateHelper(testDirectory, adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(originalProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(0, adapter.SetProfileCount);
+            Assert.AreSame(newerProfile, adapter.CurrentProfile);
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
         }
     }
 
@@ -161,15 +210,26 @@ public class StorageBasedServerHelperTests
         return path;
     }
 
+    private static void DeleteTestDirectory(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
     private sealed class TestStorageAdapter(
         string remoteFile,
         ProfileDto currentProfile) : IStorageBasedServerAdapter
     {
         public ProfileDto? CurrentProfile { get; private set; } = currentProfile;
         public ProfileDto? ProfileAfterDownload { get; init; }
+        public ProfileDto? ProfileBeforeConditionalSet { get; init; }
         public int DownloadCount { get; private set; }
         public int UploadCount { get; private set; }
         public int SetProfileCount { get; private set; }
+        public int ConditionalSetAttemptCount { get; private set; }
+        private int _profileVersion;
 
         public Task InitializeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
@@ -178,13 +238,45 @@ public class StorageBasedServerHelperTests
             return Task.FromResult(CurrentProfile);
         }
 
+        public Task<StorageProfileSnapshot?> GetProfileSnapshotAsync(CancellationToken cancellationToken = default)
+        {
+            var snapshot = CurrentProfile is null
+                ? null
+                : new StorageProfileSnapshot(CurrentProfile, _profileVersion.ToString());
+            return Task.FromResult(snapshot);
+        }
+
         public Task SetProfileAsync(
             ProfileDto profileDto,
             CancellationToken cancellationToken = default)
         {
             SetProfileCount++;
             CurrentProfile = profileDto;
+            _profileVersion++;
             return Task.CompletedTask;
+        }
+
+        public Task<bool> TrySetProfileAsync(
+            ProfileDto profileDto,
+            string? expectedVersion,
+            CancellationToken cancellationToken = default)
+        {
+            ConditionalSetAttemptCount++;
+            if (ProfileBeforeConditionalSet is not null)
+            {
+                CurrentProfile = ProfileBeforeConditionalSet;
+                _profileVersion++;
+            }
+
+            if (expectedVersion != _profileVersion.ToString())
+            {
+                return Task.FromResult(false);
+            }
+
+            SetProfileCount++;
+            CurrentProfile = profileDto;
+            _profileVersion++;
+            return Task.FromResult(true);
         }
 
         public Task UploadFileAsync(
@@ -206,7 +298,11 @@ public class StorageBasedServerHelperTests
             DownloadCount++;
             Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
             File.Copy(remoteFile, localPath, overwrite: true);
-            CurrentProfile = ProfileAfterDownload ?? CurrentProfile;
+            if (ProfileAfterDownload is not null)
+            {
+                CurrentProfile = ProfileAfterDownload;
+                _profileVersion++;
+            }
             return Task.CompletedTask;
         }
 

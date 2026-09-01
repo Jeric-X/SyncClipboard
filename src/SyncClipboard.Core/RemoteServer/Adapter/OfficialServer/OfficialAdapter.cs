@@ -184,6 +184,19 @@ public sealed class OfficialAdapter(
         return _webDavAdapter.SetProfileAsync(profileDto, cancellationToken);
     }
 
+    public Task<StorageProfileSnapshot?> GetProfileSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        return _webDavAdapter.GetProfileSnapshotAsync(cancellationToken);
+    }
+
+    public Task<bool> TrySetProfileAsync(
+        ProfileDto profileDto,
+        string? expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        return _webDavAdapter.TrySetProfileAsync(profileDto, expectedVersion, cancellationToken);
+    }
+
     public Task DownloadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         return _webDavAdapter.DownloadFileAsync(fileName, localPath, progress, cancellationToken);

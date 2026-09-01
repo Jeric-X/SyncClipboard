@@ -82,9 +82,29 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         return profileDto;
     }
 
+    public async Task<StorageProfileSnapshot?> GetProfileSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        var (profileDto, version) = await _webDav.GetJsonWithVersion<ProfileDto>(
+            RemoteProfilePath,
+            cancellationToken);
+        return profileDto is null ? null : new StorageProfileSnapshot(profileDto, version);
+    }
+
     public async Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default)
     {
         await _webDav.PutJson(RemoteProfilePath, profileDto, cancellationToken);
+    }
+
+    public Task<bool> TrySetProfileAsync(
+        ProfileDto profileDto,
+        string? expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        return _webDav.PutJsonIfVersion(
+            RemoteProfilePath,
+            profileDto,
+            expectedVersion,
+            cancellationToken);
     }
 
     public async Task UploadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)

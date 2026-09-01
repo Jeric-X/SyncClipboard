@@ -174,6 +174,19 @@ namespace SyncClipboard.Core.Utilities.Web
             );
         }
 
+        public async Task<(Type? Value, string? Version)> GetJsonWithVersion<Type>(
+            string url,
+            CancellationToken? cancelToken = null)
+        {
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var response = await HttpClient.GetAsync(url, cancellationSource.Token);
+            response.EnsureSuccessStatusCode();
+            var value = await response.Content.ReadFromJsonAsync<Type>(
+                SerializerOptions,
+                cancellationSource.Token);
+            return (value, response.Headers.ETag?.ToString());
+        }
+
         public async Task PutJson<Type>(string url, Type jsonContent, CancellationToken? cancelToken = null)
         {
             using var cancellationSource = CreateRequestCancellationSource(cancelToken);
@@ -184,6 +197,32 @@ namespace SyncClipboard.Core.Utilities.Web
                 content,
                 cancellationSource.Token
             );
+        }
+
+        public async Task<bool> PutJsonIfVersion<Type>(
+            string url,
+            Type jsonContent,
+            string? expectedVersion,
+            CancellationToken? cancelToken = null)
+        {
+            if (string.IsNullOrWhiteSpace(expectedVersion))
+            {
+                return false;
+            }
+
+            using var cancellationSource = CreateRequestCancellationSource(cancelToken);
+            using var request = new HttpRequestMessage(HttpMethod.Put, url);
+            request.Headers.TryAddWithoutValidation("If-Match", expectedVersion);
+            request.Content = JsonContent.Create(jsonContent, null, SerializerOptions);
+            await request.Content.LoadIntoBufferAsync(); // avoid chunked encoding
+            using var response = await HttpClient.SendAsync(request, cancellationSource.Token);
+            if (response.StatusCode is HttpStatusCode.PreconditionFailed or HttpStatusCode.Conflict)
+            {
+                return false;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return true;
         }
 
         private CancellationTokenSource CreateRequestCancellationSource(CancellationToken? cancelToken = null)

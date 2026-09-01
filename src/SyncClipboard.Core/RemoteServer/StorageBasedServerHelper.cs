@@ -89,10 +89,11 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
 
         try
         {
-            var currentProfile = await _serverAdapter.GetProfileAsync(cancellationToken);
-            if (!CanBackfillRemoteProfileHash(originalProfile, currentProfile))
+            var currentSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
+            if (currentSnapshot is null ||
+                !CanBackfillRemoteProfileHash(originalProfile, currentSnapshot.Profile))
             {
-                _logger.Write("[PULL] Remote profile changed before hash backfill, skipped metadata update.");
+                _logger.Write("[PULL] Remote profile does not meet hash backfill preconditions, skipped metadata update.");
                 return;
             }
 
@@ -102,14 +103,21 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
                 return;
             }
 
-            await _serverAdapter.SetProfileAsync(
-                currentProfile! with { Hash = calculatedHash },
+            var updated = await _serverAdapter.TrySetProfileAsync(
+                currentSnapshot.Profile with { Hash = calculatedHash },
+                currentSnapshot.Version,
                 cancellationToken);
+            if (!updated)
+            {
+                _logger.Write("[PULL] Remote profile changed during hash backfill, skipped metadata update.");
+                return;
+            }
+
             _logger.Write($"[PULL] Backfilled remote profile hash: {calculatedHash}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
-            _logger.Write($"[PULL] Failed to backfill remote profile hash: {ex.Message}");
+            _logger.Write($"[PULL] Failed to backfill remote profile hash: {ex}");
         }
     }
 
