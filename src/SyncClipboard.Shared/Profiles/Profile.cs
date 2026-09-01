@@ -155,14 +155,17 @@ public abstract class Profile
 
     public static string QueryGetWorkingDir(string persistentDir, ProfileType type, string hash)
     {
+        return Path.Combine(persistentDir, GetWorkingDirName(type, hash));
+    }
+
+    public static string GetWorkingDirName(ProfileType type, string hash)
+    {
         if (hash.Contains(Path.DirectorySeparatorChar) || hash.Contains(Path.AltDirectorySeparatorChar))
         {
             throw new ArgumentException("Hash contains invalid path characters.", nameof(hash));
         }
 
-        var dirName = $"{type}_{hash}";
-        var profileDir = Path.Combine(persistentDir, dirName);
-        return profileDir;
+        return $"{type}_{hash}";
     }
 
     [return: NotNullIfNotNull(nameof(fullPath))]

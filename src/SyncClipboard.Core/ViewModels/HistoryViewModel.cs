@@ -1344,19 +1344,21 @@ public partial class HistoryViewModel : ObservableObject
             }));
         }
 
-        var profile = record.ToHistoryRecord().ToProfile();
+        var historyRecord = record.ToHistoryRecord();
+        if (!historyRecord.IsLocalFileReady)
+        {
+            AddMissingLocalFileActions(actions, historyRecord);
+            return actions;
+        }
+
+        var profile = historyRecord.ToProfile();
         var valid = await profile.IsLocalDataValid(true, token);
 
         if (!valid)
         {
-            var historyRecord = record.ToHistoryRecord();
             historyRecord.IsLocalFileReady = false;
             await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
-            actions.Add(new MenuItem(
-                I18n.Strings.DeleteHistory,
-                () => _ = RunWithOperationTimeoutAsync(
-                    "delete history record",
-                    token => historyManager.DeleteHistory(historyRecord, token))));
+            AddMissingLocalFileActions(actions, historyRecord);
         }
         else
         {
@@ -1364,6 +1366,43 @@ public partial class HistoryViewModel : ObservableObject
             actions.AddRange(menuItems);
         }
         return actions;
+    }
+
+    private void AddMissingLocalFileActions(List<MenuItem> actions, HistoryRecord record)
+    {
+        if (record.FilePath.FirstOrDefault() is { } filePath &&
+            Path.GetDirectoryName(filePath) is { Length: > 0 } containingFolder)
+        {
+            actions.Add(new MenuItem(
+                I18n.Strings.CopyContainingFolderPath,
+                () => _ = RunWithOperationTimeoutAsync(
+                    "copy missing history file containing folder",
+                    token => localClipboardSetter.Set(new TextProfile(containingFolder), token))));
+        }
+
+        actions.Add(new MenuItem(
+            I18n.Strings.ReloadLocalFile,
+            () => _ = RunWithOperationTimeoutAsync(
+                "reload local history file",
+                token => ReloadLocalHistoryFileAsync(record, token))));
+        actions.Add(new MenuItem(
+            I18n.Strings.DeleteHistory,
+            () => _ = RunWithOperationTimeoutAsync(
+                "delete history record",
+                token => historyManager.DeleteHistory(record, token))));
+    }
+
+    private async Task ReloadLocalHistoryFileAsync(HistoryRecord record, CancellationToken token)
+    {
+        var profile = record.ToProfile();
+        if (!await profile.IsLocalDataValid(false, token))
+        {
+            ShowWindowToastInfo(I18n.Strings.UnableToCopyByMissingFile);
+            return;
+        }
+
+        record.IsLocalFileReady = true;
+        await historyManager.UpdateHistoryLocalInfo(record, token);
     }
 
     [RelayCommand]

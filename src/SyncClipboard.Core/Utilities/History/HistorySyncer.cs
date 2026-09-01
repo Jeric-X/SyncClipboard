@@ -69,6 +69,7 @@ public class HistorySyncer
 
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
+        await CleanupLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
         return addedRecords;
     }
@@ -97,15 +98,64 @@ public class HistorySyncer
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
         }
+        await CleanupLocalRecordsAsync(token);
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
         await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
+        await CleanupLocalRecordsAsync(token);
     }
 
-    // 关闭历史记录同步功能后，将所有远程历史记录标记为本地，不完整的记录删除
+    // 关闭历史记录同步功能后，将所有记录转为纯本地语义，再按本地记录清理规则处理。
     public async Task RemoveRemoteHistorys(CancellationToken token)
     {
-        await DetectOrphanDataAsync(null, null, [], ProfileTypeFilter.All, null, null, token);
+        var records = await _historyManager.GetHistory(token).ConfigureAwait(false);
+        var autoDeleteMissingLocalFiles = _configManager.GetConfig<HistoryConfig>().AutoDeleteMissingLocalFiles;
+
+        await Task.Run(async () =>
+        {
+            foreach (var record in records)
+            {
+                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
+                if (syncStatusChanged)
+                {
+                    record.SyncStatus = HistorySyncStatus.LocalOnly;
+                }
+
+                if (ShouldDeleteLocalRecord(record, autoDeleteMissingLocalFiles))
+                {
+                    await _historyManager.RemoveHistory(record, token).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (syncStatusChanged)
+                {
+                    await _historyManager.PersistServerSyncedAsync(record, token).ConfigureAwait(false);
+                }
+            }
+        }, token).ConfigureAwait(false);
+
+        await _historyManager.EnforceMaxItemCountAsync(token).ConfigureAwait(false);
+    }
+
+    private async Task CleanupLocalRecordsAsync(CancellationToken token)
+    {
+        var autoDeleteMissingLocalFiles = _configManager
+            .GetConfig<HistoryConfig>()
+            .AutoDeleteMissingLocalFiles;
+        var records = await _historyManager.GetHistory(token);
+
+        foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, autoDeleteMissingLocalFiles)))
+        {
+            await _historyManager.RemoveHistory(record, token);
+        }
+    }
+
+    private static bool ShouldDeleteLocalRecord(
+        HistoryRecord record,
+        bool autoDeleteMissingLocalFiles)
+    {
+        return record.SyncStatus == HistorySyncStatus.LocalOnly &&
+               (record.IsDeleted || (autoDeleteMissingLocalFiles && !record.IsLocalFileReady));
     }
 
     /// <summary>
@@ -230,7 +280,7 @@ public class HistorySyncer
     }
 
     /// <summary>
-    /// 检测并处理孤儿数据：本地标记为 Synced/ServerOnly 但服务器不存在的记录
+    /// 检测并处理孤儿数据：本地标记为 Synced/NeedSync 但服务器不存在的记录
     /// </summary>
     private async Task DetectOrphanDataAsync(
         DateTime? before,
@@ -241,7 +291,7 @@ public class HistorySyncer
         bool? starred,
         CancellationToken token)
     {
-        // 获取本地该范围内标记为 Synced 或 ServerOnly 的记录
+        // 获取本地该范围内标记为 Synced 或 NeedSync 的记录
         var localRecords = await _historyManager.GetHistoryAsync(
             types,
             starred,
@@ -253,24 +303,19 @@ public class HistorySyncer
 
         await Task.Run(async () =>
         {
-            var localSyncedOrServerOnly = localRecords
-                .Where(r => r.SyncStatus == HistorySyncStatus.Synced || r.IsLocalFileReady is false)
+            var remoteBackedRecords = localRecords
+                .Where(r => r.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync)
                 .Where(r => !after.HasValue || r.Timestamp >= after.Value);
 
             // 构建服务器记录的标识集合
             var remoteIds = remoteRecords.Select(r => $"{r.Type}-{r.Hash}").ToHashSet();
 
             // 找出孤儿数据：本地认为已同步但服务器不存在
-            foreach (var localRecord in localSyncedOrServerOnly)
+            foreach (var localRecord in remoteBackedRecords)
             {
                 var localId = $"{localRecord.Type}-{localRecord.Hash}";
                 if (remoteIds.Contains(localId))
                 {
-                    continue;
-                }
-                if (localRecord.IsLocalFileReady is false)
-                {
-                    await _historyManager.RemoveHistory(localRecord, token).ConfigureAwait(false);
                     continue;
                 }
                 // 孤儿数据：服务器已删除，修改为 LocalOnly
@@ -316,7 +361,8 @@ public class HistorySyncer
     }
 
     /// <summary>
-    /// 同步所有未同步记录的数据：下载所有 IsLocalFileReady 为 false 的记录，上传所有 LocalOnly 的记录
+    /// 同步所有未同步记录的数据：下载远端存在但本地未就绪的记录，上传本地数据已就绪的 LocalOnly 记录。
+    /// 本地数据未就绪的 LocalOnly 记录不会在后台重新检查，也不会被误当成远端记录下载。
     /// </summary>
     private async Task SyncPendingHistoryDataAsync(CancellationToken token)
     {
@@ -328,7 +374,10 @@ public class HistorySyncer
 
     private async Task SyncPendingDownloadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
     {
-        var needDownload = await Task.Run(() => allRecords.Where(r => r.IsLocalFileReady is false).ToList(), token);
+        var needDownload = await Task.Run(
+            () => allRecords
+                .Where(r => r.IsLocalFileReady is false && r.SyncStatus != HistorySyncStatus.LocalOnly)
+                .ToList(), token);
         foreach (var record in needDownload)
         {
             if (token.IsCancellationRequested)
@@ -343,7 +392,7 @@ public class HistorySyncer
     {
         var needUpload = await Task.Run(
             () => allRecords
-            .Where(r => r.SyncStatus == HistorySyncStatus.LocalOnly)
+            .Where(r => r.SyncStatus == HistorySyncStatus.LocalOnly && r.IsLocalFileReady)
             .ToList(), token).ConfigureAwait(false);
 
         foreach (var record in needUpload)
@@ -352,8 +401,7 @@ public class HistorySyncer
                 break;
 
             var profile = record.ToProfile();
-            var validationError = await ContentControlHelper.IsContentValid(profile, token);
-            if (validationError != null)
+            if (!await CanUploadLocalProfileAsync(profile, token))
             {
                 continue;
             }
@@ -395,12 +443,8 @@ public class HistorySyncer
             }
 
             var profile = record.ToProfile();
-            // 使用 ContentControlHelper 过滤被 content control 过滤的记录
-            var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
-            if (validationError != null)
+            if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
             {
-                // 记录被过滤，跳过上传
-                // _logger.Write("HistorySyncer", $"记录被过滤，跳过上传[{record.Hash}]: {validationError}");
                 return;
             }
 
@@ -411,6 +455,12 @@ public class HistorySyncer
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
         }
+    }
+
+    private static async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
+    {
+        var validationError = await ContentControlHelper.IsContentValid(profile, token);
+        return validationError is null;
     }
 
     private async void OnHistoryRemoved(HistoryRecord record)
@@ -431,4 +481,3 @@ public class HistorySyncer
         }
     }
 }
-

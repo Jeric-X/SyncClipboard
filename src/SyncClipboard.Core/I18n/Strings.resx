@@ -906,11 +906,29 @@ Shift + left click: Select a continuous range</value>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
     <value>Synced records will follow server settings for automatic deletion.</value>
   </data>
+  <data name="AutoDeleteMissingLocalFiles" xml:space="preserve">
+    <value>Delete records with missing local files automatically</value>
+  </data>
+  <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
+    <value>Automatically delete local-only records when their files are missing or incomplete.</value>
+  </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>History Panel</value>
   </data>
   <data name="UnableToCopyByMissingFile" xml:space="preserve">
     <value>Unable to copy because of missing files</value>
+  </data>
+  <data name="SourceFileMissingUnableToUpload" xml:space="preserve">
+    <value>Source file is missing. Unable to upload</value>
+  </data>
+  <data name="FileMissing" xml:space="preserve">
+    <value>File missing</value>
+  </data>
+  <data name="CopyContainingFolderPath" xml:space="preserve">
+    <value>Copy containing folder path</value>
+  </data>
+  <data name="ReloadLocalFile" xml:space="preserve">
+    <value>Reload local files</value>
   </data>
   <data name="OpenHistoryPanel" xml:space="preserve">
     <value>Open History Panel</value>

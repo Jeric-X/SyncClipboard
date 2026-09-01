@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using SyncClipboard.Core;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -79,7 +80,7 @@ public sealed partial class PreviewPanel : UserControl
                     }
                     else if (args.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
                     {
-                        UpdateSyncedTextVisibility();
+                        UpdateStatusText();
                     }
                 };
             }
@@ -99,7 +100,7 @@ public sealed partial class PreviewPanel : UserControl
             }
 
             _ = UpdatePreviewImageContent();
-            UpdateSyncedTextVisibility();
+            UpdateStatusText();
         }
     }
 
@@ -108,6 +109,11 @@ public sealed partial class PreviewPanel : UserControl
         if (e.PropertyName == nameof(HistoryRecordVM.PreviewImage))
         {
             _ = UpdatePreviewImageContent();
+        }
+
+        if (e.PropertyName is nameof(HistoryRecordVM.SyncState) or nameof(HistoryRecordVM.IsLocalFileReady))
+        {
+            UpdateStatusText();
         }
     }
 
@@ -192,15 +198,20 @@ public sealed partial class PreviewPanel : UserControl
         }
     }
 
-    private void UpdateSyncedTextVisibility()
+    private void UpdateStatusText()
     {
-        if (ViewModel == null || _SyncedText == null)
+        if (ViewModel == null || _StatusText == null)
             return;
 
-        var enableSync = ViewModel.EnableSyncHistory;
-        var isSynced = SelectedItem?.SyncState == SyncStatus.Synced;
+        var isLocalFileMissing = SelectedItem is
+        {
+            SyncState: SyncStatus.LocalOnly,
+            IsLocalFileReady: false
+        };
+        var isSynced = ViewModel.EnableSyncHistory && SelectedItem?.SyncState == SyncStatus.Synced;
 
-        _SyncedText.IsVisible = enableSync && isSynced;
+        _StatusText.Text = isLocalFileMissing ? Strings.FileMissing : Strings.Synced;
+        _StatusText.IsVisible = isLocalFileMissing || isSynced;
     }
 
     private static Task<(uint width, uint height)> GetImageDimensions(string imagePath)

@@ -4,6 +4,7 @@ using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Utilities;
 using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
+using SyncClipboard.Server.Core.Exceptions;
 using System.Linq.Expressions;
 
 namespace SyncClipboard.Server.Core.Services.History;
@@ -402,7 +403,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     {
         var profile = entity.ToProfile(_persistentDir);
         var filePath = await profile.NeedsTransferData(_persistentDir, token)
-            ?? throw new InvalidOperationException("Profile does not support transfer data.");
+            ?? throw new HistoryTransferDataException("Profile does not support transfer data.");
 
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
@@ -410,13 +411,63 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             Directory.CreateDirectory(directory);
         }
 
-        using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        try
         {
-            await transferFileStream.CopyToAsync(fs, token);
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await transferFileStream.CopyToAsync(fs, token);
+            }
+
+            await profile.SetTransferData(filePath, verify: true, token);
+            return profile;
+        }
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException)
+        {
+            CleanupRejectedTransferData(filePath);
+            throw new HistoryTransferDataException("History transfer data failed validation.", ex);
+        }
+        catch
+        {
+            CleanupRejectedTransferData(filePath);
+            throw;
+        }
+    }
+
+    private static void CleanupRejectedTransferData(string filePath)
+    {
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch
+        { }
+
+        if (filePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var extractDirectory = filePath[..^4];
+                if (Directory.Exists(extractDirectory))
+                {
+                    Directory.Delete(extractDirectory, recursive: true);
+                }
+            }
+            catch
+            { }
         }
 
-        await profile.SetTransferData(filePath, verify: true, token);
-        return profile;
+        try
+        {
+            var workingDirectory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(workingDirectory) &&
+                Directory.Exists(workingDirectory) &&
+                !Directory.EnumerateFileSystemEntries(workingDirectory).Any())
+            {
+                Directory.Delete(workingDirectory);
+            }
+        }
+        catch
+        { }
     }
 
     private Task DeleteProfileDataIfNeed(HistoryRecordEntity entity, CancellationToken token)

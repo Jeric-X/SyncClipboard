@@ -38,22 +38,21 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         _historyManagerHelper = new(this);
         _runtimeHistoryConfig = runtimeConfig.GetListenConfig<RuntimeHistoryConfig>(LoadRuntimeHistoryConfig);
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadHistoryConfig);
-        LoadConfig(_runtimeHistoryConfig, _historyConfig);
+        LoadConfig(_historyConfig);
     }
 
     private void LoadHistoryConfig(HistoryConfig config)
     {
         _historyConfig = config;
-        LoadConfig(_runtimeHistoryConfig, _historyConfig);
+        LoadConfig(_historyConfig);
     }
 
     private void LoadRuntimeHistoryConfig(RuntimeHistoryConfig config)
     {
         _runtimeHistoryConfig = config;
-        LoadConfig(_runtimeHistoryConfig, _historyConfig);
     }
 
-    private async void LoadConfig(RuntimeHistoryConfig runtimeConfig, HistoryConfig historyConfig)
+    private async void LoadConfig(HistoryConfig historyConfig)
     {
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -62,30 +61,17 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         {
             await _dbContext.SaveChangesAsync();
         }
-
-        if (runtimeConfig.EnableSyncHistory)
-        {
-            return;
-        }
-
-        await DeleteObsoleteRemoteRecords();
     }
 
-    private async Task<uint> DeleteObsoleteRemoteRecords(CancellationToken token = default)
+    internal async Task EnforceMaxItemCountAsync(CancellationToken token = default)
     {
-        var remoteRecords = _dbContext.HistoryRecords.Where(r => r.IsDeleted || !r.IsLocalFileReady).ToList();
-        uint remoteCount = (uint)remoteRecords.Count;
-        if (remoteCount == 0)
-            return 0;
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        foreach (var record in remoteRecords)
+        if (EnableCleanup)
         {
-            record.SyncStatus = HistorySyncStatus.LocalOnly;
-            await RemoveHistory(record, token);
+            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount, token);
         }
-
-        await _dbContext.SaveChangesAsync(token);
-        return remoteCount;
     }
 
     public string? GetRecordWorkingDir(HistoryRecord record)
@@ -257,6 +243,30 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
         }
+    }
+
+    public async Task HandleLocalFileUnavailableAsync(
+        ProfileType type,
+        string hash,
+        CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var entity = await Query(type, hash, token);
+        if (entity is null)
+        {
+            return;
+        }
+
+        if (!entity.IsLocalFileReady)
+        {
+            return;
+        }
+
+        entity.IsLocalFileReady = false;
+        await _dbContext.SaveChangesAsync(token);
+        HistoryUpdated?.Invoke(entity);
     }
 
     /// <summary>
@@ -482,40 +492,39 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             }
 
             using var _dbContext = new HistoryDbContext();
-            var existingHashes = _dbContext.HistoryRecords
-                .Select(r => r.Hash)
-                .ToHashSet();
+            var existingDirectoryNames = _dbContext.HistoryRecords
+                .Select(r => new { r.Type, r.Hash })
+                .AsEnumerable()
+                .Select(r => Profile.GetWorkingDirName(r.Type, r.Hash))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var directories = Directory.GetDirectories(historyFolder);
+            var directories = new DirectoryInfo(historyFolder).GetDirectories();
             var cutoffTime = DateTime.Now.AddDays(-7); // 7天前的时间点
 
-            foreach (var dir in directories)
+            foreach (var dirInfo in directories)
             {
-                var dirName = Path.GetFileName(dir);
-
                 try
                 {
-                    if (existingHashes.Contains(dirName))
+                    if (existingDirectoryNames.Contains(dirInfo.Name))
                     {
                         continue;
                     }
 
-                    var dirInfo = new DirectoryInfo(dir);
                     if (dirInfo.CreationTime <= cutoffTime)
                     {
                         try
                         {
-                            Directory.Delete(dir, true);
+                            dirInfo.Delete(recursive: true);
                         }
                         catch (Exception ex)
                         {
-                            _logger.Write("HistoryManager", $"Failed to delete orphaned folder {dir}: {ex.Message}");
+                            _logger.Write("HistoryManager", $"Failed to delete orphaned folder {dirInfo.FullName}: {ex.Message}");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.Write("HistoryManager", $"Error checking folder {dir}: {ex.Message}");
+                    _logger.Write("HistoryManager", $"Error checking folder {dirInfo.FullName}: {ex.Message}");
                 }
             }
         }

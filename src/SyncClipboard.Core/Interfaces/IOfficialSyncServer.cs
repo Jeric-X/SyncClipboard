@@ -47,11 +47,9 @@ public interface IOfficialSyncServer
     Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 上传一个本地仅存在的记录（初次同步）。若服务器已存在则抛出冲突异常。
+    /// 上传一个本地仅存在的记录（初次同步），包括可选的本地传输文件。
+    /// 服务器已存在记录或拒绝传输数据时抛出对应异常。
     /// </summary>
-    /// 上传一个本地仅存在的记录（初次同步）。若服务器已存在则抛出冲突异常。
-    /// createTime: 原始创建时间（记录的 Timestamp）
-    /// filePath: 可选的本地传输文件路径（若需要）。
     Task UploadHistoryAsync(
         HistoryRecordDto dto,
         string? filePath = null,

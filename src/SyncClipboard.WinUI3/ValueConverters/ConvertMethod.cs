@@ -138,9 +138,9 @@ internal static class ConvertMethod
         return I18nHelper.GetString(state);
     }
 
-    public static double SyncStateToOpacity(SyncStatus state)
+    public static double LocalFileReadyToOpacity(bool isLocalFileReady)
     {
-        return state == SyncStatus.ServerOnly ? 0.5 : 1.0;
+        return isLocalFileReady ? 1.0 : 0.5;
     }
 
     public static BitmapImage? CreateBitmap(string? uri)

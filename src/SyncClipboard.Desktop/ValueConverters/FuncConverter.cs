@@ -183,10 +183,10 @@ public static class FuncConverter
     public static FuncValueConverter<SyncStatus, string> SyncStateToText { get; } =
         new FuncValueConverter<SyncStatus, string>(I18nHelper.GetString);
 
-    public static FuncValueConverter<SyncStatus, double> SyncStateToOpacity { get; } =
-        new FuncValueConverter<SyncStatus, double>(state =>
+    public static FuncValueConverter<bool, double> LocalFileReadyToOpacity { get; } =
+        new FuncValueConverter<bool, double>(isLocalFileReady =>
         {
-            return state == SyncStatus.ServerOnly ? 0.5 : 1.0;
+            return isLocalFileReady ? 1.0 : 0.5;
         });
 
     /// <summary>

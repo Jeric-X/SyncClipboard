@@ -906,11 +906,29 @@ Shift + 左键：选中连续范围</value>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
     <value>已同步记录的自动删除将遵循服务器配置</value>
   </data>
+  <data name="AutoDeleteMissingLocalFiles" xml:space="preserve">
+    <value>本地文件丢失时自动删除记录</value>
+  </data>
+  <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
+    <value>本地文件不存在或不完整时，自动删除纯本地记录</value>
+  </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>历史记录面板</value>
   </data>
   <data name="UnableToCopyByMissingFile" xml:space="preserve">
     <value>文件丢失无法复制</value>
+  </data>
+  <data name="SourceFileMissingUnableToUpload" xml:space="preserve">
+    <value>源文件丢失，无法上传</value>
+  </data>
+  <data name="FileMissing" xml:space="preserve">
+    <value>文件丢失</value>
+  </data>
+  <data name="CopyContainingFolderPath" xml:space="preserve">
+    <value>复制所在路径</value>
+  </data>
+  <data name="ReloadLocalFile" xml:space="preserve">
+    <value>重新读取本地文件</value>
   </data>
   <data name="OpenHistoryPanel" xml:space="preserve">
     <value>打开历史记录面板</value>

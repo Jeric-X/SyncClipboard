@@ -112,14 +112,38 @@ public class FileProfile : Profile
         return hash;
     }
 
-    public override Task<string?> PrepareTransferData(string _, CancellationToken token)
+    public override async Task<string?> PrepareTransferData(string _, CancellationToken token)
     {
-        if (FullPath is not null && File.Exists(FullPath))
+        var path = FullPath;
+        if (path is null || !File.Exists(path))
         {
-            return Task.FromResult<string?>(FullPath);
+            throw new LocalProfileDataUnavailableException(
+                $"Transfer data is unavailable for File profile {Hash ?? "<unknown>"}.");
         }
 
-        throw new FileNotFoundException("File not found for transfer", FullPath);
+        try
+        {
+            await ValidateTransferDataHashAsync(path, token);
+            return path;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
+                                   ex is not LocalProfileDataUnavailableException &&
+                                   !token.IsCancellationRequested)
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to validate transfer data for File profile {Hash ?? "<unknown>"}.", ex);
+        }
+    }
+
+    private async Task ValidateTransferDataHashAsync(string path, CancellationToken token)
+    {
+        var expectedHash = await GetHash(token);
+        var actualHash = await GetSHA256HashFromFile(path, token);
+        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"File transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+        }
     }
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)

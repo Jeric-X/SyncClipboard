@@ -366,7 +366,7 @@ public sealed class OfficialAdapter(
             };
 
             // 添加文件字段（如果提供）
-            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+            if (!string.IsNullOrWhiteSpace(filePath))
             {
                 var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 HttpContent fileContent = progress is null
@@ -392,6 +392,11 @@ public sealed class OfficialAdapter(
                 throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
             }
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity)
+            {
+                throw new RemoteHistoryDataRejectedException(
+                    $"History data was rejected for {dto.Type}/{dto.Hash}. Code {response.StatusCode}: {responseBody}");
+            }
             throw new RemoteServerException($"Code {response.StatusCode}: {response.ReasonPhrase}. Response body: {responseBody}");
         }
         catch (Exception ex)

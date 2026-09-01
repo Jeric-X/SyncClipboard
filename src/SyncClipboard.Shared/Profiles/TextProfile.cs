@@ -84,7 +84,20 @@ public class TextProfile : Profile
     {
         if (!HasTransferData)
         {
-            return true;
+            if (quick)
+            {
+                return true;
+            }
+
+            try
+            {
+                await ValidateInlineTextHashAsync(await GetHash(token), token);
+                return true;
+            }
+            catch when (token.IsCancellationRequested is false)
+            {
+                return false;
+            }
         }
 
         if (File.Exists(_transferDataPath) is false)
@@ -217,18 +230,76 @@ public class TextProfile : Profile
 
     public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
+        var expectedHash = await GetHash(token);
         if (HasTransferData is false)
         {
+            await ValidateInlineTextHashAsync(expectedHash, token);
             return null;
         }
 
+        return await PrepareTransferFileAsync(persistentDir, expectedHash, token);
+    }
+
+    private async Task<string> PrepareTransferFileAsync(
+        string persistentDir,
+        string expectedHash,
+        CancellationToken token)
+    {
         await WriteFullTextToFile(persistentDir, token);
-        if (_transferDataPath is null)
+        var path = GetAvailableTransferDataPath();
+
+        try
         {
-            throw new Exception($"Can not prepare transfer data for {_text}");
+            await ValidateTransferDataHashAsync(path, expectedHash, token);
+            return path;
+        }
+        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
+        }
+    }
+
+    private string GetAvailableTransferDataPath()
+    {
+        var path = _transferDataPath;
+        if (path is null || !File.Exists(path))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Transfer data is unavailable for Text profile {Hash ?? "<unknown>"}.");
         }
 
-        return _transferDataPath;
+        return path;
+    }
+
+    private async Task ValidateInlineTextHashAsync(string expectedHash, CancellationToken token)
+    {
+        var actualHash = await Utility.CalculateSHA256(_text, token);
+        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Text profile hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+        }
+    }
+
+    private static async Task ValidateTransferDataHashAsync(
+        string path,
+        string expectedHash,
+        CancellationToken token)
+    {
+        var actualHash = await Utility.CalculateFileSHA256(path, token);
+        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+        }
+    }
+
+    private static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
+    {
+        return ex is IOException or UnauthorizedAccessException &&
+               ex is not LocalProfileDataUnavailableException &&
+               !token.IsCancellationRequested;
     }
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)
