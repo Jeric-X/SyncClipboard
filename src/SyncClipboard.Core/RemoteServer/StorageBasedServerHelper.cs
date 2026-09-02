@@ -11,9 +11,9 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.RemoteServer;
 
-internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServerAdapter serverAdapter)
+internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serverAdapter)
 {
-    private readonly IStorageBasedServerAdapter _serverAdapter = serverAdapter;
+    private readonly IServerAdapter _serverAdapter = serverAdapter;
     private readonly ILogger _logger = sp.GetRequiredService<ILogger>();
     private readonly ITrayIcon _trayIcon = sp.GetRequiredService<ITrayIcon>();
     private readonly IProfileEnv _profileEnv = sp.GetRequiredService<IProfileEnv>();
@@ -34,7 +34,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        var remoteSnapshotWithoutHash = await GetRemoteFileProfileWithoutHash(profile, cancellationToken);
+        var shouldBackfillHash = string.IsNullOrEmpty(await profile.GetHash(cancellationToken));
         var persistentDir = _profileEnv.GetPersistentDir();
         var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
         if (dataPath is null)
@@ -47,7 +47,10 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
             await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
-            await BackfillRemoteProfileHash(remoteSnapshotWithoutHash, profile, cancellationToken);
+            if (shouldBackfillHash)
+            {
+                await BackfillRemoteProfileHash(profile, cancellationToken);
+            }
             _logger.Write($"[PULL] Downloaded {fileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
         }
@@ -64,65 +67,41 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
         }
     }
 
-    private async Task<StorageProfileSnapshot?> GetRemoteFileProfileWithoutHash(
-        Profile profile,
-        CancellationToken cancellationToken)
-    {
-        if (profile is not FileProfile ||
-            !string.IsNullOrEmpty(await profile.GetHash(cancellationToken)))
-        {
-            return null;
-        }
-
-        try
-        {
-            var normalizedProfile = await profile.ToProfileDto(cancellationToken);
-            var remoteSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
-            if (remoteSnapshot is null ||
-                !MatchesNormalizedFileProfile(normalizedProfile, remoteSnapshot.Profile))
-            {
-                return null;
-            }
-
-            return remoteSnapshot;
-        }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            _logger.Write($"[PULL] Failed to capture remote profile for optional hash backfill: {ex}");
-            return null;
-        }
-    }
-
     private async Task BackfillRemoteProfileHash(
-        StorageProfileSnapshot? originalSnapshot,
         Profile downloadedProfile,
         CancellationToken cancellationToken)
     {
-        if (originalSnapshot is null)
+        if (_serverAdapter is not IStorageBasedServerAdapter storageBasedServerAdapter)
         {
             return;
         }
 
         try
         {
-            var currentSnapshot = await _serverAdapter.GetProfileSnapshotAsync(cancellationToken);
+            var downloadedProfileDto = await downloadedProfile.ToProfileDto(cancellationToken);
+            if (string.IsNullOrEmpty(downloadedProfileDto.Hash))
+            {
+                return;
+            }
+
+            var currentSnapshot = await storageBasedServerAdapter.GetProfileSnapshotAsync(cancellationToken);
             if (currentSnapshot is null ||
-                !string.Equals(currentSnapshot.Version, originalSnapshot.Version, StringComparison.Ordinal) ||
-                !CanBackfillRemoteProfileHash(originalSnapshot.Profile, currentSnapshot.Profile))
+                !CanBackfillRemoteProfileHash(downloadedProfileDto, currentSnapshot.Profile))
             {
                 _logger.Write("[PULL] Remote profile does not meet hash backfill preconditions, skipped metadata update.");
                 return;
             }
 
-            var calculatedHash = await downloadedProfile.GetHash(cancellationToken);
-            if (string.IsNullOrEmpty(calculatedHash) ||
-                FileProfile.IsOversizedFileHash(calculatedHash))
+            var updatedProfile = currentSnapshot.Profile with { Hash = downloadedProfileDto.Hash };
+            if (string.IsNullOrWhiteSpace(currentSnapshot.Version))
             {
+                await _serverAdapter.SetProfileAsync(updatedProfile, cancellationToken);
+                _logger.Write($"[PULL] Backfilled remote profile hash without version precondition: {downloadedProfileDto.Hash}");
                 return;
             }
 
-            var updated = await _serverAdapter.TrySetProfileAsync(
-                currentSnapshot.Profile with { Hash = calculatedHash },
+            var updated = await storageBasedServerAdapter.TrySetProfileAsync(
+                updatedProfile,
                 currentSnapshot.Version,
                 cancellationToken);
             if (!updated)
@@ -131,7 +110,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
                 return;
             }
 
-            _logger.Write($"[PULL] Backfilled remote profile hash: {calculatedHash}");
+            _logger.Write($"[PULL] Backfilled remote profile hash: {downloadedProfileDto.Hash}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
@@ -139,27 +118,16 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IStorageBasedServer
         }
     }
 
-    private static bool CanBackfillRemoteProfileHash(ProfileDto originalProfile, ProfileDto? currentProfile)
+    private static bool CanBackfillRemoteProfileHash(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        return currentProfile is not null &&
-            string.IsNullOrEmpty(currentProfile.Hash) &&
-            currentProfile.Type == originalProfile.Type &&
-            string.Equals(currentProfile.Text, originalProfile.Text, StringComparison.Ordinal) &&
-            currentProfile.HasData == originalProfile.HasData &&
-            string.Equals(currentProfile.DataName, originalProfile.DataName, StringComparison.Ordinal) &&
-            currentProfile.Size == originalProfile.Size;
-    }
-
-    private static bool MatchesNormalizedFileProfile(ProfileDto normalizedProfile, ProfileDto remoteProfile)
-    {
-        var typeMatches = remoteProfile.Type == normalizedProfile.Type ||
-            (remoteProfile.Type == ProfileType.File && normalizedProfile.Type == ProfileType.Image);
+        var typeMatches = currentProfile.Type == downloadedProfile.Type ||
+            (currentProfile.Type == ProfileType.File && downloadedProfile.Type == ProfileType.Image);
         return typeMatches &&
-            string.IsNullOrEmpty(remoteProfile.Hash) &&
-            string.Equals(remoteProfile.Text, normalizedProfile.Text, StringComparison.Ordinal) &&
-            remoteProfile.HasData == normalizedProfile.HasData &&
-            string.Equals(remoteProfile.DataName, normalizedProfile.DataName, StringComparison.Ordinal) &&
-            remoteProfile.Size == normalizedProfile.Size;
+            string.IsNullOrEmpty(currentProfile.Hash) &&
+            string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal) &&
+            currentProfile.HasData == downloadedProfile.HasData &&
+            string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal) &&
+            currentProfile.Size == downloadedProfile.Size;
     }
 
     public void SetErrorStatus(string message, Exception? innerException = null)

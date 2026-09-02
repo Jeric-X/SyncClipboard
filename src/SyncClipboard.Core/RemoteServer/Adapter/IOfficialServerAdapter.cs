@@ -1,6 +1,6 @@
 namespace SyncClipboard.Core.RemoteServer.Adapter;
 
-public interface IOfficialServerAdapter : IStorageBasedServerAdapter
+public interface IOfficialServerAdapter : IServerAdapter
 {
     public void StartListening();
     public void StopListening();

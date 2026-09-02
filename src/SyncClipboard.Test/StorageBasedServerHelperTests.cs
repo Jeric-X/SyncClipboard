@@ -45,8 +45,52 @@ public class StorageBasedServerHelperTests
             var expectedHash = await new FileProfile(remoteFile).GetHash(token);
             Assert.AreEqual(1, adapter.DownloadCount);
             Assert.AreEqual(0, adapter.UploadCount);
+            Assert.AreEqual(1, adapter.SnapshotReadCount);
+            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
             Assert.AreEqual(1, adapter.SetProfileCount);
             Assert.AreEqual(expectedHash, adapter.CurrentProfile?.Hash);
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
+    [TestMethod]
+    public async Task DownloadFileProfile_MissingRemoteVersionBackfillsMetadataUnconditionally()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var fileName = "video.mov";
+            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
+            await File.WriteAllBytesAsync(remoteFile, [1, 2, 3, 4], token);
+
+            var remoteProfile = new ProfileDto
+            {
+                Type = ProfileType.File,
+                Hash = string.Empty,
+                Text = fileName,
+                HasData = true,
+                DataName = fileName,
+                Size = new FileInfo(remoteFile).Length,
+            };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile)
+            {
+                OmitVersion = true,
+            };
+            var helper = CreateHelper(testDirectory, adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(remoteProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.SnapshotReadCount);
+            Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
         }
         finally
         {
@@ -132,6 +176,7 @@ public class StorageBasedServerHelperTests
                 cancellationToken: token);
 
             Assert.AreEqual(1, adapter.DownloadCount);
+            Assert.AreEqual(0, adapter.SnapshotReadCount);
             Assert.AreEqual(0, adapter.SetProfileCount);
             Assert.AreSame(remoteProfile, adapter.CurrentProfile);
         }
@@ -229,39 +274,61 @@ public class StorageBasedServerHelperTests
     }
 
     [TestMethod]
-    public async Task DownloadOversizedFileProfile_DoesNotBackfillSharedHashSentinel()
+    public async Task DownloadTransferredTextProfile_EmptyRemoteHashBackfillsMetadata()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
         try
         {
-            var fileName = "oversized.bin";
-            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
-            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
-            await File.WriteAllBytesAsync(remoteFile, [1], token);
-            var oversizedLength = (long)int.MaxValue + 1;
-
-            var remoteProfile = new ProfileDto
-            {
-                Type = ProfileType.File,
-                Hash = string.Empty,
-                Text = fileName,
-                HasData = true,
-                DataName = fileName,
-                Size = oversizedLength,
-            };
-            var adapter = new TestStorageAdapter(remoteFile, remoteProfile)
-            {
-                DownloadedFileLength = oversizedLength,
-            };
-            var helper = CreateHelper(testDirectory, adapter);
+            var sourceDirectory = Path.Combine(testDirectory, "source");
+            var sourceProfile = new TextProfile(new string('a', 10241));
+            var remoteFile = await sourceProfile.PrepareTransferData(sourceDirectory, token);
+            Assert.IsNotNull(remoteFile);
+            var remoteProfile = (await sourceProfile.ToProfileDto(token)) with { Hash = string.Empty };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
+            var helper = CreateHelper(Path.Combine(testDirectory, "download"), adapter);
 
             await helper.DownloadProfileDataAsync(
                 Profile.Create(remoteProfile),
                 cancellationToken: token);
 
-            Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
-            Assert.AreEqual(string.Empty, adapter.CurrentProfile?.Hash);
+            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
+    [TestMethod]
+    public async Task DownloadGroupProfile_EmptyRemoteHashBackfillsMetadata()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sourceDirectory = Path.Combine(testDirectory, "source");
+            Directory.CreateDirectory(sourceDirectory);
+            var sourceFile = Path.Combine(sourceDirectory, "document.txt");
+            await File.WriteAllTextAsync(sourceFile, "group content", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var remoteFile = await sourceProfile.PrepareTransferData(
+                Path.Combine(testDirectory, "remote-cache"),
+                token);
+            Assert.IsNotNull(remoteFile);
+            var remoteProfile = (await sourceProfile.ToProfileDto(token)) with { Hash = string.Empty };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
+            var helper = CreateHelper(Path.Combine(testDirectory, "download"), adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(remoteProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
         }
         finally
         {
@@ -344,11 +411,12 @@ public class StorageBasedServerHelperTests
         public ProfileDto? CurrentProfile { get; private set; } = currentProfile;
         public ProfileDto? ProfileAfterDownload { get; init; }
         public ProfileDto? ProfileBeforeConditionalSet { get; init; }
-        public long? DownloadedFileLength { get; init; }
         public Exception? SnapshotException { get; init; }
+        public bool OmitVersion { get; init; }
         public int DownloadCount { get; private set; }
         public int UploadCount { get; private set; }
         public int SetProfileCount { get; private set; }
+        public int SnapshotReadCount { get; private set; }
         public int ConditionalSetAttemptCount { get; private set; }
         private int _profileVersion;
 
@@ -361,6 +429,7 @@ public class StorageBasedServerHelperTests
 
         public Task<StorageProfileSnapshot?> GetProfileSnapshotAsync(CancellationToken cancellationToken = default)
         {
+            SnapshotReadCount++;
             if (SnapshotException is not null)
             {
                 throw SnapshotException;
@@ -368,7 +437,9 @@ public class StorageBasedServerHelperTests
 
             var snapshot = CurrentProfile is null
                 ? null
-                : new StorageProfileSnapshot(CurrentProfile, _profileVersion.ToString());
+                : new StorageProfileSnapshot(
+                    CurrentProfile,
+                    OmitVersion ? null : _profileVersion.ToString());
             return Task.FromResult(snapshot);
         }
 
@@ -423,15 +494,7 @@ public class StorageBasedServerHelperTests
         {
             DownloadCount++;
             Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
-            if (DownloadedFileLength is not null)
-            {
-                using var stream = new FileStream(localPath, FileMode.Create, FileAccess.Write);
-                stream.SetLength(DownloadedFileLength.Value);
-            }
-            else
-            {
-                File.Copy(remoteFile, localPath, overwrite: true);
-            }
+            File.Copy(remoteFile, localPath, overwrite: true);
             if (ProfileAfterDownload is not null)
             {
                 CurrentProfile = ProfileAfterDownload;

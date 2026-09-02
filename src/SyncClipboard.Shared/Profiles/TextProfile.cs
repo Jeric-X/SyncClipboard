@@ -304,15 +304,14 @@ public class TextProfile : Profile
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
-        if (verify && File.Exists(path) && Hash is not null)
+        if (verify && File.Exists(path))
         {
             var fileHash = await Utility.CalculateFileSHA256(path, token);
-            var textHash = Hash;
-
-            if (!string.Equals(fileHash, textHash, StringComparison.OrdinalIgnoreCase))
+            if (Hash is not null && !string.Equals(fileHash, Hash, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Transfer data file content does not match the text hash.");
             }
+            Hash = fileHash;
         }
 
         _transferDataPath = path;
