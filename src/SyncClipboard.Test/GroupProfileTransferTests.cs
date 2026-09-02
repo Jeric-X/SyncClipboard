@@ -290,6 +290,48 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
+    public async Task SetTransferData_OwnershipMarkerAllowsReplacementByNewProfileInstance()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var sourceArchive = await sourceProfile.PrepareTransferData(
+                Path.Combine(testDirectory, "persistent"),
+                token);
+            Assert.IsNotNull(sourceArchive);
+            var archivePath = Path.Combine(testDirectory, "received.zip");
+            File.Copy(sourceArchive, archivePath);
+            var profileHash = await sourceProfile.GetHash(token);
+
+            var firstProfile = new GroupProfile([], profileHash);
+            await firstProfile.SetTransferData(
+                archivePath,
+                TransferDataValidation.Full(),
+                token);
+            var extractedFile = Path.Combine(testDirectory, "received", "source.txt");
+            await File.WriteAllTextAsync(extractedFile, "stale", token);
+
+            var restartedProfile = new GroupProfile([], profileHash);
+            await restartedProfile.SetTransferData(
+                archivePath,
+                TransferDataValidation.Full(),
+                token);
+
+            Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            Assert.HasCount(1, restartedProfile.Files);
+            Assert.AreEqual(extractedFile, restartedProfile.Files[0]);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task PrepareTransferData_EmptyCachedArchiveIsNotReused()
     {
         var token = TestContext.CancellationTokenSource.Token;

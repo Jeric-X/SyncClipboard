@@ -10,6 +10,7 @@ namespace SyncClipboard.Shared.Profiles;
 
 public class GroupProfile : Profile
 {
+    private const string ExtractionOwnershipFileName = ".syncclipboard-extraction-owner";
     private static readonly SemaphoreSlim ConcurrencyComputeLimiter = new(Math.Max(1, Environment.ProcessorCount));
     private static readonly Encoding EntryEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private readonly SemaphoreSlim _transferDataLock = new(1, 1);
@@ -804,10 +805,24 @@ public class GroupProfile : Profile
                 path,
                 verifyProfileHash: !validation.CanSkipProfileSemanticValidation,
                 token);
+            var verifiedProfileHash = extractedData.ProfileHash ?? Hash;
+            if (string.IsNullOrEmpty(verifiedProfileHash))
+            {
+                throw new InvalidDataException("Group profile hash is unavailable after transfer-data validation.");
+            }
+
+            var ownershipMarker = CreateExtractionOwnershipMarker(
+                verifiedProfileHash,
+                actualTransferDataHash);
+            await WriteExtractionOwnershipMarker(
+                temporaryExtractDir,
+                ownershipMarker,
+                token);
             _files = CommitExtractionDirectory(
                 temporaryExtractDir,
                 extractDir,
-                extractedData.Files);
+                extractedData.Files,
+                ownershipMarker);
             if (extractedData.ProfileHash is not null)
             {
                 Hash = extractedData.ProfileHash;
@@ -827,7 +842,8 @@ public class GroupProfile : Profile
     private string[] CommitExtractionDirectory(
         string temporaryExtractDir,
         string extractDir,
-        string[] extractedFiles)
+        string[] extractedFiles,
+        string ownershipMarker)
     {
         if (!Directory.Exists(extractDir))
         {
@@ -835,7 +851,7 @@ public class GroupProfile : Profile
             return RemapExtractedFiles(extractedFiles, temporaryExtractDir, extractDir);
         }
 
-        if (!OwnsExtractionDirectory(extractDir))
+        if (!OwnsExtractionDirectory(extractDir, ownershipMarker))
         {
             throw new InvalidDataException($"Group extraction directory is already in use: {extractDir}");
         }
@@ -856,19 +872,53 @@ public class GroupProfile : Profile
         return RemapExtractedFiles(extractedFiles, temporaryExtractDir, extractDir);
     }
 
-    private bool OwnsExtractionDirectory(string extractDir)
+    private bool OwnsExtractionDirectory(string extractDir, string ownershipMarker)
     {
-        if (_files is null || _files.Length == 0)
+        if (_files is not null && _files.Length > 0)
+        {
+            var directoryPrefix = Path.GetFullPath(extractDir)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var comparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            if (_files.All(file => Path.GetFullPath(file).StartsWith(directoryPrefix, comparison)))
+            {
+                return true;
+            }
+        }
+
+        var markerPath = Path.Combine(extractDir, ExtractionOwnershipFileName);
+        try
+        {
+            return File.Exists(markerPath) &&
+                string.Equals(File.ReadAllText(markerPath), ownershipMarker, StringComparison.Ordinal);
+        }
+        catch
         {
             return false;
         }
+    }
 
-        var directoryPrefix = Path.GetFullPath(extractDir)
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        var comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
-        return _files.All(file => Path.GetFullPath(file).StartsWith(directoryPrefix, comparison));
+    private static string CreateExtractionOwnershipMarker(
+        string profileHash,
+        string transferDataHash)
+    {
+        return $"1\n{profileHash.ToUpperInvariant()}\n{transferDataHash.ToUpperInvariant()}";
+    }
+
+    private static async Task WriteExtractionOwnershipMarker(
+        string extractDir,
+        string ownershipMarker,
+        CancellationToken token)
+    {
+        var markerPath = Path.Combine(extractDir, ExtractionOwnershipFileName);
+        if (File.Exists(markerPath) || Directory.Exists(markerPath))
+        {
+            throw new InvalidDataException(
+                $"Group transfer data contains reserved entry: {ExtractionOwnershipFileName}");
+        }
+
+        await File.WriteAllTextAsync(markerPath, ownershipMarker, token).ConfigureAwait(false);
     }
 
     private static string[] RemapExtractedFiles(

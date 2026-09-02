@@ -268,6 +268,44 @@ public class StorageBasedServerHelperTests
     }
 
     [TestMethod]
+    public async Task DownloadGroupProfile_MalformedTransferDataHashBackfillsVerifiedHash()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sourceDirectory = Path.Combine(testDirectory, "source");
+            Directory.CreateDirectory(sourceDirectory);
+            var sourceFile = Path.Combine(sourceDirectory, "document.txt");
+            await File.WriteAllTextAsync(sourceFile, "group content", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var remoteFile = await sourceProfile.PrepareTransferData(
+                Path.Combine(testDirectory, "remote-cache"),
+                token);
+            Assert.IsNotNull(remoteFile);
+            var expectedTransferDataHash = sourceProfile.TransferDataHash;
+            var remoteProfile = (await sourceProfile.ToProfileDto(token)) with
+            {
+                TransferDataHash = "malformed",
+            };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
+            var helper = CreateHelper(Path.Combine(testDirectory, "download"), adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(remoteProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.AreEqual(expectedTransferDataHash, adapter.CurrentProfile?.TransferDataHash);
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
+    [TestMethod]
     public async Task DownloadFileProfile_RemoteProfileChangedDuringConditionalBackfillDoesNotOverwriteMetadata()
     {
         var token = TestContext.CancellationTokenSource.Token;

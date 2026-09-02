@@ -77,7 +77,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         return string.IsNullOrEmpty(await profile.GetHash(cancellationToken)) ||
             !profile.HasKnownSize ||
-            string.IsNullOrEmpty(profile.TransferDataHash);
+            !Profile.IsValidTransferDataHash(profile.TransferDataHash);
     }
 
     private async Task FillBackRemoteProfile(
@@ -140,7 +140,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         if (!string.IsNullOrEmpty(currentProfile.Hash) &&
             currentProfile.Size is not null &&
-            !string.IsNullOrEmpty(currentProfile.TransferDataHash))
+            Profile.IsValidTransferDataHash(currentProfile.TransferDataHash))
         {
             return false;
         }
@@ -176,7 +176,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             }
         }
 
-        if (!string.IsNullOrEmpty(currentProfile.TransferDataHash) &&
+        if (Profile.IsValidTransferDataHash(currentProfile.TransferDataHash) &&
             !string.Equals(
                 currentProfile.TransferDataHash,
                 downloadedProfile.TransferDataHash,
