@@ -132,46 +132,39 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     private static bool ShouldFillBack(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        var shouldFillHash = string.IsNullOrEmpty(currentProfile.Hash);
-        var shouldFillSize = currentProfile.Size is null;
-        if (!shouldFillHash && !shouldFillSize)
+        if (!string.IsNullOrEmpty(currentProfile.Hash) && currentProfile.Size is not null)
         {
             return false;
         }
 
-        if (!shouldFillHash &&
-            !string.Equals(currentProfile.Hash, downloadedProfile.Hash, StringComparison.OrdinalIgnoreCase))
+        if (!MatchesKnownProfileMetadata(downloadedProfile, currentProfile))
         {
             return false;
         }
 
-        if (currentProfile.Type != downloadedProfile.Type &&
-            (currentProfile.Type != ProfileType.File || downloadedProfile.Type != ProfileType.Image))
-        {
-            return false;
-        }
-
-        if (!string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (currentProfile.HasData != downloadedProfile.HasData)
-        {
-            return false;
-        }
-
-        if (!string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (!shouldFillSize && currentProfile.Size != downloadedProfile.Size)
+        if (!MatchesProfileIdentity(downloadedProfile, currentProfile))
         {
             return false;
         }
 
         return true;
+    }
+
+    private static bool MatchesKnownProfileMetadata(ProfileDto downloadedProfile, ProfileDto currentProfile)
+    {
+        return (string.IsNullOrEmpty(currentProfile.Hash) ||
+                string.Equals(currentProfile.Hash, downloadedProfile.Hash, StringComparison.OrdinalIgnoreCase)) &&
+            (currentProfile.Size is null || currentProfile.Size == downloadedProfile.Size);
+    }
+
+    private static bool MatchesProfileIdentity(ProfileDto downloadedProfile, ProfileDto currentProfile)
+    {
+        var typeMatches = currentProfile.Type == downloadedProfile.Type ||
+            (currentProfile.Type == ProfileType.File && downloadedProfile.Type == ProfileType.Image);
+        return typeMatches &&
+            string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal) &&
+            currentProfile.HasData == downloadedProfile.HasData &&
+            string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal);
     }
 
     public void SetErrorStatus(string message, Exception? innerException = null)
