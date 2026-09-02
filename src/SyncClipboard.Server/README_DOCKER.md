@@ -38,7 +38,9 @@ When you wish to configure server settings on your own, follow the template belo
   },
   "AppSettings": {
     "UserName": "admin",
-    "Password": "admin"
+    "Password": "admin",
+    "EnableFcmPush": false,
+    "FirebaseProjectId": null
   }
 }
 ```
@@ -64,6 +66,16 @@ docker run -d \
 | -p 5033              | 端口映射 \| Port mapping, [hostport:containerport]   |
 | -v /appsettings.json | 路径映射 \| Volume mapping, [hostpath:containerpath] |
 | --restart            | 重启策略 \|  Restart Policy                          |
+
+## 可选 FCM Push | Optional FCM Push
+
+FCM 默认关闭。启用时，将 `AppSettings.EnableFcmPush` 设为 `true`，并按 Firebase Admin SDK 的要求通过 `GOOGLE_APPLICATION_CREDENTIALS` 提供服务账号文件路径。可使用 `AppSettings.FirebaseProjectId` 显式指定 Firebase project ID。
+
+FCM is disabled by default. To enable it, set `AppSettings.EnableFcmPush` to `true` and provide the service-account file path through `GOOGLE_APPLICATION_CREDENTIALS`, as required by the Firebase Admin SDK. `AppSettings.FirebaseProjectId` can explicitly select the Firebase project.
+
+只有 Firebase Admin 初始化成功时，`GET /api/capabilities` 才会返回 `push.fcm: true`。服务账号内容不会写入应用配置或日志。
+
+`GET /api/capabilities` reports `push.fcm: true` only after Firebase Admin initializes successfully. Service-account contents are never stored in app configuration or logs.
 
 ----
 

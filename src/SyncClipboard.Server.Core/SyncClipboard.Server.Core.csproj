@@ -15,10 +15,15 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="FirebaseAdmin" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Shared\SyncClipboard.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SyncClipboard.Test" />
   </ItemGroup>
 
 </Project>

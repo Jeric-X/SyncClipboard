@@ -6,6 +6,9 @@ using SyncClipboard.Server.Core.Hubs;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Server.Core.Services.Notifications;
+using SyncClipboard.Server.Core.Services.Notifications.Fcm;
+using SyncClipboard.Server.Core.Services.PushDevices;
 using SyncClipboard.Server.Core.Swagger;
 using SyncClipboard.Server.Core.Utilities;
 using SyncClipboard.Server.Core.Utilities.History;
@@ -36,9 +39,20 @@ public class Web
             .AddApplicationPart(typeof(SyncClipboardController).Assembly);
         services.AddMemoryCache();
         services.AddSignalR();
+        services.AddSingleton<SignalRProfileChangeNotifier>();
+        services.AddSingleton<IFcmPushClient, FirebaseAdminFcmPushClient>();
+        services.AddSingleton<IFcmProfileChangeQueue, FcmProfileChangeQueue>();
+        services.AddScoped<FcmProfileChangeDelivery>();
+        services.AddScoped<FcmProfileChangeNotifier>();
+        services.AddScoped<IProfileChangeNotifier>(provider =>
+            new CompositeProfileChangeNotifier([
+                provider.GetRequiredService<SignalRProfileChangeNotifier>(),
+                provider.GetRequiredService<FcmProfileChangeNotifier>()
+            ]));
 
         services.AddDbContext<HistoryDbContext>();
         services.AddScoped<HistoryService>();
+        services.AddScoped<IPushDeviceRegistry, PushDeviceRegistry>();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
@@ -50,6 +64,7 @@ public class Web
 
         services.AddServerProfileEnvProvider();
         services.AddHostedService<HistoryCleaner>();
+        services.AddHostedService<FcmProfileChangeWorker>();
 
         // This is minimal api project, but Swagger use Microsoft.AspNetCore.Mvc.JsonOptions to show enum as string.
         // The real working converter is written in dto definition in form of attribute. 
@@ -117,14 +132,28 @@ public class Web
                 serverOptions.ListenAnyIP(serverConfig.Port, OptionAction);
             });
         }
-        builder.Services.Configure<AppSettings>(option =>
-        {
-            option.MaxSavedHistoryCount = serverConfig.MaxSavedHistoryCount;
-            option.HistoryRetentionMinutes = serverConfig.HistoryRetentionMinutes;
-        });
+        ConfigureEmbeddedServerAppSettings(
+            builder.Services,
+            builder.Configuration,
+            serverConfig.MaxSavedHistoryCount,
+            serverConfig.HistoryRetentionMinutes);
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);
         await app.StartAsync();
         return app;
+    }
+
+    internal static void ConfigureEmbeddedServerAppSettings(
+        IServiceCollection services,
+        IConfiguration configuration,
+        uint maxSavedHistoryCount,
+        uint historyRetentionMinutes)
+    {
+        services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings)));
+        services.PostConfigure<AppSettings>(option =>
+        {
+            option.MaxSavedHistoryCount = maxSavedHistoryCount;
+            option.HistoryRetentionMinutes = historyRetentionMinutes;
+        });
     }
 }
