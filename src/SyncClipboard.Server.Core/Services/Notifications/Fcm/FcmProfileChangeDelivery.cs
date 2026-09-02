@@ -64,6 +64,37 @@ public sealed class FcmProfileChangeDelivery(
             await fcmClient.SendProfileChangedAsync(
                 registration.PushToken, profileHash, cancellationToken);
         }
+        catch (InvalidFcmRegistrationException ex)
+        {
+            try
+            {
+                var removed = await registry.RemoveIfTokenMatchesAsync(
+                    registration.DeviceId,
+                    registration.PushToken,
+                    cancellationToken);
+                if (removed)
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Removed permanently invalid FCM registration for device {DeviceId}",
+                        registration.DeviceId);
+                }
+                else
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Did not remove FCM registration for device {DeviceId} because its token changed",
+                        registration.DeviceId);
+                }
+            }
+            catch (Exception removeException) when (!cancellationToken.IsCancellationRequested)
+            {
+                logger.LogWarning(
+                    removeException,
+                    "Failed to remove permanently invalid FCM registration for device {DeviceId}",
+                    registration.DeviceId);
+            }
+        }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             logger.LogWarning(

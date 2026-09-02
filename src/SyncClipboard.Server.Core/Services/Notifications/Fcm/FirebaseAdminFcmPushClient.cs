@@ -56,7 +56,17 @@ public sealed class FirebaseAdminFcmPushClient : IFcmPushClient, IDisposable
         }
 
         var message = FcmMessageFactory.CreateProfileChangedMessage(pushToken, profileHash);
-        await _messaging.SendAsync(message, cancellationToken);
+        try
+        {
+            await _messaging.SendAsync(message, cancellationToken);
+        }
+        catch (FirebaseMessagingException ex)
+            when (ex.MessagingErrorCode == MessagingErrorCode.Unregistered)
+        {
+            throw new InvalidFcmRegistrationException(
+                "FCM registration is permanently unregistered",
+                ex);
+        }
     }
 
     public void Dispose()

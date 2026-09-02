@@ -40,11 +40,34 @@ public class PushDeviceRegistry(
         string deviceId,
         CancellationToken cancellationToken = default)
     {
-        var registration = await dbContext.PushDeviceRegistrations
-            .SingleOrDefaultAsync(value => value.DeviceId == deviceId, cancellationToken);
+        return await RemoveInternalAsync(deviceId, pushToken: null, cancellationToken);
+    }
+
+    public async Task<bool> RemoveIfTokenMatchesAsync(
+        string deviceId,
+        string pushToken,
+        CancellationToken cancellationToken = default)
+    {
+        return await RemoveInternalAsync(deviceId, pushToken, cancellationToken);
+    }
+
+    private async Task<bool> RemoveInternalAsync(
+        string deviceId,
+        string? pushToken,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.PushDeviceRegistrations
+            .Where(value => value.DeviceId == deviceId);
+        if (pushToken is not null)
+        {
+            query = query.Where(value => value.PushToken == pushToken);
+        }
+        var registration = await query.SingleOrDefaultAsync(cancellationToken);
         if (registration is null)
         {
-            logger.LogDebug("Push registration already absent for device {DeviceId}", deviceId);
+            logger.LogDebug(
+                "Push registration already absent or changed for device {DeviceId}",
+                deviceId);
             return false;
         }
 

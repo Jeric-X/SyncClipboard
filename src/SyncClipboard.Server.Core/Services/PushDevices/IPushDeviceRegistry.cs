@@ -16,6 +16,11 @@ public interface IPushDeviceRegistry
         string deviceId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> RemoveIfTokenMatchesAsync(
+        string deviceId,
+        string pushToken,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<PushDeviceRegistration>> GetByProviderAsync(
         string provider,
         CancellationToken cancellationToken = default);

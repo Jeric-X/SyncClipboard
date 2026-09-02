@@ -46,6 +46,23 @@ public class PushDeviceRegistryTests
         Assert.IsFalse(await harness.Registry.RemoveAsync(deviceId, CancellationToken.None));
     }
 
+    [TestMethod]
+    public async Task RemoveIfTokenMatchesAsync_DoesNotRemoveRotatedToken()
+    {
+        await using var harness = await RegistryHarness.Create();
+        var deviceId = Guid.NewGuid().ToString("D");
+        await harness.Registry.UpsertAsync(
+            deviceId, "android", "fcm", "new-token", null, CancellationToken.None);
+
+        var removed = await harness.Registry.RemoveIfTokenMatchesAsync(
+            deviceId, "old-token", CancellationToken.None);
+
+        Assert.IsFalse(removed);
+        var registrations = await harness.Registry.GetByProviderAsync("fcm", CancellationToken.None);
+        Assert.HasCount(1, registrations);
+        Assert.AreEqual("new-token", registrations[0].PushToken);
+    }
+
     private sealed class RegistryHarness : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;

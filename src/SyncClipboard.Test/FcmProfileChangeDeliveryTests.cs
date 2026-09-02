@@ -71,7 +71,7 @@ public class FcmProfileChangeDeliveryTests
     }
 
     [TestMethod]
-    public async Task DeliverAsync_WhenOneSendFails_ContinuesOtherDevices()
+    public async Task DeliverAsync_WhenOneSendFails_ContinuesOtherDevicesWithoutRemovingRegistration()
     {
         var registrations = new List<PushDeviceRegistration>
         {
@@ -91,6 +91,37 @@ public class FcmProfileChangeDeliveryTests
 
         fcmClient.Verify(value => value.SendProfileChangedAsync(
             "token-b", "profile-hash", CancellationToken.None), Times.Once);
+        registry.Verify(value => value.RemoveIfTokenMatchesAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [TestMethod]
+    public async Task DeliverAsync_WhenRegistrationIsPermanentlyInvalid_RemovesOnlyMatchingToken()
+    {
+        var registrations = new List<PushDeviceRegistration>
+        {
+            CreateRegistration("device-a", "stale-token"),
+            CreateRegistration("device-b", "valid-token")
+        };
+        var registry = CreateRegistry(registrations);
+        registry.Setup(value => value.RemoveIfTokenMatchesAsync(
+                "device-a", "stale-token", CancellationToken.None))
+            .ReturnsAsync(true);
+        var fcmClient = CreateAvailableClient();
+        fcmClient.Setup(value => value.SendProfileChangedAsync(
+                "stale-token", "profile-hash", CancellationToken.None))
+            .ThrowsAsync(new InvalidFcmRegistrationException(
+                "unregistered", new InvalidOperationException()));
+        var delivery = CreateDelivery(registry, fcmClient);
+
+        await delivery.DeliverAsync(
+            new FcmProfileChangeHint("profile-hash", null),
+            CancellationToken.None);
+
+        registry.Verify(value => value.RemoveIfTokenMatchesAsync(
+            "device-a", "stale-token", CancellationToken.None), Times.Once);
+        fcmClient.Verify(value => value.SendProfileChangedAsync(
+            "valid-token", "profile-hash", CancellationToken.None), Times.Once);
     }
 
     [TestMethod]
