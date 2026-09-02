@@ -251,6 +251,45 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
+    public async Task SetTransferData_UnownedSiblingDirectoryIsNotDeleted()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var sourceArchive = await sourceProfile.PrepareTransferData(
+                Path.Combine(testDirectory, "persistent"),
+                token);
+            Assert.IsNotNull(sourceArchive);
+
+            var archivePath = Path.Combine(testDirectory, "shared.zip");
+            File.Copy(sourceArchive, archivePath);
+            var unownedDirectory = Path.Combine(testDirectory, "shared");
+            Directory.CreateDirectory(unownedDirectory);
+            var sentinelPath = Path.Combine(unownedDirectory, "sentinel.txt");
+            await File.WriteAllTextAsync(sentinelPath, "keep", token);
+            var profile = new GroupProfile([], await sourceProfile.GetHash(token));
+
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => profile.SetTransferData(
+                    archivePath,
+                    TransferDataValidation.Full(),
+                    token));
+
+            Assert.AreEqual("keep", await File.ReadAllTextAsync(sentinelPath, token));
+            Assert.IsTrue(File.Exists(archivePath));
+            Assert.IsFalse(Directory.EnumerateDirectories(testDirectory, "*.tmp").Any());
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task PrepareTransferData_EmptyCachedArchiveIsNotReused()
     {
         var token = TestContext.CancellationTokenSource.Token;

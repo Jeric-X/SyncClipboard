@@ -677,7 +677,7 @@ public class GroupProfile : Profile
         return topLevelFiles.ToArray();
     }
 
-    private async Task ExtractTransferData(
+    private async Task<(string[] Files, string? ProfileHash, long? Size)> ExtractTransferData(
         string extractDir,
         string path,
         bool verifyProfileHash,
@@ -691,20 +691,21 @@ public class GroupProfile : Profile
             throw new InvalidDataException("Group transfer data contains no entries.");
         }
 
+        string? profileHash = null;
+        long? size = null;
         if (verifyProfileHash)
         {
-            var (hash, size) = await Task.Run(() => CaclHashAndSize(topLevelFiles, token), token).WaitAsync(token);
+            var (hash, calculatedSize) = await Task.Run(() => CaclHashAndSize(topLevelFiles, token), token).WaitAsync(token);
             if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
             {
                 var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
                 throw new InvalidDataException(errorMsg);
             }
-            Hash = hash;
-            Size = size;
+            profileHash = hash;
+            size = calculatedSize;
         }
-        _files = topLevelFiles;
-        _transferDataPath = path;
-        _transferDataName = Path.GetFileName(path);
+
+        return (topLevelFiles, profileHash, size);
     }
 
     public override async Task SetTransferData(
@@ -793,32 +794,91 @@ public class GroupProfile : Profile
         var actualTransferDataHash = await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false);
         validation.EnsureTransferDataHashMatches(actualTransferDataHash, "Group transfer data");
 
-        RecreateExtractionDirectory(extractDir);
+        var temporaryExtractDir = $"{extractDir}.{Guid.NewGuid():N}.tmp";
+        Directory.CreateDirectory(temporaryExtractDir);
 
         try
         {
-            await ExtractTransferData(
-                extractDir,
+            var extractedData = await ExtractTransferData(
+                temporaryExtractDir,
                 path,
                 verifyProfileHash: !validation.CanSkipProfileSemanticValidation,
                 token);
+            _files = CommitExtractionDirectory(
+                temporaryExtractDir,
+                extractDir,
+                extractedData.Files);
+            if (extractedData.ProfileHash is not null)
+            {
+                Hash = extractedData.ProfileHash;
+                Size = extractedData.Size;
+            }
+            _transferDataPath = path;
+            _transferDataName = Path.GetFileName(path);
             MarkTransferDataVerified(path, actualTransferDataHash);
         }
         catch
         {
-            DeleteExtractionDirectory(extractDir);
+            DeleteExtractionDirectory(temporaryExtractDir);
             throw;
         }
     }
 
-    private static void RecreateExtractionDirectory(string path)
+    private string[] CommitExtractionDirectory(
+        string temporaryExtractDir,
+        string extractDir,
+        string[] extractedFiles)
     {
-        if (Directory.Exists(path))
+        if (!Directory.Exists(extractDir))
         {
-            Directory.Delete(path, recursive: true);
+            Directory.Move(temporaryExtractDir, extractDir);
+            return RemapExtractedFiles(extractedFiles, temporaryExtractDir, extractDir);
         }
 
-        Directory.CreateDirectory(path);
+        if (!OwnsExtractionDirectory(extractDir))
+        {
+            throw new InvalidDataException($"Group extraction directory is already in use: {extractDir}");
+        }
+
+        var backupDir = $"{extractDir}.{Guid.NewGuid():N}.backup";
+        Directory.Move(extractDir, backupDir);
+        try
+        {
+            Directory.Move(temporaryExtractDir, extractDir);
+        }
+        catch
+        {
+            Directory.Move(backupDir, extractDir);
+            throw;
+        }
+
+        DeleteExtractionDirectory(backupDir);
+        return RemapExtractedFiles(extractedFiles, temporaryExtractDir, extractDir);
+    }
+
+    private bool OwnsExtractionDirectory(string extractDir)
+    {
+        if (_files is null || _files.Length == 0)
+        {
+            return false;
+        }
+
+        var directoryPrefix = Path.GetFullPath(extractDir)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+        return _files.All(file => Path.GetFullPath(file).StartsWith(directoryPrefix, comparison));
+    }
+
+    private static string[] RemapExtractedFiles(
+        string[] extractedFiles,
+        string sourceDirectory,
+        string targetDirectory)
+    {
+        return extractedFiles
+            .Select(file => Path.Combine(targetDirectory, Path.GetRelativePath(sourceDirectory, file)))
+            .ToArray();
     }
 
     private static void DeleteExtractionDirectory(string path)
