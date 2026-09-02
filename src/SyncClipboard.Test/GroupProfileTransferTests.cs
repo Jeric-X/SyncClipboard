@@ -214,6 +214,43 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
+    [DataRow(".zip")]
+    [DataRow("..zip")]
+    [DataRow("...zip")]
+    public async Task SetTransferData_UnsafeArchiveStemIsRejectedBeforeDeletingParent(string archiveName)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sentinelPath = Path.Combine(testDirectory, "sentinel.txt");
+            await File.WriteAllTextAsync(sentinelPath, "keep", token);
+            var archivePath = Path.Combine(testDirectory, archiveName);
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                archive.CreateEntry("content.txt");
+            }
+            var profile = new GroupProfile([], new string('A', 64));
+
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => profile.SetTransferData(
+                    archivePath,
+                    TransferDataValidation.Full(),
+                    token));
+
+            Assert.IsTrue(File.Exists(sentinelPath));
+            Assert.IsTrue(File.Exists(archivePath));
+        }
+        finally
+        {
+            if (Directory.Exists(testDirectory))
+            {
+                Directory.Delete(testDirectory, recursive: true);
+            }
+        }
+    }
+
+    [TestMethod]
     public async Task PrepareTransferData_EmptyCachedArchiveIsNotReused()
     {
         var token = TestContext.CancellationTokenSource.Token;

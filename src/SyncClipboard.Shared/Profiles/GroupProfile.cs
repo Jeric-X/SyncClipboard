@@ -712,7 +712,7 @@ public class GroupProfile : Profile
         TransferDataValidation validation,
         CancellationToken token)
     {
-        ValidateTransferDataPath(path);
+        var extractDir = ValidateTransferDataPath(path);
 
         if (!validation.RequiresVerification)
         {
@@ -722,11 +722,12 @@ public class GroupProfile : Profile
 
         await SetVerifiedTransferData(
             path,
+            extractDir,
             validation,
             token);
     }
 
-    private static void ValidateTransferDataPath(string path)
+    private static string ValidateTransferDataPath(string path)
     {
         if (!File.Exists(path))
         {
@@ -737,6 +738,25 @@ public class GroupProfile : Profile
         {
             throw new InvalidDataException($"File is not a zip archive: {path}");
         }
+
+        var fullArchivePath = Path.GetFullPath(path);
+        var archiveDirectory = Path.GetDirectoryName(fullArchivePath);
+        var archiveStem = Path.GetFileName(fullArchivePath)[..^4];
+        if (archiveDirectory is null || archiveStem is "" or "." or "..")
+        {
+            throw new InvalidDataException($"Zip archive name does not identify a safe extraction directory: {path}");
+        }
+
+        var extractDir = Path.GetFullPath(Path.Combine(archiveDirectory, archiveStem));
+        if (!string.Equals(
+            Path.GetDirectoryName(extractDir),
+            archiveDirectory,
+            StringComparison.Ordinal))
+        {
+            throw new InvalidDataException($"Zip extraction directory must be a child of its archive directory: {path}");
+        }
+
+        return extractDir;
     }
 
     private async Task SetUnverifiedTransferData(string path, CancellationToken token)
@@ -766,13 +786,13 @@ public class GroupProfile : Profile
 
     private async Task SetVerifiedTransferData(
         string path,
+        string extractDir,
         TransferDataValidation validation,
         CancellationToken token)
     {
         var actualTransferDataHash = await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false);
         validation.EnsureTransferDataHashMatches(actualTransferDataHash, "Group transfer data");
 
-        var extractDir = path[..^4];
         RecreateExtractionDirectory(extractDir);
 
         try
