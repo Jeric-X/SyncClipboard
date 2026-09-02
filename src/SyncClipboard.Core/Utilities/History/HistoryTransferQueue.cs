@@ -578,8 +578,14 @@ public class HistoryTransferQueue : IDisposable
             return;
         }
 
+        var remoteRecord = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct)
+            ?? throw new RemoteHistoryNotFoundException($"服务器上不存在历史记录 {task.ProfileId}");
+
         await server.DownloadHistoryDataAsync(task.ProfileId, localDataPath, task.ProgressReporter, ct);
-        await profile.SetTransferData(localDataPath, true, ct);
+        await profile.SetTransferData(
+            localDataPath,
+            TransferDataValidation.PreferTransferDataHash(remoteRecord.TransferDataHash),
+            ct);
         if (_configManager.GetConfig<HistoryConfig>().EnableHistory)
         {
             await _historyManager.AddLocalProfile(profile, updateLastAccessed: false, token: ct);
@@ -608,12 +614,19 @@ public class HistoryTransferQueue : IDisposable
 
         // 服务器不存在，执行上传
         string? transferFilePath = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
+        var persistentInfo = await profile.Persist(_profileEnv.GetPersistentDir(), ct);
+        record.FilePath = persistentInfo.FilePaths;
+        record.TransferDataFile = persistentInfo.TransferDataFile;
+        record.TransferDataHash = persistentInfo.TransferDataHash;
+        record.IsLocalFileReady = true;
+        await _historyManager.UpdateHistoryLocalInfo(record, ct);
         var recordDto = record.ToHistoryRecordDto();
 
         try
         {
             await server.UploadHistoryAsync(recordDto, transferFilePath, task.ProgressReporter, ct);
             record.SyncStatus = HistorySyncStatus.Synced;
+            await _historyManager.PersistServerSyncedAsync(record, ct);
         }
         catch (RemoteHistoryConflictException ex)
         {

@@ -47,6 +47,7 @@ public class TextProfile : Profile
         }
         Size = entity.Size;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
+        RestoreTransferDataHashBinding(entity.TransferDataHash, bindingVerified: true);
     }
 
     public TextProfile(ProfileDto dto)
@@ -55,6 +56,7 @@ public class TextProfile : Profile
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
+        RestoreTransferDataHashBinding(dto.TransferDataHash, bindingVerified: false);
         Size = dto.Size;
     }
 
@@ -76,6 +78,9 @@ public class TextProfile : Profile
             Text = _text,
             HasData = _hasTransferData,
             DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null,
+            TransferDataHash = _hasTransferData && HasVerifiedTransferDataHashBinding
+                ? TransferDataHash
+                : null,
             Size = await GetSize(token)
         };
     }
@@ -175,7 +180,12 @@ public class TextProfile : Profile
         {
             try
             {
-                await SetTransferData(_transferDataPath, true, token);
+                await SetTransferData(
+                    _transferDataPath,
+                    HasVerifiedTransferDataHashBinding
+                        ? TransferDataValidation.PreferTransferDataHash(TransferDataHash)
+                        : TransferDataValidation.Full(TransferDataHash),
+                    token);
                 return null;
             }
             catch when (token.IsCancellationRequested is false)
@@ -212,9 +222,39 @@ public class TextProfile : Profile
         _fullText = null;
     }
 
-    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(
+        string persistentDir,
+        CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
+        if (HasTransferData && File.Exists(_transferDataPath))
+        {
+            if (!IsTransferDataVerified(_transferDataPath) &&
+                HasVerifiedTransferDataHashBinding &&
+                IsValidTransferDataHash(TransferDataHash))
+            {
+                var actualTransferDataHash = await Utility.CalculateFileSHA256(_transferDataPath!, token);
+                if (!string.Equals(actualTransferDataHash, TransferDataHash, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new LocalProfileDataUnavailableException(
+                        $"Text transfer data hash mismatch. Expected: {TransferDataHash}, Actual: {actualTransferDataHash}.");
+                }
+                MarkTransferDataVerified(_transferDataPath!, actualTransferDataHash);
+            }
+            else if (!IsTransferDataVerified(_transferDataPath))
+            {
+                MarkTransferDataVerified(
+                    _transferDataPath!,
+                    await ValidateTransferDataHashAsync(
+                        _transferDataPath!,
+                        await GetHash(token),
+                        token));
+            }
+        }
+        else
+        {
+            ClearTransferDataHashBinding();
+        }
         var workingDir = QueryGetWorkingDir(persistentDir, Type, await GetHash(token));
         var path = GetPersistentPath(workingDir, _transferDataPath);
         return new ProfilePersistentInfo
@@ -224,6 +264,7 @@ public class TextProfile : Profile
             Size = await GetSize(token),
             Hash = await GetHash(token),
             TransferDataFile = path,
+            TransferDataHash = TransferDataHash,
             FilePaths = path is null ? [] : [path]
         };
     }
@@ -233,6 +274,7 @@ public class TextProfile : Profile
         var expectedHash = await GetHash(token);
         if (HasTransferData is false)
         {
+            ClearTransferDataHashBinding();
             await ValidateInlineTextHashAsync(expectedHash, token);
             return null;
         }
@@ -250,7 +292,9 @@ public class TextProfile : Profile
 
         try
         {
-            await ValidateTransferDataHashAsync(path, expectedHash, token);
+            MarkTransferDataVerified(
+                path,
+                await ValidateTransferDataHashAsync(path, expectedHash, token));
             return path;
         }
         catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
@@ -282,7 +326,7 @@ public class TextProfile : Profile
         }
     }
 
-    private static async Task ValidateTransferDataHashAsync(
+    private static async Task<string> ValidateTransferDataHashAsync(
         string path,
         string expectedHash,
         CancellationToken token)
@@ -293,6 +337,8 @@ public class TextProfile : Profile
             throw new LocalProfileDataUnavailableException(
                 $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
         }
+
+        return actualHash;
     }
 
     private static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
@@ -302,30 +348,94 @@ public class TextProfile : Profile
                !token.IsCancellationRequested;
     }
 
-    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
+    public override async Task SetTransferData(
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
     {
-        if (verify && File.Exists(path))
+        if (!File.Exists(path))
         {
-            var fileHash = await Utility.CalculateFileSHA256(path, token);
-            if (Hash is not null && !string.Equals(fileHash, Hash, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Transfer data file content does not match the text hash.");
-            }
-            Hash = fileHash;
+            throw new FileNotFoundException($"Text transfer data file does not exist: {path}", path);
+        }
+
+        if (TrySetUnverifiedTransferData(path, validation))
+        {
+            return;
+        }
+
+        var previousTransferDataHash = TransferDataHash;
+        var wasBindingVerified = HasVerifiedTransferDataHashBinding;
+        var fileHash = await Utility.CalculateFileSHA256(path, token);
+        ValidateTransferDataHash(
+            fileHash,
+            validation);
+        if (validation.RequiresVerification)
+        {
+            Hash ??= fileHash;
         }
 
         _transferDataPath = path;
         _transferDataName = Path.GetFileName(path);
+        if (validation.RequiresVerification ||
+            (wasBindingVerified &&
+             string.Equals(previousTransferDataHash, fileHash, StringComparison.OrdinalIgnoreCase)))
+        {
+            MarkTransferDataVerified(path, fileHash);
+        }
+        else
+        {
+            SetUnverifiedTransferDataHash(fileHash);
+        }
     }
 
-    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
+    private bool TrySetUnverifiedTransferData(
+        string path,
+        TransferDataValidation validation)
+    {
+        if (validation.RequiresVerification || HasVerifiedTransferDataHashBinding)
+        {
+            return false;
+        }
+
+        SetTransferDataHashBindingVerification(bindingVerified: false);
+        _transferDataPath = path;
+        _transferDataName = Path.GetFileName(path);
+        return true;
+    }
+
+    private void ValidateTransferDataHash(
+        string fileHash,
+        TransferDataValidation validation)
+    {
+        validation.EnsureTransferDataHashMatches(fileHash, "Transfer data");
+        if (validation.RequiresVerification &&
+            !validation.CanSkipProfileSemanticValidation &&
+            Hash is not null)
+        {
+            var textHash = Hash;
+
+            if (!string.Equals(fileHash, textHash, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Transfer data file content does not match the text hash.");
+            }
+        }
+    }
+
+    public override async Task SetAndMoveTransferData(
+        string persistentDir,
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
     {
         if (File.Exists(_transferDataPath))
         {
             return;
         }
 
-        await SetTransferData(path, true, token);
+        await SetTransferData(
+            path,
+            validation,
+            token);
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
@@ -339,6 +449,7 @@ public class TextProfile : Profile
 
         var targetPath = Path.Combine(workingDir, fileName);
         File.Move(path, targetPath, true);
+        MoveVerifiedTransferData(path, targetPath);
         _transferDataPath = targetPath;
         _transferDataName = Path.GetFileName(targetPath);
     }
@@ -373,5 +484,6 @@ public class TextProfile : Profile
         textTarget._transferDataName = _transferDataName;
         textTarget.Hash = Hash;
         textTarget.Size = Size;
+        CopyTransferDataHashStateTo(textTarget);
     }
 }

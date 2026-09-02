@@ -5,6 +5,7 @@ namespace SyncClipboard.Server.Core.Models;
 public class HistoryRecordDto
 {
     public string Hash { get; set; } = string.Empty;
+    public string? TransferDataHash { get; set; }
     public string Text { get; set; } = string.Empty;
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ProfileType Type { get; set; } = ProfileType.None;
@@ -23,6 +24,7 @@ public class HistoryRecordDto
         return new HistoryRecordDto
         {
             Hash = e.Hash,
+            TransferDataHash = e.TransferDataHash,
             Text = e.Text,
             Type = e.Type,
             CreateTime = new DateTimeOffset(e.CreateTime, TimeSpan.Zero),
@@ -43,6 +45,7 @@ public class HistoryRecordDto
         {
             UserId = userId,
             Hash = this.Hash.ToUpperInvariant(),
+            TransferDataHash = Profile.NormalizeTransferDataHash(this.TransferDataHash),
             Text = this.Text,
             Type = this.Type,
             CreateTime = this.CreateTime.UtcDateTime,

@@ -46,7 +46,11 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         {
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
-            await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
+            await profile.SetAndMoveTransferData(
+                persistentDir,
+                dataPath,
+                TransferDataValidation.Full(profile.TransferDataHash),
+                cancellationToken);
             if (shouldFillBack)
             {
                 await FillBackRemoteProfile(profile, cancellationToken);

@@ -28,18 +28,22 @@ public class GroupProfile : Profile
     public override string ShortDisplayText => GetDisplayText(true);
 
     public GroupProfile(ProfilePersistentInfo entity)
-        : this(entity.FilePaths ?? [], entity.Hash, entity.TransferDataFile)
+        : this(entity.FilePaths ?? [], entity.Hash, entity.TransferDataFile, entity.TransferDataHash)
     {
+        Size = entity.Size;
+        SetTransferDataHashBindingVerification(bindingVerified: true);
     }
 
     public GroupProfile(
         IEnumerable<string> files,
         string hash,
-        string? dataPath = null)
+        string? dataPath = null,
+        string? transferDataHash = null)
     {
         _files = [.. files];
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
+        RestoreTransferDataHashBinding(transferDataHash, bindingVerified: false);
         if (_transferDataPath is not null)
         {
             _transferDataName = Path.GetFileName(_transferDataPath);
@@ -74,6 +78,7 @@ public class GroupProfile : Profile
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToArray();
         _transferDataName = dto.DataName;
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
+        RestoreTransferDataHashBinding(dto.TransferDataHash, bindingVerified: false);
         Size = dto.Size;
     }
 
@@ -278,6 +283,7 @@ public class GroupProfile : Profile
 
         _transferDataName = null;
         _transferDataPath = null;
+        ClearTransferDataHashBinding();
 
         if (!await IsLocalDataValid(true, token).ConfigureAwait(false))
         {
@@ -294,9 +300,11 @@ public class GroupProfile : Profile
         {
             await CreateTransferArchiveAsync(tempFilePath, _files, expectedHash, token).ConfigureAwait(false);
 
+            var transferDataHash = await Utility.CalculateFileSHA256(tempFilePath, token).ConfigureAwait(false);
             File.Move(tempFilePath, filePath);
             _transferDataName = fileName;
             _transferDataPath = filePath;
+            MarkTransferDataVerified(filePath, transferDataHash);
             return filePath;
         }
         finally
@@ -305,14 +313,31 @@ public class GroupProfile : Profile
         }
     }
 
-    private static async Task<bool> CanReuseTransferArchiveAsync(
+    private async Task<bool> CanReuseTransferArchiveAsync(
         string archivePath,
         string expectedHash,
         CancellationToken token)
     {
         try
         {
+            if (HasVerifiedTransferDataHashBinding && IsValidTransferDataHash(TransferDataHash))
+            {
+                var actualTransferDataHash = await Utility.CalculateFileSHA256(archivePath, token).ConfigureAwait(false);
+                var hashMatches = string.Equals(
+                    actualTransferDataHash,
+                    TransferDataHash,
+                    StringComparison.OrdinalIgnoreCase);
+                if (hashMatches)
+                {
+                    MarkTransferDataVerified(archivePath, actualTransferDataHash);
+                }
+                return hashMatches;
+            }
+
             await VerifyExistingTransferArchiveAsync(archivePath, expectedHash, token).ConfigureAwait(false);
+            MarkTransferDataVerified(
+                archivePath,
+                await Utility.CalculateFileSHA256(archivePath, token).ConfigureAwait(false));
             return true;
         }
         catch (LocalProfileDataUnavailableException) when (!token.IsCancellationRequested)
@@ -587,6 +612,7 @@ public class GroupProfile : Profile
             Text = DisplayText,
             HasData = true,
             DataName = _transferDataName,
+            TransferDataHash = HasVerifiedTransferDataHashBinding ? TransferDataHash : null,
             Size = await GetSize(token)
         };
     }
@@ -651,7 +677,11 @@ public class GroupProfile : Profile
         return topLevelFiles.ToArray();
     }
 
-    private async Task ExtractAndVerifyTransferData(string extractDir, string path, CancellationToken token)
+    private async Task ExtractTransferData(
+        string extractDir,
+        string path,
+        bool verifyProfileHash,
+        CancellationToken token)
     {
         await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
@@ -661,20 +691,42 @@ public class GroupProfile : Profile
             throw new InvalidDataException("Group transfer data contains no entries.");
         }
 
-        var (hash, size) = await Task.Run(() => CaclHashAndSize(topLevelFiles, token), token).WaitAsync(token);
-        if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
+        if (verifyProfileHash)
         {
-            var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
-            throw new InvalidDataException(errorMsg);
+            var (hash, size) = await Task.Run(() => CaclHashAndSize(topLevelFiles, token), token).WaitAsync(token);
+            if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
+            {
+                var errorMsg = $"Group data hash mismatch. Expected: {Hash}, Actual: {hash}";
+                throw new InvalidDataException(errorMsg);
+            }
+            Hash = hash;
+            Size = size;
         }
         _files = topLevelFiles;
-        Hash = hash;
-        Size = size;
         _transferDataPath = path;
         _transferDataName = Path.GetFileName(path);
     }
 
-    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
+    public override async Task SetTransferData(
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
+    {
+        ValidateTransferDataPath(path);
+
+        if (!validation.RequiresVerification)
+        {
+            await SetUnverifiedTransferData(path, token);
+            return;
+        }
+
+        await SetVerifiedTransferData(
+            path,
+            validation,
+            token);
+    }
+
+    private static void ValidateTransferDataPath(string path)
     {
         if (!File.Exists(path))
         {
@@ -685,49 +737,95 @@ public class GroupProfile : Profile
         {
             throw new InvalidDataException($"File is not a zip archive: {path}");
         }
+    }
 
-        if (!verify)
+    private async Task SetUnverifiedTransferData(string path, CancellationToken token)
+    {
+        _transferDataPath = path;
+        _transferDataName = Path.GetFileName(path);
+        if (!HasVerifiedTransferDataHashBinding || !IsValidTransferDataHash(TransferDataHash))
         {
-            _transferDataPath = path;
-            _transferDataName = Path.GetFileName(path);
+            SetTransferDataHashBindingVerification(bindingVerified: false);
             return;
         }
 
-        var extractDir = path[..^4];
-        var createdExtractDirectory = false;
-        if (!Directory.Exists(extractDir))
+        var previousTransferDataHash = TransferDataHash;
+        var actualTransferDataHash = await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false);
+        if (string.Equals(
+            previousTransferDataHash,
+            actualTransferDataHash,
+            StringComparison.OrdinalIgnoreCase))
         {
-            Directory.CreateDirectory(extractDir);
-            createdExtractDirectory = true;
+            MarkTransferDataVerified(path, actualTransferDataHash);
         }
+        else
+        {
+            SetUnverifiedTransferDataHash(actualTransferDataHash);
+        }
+    }
+
+    private async Task SetVerifiedTransferData(
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
+    {
+        var actualTransferDataHash = await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false);
+        validation.EnsureTransferDataHashMatches(actualTransferDataHash, "Group transfer data");
+
+        var extractDir = path[..^4];
+        RecreateExtractionDirectory(extractDir);
 
         try
         {
-            await ExtractAndVerifyTransferData(extractDir, path, token);
+            await ExtractTransferData(
+                extractDir,
+                path,
+                verifyProfileHash: !validation.CanSkipProfileSemanticValidation,
+                token);
+            MarkTransferDataVerified(path, actualTransferDataHash);
         }
         catch
         {
-            if (createdExtractDirectory)
-            {
-                try
-                {
-                    Directory.Delete(extractDir, recursive: true);
-                }
-                catch
-                { }
-            }
+            DeleteExtractionDirectory(extractDir);
             throw;
         }
     }
 
-    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
+    private static void RecreateExtractionDirectory(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            Directory.Delete(path, recursive: true);
+        }
+
+        Directory.CreateDirectory(path);
+    }
+
+    private static void DeleteExtractionDirectory(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch
+        { }
+    }
+
+    public override async Task SetAndMoveTransferData(
+        string persistentDir,
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
     {
         if (File.Exists(_transferDataPath))
         {
             return;
         }
 
-        await SetTransferData(path, true, token);
+        await SetTransferData(
+            path,
+            validation,
+            token);
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
@@ -739,6 +837,7 @@ public class GroupProfile : Profile
 
         var targetPath = Path.Combine(workingDir, _transferDataName!);
         File.Move(path, targetPath, true);
+        MoveVerifiedTransferData(path, targetPath);
         try
         {
             Directory.Move(path[..^4], targetPath[..^4]);
@@ -788,7 +887,12 @@ public class GroupProfile : Profile
         {
             try
             {
-                await SetTransferData(_transferDataPath, true, token);
+                await SetTransferData(
+                    _transferDataPath,
+                    HasVerifiedTransferDataHashBinding
+                        ? TransferDataValidation.PreferTransferDataHash(TransferDataHash)
+                        : TransferDataValidation.Full(TransferDataHash),
+                    token);
                 return null;
             }
             catch when (token.IsCancellationRequested is false)
@@ -798,7 +902,9 @@ public class GroupProfile : Profile
         return Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataName ?? CreateNewDataFileName());
     }
 
-    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(
+        string persistentDir,
+        CancellationToken token)
     {
         if (_files is null && _transferDataPath is null)
         {
@@ -806,9 +912,46 @@ public class GroupProfile : Profile
         }
 
         var workingDir = CreateWorkingDir(persistentDir, Type, await GetHash(token));
-
+        await ValidatePersistentTransferData(token);
         await BackUpFilteredFilesIfNeeded(workingDir, token);
 
+        return await CreatePersistentInfo(workingDir, token);
+    }
+
+    private async Task ValidatePersistentTransferData(CancellationToken token)
+    {
+        if (_transferDataPath is null || !File.Exists(_transferDataPath))
+        {
+            return;
+        }
+
+        if (!HasVerifiedTransferDataHashBinding || !IsValidTransferDataHash(TransferDataHash))
+        {
+            await SetTransferData(
+                _transferDataPath,
+                TransferDataValidation.Full(),
+                token);
+            return;
+        }
+
+        if (IsTransferDataVerified(_transferDataPath))
+        {
+            return;
+        }
+
+        var actualTransferDataHash = await Utility.CalculateFileSHA256(_transferDataPath, token);
+        if (!string.Equals(actualTransferDataHash, TransferDataHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Group transfer data hash mismatch. Expected: {TransferDataHash}, Actual: {actualTransferDataHash}.");
+        }
+        MarkTransferDataVerified(_transferDataPath, actualTransferDataHash);
+    }
+
+    private async Task<ProfilePersistentInfo> CreatePersistentInfo(
+        string workingDir,
+        CancellationToken token)
+    {
         var relativeFiles = _files?
                             .Select(f => f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
                             .Select(f => Path.GetFileName(f))
@@ -823,6 +966,7 @@ public class GroupProfile : Profile
             Size = await GetSize(token),
             Hash = await GetHash(token),
             TransferDataFile = GetPersistentPath(workingDir, _transferDataPath),
+            TransferDataHash = HasVerifiedTransferDataHashBinding ? TransferDataHash : null,
             FilePaths = _files?.Select(f => GetPersistentPath(workingDir, f))
                             .Where(f => string.IsNullOrEmpty(f) is false)
                             .ToArray() ?? []
@@ -958,7 +1102,11 @@ public class GroupProfile : Profile
     {
         if (_files is null && _transferDataPath is not null)
         {
-            await SetAndMoveTransferData(localDir, _transferDataPath, token);
+            await SetAndMoveTransferData(
+                localDir,
+                _transferDataPath,
+                TransferDataValidation.Full(),
+                token);
         }
         ArgumentNullException.ThrowIfNull(_files);
 
@@ -980,5 +1128,6 @@ public class GroupProfile : Profile
         groupTarget._fileNames = _fileNames;
         groupTarget.Hash = Hash;
         groupTarget.Size = Size;
+        CopyTransferDataHashStateTo(groupTarget);
     }
 }

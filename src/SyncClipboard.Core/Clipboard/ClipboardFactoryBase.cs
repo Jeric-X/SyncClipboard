@@ -91,7 +91,10 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         if (tempPath != dataPath)
         {
             await Task.Run(() => File.Move(tempPath, dataPath, true), ctk).WaitAsync(ctk);
-            await imageProfile.SetTransferData(dataPath, false, ctk);
+            await imageProfile.SetTransferData(
+                dataPath,
+                TransferDataValidation.Unverified,
+                ctk);
         }
 
         await FileCacheManager.SaveCacheEntryAsync(nameof(IClipboardImage), hash, dataPath, ctk);

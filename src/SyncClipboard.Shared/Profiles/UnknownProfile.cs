@@ -39,7 +39,9 @@ public class UnknownProfile : Profile
         return Task.FromResult<string?>(null);
     }
 
-    public override Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
+    public override Task<ProfilePersistentInfo> Persist(
+        string persistentDir,
+        CancellationToken token)
     {
         throw new NotImplementedException();
     }
@@ -54,12 +56,19 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task SetTransferData(string path, bool verify, CancellationToken token)
+    public override Task SetTransferData(
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
     {
         throw new NotImplementedException();
     }
 
-    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
+    public override Task SetAndMoveTransferData(
+        string persistentDir,
+        string path,
+        TransferDataValidation validation,
+        CancellationToken token)
     {
         throw new NotImplementedException();
     }

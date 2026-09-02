@@ -54,7 +54,23 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest("profileId is required");
         }
 
-        var path = await _historyService.GetTransferDataFileByProfileId(HARD_CODED_USER_ID, profileId, token);
+        string? path;
+        try
+        {
+            path = await _historyService.GetTransferDataFileByProfileId(HARD_CODED_USER_ID, profileId, token);
+        }
+        catch (HistoryTransferDataException ex)
+        {
+            var problem = new ProblemDetails
+            {
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Title = "History transfer data is invalid",
+                Detail = ex.Message,
+            };
+            problem.Extensions["code"] = "history_data_invalid";
+            return UnprocessableEntity(problem);
+        }
+
         if (string.IsNullOrEmpty(path))
         {
             return NotFound();
@@ -114,7 +130,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     /// <summary>
     /// POST api/history
     /// 使用 multipart/form-data 流式传输文件和元数据。
-    /// Form 字段：hash, type, createTime, lastModified, starred, pinned, version, isDeleted, text, size, data
+    /// Form 字段：hash, transferDataHash, type, createTime, lastModified, starred, pinned, version, isDeleted, text, size, data
     /// data 字段为可选的二进制文件数据。
     /// </summary>
     [HttpPost]
@@ -183,6 +199,9 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         return new HistoryRecordDto
         {
             Hash = GetRequiredString(metadata, "hash"),
+            TransferDataHash = metadata.TryGetValue("transferDataHash", out var transferDataHash)
+                ? Profile.NormalizeTransferDataHash(transferDataHash)
+                : null,
             Type = type.Value,
             CreateTime = ParseDateTimeOffset(metadata, "createTime"),
             LastModified = ParseDateTimeOffset(metadata, "lastModified"),

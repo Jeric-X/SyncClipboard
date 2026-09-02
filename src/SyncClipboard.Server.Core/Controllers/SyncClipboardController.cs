@@ -161,6 +161,23 @@ public class SyncClipboardController(
             return BadRequest("dto cannot be null");
         }
 
+        try
+        {
+            dto = dto with
+            {
+                TransferDataHash = Profile.NormalizeTransferDataHash(dto.TransferDataHash)
+            };
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
+        if (!dto.HasData && dto.TransferDataHash is not null)
+        {
+            return BadRequest("TransferDataHash cannot be set when HasData is false");
+        }
+
         if (!string.IsNullOrWhiteSpace(dto.Hash))
         {
             var profile = await _historyService.GetExistingProfileAsync(
@@ -185,36 +202,64 @@ public class SyncClipboardController(
 
     private async Task<IActionResult> CreateAndSaveNewProfile(ProfileDto dto, CancellationToken token)
     {
-        var newProfile = Profile.Create(dto);
-
-        if (dto.HasData)
+        var newProfile = Profile.Create(dto with { TransferDataHash = null });
+        var transferDataError = await SetTransferData(dto, newProfile, token);
+        if (transferDataError is not null)
         {
-            if (string.IsNullOrEmpty(dto.DataName))
-            {
-                return BadRequest("DataName cannot be null or empty when HasData is true");
-            }
-
-            var fileName = Path.GetFileName(dto.DataName);
-            var previousDataPath = Path.Combine(_serverEnv.GetDataRootPath(), "file", fileName);
-            if (!System.IO.File.Exists(previousDataPath))
-            {
-                return NotFound("Transfer data file not found");
-            }
-
-            var persistentDir = _serverEnv.GetPersistentDir();
-            try
-            {
-                await newProfile.SetAndMoveTransferData(persistentDir, previousDataPath, token);
-            }
-            catch when (!token.IsCancellationRequested)
-            {
-                return BadRequest("Hash is not match data.");
-            }
+            return transferDataError;
         }
 
         await _historyService.AddProfile(HistoryService.HARD_CODED_USER_ID, newProfile, token);
         await SaveAndNotifyCurrentProfile(newProfile, token);
         return Ok();
+    }
+
+    private async Task<IActionResult?> SetTransferData(
+        ProfileDto dto,
+        Profile profile,
+        CancellationToken token)
+    {
+        if (!dto.HasData)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(dto.DataName))
+        {
+            return BadRequest("DataName cannot be null or empty when HasData is true");
+        }
+
+        var previousDataPath = Path.Combine(
+            _serverEnv.GetDataRootPath(),
+            "file",
+            Path.GetFileName(dto.DataName));
+        if (!System.IO.File.Exists(previousDataPath))
+        {
+            return NotFound("Transfer data file not found");
+        }
+
+        try
+        {
+            await profile.SetAndMoveTransferData(
+                _serverEnv.GetPersistentDir(),
+                previousDataPath,
+                TransferDataValidation.Full(dto.TransferDataHash),
+                token);
+        }
+        catch when (!token.IsCancellationRequested)
+        {
+            return BadRequest("Hash is not match data.");
+        }
+
+        return TransferDataHashMatches(dto.TransferDataHash, profile.TransferDataHash)
+            ? null
+            : BadRequest("TransferDataHash changed while validating transfer data");
+    }
+
+    private static bool TransferDataHashMatches(string? expected, string? actual)
+    {
+        return expected is null ||
+            string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)

@@ -12,5 +12,7 @@ public record class ProfileDto
     public bool HasData { get; set; } = false;
     public string? DataName { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TransferDataHash { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public long? Size { get; set; }
 }

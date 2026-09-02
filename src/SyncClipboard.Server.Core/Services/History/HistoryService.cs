@@ -179,7 +179,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return list.Select(HistoryRecordDto.FromEntity).ToList();
     }
 
-    public async Task AddProfile(string userId, Profile profile, CancellationToken token)
+    public async Task AddProfile(
+        string userId,
+        Profile profile,
+        CancellationToken token)
     {
         var entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
 
@@ -196,6 +199,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             existing.IsDeleted = false;
             existing.LastModified = DateTime.UtcNow;
             existing.TransferDataFile = entity.TransferDataFile;
+            existing.TransferDataHash = entity.TransferDataHash;
             existing.FilePaths = entity.FilePaths;
             existing.Version++;
             await _dbContext.SaveChangesAsync(token);
@@ -245,8 +249,44 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return null;
         }
 
+        if (Profile.IsValidTransferDataHash(entity.TransferDataHash))
+        {
+            var transferDataPath = Profile.GetFullPath(
+                _persistentDir,
+                entity.Type,
+                entity.Hash,
+                entity.TransferDataFile);
+            if (!string.IsNullOrEmpty(transferDataPath) && File.Exists(transferDataPath))
+            {
+                var actualTransferDataHash = await Utility.CalculateFileSHA256(transferDataPath, token);
+                if (!string.Equals(
+                        actualTransferDataHash,
+                        entity.TransferDataHash,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new HistoryTransferDataException(
+                        $"Stored transfer data hash mismatch. Expected: {entity.TransferDataHash}, Actual: {actualTransferDataHash}.");
+                }
+
+                return transferDataPath;
+            }
+        }
+
         var profile = entity.ToProfile(_persistentDir);
-        return await profile.PrepareTransferData(_persistentDir, token);
+        var path = await profile.PrepareTransferData(_persistentDir, token);
+        if (path is null)
+        {
+            return null;
+        }
+
+        var persistentInfo = await profile.Persist(_persistentDir, token);
+        entity.TransferDataFile = persistentInfo.TransferDataFile ?? string.Empty;
+        entity.TransferDataHash = persistentInfo.TransferDataHash;
+        entity.FilePaths = persistentInfo.FilePaths;
+        entity.Text = persistentInfo.Text;
+        entity.Size = persistentInfo.Size;
+        await _dbContext.SaveChangesAsync(token);
+        return path;
     }
 
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)
@@ -316,7 +356,11 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     {
         if (existing.IsDeleted)
         {
-            await EnsureExistingRecordData(existing, transferFileStream, token);
+            await EnsureExistingRecordData(
+                existing,
+                incoming.TransferDataHash,
+                transferFileStream,
+                token);
         }
 
         if (ShouldUpdateExistingRecord(existing, incoming))
@@ -333,12 +377,17 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     private async Task EnsureExistingRecordData(
         HistoryRecordEntity existing,
+        string? incomingTransferDataHash,
         Stream? transferFileStream,
         CancellationToken token)
     {
         if (transferFileStream is not null)
         {
-            await SaveTransferDataAsync(existing, transferFileStream, token);
+            await SaveTransferDataAsync(
+                existing,
+                incomingTransferDataHash,
+                transferFileStream,
+                token);
             return;
         }
 
@@ -369,10 +418,15 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (transferFileStream != null)
         {
-            profile = await SaveTransferDataAsync(entity, transferFileStream, token);
-            var newEntity = await profile.ToHistoryEntity(_persistentDir, userId, token);
-            UpdateEntityFields(entity, newEntity);
-            entity = newEntity;
+            profile = await SaveTransferDataAsync(
+                entity,
+                incoming.TransferDataHash,
+                transferFileStream,
+                token);
+        }
+        else
+        {
+            entity.TransferDataHash = null;
         }
 
         profile ??= entity.ToProfile(_persistentDir);
@@ -399,8 +453,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dstEntity.IsDeleted = srcEntity.IsDeleted;
     }
 
-    private async Task<Profile> SaveTransferDataAsync(HistoryRecordEntity entity, Stream transferFileStream, CancellationToken token)
+    private async Task<Profile> SaveTransferDataAsync(
+        HistoryRecordEntity entity,
+        string? declaredTransferDataHash,
+        Stream transferFileStream,
+        CancellationToken token)
     {
+        entity.TransferDataHash = null;
         var profile = entity.ToProfile(_persistentDir);
         var filePath = await profile.NeedsTransferData(_persistentDir, token)
             ?? throw new HistoryTransferDataException("Profile does not support transfer data.");
@@ -418,7 +477,18 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 await transferFileStream.CopyToAsync(fs, token);
             }
 
-            await profile.SetTransferData(filePath, verify: true, token);
+            await profile.SetTransferData(
+                filePath,
+                TransferDataValidation.Full(declaredTransferDataHash),
+                token);
+            var actualTransferDataHash = profile.TransferDataHash
+                ?? throw new HistoryTransferDataException("Verified transfer data has no SHA-256 hash.");
+            var persistentInfo = await profile.Persist(_persistentDir, token);
+            entity.TransferDataFile = persistentInfo.TransferDataFile ?? string.Empty;
+            entity.TransferDataHash = actualTransferDataHash;
+            entity.FilePaths = persistentInfo.FilePaths;
+            entity.Text = persistentInfo.Text;
+            entity.Size = persistentInfo.Size;
             return profile;
         }
         catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException)
