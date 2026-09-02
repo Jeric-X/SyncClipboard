@@ -129,14 +129,28 @@ public class Web
                 serverOptions.ListenAnyIP(serverConfig.Port, OptionAction);
             });
         }
-        builder.Services.Configure<AppSettings>(option =>
-        {
-            option.MaxSavedHistoryCount = serverConfig.MaxSavedHistoryCount;
-            option.HistoryRetentionMinutes = serverConfig.HistoryRetentionMinutes;
-        });
+        ConfigureEmbeddedServerAppSettings(
+            builder.Services,
+            builder.Configuration,
+            serverConfig.MaxSavedHistoryCount,
+            serverConfig.HistoryRetentionMinutes);
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);
         await app.StartAsync();
         return app;
+    }
+
+    internal static void ConfigureEmbeddedServerAppSettings(
+        IServiceCollection services,
+        IConfiguration configuration,
+        uint maxSavedHistoryCount,
+        uint historyRetentionMinutes)
+    {
+        services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings)));
+        services.PostConfigure<AppSettings>(option =>
+        {
+            option.MaxSavedHistoryCount = maxSavedHistoryCount;
+            option.HistoryRetentionMinutes = historyRetentionMinutes;
+        });
     }
 }

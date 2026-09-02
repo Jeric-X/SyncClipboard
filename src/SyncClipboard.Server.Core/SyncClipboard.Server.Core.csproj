@@ -22,4 +22,8 @@
     <ProjectReference Include="..\SyncClipboard.Shared\SyncClipboard.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SyncClipboard.Test" />
+  </ItemGroup>
+
 </Project>
