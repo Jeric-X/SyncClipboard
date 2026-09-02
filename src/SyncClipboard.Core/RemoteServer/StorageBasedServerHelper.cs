@@ -34,7 +34,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     public async Task DownloadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        var shouldBackfillHash = string.IsNullOrEmpty(await profile.GetHash(cancellationToken));
+        var shouldFillBack = await IsProfileDtoMetadataIncompleteAsync(profile, cancellationToken);
         var persistentDir = _profileEnv.GetPersistentDir();
         var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
         if (dataPath is null)
@@ -47,9 +47,9 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
             await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
-            if (shouldBackfillHash)
+            if (shouldFillBack)
             {
-                await BackfillRemoteProfileHash(profile, cancellationToken);
+                await FillBackRemoteProfile(profile, cancellationToken);
             }
             _logger.Write($"[PULL] Downloaded {fileName} to {dataPath}");
             _trayIcon.SetStatusString(ServerConstants.StatusName, "Running.");
@@ -67,7 +67,15 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         }
     }
 
-    private async Task BackfillRemoteProfileHash(
+    private static async Task<bool> IsProfileDtoMetadataIncompleteAsync(
+        Profile profile,
+        CancellationToken cancellationToken)
+    {
+        return string.IsNullOrEmpty(await profile.GetHash(cancellationToken)) ||
+            !profile.HasKnownSize;
+    }
+
+    private async Task FillBackRemoteProfile(
         Profile downloadedProfile,
         CancellationToken cancellationToken)
     {
@@ -86,17 +94,21 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
             var currentSnapshot = await storageBasedServerAdapter.GetProfileSnapshotAsync(cancellationToken);
             if (currentSnapshot is null ||
-                !CanBackfillRemoteProfileHash(downloadedProfileDto, currentSnapshot.Profile))
+                !ShouldFillBack(downloadedProfileDto, currentSnapshot.Profile))
             {
-                _logger.Write("[PULL] Remote profile does not meet hash backfill preconditions, skipped metadata update.");
+                _logger.Write("[PULL] Remote profile does not meet metadata fill-back preconditions, skipped metadata update.");
                 return;
             }
 
-            var updatedProfile = currentSnapshot.Profile with { Hash = downloadedProfileDto.Hash };
+            var updatedProfile = currentSnapshot.Profile with
+            {
+                Hash = downloadedProfileDto.Hash,
+                Size = downloadedProfileDto.Size,
+            };
             if (string.IsNullOrWhiteSpace(currentSnapshot.Version))
             {
                 await _serverAdapter.SetProfileAsync(updatedProfile, cancellationToken);
-                _logger.Write($"[PULL] Backfilled remote profile hash without version precondition: {downloadedProfileDto.Hash}");
+                _logger.Write($"[PULL] Filled back remote profile metadata without version precondition: {downloadedProfileDto.Hash}");
                 return;
             }
 
@@ -110,7 +122,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
                 return;
             }
 
-            _logger.Write($"[PULL] Backfilled remote profile hash: {downloadedProfileDto.Hash}");
+            _logger.Write($"[PULL] Filled back remote profile metadata: {downloadedProfileDto.Hash}");
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
@@ -118,16 +130,48 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         }
     }
 
-    private static bool CanBackfillRemoteProfileHash(ProfileDto downloadedProfile, ProfileDto currentProfile)
+    private static bool ShouldFillBack(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        var typeMatches = currentProfile.Type == downloadedProfile.Type ||
-            (currentProfile.Type == ProfileType.File && downloadedProfile.Type == ProfileType.Image);
-        return typeMatches &&
-            string.IsNullOrEmpty(currentProfile.Hash) &&
-            string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal) &&
-            currentProfile.HasData == downloadedProfile.HasData &&
-            string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal) &&
-            currentProfile.Size == downloadedProfile.Size;
+        var shouldFillHash = string.IsNullOrEmpty(currentProfile.Hash);
+        var shouldFillSize = currentProfile.Size is null;
+        if (!shouldFillHash && !shouldFillSize)
+        {
+            return false;
+        }
+
+        if (!shouldFillHash &&
+            !string.Equals(currentProfile.Hash, downloadedProfile.Hash, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (currentProfile.Type != downloadedProfile.Type &&
+            (currentProfile.Type != ProfileType.File || downloadedProfile.Type != ProfileType.Image))
+        {
+            return false;
+        }
+
+        if (!string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (currentProfile.HasData != downloadedProfile.HasData)
+        {
+            return false;
+        }
+
+        if (!string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!shouldFillSize && currentProfile.Size != downloadedProfile.Size)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public void SetErrorStatus(string message, Exception? innerException = null)

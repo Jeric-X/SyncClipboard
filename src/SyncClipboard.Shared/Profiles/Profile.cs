@@ -17,6 +17,7 @@ public abstract class Profile
     public abstract Task<ProfileDto> ToProfileDto(CancellationToken token);
     protected abstract Task ComputeHash(CancellationToken token);
     protected abstract Task ComputeSize(CancellationToken token);
+    public bool HasKnownSize => Size is not null;
 
     public async ValueTask<long> GetSize(CancellationToken token)
     {

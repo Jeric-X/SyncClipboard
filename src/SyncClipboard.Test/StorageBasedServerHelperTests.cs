@@ -99,6 +99,47 @@ public class StorageBasedServerHelperTests
     }
 
     [TestMethod]
+    public async Task DownloadFileProfile_EmptyRemoteSizeBackfillsMetadata()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var fileName = "video.mov";
+            var remoteFile = Path.Combine(testDirectory, "remote", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(remoteFile)!);
+            await File.WriteAllBytesAsync(remoteFile, [1, 2, 3, 4], token);
+            var expectedHash = await new FileProfile(remoteFile).GetHash(token);
+            var expectedSize = new FileInfo(remoteFile).Length;
+            var remoteProfile = new ProfileDto
+            {
+                Type = ProfileType.File,
+                Hash = expectedHash,
+                Text = fileName,
+                HasData = true,
+                DataName = fileName,
+                Size = null,
+            };
+            var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
+            var helper = CreateHelper(testDirectory, adapter);
+
+            await helper.DownloadProfileDataAsync(
+                Profile.Create(remoteProfile),
+                cancellationToken: token);
+
+            Assert.AreEqual(1, adapter.SnapshotReadCount);
+            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.AreEqual(expectedHash, adapter.CurrentProfile?.Hash);
+            Assert.AreEqual(expectedSize, adapter.CurrentProfile?.Size);
+        }
+        finally
+        {
+            DeleteTestDirectory(testDirectory);
+        }
+    }
+
+    [TestMethod]
     public async Task DownloadFileProfile_RemoteProfileChangedBeforeBackfillDoesNotOverwriteMetadata()
     {
         var token = TestContext.CancellationTokenSource.Token;
