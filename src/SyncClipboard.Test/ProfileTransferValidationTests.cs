@@ -239,5 +239,4 @@ public class ProfileTransferValidationTests
         Directory.CreateDirectory(path);
         return path;
     }
-
 }
