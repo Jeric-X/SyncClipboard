@@ -152,19 +152,56 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     private static bool MatchesKnownProfileMetadata(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        return (string.IsNullOrEmpty(currentProfile.Hash) ||
-                string.Equals(currentProfile.Hash, downloadedProfile.Hash, StringComparison.OrdinalIgnoreCase)) &&
-            (currentProfile.Size is null || currentProfile.Size == downloadedProfile.Size);
+        if (!string.IsNullOrEmpty(currentProfile.Hash))
+        {
+            if (!string.Equals(currentProfile.Hash, downloadedProfile.Hash, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        if (currentProfile.Size is not null)
+        {
+            if (currentProfile.Size != downloadedProfile.Size)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool MatchesProfileIdentity(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        var typeMatches = currentProfile.Type == downloadedProfile.Type ||
-            (currentProfile.Type == ProfileType.File && downloadedProfile.Type == ProfileType.Image);
-        return typeMatches &&
-            string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal) &&
-            currentProfile.HasData == downloadedProfile.HasData &&
-            string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal);
+        if (currentProfile.Type != downloadedProfile.Type)
+        {
+            if (currentProfile.Type != ProfileType.File)
+            {
+                return false;
+            }
+
+            if (downloadedProfile.Type != ProfileType.Image)
+            {
+                return false;
+            }
+        }
+
+        if (!string.Equals(currentProfile.Text, downloadedProfile.Text, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (currentProfile.HasData != downloadedProfile.HasData)
+        {
+            return false;
+        }
+
+        if (!string.Equals(currentProfile.DataName, downloadedProfile.DataName, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public void SetErrorStatus(string message, Exception? innerException = null)
