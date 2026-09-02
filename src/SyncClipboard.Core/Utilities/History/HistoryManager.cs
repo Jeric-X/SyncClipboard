@@ -106,6 +106,14 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
     public async Task RemoveHistory(HistoryRecord record, CancellationToken token)
     {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        await RemoveHistoryNoLock(record, token);
+    }
+
+    private async Task RemoveHistoryNoLock(HistoryRecord record, CancellationToken token)
+    {
         var entity = await Query(record.Type, record.Hash, token);
         if (entity != null)
         {
@@ -720,7 +728,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             try
             {
                 record.SyncStatus = HistorySyncStatus.LocalOnly;
-                await RemoveHistory(record, token);
+                await RemoveHistoryNoLock(record, token);
             }
             catch (Exception ex)
             {
