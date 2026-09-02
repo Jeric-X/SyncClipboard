@@ -5,8 +5,6 @@ namespace SyncClipboard.Shared.Profiles;
 
 public class FileProfile : Profile
 {
-    protected const long MAX_FILE_SIZE = int.MaxValue;
-
     public virtual string FileName { get; set; } = "";
     public override string DisplayText => FileName;
 
@@ -14,8 +12,6 @@ public class FileProfile : Profile
     public override ProfileType Type => ProfileType.File;
     public virtual string? FullPath { get; set; }
     public override bool HasTransferData => true;
-
-    protected const string HASH_FOR_OVERSIZED_FILE = "HASH_FOR_OVERSIZED_FILE";
 
     public FileProfile(ProfilePersistentInfo entity)
     {
@@ -100,12 +96,6 @@ public class FileProfile : Profile
     protected async static Task<string> GetSHA256HashFromFile(string filePath, CancellationToken? cancelToken)
     {
         cancelToken ??= CancellationToken.None;
-        var fileInfo = new FileInfo(filePath);
-        if (fileInfo.Length > MAX_FILE_SIZE)
-        {
-            return HASH_FOR_OVERSIZED_FILE;
-        }
-
         var contentSha256Hex = await Utility.CalculateFileSHA256(filePath, cancelToken.Value);
         var fileName = Path.GetFileName(filePath);
         var hash = await CombineHash(fileName, contentSha256Hex, cancelToken.Value);

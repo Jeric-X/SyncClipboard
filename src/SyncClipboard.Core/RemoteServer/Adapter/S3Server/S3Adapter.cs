@@ -93,6 +93,11 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
 
     public async Task<ProfileDto?> GetProfileAsync(CancellationToken cancellationToken = default)
     {
+        return (await GetProfileSnapshotAsync(cancellationToken))?.Profile;
+    }
+
+    public async Task<StorageProfileSnapshot?> GetProfileSnapshotAsync(CancellationToken cancellationToken = default)
+    {
         ValidateConfig();
         try
         {
@@ -104,7 +109,8 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
             using var response = await _s3Client.GetObjectAsync(request, cancellationToken);
             using var reader = new StreamReader(response.ResponseStream);
             var json = await reader.ReadToEndAsync(cancellationToken);
-            return JsonSerializer.Deserialize<ProfileDto>(json, JsonSerializerOptions.Web);
+            var profile = JsonSerializer.Deserialize<ProfileDto>(json, JsonSerializerOptions.Web);
+            return profile is null ? null : new StorageProfileSnapshot(profile, response.ETag);
         }
         catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound || ex.ErrorCode == "NoSuchKey")
         {
@@ -125,6 +131,40 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
         };
         ApplyCompatibilityForPut(request);
         await _s3Client.PutObjectAsync(request, cancellationToken);
+    }
+
+    public async Task<bool> TrySetProfileAsync(
+        ProfileDto profileDto,
+        string? expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(expectedVersion))
+        {
+            return false;
+        }
+
+        ValidateConfig();
+        var json = JsonSerializer.Serialize(profileDto, JsonSerializerOptions.Web);
+        var request = new PutObjectRequest
+        {
+            BucketName = _s3Config.BucketName,
+            Key = BuildObjectKey(RemoteProfilePath),
+            ContentBody = json,
+            ContentType = "application/json; charset=utf-8",
+            IfMatch = expectedVersion
+        };
+        ApplyCompatibilityForPut(request);
+
+        try
+        {
+            await _s3Client.PutObjectAsync(request, cancellationToken);
+            return true;
+        }
+        catch (AmazonS3Exception ex) when (
+            ex.StatusCode is HttpStatusCode.PreconditionFailed or HttpStatusCode.Conflict)
+        {
+            return false;
+        }
     }
 
     public async Task UploadFileAsync(string fileName, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)

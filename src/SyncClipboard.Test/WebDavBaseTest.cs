@@ -1,6 +1,7 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Web;
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace SyncClipboard.Test;
 
@@ -55,6 +56,51 @@ public class WebDavBaseTest
         Assert.ThrowsExactly<ObjectDisposedException>(() => _ = handler.CapturedToken.WaitHandle);
     }
 
+    [TestMethod]
+    public async Task GetJsonWithVersionReturnsResponseETag()
+    {
+        using var handler = new DelegateHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"value\":\"ok\"}")
+            };
+            response.Headers.ETag = new EntityTagHeaderValue("\"version-1\"");
+            return response;
+        });
+        using var webDav = new TestWebDav(handler);
+
+        var (payload, version) = await webDav.GetJsonWithVersion<TestPayload>(
+            "test",
+            TestContext.CancellationTokenSource.Token);
+
+        Assert.AreEqual("ok", payload?.Value);
+        Assert.AreEqual("\"version-1\"", version);
+    }
+
+    [TestMethod]
+    public async Task PutJsonIfVersionUsesIfMatchAndReportsPreconditionFailure()
+    {
+        string? ifMatch = null;
+        using var handler = new DelegateHandler(request =>
+        {
+            ifMatch = request.Headers.TryGetValues("If-Match", out var values)
+                ? values.Single()
+                : null;
+            return new HttpResponseMessage(HttpStatusCode.PreconditionFailed);
+        });
+        using var webDav = new TestWebDav(handler);
+
+        var updated = await webDav.PutJsonIfVersion(
+            "test",
+            new TestPayload("new"),
+            "\"version-1\"",
+            TestContext.CancellationTokenSource.Token);
+
+        Assert.IsFalse(updated);
+        Assert.AreEqual("\"version-1\"", ifMatch);
+    }
+
     private sealed class RecordingHandler(TaskCompletionSource? started = null) : HttpMessageHandler
     {
         public CancellationToken CapturedToken { get; private set; }
@@ -72,6 +118,17 @@ public class WebDavBaseTest
             {
                 Content = new StringContent("ok")
             };
+        }
+    }
+
+    private sealed class DelegateHandler(
+        Func<HttpRequestMessage, HttpResponseMessage> send) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(send(request));
         }
     }
 
@@ -100,4 +157,6 @@ public class WebDavBaseTest
         public string UpdateApiUrl => string.Empty;
         public string UpdateUrl => string.Empty;
     }
+
+    private sealed record TestPayload(string Value);
 }

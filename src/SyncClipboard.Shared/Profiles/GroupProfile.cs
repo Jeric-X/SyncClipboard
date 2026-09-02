@@ -79,7 +79,12 @@ public class GroupProfile : Profile
 
     protected override async Task ComputeHash(CancellationToken token)
     {
-        var (hash, size) = await Task.Run(() => CaclHashAndSize(_files ?? [], token), token).WaitAsync(token);
+        if (_files is null || _files.Length == 0)
+        {
+            return;
+        }
+
+        var (hash, size) = await Task.Run(() => CaclHashAndSize(_files, token), token).WaitAsync(token);
         Hash = hash;
         Size ??= size;
     }
