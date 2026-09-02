@@ -41,6 +41,8 @@ public class Web
         services.AddSignalR();
         services.AddSingleton<SignalRProfileChangeNotifier>();
         services.AddSingleton<IFcmPushClient, FirebaseAdminFcmPushClient>();
+        services.AddSingleton<IFcmProfileChangeQueue, FcmProfileChangeQueue>();
+        services.AddScoped<FcmProfileChangeDelivery>();
         services.AddScoped<FcmProfileChangeNotifier>();
         services.AddScoped<IProfileChangeNotifier>(provider =>
             new CompositeProfileChangeNotifier([
@@ -62,6 +64,7 @@ public class Web
 
         services.AddServerProfileEnvProvider();
         services.AddHostedService<HistoryCleaner>();
+        services.AddHostedService<FcmProfileChangeWorker>();
 
         // This is minimal api project, but Swagger use Microsoft.AspNetCore.Mvc.JsonOptions to show enum as string.
         // The real working converter is written in dto definition in form of attribute. 
