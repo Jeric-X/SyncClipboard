@@ -2,6 +2,7 @@ using System.IO.Compression;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
 
@@ -199,9 +200,130 @@ public class GroupProfileTransferTests
                 "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855");
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => profile.SetTransferData(archivePath, verify: true, token));
+                () => profile.SetTransferData(
+                    archivePath,
+                    verify: true,
+                    token));
 
             Assert.IsFalse(Directory.Exists(Path.Combine(testDirectory, "empty")));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    [DataRow(".zip")]
+    [DataRow("..zip")]
+    [DataRow("...zip")]
+    public async Task SetTransferData_UnsafeArchiveStemIsRejectedBeforeDeletingParent(string archiveName)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sentinelPath = Path.Combine(testDirectory, "sentinel.txt");
+            await File.WriteAllTextAsync(sentinelPath, "keep", token);
+            var archivePath = Path.Combine(testDirectory, archiveName);
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                archive.CreateEntry("content.txt");
+            }
+            var profile = new GroupProfile([], new string('A', 64));
+
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => profile.SetTransferData(
+                    archivePath,
+                    verify: true,
+                    token));
+
+            Assert.IsTrue(File.Exists(sentinelPath));
+            Assert.IsTrue(File.Exists(archivePath));
+        }
+        finally
+        {
+            if (Directory.Exists(testDirectory))
+            {
+                Directory.Delete(testDirectory, recursive: true);
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task SetTransferData_UnownedSiblingDirectoryIsNotDeleted()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var sourceArchive = await sourceProfile.PrepareTransferData(
+                Path.Combine(testDirectory, "persistent"),
+                token);
+            Assert.IsNotNull(sourceArchive);
+
+            var archivePath = Path.Combine(testDirectory, "shared.zip");
+            File.Copy(sourceArchive, archivePath);
+            var unownedDirectory = Path.Combine(testDirectory, "shared");
+            Directory.CreateDirectory(unownedDirectory);
+            var sentinelPath = Path.Combine(unownedDirectory, "sentinel.txt");
+            await File.WriteAllTextAsync(sentinelPath, "keep", token);
+            var profile = new GroupProfile([], await sourceProfile.GetHash(token));
+
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => profile.SetTransferData(
+                    archivePath,
+                    verify: true,
+                    token));
+
+            Assert.AreEqual("keep", await File.ReadAllTextAsync(sentinelPath, token));
+            Assert.IsTrue(File.Exists(archivePath));
+            Assert.IsFalse(Directory.EnumerateDirectories(testDirectory, "*.tmp").Any());
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SetTransferData_OwnershipMarkerAllowsReplacementByNewProfileInstance()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var sourceArchive = await sourceProfile.PrepareTransferData(
+                Path.Combine(testDirectory, "persistent"),
+                token);
+            Assert.IsNotNull(sourceArchive);
+            var archivePath = Path.Combine(testDirectory, "received.zip");
+            File.Copy(sourceArchive, archivePath);
+            var profileHash = await sourceProfile.GetHash(token);
+
+            var firstProfile = new GroupProfile([], profileHash);
+            await firstProfile.SetTransferData(
+                archivePath,
+                verify: true,
+                token);
+            var extractedFile = Path.Combine(testDirectory, "received", "source.txt");
+            await File.WriteAllTextAsync(extractedFile, "stale", token);
+
+            var restartedProfile = new GroupProfile([], profileHash);
+            await restartedProfile.SetTransferData(
+                archivePath,
+                verify: true,
+                token);
+
+            Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            Assert.HasCount(1, restartedProfile.Files);
+            Assert.AreEqual(extractedFile, restartedProfile.Files[0]);
         }
         finally
         {
@@ -316,7 +438,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task PrepareTransferData_TrustedCachedArchiveIsReused()
+    public async Task PrepareTransferData_VerifiedCachedArchiveIsReused()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -330,12 +452,93 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
 
             var cachedProfile = new GroupProfile([file], await sourceProfile.GetHash(token));
-            await cachedProfile.SetTransferData(archivePath, verify: false, token);
+            await cachedProfile.SetTransferData(
+                archivePath,
+                verify: false,
+                token);
             File.Delete(file);
 
             var reusedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
 
             Assert.AreEqual(archivePath, reusedPath);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task PersistedTransferDataHash_RestoresArchiveAfterProfileRecreation()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var file = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(file, "source", token);
+            var sourceProfile = new GroupProfile([file]);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+            var persistentInfo = await sourceProfile.Persist(persistentDirectory, token);
+
+            Assert.AreEqual(
+                await Utility.CalculateFileSHA256(archivePath, token),
+                persistentInfo.TransferDataHash);
+
+            File.Delete(file);
+            var restoredProfile = Profile.Create(persistentDirectory, persistentInfo);
+            var reusedPath = await restoredProfile.PrepareTransferData(persistentDirectory, token);
+
+            Assert.AreEqual(archivePath, reusedPath);
+            Assert.AreEqual(persistentInfo.TransferDataHash, restoredProfile.TransferDataHash);
+            Assert.IsTrue(restoredProfile.HasVerifiedTransferDataHashBinding);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task VerifiedArchive_IsExtractedOnlyWhenLocalized()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+            var persistentInfo = await sourceProfile.Persist(persistentDirectory, token);
+
+            File.Delete(sourceFile);
+            var restoredProfile = Profile.Create(persistentDirectory, persistentInfo);
+            await restoredProfile.SetTransferData(
+                archivePath,
+                persistentInfo.TransferDataHash!,
+                verify: false,
+                token);
+            var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
+            Assert.IsFalse(File.Exists(extractedFile));
+
+            var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
+
+            Assert.IsNull(downloadPath);
+            Assert.IsFalse(File.Exists(extractedFile));
+
+            var localInfo = await restoredProfile.Localize(
+                Path.Combine(testDirectory, "local"),
+                quick: false,
+                token);
+
+            Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
+            Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
         }
         finally
         {
@@ -359,7 +562,10 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
 
             var cachedProfile = new GroupProfile([file], expectedHash);
-            await cachedProfile.SetTransferData(archivePath, verify: true, token);
+            await cachedProfile.SetTransferData(
+                archivePath,
+                verify: true,
+                token);
 
             File.Delete(archivePath);
             using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
@@ -374,7 +580,10 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(regeneratedPath);
             Assert.AreNotEqual(archivePath, regeneratedPath);
             var verifiedProfile = new GroupProfile([], expectedHash);
-            await verifiedProfile.SetTransferData(regeneratedPath, verify: true, token);
+            await verifiedProfile.SetTransferData(
+                regeneratedPath,
+                verify: true,
+                token);
         }
         finally
         {
@@ -402,7 +611,10 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(regeneratedPath);
             Assert.AreNotEqual(archivePath, regeneratedPath);
             var verifiedProfile = new GroupProfile([], expectedHash);
-            await verifiedProfile.SetTransferData(regeneratedPath, verify: true, token);
+            await verifiedProfile.SetTransferData(
+                regeneratedPath,
+                verify: true,
+                token);
         }
         finally
         {

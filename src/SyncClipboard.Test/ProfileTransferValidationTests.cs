@@ -1,5 +1,6 @@
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
 
@@ -20,7 +21,10 @@ public class ProfileTransferValidationTests
             var sourceProfile = new FileProfile(filePath);
             var expectedHash = await sourceProfile.GetHash(token);
             var profile = new FileProfile(null, Path.GetFileName(filePath), expectedHash);
-            await profile.SetTransferData(filePath, verify: true, token);
+            await profile.SetTransferData(
+                filePath,
+                verify: true,
+                token);
 
             await File.WriteAllTextAsync(filePath, "after", token);
 
@@ -110,6 +114,123 @@ public class ProfileTransferValidationTests
         });
 
         Assert.IsFalse(await profile.IsLocalDataValid(false, token));
+    }
+
+    [TestMethod]
+    public async Task FileTransferDataHash_EqualsFileContentHash()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "file.txt");
+            await File.WriteAllTextAsync(filePath, "transfer data", token);
+            var profile = new FileProfile(filePath);
+
+            await profile.PrepareTransferData(testDirectory, token);
+
+            var contentHash = await Utility.CalculateFileSHA256(filePath, token);
+            Assert.AreEqual(contentHash, profile.TransferDataHash);
+            Assert.AreNotEqual(contentHash, await profile.GetHash(token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SetTransferData_UnverifiedProfilesAttachFilesWithoutHashing()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "cached.bin");
+            var textPath = Path.Combine(testDirectory, "cached.txt");
+            var groupPath = Path.Combine(testDirectory, "cached.zip");
+            await File.WriteAllBytesAsync(filePath, [1, 2, 3], token);
+            await File.WriteAllTextAsync(textPath, "cached text", token);
+            await File.WriteAllBytesAsync(groupPath, [4, 5, 6], token);
+            Profile[] profiles =
+            [
+                new FileProfile(null, Path.GetFileName(filePath), new string('A', 64)),
+                new TextProfile(new string('T', 10241)),
+                new GroupProfile([], new string('B', 64)),
+            ];
+            string[] paths = [filePath, textPath, groupPath];
+            using var canceled = new CancellationTokenSource();
+            await canceled.CancelAsync();
+
+            for (var index = 0; index < profiles.Length; index++)
+            {
+                await profiles[index].SetTransferData(
+                    paths[index],
+                    verify: false,
+                    canceled.Token);
+
+                Assert.IsFalse(profiles[index].HasVerifiedTransferDataHashBinding);
+            }
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task Persist_ImmediatelyVerifiedTransferDataDoesNotRehash()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "verified.bin");
+            await File.WriteAllBytesAsync(filePath, [1, 2, 3], token);
+            var sourceProfile = new FileProfile(filePath);
+            var profile = new FileProfile(
+                null,
+                Path.GetFileName(filePath),
+                await sourceProfile.GetHash(token));
+            await profile.SetTransferData(
+                filePath,
+                verify: true,
+                token);
+            await profile.GetSize(token);
+            using var canceled = new CancellationTokenSource();
+            await canceled.CancelAsync();
+
+            var persistentInfo = await profile.Persist(testDirectory, canceled.Token);
+
+            Assert.AreEqual(profile.TransferDataHash, persistentInfo.TransferDataHash);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task LongTextTransferDataHash_EqualsProfileHashAndPersists()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var profile = new TextProfile(new string('T', 10241));
+            var transferPath = await profile.PrepareTransferData(testDirectory, token);
+            Assert.IsNotNull(transferPath);
+
+            var persistentInfo = await profile.Persist(testDirectory, token);
+
+            Assert.AreEqual(await profile.GetHash(token), profile.TransferDataHash);
+            Assert.AreEqual(profile.TransferDataHash, persistentInfo.TransferDataHash);
+            Assert.IsNotNull(persistentInfo.TransferDataFile);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
     }
 
     private static string CreateTestDirectory()

@@ -362,8 +362,14 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.Version.ToString()), "version" },
                 { new StringContent(dto.IsDeleted.ToString()), "isDeleted" },
                 { new StringContent(dto.Text), "text" },
-                { new StringContent(dto.Size.ToString()), "size" }
+                { new StringContent(dto.Size.ToString()), "size" },
+                { new StringContent(dto.HasData.ToString()), "hasData" }
             };
+
+            if (!string.IsNullOrEmpty(dto.TransferDataHash))
+            {
+                content.Add(new StringContent(dto.TransferDataHash), "transferDataHash");
+            }
 
             // 添加文件字段（如果提供）
             if (!string.IsNullOrWhiteSpace(filePath))

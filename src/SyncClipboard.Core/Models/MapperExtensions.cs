@@ -17,6 +17,9 @@ public static class MapperExtensions
             Type = dto.Type,
             FilePath = [],
             Hash = dto.Hash.ToUpperInvariant(),
+            TransferDataHash = Profile.IsValidTransferDataHash(dto.TransferDataHash)
+                ? dto.TransferDataHash!.ToUpperInvariant()
+                : null,
             Timestamp = dto.CreateTime.UtcDateTime,
             Stared = dto.Starred,
             Pinned = dto.Pinned,
@@ -45,6 +48,13 @@ public static class MapperExtensions
         entity.LastModified = dto.LastModified.UtcDateTime;
         entity.LastAccessed = dto.LastAccessed.UtcDateTime;
         entity.Size = dto.Size;
+        if (!entity.IsLocalFileReady)
+        {
+            entity.TransferDataFile = null;
+            entity.TransferDataHash = Profile.IsValidTransferDataHash(dto.TransferDataHash)
+                ? dto.TransferDataHash!.ToUpperInvariant()
+                : null;
+        }
     }
 
     public static bool ShouldUpdateFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
@@ -72,6 +82,7 @@ public static class MapperExtensions
         return new HistoryRecordDto
         {
             Hash = entity.Hash,
+            TransferDataHash = entity.TransferDataHash,
             Text = entity.Text,
             Type = entity.Type,
             CreateTime = entity.Timestamp,
@@ -82,7 +93,9 @@ public static class MapperExtensions
             Size = entity.Size,
             Version = entity.Version,
             IsDeleted = entity.IsDeleted,
-            HasData = !entity.IsLocalFileReady || entity.FilePath.Length > 0
+            HasData = !entity.IsLocalFileReady ||
+                entity.FilePath.Length > 0 ||
+                entity.TransferDataFile is not null
         };
     }
 
@@ -119,8 +132,9 @@ public static class MapperExtensions
             Type = historyRecord.Type,
             Size = historyRecord.Size,
             Hash = historyRecord.Hash,
+            TransferDataFile = historyRecord.TransferDataFile,
+            TransferDataHash = historyRecord.TransferDataHash,
             FilePaths = historyRecord.FilePath,
         });
     }
 }
-

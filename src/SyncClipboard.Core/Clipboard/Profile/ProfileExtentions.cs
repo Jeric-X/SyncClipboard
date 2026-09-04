@@ -11,7 +11,10 @@ public static class ProfileExtentions
         var cachedFilePath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token), token);
         if (!string.IsNullOrEmpty(cachedFilePath))
         {
-            await profile.SetTransferData(cachedFilePath, false, token);
+            await profile.SetTransferData(
+                cachedFilePath,
+                verify: false,
+                token);
             return cachedFilePath;
         }
 
