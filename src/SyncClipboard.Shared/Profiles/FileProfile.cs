@@ -174,29 +174,59 @@ public class FileProfile : Profile
 
     public override async Task SetTransferData(
         string path,
-        TransferDataValidation validation,
+        bool verify,
         CancellationToken token)
+    {
+        EnsureTransferDataExists(path);
+        if (!verify)
+        {
+            await SetUnverifiedTransferData(path, token);
+            return;
+        }
+
+        SetVerifiedTransferData(
+            path,
+            await GetHashesFromFile(path, token),
+            verifyProfileSemantic: true);
+    }
+
+    public override async Task SetTransferData(
+        string path,
+        string transferDataHash,
+        bool verify,
+        CancellationToken token)
+    {
+        EnsureTransferDataExists(path);
+        var normalizedTransferDataHash = NormalizeVerifiedTransferDataHash(transferDataHash);
+        SetVerifiedTransferData(
+            path,
+            (
+                await CombineHash(Path.GetFileName(path), normalizedTransferDataHash, token),
+                normalizedTransferDataHash),
+            verifyProfileSemantic: verify);
+    }
+
+    private static void EnsureTransferDataExists(string path)
     {
         if (!File.Exists(path))
         {
             throw new FileNotFoundException($"File does not exist: {path}", path);
         }
+    }
 
-        if (TrySetUnverifiedTransferData(path, validation))
+    private async Task SetUnverifiedTransferData(string path, CancellationToken token)
+    {
+        if (!HasVerifiedTransferDataHashBinding)
         {
+            SetTransferDataHashBindingVerification(bindingVerified: false);
+            SetTransferDataPath(path);
             return;
         }
 
         var previousTransferDataHash = TransferDataHash;
-        var wasBindingVerified = HasVerifiedTransferDataHashBinding;
         var hashes = await GetHashesFromFile(path, token);
-        ValidateTransferDataHashes(
-            hashes,
-            validation);
         Hash ??= hashes.ProfileHash;
-        if (validation.RequiresVerification ||
-            (wasBindingVerified &&
-             string.Equals(previousTransferDataHash, hashes.TransferDataHash, StringComparison.OrdinalIgnoreCase)))
+        if (string.Equals(previousTransferDataHash, hashes.TransferDataHash, StringComparison.OrdinalIgnoreCase))
         {
             MarkTransferDataVerified(path, hashes.TransferDataHash);
         }
@@ -204,43 +234,35 @@ public class FileProfile : Profile
         {
             SetUnverifiedTransferDataHash(hashes.TransferDataHash);
         }
-        FullPath = path;
-        FileName = Path.GetFileName(path);
+        SetTransferDataPath(path);
     }
 
-    private bool TrySetUnverifiedTransferData(
+    private void SetVerifiedTransferData(
         string path,
-        TransferDataValidation validation)
-    {
-        if (validation.RequiresVerification || HasVerifiedTransferDataHashBinding)
-        {
-            return false;
-        }
-
-        SetTransferDataHashBindingVerification(bindingVerified: false);
-        FullPath = path;
-        FileName = Path.GetFileName(path);
-        return true;
-    }
-
-    private void ValidateTransferDataHashes(
         (string ProfileHash, string TransferDataHash) hashes,
-        TransferDataValidation validation)
+        bool verifyProfileSemantic)
     {
-        validation.EnsureTransferDataHashMatches(hashes.TransferDataHash, "Transfer data");
-        if (validation.RequiresVerification &&
-            !validation.CanSkipProfileSemanticValidation &&
+        if (verifyProfileSemantic &&
             Hash is not null &&
             !string.Equals(hashes.ProfileHash, Hash, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidDataException("Hash mismatch for the provided file.");
         }
+
+        Hash ??= hashes.ProfileHash;
+        MarkTransferDataVerified(path, hashes.TransferDataHash);
+        SetTransferDataPath(path);
+    }
+
+    private void SetTransferDataPath(string path)
+    {
+        FullPath = path;
+        FileName = Path.GetFileName(path);
     }
 
     public override async Task SetAndMoveTransferData(
         string persistentDir,
         string path,
-        TransferDataValidation validation,
         CancellationToken token)
     {
         if (File.Exists(FullPath))
@@ -248,10 +270,7 @@ public class FileProfile : Profile
             return;
         }
 
-        await SetTransferData(
-            path,
-            validation,
-            token);
+        await SetTransferData(path, verify: true, token);
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);

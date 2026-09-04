@@ -54,7 +54,7 @@ Group 的快速路径不能只检查字段和 ZIP 文件是否非空。必须重
 当前 `GroupProfile` 有两条昂贵路径：
 
 1. `PrepareTransferData()` 复用既有 ZIP 前，通过 `VerifyExistingTransferArchiveAsync()` 打开归档、逐条读取内容并重建 Group 哈希；
-2. `SetTransferData(..., TransferDataValidation.Full(...))` 先解压 ZIP，再通过 `CaclHashAndSize()` 重新读取解压后的全部文件并重建 Group 哈希。
+2. 外部先验证 ZIP SHA-256，再调用 `SetTransferData(path, transferDataHash, verify: true, ...)`，解压 ZIP 后通过 `CaclHashAndSize()` 重新读取解压后的全部文件并重建 Group 哈希。
 
 两条路径都只能证明 ZIP 的内容仍对应 `Profile.Hash`，但没有持久化“这一个已经验证过的 ZIP 文件”的标识。进程重启或从数据库重建 Profile 后，无法通过整包哈希识别相同 ZIP，只能重复读取内部文件。
 
@@ -121,7 +121,7 @@ multipart 中该字段为可选字段。服务端对非空值要求恰好为 64 
 
 普通同步的 File/Image/Text/Group 在生成或验证传输文件后，由 `ToProfileDto()` 输出当前哈希。WebDAV/S3 使用通用 `Profile.Create(ProfileDto)`，恢复声明值但不把绑定标记为已验证；官方服务端入口使用显式的可信来源参数。来源判断由适配器完成，不进入 DTO，其他客户端无法通过协议字段伪造“官方可信”状态。
 
-下载调用 `SetTransferData()` 时显式传入 `TransferDataValidation`。WebDAV/S3 使用 `Full(expectedHash)`，同时验证传输文件 SHA-256 和 Profile 语义；官方服务端使用 `PreferTransferDataHash(expectedHash)`，但只有期望传输哈希合法且与实际文件匹配时才允许跳过语义验证。字段缺失或格式无效时一律回退到完整语义验证。
+`SetTransferData(path, verify, ...)` 保持原接口和语义。新增带 `transferDataHash` 的重载，传入值必须是调用方已经对实际文件验证过的 SHA-256；该重载不再重复验证整包哈希，`verify` 只控制是否继续验证 Profile 语义。WebDAV/S3 在外部验证整包哈希后仍执行完整 Profile 语义验证；直接调用 `SetTransferData()` 的路径使用新重载的 `verify: true`，需要移动文件的路径继续使用原 `SetAndMoveTransferData()`。官方服务端的可信绑定在外部验证整包哈希后使用新重载的 `verify: false`；此时 Group 只记录 ZIP 路径与已验证哈希，不解压 ZIP。客户端随后调用 `Localize()` 准备可复制的本地文件；同一 Profile 实例已经确认当前路径正确时直接安全解压，不重复计算 ZIP SHA-256，进程重启或路径变化后才重新比对持久化 hash。只有 Profile 语义验证确实需要读取内部文件，或者随后把 Group 放入本地剪贴板时，才执行解压。字段缺失或格式无效时一律回退到原重载的完整语义验证；不需要校验的本地缓存仍使用原重载的 `verify: false`。
 
 官方服务端接收 `PUT SyncClipboard.json` 时不直接信任该字段：先验证字段格式和暂存文件的整包 SHA-256，再清除 DTO 中的哈希创建 Profile，以保证首次 Group 文件仍执行内部语义校验。验证完成后，服务端通过自己计算出的哈希保存并广播新的 `ProfileDto`。
 
@@ -372,7 +372,7 @@ Group 的 `_transferDataLock` 继续保护同一 Profile 实例的准备过程�
 - [x] 客户端信任官方服务器已验证的哈希绑定；WebDAV/S3 的 DTO 声明仍在本地首次完整验证。
 - [x] ZIP 实际 SHA-256 与可信字段相等时，不再逐条计算内部文件哈希或重建 Group 哈希。
 - [x] 哈希不匹配时拒绝或从有效源数据重建，不静默接受并改写字段。
-- [x] 快速路径仍执行安全解压和 Zip Slip 防护。
+- [x] 快速路径设置数据时不解压；真正需要本地文件时执行安全解压和 Zip Slip 防护。
 - [x] 客户端 `TransferDataFile` 与 `TransferDataHash` 原子更新，失败不会留下已提交的错误绑定。
 - [x] 现有空 ZIP、内容变更、缺失文件和服务端 422 回归测试继续通过。
 

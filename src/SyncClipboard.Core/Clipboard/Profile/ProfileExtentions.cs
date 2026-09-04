@@ -13,7 +13,7 @@ public static class ProfileExtentions
         {
             await profile.SetTransferData(
                 cachedFilePath,
-                TransferDataValidation.Unverified,
+                verify: false,
                 token);
             return cachedFilePath;
         }

@@ -58,7 +58,16 @@ public class UnknownProfile : Profile
 
     public override Task SetTransferData(
         string path,
-        TransferDataValidation validation,
+        bool verify,
+        CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task SetTransferData(
+        string path,
+        string transferDataHash,
+        bool verify,
         CancellationToken token)
     {
         throw new NotImplementedException();
@@ -67,7 +76,6 @@ public class UnknownProfile : Profile
     public override Task SetAndMoveTransferData(
         string persistentDir,
         string path,
-        TransferDataValidation validation,
         CancellationToken token)
     {
         throw new NotImplementedException();

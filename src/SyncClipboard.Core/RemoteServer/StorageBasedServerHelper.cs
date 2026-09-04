@@ -46,10 +46,13 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         {
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
+            await Utility.VerifyFileSHA256(
+                dataPath,
+                profile.TransferDataHash,
+                cancellationToken);
             await profile.SetAndMoveTransferData(
                 persistentDir,
                 dataPath,
-                TransferDataValidation.Full(profile.TransferDataHash),
                 cancellationToken);
             if (shouldFillBack)
             {

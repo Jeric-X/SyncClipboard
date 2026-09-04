@@ -202,7 +202,7 @@ public class GroupProfileTransferTests
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => profile.SetTransferData(
                     archivePath,
-                    TransferDataValidation.Full(),
+                    verify: true,
                     token));
 
             Assert.IsFalse(Directory.Exists(Path.Combine(testDirectory, "empty")));
@@ -235,7 +235,7 @@ public class GroupProfileTransferTests
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => profile.SetTransferData(
                     archivePath,
-                    TransferDataValidation.Full(),
+                    verify: true,
                     token));
 
             Assert.IsTrue(File.Exists(sentinelPath));
@@ -276,7 +276,7 @@ public class GroupProfileTransferTests
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => profile.SetTransferData(
                     archivePath,
-                    TransferDataValidation.Full(),
+                    verify: true,
                     token));
 
             Assert.AreEqual("keep", await File.ReadAllTextAsync(sentinelPath, token));
@@ -310,7 +310,7 @@ public class GroupProfileTransferTests
             var firstProfile = new GroupProfile([], profileHash);
             await firstProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
             var extractedFile = Path.Combine(testDirectory, "received", "source.txt");
             await File.WriteAllTextAsync(extractedFile, "stale", token);
@@ -318,7 +318,7 @@ public class GroupProfileTransferTests
             var restartedProfile = new GroupProfile([], profileHash);
             await restartedProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
 
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
@@ -454,7 +454,7 @@ public class GroupProfileTransferTests
             var cachedProfile = new GroupProfile([file], await sourceProfile.GetHash(token));
             await cachedProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.Unverified,
+                verify: false,
                 token);
             File.Delete(file);
 
@@ -502,7 +502,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task NeedsTransferData_VerifiedArchiveReplacesStaleExtractedFiles()
+    public async Task VerifiedArchive_IsExtractedOnlyWhenLocalized()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -516,21 +516,28 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
             var persistentInfo = await sourceProfile.Persist(persistentDirectory, token);
 
+            File.Delete(sourceFile);
             var restoredProfile = Profile.Create(persistentDirectory, persistentInfo);
             await restoredProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.PreferTransferDataHash(
-                    persistentInfo.TransferDataHash),
+                persistentInfo.TransferDataHash!,
+                verify: false,
                 token);
             var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
-            Assert.IsTrue(File.Exists(extractedFile));
-            await File.WriteAllTextAsync(extractedFile, "stale", token);
-            Assert.IsFalse(await restoredProfile.IsLocalDataValid(false, token));
+            Assert.IsFalse(File.Exists(extractedFile));
 
             var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
 
             Assert.IsNull(downloadPath);
+            Assert.IsFalse(File.Exists(extractedFile));
+
+            var localInfo = await restoredProfile.Localize(
+                Path.Combine(testDirectory, "local"),
+                quick: false,
+                token);
+
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
             Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
         }
         finally
@@ -557,7 +564,7 @@ public class GroupProfileTransferTests
             var cachedProfile = new GroupProfile([file], expectedHash);
             await cachedProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
 
             File.Delete(archivePath);
@@ -575,7 +582,7 @@ public class GroupProfileTransferTests
             var verifiedProfile = new GroupProfile([], expectedHash);
             await verifiedProfile.SetTransferData(
                 regeneratedPath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
         }
         finally
@@ -606,7 +613,7 @@ public class GroupProfileTransferTests
             var verifiedProfile = new GroupProfile([], expectedHash);
             await verifiedProfile.SetTransferData(
                 regeneratedPath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
         }
         finally

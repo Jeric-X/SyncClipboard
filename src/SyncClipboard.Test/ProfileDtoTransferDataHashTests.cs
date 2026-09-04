@@ -2,6 +2,7 @@ using System.Text.Json;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
 
@@ -121,7 +122,7 @@ public class ProfileDtoTransferDataHashTests
 
             await restored.SetTransferData(
                 archivePath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
             Assert.IsTrue(restored.HasVerifiedTransferDataHashBinding);
         }
@@ -153,7 +154,8 @@ public class ProfileDtoTransferDataHashTests
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => remoteProfile.SetTransferData(
                     archivePath,
-                    TransferDataValidation.Full(remoteProfile.TransferDataHash),
+                    remoteProfile.TransferDataHash!,
+                    verify: true,
                     token));
         }
         finally
@@ -183,8 +185,8 @@ public class ProfileDtoTransferDataHashTests
             Assert.IsTrue(officialProfile.HasVerifiedTransferDataHashBinding);
             await officialProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.PreferTransferDataHash(
-                    officialProfile.TransferDataHash),
+                officialProfile.TransferDataHash!,
+                verify: false,
                 token);
             var persistentInfo = await officialProfile.Persist(
                 Path.Combine(testDirectory, "official-persistent"),
@@ -217,7 +219,7 @@ public class ProfileDtoTransferDataHashTests
             var unverifiedProfile = Profile.Create(dto);
             await unverifiedProfile.SetTransferData(
                 archivePath,
-                TransferDataValidation.Unverified,
+                verify: false,
                 token);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
@@ -271,9 +273,9 @@ public class ProfileDtoTransferDataHashTests
             var remoteProfile = Profile.Create(dto);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => remoteProfile.SetTransferData(
+                () => Utility.VerifyFileSHA256(
                     filePath,
-                    TransferDataValidation.Full(remoteProfile.TransferDataHash),
+                    remoteProfile.TransferDataHash,
                     token));
             Assert.IsFalse(remoteProfile.HasVerifiedTransferDataHashBinding);
         }
@@ -298,9 +300,9 @@ public class ProfileDtoTransferDataHashTests
             var remoteProfile = Profile.Create(dto);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => remoteProfile.SetTransferData(
+                () => Utility.VerifyFileSHA256(
                     transferPath,
-                    TransferDataValidation.Full(remoteProfile.TransferDataHash),
+                    remoteProfile.TransferDataHash,
                     token));
             Assert.IsFalse(remoteProfile.HasVerifiedTransferDataHashBinding);
         }

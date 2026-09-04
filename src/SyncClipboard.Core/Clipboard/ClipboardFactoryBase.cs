@@ -93,7 +93,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             await Task.Run(() => File.Move(tempPath, dataPath, true), ctk).WaitAsync(ctk);
             await imageProfile.SetTransferData(
                 dataPath,
-                TransferDataValidation.Unverified,
+                verify: false,
                 ctk);
         }
 

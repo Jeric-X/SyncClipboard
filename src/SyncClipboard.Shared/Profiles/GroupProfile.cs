@@ -711,21 +711,44 @@ public class GroupProfile : Profile
 
     public override async Task SetTransferData(
         string path,
-        TransferDataValidation validation,
+        bool verify,
         CancellationToken token)
     {
         var extractDir = ValidateTransferDataPath(path);
-
-        if (!validation.RequiresVerification)
+        if (!verify)
         {
             await SetUnverifiedTransferData(path, token);
             return;
         }
 
-        await SetVerifiedTransferData(
+        await ExtractAndSetTransferData(
             path,
             extractDir,
-            validation,
+            await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false),
+            verifyProfileHash: true,
+            token);
+    }
+
+    public override async Task SetTransferData(
+        string path,
+        string transferDataHash,
+        bool verify,
+        CancellationToken token)
+    {
+        var extractDir = ValidateTransferDataPath(path);
+        var normalizedTransferDataHash = NormalizeVerifiedTransferDataHash(transferDataHash);
+
+        if (!verify)
+        {
+            SetVerifiedTransferDataPath(path, normalizedTransferDataHash);
+            return;
+        }
+
+        await ExtractAndSetTransferData(
+            path,
+            extractDir,
+            normalizedTransferDataHash,
+            verifyProfileHash: true,
             token);
     }
 
@@ -786,15 +809,13 @@ public class GroupProfile : Profile
         }
     }
 
-    private async Task SetVerifiedTransferData(
+    private async Task ExtractAndSetTransferData(
         string path,
         string extractDir,
-        TransferDataValidation validation,
+        string transferDataHash,
+        bool verifyProfileHash,
         CancellationToken token)
     {
-        var actualTransferDataHash = await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false);
-        validation.EnsureTransferDataHashMatches(actualTransferDataHash, "Group transfer data");
-
         var temporaryExtractDir = $"{extractDir}.{Guid.NewGuid():N}.tmp";
         Directory.CreateDirectory(temporaryExtractDir);
 
@@ -803,7 +824,7 @@ public class GroupProfile : Profile
             var extractedData = await ExtractTransferData(
                 temporaryExtractDir,
                 path,
-                verifyProfileHash: !validation.CanSkipProfileSemanticValidation,
+                verifyProfileHash,
                 token);
             var verifiedProfileHash = extractedData.ProfileHash ?? Hash;
             if (string.IsNullOrEmpty(verifiedProfileHash))
@@ -813,7 +834,7 @@ public class GroupProfile : Profile
 
             var ownershipMarker = CreateExtractionOwnershipMarker(
                 verifiedProfileHash,
-                actualTransferDataHash);
+                transferDataHash);
             await WriteExtractionOwnershipMarker(
                 temporaryExtractDir,
                 ownershipMarker,
@@ -830,13 +851,20 @@ public class GroupProfile : Profile
             }
             _transferDataPath = path;
             _transferDataName = Path.GetFileName(path);
-            MarkTransferDataVerified(path, actualTransferDataHash);
+            MarkTransferDataVerified(path, transferDataHash);
         }
         catch
         {
             DeleteExtractionDirectory(temporaryExtractDir);
             throw;
         }
+    }
+
+    private void SetVerifiedTransferDataPath(string path, string transferDataHash)
+    {
+        _transferDataPath = path;
+        _transferDataName = Path.GetFileName(path);
+        MarkTransferDataVerified(path, transferDataHash);
     }
 
     private string[] CommitExtractionDirectory(
@@ -944,7 +972,6 @@ public class GroupProfile : Profile
     public override async Task SetAndMoveTransferData(
         string persistentDir,
         string path,
-        TransferDataValidation validation,
         CancellationToken token)
     {
         if (File.Exists(_transferDataPath))
@@ -952,10 +979,7 @@ public class GroupProfile : Profile
             return;
         }
 
-        await SetTransferData(
-            path,
-            validation,
-            token);
+        await SetTransferData(path, verify: true, token);
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
@@ -1017,12 +1041,18 @@ public class GroupProfile : Profile
         {
             try
             {
-                await SetTransferData(
-                    _transferDataPath,
-                    HasVerifiedTransferDataHashBinding
-                        ? TransferDataValidation.PreferTransferDataHash(TransferDataHash)
-                        : TransferDataValidation.Full(TransferDataHash),
-                    token);
+                if (HasVerifiedTransferDataHashBinding && IsValidTransferDataHash(TransferDataHash))
+                {
+                    var actualTransferDataHash = await Utility.VerifyFileSHA256(
+                        _transferDataPath,
+                        TransferDataHash,
+                        token);
+                    MarkTransferDataVerified(_transferDataPath, actualTransferDataHash);
+                }
+                else
+                {
+                    await SetTransferData(_transferDataPath, verify: true, token);
+                }
                 return null;
             }
             catch when (token.IsCancellationRequested is false)
@@ -1059,7 +1089,7 @@ public class GroupProfile : Profile
         {
             await SetTransferData(
                 _transferDataPath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
             return;
         }
@@ -1230,13 +1260,31 @@ public class GroupProfile : Profile
 
     public override async Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
     {
-        if (_files is null && _transferDataPath is not null)
+        if (!await IsLocalDataValid(true, token) &&
+            _transferDataPath is not null &&
+            File.Exists(_transferDataPath))
         {
-            await SetAndMoveTransferData(
-                localDir,
-                _transferDataPath,
-                TransferDataValidation.Full(),
-                token);
+            if (HasVerifiedTransferDataHashBinding && IsValidTransferDataHash(TransferDataHash))
+            {
+                var transferDataHash = TransferDataHash!;
+                if (!IsTransferDataVerified(_transferDataPath))
+                {
+                    transferDataHash = await Utility.VerifyFileSHA256(
+                        _transferDataPath,
+                        transferDataHash,
+                        token);
+                }
+                await ExtractAndSetTransferData(
+                    _transferDataPath,
+                    ValidateTransferDataPath(_transferDataPath),
+                    transferDataHash,
+                    verifyProfileHash: false,
+                    token);
+            }
+            else
+            {
+                await SetTransferData(_transferDataPath, verify: true, token);
+            }
         }
         ArgumentNullException.ThrowIfNull(_files);
 

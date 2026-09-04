@@ -582,10 +582,26 @@ public class HistoryTransferQueue : IDisposable
             ?? throw new RemoteHistoryNotFoundException($"服务器上不存在历史记录 {task.ProfileId}");
 
         await server.DownloadHistoryDataAsync(task.ProfileId, localDataPath, task.ProgressReporter, ct);
-        await profile.SetTransferData(
-            localDataPath,
-            TransferDataValidation.PreferTransferDataHash(remoteRecord.TransferDataHash),
-            ct);
+        if (Profile.IsValidTransferDataHash(remoteRecord.TransferDataHash))
+        {
+            var actualTransferDataHash = await Utility.VerifyFileSHA256(
+                localDataPath,
+                remoteRecord.TransferDataHash,
+                ct);
+            await profile.SetTransferData(
+                localDataPath,
+                actualTransferDataHash,
+                verify: false,
+                ct);
+        }
+        else
+        {
+            await profile.SetTransferData(localDataPath, verify: true, ct);
+        }
+        if (profile is GroupProfile)
+        {
+            await profile.Localize(persistentDir, quick: false, ct);
+        }
         if (_configManager.GetConfig<HistoryConfig>().EnableHistory)
         {
             await _historyManager.AddLocalProfile(profile, updateLastAccessed: false, token: ct);

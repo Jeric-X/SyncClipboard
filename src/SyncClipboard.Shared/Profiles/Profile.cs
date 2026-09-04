@@ -77,14 +77,26 @@ public abstract class Profile
     public abstract Task<string?> PrepareTransferData(string persistentDir, CancellationToken token);
     public abstract Task SetTransferData(
         string path,
-        TransferDataValidation validation,
+        bool verify,
         CancellationToken token);
+
+    public abstract Task SetTransferData(
+        string path,
+        string transferDataHash,
+        bool verify,
+        CancellationToken token);
+
     public abstract Task SetAndMoveTransferData(
         string persistentDir,
         string path,
-        TransferDataValidation validation,
         CancellationToken token);
     public abstract Task<string?> NeedsTransferData(string persistentDir, CancellationToken token);
+
+    protected static string NormalizeVerifiedTransferDataHash(string transferDataHash)
+    {
+        return NormalizeTransferDataHash(transferDataHash)
+            ?? throw new ArgumentException("Transfer data hash cannot be empty.", nameof(transferDataHash));
+    }
 
     public static bool IsValidTransferDataHash(string? hash)
     {

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -240,10 +241,13 @@ public class SyncClipboardController(
 
         try
         {
+            await Utility.VerifyFileSHA256(
+                previousDataPath,
+                dto.TransferDataHash,
+                token);
             await profile.SetAndMoveTransferData(
                 _serverEnv.GetPersistentDir(),
                 previousDataPath,
-                TransferDataValidation.Full(dto.TransferDataHash),
                 token);
         }
         catch when (!token.IsCancellationRequested)

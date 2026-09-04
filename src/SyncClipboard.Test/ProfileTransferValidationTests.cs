@@ -23,7 +23,7 @@ public class ProfileTransferValidationTests
             var profile = new FileProfile(null, Path.GetFileName(filePath), expectedHash);
             await profile.SetTransferData(
                 filePath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
 
             await File.WriteAllTextAsync(filePath, "after", token);
@@ -166,7 +166,7 @@ public class ProfileTransferValidationTests
             {
                 await profiles[index].SetTransferData(
                     paths[index],
-                    TransferDataValidation.Unverified,
+                    verify: false,
                     canceled.Token);
 
                 Assert.IsFalse(profiles[index].HasVerifiedTransferDataHashBinding);
@@ -194,7 +194,7 @@ public class ProfileTransferValidationTests
                 await sourceProfile.GetHash(token));
             await profile.SetTransferData(
                 filePath,
-                TransferDataValidation.Full(),
+                verify: true,
                 token);
             await profile.GetSize(token);
             using var canceled = new CancellationTokenSource();

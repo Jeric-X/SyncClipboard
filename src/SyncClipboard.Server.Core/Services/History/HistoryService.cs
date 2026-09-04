@@ -477,11 +477,16 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 await transferFileStream.CopyToAsync(fs, token);
             }
 
+            var actualTransferDataHash = await Utility.VerifyFileSHA256(
+                filePath,
+                declaredTransferDataHash,
+                token);
             await profile.SetTransferData(
                 filePath,
-                TransferDataValidation.Full(declaredTransferDataHash),
+                actualTransferDataHash,
+                verify: true,
                 token);
-            var actualTransferDataHash = profile.TransferDataHash
+            actualTransferDataHash = profile.TransferDataHash
                 ?? throw new HistoryTransferDataException("Verified transfer data has no SHA-256 hash.");
             var persistentInfo = await profile.Persist(_persistentDir, token);
             entity.TransferDataFile = persistentInfo.TransferDataFile ?? string.Empty;
