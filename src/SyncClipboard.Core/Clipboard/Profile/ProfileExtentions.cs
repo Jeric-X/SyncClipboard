@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Utilities.FileCacheManager;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -11,7 +12,7 @@ public static class ProfileExtentions
         var cachedFilePath = await cacheManager.GetCachedFilePathAsync(profile.Type.ToString(), await profile.GetHash(token), token);
         if (!string.IsNullOrEmpty(cachedFilePath))
         {
-            await profile.SetTransferData(cachedFilePath, verify: true, token);
+            await BindCachedTransferData(profile, cachedFilePath, token);
             return cachedFilePath;
         }
 
@@ -23,5 +24,18 @@ public static class ProfileExtentions
             await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), path, token);
         }
         return path;
+    }
+
+    internal static async Task BindCachedTransferData(
+        Profile profile,
+        string cachedFilePath,
+        CancellationToken token)
+    {
+        var transferDataHash = await Utility.CalculateFileSHA256(cachedFilePath, token);
+        await profile.SetTransferData(
+            cachedFilePath,
+            transferDataHash,
+            verify: false,
+            token);
     }
 }

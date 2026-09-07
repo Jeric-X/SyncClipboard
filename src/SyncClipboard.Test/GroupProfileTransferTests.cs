@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
@@ -533,6 +534,53 @@ public class GroupProfileTransferTests
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
             CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
             Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task BindCachedTransferData_LegacyExtractionDirectory_DoesNotExtractArchive()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var firstSourceDirectory = Path.Combine(testDirectory, "first");
+            var secondSourceDirectory = Path.Combine(testDirectory, "second");
+            Directory.CreateDirectory(firstSourceDirectory);
+            Directory.CreateDirectory(secondSourceDirectory);
+            var firstSourceFile = Path.Combine(firstSourceDirectory, "source.txt");
+            var secondSourceFile = Path.Combine(secondSourceDirectory, "source.txt");
+            await File.WriteAllTextAsync(firstSourceFile, "source", token);
+            await File.WriteAllTextAsync(secondSourceFile, "source", token);
+
+            var sourceProfile = new GroupProfile([firstSourceFile]);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+            var legacyExtractionDirectory = archivePath[..^4];
+            Directory.CreateDirectory(legacyExtractionDirectory);
+            var legacyFile = Path.Combine(legacyExtractionDirectory, "legacy.txt");
+            await File.WriteAllTextAsync(legacyFile, "legacy", token);
+
+            var cachedProfile = new GroupProfile([secondSourceFile]);
+            Assert.AreEqual(
+                await sourceProfile.GetHash(token),
+                await cachedProfile.GetHash(token));
+
+            await ProfileExtentions.BindCachedTransferData(
+                cachedProfile,
+                archivePath,
+                token);
+
+            Assert.AreEqual(archivePath, await cachedProfile.PrepareTransferData(persistentDirectory, token));
+            CollectionAssert.AreEqual(new[] { secondSourceFile }, cachedProfile.Files);
+            Assert.AreEqual("legacy", await File.ReadAllTextAsync(legacyFile, token));
+            Assert.IsNotNull(cachedProfile.TransferDataHash);
+            Assert.IsTrue(await cachedProfile.IsTransferDataValid(token));
         }
         finally
         {
