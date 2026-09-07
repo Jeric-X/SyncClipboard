@@ -1068,8 +1068,7 @@ public class GroupProfile : Profile
         {
             if (IsValidTransferDataHash(TransferDataHash))
             {
-                return IsTransferDataValidationCached(transferDataPath) ||
-                    await IsTransferDataValid(token);
+                return await IsTransferDataValid(token);
             }
 
             await VerifyExistingTransferArchiveAsync(
@@ -1285,8 +1284,7 @@ public class GroupProfile : Profile
         {
             if (IsValidTransferDataHash(TransferDataHash))
             {
-                if (!IsTransferDataValidationCached(_transferDataPath) &&
-                    !await IsTransferDataValid(token))
+                if (!await IsTransferDataValid(token))
                 {
                     throw new LocalProfileDataUnavailableException(
                         $"Group transfer data hash mismatch for {Hash ?? "<unknown>"}.");

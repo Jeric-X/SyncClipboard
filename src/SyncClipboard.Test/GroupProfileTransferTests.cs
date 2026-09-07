@@ -586,6 +586,53 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
+    public async Task ModifiedArchiveAndExtractedFile_AreNotAcceptedFromValidationCache()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var profileHash = await sourceProfile.GetHash(token);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+
+            var restoredProfile = new GroupProfile([], profileHash);
+            await restoredProfile.SetTransferData(
+                archivePath,
+                sourceProfile.TransferDataHash!,
+                verify: true,
+                token);
+            var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
+            await File.WriteAllTextAsync(extractedFile, "modified", token);
+
+            File.Delete(archivePath);
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(Path.GetFileName(sourceFile));
+                await using var writer = new StreamWriter(entry.Open());
+                await writer.WriteAsync("tampered");
+            }
+
+            var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
+
+            Assert.IsNotNull(downloadPath);
+            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                () => restoredProfile.Localize(
+                    Path.Combine(testDirectory, "local"),
+                    quick: false,
+                    token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task PrepareTransferData_VerifiedCachedArchiveChangedAfterSetRegeneratesFromFiles()
     {
         var token = TestContext.CancellationTokenSource.Token;
