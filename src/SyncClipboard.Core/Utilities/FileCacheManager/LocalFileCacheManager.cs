@@ -5,6 +5,8 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.FileCacheManager;
 
+internal sealed record ValidatedCachedFile(string FilePath, string TransferDataHash);
+
 public sealed class LocalFileCacheManager : IDisposable
 {
     private readonly ILogger _logger;
@@ -99,6 +101,14 @@ public sealed class LocalFileCacheManager : IDisposable
 
     public async Task<string?> GetCachedFilePathAsync(string cacheType, string id, CancellationToken token)
     {
+        return (await GetValidatedCachedFileAsync(cacheType, id, token))?.FilePath;
+    }
+
+    internal async Task<ValidatedCachedFile?> GetValidatedCachedFileAsync(
+        string cacheType,
+        string id,
+        CancellationToken token)
+    {
         await _semaphore.WaitAsync(token);
         try
         {
@@ -116,17 +126,19 @@ public sealed class LocalFileCacheManager : IDisposable
                 return null;
             }
 
-            if (!await IsFileValidAsync(entry, token))
+            var transferDataHash = await GetValidatedFileHashAsync(entry, token);
+            if (transferDataHash is null)
             {
                 dbContext.CacheEntries.Remove(entry);
                 await dbContext.SaveChangesAsync(token);
                 return null;
             }
 
+            entry.CachedFileHash = transferDataHash;
             entry.LastAccessTime = DateTime.Now;
             await dbContext.SaveChangesAsync(token);
 
-            return entry.FilePath;
+            return new ValidatedCachedFile(entry.FilePath, transferDataHash);
         }
         catch when (!token.IsCancellationRequested)
         {
@@ -155,7 +167,8 @@ public sealed class LocalFileCacheManager : IDisposable
             var entry = await dbContext.CacheEntries
                 .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 
-            var cachedFileHash = await CalculateFileHashAsync(filePath, token);
+            var cachedFileHash = Convert.ToHexString(
+                await CalculateFileHashAsync(filePath, token));
             if (entry == null)
             {
                 entry = new LocalFileCacheEntry
@@ -299,33 +312,37 @@ public sealed class LocalFileCacheManager : IDisposable
         }
     }
 
-    private static async Task<bool> IsFileValidAsync(LocalFileCacheEntry entry, CancellationToken token)
+    private static async Task<string?> GetValidatedFileHashAsync(
+        LocalFileCacheEntry entry,
+        CancellationToken token)
     {
         try
         {
             var fileInfo = new FileInfo(entry.FilePath);
             if (fileInfo.Length != entry.FileSize)
-                return false;
+                return null;
 
-            if (!string.IsNullOrEmpty(entry.CachedFileHash))
+            var hashBytes = await CalculateFileHashAsync(entry.FilePath, token);
+            var hexHash = Convert.ToHexString(hashBytes);
+            if (string.IsNullOrEmpty(entry.CachedFileHash) ||
+                string.Equals(entry.CachedFileHash, hexHash, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(entry.CachedFileHash, Convert.ToBase64String(hashBytes), StringComparison.Ordinal))
             {
-                var currentHash = await CalculateFileHashAsync(entry.FilePath, token);
-                return currentHash == entry.CachedFileHash;
+                return hexHash;
             }
 
-            return true;
+            return null;
         }
         catch
         {
-            return false;
+            return null;
         }
     }
 
-    private static async Task<string> CalculateFileHashAsync(string filePath, CancellationToken token)
+    private static async Task<byte[]> CalculateFileHashAsync(string filePath, CancellationToken token)
     {
         using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var hashBytes = await SHA256.HashDataAsync(stream, token);
-        return Convert.ToBase64String(hashBytes);
+        return await SHA256.HashDataAsync(stream, token);
     }
 
     public void Dispose()

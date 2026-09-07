@@ -900,12 +900,26 @@ public class GroupProfile : Profile
         try
         {
             return File.Exists(markerPath) &&
-                string.Equals(File.ReadAllText(markerPath), ownershipMarker, StringComparison.Ordinal);
+                HasSameExtractionOwner(File.ReadAllText(markerPath), ownershipMarker);
         }
         catch
         {
             return false;
         }
+    }
+
+    private static bool HasSameExtractionOwner(
+        string existingMarker,
+        string expectedMarker)
+    {
+        var existingParts = existingMarker.Split('\n');
+        var expectedParts = expectedMarker.Split('\n');
+        return existingParts is ["1", var existingProfileHash, _] &&
+            expectedParts is ["1", var expectedProfileHash, _] &&
+            string.Equals(
+                existingProfileHash,
+                expectedProfileHash,
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private static string CreateExtractionOwnershipMarker(

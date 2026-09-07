@@ -57,7 +57,7 @@ public class StorageBasedServerHelperTests
     }
 
     [TestMethod]
-    public async Task DownloadFileProfile_MissingRemoteVersionBackfillsMetadataUnconditionally()
+    public async Task DownloadFileProfile_MissingRemoteVersionSkipsMetadataBackfill()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -89,8 +89,8 @@ public class StorageBasedServerHelperTests
 
             Assert.AreEqual(1, adapter.SnapshotReadCount);
             Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
-            Assert.AreEqual(1, adapter.SetProfileCount);
-            Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
+            Assert.AreEqual(0, adapter.SetProfileCount);
+            Assert.IsTrue(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
         }
         finally
         {

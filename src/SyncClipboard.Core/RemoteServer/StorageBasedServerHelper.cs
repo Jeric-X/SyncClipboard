@@ -117,8 +117,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             };
             if (string.IsNullOrWhiteSpace(currentSnapshot.Version))
             {
-                await _serverAdapter.SetProfileAsync(updatedProfile, cancellationToken);
-                _logger.Write($"[PULL] Filled back remote profile metadata without version precondition: {downloadedProfileDto.Hash}");
+                _logger.Write("[PULL] Remote profile has no version precondition, skipped metadata update.");
                 return;
             }
 

@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
@@ -573,7 +574,9 @@ public class GroupProfileTransferTests
 
             await ProfileExtentions.BindCachedTransferData(
                 cachedProfile,
-                archivePath,
+                new ValidatedCachedFile(
+                    archivePath,
+                    sourceProfile.TransferDataHash!),
                 token);
 
             Assert.AreEqual(archivePath, await cachedProfile.PrepareTransferData(persistentDirectory, token));
@@ -673,6 +676,60 @@ public class GroupProfileTransferTests
                     Path.Combine(testDirectory, "local"),
                     quick: false,
                     token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task Localize_RegeneratedArchiveForSameProfile_ReplacesOwnedExtractionDirectory()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var persistentDirectory = Path.Combine(testDirectory, "persistent");
+            var sourceFile = Path.Combine(testDirectory, "source.txt");
+            await File.WriteAllTextAsync(sourceFile, "source", token);
+            var sourceProfile = new GroupProfile([sourceFile]);
+            var profileHash = await sourceProfile.GetHash(token);
+            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            Assert.IsNotNull(archivePath);
+
+            var firstProfile = new GroupProfile([], profileHash);
+            await firstProfile.SetTransferData(
+                archivePath,
+                sourceProfile.TransferDataHash!,
+                verify: true,
+                token);
+
+            File.Delete(archivePath);
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(Path.GetFileName(sourceFile));
+                entry.LastWriteTime = new DateTimeOffset(2020, 1, 2, 0, 0, 0, TimeSpan.Zero);
+                await using var writer = new StreamWriter(entry.Open());
+                await writer.WriteAsync("source");
+            }
+            var regeneratedTransferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
+            Assert.AreNotEqual(sourceProfile.TransferDataHash, regeneratedTransferDataHash);
+
+            var restartedProfile = new GroupProfile([], profileHash);
+            await restartedProfile.SetTransferData(
+                archivePath,
+                regeneratedTransferDataHash,
+                verify: false,
+                token);
+
+            var localInfo = await restartedProfile.Localize(
+                Path.Combine(testDirectory, "local"),
+                quick: false,
+                token);
+
+            Assert.AreEqual("source", await File.ReadAllTextAsync(localInfo.FilePaths.Single(), token));
+            Assert.AreEqual(regeneratedTransferDataHash, restartedProfile.TransferDataHash);
         }
         finally
         {
