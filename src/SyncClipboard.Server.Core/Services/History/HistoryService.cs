@@ -286,7 +286,17 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return null;
         }
 
-        var actualTransferDataHash = await Utility.CalculateFileSHA256(transferDataPath, token);
+        string actualTransferDataHash;
+        try
+        {
+            actualTransferDataHash = await Utility.CalculateFileSHA256(transferDataPath, token);
+        }
+        catch (Exception ex) when (
+            ex is IOException or UnauthorizedAccessException &&
+            !token.IsCancellationRequested)
+        {
+            return null;
+        }
         if (!string.Equals(
                 actualTransferDataHash,
                 entity.TransferDataHash,
