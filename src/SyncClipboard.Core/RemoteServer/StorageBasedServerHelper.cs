@@ -46,7 +46,15 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         {
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
-            await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
+            var transferDataHash = await Utility.VerifyFileSHA256(
+                dataPath,
+                profile.TransferDataHash,
+                cancellationToken);
+            await profile.SetAndMoveTransferData(
+                persistentDir,
+                dataPath,
+                transferDataHash,
+                cancellationToken);
             if (shouldFillBack)
             {
                 await FillBackRemoteProfile(profile, cancellationToken);
@@ -72,7 +80,8 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         CancellationToken cancellationToken)
     {
         return string.IsNullOrEmpty(await profile.GetHash(cancellationToken)) ||
-            !profile.HasKnownSize;
+            !profile.HasKnownSize ||
+            !Profile.IsValidTransferDataHash(profile.TransferDataHash);
     }
 
     private async Task FillBackRemoteProfile(
@@ -104,6 +113,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             {
                 Hash = downloadedProfileDto.Hash,
                 Size = downloadedProfileDto.Size,
+                TransferDataHash = downloadedProfileDto.TransferDataHash,
             };
             if (string.IsNullOrWhiteSpace(currentSnapshot.Version))
             {
@@ -132,7 +142,9 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     private static bool ShouldFillBack(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        if (!string.IsNullOrEmpty(currentProfile.Hash) && currentProfile.Size is not null)
+        if (!string.IsNullOrEmpty(currentProfile.Hash) &&
+            currentProfile.Size is not null &&
+            Profile.IsValidTransferDataHash(currentProfile.TransferDataHash))
         {
             return false;
         }
@@ -166,6 +178,15 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             {
                 return false;
             }
+        }
+
+        if (Profile.IsValidTransferDataHash(currentProfile.TransferDataHash) &&
+            !string.Equals(
+                currentProfile.TransferDataHash,
+                downloadedProfile.TransferDataHash,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
         }
 
         return true;

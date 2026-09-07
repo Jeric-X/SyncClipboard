@@ -25,6 +25,22 @@ public static class Utility
         return Convert.ToHexString(hashBytes);
     }
 
+    public static async Task<string> VerifyFileSHA256(
+        string path,
+        string? expectedHash,
+        CancellationToken token)
+    {
+        var actualHash = await CalculateFileSHA256(path, token);
+        if (!string.IsNullOrEmpty(expectedHash) &&
+            !string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException(
+                $"Transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+        }
+
+        return actualHash;
+    }
+
     public static Task<string> CalculateSHA256(string str, CancellationToken token)
     {
         var bytes = Encoding.UTF8.GetBytes(str);

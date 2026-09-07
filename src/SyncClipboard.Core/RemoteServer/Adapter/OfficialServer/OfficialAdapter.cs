@@ -16,6 +16,7 @@ using System.Net;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities.Updater;
+using System.Security.Cryptography;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
@@ -25,6 +26,7 @@ public sealed class OfficialAdapter(
     [FromKeyedServices(WebDavConfig.ConfigTypeName)] IServerAdapter webDavAdapter)
     : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
+    private const int DownloadBufferSize = 102400;
     private readonly ILogger _logger = logger;
     private readonly IAppConfig _appConfig = appConfig;
     private readonly WebDavAdapter _webDavAdapter = (WebDavAdapter)webDavAdapter;
@@ -344,7 +346,12 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task UploadHistoryAsync(HistoryRecordDto dto, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task UploadHistoryAsync(
+        HistoryRecordDto dto,
+        string? filePath,
+        string? transferDataHash,
+        IProgress<HttpDownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -362,42 +369,42 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.Version.ToString()), "version" },
                 { new StringContent(dto.IsDeleted.ToString()), "isDeleted" },
                 { new StringContent(dto.Text), "text" },
-                { new StringContent(dto.Size.ToString()), "size" }
+                { new StringContent(dto.Size.ToString()), "size" },
+                { new StringContent(dto.HasData.ToString()), "hasData" }
+            };
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = content,
             };
 
             // 添加文件字段（如果提供）
             if (!string.IsNullOrWhiteSpace(filePath))
             {
+                var normalizedTransferDataHash = Profile.NormalizeTransferDataHash(transferDataHash)
+                    ?? throw new ArgumentException(
+                        "Transfer data hash is required when uploading history data.",
+                        nameof(transferDataHash));
                 var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 HttpContent fileContent = progress is null
                     ? new StreamContent(stream)
                     : new ProgressableStreamContent(stream, progress, cancellationToken);
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
                 content.Add(fileContent, "data", Path.GetFileName(filePath));
+
+                request.Headers.Add(
+                    HistoryTransferDataHeaders.TransferDataHash,
+                    normalizedTransferDataHash);
+            }
+            else if (transferDataHash is not null)
+            {
+                throw new ArgumentException(
+                    "Transfer data hash cannot be set without history data.",
+                    nameof(transferDataHash));
             }
 
-            using var response = await _httpClient.PostAsync(url, content, cancellationToken);
-            if (response.IsSuccessStatusCode)
-            {
-                return;
-            }
-            if (response.StatusCode == HttpStatusCode.Conflict)
-            {
-                HistoryRecordUpdateDto? serverDto = null;
-                try
-                {
-                    serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
-                }
-                catch { /* ignore parse errors, fall back to null */ }
-                throw new RemoteHistoryConflictException($"History already exists {dto.Type}/{dto.Hash}", serverDto);
-            }
-            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity)
-            {
-                throw new RemoteHistoryDataRejectedException(
-                    $"History data was rejected for {dto.Type}/{dto.Hash}. Code {response.StatusCode}: {responseBody}");
-            }
-            throw new RemoteServerException($"Code {response.StatusCode}: {response.ReasonPhrase}. Response body: {responseBody}");
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            await EnsureHistoryUploadSucceeded(dto, response, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -406,24 +413,170 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    private static async Task EnsureHistoryUploadSucceeded(
+        HistoryRecordDto dto,
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            HistoryRecordUpdateDto? serverDto = null;
+            try
+            {
+                serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(
+                    cancellationToken: cancellationToken);
+            }
+            catch
+            {
+                // Ignore parse errors and fall back to a conflict without server metadata.
+            }
+            throw new RemoteHistoryConflictException(
+                $"History already exists {dto.Type}/{dto.Hash}",
+                serverDto);
+        }
+
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity)
+        {
+            throw new RemoteHistoryDataRejectedException(
+                $"History data was rejected for {dto.Type}/{dto.Hash}. Code {response.StatusCode}: {responseBody}");
+        }
+        throw new RemoteServerException(
+            $"Code {response.StatusCode}: {response.ReasonPhrase}. Response body: {responseBody}");
+    }
+
+    public async Task<string?> DownloadHistoryDataAsync(
+        string profileId,
+        string localPath,
+        IProgress<HttpDownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history/{HttpUtility.UrlEncode(profileId)}/data");
-            if (progress is null)
-            {
-                await _httpClient.GetFile(url.ToString(), localPath, cancellationToken);
-            }
-            else
-            {
-                await _httpClient.GetFile(url.ToString(), localPath, progress, cancellationToken);
-            }
+            using var response = await _httpClient.GetAsync(
+                url,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await SaveHistoryDataResponseAsync(
+                response,
+                localPath,
+                progress,
+                cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.Write($"[OFFICIAL_ADAPTER] Failed to download history data for {profileId}: {ex.Message}");
             throw;
+        }
+    }
+
+    internal static async Task<string?> SaveHistoryDataResponseAsync(
+        HttpResponseMessage response,
+        string localPath,
+        IProgress<HttpDownloadProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var temporaryPath = $"{localPath}.{Guid.NewGuid():N}.download";
+        try
+        {
+            var expectedTransferDataHash = ReadTransferDataHash(response);
+            var directory = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var downloadProgress = new HttpDownloadProgress
+            {
+                TotalBytesToReceive = (ulong?)response.Content.Headers.ContentLength,
+            };
+            progress?.Report(downloadProgress);
+
+            using var incrementalHash = expectedTransferDataHash is null
+                ? null
+                : IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using (var fileStream = new FileStream(
+                temporaryPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                DownloadBufferSize,
+                useAsync: true))
+            {
+                var buffer = new byte[DownloadBufferSize];
+                int bytesRead;
+                while ((bytesRead = await responseStream.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    incrementalHash?.AppendData(buffer, 0, bytesRead);
+                    downloadProgress.BytesReceived += (ulong)bytesRead;
+                    progress?.Report(downloadProgress);
+                }
+            }
+
+            string? actualTransferDataHash = null;
+            if (incrementalHash is not null)
+            {
+                actualTransferDataHash = Convert.ToHexString(incrementalHash.GetHashAndReset());
+                if (!string.Equals(
+                        actualTransferDataHash,
+                        expectedTransferDataHash,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new RemoteHistoryDataRejectedException(
+                        $"Downloaded history data hash mismatch. Expected: {expectedTransferDataHash}, Actual: {actualTransferDataHash}.");
+                }
+            }
+
+            File.Move(temporaryPath, localPath, overwrite: true);
+            downloadProgress.End = true;
+            progress?.Report(downloadProgress);
+            return actualTransferDataHash;
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(temporaryPath);
+            }
+            catch
+            { }
+        }
+    }
+
+    private static string? ReadTransferDataHash(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues(
+                HistoryTransferDataHeaders.TransferDataHash,
+                out var values))
+        {
+            return null;
+        }
+
+        var headerValues = values.ToArray();
+        if (headerValues.Length != 1)
+        {
+            throw new RemoteHistoryDataRejectedException(
+                $"{HistoryTransferDataHeaders.TransferDataHash} must contain exactly one value.");
+        }
+
+        try
+        {
+            return Profile.NormalizeTransferDataHash(headerValues[0])
+                ?? throw new RemoteHistoryDataRejectedException(
+                    $"{HistoryTransferDataHeaders.TransferDataHash} cannot be empty.");
+        }
+        catch (ArgumentException ex)
+        {
+            throw new RemoteHistoryDataRejectedException(
+                $"{HistoryTransferDataHeaders.TransferDataHash} is not a valid SHA-256 hash: {ex.Message}");
         }
     }
 

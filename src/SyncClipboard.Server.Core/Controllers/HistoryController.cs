@@ -54,10 +54,31 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest("profileId is required");
         }
 
-        var path = await _historyService.GetTransferDataFileByProfileId(HARD_CODED_USER_ID, profileId, token);
-        if (string.IsNullOrEmpty(path))
+        string? path;
+        try
         {
-            return NotFound();
+            var transferData = await _historyService.GetTransferDataByProfileId(
+                HARD_CODED_USER_ID,
+                profileId,
+                token);
+            if (transferData is null)
+            {
+                return NotFound();
+            }
+
+            path = transferData.FilePath;
+            Response.Headers[HistoryTransferDataHeaders.TransferDataHash] = transferData.TransferDataHash;
+        }
+        catch (HistoryTransferDataException ex)
+        {
+            var problem = new ProblemDetails
+            {
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Title = "History transfer data is invalid",
+                Detail = ex.Message,
+            };
+            problem.Extensions["code"] = "history_data_invalid";
+            return UnprocessableEntity(problem);
         }
 
         new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
@@ -114,6 +135,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     /// <summary>
     /// POST api/history
     /// 使用 multipart/form-data 流式传输文件和元数据。
+    /// 请求头：X-SyncClipboard-Transfer-Data-Hash（存在 data 时可选，用于声明文件 SHA-256）。
     /// Form 字段：hash, type, createTime, lastModified, starred, pinned, version, isDeleted, text, size, data
     /// data 字段为可选的二进制文件数据。
     /// </summary>
@@ -146,8 +168,18 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             }
 
             var dto = ParseHistoryRecord(metadata);
+            var declaredTransferDataHash = GetDeclaredTransferDataHash();
+            if (fileStream is null && declaredTransferDataHash is not null)
+            {
+                return BadRequest($"{HistoryTransferDataHeaders.TransferDataHash} cannot be set without transfer data");
+            }
 
-            var serverDto = await _historyService.AddRecordDto(HARD_CODED_USER_ID, dto, fileStream, token);
+            var serverDto = await _historyService.AddRecordDto(
+                HARD_CODED_USER_ID,
+                dto,
+                declaredTransferDataHash,
+                fileStream,
+                token);
             return Ok(serverDto);
         }
         catch (ArgumentException ex)
@@ -195,6 +227,26 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             Size = ParseLong(metadata, "size"),
             HasData = ParseBool(metadata, "hasData")
         };
+    }
+
+    private string? GetDeclaredTransferDataHash()
+    {
+        if (!Request.Headers.TryGetValue(
+                HistoryTransferDataHeaders.TransferDataHash,
+                out var values))
+        {
+            return null;
+        }
+
+        if (values.Count != 1)
+        {
+            throw new ArgumentException(
+                $"{HistoryTransferDataHeaders.TransferDataHash} must contain exactly one value");
+        }
+
+        return Profile.NormalizeTransferDataHash(values[0])
+            ?? throw new ArgumentException(
+                $"{HistoryTransferDataHeaders.TransferDataHash} cannot be empty");
     }
 
     private static string GetRequiredString(Dictionary<string, string> metadata, string key)

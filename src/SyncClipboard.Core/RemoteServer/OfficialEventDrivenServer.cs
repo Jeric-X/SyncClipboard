@@ -118,7 +118,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
 
     private void OnProfileDtoChanged(ProfileDto newProfileDto)
     {
-        var newProfile = Profile.Create(newProfileDto);
+        var newProfile = Profile.Create(newProfileDto, isTransferDataHashBindingVerified: true);
         RemoteProfileChangedImpl?.Invoke(this, new ProfileChangedEventArgs
         {
             NewProfile = newProfile,
@@ -144,7 +144,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
             var profileDto = await _serverAdapter.GetCurrentProfileAsync(cancellationToken);
             if (profileDto is not null)
             {
-                return Profile.Create(profileDto);
+                return Profile.Create(profileDto, isTransferDataHashBindingVerified: true);
             }
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -230,7 +230,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.GetHistoryAsync(page, before, after, modifiedAfter, types, searchText, starred, sortByLastAccessed);
     }
 
-    public Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<string?> DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
@@ -248,13 +248,23 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.UpdateHistoryAsync(type, hash, dto, cancellationToken);
     }
 
-    public Task UploadHistoryAsync(HistoryRecordDto dto, string? filePath = null, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task UploadHistoryAsync(
+        HistoryRecordDto dto,
+        string? filePath,
+        string? transferDataHash,
+        IProgress<HttpDownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
-        return syncServer.UploadHistoryAsync(dto, filePath, progress, cancellationToken);
+        return syncServer.UploadHistoryAsync(
+            dto,
+            filePath,
+            transferDataHash,
+            progress,
+            cancellationToken);
     }
 
     public Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default)
