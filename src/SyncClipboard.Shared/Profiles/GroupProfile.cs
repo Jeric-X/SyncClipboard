@@ -1048,36 +1048,43 @@ public class GroupProfile : Profile
             return null;
         }
 
-        if (_transferDataPath is not null && File.Exists(_transferDataPath))
+        if (await CanReuseTransferArchiveWithoutDownload(token))
         {
-            try
-            {
-                if (IsValidTransferDataHash(TransferDataHash))
-                {
-                    if (!IsTransferDataValidationCached(_transferDataPath) &&
-                        !await IsTransferDataValid(token))
-                    {
-                        throw new LocalProfileDataUnavailableException(
-                            $"Group transfer data hash mismatch for {Hash ?? "<unknown>"}.");
-                    }
-                }
-                else
-                {
-                    await VerifyExistingTransferArchiveAsync(
-                        _transferDataPath,
-                        await GetHash(token),
-                        token);
-                    SetTransferDataHashForPath(
-                        _transferDataPath,
-                        await Utility.CalculateFileSHA256(_transferDataPath, token));
-                }
-                return null;
-            }
-            catch when (token.IsCancellationRequested is false)
-            { }
+            return null;
         }
 
         return Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataName ?? CreateNewDataFileName());
+    }
+
+    private async Task<bool> CanReuseTransferArchiveWithoutDownload(CancellationToken token)
+    {
+        var transferDataPath = _transferDataPath;
+        if (transferDataPath is null || !File.Exists(transferDataPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (IsValidTransferDataHash(TransferDataHash))
+            {
+                return IsTransferDataValidationCached(transferDataPath) ||
+                    await IsTransferDataValid(token);
+            }
+
+            await VerifyExistingTransferArchiveAsync(
+                transferDataPath,
+                await GetHash(token),
+                token);
+            SetTransferDataHashForPath(
+                transferDataPath,
+                await Utility.CalculateFileSHA256(transferDataPath, token));
+            return true;
+        }
+        catch when (!token.IsCancellationRequested)
+        {
+            return false;
+        }
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
