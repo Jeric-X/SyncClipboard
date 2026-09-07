@@ -22,6 +22,11 @@ public class UnknownProfile : Profile
         return Task.FromResult(false);
     }
 
+    public override Task<bool> IsTransferDataValid(CancellationToken token)
+    {
+        return Task.FromResult(false);
+    }
+
     protected override Task ComputeHash(CancellationToken token)
     {
         Hash = "UNKNOWN_PROFILE_HASH";

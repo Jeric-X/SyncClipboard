@@ -1,3 +1,4 @@
+using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
@@ -166,8 +167,46 @@ public class ProfileTransferValidationTests
                     verify: false,
                     canceled.Token);
 
-                Assert.IsFalse(profiles[index].HasVerifiedTransferDataHashBinding);
+                Assert.IsNull(profiles[index].TransferDataHash);
+                Assert.IsFalse(await profiles[index].IsTransferDataValid(token));
             }
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SetTransferData_WithHashOnlyVerifiesProfileSemantics()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "text.txt");
+            await File.WriteAllTextAsync(filePath, "actual", token);
+            var declaredHash = new string('A', 64);
+            var profile = new TextProfile(new ProfileDto
+            {
+                Type = ProfileType.Text,
+                Hash = declaredHash,
+                Text = "preview",
+                HasData = true,
+                DataName = Path.GetFileName(filePath),
+                TransferDataHash = declaredHash,
+            });
+            using var canceled = new CancellationTokenSource();
+            await canceled.CancelAsync();
+
+            await profile.SetTransferData(
+                filePath,
+                declaredHash,
+                verify: true,
+                canceled.Token);
+
+            Assert.AreEqual(declaredHash, profile.TransferDataHash);
+            Assert.IsFalse(await profile.IsTransferDataValid(token));
         }
         finally
         {

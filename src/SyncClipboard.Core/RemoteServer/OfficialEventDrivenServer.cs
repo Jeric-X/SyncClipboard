@@ -118,7 +118,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
 
     private void OnProfileDtoChanged(ProfileDto newProfileDto)
     {
-        var newProfile = Profile.Create(newProfileDto, isTransferDataHashBindingVerified: true);
+        var newProfile = Profile.Create(newProfileDto);
         RemoteProfileChangedImpl?.Invoke(this, new ProfileChangedEventArgs
         {
             NewProfile = newProfile,
@@ -144,7 +144,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
             var profileDto = await _serverAdapter.GetCurrentProfileAsync(cancellationToken);
             if (profileDto is not null)
             {
-                return Profile.Create(profileDto, isTransferDataHashBindingVerified: true);
+                return Profile.Create(profileDto);
             }
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)

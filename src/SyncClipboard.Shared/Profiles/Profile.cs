@@ -9,14 +9,14 @@ public abstract class Profile
     protected string? Hash;
     protected long? Size;
     protected readonly SemaphoreSlim _hashInitLock = new(1, 1);
-    private string? _verifiedTransferDataPath;
+    private string? _validatedTransferDataPath;
     public string? TransferDataHash { get; protected set; }
-    public bool HasVerifiedTransferDataHashBinding { get; private protected set; }
 
     public abstract ProfileType Type { get; }
     public abstract string DisplayText { get; }
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
+    public abstract Task<bool> IsTransferDataValid(CancellationToken token);
     public abstract Task<ProfileDto> ToProfileDto(CancellationToken token);
     protected abstract Task ComputeHash(CancellationToken token);
     protected abstract Task ComputeSize(CancellationToken token);
@@ -98,7 +98,7 @@ public abstract class Profile
         CancellationToken token);
     public abstract Task<string?> NeedsTransferData(string persistentDir, CancellationToken token);
 
-    protected static string NormalizeVerifiedTransferDataHash(string transferDataHash)
+    protected static string NormalizeRequiredTransferDataHash(string transferDataHash)
     {
         return NormalizeTransferDataHash(transferDataHash)
             ?? throw new ArgumentException("Transfer data hash cannot be empty.", nameof(transferDataHash));
@@ -124,51 +124,34 @@ public abstract class Profile
         return hash.ToUpperInvariant();
     }
 
-    protected static string? RestoreTransferDataHash(string? hash)
+    protected static string? NormalizeRestoredTransferDataHash(string? hash)
     {
         return IsValidTransferDataHash(hash) ? hash!.ToUpperInvariant() : null;
     }
 
-    protected void RestoreTransferDataHashBinding(string? hash, bool bindingVerified)
+    protected void RestoreTransferDataHash(string? hash)
     {
-        TransferDataHash = RestoreTransferDataHash(hash);
-        HasVerifiedTransferDataHashBinding = bindingVerified && TransferDataHash is not null;
-        _verifiedTransferDataPath = null;
+        TransferDataHash = NormalizeRestoredTransferDataHash(hash);
+        _validatedTransferDataPath = null;
     }
 
-    protected void SetTransferDataHashBindingVerification(bool bindingVerified)
+    protected void SetTransferDataHashForPath(string path, string transferDataHash)
     {
-        HasVerifiedTransferDataHashBinding = bindingVerified && IsValidTransferDataHash(TransferDataHash);
-        _verifiedTransferDataPath = null;
+        TransferDataHash = NormalizeRequiredTransferDataHash(transferDataHash);
+        _validatedTransferDataPath = Path.GetFullPath(path);
     }
 
-    protected void MarkTransferDataVerified(string path, string transferDataHash)
-    {
-        TransferDataHash = NormalizeTransferDataHash(transferDataHash);
-        HasVerifiedTransferDataHashBinding = true;
-        _verifiedTransferDataPath = Path.GetFullPath(path);
-    }
-
-    protected void SetUnverifiedTransferDataHash(string? transferDataHash)
-    {
-        TransferDataHash = RestoreTransferDataHash(transferDataHash);
-        HasVerifiedTransferDataHashBinding = false;
-        _verifiedTransferDataPath = null;
-    }
-
-    protected void ClearTransferDataHashBinding()
+    protected void ClearTransferDataHash()
     {
         TransferDataHash = null;
-        HasVerifiedTransferDataHashBinding = false;
-        _verifiedTransferDataPath = null;
+        _validatedTransferDataPath = null;
     }
 
-    protected bool IsTransferDataVerified(string? path)
+    protected bool IsTransferDataValidationCached(string? path)
     {
-        if (!HasVerifiedTransferDataHashBinding ||
-            !IsValidTransferDataHash(TransferDataHash) ||
+        if (!IsValidTransferDataHash(TransferDataHash) ||
             string.IsNullOrEmpty(path) ||
-            _verifiedTransferDataPath is null)
+            _validatedTransferDataPath is null)
         {
             return false;
         }
@@ -178,23 +161,50 @@ public abstract class Profile
             : StringComparison.Ordinal;
         return string.Equals(
             Path.GetFullPath(path),
-            _verifiedTransferDataPath,
+            _validatedTransferDataPath,
             comparison);
     }
 
-    protected void MoveVerifiedTransferData(string sourcePath, string targetPath)
+    protected async Task<bool> IsTransferDataValid(
+        string? path,
+        CancellationToken token)
     {
-        if (IsTransferDataVerified(sourcePath))
+        if (!IsValidTransferDataHash(TransferDataHash) ||
+            string.IsNullOrEmpty(path) ||
+            !File.Exists(path))
         {
-            _verifiedTransferDataPath = Path.GetFullPath(targetPath);
+            return false;
+        }
+
+        try
+        {
+            var actualHash = await Utility.CalculateFileSHA256(path, token);
+            if (!string.Equals(actualHash, TransferDataHash, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            _validatedTransferDataPath = Path.GetFullPath(path);
+            return true;
+        }
+        catch when (!token.IsCancellationRequested)
+        {
+            return false;
         }
     }
 
-    protected void CopyTransferDataHashStateTo(Profile target)
+    protected void MoveTransferDataValidationCache(string sourcePath, string targetPath)
+    {
+        if (IsTransferDataValidationCached(sourcePath))
+        {
+            _validatedTransferDataPath = Path.GetFullPath(targetPath);
+        }
+    }
+
+    protected void CopyTransferDataStateTo(Profile target)
     {
         target.TransferDataHash = TransferDataHash;
-        target.HasVerifiedTransferDataHashBinding = HasVerifiedTransferDataHashBinding;
-        target._verifiedTransferDataPath = _verifiedTransferDataPath;
+        target._validatedTransferDataPath = _validatedTransferDataPath;
     }
 
     public async Task<string> GetProfileId(CancellationToken token)
@@ -352,12 +362,7 @@ public abstract class Profile
 
     public static Profile Create(ProfileDto dto)
     {
-        return Create(dto, isTransferDataHashBindingVerified: false);
-    }
-
-    public static Profile Create(ProfileDto dto, bool isTransferDataHashBindingVerified)
-    {
-        Profile profile = dto.Type switch
+        return dto.Type switch
         {
             ProfileType.Text => new TextProfile(dto),
             ProfileType.File => dto.DataName is not null && ImageTool.FileIsImage(dto.DataName)
@@ -367,7 +372,5 @@ public abstract class Profile
             ProfileType.Group => new GroupProfile(dto),
             _ => throw new NotSupportedException($"Unsupported profile type from ProfileDto: {dto.Type}"),
         };
-        profile.SetTransferDataHashBindingVerification(isTransferDataHashBindingVerified);
-        return profile;
     }
 }

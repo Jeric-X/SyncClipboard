@@ -487,7 +487,7 @@ public class GroupProfileTransferTests
 
             Assert.AreEqual(archivePath, reusedPath);
             Assert.AreEqual(persistentInfo.TransferDataHash, restoredProfile.TransferDataHash);
-            Assert.IsTrue(restoredProfile.HasVerifiedTransferDataHashBinding);
+            Assert.IsTrue(await restoredProfile.IsTransferDataValid(token));
         }
         finally
         {
@@ -541,7 +541,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task NeedsTransferData_ModifiedExtractedFileIsRestoredFromVerifiedArchive()
+    public async Task Localize_ModifiedExtractedFileIsRestoredFromVerifiedArchive()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -568,7 +568,15 @@ public class GroupProfileTransferTests
             var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
 
             Assert.IsNull(downloadPath);
+            Assert.AreEqual("modified", await File.ReadAllTextAsync(extractedFile, token));
+
+            var localInfo = await restoredProfile.Localize(
+                Path.Combine(testDirectory, "local"),
+                quick: false,
+                token);
+
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
             Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
         }
         finally

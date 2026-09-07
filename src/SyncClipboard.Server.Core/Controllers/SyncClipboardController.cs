@@ -241,13 +241,14 @@ public class SyncClipboardController(
 
         try
         {
-            await Utility.VerifyFileSHA256(
+            var actualTransferDataHash = await Utility.VerifyFileSHA256(
                 previousDataPath,
                 dto.TransferDataHash,
                 token);
             await profile.SetAndMoveTransferData(
                 _serverEnv.GetPersistentDir(),
                 previousDataPath,
+                actualTransferDataHash,
                 token);
         }
         catch when (!token.IsCancellationRequested)
@@ -255,15 +256,7 @@ public class SyncClipboardController(
             return BadRequest("Hash is not match data.");
         }
 
-        return TransferDataHashMatches(dto.TransferDataHash, profile.TransferDataHash)
-            ? null
-            : BadRequest("TransferDataHash changed while validating transfer data");
-    }
-
-    private static bool TransferDataHashMatches(string? expected, string? actual)
-    {
-        return expected is null ||
-            string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+        return null;
     }
 
     private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)

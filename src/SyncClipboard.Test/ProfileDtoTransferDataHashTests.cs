@@ -43,7 +43,7 @@ public class ProfileDtoTransferDataHashTests
 
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(restored.HasVerifiedTransferDataHashBinding);
+            Assert.IsFalse(await restored.IsTransferDataValid(token));
         }
         finally
         {
@@ -69,7 +69,7 @@ public class ProfileDtoTransferDataHashTests
             Assert.AreEqual(ProfileType.Image, dto.Type);
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(restored.HasVerifiedTransferDataHashBinding);
+            Assert.IsFalse(await restored.IsTransferDataValid(token));
         }
         finally
         {
@@ -92,7 +92,7 @@ public class ProfileDtoTransferDataHashTests
 
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(restored.HasVerifiedTransferDataHashBinding);
+            Assert.IsFalse(await restored.IsTransferDataValid(token));
         }
         finally
         {
@@ -118,13 +118,13 @@ public class ProfileDtoTransferDataHashTests
 
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(restored.HasVerifiedTransferDataHashBinding);
+            Assert.IsFalse(await restored.IsTransferDataValid(token));
 
             await restored.SetTransferData(
                 archivePath,
                 verify: true,
                 token);
-            Assert.IsTrue(restored.HasVerifiedTransferDataHashBinding);
+            Assert.IsTrue(await restored.IsTransferDataValid(token));
         }
         finally
         {
@@ -150,7 +150,6 @@ public class ProfileDtoTransferDataHashTests
             dto.Hash = new string('D', 64);
             var remoteProfile = Profile.Create(dto);
 
-            Assert.IsFalse(remoteProfile.HasVerifiedTransferDataHashBinding);
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => remoteProfile.SetTransferData(
                     archivePath,
@@ -165,7 +164,7 @@ public class ProfileDtoTransferDataHashTests
     }
 
     [TestMethod]
-    public async Task GroupProfileDto_AcceptsVerifiedBindingFromOfficialServer()
+    public async Task GroupProfileDto_AcceptsExternallyVerifiedBindingFromOfficialServer()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -180,18 +179,21 @@ public class ProfileDtoTransferDataHashTests
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
-            var officialProfile = Profile.Create(dto, isTransferDataHashBindingVerified: true);
+            var officialProfile = Profile.Create(dto);
 
-            Assert.IsTrue(officialProfile.HasVerifiedTransferDataHashBinding);
+            var actualTransferDataHash = await Utility.VerifyFileSHA256(
+                archivePath,
+                officialProfile.TransferDataHash,
+                token);
             await officialProfile.SetTransferData(
                 archivePath,
-                officialProfile.TransferDataHash!,
+                actualTransferDataHash,
                 verify: false,
                 token);
             var persistentInfo = await officialProfile.Persist(
                 Path.Combine(testDirectory, "official-persistent"),
                 token);
-            Assert.IsTrue(officialProfile.HasVerifiedTransferDataHashBinding);
+            Assert.IsTrue(await officialProfile.IsTransferDataValid(token));
             Assert.AreEqual(dto.TransferDataHash, persistentInfo.TransferDataHash);
         }
         finally
@@ -248,14 +250,11 @@ public class ProfileDtoTransferDataHashTests
             Size = 1,
         };
 
-        var unverifiedProfile = Profile.Create(dto);
-        var officialProfile = Profile.Create(dto, isTransferDataHashBindingVerified: true);
+        var profile = Profile.Create(dto);
 
-        var unverifiedRecord = await HistoryManager.ToRemoteHistoryRecord(unverifiedProfile, token);
-        var officialRecord = await HistoryManager.ToRemoteHistoryRecord(officialProfile, token);
+        var record = await HistoryManager.ToRemoteHistoryRecord(profile, token);
 
-        Assert.IsNull(unverifiedRecord.TransferDataHash);
-        Assert.IsNull(officialRecord.TransferDataHash);
+        Assert.IsNull(record.TransferDataHash);
     }
 
     [TestMethod]
@@ -277,7 +276,7 @@ public class ProfileDtoTransferDataHashTests
                     filePath,
                     remoteProfile.TransferDataHash,
                     token));
-            Assert.IsFalse(remoteProfile.HasVerifiedTransferDataHashBinding);
+            Assert.IsFalse(await remoteProfile.IsTransferDataValid(token));
         }
         finally
         {
@@ -304,7 +303,7 @@ public class ProfileDtoTransferDataHashTests
                     transferPath,
                     remoteProfile.TransferDataHash,
                     token));
-            Assert.IsFalse(remoteProfile.HasVerifiedTransferDataHashBinding);
+            Assert.IsFalse(await remoteProfile.IsTransferDataValid(token));
         }
         finally
         {

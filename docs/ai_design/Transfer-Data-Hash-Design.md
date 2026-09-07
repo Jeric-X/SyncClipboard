@@ -39,15 +39,15 @@ Group 的快速路径不能只检查字段和 ZIP 文件是否非空。必须重
 
 同一个 Group 内容可以因压缩级别、条目时间戳、ZIP 实现或条目写入细节不同而产生不同的 ZIP 字节，因此也可以有不同的 `TransferDataHash`；它们仍然共享同一个 `Profile.Hash`。`TransferDataHash` 不能参与历史记录去重、工作目录命名或 Profile ID 计算。
 
-### 空值与可信状态
+### 空值与本地绑定状态
 
 字段使用 `string?`，不使用空字符串表达未知状态：
 
-- `null`：没有传输文件，或旧记录尚未建立可信的传输文件哈希；
+- `null`：没有传输文件，或旧记录尚未建立传输文件哈希；
 - 64 位 SHA-256：持久化时表示已经与当前本地或服务端文件验证绑定的传输文件哈希；普通同步 DTO 中的远端声明值仍不自动可信；
 - 其他格式：视为无效输入，不得进入快速路径。
 
-只有 Profile 运行时使用非持久化的 `HasVerifiedTransferDataHashBinding` 区分“尚未验证的 DTO 声明值”与“已经建立的绑定”，并在内部记录本次已验证的传输文件路径。该状态不进入 `ProfilePersistentInfo`、History 实体、数据库、`ProfileDto` 或 `HistoryRecordDto`。持久化模型采用更强的不变量：非空 `TransferDataHash` 必须已经由本机验证，或来自可信的官方服务器。由持久化记录重建 Profile 时，非空哈希本身就表示绑定已经建立，不再需要额外的信任字段；本地文件仍会在需要使用或重新持久化时按哈希验证。
+Profile 不保存额外的绑定信任标记。由 DTO 创建的 Profile 可以在内存中暂存远端声明的 `TransferDataHash`，但此时没有本地 `TransferDataFile`，不得持久化该值。下载层完成整包哈希验证并成功调用 `SetTransferData()` 后，路径与哈希同时存在即表示绑定已经建立。Profile 仅在内存中记录本次已经确认过的传输文件路径，用于避免 `Localize()` 立即重复扫描同一个文件；该路径缓存不持久化。由持久化记录重建 Profile 时，路径与非空哈希表示绑定以前已经建立，本地文件在再次使用时通过显式的 `IsTransferDataValid()` 重新检查。
 
 ## 当前实现与改造原因
 
@@ -71,7 +71,7 @@ Group 的快速路径不能只检查字段和 ZIP 文件是否非空。必须重
 - `SyncClipboard.Core.Models.HistoryRecord`：新增 `string? TransferDataFile` 和 `string? TransferDataHash`；
 - `SyncClipboard.Server.Core.Models.HistoryRecordEntity`：新增 `string? TransferDataHash`；
 - `SyncClipboard.Shared.Profiles.Models.ProfilePersistentInfo`：新增 `string? TransferDataHash`；
-- `Profile`：保存当前传输文件哈希，并在内存中记录该绑定是否已经验证；仅由明确区分来源的创建和验证流程更新。
+- `Profile`：保存当前传输文件哈希，并仅缓存当前进程中已经校验过的本地文件路径，以避免 `Localize()` 紧接着重复计算文件哈希；不保存独立的绑定信任状态。
 
 所有 Profile 的持久化、构造和 `CopyTo()` 都要传递该字段。重点映射位置包括：
 
@@ -125,9 +125,9 @@ X-SyncClipboard-Transfer-Data-Hash: <64 位 SHA-256>
 
 `ProfileDto` 同样新增可空 `TransferDataHash`，JSON 字段名为 `transferDataHash`。值为 `null` 时序列化省略该字段，因此旧客户端、旧服务端以及已有 WebDAV/S3 `SyncClipboard.json` 均保持兼容。
 
-普通同步的 File/Image/Text/Group 在生成或验证传输文件后，由 `ToProfileDto()` 输出当前哈希。WebDAV/S3 使用通用 `Profile.Create(ProfileDto)`，恢复声明值但不把绑定标记为已验证；官方服务端入口使用显式的可信来源参数。来源判断由适配器完成，不进入 DTO，其他客户端无法通过协议字段伪造“官方可信”状态。
+普通同步的 File/Image/Text/Group 在生成或验证传输文件后，由 `ToProfileDto()` 输出当前哈希。通用 `Profile.Create(ProfileDto)` 只把声明值作为内存中的下载候选值，不设置本地文件路径，也不会将其写入历史数据库。官方服务器与 WebDAV/S3 的来源差异不在 Profile 创建阶段表达，而在下载层调用 `SetTransferData()` 时决定是否继续验证 Profile 语义。
 
-`SetTransferData(path, verify, ...)` 保持原接口和语义。新增带 `transferDataHash` 的重载，传入值必须是调用方已经对实际文件验证过的 SHA-256；该重载不再重复验证整包哈希，`verify` 只控制是否继续验证 Profile 语义。WebDAV/S3 在外部验证整包哈希后仍执行完整 Profile 语义验证；直接调用 `SetTransferData()` 的路径使用新重载的 `verify: true`，需要移动文件的路径继续使用原 `SetAndMoveTransferData()`。官方服务端的可信绑定在外部验证整包哈希后使用新重载的 `verify: false`；此时 Group 只记录 ZIP 路径与已验证哈希，不解压 ZIP。客户端随后调用 `Localize()` 准备可复制的本地文件；同一 Profile 实例已经确认当前路径正确时直接安全解压，不重复计算 ZIP SHA-256，进程重启或路径变化后才重新比对持久化 hash。只有 Profile 语义验证确实需要读取内部文件，或者随后把 Group 放入本地剪贴板时，才执行解压。字段缺失或格式无效时一律回退到原重载的完整语义验证；不需要校验的本地缓存仍使用原重载的 `verify: false`。
+`SetTransferData(path, verify, ...)` 保持原接口。新增带 `transferDataHash` 的重载，传入值必须是调用方已经对实际文件验证过的 SHA-256；该重载不读取文件，也不把传入值与 Profile 内暂存的远端声明值重复比较，`verify` 只控制是否继续验证 Profile 语义。WebDAV/S3 在下载层验证整包哈希后使用新重载的 `verify: true`，继续执行完整 Profile 语义验证；官方服务器在下载层验证响应头与文件后使用新重载的 `verify: false`，直接提交服务端已建立的绑定。此时 Group 只记录 ZIP 路径与哈希，不解压 ZIP。客户端随后调用 `Localize()` 准备可复制的本地文件；同一 Profile 实例已经确认当前路径正确时直接安全解压，不重复计算 ZIP SHA-256，进程重启或路径变化后才通过 `IsTransferDataValid()` 重新比对持久化 hash。没有 hash 参数且 `verify: false` 时只附加文件路径并清除候选 hash，防止把未验证的 DTO 声明值意外持久化。
 
 官方服务端接收 `PUT SyncClipboard.json` 时不直接信任该字段：先验证字段格式和暂存文件的整包 SHA-256，再清除 DTO 中的哈希创建 Profile，以保证首次 Group 文件仍执行内部语义校验。验证完成后，服务端通过自己计算出的哈希保存并广播新的 `ProfileDto`。
 
@@ -168,7 +168,7 @@ X-SyncClipboard-Transfer-Data-Hash: <64 位 SHA-256>
 对已有或刚下载的 ZIP 执行以下顺序：
 
 1. 文件必须存在且扩展名符合现有要求；
-2. `TransferDataHash` 必须是合法 SHA-256，且该绑定已由当前实例验证、从本地持久化恢复，或来自可信官方服务器；
+2. `TransferDataHash` 必须是合法 SHA-256，并且与本地传输文件路径一起来自成功的 `SetTransferData()` 或本地持久化记录；
 3. 流式计算当前 ZIP 完整字节的 SHA-256；
 4. 只有实际值与字段值大小写无关地相等时，才命中快速路径；
 5. 命中后跳过逐条内容哈希和 Group 语义哈希重建。
@@ -177,18 +177,15 @@ X-SyncClipboard-Transfer-Data-Hash: <64 位 SHA-256>
 
 ```mermaid
 flowchart TD
-    A["需要验证 Group 传输 ZIP"] --> B{"绑定已由当前实例完整验证?"}
-    B -- "否：WebDAV/S3 声明或旧记录" --> C["核对整包哈希并完整重建 Group.Hash"]
-    C --> D{"语义哈希匹配?"}
-    D -- 否 --> E["拒绝文件并清理本次产物"]
-    D -- 是 --> F["计算 ZIP SHA-256并建立可信绑定"]
-    B -- 是 --> G["计算 ZIP 整包 SHA-256"]
-    G --> H{"与 TransferDataHash 匹配?"}
-    H -- 否 --> E
-    H -- 是 --> I["跳过内部内容哈希与 Group.Hash 重建"]
-    F --> J["安全解压或复用 ZIP"]
-    I --> J
-    J --> K["原子持久化文件引用与 TransferDataHash"]
+    A["下载层接收 Group ZIP"] --> B["核对 ZIP SHA-256 与远端 TransferDataHash"]
+    B --> C{"绑定来源可信?"}
+    C -- "否：WebDAV/S3" --> D["安全解压并重建 Group.Hash"]
+    D --> E{"语义哈希匹配?"}
+    E -- 否 --> F["拒绝文件并清理本次产物"]
+    E -- 是 --> G["提交本地路径与实际 TransferDataHash"]
+    C -- "是：官方服务器" --> G
+    G --> H["Localize 时安全解压"]
+    H --> I["持久化文件引用与 TransferDataHash"]
 ```
 
 ### 快速路径不能跳过的检查
@@ -280,13 +277,13 @@ ALTER TABLE HistoryRecords ADD COLUMN TransferDataHash TEXT NULL;
 
 - `ProfileDto.cs`：增加可选 `TransferDataHash`，空值不写入 JSON；
 - `Profiles/Models/ProfilePersistentInfo.cs`：增加字段；
-- `Profiles/Profile.cs`：保存/暴露当前传输文件哈希，提供格式规范化公共逻辑；
+- `Profiles/Profile.cs`：保存/暴露当前传输文件哈希，提供格式规范化和显式 `IsTransferDataValid()` 逻辑；
 - `Profiles/TextProfile.cs`：生成、验证、持久化和复制传输文件哈希；
 - `Profiles/FileProfile.cs`：一次读取生成内容哈希与组合 Profile 哈希；Image 自动继承；
 - `Profiles/GroupProfile.cs`：
   - 新 ZIP 关闭后计算 ZIP SHA-256；
   - 将 `ExtractAndVerifyTransferData()` 拆成安全解压与可选语义验证；
-  - `PrepareTransferData()` 和 `SetTransferData()` 增加整包哈希快速路径；
+  - `PrepareTransferData()` 使用整包哈希快速路径，`SetTransferData()` 的 hash 重载只消费外部验证结果；
   - 旧记录完整验证成功后学习哈希；
   - `CopyTo()` 复制字段。
 
