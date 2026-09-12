@@ -247,11 +247,6 @@ public class FileProfile : Profile
         string? transferDataHash,
         CancellationToken token)
     {
-        if (File.Exists(FullPath))
-        {
-            return;
-        }
-
         if (transferDataHash is null)
         {
             await SetTransferData(path, verify: true, token);

@@ -480,11 +480,6 @@ public class TextProfile : Profile
         string? transferDataHash,
         CancellationToken token)
     {
-        if (File.Exists(_transferDataPath))
-        {
-            return;
-        }
-
         if (transferDataHash is null)
         {
             await SetTransferData(path, verify: true, token);

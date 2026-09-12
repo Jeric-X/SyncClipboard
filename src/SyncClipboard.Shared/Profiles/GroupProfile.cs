@@ -997,11 +997,6 @@ public class GroupProfile : Profile
         string? transferDataHash,
         CancellationToken token)
     {
-        if (File.Exists(_transferDataPath))
-        {
-            return;
-        }
-
         if (transferDataHash is null)
         {
             await SetTransferData(path, verify: true, token);
@@ -1020,13 +1015,13 @@ public class GroupProfile : Profile
         }
 
         var targetPath = Path.Combine(workingDir, _transferDataName!);
+        _files = CommitExtractionDirectory(
+            path[..^4],
+            targetPath[..^4],
+            _files!,
+            CreateExtractionOwnershipMarker(Hash, TransferDataHash));
         File.Move(path, targetPath, true);
         MoveTransferDataValidationCache(path, targetPath);
-        try
-        {
-            Directory.Move(path[..^4], targetPath[..^4]);
-        }
-        catch { }
         _transferDataPath = targetPath;
     }
 
