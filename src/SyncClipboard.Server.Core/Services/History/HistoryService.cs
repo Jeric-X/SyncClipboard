@@ -271,7 +271,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         HistoryRecordEntity entity,
         CancellationToken token)
     {
-        if (!Profile.IsValidTransferDataHash(entity.TransferDataHash))
+        if (!Utility.IsValidSHA256(entity.TransferDataHash))
         {
             return null;
         }
@@ -327,7 +327,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         entity.Size = persistentInfo.Size;
         await _dbContext.SaveChangesAsync(token);
         var transferDataHash = persistentInfo.TransferDataHash;
-        if (!Profile.IsValidTransferDataHash(transferDataHash))
+        if (!Utility.IsValidSHA256(transferDataHash))
         {
             throw new HistoryTransferDataException("Prepared history transfer data has no valid SHA-256 hash.");
         }

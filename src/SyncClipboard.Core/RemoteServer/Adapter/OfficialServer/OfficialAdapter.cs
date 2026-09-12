@@ -381,7 +381,7 @@ public sealed class OfficialAdapter(
             // 添加文件字段（如果提供）
             if (!string.IsNullOrWhiteSpace(filePath))
             {
-                var normalizedTransferDataHash = Profile.NormalizeTransferDataHash(transferDataHash)
+                var normalizedTransferDataHash = Utility.NormalizeSHA256(transferDataHash)
                     ?? throw new ArgumentException(
                         "Transfer data hash is required when uploading history data.",
                         nameof(transferDataHash));
@@ -569,7 +569,7 @@ public sealed class OfficialAdapter(
 
         try
         {
-            return Profile.NormalizeTransferDataHash(headerValues[0])
+            return Utility.NormalizeSHA256(headerValues[0])
                 ?? throw new RemoteHistoryDataRejectedException(
                     $"{HistoryTransferDataHeaders.TransferDataHash} cannot be empty.");
         }

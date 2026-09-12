@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.FileCacheManager;
 
-internal sealed record ValidatedCachedFile(string FilePath, string TransferDataHash);
+internal sealed record CachedFileInfo(string FilePath, string FileHash);
 
 public sealed class LocalFileCacheManager : IDisposable
 {
@@ -101,10 +101,10 @@ public sealed class LocalFileCacheManager : IDisposable
 
     public async Task<string?> GetCachedFilePathAsync(string cacheType, string id, CancellationToken token)
     {
-        return (await GetValidatedCachedFileAsync(cacheType, id, token))?.FilePath;
+        return (await GetCachedFileInfoAsync(cacheType, id, token))?.FilePath;
     }
 
-    internal async Task<ValidatedCachedFile?> GetValidatedCachedFileAsync(
+    internal async Task<CachedFileInfo?> GetCachedFileInfoAsync(
         string cacheType,
         string id,
         CancellationToken token)
@@ -126,19 +126,19 @@ public sealed class LocalFileCacheManager : IDisposable
                 return null;
             }
 
-            var transferDataHash = await GetValidatedFileHashAsync(entry, token);
-            if (transferDataHash is null)
+            var fileHash = await GetValidatedFileHashAsync(entry, token);
+            if (fileHash is null)
             {
                 dbContext.CacheEntries.Remove(entry);
                 await dbContext.SaveChangesAsync(token);
                 return null;
             }
 
-            entry.CachedFileHash = transferDataHash;
+            entry.CachedFileHash = fileHash;
             entry.LastAccessTime = DateTime.Now;
             await dbContext.SaveChangesAsync(token);
 
-            return new ValidatedCachedFile(entry.FilePath, transferDataHash);
+            return new CachedFileInfo(entry.FilePath, fileHash);
         }
         catch when (!token.IsCancellationRequested)
         {

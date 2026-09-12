@@ -324,7 +324,7 @@ public class GroupProfile : Profile
     {
         try
         {
-            if (IsValidTransferDataHash(TransferDataHash))
+            if (Utility.IsValidSHA256(TransferDataHash))
             {
                 return await IsTransferDataValid(archivePath, token).ConfigureAwait(false);
             }
@@ -615,7 +615,7 @@ public class GroupProfile : Profile
             Text = DisplayText,
             HasData = true,
             DataName = _transferDataName,
-            TransferDataHash = File.Exists(_transferDataPath) && IsValidTransferDataHash(TransferDataHash)
+            TransferDataHash = File.Exists(_transferDataPath) && Utility.IsValidSHA256(TransferDataHash)
                 ? TransferDataHash
                 : null,
             Size = await GetSize(token)
@@ -742,7 +742,7 @@ public class GroupProfile : Profile
         CancellationToken token)
     {
         var extractDir = ValidateTransferDataPath(path);
-        var normalizedTransferDataHash = NormalizeRequiredTransferDataHash(transferDataHash);
+        var normalizedTransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
 
         if (!verify)
         {
@@ -1080,7 +1080,7 @@ public class GroupProfile : Profile
 
         try
         {
-            if (IsValidTransferDataHash(TransferDataHash))
+            if (Utility.IsValidSHA256(TransferDataHash))
             {
                 return await IsTransferDataValid(token);
             }
@@ -1129,7 +1129,7 @@ public class GroupProfile : Profile
             return;
         }
 
-        if (!IsValidTransferDataHash(TransferDataHash))
+        if (!Utility.IsValidSHA256(TransferDataHash))
         {
             await SetTransferData(
                 _transferDataPath,
@@ -1156,7 +1156,7 @@ public class GroupProfile : Profile
             Size = await GetSize(token),
             Hash = await GetHash(token),
             TransferDataFile = GetPersistentPath(workingDir, _transferDataPath),
-            TransferDataHash = _transferDataPath is not null && IsValidTransferDataHash(TransferDataHash)
+            TransferDataHash = _transferDataPath is not null && Utility.IsValidSHA256(TransferDataHash)
                 ? TransferDataHash
                 : null,
             FilePaths = _files?.Select(f => GetPersistentPath(workingDir, f))
@@ -1296,7 +1296,7 @@ public class GroupProfile : Profile
             _transferDataPath is not null &&
             File.Exists(_transferDataPath))
         {
-            if (IsValidTransferDataHash(TransferDataHash))
+            if (Utility.IsValidSHA256(TransferDataHash))
             {
                 if (!await IsTransferDataValid(token))
                 {

@@ -98,46 +98,15 @@ public abstract class Profile
         CancellationToken token);
     public abstract Task<string?> NeedsTransferData(string persistentDir, CancellationToken token);
 
-    protected static string NormalizeRequiredTransferDataHash(string transferDataHash)
-    {
-        return NormalizeTransferDataHash(transferDataHash)
-            ?? throw new ArgumentException("Transfer data hash cannot be empty.", nameof(transferDataHash));
-    }
-
-    public static bool IsValidTransferDataHash(string? hash)
-    {
-        return hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
-    }
-
-    public static string? NormalizeTransferDataHash(string? hash)
-    {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            return null;
-        }
-
-        if (!IsValidTransferDataHash(hash))
-        {
-            throw new ArgumentException("Transfer data hash must be a 64-character SHA-256 hex string.", nameof(hash));
-        }
-
-        return hash.ToUpperInvariant();
-    }
-
-    protected static string? NormalizeRestoredTransferDataHash(string? hash)
-    {
-        return IsValidTransferDataHash(hash) ? hash!.ToUpperInvariant() : null;
-    }
-
     protected void RestoreTransferDataHash(string? hash)
     {
-        TransferDataHash = NormalizeRestoredTransferDataHash(hash);
+        TransferDataHash = Utility.NormalizeSHA256OrNull(hash);
         _validatedTransferDataPath = null;
     }
 
     protected void SetTransferDataHashForPath(string path, string transferDataHash)
     {
-        TransferDataHash = NormalizeRequiredTransferDataHash(transferDataHash);
+        TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
         _validatedTransferDataPath = Path.GetFullPath(path);
     }
 
@@ -149,7 +118,7 @@ public abstract class Profile
 
     protected bool IsTransferDataValidationCached(string? path)
     {
-        if (!IsValidTransferDataHash(TransferDataHash) ||
+        if (!Utility.IsValidSHA256(TransferDataHash) ||
             string.IsNullOrEmpty(path) ||
             _validatedTransferDataPath is null)
         {
@@ -169,7 +138,7 @@ public abstract class Profile
         string? path,
         CancellationToken token)
     {
-        if (!IsValidTransferDataHash(TransferDataHash) ||
+        if (!Utility.IsValidSHA256(TransferDataHash) ||
             string.IsNullOrEmpty(path) ||
             !File.Exists(path))
         {

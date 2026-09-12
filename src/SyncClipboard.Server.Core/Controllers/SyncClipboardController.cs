@@ -166,7 +166,7 @@ public class SyncClipboardController(
         {
             dto = dto with
             {
-                TransferDataHash = Profile.NormalizeTransferDataHash(dto.TransferDataHash)
+                TransferDataHash = Utility.NormalizeSHA256(dto.TransferDataHash)
             };
         }
         catch (ArgumentException ex)

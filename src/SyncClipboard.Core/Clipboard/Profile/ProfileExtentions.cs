@@ -8,7 +8,7 @@ public static class ProfileExtentions
     public static async Task<string?> PrepareDataWithCache(this Profile profile, CancellationToken token)
     {
         var cacheManager = AppCore.Current.Services.GetRequiredService<LocalFileCacheManager>();
-        var cachedFile = await cacheManager.GetValidatedCachedFileAsync(
+        var cachedFile = await cacheManager.GetCachedFileInfoAsync(
             profile.Type.ToString(),
             await profile.GetHash(token),
             token);
@@ -30,12 +30,12 @@ public static class ProfileExtentions
 
     internal static async Task BindCachedTransferData(
         Profile profile,
-        ValidatedCachedFile cachedFile,
+        CachedFileInfo cachedFile,
         CancellationToken token)
     {
         await profile.SetTransferData(
             cachedFile.FilePath,
-            cachedFile.TransferDataHash,
+            cachedFile.FileHash,
             verify: false,
             token);
     }

@@ -5,6 +5,37 @@ namespace SyncClipboard.Shared.Utilities;
 
 public static class Utility
 {
+    public static bool IsValidSHA256(string? hash)
+    {
+        return hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
+    }
+
+    public static string? NormalizeSHA256(string? hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            return null;
+        }
+
+        if (!IsValidSHA256(hash))
+        {
+            throw new ArgumentException("Hash must be a 64-character SHA-256 hex string.", nameof(hash));
+        }
+
+        return hash.ToUpperInvariant();
+    }
+
+    public static string NormalizeRequiredSHA256(string hash)
+    {
+        return NormalizeSHA256(hash)
+            ?? throw new ArgumentException("SHA-256 hash cannot be empty.", nameof(hash));
+    }
+
+    public static string? NormalizeSHA256OrNull(string? hash)
+    {
+        return IsValidSHA256(hash) ? hash!.ToUpperInvariant() : null;
+    }
+
     public static async Task<string> CalculateSHA256(byte[] data, CancellationToken token)
     {
         using var ms = new MemoryStream(data);
@@ -35,7 +66,7 @@ public static class Utility
             !string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidDataException(
-                $"Transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+                $"File SHA-256 mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
         }
 
         return actualHash;

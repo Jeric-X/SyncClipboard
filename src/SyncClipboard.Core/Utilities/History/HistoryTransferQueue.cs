@@ -587,7 +587,7 @@ public class HistoryTransferQueue : IDisposable
             localDataPath,
             task.ProgressReporter,
             ct);
-        if (Profile.IsValidTransferDataHash(transferDataHash))
+        if (Utility.IsValidSHA256(transferDataHash))
         {
             await profile.SetTransferData(
                 localDataPath,

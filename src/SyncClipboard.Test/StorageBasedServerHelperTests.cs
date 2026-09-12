@@ -6,6 +6,7 @@ using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter;
 using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Utilities;
 using System.Net;
 
 namespace SyncClipboard.Test;
@@ -57,7 +58,7 @@ public class StorageBasedServerHelperTests
     }
 
     [TestMethod]
-    public async Task DownloadFileProfile_MissingRemoteVersionSkipsMetadataBackfill()
+    public async Task DownloadFileProfile_MissingRemoteVersionBackfillsMetadataUnconditionally()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -89,8 +90,11 @@ public class StorageBasedServerHelperTests
 
             Assert.AreEqual(1, adapter.SnapshotReadCount);
             Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
-            Assert.AreEqual(0, adapter.SetProfileCount);
-            Assert.IsTrue(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
+            Assert.AreEqual(1, adapter.SetProfileCount);
+            Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
+            Assert.AreEqual(
+                await Utility.CalculateFileSHA256(remoteFile, token),
+                adapter.CurrentProfile?.TransferDataHash);
         }
         finally
         {

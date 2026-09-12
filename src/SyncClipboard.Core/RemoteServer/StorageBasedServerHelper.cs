@@ -81,7 +81,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         return string.IsNullOrEmpty(await profile.GetHash(cancellationToken)) ||
             !profile.HasKnownSize ||
-            !Profile.IsValidTransferDataHash(profile.TransferDataHash);
+            !Utility.IsValidSHA256(profile.TransferDataHash);
     }
 
     private async Task FillBackRemoteProfile(
@@ -117,7 +117,8 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             };
             if (string.IsNullOrWhiteSpace(currentSnapshot.Version))
             {
-                _logger.Write("[PULL] Remote profile has no version precondition, skipped metadata update.");
+                await _serverAdapter.SetProfileAsync(updatedProfile, cancellationToken);
+                _logger.Write($"[PULL] Filled back remote profile metadata without version precondition: {downloadedProfileDto.Hash}");
                 return;
             }
 
@@ -143,7 +144,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         if (!string.IsNullOrEmpty(currentProfile.Hash) &&
             currentProfile.Size is not null &&
-            Profile.IsValidTransferDataHash(currentProfile.TransferDataHash))
+            Utility.IsValidSHA256(currentProfile.TransferDataHash))
         {
             return false;
         }
@@ -179,7 +180,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             }
         }
 
-        if (Profile.IsValidTransferDataHash(currentProfile.TransferDataHash) &&
+        if (Utility.IsValidSHA256(currentProfile.TransferDataHash) &&
             !string.Equals(
                 currentProfile.TransferDataHash,
                 downloadedProfile.TransferDataHash,

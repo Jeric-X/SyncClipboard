@@ -90,7 +90,7 @@ public class FileProfile : Profile
             Text = FileName,
             HasData = true,
             DataName = FileName,
-            TransferDataHash = File.Exists(FullPath) && IsValidTransferDataHash(TransferDataHash)
+            TransferDataHash = File.Exists(FullPath) && Utility.IsValidSHA256(TransferDataHash)
                 ? TransferDataHash
                 : null,
             Size = await GetSize(token)
@@ -184,7 +184,7 @@ public class FileProfile : Profile
         CancellationToken token)
     {
         EnsureTransferDataExists(path);
-        var normalizedTransferDataHash = NormalizeRequiredTransferDataHash(transferDataHash);
+        var normalizedTransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
         SetTransferDataWithHash(
             path,
             (
@@ -291,7 +291,7 @@ public class FileProfile : Profile
             return true;
         }
 
-        if (IsValidTransferDataHash(TransferDataHash))
+        if (Utility.IsValidSHA256(TransferDataHash))
         {
             return await IsTransferDataValid(token);
         }
@@ -342,7 +342,7 @@ public class FileProfile : Profile
         }
 
         var workingDir = QueryGetWorkingDir(persistentDir, Type, await GetHash(token));
-        if (!IsValidTransferDataHash(TransferDataHash))
+        if (!Utility.IsValidSHA256(TransferDataHash))
         {
             await SetTransferData(FullPath, verify: true, token);
         }
@@ -368,7 +368,7 @@ public class FileProfile : Profile
 
         if (!quick && !IsTransferDataValidationCached(FullPath))
         {
-            if (IsValidTransferDataHash(TransferDataHash))
+            if (Utility.IsValidSHA256(TransferDataHash))
             {
                 if (!await IsTransferDataValid(token))
                 {

@@ -7,6 +7,7 @@ using SyncClipboard.Server.Core.Attributes;
 using SyncClipboard.Server.Core.Exceptions;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -244,7 +245,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
                 $"{HistoryTransferDataHeaders.TransferDataHash} must contain exactly one value");
         }
 
-        return Profile.NormalizeTransferDataHash(values[0])
+        return Utility.NormalizeSHA256(values[0])
             ?? throw new ArgumentException(
                 $"{HistoryTransferDataHeaders.TransferDataHash} cannot be empty");
     }

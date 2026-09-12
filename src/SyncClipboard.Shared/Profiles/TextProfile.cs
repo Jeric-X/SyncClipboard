@@ -83,7 +83,7 @@ public class TextProfile : Profile
             DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null,
             TransferDataHash = _hasTransferData &&
                 File.Exists(_transferDataPath) &&
-                IsValidTransferDataHash(TransferDataHash)
+                Utility.IsValidSHA256(TransferDataHash)
                 ? TransferDataHash
                 : null,
             Size = await GetSize(token)
@@ -120,7 +120,7 @@ public class TextProfile : Profile
             return true;
         }
 
-        if (IsValidTransferDataHash(TransferDataHash))
+        if (Utility.IsValidSHA256(TransferDataHash))
         {
             return await IsTransferDataValid(token);
         }
@@ -245,7 +245,7 @@ public class TextProfile : Profile
         await WriteFullTextToFile(persistentDir, token);
         if (HasTransferData && File.Exists(_transferDataPath))
         {
-            if (!IsValidTransferDataHash(TransferDataHash))
+            if (!Utility.IsValidSHA256(TransferDataHash))
             {
                 await SetTransferData(_transferDataPath!, verify: true, token);
             }
@@ -375,7 +375,7 @@ public class TextProfile : Profile
         EnsureTransferDataExists(path);
         SetTransferDataWithHash(
             path,
-            NormalizeRequiredTransferDataHash(transferDataHash),
+            Utility.NormalizeRequiredSHA256(transferDataHash),
             verifyProfileSemantic: verify);
         return Task.CompletedTask;
     }
@@ -481,7 +481,7 @@ public class TextProfile : Profile
         {
             if (!IsTransferDataValidationCached(_transferDataPath))
             {
-                if (IsValidTransferDataHash(TransferDataHash))
+                if (Utility.IsValidSHA256(TransferDataHash))
                 {
                     if (!await IsTransferDataValid(token))
                     {

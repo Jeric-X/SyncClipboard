@@ -574,7 +574,7 @@ public class GroupProfileTransferTests
 
             await ProfileExtentions.BindCachedTransferData(
                 cachedProfile,
-                new ValidatedCachedFile(
+                new CachedFileInfo(
                     archivePath,
                     sourceProfile.TransferDataHash!),
                 token);
