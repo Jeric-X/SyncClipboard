@@ -341,7 +341,7 @@ public sealed class LocalFileCacheManager : IDisposable
             var hashBytes = await CalculateFileHashAsync(entry.FilePath, token);
             var hexHash = Convert.ToHexString(hashBytes);
             if (string.IsNullOrEmpty(entry.CachedFileHash) ||
-                string.Equals(entry.CachedFileHash, hexHash, StringComparison.OrdinalIgnoreCase) ||
+                Utility.SHA256Same(entry.CachedFileHash, hexHash) ||
                 string.Equals(entry.CachedFileHash, Convert.ToBase64String(hashBytes), StringComparison.Ordinal))
             {
                 return hexHash;

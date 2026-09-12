@@ -48,7 +48,7 @@ public class TextProfile : Profile
         }
         Size = entity.Size;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
-        RestoreTransferDataHash(
+        TransferDataHash = Utility.NormalizeSHA256OrNull(
             string.IsNullOrEmpty(entity.TransferDataFile)
                 ? null
                 : entity.TransferDataHash);
@@ -60,7 +60,7 @@ public class TextProfile : Profile
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
-        RestoreTransferDataHash(dto.TransferDataHash);
+        TransferDataHash = Utility.NormalizeSHA256OrNull(dto.TransferDataHash);
         Size = dto.Size;
     }
 
@@ -135,7 +135,7 @@ public class TextProfile : Profile
                 return false;
             }
 
-            SetTransferDataHashForPath(_transferDataPath!, actualHash);
+            TransferDataHash = Utility.NormalizeRequiredSHA256(actualHash);
             return true;
         }
         catch when (token.IsCancellationRequested is false)
@@ -281,7 +281,7 @@ public class TextProfile : Profile
         await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
         _transferDataPath = path;
         _transferDataName = dataName;
-        SetTransferDataHashForPath(path, await GetHash(token));
+        TransferDataHash = Utility.NormalizeRequiredSHA256(await GetHash(token));
         _fullText = null;
     }
 
@@ -299,7 +299,7 @@ public class TextProfile : Profile
         }
         else
         {
-            ClearTransferDataHash();
+            TransferDataHash = null;
         }
         var workingDir = QueryGetWorkingDir(persistentDir, Type, await GetHash(token));
         var path = GetPersistentPath(workingDir, _transferDataPath);
@@ -320,7 +320,7 @@ public class TextProfile : Profile
         var expectedHash = await GetHash(token);
         if (HasTransferData is false)
         {
-            ClearTransferDataHash();
+            TransferDataHash = null;
             await ValidateInlineTextHashAsync(expectedHash, token);
             return null;
         }
@@ -339,7 +339,7 @@ public class TextProfile : Profile
         try
         {
             var hash = await ValidateTransferDataHashAsync(path, expectedHash, token);
-            SetTransferDataHashForPath(path, hash);
+            TransferDataHash = Utility.NormalizeRequiredSHA256(hash);
             return new FileHashInfo(path, hash);
         }
         catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
@@ -401,7 +401,7 @@ public class TextProfile : Profile
         EnsureTransferDataExists(path);
         if (!verify)
         {
-            ClearTransferDataHash();
+            TransferDataHash = null;
             SetTransferDataPath(path);
             return;
         }
@@ -447,7 +447,7 @@ public class TextProfile : Profile
         }
 
         Hash ??= transferDataHash;
-        SetTransferDataHashForPath(path, transferDataHash);
+        TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
         SetTransferDataPath(path);
     }
 
@@ -501,7 +501,6 @@ public class TextProfile : Profile
 
         var targetPath = Path.Combine(workingDir, fileName);
         File.Move(path, targetPath, true);
-        MoveTransferDataValidationCache(path, targetPath);
         _transferDataPath = targetPath;
         _transferDataName = Path.GetFileName(targetPath);
     }
@@ -536,6 +535,6 @@ public class TextProfile : Profile
         textTarget._transferDataName = _transferDataName;
         textTarget.Hash = Hash;
         textTarget.Size = Size;
-        CopyTransferDataStateTo(textTarget);
+        textTarget.TransferDataHash = TransferDataHash;
     }
 }

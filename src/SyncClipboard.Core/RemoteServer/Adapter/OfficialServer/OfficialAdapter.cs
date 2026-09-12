@@ -519,10 +519,7 @@ public sealed class OfficialAdapter(
             if (incrementalHash is not null)
             {
                 actualTransferDataHash = Convert.ToHexString(incrementalHash.GetHashAndReset());
-                if (!string.Equals(
-                        actualTransferDataHash,
-                        expectedTransferDataHash,
-                        StringComparison.OrdinalIgnoreCase))
+                if (!Utility.SHA256Same(actualTransferDataHash, expectedTransferDataHash))
                 {
                     throw new RemoteHistoryDataRejectedException(
                         $"Downloaded history data hash mismatch. Expected: {expectedTransferDataHash}, Actual: {actualTransferDataHash}.");

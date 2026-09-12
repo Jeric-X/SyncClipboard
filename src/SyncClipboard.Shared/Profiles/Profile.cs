@@ -10,7 +10,6 @@ public abstract class Profile
     protected string? Hash;
     protected long? Size;
     protected readonly SemaphoreSlim _hashInitLock = new(1, 1);
-    private string? _validatedTransferDataPath;
     public string? TransferDataHash { get; protected set; }
 
     public abstract ProfileType Type { get; }
@@ -138,45 +137,7 @@ public abstract class Profile
     /// </summary>
     public abstract string? GetTransferDataSavePath(string persistentDir);
 
-    protected void RestoreTransferDataHash(string? hash)
-    {
-        TransferDataHash = Utility.NormalizeSHA256OrNull(hash);
-        _validatedTransferDataPath = null;
-    }
-
-    protected void SetTransferDataHashForPath(string path, string transferDataHash)
-    {
-        TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
-        _validatedTransferDataPath = Path.GetFullPath(path);
-    }
-
-    protected void ClearTransferDataHash()
-    {
-        TransferDataHash = null;
-        _validatedTransferDataPath = null;
-    }
-
-    protected bool IsTransferDataValidationCached(string? path)
-    {
-        if (!Utility.IsValidSHA256(TransferDataHash) ||
-            string.IsNullOrEmpty(path) ||
-            _validatedTransferDataPath is null)
-        {
-            return false;
-        }
-
-        var comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
-        return string.Equals(
-            Path.GetFullPath(path),
-            _validatedTransferDataPath,
-            comparison);
-    }
-
-    protected async Task<bool> IsTransferDataValid(
-        string? path,
-        CancellationToken token)
+    protected async Task<bool> IsTransferDataValid(string? path, CancellationToken token)
     {
         if (!Utility.IsValidSHA256(TransferDataHash) ||
             string.IsNullOrEmpty(path) ||
@@ -188,32 +149,12 @@ public abstract class Profile
         try
         {
             var actualHash = await Utility.CalculateFileSHA256(path, token);
-            if (!string.Equals(actualHash, TransferDataHash, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            _validatedTransferDataPath = Path.GetFullPath(path);
-            return true;
+            return Utility.SHA256Same(actualHash, TransferDataHash);
         }
         catch when (!token.IsCancellationRequested)
         {
             return false;
         }
-    }
-
-    protected void MoveTransferDataValidationCache(string sourcePath, string targetPath)
-    {
-        if (IsTransferDataValidationCached(sourcePath))
-        {
-            _validatedTransferDataPath = Path.GetFullPath(targetPath);
-        }
-    }
-
-    protected void CopyTransferDataStateTo(Profile target)
-    {
-        target.TransferDataHash = TransferDataHash;
-        target._validatedTransferDataPath = _validatedTransferDataPath;
     }
 
     public async Task<string> GetProfileId(CancellationToken token)

@@ -6,6 +6,14 @@ namespace SyncClipboard.Shared.Utilities;
 
 public static class Utility
 {
+    /// <summary>
+    /// 忽略大小写比较 SHA-256 字符串，不校验格式；两个 null 视为相同。
+    /// </summary>
+    public static bool SHA256Same(string? first, string? second)
+    {
+        return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static bool IsValidSHA256([NotNullWhen(true)] string? hash)
     {
         return hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
@@ -57,14 +65,10 @@ public static class Utility
         return Convert.ToHexString(hashBytes);
     }
 
-    public static async Task<string> VerifyFileSHA256(
-        string path,
-        string? expectedHash,
-        CancellationToken token)
+    public static async Task<string> VerifyFileSHA256(string path, string? expectedHash, CancellationToken token)
     {
         var actualHash = await CalculateFileSHA256(path, token);
-        if (!string.IsNullOrEmpty(expectedHash) &&
-            !string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(expectedHash) && !SHA256Same(actualHash, expectedHash))
         {
             throw new InvalidDataException(
                 $"File SHA-256 mismatch. Expected: {expectedHash}, Actual: {actualHash}.");

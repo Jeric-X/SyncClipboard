@@ -26,7 +26,7 @@ public class FileProfile : Profile
         }
         FileName = entity.Text;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
-        RestoreTransferDataHash(
+        TransferDataHash = Utility.NormalizeSHA256OrNull(
             string.IsNullOrEmpty(entity.TransferDataFile)
                 ? null
                 : entity.TransferDataHash);
@@ -55,7 +55,7 @@ public class FileProfile : Profile
     public FileProfile(ProfileDto dto) : this(null, dto.DataName, dto.Hash)
     {
         Size = dto.Size;
-        RestoreTransferDataHash(dto.TransferDataHash);
+        TransferDataHash = Utility.NormalizeSHA256OrNull(dto.TransferDataHash);
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -67,7 +67,7 @@ public class FileProfile : Profile
 
         var hashes = await GetHashesFromFile(FullPath, token);
         Hash = hashes.ProfileHash;
-        SetTransferDataHashForPath(FullPath, hashes.TransferDataHash);
+        TransferDataHash = Utility.NormalizeRequiredSHA256(hashes.TransferDataHash);
     }
 
     protected override Task ComputeSize(CancellationToken token)
@@ -133,7 +133,7 @@ public class FileProfile : Profile
         try
         {
             var hash = await ValidateTransferDataHashAsync(path, token);
-            SetTransferDataHashForPath(path, hash);
+            TransferDataHash = Utility.NormalizeRequiredSHA256(hash);
             return new FileHashInfo(path, hash);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
@@ -166,7 +166,7 @@ public class FileProfile : Profile
         EnsureTransferDataExists(path);
         if (!verify)
         {
-            ClearTransferDataHash();
+            TransferDataHash = null;
             SetTransferDataPath(path);
             return;
         }
@@ -214,7 +214,7 @@ public class FileProfile : Profile
         }
 
         Hash ??= hashes.ProfileHash;
-        SetTransferDataHashForPath(path, hashes.TransferDataHash);
+        TransferDataHash = Utility.NormalizeRequiredSHA256(hashes.TransferDataHash);
         SetTransferDataPath(path);
     }
 
@@ -266,7 +266,6 @@ public class FileProfile : Profile
 
         var targetPath = Path.Combine(workingDir, FileName);
         File.Move(path, targetPath, true);
-        MoveTransferDataValidationCache(path, targetPath);
         FullPath = targetPath;
     }
 
@@ -299,7 +298,7 @@ public class FileProfile : Profile
                 return false;
             }
 
-            SetTransferDataHashForPath(FullPath, hashes.TransferDataHash);
+            TransferDataHash = Utility.NormalizeRequiredSHA256(hashes.TransferDataHash);
             return true;
         }
         catch when (token.IsCancellationRequested is false)
@@ -382,6 +381,6 @@ public class FileProfile : Profile
         fileTarget.FileName = FileName;
         fileTarget.Hash = Hash;
         fileTarget.Size = Size;
-        CopyTransferDataStateTo(fileTarget);
+        fileTarget.TransferDataHash = TransferDataHash;
     }
 }

@@ -98,6 +98,39 @@ public class SetTransferDataInfoTests
         }
     }
 
+    [TestMethod]
+    [DataRow(ProfileType.File)]
+    [DataRow(ProfileType.Image)]
+    [DataRow(ProfileType.Text)]
+    [DataRow(ProfileType.Group)]
+    public async Task CopiedProfileRetainsHashAndRechecksCurrentFile(ProfileType type)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = Directory.CreateTempSubdirectory("SyncClipboard-CopyFileHash-");
+        try
+        {
+            var (profile, file) = await CreateIncomingFile(directory.FullName, type, token);
+            await profile.SetTransferData(file, false, token);
+            var copy = Profile.Create(await profile.ToProfileDto(token));
+            profile.CopyTo(copy);
+
+            Assert.AreEqual(file.Hash, copy.TransferDataHash);
+            Assert.IsTrue(await profile.IsTransferDataValid(token));
+            Assert.IsTrue(await copy.IsTransferDataValid(token));
+
+            await File.WriteAllTextAsync(file.Path, "modified", token);
+
+            Assert.IsFalse(await profile.IsTransferDataValid(token));
+            Assert.IsFalse(await copy.IsTransferDataValid(token));
+            Assert.AreEqual(file.Hash, profile.TransferDataHash);
+            Assert.AreEqual(file.Hash, copy.TransferDataHash);
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
     private static async Task<(Profile Profile, FileHashInfo File)> CreateIncomingFile(
         string directory, ProfileType type, CancellationToken token)
     {

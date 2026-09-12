@@ -216,10 +216,7 @@ public class SyncClipboardController(
         return Ok();
     }
 
-    private async Task<IActionResult?> SetTransferData(
-        ProfileDto dto,
-        Profile profile,
-        CancellationToken token)
+    private async Task<IActionResult?> SetTransferData(ProfileDto dto, Profile profile, CancellationToken token)
     {
         if (!dto.HasData)
         {
@@ -231,10 +228,7 @@ public class SyncClipboardController(
             return BadRequest("DataName cannot be null or empty when HasData is true");
         }
 
-        var previousDataPath = Path.Combine(
-            _serverEnv.GetDataRootPath(),
-            "file",
-            Path.GetFileName(dto.DataName));
+        var previousDataPath = Path.Combine(_serverEnv.GetDataRootPath(), "file", Path.GetFileName(dto.DataName));
         if (!System.IO.File.Exists(previousDataPath))
         {
             return NotFound("Transfer data file not found");
@@ -243,13 +237,9 @@ public class SyncClipboardController(
         try
         {
             var actualTransferDataHash = await Utility.VerifyFileSHA256(
-                previousDataPath,
-                dto.TransferDataHash,
-                token);
-            await profile.SetAndMoveTransferData(
-                _serverEnv.GetPersistentDir(),
-                new FileHashInfo(previousDataPath, actualTransferDataHash),
-                token);
+                previousDataPath, dto.TransferDataHash, token);
+            await profile.SetAndMoveTransferData(_serverEnv.GetPersistentDir(),
+                new FileHashInfo(previousDataPath, actualTransferDataHash), token);
         }
         catch when (!token.IsCancellationRequested)
         {

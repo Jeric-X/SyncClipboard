@@ -38,7 +38,7 @@ public class GroupProfile : Profile
         Size = entity.Size;
         if (_transferDataPath is null)
         {
-            ClearTransferDataHash();
+            TransferDataHash = null;
         }
     }
 
@@ -52,7 +52,7 @@ public class GroupProfile : Profile
         _fileNames = GetFileNames(_files);
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
-        RestoreTransferDataHash(transferDataHash);
+        TransferDataHash = Utility.NormalizeSHA256OrNull(transferDataHash);
         if (_transferDataPath is not null)
         {
             _transferDataName = Path.GetFileName(_transferDataPath);
@@ -88,7 +88,7 @@ public class GroupProfile : Profile
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToArray();
         _transferDataName = dto.DataName;
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
-        RestoreTransferDataHash(dto.TransferDataHash);
+        TransferDataHash = Utility.NormalizeSHA256OrNull(dto.TransferDataHash);
         Size = dto.Size;
     }
 
@@ -293,7 +293,7 @@ public class GroupProfile : Profile
 
         _transferDataName = null;
         _transferDataPath = null;
-        ClearTransferDataHash();
+        TransferDataHash = null;
 
         if (!await IsLocalDataValid(true, token).ConfigureAwait(false))
         {
@@ -314,7 +314,7 @@ public class GroupProfile : Profile
             File.Move(tempFilePath, filePath);
             _transferDataName = fileName;
             _transferDataPath = filePath;
-            SetTransferDataHashForPath(filePath, transferDataHash);
+            TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
             return new FileHashInfo(filePath, transferDataHash);
         }
         finally
@@ -336,8 +336,7 @@ public class GroupProfile : Profile
             }
 
             await VerifyExistingTransferArchiveAsync(archivePath, expectedHash, token).ConfigureAwait(false);
-            SetTransferDataHashForPath(
-                archivePath,
+            TransferDataHash = Utility.NormalizeRequiredSHA256(
                 await Utility.CalculateFileSHA256(archivePath, token).ConfigureAwait(false));
             return true;
         }
@@ -729,7 +728,7 @@ public class GroupProfile : Profile
         var extractDir = ValidateTransferDataPath(path);
         if (!verify)
         {
-            ClearTransferDataHash();
+            TransferDataHash = null;
             _transferDataPath = path;
             _transferDataName = Path.GetFileName(path);
             return;
@@ -840,7 +839,7 @@ public class GroupProfile : Profile
             _transferDataName = Path.GetFileName(path);
             if (verifyProfileHash && transferDataHash is not null)
             {
-                SetTransferDataHashForPath(path, transferDataHash);
+                TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
             }
         }
         catch
@@ -854,7 +853,7 @@ public class GroupProfile : Profile
     {
         _transferDataPath = path;
         _transferDataName = Path.GetFileName(path);
-        SetTransferDataHashForPath(path, transferDataHash);
+        TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
     }
 
     private string[] CommitExtractionDirectory(
@@ -1021,7 +1020,6 @@ public class GroupProfile : Profile
             _files!,
             CreateExtractionOwnershipMarker(Hash, TransferDataHash));
         File.Move(path, targetPath, true);
-        MoveTransferDataValidationCache(path, targetPath);
         _transferDataPath = targetPath;
     }
 
@@ -1116,8 +1114,7 @@ public class GroupProfile : Profile
                 transferDataPath,
                 await GetHash(token),
                 token);
-            SetTransferDataHashForPath(
-                transferDataPath,
+            TransferDataHash = Utility.NormalizeRequiredSHA256(
                 await Utility.CalculateFileSHA256(transferDataPath, token));
             return true;
         }
@@ -1152,7 +1149,7 @@ public class GroupProfile : Profile
         {
             _transferDataPath = null;
             _transferDataName = null;
-            ClearTransferDataHash();
+            TransferDataHash = null;
             return;
         }
 
@@ -1343,6 +1340,6 @@ public class GroupProfile : Profile
         groupTarget._fileNames = _fileNames;
         groupTarget.Hash = Hash;
         groupTarget.Size = Size;
-        CopyTransferDataStateTo(groupTarget);
+        groupTarget.TransferDataHash = TransferDataHash;
     }
 }

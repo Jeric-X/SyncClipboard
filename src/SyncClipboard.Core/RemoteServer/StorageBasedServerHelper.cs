@@ -181,10 +181,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         }
 
         if (Utility.IsValidSHA256(currentProfile.TransferDataHash) &&
-            !string.Equals(
-                currentProfile.TransferDataHash,
-                downloadedProfile.TransferDataHash,
-                StringComparison.OrdinalIgnoreCase))
+            !Utility.SHA256Same(currentProfile.TransferDataHash, downloadedProfile.TransferDataHash))
         {
             return false;
         }
