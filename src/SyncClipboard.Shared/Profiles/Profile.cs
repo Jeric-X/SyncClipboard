@@ -17,6 +17,13 @@ public abstract class Profile
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
     public abstract Task<bool> IsTransferDataValid(CancellationToken token);
+
+    /// <summary>
+    /// 检查本地数据或传输文件是否至少有一份完整可用；不保证数据已完成本地化。
+    /// quick 为 true 时仅检查数据是否存在，不验证内容完整性。
+    /// </summary>
+    public abstract Task<bool> IsDataComplete(bool quick, CancellationToken token);
+
     public abstract Task<ProfileDto> ToProfileDto(CancellationToken token);
     protected abstract Task ComputeHash(CancellationToken token);
     protected abstract Task ComputeSize(CancellationToken token);
@@ -70,7 +77,15 @@ public abstract class Profile
         }
     }
     public abstract Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token);
-    public abstract Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token);
+    /// <summary>
+    /// 准备可供本地使用的数据；不验证内容完整性，所需验证由调用方负责。
+    /// </summary>
+    public abstract Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token);
+
+    /// <summary>
+    /// 验证并尝试准备完整的本地数据；没有可用数据时返回 false，保留原路径信息。
+    /// </summary>
+    public abstract Task<bool> TryLocalize(string localDir, CancellationToken token);
     public abstract void CopyTo(Profile target);
 
     public abstract bool HasTransferData { get; }
@@ -96,7 +111,11 @@ public abstract class Profile
         string path,
         string transferDataHash,
         CancellationToken token);
-    public abstract Task<string?> NeedsTransferData(string persistentDir, CancellationToken token);
+    /// <summary>
+    /// 仅根据现有元数据计算接收传输文件的保存路径，不验证数据或创建目录。
+    /// 不支持传输文件时返回 null。
+    /// </summary>
+    public abstract string? GetTransferDataSavePath(string persistentDir);
 
     protected void RestoreTransferDataHash(string? hash)
     {

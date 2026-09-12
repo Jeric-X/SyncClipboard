@@ -318,20 +318,20 @@ public class FileProfile : Profile
         return IsTransferDataValid(FullPath, token);
     }
 
-    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
+    public override Task<bool> IsDataComplete(bool quick, CancellationToken token)
     {
-        if (await IsLocalDataValid(false, token))
-        {
-            return null;
-        }
+        return IsLocalDataValid(quick, token);
+    }
 
-        var workingDir = CreateWorkingDir(persistentDir, Type, await GetHash(token));
-        if (FullPath is null)
-        {
-            return Path.Combine(workingDir, FileName);
-        }
+    public override Task<bool> TryLocalize(string localDir, CancellationToken token)
+    {
+        return IsLocalDataValid(false, token);
+    }
 
-        return FullPath;
+    public override string GetTransferDataSavePath(string persistentDir)
+    {
+        var workingDir = QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty);
+        return Path.Combine(workingDir, FileName);
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
@@ -359,35 +359,18 @@ public class FileProfile : Profile
         };
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
     {
         if (FullPath is null)
         {
             throw new Exception("Cannot localize a FileProfile with no data.");
         }
 
-        if (!quick && !IsTransferDataValidationCached(FullPath))
-        {
-            if (Utility.IsValidSHA256(TransferDataHash))
-            {
-                if (!await IsTransferDataValid(token))
-                {
-                    throw new LocalProfileDataUnavailableException(
-                        $"File transfer data hash mismatch for {Hash ?? "<unknown>"}.");
-                }
-            }
-            else if (!await IsLocalDataValid(false, token))
-            {
-                throw new LocalProfileDataUnavailableException(
-                    $"Local data is unavailable for File profile {Hash ?? "<unknown>"}.");
-            }
-        }
-
-        return new ProfileLocalInfo
+        return Task.FromResult(new ProfileLocalInfo
         {
             Text = FullPath,
             FilePaths = [FullPath],
-        };
+        });
     }
 
     public override void CopyTo(Profile target)

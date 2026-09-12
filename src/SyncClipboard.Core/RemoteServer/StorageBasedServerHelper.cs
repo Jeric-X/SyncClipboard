@@ -36,14 +36,16 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         var shouldFillBack = await IsProfileDtoMetadataIncompleteAsync(profile, cancellationToken);
         var persistentDir = _profileEnv.GetPersistentDir();
-        var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
-        if (dataPath is null)
+        if (await profile.TryLocalize(persistentDir, cancellationToken))
         {
             return;
         }
 
+        var dataPath = profile.GetTransferDataSavePath(persistentDir)
+            ?? throw new ProfileDataDownloadException("Profile does not support transfer data.");
         try
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dataPath))!);
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
             var transferDataHash = await Utility.VerifyFileSHA256(

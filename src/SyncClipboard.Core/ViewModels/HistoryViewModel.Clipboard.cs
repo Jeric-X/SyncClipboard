@@ -31,7 +31,7 @@ public partial class HistoryViewModel
     {
         var historyRecord = record.ToHistoryRecord();
         var profile = historyRecord.ToProfile();
-        var valid = await profile.IsLocalDataValid(true, token);
+        var valid = await profile.IsDataComplete(true, token);
         if (!valid)
         {
             historyRecord.IsLocalFileReady = false;

@@ -1545,7 +1545,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         var historyRecord = record.ToHistoryRecord();
         var profile = historyRecord.ToProfile();
-        var valid = await profile.IsLocalDataValid(true, token);
+        var valid = await profile.IsDataComplete(true, token);
         if (!valid)
         {
             historyRecord.IsLocalFileReady = false;
@@ -1565,7 +1565,7 @@ public partial class HistoryViewModel : ObservableObject
 
         try
         {
-            var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), false, token);
+            var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
             await setter.FillPackage(package, localInfo.GetMetaInfomation());
             return true;
         }

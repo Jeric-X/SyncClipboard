@@ -331,7 +331,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         {
             throw new HistoryTransferDataException("Prepared history transfer data has no valid SHA-256 hash.");
         }
-        return new HistoryTransferData(path, transferDataHash!);
+        return new HistoryTransferData(path, transferDataHash);
     }
 
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)
@@ -520,7 +520,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     {
         entity.TransferDataHash = null;
         var profile = entity.ToProfile(_persistentDir);
-        var filePath = await profile.NeedsTransferData(_persistentDir, token)
+        var filePath = profile.GetTransferDataSavePath(_persistentDir)
             ?? throw new HistoryTransferDataException("Profile does not support transfer data.");
 
         var directory = Path.GetDirectoryName(filePath);

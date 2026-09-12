@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -5,7 +6,7 @@ namespace SyncClipboard.Shared.Utilities;
 
 public static class Utility
 {
-    public static bool IsValidSHA256(string? hash)
+    public static bool IsValidSHA256([NotNullWhen(true)] string? hash)
     {
         return hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
     }
@@ -33,7 +34,7 @@ public static class Utility
 
     public static string? NormalizeSHA256OrNull(string? hash)
     {
-        return IsValidSHA256(hash) ? hash!.ToUpperInvariant() : null;
+        return IsValidSHA256(hash) ? hash.ToUpperInvariant() : null;
     }
 
     public static async Task<string> CalculateSHA256(byte[] data, CancellationToken token)

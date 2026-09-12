@@ -92,6 +92,48 @@ public class HistoryTransferDataHashTests
     }
 
     [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task AddRecordDto_ExistingDataOnlyAcceptsVerifiedReplacementWhenDeleted(bool deleted, bool invalidHash)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        var sourceFile = Path.Combine(fixture.RootDirectory, "existing.txt");
+        await File.WriteAllTextAsync(sourceFile, "content", token);
+        var sourceProfile = new GroupProfile([sourceFile]);
+        var archivePath = await sourceProfile.PrepareTransferData(Path.Combine(fixture.RootDirectory, "client"), token);
+        Assert.IsNotNull(archivePath);
+        var hash = sourceProfile.TransferDataHash!;
+        var dto = CreateGroupDto(await sourceProfile.GetHash(token));
+        await using (var first = File.OpenRead(archivePath))
+            await fixture.Service.AddRecordDto("user", dto, hash, first, token);
+
+        var existing = await fixture.DbContext.HistoryRecords.SingleAsync(token);
+        existing.IsDeleted = deleted;
+        await fixture.DbContext.SaveChangesAsync(token);
+        Assert.IsTrue(await existing.ToProfile(fixture.PersistentDirectory).IsLocalDataValid(false, token));
+
+        await using var stream = File.OpenRead(archivePath);
+        if (deleted && invalidHash)
+        {
+            await Assert.ThrowsExactlyAsync<HistoryTransferDataException>(
+                () => fixture.Service.AddRecordDto("user", dto, new string('A', 64), stream, token));
+            Assert.IsTrue(existing.IsDeleted);
+        }
+        else
+        {
+            // 未删除的重复记录忽略上传内容；已删除记录必须接收并验证新文件。
+            var result = await fixture.Service.AddRecordDto("user", dto, deleted ? hash : new string('A', 64), stream, token);
+            Assert.IsFalse(result.IsDeleted);
+            Assert.AreEqual(hash, existing.TransferDataHash);
+            Assert.AreEqual(deleted ? stream.Length : 0, stream.Position);
+            Assert.IsTrue(await existing.ToProfile(fixture.PersistentDirectory).IsLocalDataValid(false, token));
+        }
+        Assert.AreEqual(1, await fixture.DbContext.HistoryRecords.CountAsync(token));
+    }
+
+    [TestMethod]
     public async Task AddRecordDto_ResurrectedGroupUsesIncomingArchiveHash()
     {
         var token = TestContext.CancellationTokenSource.Token;

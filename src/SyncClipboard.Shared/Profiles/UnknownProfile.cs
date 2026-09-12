@@ -27,6 +27,11 @@ public class UnknownProfile : Profile
         return Task.FromResult(false);
     }
 
+    public override Task<bool> IsDataComplete(bool quick, CancellationToken token)
+    {
+        return Task.FromResult(false);
+    }
+
     protected override Task ComputeHash(CancellationToken token)
     {
         Hash = "UNKNOWN_PROFILE_HASH";
@@ -39,17 +44,19 @@ public class UnknownProfile : Profile
         return Task.CompletedTask;
     }
 
-    public override Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
+    public override Task<bool> TryLocalize(string localDir, CancellationToken token)
     {
-        return Task.FromResult<string?>(null);
+        return Task.FromResult(false);
     }
+
+    public override string? GetTransferDataSavePath(string persistentDir) => null;
 
     public override Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }
 
-    public override Task<ProfileLocalInfo> Localize(string persistentDir, bool quick, CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }

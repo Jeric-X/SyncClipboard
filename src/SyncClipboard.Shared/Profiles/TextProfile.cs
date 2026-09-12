@@ -189,11 +189,24 @@ public class TextProfile : Profile
         Size = _text.Length;
     }
 
-    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
+    public override async Task<bool> IsDataComplete(bool quick, CancellationToken token)
     {
+        if (quick)
+        {
+            return _fullText is not null || await IsLocalDataValid(true, token);
+        }
+
+        if (_fullText is not null && string.Equals(
+                await Utility.CalculateSHA256(_fullText, token),
+                await GetHash(token),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         if (await IsLocalDataValid(false, token))
         {
-            return null;
+            return true;
         }
 
         if (_transferDataPath is not null && File.Exists(_transferDataPath))
@@ -201,15 +214,38 @@ public class TextProfile : Profile
             try
             {
                 await SetTransferData(_transferDataPath, verify: true, token);
-                return null;
+                return true;
             }
             catch when (token.IsCancellationRequested is false)
             { }
         }
 
-        _transferDataName ??= $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
-        var dataPath = Path.Combine(CreateWorkingDir(persistentDir, await GetHash(token)), _transferDataName);
-        return dataPath;
+        return false;
+    }
+
+    public override async Task<bool> TryLocalize(string localDir, CancellationToken token)
+    {
+        if (!await IsDataComplete(false, token))
+        {
+            return false;
+        }
+
+        if (HasTransferData && _fullText is null)
+        {
+            _fullText = await File.ReadAllTextAsync(_transferDataPath!, Encoding.UTF8, token);
+        }
+        return true;
+    }
+
+    public override string? GetTransferDataSavePath(string persistentDir)
+    {
+        if (!HasTransferData)
+        {
+            return null;
+        }
+
+        var name = _transferDataName ?? Path.GetFileName(_transferDataPath) ?? $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+        return Path.Combine(QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty), name);
     }
 
     private readonly SemaphoreSlim _persistentLock = new(1, 1);
@@ -465,35 +501,20 @@ public class TextProfile : Profile
         _transferDataName = Path.GetFileName(targetPath);
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string _, bool quick, CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string _, CancellationToken token)
     {
-        if (HasTransferData is false || quick)
-        {
-            return new ProfileLocalInfo { Text = _text };
-        }
-
         if (_fullText is not null)
         {
             return new ProfileLocalInfo { Text = _fullText };
         }
 
+        if (HasTransferData is false)
+        {
+            return new ProfileLocalInfo { Text = _text };
+        }
+
         if (File.Exists(_transferDataPath))
         {
-            if (!IsTransferDataValidationCached(_transferDataPath))
-            {
-                if (Utility.IsValidSHA256(TransferDataHash))
-                {
-                    if (!await IsTransferDataValid(token))
-                    {
-                        throw new LocalProfileDataUnavailableException(
-                            $"Text transfer data hash mismatch for {Hash ?? "<unknown>"}.");
-                    }
-                }
-                else
-                {
-                    await SetTransferData(_transferDataPath!, verify: true, token);
-                }
-            }
             return new ProfileLocalInfo { Text = await File.ReadAllTextAsync(_transferDataPath, Encoding.UTF8, token) };
         }
 

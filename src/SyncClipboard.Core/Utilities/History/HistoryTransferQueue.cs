@@ -572,16 +572,14 @@ public class HistoryTransferQueue : IDisposable
         var profile = task.Profile;
         var persistentDir = _profileEnv.GetPersistentDir();
 
-        var localDataPath = await profile.NeedsTransferData(persistentDir, ct);
-        if (localDataPath is null)
+        if (await profile.TryLocalize(persistentDir, ct))
         {
-            if (profile is GroupProfile)
-            {
-                await profile.Localize(persistentDir, quick: false, ct);
-            }
             return;
         }
 
+        var localDataPath = profile.GetTransferDataSavePath(persistentDir)
+            ?? throw new InvalidOperationException("Profile does not support transfer data.");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(localDataPath))!);
         var transferDataHash = await server.DownloadHistoryDataAsync(
             task.ProfileId,
             localDataPath,
@@ -591,7 +589,7 @@ public class HistoryTransferQueue : IDisposable
         {
             await profile.SetTransferData(
                 localDataPath,
-                transferDataHash!,
+                transferDataHash,
                 verify: false,
                 ct);
         }
@@ -601,7 +599,7 @@ public class HistoryTransferQueue : IDisposable
         }
         if (profile is GroupProfile)
         {
-            await profile.Localize(persistentDir, quick: false, ct);
+            await profile.Localize(persistentDir, ct);
         }
         if (_configManager.GetConfig<HistoryConfig>().EnableHistory)
         {

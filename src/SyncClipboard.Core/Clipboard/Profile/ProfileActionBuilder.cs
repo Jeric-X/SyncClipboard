@@ -11,10 +11,15 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
     {
         List<MenuItem> actions =
         [
-            new MenuItem(Strings.Copy, () => { _ = setter.Set(profile, CancellationToken.None); }),
+            new MenuItem(Strings.Copy, () =>
+            {
+                DelegateExtention.SafeFireAndForget(
+                    () => setter.Set(profile, CancellationToken.None),
+                    nameof(ProfileActionBuilder));
+            }),
         ];
 
-        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), true, token);
+        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
 
         if (HasUrl(localInfo.Text, out var url) && url is not null)
         {
@@ -41,7 +46,7 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
 
     public async Task<MenuItem?> GetPrimaryAction(Profile profile, CancellationToken token)
     {
-        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), true, token);
+        var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
 
         if (profile is TextProfile && HasUrl(localInfo.Text, out var url) && url is not null)
         {

@@ -23,7 +23,7 @@ public class GroupProfile : Profile
     public string[] Files => _files ?? [];
 
     public override ProfileType Type => ProfileType.Group;
-    private string[]? _fileNames;
+    private string[] _fileNames = [];
     public override string DisplayText => GetDisplayText();
 
     public override string ShortDisplayText => GetDisplayText(true);
@@ -31,6 +31,10 @@ public class GroupProfile : Profile
     public GroupProfile(ProfilePersistentInfo entity)
         : this(entity.FilePaths ?? [], entity.Hash, entity.TransferDataFile, entity.TransferDataHash)
     {
+        if (!string.IsNullOrEmpty(entity.Text))
+        {
+            _fileNames = entity.Text.Split(["\r\n", "\r", "\n"], StringSplitOptions.RemoveEmptyEntries);
+        }
         Size = entity.Size;
         if (_transferDataPath is null)
         {
@@ -45,6 +49,7 @@ public class GroupProfile : Profile
         string? transferDataHash = null)
     {
         _files = [.. files];
+        _fileNames = GetFileNames(_files);
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
         RestoreTransferDataHash(transferDataHash);
@@ -69,6 +74,7 @@ public class GroupProfile : Profile
                 return FileFilterHelper.IsFileAvailableAfterFilter(fileName, _fileFilterConfig);
             })
             .ToArray();
+        _fileNames = GetFileNames(_files);
     }
 
     private static string CreateNewDataFileName()
@@ -624,17 +630,19 @@ public class GroupProfile : Profile
 
     public string GetDisplayText(bool shortStr = false)
     {
-        if (_fileNames?.Length != 0 && _files is not null)
-            _fileNames = _files.Select(file => Path.GetFileName(file)).ToArray();
-
-        if (_fileNames is null)
-            return string.Empty;
-
         if (shortStr && _fileNames.Length > 5)
         {
             return string.Join("\n", _fileNames.Take(5)) + "\n...";
         }
         return string.Join("\n", _fileNames);
+    }
+
+    private static string[] GetFileNames(IEnumerable<string> files)
+    {
+        return files
+            .Select(file => Path.GetFileName(file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
+            .Where(fileName => !string.IsNullOrEmpty(fileName))
+            .ToArray();
     }
 
     private static async Task<string[]> ExtractArchiveEntriesAsync(ZipArchive archive, string extractPath, CancellationToken token)
@@ -793,7 +801,7 @@ public class GroupProfile : Profile
     private async Task ExtractAndSetTransferData(
         string path,
         string extractDir,
-        string transferDataHash,
+        string? transferDataHash,
         bool verifyProfileHash,
         CancellationToken token)
     {
@@ -807,14 +815,8 @@ public class GroupProfile : Profile
                 path,
                 verifyProfileHash,
                 token);
-            var verifiedProfileHash = extractedData.ProfileHash ?? Hash;
-            if (string.IsNullOrEmpty(verifiedProfileHash))
-            {
-                throw new InvalidDataException("Group profile hash is unavailable after transfer-data validation.");
-            }
-
             var ownershipMarker = CreateExtractionOwnershipMarker(
-                verifiedProfileHash,
+                extractedData.ProfileHash ?? Hash,
                 transferDataHash);
             await WriteExtractionOwnershipMarker(
                 temporaryExtractDir,
@@ -825,6 +827,10 @@ public class GroupProfile : Profile
                 extractDir,
                 extractedData.Files,
                 ownershipMarker);
+            if (_fileNames.Length == 0)
+            {
+                _fileNames = GetFileNames(_files);
+            }
             if (extractedData.ProfileHash is not null)
             {
                 Hash = extractedData.ProfileHash;
@@ -832,7 +838,10 @@ public class GroupProfile : Profile
             }
             _transferDataPath = path;
             _transferDataName = Path.GetFileName(path);
-            SetTransferDataHashForPath(path, transferDataHash);
+            if (verifyProfileHash && transferDataHash is not null)
+            {
+                SetTransferDataHashForPath(path, transferDataHash);
+            }
         }
         catch
         {
@@ -916,6 +925,7 @@ public class GroupProfile : Profile
         var expectedParts = expectedMarker.Split('\n');
         return existingParts is ["1", var existingProfileHash, _] &&
             expectedParts is ["1", var expectedProfileHash, _] &&
+            !string.IsNullOrEmpty(expectedProfileHash) &&
             string.Equals(
                 existingProfileHash,
                 expectedProfileHash,
@@ -923,10 +933,10 @@ public class GroupProfile : Profile
     }
 
     private static string CreateExtractionOwnershipMarker(
-        string profileHash,
-        string transferDataHash)
+        string? profileHash,
+        string? transferDataHash)
     {
-        return $"1\n{profileHash.ToUpperInvariant()}\n{transferDataHash.ToUpperInvariant()}";
+        return $"1\n{profileHash?.ToUpperInvariant()}\n{transferDataHash?.ToUpperInvariant()}";
     }
 
     private static async Task WriteExtractionOwnershipMarker(
@@ -1055,19 +1065,37 @@ public class GroupProfile : Profile
         return IsTransferDataValid(_transferDataPath, token);
     }
 
-    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
+    public override async Task<bool> TryLocalize(string localDir, CancellationToken token)
     {
         if (await IsLocalDataValid(false, token))
         {
-            return null;
+            return true;
         }
 
-        if (await CanReuseTransferArchiveWithoutDownload(token))
+        if (!await CanReuseTransferArchiveWithoutDownload(token))
         {
-            return null;
+            return false;
         }
 
-        return Path.Combine(CreateWorkingDir(persistentDir, Type, await GetHash(token)), _transferDataName ?? CreateNewDataFileName());
+        var path = _transferDataPath!;
+        await ExtractAndSetTransferData(
+            path,
+            ValidateTransferDataPath(path),
+            TransferDataHash,
+            verifyProfileHash: false,
+            token);
+        return true;
+    }
+
+    public override string GetTransferDataSavePath(string persistentDir)
+    {
+        return Path.Combine(QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty), _transferDataName ?? CreateNewDataFileName());
+    }
+
+    public override async Task<bool> IsDataComplete(bool quick, CancellationToken token)
+    {
+        return await IsLocalDataValid(quick, token) ||
+            (quick ? File.Exists(_transferDataPath) : await CanReuseTransferArchiveWithoutDownload(token));
     }
 
     private async Task<bool> CanReuseTransferArchiveWithoutDownload(CancellationToken token)
@@ -1142,17 +1170,10 @@ public class GroupProfile : Profile
         string workingDir,
         CancellationToken token)
     {
-        var relativeFiles = _files?
-                            .Select(f => f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
-                            .Select(f => Path.GetFileName(f))
-                            .Where(f => string.IsNullOrEmpty(f) is false)
-                            .ToArray() ?? [];
-        var text = string.Join('\n', relativeFiles);
-
         return new ProfilePersistentInfo
         {
             Type = Type,
-            Text = text,
+            Text = string.Join('\n', _fileNames),
             Size = await GetSize(token),
             Hash = await GetHash(token),
             TransferDataFile = GetPersistentPath(workingDir, _transferDataPath),
@@ -1290,30 +1311,18 @@ public class GroupProfile : Profile
         }
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
     {
-        if (!await IsLocalDataValid(quick, token) &&
+        if (!await IsLocalDataValid(true, token) &&
             _transferDataPath is not null &&
             File.Exists(_transferDataPath))
         {
-            if (Utility.IsValidSHA256(TransferDataHash))
-            {
-                if (!await IsTransferDataValid(token))
-                {
-                    throw new LocalProfileDataUnavailableException(
-                        $"Group transfer data hash mismatch for {Hash ?? "<unknown>"}.");
-                }
-                await ExtractAndSetTransferData(
-                    _transferDataPath,
-                    ValidateTransferDataPath(_transferDataPath),
-                    TransferDataHash!,
-                    verifyProfileHash: false,
-                    token);
-            }
-            else
-            {
-                await SetTransferData(_transferDataPath, verify: true, token);
-            }
+            await ExtractAndSetTransferData(
+                _transferDataPath,
+                ValidateTransferDataPath(_transferDataPath),
+                TransferDataHash,
+                verifyProfileHash: false,
+                token);
         }
         ArgumentNullException.ThrowIfNull(_files);
 

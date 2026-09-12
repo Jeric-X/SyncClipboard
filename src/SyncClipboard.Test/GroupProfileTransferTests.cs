@@ -522,14 +522,12 @@ public class GroupProfileTransferTests
             var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
             Assert.IsFalse(File.Exists(extractedFile));
 
-            var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
-
-            Assert.IsNull(downloadPath);
+            Assert.IsTrue(await restoredProfile.IsDataComplete(false, token));
             Assert.IsFalse(File.Exists(extractedFile));
 
+            Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, token));
             var localInfo = await restoredProfile.Localize(
                 Path.Combine(testDirectory, "local"),
-                quick: false,
                 token);
 
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
@@ -592,7 +590,9 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task Localize_ModifiedExtractedFileIsRestoredFromVerifiedArchive()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ModifiedExtractedFile_IsRestoredOnlyByTryLocalize(bool tryLocalize)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -616,19 +616,20 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(extractedFile, "modified", token);
             Assert.IsFalse(await restoredProfile.IsLocalDataValid(false, token));
 
-            var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
-
-            Assert.IsNull(downloadPath);
+            Assert.IsTrue(await restoredProfile.IsDataComplete(false, token));
             Assert.AreEqual("modified", await File.ReadAllTextAsync(extractedFile, token));
+            CollectionAssert.Contains(restoredProfile.Files, extractedFile);
+
+            if (tryLocalize)
+                Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, token));
 
             var localInfo = await restoredProfile.Localize(
                 Path.Combine(testDirectory, "local"),
-                quick: false,
                 token);
 
-            Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            Assert.AreEqual(tryLocalize ? "source" : "modified", await File.ReadAllTextAsync(extractedFile, token));
             CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
-            Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
+            Assert.AreEqual(tryLocalize, await restoredProfile.IsLocalDataValid(false, token));
         }
         finally
         {
@@ -668,14 +669,9 @@ public class GroupProfileTransferTests
                 await writer.WriteAsync("tampered");
             }
 
-            var downloadPath = await restoredProfile.NeedsTransferData(persistentDirectory, token);
-
-            Assert.IsNotNull(downloadPath);
-            await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
-                () => restoredProfile.Localize(
-                    Path.Combine(testDirectory, "local"),
-                    quick: false,
-                    token));
+            Assert.IsFalse(await restoredProfile.TryLocalize(persistentDirectory, token));
+            Assert.IsFalse(await restoredProfile.IsDataComplete(false, token));
+            Assert.IsFalse(await restoredProfile.IsTransferDataValid(token));
         }
         finally
         {
@@ -725,7 +721,6 @@ public class GroupProfileTransferTests
 
             var localInfo = await restartedProfile.Localize(
                 Path.Combine(testDirectory, "local"),
-                quick: false,
                 token);
 
             Assert.AreEqual("source", await File.ReadAllTextAsync(localInfo.FilePaths.Single(), token));
