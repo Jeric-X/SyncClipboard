@@ -209,6 +209,11 @@ public class TextProfile : Profile
             return true;
         }
 
+        return await TryValidateExistingTransferFile(token);
+    }
+
+    private async Task<bool> TryValidateExistingTransferFile(CancellationToken token)
+    {
         if (_transferDataPath is not null && File.Exists(_transferDataPath))
         {
             try
