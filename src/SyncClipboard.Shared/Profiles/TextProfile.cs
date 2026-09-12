@@ -1,4 +1,5 @@
 using System.Text;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
@@ -314,7 +315,7 @@ public class TextProfile : Profile
         };
     }
 
-    public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         var expectedHash = await GetHash(token);
         if (HasTransferData is false)
@@ -327,7 +328,7 @@ public class TextProfile : Profile
         return await PrepareTransferFileAsync(persistentDir, expectedHash, token);
     }
 
-    private async Task<string> PrepareTransferFileAsync(
+    private async Task<FileHashInfo> PrepareTransferFileAsync(
         string persistentDir,
         string expectedHash,
         CancellationToken token)
@@ -337,10 +338,9 @@ public class TextProfile : Profile
 
         try
         {
-            SetTransferDataHashForPath(
-                path,
-                await ValidateTransferDataHashAsync(path, expectedHash, token));
-            return path;
+            var hash = await ValidateTransferDataHashAsync(path, expectedHash, token);
+            SetTransferDataHashForPath(path, hash);
+            return new FileHashInfo(path, hash);
         }
         catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
         {

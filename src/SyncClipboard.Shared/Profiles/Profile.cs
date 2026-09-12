@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
@@ -90,7 +91,10 @@ public abstract class Profile
     public abstract void CopyTo(Profile target);
 
     public abstract bool HasTransferData { get; }
-    public abstract Task<string?> PrepareTransferData(string persistentDir, CancellationToken token);
+    /// <summary>
+    /// 验证并准备传输文件，返回文件路径及对应的 SHA-256；无需传输文件时返回 null。
+    /// </summary>
+    public abstract Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token);
     public abstract Task SetTransferData(
         string path,
         bool verify,

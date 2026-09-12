@@ -1,3 +1,4 @@
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Shared.Profiles;
@@ -61,7 +62,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
+    public override Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }

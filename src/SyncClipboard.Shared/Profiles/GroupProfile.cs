@@ -269,7 +269,7 @@ public class GroupProfile : Profile
         }
     }
 
-    public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         var expectedHash = await GetHash(token);
         var transferDataPath = _transferDataPath;
@@ -277,7 +277,7 @@ public class GroupProfile : Profile
             File.Exists(transferDataPath) &&
             await CanReuseTransferArchiveAsync(transferDataPath, expectedHash, token).ConfigureAwait(false))
         {
-            return transferDataPath;
+            return new FileHashInfo(transferDataPath, TransferDataHash!);
         }
 
         await _transferDataLock.WaitAsync(token);
@@ -288,7 +288,7 @@ public class GroupProfile : Profile
             File.Exists(transferDataPath) &&
             await CanReuseTransferArchiveAsync(transferDataPath, expectedHash, token).ConfigureAwait(false))
         {
-            return transferDataPath;
+            return new FileHashInfo(transferDataPath, TransferDataHash!);
         }
 
         _transferDataName = null;
@@ -315,7 +315,7 @@ public class GroupProfile : Profile
             _transferDataName = fileName;
             _transferDataPath = filePath;
             SetTransferDataHashForPath(filePath, transferDataHash);
-            return filePath;
+            return new FileHashInfo(filePath, transferDataHash);
         }
         finally
         {

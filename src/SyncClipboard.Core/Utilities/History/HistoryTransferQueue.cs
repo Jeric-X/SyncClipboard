@@ -628,7 +628,7 @@ public class HistoryTransferQueue : IDisposable
         }
 
         // 服务器不存在，执行上传
-        string? transferFilePath = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
+        var transferData = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
         var persistentInfo = await profile.Persist(_profileEnv.GetPersistentDir(), ct);
         record.FilePath = persistentInfo.FilePaths;
         record.TransferDataFile = persistentInfo.TransferDataFile;
@@ -641,8 +641,8 @@ public class HistoryTransferQueue : IDisposable
         {
             await server.UploadHistoryAsync(
                 recordDto,
-                transferFilePath,
-                persistentInfo.TransferDataHash,
+                transferData?.Path,
+                transferData?.Hash,
                 task.ProgressReporter,
                 ct);
             record.SyncStatus = HistorySyncStatus.Synced;

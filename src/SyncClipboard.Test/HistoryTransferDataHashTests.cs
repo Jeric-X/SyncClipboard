@@ -75,9 +75,9 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "source.txt");
         await File.WriteAllTextAsync(sourceFile, "content", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = await sourceProfile.PrepareTransferData(
+        var archivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "client"),
-            token);
+            token))?.Path;
         Assert.IsNotNull(archivePath);
 
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
@@ -102,7 +102,7 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "existing.txt");
         await File.WriteAllTextAsync(sourceFile, "content", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = await sourceProfile.PrepareTransferData(Path.Combine(fixture.RootDirectory, "client"), token);
+        var archivePath = (await sourceProfile.PrepareTransferData(Path.Combine(fixture.RootDirectory, "client"), token))?.Path;
         Assert.IsNotNull(archivePath);
         var hash = sourceProfile.TransferDataHash!;
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
@@ -141,9 +141,9 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "resurrect-source.txt");
         await File.WriteAllTextAsync(sourceFile, "resurrect", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = await sourceProfile.PrepareTransferData(
+        var archivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "resurrect-client"),
-            token);
+            token))?.Path;
         Assert.IsNotNull(archivePath);
         var incomingTransferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
@@ -193,8 +193,8 @@ public class HistoryTransferDataHashTests
             "user",
             Profile.GetProfileId(ProfileType.Group, profileHash),
             token);
-        Assert.AreEqual(archivePath, result?.FilePath);
-        Assert.AreEqual(transferDataHash, result?.TransferDataHash);
+        Assert.AreEqual(archivePath, result?.Path);
+        Assert.AreEqual(transferDataHash, result?.Hash);
 
         await File.WriteAllTextAsync(archivePath, "changed", token);
         await Assert.ThrowsExactlyAsync<HistoryTransferDataException>(
@@ -212,9 +212,9 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "regenerate-source.txt");
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = await sourceProfile.PrepareTransferData(
+        var archivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "regenerate-client"),
-            token);
+            token))?.Path;
         Assert.IsNotNull(archivePath);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
@@ -243,12 +243,12 @@ public class HistoryTransferDataHashTests
             token);
 
         Assert.IsNotNull(regenerated);
-        Assert.IsTrue(File.Exists(regenerated.FilePath));
+        Assert.IsTrue(File.Exists(regenerated.Path));
         Assert.AreEqual(
-            await Utility.CalculateFileSHA256(regenerated.FilePath, token),
-            regenerated.TransferDataHash);
+            await Utility.CalculateFileSHA256(regenerated.Path, token),
+            regenerated.Hash);
         Assert.AreEqual(
-            regenerated.TransferDataHash,
+            regenerated.Hash,
             entity.TransferDataHash);
     }
 
@@ -260,9 +260,9 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "corrupt-source.txt");
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = await sourceProfile.PrepareTransferData(
+        var archivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "corrupt-client"),
-            token);
+            token))?.Path;
         Assert.IsNotNull(archivePath);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
@@ -291,12 +291,12 @@ public class HistoryTransferDataHashTests
             token);
 
         Assert.IsNotNull(regenerated);
-        Assert.IsTrue(File.Exists(regenerated.FilePath));
+        Assert.IsTrue(File.Exists(regenerated.Path));
         Assert.AreEqual(
-            await Utility.CalculateFileSHA256(regenerated.FilePath, token),
-            regenerated.TransferDataHash);
-        Assert.AreEqual(regenerated.TransferDataHash, entity.TransferDataHash);
-        Assert.AreEqual(transferDataHash, regenerated.TransferDataHash);
+            await Utility.CalculateFileSHA256(regenerated.Path, token),
+            regenerated.Hash);
+        Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
+        Assert.AreEqual(transferDataHash, regenerated.Hash);
     }
 
     [TestMethod]
@@ -307,9 +307,9 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "locked-source.txt");
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = await sourceProfile.PrepareTransferData(
+        var archivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "locked-client"),
-            token);
+            token))?.Path;
         Assert.IsNotNull(archivePath);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
@@ -342,12 +342,12 @@ public class HistoryTransferDataHashTests
             token);
 
         Assert.IsNotNull(regenerated);
-        Assert.AreNotEqual(storedArchivePath, regenerated.FilePath);
-        Assert.IsTrue(File.Exists(regenerated.FilePath));
+        Assert.AreNotEqual(storedArchivePath, regenerated.Path);
+        Assert.IsTrue(File.Exists(regenerated.Path));
         Assert.AreEqual(
-            await Utility.CalculateFileSHA256(regenerated.FilePath, token),
-            regenerated.TransferDataHash);
-        Assert.AreEqual(regenerated.TransferDataHash, entity.TransferDataHash);
+            await Utility.CalculateFileSHA256(regenerated.Path, token),
+            regenerated.Hash);
+        Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
     }
 
     [TestMethod]
@@ -355,7 +355,9 @@ public class HistoryTransferDataHashTests
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var fixture = await TestFixture.CreateAsync(token);
-        var profileHash = new string('D', 64);
+        var sourcePath = Path.Combine(fixture.RootDirectory, "file.bin");
+        await File.WriteAllTextAsync(sourcePath, "content", token);
+        var profileHash = await new FileProfile(sourcePath).GetHash(token);
         var workingDirectory = Profile.CreateWorkingDir(
             fixture.PersistentDirectory,
             ProfileType.File,
@@ -483,9 +485,9 @@ public class HistoryTransferDataHashTests
         var sourceFile = Path.Combine(fixture.RootDirectory, "ordinary-source.txt");
         await File.WriteAllTextAsync(sourceFile, "ordinary", token);
         var sourceProfile = new GroupProfile([sourceFile]);
-        var clientArchivePath = await sourceProfile.PrepareTransferData(
+        var clientArchivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "ordinary-client"),
-            token);
+            token))?.Path;
         Assert.IsNotNull(clientArchivePath);
         var dto = await sourceProfile.ToProfileDto(token);
         var fileDirectory = Path.Combine(fixture.ServerEnv.GetDataRootPath(), "file");

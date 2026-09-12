@@ -47,7 +47,7 @@ public class ProfileTransferDataReplacementTests
 
             Assert.AreEqual(expectedHash, await profile.GetHash(token));
             Assert.AreEqual(await Utility.CalculateFileSHA256(targetPath, token), profile.TransferDataHash);
-            Assert.AreEqual(targetPath, await profile.PrepareTransferData(persistentDir, token));
+            Assert.AreEqual(targetPath, (await profile.PrepareTransferData(persistentDir, token))?.Path);
             Assert.IsTrue(await profile.IsLocalDataValid(false, token));
             CollectionAssert.AreEqual(data, await File.ReadAllBytesAsync(targetPath, token));
             if (!inPlace)
@@ -143,7 +143,7 @@ public class ProfileTransferDataReplacementTests
             ProfileType.Text => new TextProfile(Content),
             _ => new GroupProfile([sourcePath]),
         };
-        var sourceData = await source.PrepareTransferData(persistentDir, token);
+        var sourceData = (await source.PrepareTransferData(persistentDir, token))?.Path;
         Assert.IsNotNull(sourceData);
         var dto = await source.ToProfileDto(token);
         Profile profile = type switch

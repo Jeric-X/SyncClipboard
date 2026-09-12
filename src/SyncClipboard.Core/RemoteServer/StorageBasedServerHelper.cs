@@ -293,14 +293,15 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     private async Task UploadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        var localDataPath = await profile.PrepareDataWithCache(cancellationToken);
-        if (localDataPath is null)
+        var localData = await profile.PrepareDataWithCache(cancellationToken);
+        if (localData is null)
         {
             return;
         }
 
         try
         {
+            var localDataPath = localData.Path;
             if (!File.Exists(localDataPath))
             {
                 throw new FileNotFoundException($"Local data file not found: {localDataPath}");

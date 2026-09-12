@@ -245,9 +245,9 @@ public class StorageBasedServerHelperTests
             var sourceFile = Path.Combine(sourceDirectory, "document.txt");
             await File.WriteAllTextAsync(sourceFile, "group content", token);
             var sourceProfile = new GroupProfile([sourceFile]);
-            var remoteFile = await sourceProfile.PrepareTransferData(
+            var remoteFile = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "remote-cache"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(remoteFile);
             var expectedTransferDataHash = sourceProfile.TransferDataHash;
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with
@@ -283,9 +283,9 @@ public class StorageBasedServerHelperTests
             var sourceFile = Path.Combine(sourceDirectory, "document.txt");
             await File.WriteAllTextAsync(sourceFile, "group content", token);
             var sourceProfile = new GroupProfile([sourceFile]);
-            var remoteFile = await sourceProfile.PrepareTransferData(
+            var remoteFile = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "remote-cache"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(remoteFile);
             var expectedTransferDataHash = sourceProfile.TransferDataHash;
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with
@@ -405,7 +405,7 @@ public class StorageBasedServerHelperTests
         {
             var sourceDirectory = Path.Combine(testDirectory, "source");
             var sourceProfile = new TextProfile(new string('a', 10241));
-            var remoteFile = await sourceProfile.PrepareTransferData(sourceDirectory, token);
+            var remoteFile = (await sourceProfile.PrepareTransferData(sourceDirectory, token))?.Path;
             Assert.IsNotNull(remoteFile);
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with { Hash = string.Empty };
             var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
@@ -437,9 +437,9 @@ public class StorageBasedServerHelperTests
             var sourceFile = Path.Combine(sourceDirectory, "document.txt");
             await File.WriteAllTextAsync(sourceFile, "group content", token);
             var sourceProfile = new GroupProfile([sourceFile]);
-            var remoteFile = await sourceProfile.PrepareTransferData(
+            var remoteFile = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "remote-cache"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(remoteFile);
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with { Hash = string.Empty };
             var adapter = new TestStorageAdapter(remoteFile, remoteProfile);

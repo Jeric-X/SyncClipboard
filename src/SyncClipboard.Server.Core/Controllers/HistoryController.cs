@@ -67,8 +67,8 @@ public class HistoryController(HistoryService historyService) : ControllerBase
                 return NotFound();
             }
 
-            path = transferData.FilePath;
-            Response.Headers[HistoryTransferDataHeaders.TransferDataHash] = transferData.TransferDataHash;
+            path = transferData.Path;
+            Response.Headers[HistoryTransferDataHeaders.TransferDataHash] = transferData.Hash;
         }
         catch (HistoryTransferDataException ex)
         {

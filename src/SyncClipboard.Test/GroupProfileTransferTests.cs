@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using SyncClipboard.Core.Clipboard;
-using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
@@ -148,7 +147,7 @@ public class GroupProfileTransferTests
             var emptyDirectory = Directory.CreateDirectory(Path.Combine(testDirectory, "empty"));
             var profile = new GroupProfile([emptyDirectory.FullName]);
 
-            var archivePath = await profile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await profile.PrepareTransferData(persistentDirectory, token))?.Path;
 
             Assert.IsNotNull(archivePath);
             using var archive = ZipFile.OpenRead(archivePath);
@@ -173,7 +172,7 @@ public class GroupProfileTransferTests
             await File.WriteAllBytesAsync(emptyFile, [], token);
             var profile = new GroupProfile([emptyFile]);
 
-            var archivePath = await profile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await profile.PrepareTransferData(persistentDirectory, token))?.Path;
 
             Assert.IsNotNull(archivePath);
             using var archive = ZipFile.OpenRead(archivePath);
@@ -259,9 +258,9 @@ public class GroupProfileTransferTests
             var sourceFile = Path.Combine(testDirectory, "source.txt");
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
-            var sourceArchive = await sourceProfile.PrepareTransferData(
+            var sourceArchive = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "persistent"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(sourceArchive);
 
             var archivePath = Path.Combine(testDirectory, "shared.zip");
@@ -298,9 +297,9 @@ public class GroupProfileTransferTests
             var sourceFile = Path.Combine(testDirectory, "source.txt");
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
-            var sourceArchive = await sourceProfile.PrepareTransferData(
+            var sourceArchive = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "persistent"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(sourceArchive);
             var archivePath = Path.Combine(testDirectory, "received.zip");
             File.Copy(sourceArchive, archivePath);
@@ -447,14 +446,14 @@ public class GroupProfileTransferTests
             var file = Path.Combine(testDirectory, "source.txt");
             await File.WriteAllTextAsync(file, "source", token);
             var sourceProfile = new GroupProfile([file]);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var cachedProfile = new GroupProfile([file], await sourceProfile.GetHash(token));
             await cachedProfile.SetTransferData(archivePath, verify: false, token);
             File.Delete(file);
 
-            var reusedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
+            var reusedPath = (await cachedProfile.PrepareTransferData(persistentDirectory, token))?.Path;
 
             Assert.AreEqual(archivePath, reusedPath);
         }
@@ -475,7 +474,7 @@ public class GroupProfileTransferTests
             var file = Path.Combine(testDirectory, "source.txt");
             await File.WriteAllTextAsync(file, "source", token);
             var sourceProfile = new GroupProfile([file]);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var persistentInfo = await sourceProfile.Persist(persistentDirectory, token);
 
@@ -485,7 +484,7 @@ public class GroupProfileTransferTests
 
             File.Delete(file);
             var restoredProfile = Profile.Create(persistentDirectory, persistentInfo);
-            var reusedPath = await restoredProfile.PrepareTransferData(persistentDirectory, token);
+            var reusedPath = (await restoredProfile.PrepareTransferData(persistentDirectory, token))?.Path;
 
             Assert.AreEqual(archivePath, reusedPath);
             Assert.AreEqual(persistentInfo.TransferDataHash, restoredProfile.TransferDataHash);
@@ -508,7 +507,7 @@ public class GroupProfileTransferTests
             var sourceFile = Path.Combine(testDirectory, "source.txt");
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var persistentInfo = await sourceProfile.Persist(persistentDirectory, token);
 
@@ -558,7 +557,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(secondSourceFile, "source", token);
 
             var sourceProfile = new GroupProfile([firstSourceFile]);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var legacyExtractionDirectory = archivePath[..^4];
             Directory.CreateDirectory(legacyExtractionDirectory);
@@ -572,12 +571,12 @@ public class GroupProfileTransferTests
 
             await ProfileExtentions.BindCachedTransferData(
                 cachedProfile,
-                new CachedFileInfo(
+                new FileHashInfo(
                     archivePath,
                     sourceProfile.TransferDataHash!),
                 token);
 
-            Assert.AreEqual(archivePath, await cachedProfile.PrepareTransferData(persistentDirectory, token));
+            Assert.AreEqual(archivePath, (await cachedProfile.PrepareTransferData(persistentDirectory, token))?.Path);
             CollectionAssert.AreEqual(new[] { secondSourceFile }, cachedProfile.Files);
             Assert.AreEqual("legacy", await File.ReadAllTextAsync(legacyFile, token));
             Assert.IsNotNull(cachedProfile.TransferDataHash);
@@ -603,7 +602,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var profileHash = await sourceProfile.GetHash(token);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var restoredProfile = new GroupProfile([], profileHash);
@@ -649,7 +648,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var profileHash = await sourceProfile.GetHash(token);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var restoredProfile = new GroupProfile([], profileHash);
@@ -691,7 +690,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var profileHash = await sourceProfile.GetHash(token);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var firstProfile = new GroupProfile([], profileHash);
@@ -744,7 +743,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(file, "source", token);
             var sourceProfile = new GroupProfile([file]);
             var expectedHash = await sourceProfile.GetHash(token);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var cachedProfile = new GroupProfile([file], expectedHash);
@@ -758,7 +757,7 @@ public class GroupProfileTransferTests
                 await writer.WriteAsync("changed");
             }
 
-            var regeneratedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
+            var regeneratedPath = (await cachedProfile.PrepareTransferData(persistentDirectory, token))?.Path;
 
             Assert.IsNotNull(regeneratedPath);
             Assert.AreNotEqual(archivePath, regeneratedPath);
@@ -786,7 +785,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(file, "source", token);
             var sourceProfile = new GroupProfile([file]);
             var expectedHash = await sourceProfile.GetHash(token);
-            var archivePath = await sourceProfile.PrepareTransferData(persistentDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var cachedProfile = new GroupProfile([file], expectedHash);
@@ -803,7 +802,7 @@ public class GroupProfileTransferTests
                 FileAccess.Read,
                 FileShare.None))
             {
-                regeneratedPath = await cachedProfile.PrepareTransferData(persistentDirectory, token);
+                regeneratedPath = (await cachedProfile.PrepareTransferData(persistentDirectory, token))?.Path;
             }
 
             Assert.IsNotNull(regeneratedPath);
@@ -835,7 +834,7 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(archivePath, "not a zip archive", token);
             var profile = new GroupProfile([file], expectedHash, archivePath);
 
-            var regeneratedPath = await profile.PrepareTransferData(persistentDirectory, token);
+            var regeneratedPath = (await profile.PrepareTransferData(persistentDirectory, token))?.Path;
 
             Assert.IsNotNull(regeneratedPath);
             Assert.AreNotEqual(archivePath, regeneratedPath);

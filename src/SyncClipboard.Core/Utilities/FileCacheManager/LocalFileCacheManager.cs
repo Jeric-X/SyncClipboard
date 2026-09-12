@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Shared.Models;
+using SyncClipboard.Shared.Utilities;
 using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.FileCacheManager;
-
-internal sealed record CachedFileInfo(string FilePath, string FileHash);
 
 public sealed class LocalFileCacheManager : IDisposable
 {
@@ -101,10 +101,10 @@ public sealed class LocalFileCacheManager : IDisposable
 
     public async Task<string?> GetCachedFilePathAsync(string cacheType, string id, CancellationToken token)
     {
-        return (await GetCachedFileInfoAsync(cacheType, id, token))?.FilePath;
+        return (await GetCachedFileInfoAsync(cacheType, id, token))?.Path;
     }
 
-    internal async Task<CachedFileInfo?> GetCachedFileInfoAsync(
+    internal async Task<FileHashInfo?> GetCachedFileInfoAsync(
         string cacheType,
         string id,
         CancellationToken token)
@@ -138,7 +138,7 @@ public sealed class LocalFileCacheManager : IDisposable
             entry.LastAccessTime = DateTime.Now;
             await dbContext.SaveChangesAsync(token);
 
-            return new CachedFileInfo(entry.FilePath, fileHash);
+            return new FileHashInfo(entry.FilePath, fileHash);
         }
         catch when (!token.IsCancellationRequested)
         {
@@ -155,7 +155,25 @@ public sealed class LocalFileCacheManager : IDisposable
         return SaveCacheEntryAsync(cacheType, id, filePath, null, token);
     }
 
-    public async Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
+    public Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
+    {
+        return SaveCacheEntryCoreAsync(cacheType, id, filePath, null, metadata, token);
+    }
+
+    public Task SaveCacheEntryAsync(string cacheType, string id, FileHashInfo file, CancellationToken token)
+    {
+        return SaveCacheEntryAsync(cacheType, id, file, null, token);
+    }
+
+    /// <summary>
+    /// 保存已由调用方确认的文件及 SHA-256，不重复读取文件计算 hash。
+    /// </summary>
+    public Task SaveCacheEntryAsync(string cacheType, string id, FileHashInfo file, object? metadata = null, CancellationToken token = default)
+    {
+        return SaveCacheEntryCoreAsync(cacheType, id, file.Path, Utility.NormalizeRequiredSHA256(file.Hash), metadata, token);
+    }
+
+    private async Task SaveCacheEntryCoreAsync(string cacheType, string id, string filePath, string? fileHash, object? metadata, CancellationToken token)
     {
         await _semaphore.WaitAsync(token);
         try
@@ -167,7 +185,7 @@ public sealed class LocalFileCacheManager : IDisposable
             var entry = await dbContext.CacheEntries
                 .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 
-            var cachedFileHash = Convert.ToHexString(
+            var cachedFileHash = fileHash ?? Convert.ToHexString(
                 await CalculateFileHashAsync(filePath, token));
             if (entry == null)
             {

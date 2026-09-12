@@ -69,7 +69,7 @@ public class ProfileActionBuilderTest
             var sourcePath = Path.Combine(directory, "source.txt");
             await File.WriteAllTextAsync(sourcePath, "content", token);
             var sourceProfile = new GroupProfile([sourcePath]);
-            var archivePath = await sourceProfile.PrepareTransferData(directory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(directory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var profile = new GroupProfile([], await sourceProfile.GetHash(token), archivePath, sourceProfile.TransferDataHash);
             var extractedPath = Path.Combine(archivePath[..^4], "source.txt");

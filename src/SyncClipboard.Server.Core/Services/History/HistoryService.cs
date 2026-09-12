@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Utilities;
 using Microsoft.AspNetCore.SignalR;
@@ -230,7 +231,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return existing;
     }
 
-    public async Task<HistoryTransferData?> GetTransferDataByProfileId(
+    public async Task<FileHashInfo?> GetTransferDataByProfileId(
         string userId,
         string profileId,
         CancellationToken token = default)
@@ -249,12 +250,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return null;
         }
 
-        var storedTransferData = await GetStoredTransferData(entity, token);
-        if (storedTransferData is not null)
-        {
-            return storedTransferData;
-        }
-
         try
         {
             return await PrepareTransferData(entity, token);
@@ -267,54 +262,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
     }
 
-    private async Task<HistoryTransferData?> GetStoredTransferData(
-        HistoryRecordEntity entity,
-        CancellationToken token)
-    {
-        if (!Utility.IsValidSHA256(entity.TransferDataHash))
-        {
-            return null;
-        }
-
-        var transferDataPath = Profile.GetFullPath(
-            _persistentDir,
-            entity.Type,
-            entity.Hash,
-            entity.TransferDataFile);
-        if (string.IsNullOrEmpty(transferDataPath) || !File.Exists(transferDataPath))
-        {
-            return null;
-        }
-
-        string actualTransferDataHash;
-        try
-        {
-            actualTransferDataHash = await Utility.CalculateFileSHA256(transferDataPath, token);
-        }
-        catch (Exception ex) when (
-            ex is IOException or UnauthorizedAccessException &&
-            !token.IsCancellationRequested)
-        {
-            return null;
-        }
-        if (!string.Equals(
-                actualTransferDataHash,
-                entity.TransferDataHash,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        return new HistoryTransferData(transferDataPath, actualTransferDataHash);
-    }
-
-    private async Task<HistoryTransferData?> PrepareTransferData(
+    private async Task<FileHashInfo?> PrepareTransferData(
         HistoryRecordEntity entity,
         CancellationToken token)
     {
         var profile = entity.ToProfile(_persistentDir);
-        var path = await profile.PrepareTransferData(_persistentDir, token);
-        if (path is null)
+        var transferData = await profile.PrepareTransferData(_persistentDir, token);
+        if (transferData is null)
         {
             return null;
         }
@@ -326,12 +280,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         entity.Text = persistentInfo.Text;
         entity.Size = persistentInfo.Size;
         await _dbContext.SaveChangesAsync(token);
-        var transferDataHash = persistentInfo.TransferDataHash;
-        if (!Utility.IsValidSHA256(transferDataHash))
-        {
-            throw new HistoryTransferDataException("Prepared history transfer data has no valid SHA-256 hash.");
-        }
-        return new HistoryTransferData(path, transferDataHash);
+        return transferData;
     }
 
     private Task<HistoryRecordEntity?> Query(string userId, ProfileType type, string hash, CancellationToken token)

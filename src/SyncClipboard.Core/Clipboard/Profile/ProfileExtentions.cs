@@ -1,11 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Utilities.FileCacheManager;
+using SyncClipboard.Shared.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
 public static class ProfileExtentions
 {
-    public static async Task<string?> PrepareDataWithCache(this Profile profile, CancellationToken token)
+    public static async Task<FileHashInfo?> PrepareDataWithCache(this Profile profile, CancellationToken token)
     {
         var cacheManager = AppCore.Current.Services.GetRequiredService<LocalFileCacheManager>();
         var cachedFile = await cacheManager.GetCachedFileInfoAsync(
@@ -15,27 +16,27 @@ public static class ProfileExtentions
         if (cachedFile is not null)
         {
             await BindCachedTransferData(profile, cachedFile, token);
-            return cachedFile.FilePath;
+            return cachedFile;
         }
 
         var profileEnv = AppCore.Current.Services.GetRequiredService<IProfileEnv>();
-        var path = await profile.PrepareTransferData(profileEnv.GetPersistentDir(), token);
+        var file = await profile.PrepareTransferData(profileEnv.GetPersistentDir(), token);
 
-        if (File.Exists(path))
+        if (file is not null)
         {
-            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), path, token);
+            await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), file, token);
         }
-        return path;
+        return file;
     }
 
     internal static async Task BindCachedTransferData(
         Profile profile,
-        CachedFileInfo cachedFile,
+        FileHashInfo cachedFile,
         CancellationToken token)
     {
         await profile.SetTransferData(
-            cachedFile.FilePath,
-            cachedFile.FileHash,
+            cachedFile.Path,
+            cachedFile.Hash,
             verify: false,
             token);
     }

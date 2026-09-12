@@ -63,7 +63,7 @@ public class GroupProfileFileNamesTests
             foreach (var path in paths)
                 await File.WriteAllTextAsync(path, "content", token);
             var source = new GroupProfile(paths);
-            var archivePath = await source.PrepareTransferData(directory, token);
+            var archivePath = (await source.PrepareTransferData(directory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var info = await source.Persist(directory, token);
             var archiveOnlyInfo = info with { FilePaths = [] };
@@ -117,7 +117,7 @@ public class GroupProfileFileNamesTests
             var path = Path.Combine(directory, "actual.txt");
             await File.WriteAllTextAsync(path, "content", token);
             var source = new GroupProfile([path]);
-            var archivePath = await source.PrepareTransferData(directory, token);
+            var archivePath = (await source.PrepareTransferData(directory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var profile = new GroupProfile(new ProfileDto
             {

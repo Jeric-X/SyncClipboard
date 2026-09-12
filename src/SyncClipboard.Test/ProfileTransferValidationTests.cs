@@ -67,7 +67,7 @@ public class ProfileTransferValidationTests
         {
             var profile = new TextProfile(new string('A', 10241));
             await profile.GetHash(token);
-            var transferPath = await profile.PrepareTransferData(testDirectory, token);
+            var transferPath = (await profile.PrepareTransferData(testDirectory, token))?.Path;
             Assert.IsNotNull(transferPath);
 
             await File.WriteAllTextAsync(transferPath, "changed", token);
@@ -254,7 +254,7 @@ public class ProfileTransferValidationTests
         try
         {
             var profile = new TextProfile(new string('T', 10241));
-            var transferPath = await profile.PrepareTransferData(testDirectory, token);
+            var transferPath = (await profile.PrepareTransferData(testDirectory, token))?.Path;
             Assert.IsNotNull(transferPath);
 
             var persistentInfo = await profile.Persist(testDirectory, token);

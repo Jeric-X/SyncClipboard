@@ -110,7 +110,7 @@ public class ProfileDtoTransferDataHashTests
             var filePath = Path.Combine(testDirectory, "file.txt");
             await File.WriteAllTextAsync(filePath, "group", token);
             var profile = new GroupProfile([filePath]);
-            var archivePath = await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token);
+            var archivePath = (await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token))?.Path;
             Assert.IsNotNull(archivePath);
 
             var dto = await profile.ToProfileDto(token);
@@ -142,9 +142,9 @@ public class ProfileDtoTransferDataHashTests
             var filePath = Path.Combine(testDirectory, "file.txt");
             await File.WriteAllTextAsync(filePath, "group", token);
             var sourceProfile = new GroupProfile([filePath]);
-            var archivePath = await sourceProfile.PrepareTransferData(
+            var archivePath = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "persistent"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
@@ -173,9 +173,9 @@ public class ProfileDtoTransferDataHashTests
             var filePath = Path.Combine(testDirectory, "file.txt");
             await File.WriteAllTextAsync(filePath, "group", token);
             var sourceProfile = new GroupProfile([filePath]);
-            var archivePath = await sourceProfile.PrepareTransferData(
+            var archivePath = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "persistent"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
@@ -212,9 +212,9 @@ public class ProfileDtoTransferDataHashTests
             var filePath = Path.Combine(testDirectory, "file.txt");
             await File.WriteAllTextAsync(filePath, "group", token);
             var sourceProfile = new GroupProfile([filePath]);
-            var archivePath = await sourceProfile.PrepareTransferData(
+            var archivePath = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "source-persistent"),
-                token);
+                token))?.Path;
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
@@ -292,7 +292,7 @@ public class ProfileDtoTransferDataHashTests
         try
         {
             var sourceProfile = new TextProfile(new string('T', 10241));
-            var transferPath = await sourceProfile.PrepareTransferData(testDirectory, token);
+            var transferPath = (await sourceProfile.PrepareTransferData(testDirectory, token))?.Path;
             Assert.IsNotNull(transferPath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.TransferDataHash = new string('D', 64);

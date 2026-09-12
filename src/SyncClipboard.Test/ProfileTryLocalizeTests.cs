@@ -149,7 +149,7 @@ public class ProfileTryLocalizeTests
             var sourceFile = Path.Combine(directory.FullName, "source.txt");
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var profile = new GroupProfile([sourceFile]);
-            var archivePath = await profile.PrepareTransferData(directory.FullName, token);
+            var archivePath = (await profile.PrepareTransferData(directory.FullName, token))?.Path;
             Assert.IsNotNull(archivePath);
             await File.WriteAllTextAsync(sourceFile, "modified", token);
             // 解压目标被普通文件占用：这是本地操作失败，不能当成需要下载。
@@ -179,7 +179,7 @@ public class ProfileTryLocalizeTests
             var sourceFile = Path.Combine(directory.FullName, "source.txt");
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var source = new GroupProfile([sourceFile]);
-            var archive = await source.PrepareTransferData(directory.FullName, token);
+            var archive = (await source.PrepareTransferData(directory.FullName, token))?.Path;
             Assert.IsNotNull(archive);
             var archiveBytes = await File.ReadAllBytesAsync(archive, token);
             var profile = new GroupProfile(await source.ToProfileDto(token));

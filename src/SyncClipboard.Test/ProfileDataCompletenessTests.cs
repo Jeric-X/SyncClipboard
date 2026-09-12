@@ -31,7 +31,7 @@ public class ProfileDataCompletenessTests
             await File.WriteAllTextAsync(sourceFile, "source", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var profileHash = await sourceProfile.GetHash(token);
-            var archivePath = await sourceProfile.PrepareTransferData(testDirectory, token);
+            var archivePath = (await sourceProfile.PrepareTransferData(testDirectory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var transferHash = sourceProfile.TransferDataHash;
 
@@ -132,7 +132,7 @@ public class ProfileDataCompletenessTests
         try
         {
             var sourceProfile = new TextProfile(new string('T', 10241));
-            var transferPath = await sourceProfile.PrepareTransferData(testDirectory, token);
+            var transferPath = (await sourceProfile.PrepareTransferData(testDirectory, token))?.Path;
             Assert.IsNotNull(transferPath);
             var transferHash = hasTransferHash ? sourceProfile.TransferDataHash : null;
             Profile profile = new TextProfile(new ProfilePersistentInfo

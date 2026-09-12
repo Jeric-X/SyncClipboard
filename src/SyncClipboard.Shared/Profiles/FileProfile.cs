@@ -1,3 +1,4 @@
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
@@ -120,7 +121,7 @@ public class FileProfile : Profile
         return (hash, contentSha256Hex);
     }
 
-    public override async Task<string?> PrepareTransferData(string _, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(string _, CancellationToken token)
     {
         var path = FullPath;
         if (path is null || !File.Exists(path))
@@ -131,10 +132,9 @@ public class FileProfile : Profile
 
         try
         {
-            SetTransferDataHashForPath(
-                path,
-                await ValidateTransferDataHashAsync(path, token));
-            return path;
+            var hash = await ValidateTransferDataHashAsync(path, token);
+            SetTransferDataHashForPath(path, hash);
+            return new FileHashInfo(path, hash);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
                                    ex is not LocalProfileDataUnavailableException &&
