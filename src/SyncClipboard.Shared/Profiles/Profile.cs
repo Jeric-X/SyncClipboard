@@ -83,9 +83,10 @@ public abstract class Profile
     public abstract Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token);
 
     /// <summary>
-    /// 验证并尝试准备完整的本地数据；没有可用数据时返回 false，保留原路径信息。
+    /// 验证并尝试准备完整的本地数据；没有可用数据时返回 false，默认保留原路径信息。
     /// </summary>
-    public abstract Task<bool> TryLocalize(string localDir, CancellationToken token);
+    /// <param name="clearInvalidLocalPaths">失败后是否清空无效的本地路径，供后续下载替换数据；不删除磁盘文件。</param>
+    public abstract Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default);
     public abstract void CopyTo(Profile target);
 
     public abstract bool HasTransferData { get; }

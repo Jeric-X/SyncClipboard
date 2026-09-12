@@ -1065,7 +1065,7 @@ public class GroupProfile : Profile
         return IsTransferDataValid(_transferDataPath, token);
     }
 
-    public override async Task<bool> TryLocalize(string localDir, CancellationToken token)
+    public override async Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
         if (await IsLocalDataValid(false, token))
         {
@@ -1074,6 +1074,10 @@ public class GroupProfile : Profile
 
         if (!await CanReuseTransferArchiveWithoutDownload(token))
         {
+            if (clearInvalidLocalPaths && !token.IsCancellationRequested)
+            {
+                _files = null;
+            }
             return false;
         }
 

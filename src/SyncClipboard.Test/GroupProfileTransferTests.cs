@@ -525,7 +525,7 @@ public class GroupProfileTransferTests
             Assert.IsTrue(await restoredProfile.IsDataComplete(false, token));
             Assert.IsFalse(File.Exists(extractedFile));
 
-            Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, token));
+            Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, false, token));
             var localInfo = await restoredProfile.Localize(
                 Path.Combine(testDirectory, "local"),
                 token);
@@ -621,7 +621,7 @@ public class GroupProfileTransferTests
             CollectionAssert.Contains(restoredProfile.Files, extractedFile);
 
             if (tryLocalize)
-                Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, token));
+                Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, false, token));
 
             var localInfo = await restoredProfile.Localize(
                 Path.Combine(testDirectory, "local"),
@@ -669,7 +669,7 @@ public class GroupProfileTransferTests
                 await writer.WriteAsync("tampered");
             }
 
-            Assert.IsFalse(await restoredProfile.TryLocalize(persistentDirectory, token));
+            Assert.IsFalse(await restoredProfile.TryLocalize(persistentDirectory, false, token));
             Assert.IsFalse(await restoredProfile.IsDataComplete(false, token));
             Assert.IsFalse(await restoredProfile.IsTransferDataValid(token));
         }

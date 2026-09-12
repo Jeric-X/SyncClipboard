@@ -228,10 +228,15 @@ public class TextProfile : Profile
         return false;
     }
 
-    public override async Task<bool> TryLocalize(string localDir, CancellationToken token)
+    public override async Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
         if (!await IsDataComplete(false, token))
         {
+            if (clearInvalidLocalPaths && !token.IsCancellationRequested)
+            {
+                _transferDataName ??= Path.GetFileName(_transferDataPath);
+                _transferDataPath = null;
+            }
             return false;
         }
 

@@ -36,7 +36,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         var shouldFillBack = await IsProfileDtoMetadataIncompleteAsync(profile, cancellationToken);
         var persistentDir = _profileEnv.GetPersistentDir();
-        if (await profile.TryLocalize(persistentDir, cancellationToken))
+        if (await profile.TryLocalize(persistentDir, true, cancellationToken))
         {
             return;
         }

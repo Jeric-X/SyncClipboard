@@ -572,7 +572,7 @@ public class HistoryTransferQueue : IDisposable
         var profile = task.Profile;
         var persistentDir = _profileEnv.GetPersistentDir();
 
-        if (await profile.TryLocalize(persistentDir, ct))
+        if (await profile.TryLocalize(persistentDir, true, ct))
         {
             return;
         }

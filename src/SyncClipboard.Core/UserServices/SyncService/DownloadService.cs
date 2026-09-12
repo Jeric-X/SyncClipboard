@@ -376,7 +376,7 @@ public class DownloadService : Service
         {
             var cachedProfile = historyRecord.ToProfile();
             var profileEnv = _serviceProvider.GetRequiredService<IProfileEnv>();
-            var valid = await cachedProfile.TryLocalize(profileEnv.GetPersistentDir(), token);
+            var valid = await cachedProfile.TryLocalize(profileEnv.GetPersistentDir(), false, token);
             if (!valid)
             {
                 historyRecord.IsLocalFileReady = false;

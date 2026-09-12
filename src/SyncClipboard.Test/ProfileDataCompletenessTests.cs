@@ -59,7 +59,7 @@ public class ProfileDataCompletenessTests
             if (sourceState == "missing" && archiveState == "valid")
                 Assert.AreEqual(transferHash, profile.TransferDataHash);
 
-            Assert.AreEqual(expectedComplete, await profile.TryLocalize(testDirectory, token));
+            Assert.AreEqual(expectedComplete, await profile.TryLocalize(testDirectory, false, token));
             if (expectedComplete)
                 Assert.IsTrue(await profile.IsLocalDataValid(false, token));
             else
@@ -113,7 +113,7 @@ public class ProfileDataCompletenessTests
 
             Assert.IsTrue(await profile.IsDataComplete(true, token));
             Assert.IsTrue(await profile.IsDataComplete(false, token));
-            Assert.IsTrue(await profile.TryLocalize(testDirectory, token));
+            Assert.IsTrue(await profile.TryLocalize(testDirectory, false, token));
             Assert.IsFalse(Directory.EnumerateFileSystemEntries(testDirectory).Any());
         }
         finally

@@ -323,9 +323,14 @@ public class FileProfile : Profile
         return IsLocalDataValid(quick, token);
     }
 
-    public override Task<bool> TryLocalize(string localDir, CancellationToken token)
+    public override async Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
-        return IsLocalDataValid(false, token);
+        var valid = await IsLocalDataValid(false, token);
+        if (!valid && clearInvalidLocalPaths && !token.IsCancellationRequested)
+        {
+            FullPath = null;
+        }
+        return valid;
     }
 
     public override string GetTransferDataSavePath(string persistentDir)

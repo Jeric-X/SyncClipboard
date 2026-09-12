@@ -44,7 +44,7 @@ public class UnknownProfile : Profile
         return Task.CompletedTask;
     }
 
-    public override Task<bool> TryLocalize(string localDir, CancellationToken token)
+    public override Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
         return Task.FromResult(false);
     }
