@@ -490,9 +490,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 declaredTransferDataHash,
                 token);
             await profile.SetTransferData(
-                filePath,
-                actualTransferDataHash,
-                verify: true,
+                new FileHashInfo(filePath, actualTransferDataHash),
+                true,
                 token);
             actualTransferDataHash = profile.TransferDataHash
                 ?? throw new HistoryTransferDataException("Verified transfer data has no SHA-256 hash.");

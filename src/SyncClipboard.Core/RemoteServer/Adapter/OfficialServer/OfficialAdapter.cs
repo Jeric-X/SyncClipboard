@@ -348,8 +348,7 @@ public sealed class OfficialAdapter(
 
     public async Task UploadHistoryAsync(
         HistoryRecordDto dto,
-        string? filePath,
-        string? transferDataHash,
+        FileHashInfo? file,
         IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -379,28 +378,23 @@ public sealed class OfficialAdapter(
             };
 
             // 添加文件字段（如果提供）
-            if (!string.IsNullOrWhiteSpace(filePath))
+            if (file is not null)
             {
-                var normalizedTransferDataHash = Utility.NormalizeSHA256(transferDataHash)
+                ArgumentException.ThrowIfNullOrWhiteSpace(file.Path);
+                var normalizedTransferDataHash = Utility.NormalizeSHA256(file.Hash)
                     ?? throw new ArgumentException(
                         "Transfer data hash is required when uploading history data.",
-                        nameof(transferDataHash));
-                var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        nameof(file));
+                var stream = new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 HttpContent fileContent = progress is null
                     ? new StreamContent(stream)
                     : new ProgressableStreamContent(stream, progress, cancellationToken);
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-                content.Add(fileContent, "data", Path.GetFileName(filePath));
+                content.Add(fileContent, "data", Path.GetFileName(file.Path));
 
                 request.Headers.Add(
                     HistoryTransferDataHeaders.TransferDataHash,
                     normalizedTransferDataHash);
-            }
-            else if (transferDataHash is not null)
-            {
-                throw new ArgumentException(
-                    "Transfer data hash cannot be set without history data.",
-                    nameof(transferDataHash));
             }
 
             using var response = await _httpClient.SendAsync(request, cancellationToken);

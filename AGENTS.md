@@ -160,3 +160,4 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 - The project uses MSTest with Moq for mocking. Test data source attributes (`PlatformServiceProviderDataSource`, `SystemServiceProviderDataSource`) drive DI validation tests.
 - Commit messages follow conventional format with Chinese description prefixes (e.g., `fix:`, `feat:`).
 - `src/.editorconfig` defines C# code style rules.
+- Before adding a file-level `using`, check the owning project's `global using` declarations (such as `GlobalUsings.cs` and `Usings.cs`) and SDK-generated implicit usings. Do not duplicate namespaces already imported globally; remove redundant usings in files touched by the task without expanding into unrelated cleanup. Global usings apply only within their project, do not propagate through project references, and do not implicitly import child namespaces.

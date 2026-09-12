@@ -588,9 +588,8 @@ public class HistoryTransferQueue : IDisposable
         if (Utility.IsValidSHA256(transferDataHash))
         {
             await profile.SetTransferData(
-                localDataPath,
-                transferDataHash,
-                verify: false,
+                new FileHashInfo(localDataPath, transferDataHash),
+                false,
                 ct);
         }
         else
@@ -641,8 +640,7 @@ public class HistoryTransferQueue : IDisposable
         {
             await server.UploadHistoryAsync(
                 recordDto,
-                transferData?.Path,
-                transferData?.Hash,
+                transferData,
                 task.ProgressReporter,
                 ct);
             record.SyncStatus = HistorySyncStatus.Synced;

@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Utilities.FileCacheManager;
-using SyncClipboard.Shared.Models;
 
 namespace SyncClipboard.Core.Clipboard;
 
@@ -15,7 +14,7 @@ public static class ProfileExtentions
             token);
         if (cachedFile is not null)
         {
-            await BindCachedTransferData(profile, cachedFile, token);
+            await profile.SetTransferData(cachedFile, false, token);
             return cachedFile;
         }
 
@@ -27,17 +26,5 @@ public static class ProfileExtentions
             await cacheManager.SaveCacheEntryAsync(profile.Type.ToString(), await profile.GetHash(token), file, token);
         }
         return file;
-    }
-
-    internal static async Task BindCachedTransferData(
-        Profile profile,
-        FileHashInfo cachedFile,
-        CancellationToken token)
-    {
-        await profile.SetTransferData(
-            cachedFile.Path,
-            cachedFile.Hash,
-            verify: false,
-            token);
     }
 }

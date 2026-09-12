@@ -250,8 +250,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
 
     public Task UploadHistoryAsync(
         HistoryRecordDto dto,
-        string? filePath,
-        string? transferDataHash,
+        FileHashInfo? file,
         IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -261,8 +260,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         }
         return syncServer.UploadHistoryAsync(
             dto,
-            filePath,
-            transferDataHash,
+            file,
             progress,
             cancellationToken);
     }

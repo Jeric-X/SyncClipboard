@@ -4,7 +4,6 @@ using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.RemoteServer.Adapter;
-using SyncClipboard.Shared.Profiles;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
@@ -54,8 +53,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
                 cancellationToken);
             await profile.SetAndMoveTransferData(
                 persistentDir,
-                dataPath,
-                transferDataHash,
+                new FileHashInfo(dataPath, transferDataHash),
                 cancellationToken);
             if (shouldFillBack)
             {

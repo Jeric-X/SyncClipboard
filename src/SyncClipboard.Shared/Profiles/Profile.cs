@@ -106,6 +106,14 @@ public abstract class Profile
         bool verify,
         CancellationToken token);
 
+    /// <summary>
+    /// 绑定调用方已核对 SHA-256 的文件；verify 仅控制 Profile 语义验证。
+    /// </summary>
+    public Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
+    {
+        return SetTransferData(file.Path, file.Hash, verify, token);
+    }
+
     public abstract Task SetAndMoveTransferData(
         string persistentDir,
         string path,
@@ -116,6 +124,14 @@ public abstract class Profile
         string path,
         string transferDataHash,
         CancellationToken token);
+
+    /// <summary>
+    /// 验证 Profile 语义并移动调用方已核对 SHA-256 的文件。
+    /// </summary>
+    public Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token)
+    {
+        return SetAndMoveTransferData(persistentDir, file.Path, file.Hash, token);
+    }
     /// <summary>
     /// 仅根据现有元数据计算接收传输文件的保存路径，不验证数据或创建目录。
     /// 不支持传输文件时返回 null。

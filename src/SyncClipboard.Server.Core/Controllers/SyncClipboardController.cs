@@ -8,6 +8,7 @@ using Microsoft.Extensions.Caching.Memory;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Shared.Utilities;
+using SyncClipboard.Shared.Models;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -247,8 +248,7 @@ public class SyncClipboardController(
                 token);
             await profile.SetAndMoveTransferData(
                 _serverEnv.GetPersistentDir(),
-                previousDataPath,
-                actualTransferDataHash,
+                new FileHashInfo(previousDataPath, actualTransferDataHash),
                 token);
         }
         catch when (!token.IsCancellationRequested)

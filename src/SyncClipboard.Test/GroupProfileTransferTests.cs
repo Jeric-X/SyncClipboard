@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
@@ -540,7 +539,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task BindCachedTransferData_LegacyExtractionDirectory_DoesNotExtractArchive()
+    public async Task SetTransferData_FileInfoWithLegacyExtractionDirectory_DoesNotExtractArchive()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -569,11 +568,11 @@ public class GroupProfileTransferTests
                 await sourceProfile.GetHash(token),
                 await cachedProfile.GetHash(token));
 
-            await ProfileExtentions.BindCachedTransferData(
-                cachedProfile,
+            await cachedProfile.SetTransferData(
                 new FileHashInfo(
                     archivePath,
                     sourceProfile.TransferDataHash!),
+                false,
                 token);
 
             Assert.AreEqual(archivePath, (await cachedProfile.PrepareTransferData(persistentDirectory, token))?.Path);

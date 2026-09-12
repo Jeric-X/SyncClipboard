@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Shared.Models;
-using SyncClipboard.Shared.Utilities;
 using System.Security.Cryptography;
 using System.Text.Json;
 
