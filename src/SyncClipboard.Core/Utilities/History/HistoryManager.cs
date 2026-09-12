@@ -139,6 +139,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.Text = record.Text;
             }
             entity.FilePath = record.FilePath;
+            CopyLocalTransferDataBinding(record, entity);
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
             entity.LastModified = DateTime.UtcNow;
@@ -174,6 +175,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         {
             entity.IsDeleted = false;
             entity.SyncStatus = HistorySyncStatus.Synced;
+            if (!entity.IsLocalFileReady)
+            {
+                entity.TransferDataFile = null;
+                entity.TransferDataHash = null;
+            }
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
             return;
@@ -228,6 +234,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             entity.Text = record.Text;
             entity.FilePath = record.FilePath;
             entity.IsLocalFileReady = record.IsLocalFileReady;
+            CopyLocalTransferDataBinding(record, entity);
             entity.LastModified = DateTime.UtcNow;
             entity.Version++;
             if (entity.SyncStatus != HistorySyncStatus.LocalOnly)
@@ -248,6 +255,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         {
             entity.IsLocalFileReady = record.IsLocalFileReady;
             entity.FilePath = record.FilePath;
+            CopyLocalTransferDataBinding(record, entity);
             await _dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
         }
@@ -267,12 +275,16 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        if (!entity.IsLocalFileReady)
+        if (!entity.IsLocalFileReady &&
+            entity.TransferDataFile is null &&
+            entity.TransferDataHash is null)
         {
             return;
         }
 
         entity.IsLocalFileReady = false;
+        entity.TransferDataFile = null;
+        entity.TransferDataHash = null;
         await _dbContext.SaveChangesAsync(token);
         HistoryUpdated?.Invoke(entity);
     }
@@ -291,6 +303,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         {
             // 如果本地不存在，直接添加（用于服务器回写新增场景）
             record.Hash = record.Hash.ToUpperInvariant();
+            CopyLocalTransferDataBinding(record, record);
             await _dbContext.HistoryRecords.AddAsync(record, token);
             await _dbContext.SaveChangesAsync(token);
             HistoryAdded?.Invoke(record);
@@ -305,6 +318,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         entity.LastModified = record.LastModified;
         entity.LastAccessed = record.LastAccessed;
         entity.SyncStatus = record.SyncStatus; // 期望为 Synced
+        if (record.IsLocalFileReady || !entity.IsLocalFileReady)
+        {
+            CopyLocalTransferDataBinding(record, entity);
+        }
 
         await _dbContext.SaveChangesAsync(token);
         TriggleUpdateOrDeleteEvent(entity);
@@ -325,7 +342,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         entity.IsDeleted = true;
         entity.LastModified = DateTime.UtcNow;
         entity.Version += 1;
-        if (entity.FilePath.Length > 0)
+        var hadLocalData = entity.FilePath.Length > 0 || entity.TransferDataFile is not null;
+        entity.TransferDataFile = null;
+        entity.TransferDataHash = null;
+        if (hadLocalData)
         {
             entity.FilePath = [];
             entity.IsLocalFileReady = false;
@@ -429,7 +449,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
         var deletedRecords = _dbContext.HistoryRecords
-            .Where(r => r.IsDeleted && r.FilePath.Length > 0 && r.IsLocalFileReady)
+            .Where(r => r.IsDeleted && (r.FilePath.Length > 0 || r.TransferDataFile != null) && r.IsLocalFileReady)
             .ToList();
 
         if (deletedRecords.Count == 0)
@@ -440,6 +460,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         foreach (var record in deletedRecords)
         {
             record.FilePath = [];
+            record.TransferDataFile = null;
+            record.TransferDataHash = null;
             record.IsLocalFileReady = false;
             await DeleteWorkingDirAsync(record, token);
         }
@@ -764,7 +786,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             Type = profileEntity.Type,
             Size = profileEntity.Size,
             Hash = profileEntity.Hash,
-            FilePath = profileEntity.FilePaths
+            FilePath = profileEntity.FilePaths,
+            TransferDataFile = profileEntity.TransferDataFile,
+            TransferDataHash = profileEntity.TransferDataHash
         };
         return record;
     }
@@ -779,6 +803,19 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             Hash = await profile.GetHash(token),
         };
         return record;
+    }
+
+    private static void CopyLocalTransferDataBinding(HistoryRecord source, HistoryRecord target)
+    {
+        if (!source.IsLocalFileReady || source.TransferDataFile is null)
+        {
+            target.TransferDataFile = null;
+            target.TransferDataHash = null;
+            return;
+        }
+
+        target.TransferDataFile = source.TransferDataFile;
+        target.TransferDataHash = source.TransferDataHash;
     }
 
     private Task<HistoryRecord?> Query(ProfileType type, string hash, CancellationToken token)

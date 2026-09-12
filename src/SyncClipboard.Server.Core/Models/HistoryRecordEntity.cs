@@ -15,6 +15,7 @@ public class HistoryRecordEntity
     public string Text { get; set; } = string.Empty;
     public long Size { get; set; } = 0;
     public string TransferDataFile { get; set; } = string.Empty;
+    public string? TransferDataHash { get; set; }
     public string TransferDataSha256 { get; set; } = string.Empty;
     public string TransferDataMd5 { get; set; } = string.Empty;
     public string[] FilePaths { get; set; } = [];

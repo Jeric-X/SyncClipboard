@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
@@ -9,11 +10,20 @@ public abstract class Profile
     protected string? Hash;
     protected long? Size;
     protected readonly SemaphoreSlim _hashInitLock = new(1, 1);
+    public string? TransferDataHash { get; protected set; }
 
     public abstract ProfileType Type { get; }
     public abstract string DisplayText { get; }
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
+    public abstract Task<bool> IsTransferDataValid(CancellationToken token);
+
+    /// <summary>
+    /// 检查本地数据或传输文件是否至少有一份完整可用；不保证数据已完成本地化。
+    /// quick 为 true 时仅检查数据是否存在，不验证内容完整性。
+    /// </summary>
+    public abstract Task<bool> IsDataComplete(bool quick, CancellationToken token);
+
     public abstract Task<ProfileDto> ToProfileDto(CancellationToken token);
     protected abstract Task ComputeHash(CancellationToken token);
     protected abstract Task ComputeSize(CancellationToken token);
@@ -67,14 +77,85 @@ public abstract class Profile
         }
     }
     public abstract Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token);
-    public abstract Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token);
+    /// <summary>
+    /// 准备可供本地使用的数据；不验证内容完整性，所需验证由调用方负责。
+    /// </summary>
+    public abstract Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token);
+
+    /// <summary>
+    /// 验证并尝试准备完整的本地数据；没有可用数据时返回 false，默认保留原路径信息。
+    /// </summary>
+    /// <param name="clearInvalidLocalPaths">失败后是否清空无效的本地路径，供后续下载替换数据；不删除磁盘文件。</param>
+    public abstract Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default);
     public abstract void CopyTo(Profile target);
 
     public abstract bool HasTransferData { get; }
-    public abstract Task<string?> PrepareTransferData(string persistentDir, CancellationToken token);
-    public abstract Task SetTransferData(string path, bool verify, CancellationToken token);
-    public abstract Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token);
-    public abstract Task<string?> NeedsTransferData(string persistentDir, CancellationToken token);
+    /// <summary>
+    /// 验证并准备传输文件，返回文件路径及对应的 SHA-256；无需传输文件时返回 null。
+    /// </summary>
+    public abstract Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token);
+    public abstract Task SetTransferData(
+        string path,
+        bool verify,
+        CancellationToken token);
+
+    public abstract Task SetTransferData(
+        string path,
+        string transferDataHash,
+        bool verify,
+        CancellationToken token);
+
+    /// <summary>
+    /// 绑定调用方已核对 SHA-256 的文件；verify 仅控制 Profile 语义验证。
+    /// </summary>
+    public Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
+    {
+        return SetTransferData(file.Path, file.Hash, verify, token);
+    }
+
+    public abstract Task SetAndMoveTransferData(
+        string persistentDir,
+        string path,
+        CancellationToken token);
+
+    public abstract Task SetAndMoveTransferData(
+        string persistentDir,
+        string path,
+        string transferDataHash,
+        CancellationToken token);
+
+    /// <summary>
+    /// 验证 Profile 语义并移动调用方已核对 SHA-256 的文件。
+    /// </summary>
+    public Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token)
+    {
+        return SetAndMoveTransferData(persistentDir, file.Path, file.Hash, token);
+    }
+    /// <summary>
+    /// 仅根据现有元数据计算接收传输文件的保存路径，不验证数据或创建目录。
+    /// 不支持传输文件时返回 null。
+    /// </summary>
+    public abstract string? GetTransferDataSavePath(string persistentDir);
+
+    protected async Task<bool> IsTransferDataValid(string? path, CancellationToken token)
+    {
+        if (!Utility.IsValidSHA256(TransferDataHash) ||
+            string.IsNullOrEmpty(path) ||
+            !File.Exists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            var actualHash = await Utility.CalculateFileSHA256(path, token);
+            return Utility.SHA256Same(actualHash, TransferDataHash);
+        }
+        catch when (!token.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
 
     public async Task<string> GetProfileId(CancellationToken token)
     {

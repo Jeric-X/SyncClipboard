@@ -572,14 +572,34 @@ public class HistoryTransferQueue : IDisposable
         var profile = task.Profile;
         var persistentDir = _profileEnv.GetPersistentDir();
 
-        var localDataPath = await profile.NeedsTransferData(persistentDir, ct);
-        if (localDataPath is null)
+        if (await profile.TryLocalize(persistentDir, true, ct))
         {
             return;
         }
 
-        await server.DownloadHistoryDataAsync(task.ProfileId, localDataPath, task.ProgressReporter, ct);
-        await profile.SetTransferData(localDataPath, true, ct);
+        var localDataPath = profile.GetTransferDataSavePath(persistentDir)
+            ?? throw new InvalidOperationException("Profile does not support transfer data.");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(localDataPath))!);
+        var transferDataHash = await server.DownloadHistoryDataAsync(
+            task.ProfileId,
+            localDataPath,
+            task.ProgressReporter,
+            ct);
+        if (Utility.IsValidSHA256(transferDataHash))
+        {
+            await profile.SetTransferData(
+                new FileHashInfo(localDataPath, transferDataHash),
+                false,
+                ct);
+        }
+        else
+        {
+            await profile.SetTransferData(localDataPath, verify: true, ct);
+        }
+        if (profile is GroupProfile)
+        {
+            await profile.Localize(persistentDir, ct);
+        }
         if (_configManager.GetConfig<HistoryConfig>().EnableHistory)
         {
             await _historyManager.AddLocalProfile(profile, updateLastAccessed: false, token: ct);
@@ -607,13 +627,24 @@ public class HistoryTransferQueue : IDisposable
         }
 
         // 服务器不存在，执行上传
-        string? transferFilePath = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
+        var transferData = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
+        var persistentInfo = await profile.Persist(_profileEnv.GetPersistentDir(), ct);
+        record.FilePath = persistentInfo.FilePaths;
+        record.TransferDataFile = persistentInfo.TransferDataFile;
+        record.TransferDataHash = persistentInfo.TransferDataHash;
+        record.IsLocalFileReady = true;
+        await _historyManager.UpdateHistoryLocalInfo(record, ct);
         var recordDto = record.ToHistoryRecordDto();
 
         try
         {
-            await server.UploadHistoryAsync(recordDto, transferFilePath, task.ProgressReporter, ct);
+            await server.UploadHistoryAsync(
+                recordDto,
+                transferData,
+                task.ProgressReporter,
+                ct);
             record.SyncStatus = HistorySyncStatus.Synced;
+            await _historyManager.PersistServerSyncedAsync(record, ct);
         }
         catch (RemoteHistoryConflictException ex)
         {

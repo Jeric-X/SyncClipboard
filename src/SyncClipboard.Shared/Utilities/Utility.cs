@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -5,6 +6,45 @@ namespace SyncClipboard.Shared.Utilities;
 
 public static class Utility
 {
+    /// <summary>
+    /// 忽略大小写比较 SHA-256 字符串，不校验格式；两个 null 视为相同。
+    /// </summary>
+    public static bool SHA256Same(string? first, string? second)
+    {
+        return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsValidSHA256([NotNullWhen(true)] string? hash)
+    {
+        return hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
+    }
+
+    public static string? NormalizeSHA256(string? hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            return null;
+        }
+
+        if (!IsValidSHA256(hash))
+        {
+            throw new ArgumentException("Hash must be a 64-character SHA-256 hex string.", nameof(hash));
+        }
+
+        return hash.ToUpperInvariant();
+    }
+
+    public static string NormalizeRequiredSHA256(string hash)
+    {
+        return NormalizeSHA256(hash)
+            ?? throw new ArgumentException("SHA-256 hash cannot be empty.", nameof(hash));
+    }
+
+    public static string? NormalizeSHA256OrNull(string? hash)
+    {
+        return IsValidSHA256(hash) ? hash.ToUpperInvariant() : null;
+    }
+
     public static async Task<string> CalculateSHA256(byte[] data, CancellationToken token)
     {
         using var ms = new MemoryStream(data);
@@ -23,6 +63,18 @@ public static class Utility
         await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 81920, FileOptions.SequentialScan | FileOptions.Asynchronous);
         var hashBytes = await SHA256.HashDataAsync(file, token);
         return Convert.ToHexString(hashBytes);
+    }
+
+    public static async Task<string> VerifyFileSHA256(string path, string? expectedHash, CancellationToken token)
+    {
+        var actualHash = await CalculateFileSHA256(path, token);
+        if (!string.IsNullOrEmpty(expectedHash) && !SHA256Same(actualHash, expectedHash))
+        {
+            throw new InvalidDataException(
+                $"File SHA-256 mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
+        }
+
+        return actualHash;
     }
 
     public static Task<string> CalculateSHA256(string str, CancellationToken token)

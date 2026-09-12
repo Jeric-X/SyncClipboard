@@ -36,7 +36,11 @@ public interface IOfficialSyncServer
     /// <summary>
     /// Download transfer data file for a history record specified by profileId (Type-Hash) to localPath.
     /// </summary>
-    Task DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default);
+    /// <returns>
+    /// The SHA-256 hash verified against the downloaded response body, or <see langword="null"/>
+    /// when a legacy server does not provide one.
+    /// </returns>
+    Task<string?> DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update history record to server with optimistic concurrency.
@@ -48,11 +52,12 @@ public interface IOfficialSyncServer
 
     /// <summary>
     /// 上传一个本地仅存在的记录（初次同步），包括可选的本地传输文件。
+    /// 传输文件存在时，file.Hash 必须是已经与该文件核对过的 SHA-256。
     /// 服务器已存在记录或拒绝传输数据时抛出对应异常。
     /// </summary>
     Task UploadHistoryAsync(
         HistoryRecordDto dto,
-        string? filePath = null,
+        FileHashInfo? file,
         IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default);
 

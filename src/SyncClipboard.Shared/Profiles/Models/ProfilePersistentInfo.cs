@@ -7,5 +7,6 @@ public record ProfilePersistentInfo
     public required long Size { get; init; }
     public required string Hash { get; init; }
     public string? TransferDataFile { get; init; }
+    public string? TransferDataHash { get; init; }
     public string[] FilePaths { get; init; } = [];
 }

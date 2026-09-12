@@ -17,6 +17,8 @@ public static class MapperExtensions
             Type = dto.Type,
             FilePath = [],
             Hash = dto.Hash.ToUpperInvariant(),
+            TransferDataFile = null,
+            TransferDataHash = null,
             Timestamp = dto.CreateTime.UtcDateTime,
             Stared = dto.Starred,
             Pinned = dto.Pinned,
@@ -82,7 +84,9 @@ public static class MapperExtensions
             Size = entity.Size,
             Version = entity.Version,
             IsDeleted = entity.IsDeleted,
-            HasData = !entity.IsLocalFileReady || entity.FilePath.Length > 0
+            HasData = !entity.IsLocalFileReady ||
+                entity.FilePath.Length > 0 ||
+                entity.TransferDataFile is not null
         };
     }
 
@@ -119,8 +123,9 @@ public static class MapperExtensions
             Type = historyRecord.Type,
             Size = historyRecord.Size,
             Hash = historyRecord.Hash,
+            TransferDataFile = historyRecord.TransferDataFile,
+            TransferDataHash = historyRecord.TransferDataHash,
             FilePaths = historyRecord.FilePath,
         });
     }
 }
-

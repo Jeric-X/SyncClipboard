@@ -16,6 +16,8 @@ public partial class HistoryRecordVM : ObservableObject
         Type = record.Type;
         filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         Hash = record.Hash;
+        TransferDataFile = record.TransferDataFile;
+        TransferDataHash = record.TransferDataHash;
         Size = record.Size;
         timestamp = record.Timestamp;
         lastAccessed = record.LastAccessed;
@@ -43,6 +45,8 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
 
     public string Hash { get; set; }
+    public string? TransferDataFile { get; set; }
+    public string? TransferDataHash { get; set; }
     public HistoryRecordKey Key => new(Type, Hash);
     [ObservableProperty]
     private bool isSelected;
@@ -297,6 +301,8 @@ public partial class HistoryRecordVM : ObservableObject
             Type = Type,
             FilePath = FilePath,
             Hash = Hash,
+            TransferDataFile = TransferDataFile,
+            TransferDataHash = TransferDataHash,
             Timestamp = Timestamp,
             Stared = Stared,
             Pinned = Pinned,
@@ -310,6 +316,8 @@ public partial class HistoryRecordVM : ObservableObject
         Text = record.Text;
         Type = record.Type;
         FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
+        TransferDataFile = record.TransferDataFile;
+        TransferDataHash = record.TransferDataHash;
         // Hash = record.Hash;
         Size = record.Size;
         Timestamp = record.Timestamp;
@@ -390,6 +398,8 @@ public partial class HistoryRecordVM : ObservableObject
             Type = this.Type,
             FilePath = this.FilePath,
             Hash = this.Hash,
+            TransferDataFile = this.TransferDataFile,
+            TransferDataHash = this.TransferDataHash,
             Size = this.Size,
             Timestamp = this.Timestamp,
             Stared = this.Stared,

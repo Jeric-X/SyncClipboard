@@ -4,7 +4,6 @@ using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.RemoteServer.Adapter;
-using SyncClipboard.Shared.Profiles;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
@@ -36,17 +35,26 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
     {
         var shouldFillBack = await IsProfileDtoMetadataIncompleteAsync(profile, cancellationToken);
         var persistentDir = _profileEnv.GetPersistentDir();
-        var dataPath = await profile.NeedsTransferData(persistentDir, cancellationToken);
-        if (dataPath is null)
+        if (await profile.TryLocalize(persistentDir, true, cancellationToken))
         {
             return;
         }
 
+        var dataPath = profile.GetTransferDataSavePath(persistentDir)
+            ?? throw new ProfileDataDownloadException("Profile does not support transfer data.");
         try
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dataPath))!);
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
-            await profile.SetAndMoveTransferData(persistentDir, dataPath, cancellationToken);
+            var transferDataHash = await Utility.VerifyFileSHA256(
+                dataPath,
+                profile.TransferDataHash,
+                cancellationToken);
+            await profile.SetAndMoveTransferData(
+                persistentDir,
+                new FileHashInfo(dataPath, transferDataHash),
+                cancellationToken);
             if (shouldFillBack)
             {
                 await FillBackRemoteProfile(profile, cancellationToken);
@@ -72,7 +80,8 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
         CancellationToken cancellationToken)
     {
         return string.IsNullOrEmpty(await profile.GetHash(cancellationToken)) ||
-            !profile.HasKnownSize;
+            !profile.HasKnownSize ||
+            !Utility.IsValidSHA256(profile.TransferDataHash);
     }
 
     private async Task FillBackRemoteProfile(
@@ -104,6 +113,7 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             {
                 Hash = downloadedProfileDto.Hash,
                 Size = downloadedProfileDto.Size,
+                TransferDataHash = downloadedProfileDto.TransferDataHash,
             };
             if (string.IsNullOrWhiteSpace(currentSnapshot.Version))
             {
@@ -132,7 +142,9 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     private static bool ShouldFillBack(ProfileDto downloadedProfile, ProfileDto currentProfile)
     {
-        if (!string.IsNullOrEmpty(currentProfile.Hash) && currentProfile.Size is not null)
+        if (!string.IsNullOrEmpty(currentProfile.Hash) &&
+            currentProfile.Size is not null &&
+            Utility.IsValidSHA256(currentProfile.TransferDataHash))
         {
             return false;
         }
@@ -166,6 +178,12 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             {
                 return false;
             }
+        }
+
+        if (Utility.IsValidSHA256(currentProfile.TransferDataHash) &&
+            !Utility.SHA256Same(currentProfile.TransferDataHash, downloadedProfile.TransferDataHash))
+        {
+            return false;
         }
 
         return true;
@@ -270,14 +288,15 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
 
     private async Task UploadProfileDataAsync(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        var localDataPath = await profile.PrepareDataWithCache(cancellationToken);
-        if (localDataPath is null)
+        var localData = await profile.PrepareDataWithCache(cancellationToken);
+        if (localData is null)
         {
             return;
         }
 
         try
         {
+            var localDataPath = localData.Path;
             if (!File.Exists(localDataPath))
             {
                 throw new FileNotFoundException($"Local data file not found: {localDataPath}");

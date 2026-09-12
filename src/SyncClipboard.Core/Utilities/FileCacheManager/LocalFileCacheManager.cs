@@ -99,6 +99,14 @@ public sealed class LocalFileCacheManager : IDisposable
 
     public async Task<string?> GetCachedFilePathAsync(string cacheType, string id, CancellationToken token)
     {
+        return (await GetCachedFileInfoAsync(cacheType, id, token))?.Path;
+    }
+
+    internal async Task<FileHashInfo?> GetCachedFileInfoAsync(
+        string cacheType,
+        string id,
+        CancellationToken token)
+    {
         await _semaphore.WaitAsync(token);
         try
         {
@@ -116,17 +124,19 @@ public sealed class LocalFileCacheManager : IDisposable
                 return null;
             }
 
-            if (!await IsFileValidAsync(entry, token))
+            var fileHash = await GetValidatedFileHashAsync(entry, token);
+            if (fileHash is null)
             {
                 dbContext.CacheEntries.Remove(entry);
                 await dbContext.SaveChangesAsync(token);
                 return null;
             }
 
+            entry.CachedFileHash = fileHash;
             entry.LastAccessTime = DateTime.Now;
             await dbContext.SaveChangesAsync(token);
 
-            return entry.FilePath;
+            return new FileHashInfo(entry.FilePath, fileHash);
         }
         catch when (!token.IsCancellationRequested)
         {
@@ -143,7 +153,25 @@ public sealed class LocalFileCacheManager : IDisposable
         return SaveCacheEntryAsync(cacheType, id, filePath, null, token);
     }
 
-    public async Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
+    public Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
+    {
+        return SaveCacheEntryCoreAsync(cacheType, id, filePath, null, metadata, token);
+    }
+
+    public Task SaveCacheEntryAsync(string cacheType, string id, FileHashInfo file, CancellationToken token)
+    {
+        return SaveCacheEntryAsync(cacheType, id, file, null, token);
+    }
+
+    /// <summary>
+    /// 保存已由调用方确认的文件及 SHA-256，不重复读取文件计算 hash。
+    /// </summary>
+    public Task SaveCacheEntryAsync(string cacheType, string id, FileHashInfo file, object? metadata = null, CancellationToken token = default)
+    {
+        return SaveCacheEntryCoreAsync(cacheType, id, file.Path, Utility.NormalizeRequiredSHA256(file.Hash), metadata, token);
+    }
+
+    private async Task SaveCacheEntryCoreAsync(string cacheType, string id, string filePath, string? fileHash, object? metadata, CancellationToken token)
     {
         await _semaphore.WaitAsync(token);
         try
@@ -155,7 +183,8 @@ public sealed class LocalFileCacheManager : IDisposable
             var entry = await dbContext.CacheEntries
                 .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 
-            var cachedFileHash = await CalculateFileHashAsync(filePath, token);
+            var cachedFileHash = fileHash ?? Convert.ToHexString(
+                await CalculateFileHashAsync(filePath, token));
             if (entry == null)
             {
                 entry = new LocalFileCacheEntry
@@ -299,33 +328,37 @@ public sealed class LocalFileCacheManager : IDisposable
         }
     }
 
-    private static async Task<bool> IsFileValidAsync(LocalFileCacheEntry entry, CancellationToken token)
+    private static async Task<string?> GetValidatedFileHashAsync(
+        LocalFileCacheEntry entry,
+        CancellationToken token)
     {
         try
         {
             var fileInfo = new FileInfo(entry.FilePath);
             if (fileInfo.Length != entry.FileSize)
-                return false;
+                return null;
 
-            if (!string.IsNullOrEmpty(entry.CachedFileHash))
+            var hashBytes = await CalculateFileHashAsync(entry.FilePath, token);
+            var hexHash = Convert.ToHexString(hashBytes);
+            if (string.IsNullOrEmpty(entry.CachedFileHash) ||
+                Utility.SHA256Same(entry.CachedFileHash, hexHash) ||
+                string.Equals(entry.CachedFileHash, Convert.ToBase64String(hashBytes), StringComparison.Ordinal))
             {
-                var currentHash = await CalculateFileHashAsync(entry.FilePath, token);
-                return currentHash == entry.CachedFileHash;
+                return hexHash;
             }
 
-            return true;
+            return null;
         }
         catch
         {
-            return false;
+            return null;
         }
     }
 
-    private static async Task<string> CalculateFileHashAsync(string filePath, CancellationToken token)
+    private static async Task<byte[]> CalculateFileHashAsync(string filePath, CancellationToken token)
     {
         using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var hashBytes = await SHA256.HashDataAsync(stream, token);
-        return Convert.ToBase64String(hashBytes);
+        return await SHA256.HashDataAsync(stream, token);
     }
 
     public void Dispose()
