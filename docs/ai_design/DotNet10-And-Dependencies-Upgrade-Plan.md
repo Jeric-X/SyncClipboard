@@ -46,7 +46,8 @@
 | FluentAvalonia.BreadcrumbBar | 2.0.2 | 兼容版本、受维护替代或最小移植，不能假设旧包可用 | 8 |
 | Avalonia.Diagnostics | 11.3.18 | 移除；需要工具时核定 AvaloniaUI.DiagnosticsSupport 版本 | 8 |
 | WindowsAppSDK、SDK.BuildTools | 1.8.260529003 / 10.0.26100.4948 | 2.4.0 / 10.0.28000.2705，执行时核对配套组件及部署要求 | 9a |
-| WinUIEx、H.NotifyIcon、WinUI CommunityToolkit | 见中央版本文件 | 逐个核定当前稳定兼容版本 | 9b–9d |
+| WinUIEx | 2.3.4 | 2.9.3，要求 net8.0-windows10.0.19041 与 WinUI >= 1.8.250906003 | 9b |
+| H.NotifyIcon、WinUI CommunityToolkit | 见中央版本文件 | 逐个核定当前稳定兼容版本 | 9c–9d |
 | AWSSDK.S3 | 3.7.414 | 稳定 4.x，按官方 V4 迁移指南适配 | 10 |
 | Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | 各架构 Q16 同版；SystemDrawing 使用兼容配套版本 | 11 |
 | SharpHook | 5.2.3 | 当前受支持的稳定版本 | 12a |
@@ -376,13 +377,14 @@ dotnet format --verify-no-changes --severity info --no-restore
 验证命令、OS、架构、退出码、测试总数/通过/失败/跳过数：
 非 UI 回归编号、结果、产物和证据：
 UI 排除用例/检查清单、数量与原因（本计划不验证，不计通过，不阻塞）：
+是否存在需要 UI 的待办：否；发现此类检查时移入上述排除清单
 PR URL、当前 head SHA、CI run/check 链接及覆盖矩阵：
 评审 / 未解决线程 / 行内评论 / 普通评论处理结论：
 本地问题修复日志绝对路径：
 范围内未覆盖项及阻塞原因：
 回退提交与测试配置/数据库备份位置：
 监控 automation ID、间隔与删除结果：
-是否允许进入下一步：仅范围内必要检查和非 UI 回归全部通过时填“是”
+是否允许进入下一步：本步必要非 UI 检查及当前 head 的 PR CI/问题监控全部通过时填“是”；不等待 UI 验证
 ```
 
 发生问题时停止推进，优先在当前步骤作最小修复。需要回退已经推送的步骤时，用新的 revert 提交保留历史，不强推或重置共享分支；回退后重新验证。数据库、配置与外部测试存储的恢复单独处理，不能假定撤销代码就能撤销数据变化。

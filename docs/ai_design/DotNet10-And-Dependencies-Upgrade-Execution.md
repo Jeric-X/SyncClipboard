@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–8 已通过，当前执行步骤 9a：核定 Windows App SDK 与配套 BuildTools 升级，执行编译及非 UI 验证。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 8 验证通过提交为 `a8d0aca4ae12a818e37d080d4b4e609ba47c6de2`；步骤 9a 已完成版本更新及本地非 UI 验证，尚待当前提交 PR 的 Windows 构建与产物验证，不允许进入步骤 9b。
-- 步骤 9b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–9a 已通过，当前执行步骤 9b：核定 WinUIEx 升级及编译兼容性。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9a 验证通过提交为 `cd59964649814866a0374271cb889a50a7cf5150`；步骤 9b 未通过前不进入 9c。
+- 步骤 9c–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -15,6 +15,8 @@
 各步骤及子步骤的记录统一使用“非 UI 验证通过”“范围内验证待完成/失败”和“UI 范围排除”区分结果。下文历史记录中的“已通过”也仅指非 UI 范围。UI 排除项不列为待执行、阻塞或待补测，不要求人工操作或 macOS 解锁；必要的非 UI 检查及当前提交的 PR CI/问题监控完成前，仍不得开始下一步。
 
 相关步骤直接采用计划第 3.2 节按步骤列出的 UI 排除清单，最终验收同样适用。编译绑定通过不代表运行时界面绑定通过；命令行启动的测试若初始化 UI 或访问真实桌面，也必须排除。此范围调整不改变已有验证结果，不将未执行的 UI 检查补记为通过。
+
+每步收尾时核对：需要 UI 的内容全部归入排除清单，待办只保留必要的非 UI 检查及当前提交的 PR CI/问题处理。文档中的“全平台验证”“全部检查”均受此范围限制，不要求执行 UI 验证后才能完成该步。
 
 ## 步骤 0：基线证据
 
@@ -358,3 +360,25 @@ macOS 不能替代 Windows MSBuild/XAML 编译、WinUI3 非 UI 测试与 Windows
 Core 356 项、Desktop NonUI 4 项通过，0 失败/跳过；仓库 TRX 校验器按最低 360 项通过，报告 `/private/tmp/syncclipboard-stage9a-results/`。仓库 `dotnet format --verify-no-changes --severity info --no-restore` 退出 0，日志 `/tmp/syncclipboard-stage9a-format.log`，保留跨平台工作区加载警告。`git diff --check` 通过。
 
 Windows App SDK 的 Runtime 包声明 Framework AppX 版本 2.4.0.0；所选 WinUI 组件的 Microsoft.WinUI.dll 程序集版本仍为 3.0.0.0，Bootstrap.Net 为 2.0.0.0，不能只依据程序集主版本判断升级是否生效。后续产物核验须结合 deps 中的包版本、对应 NuGet 文件哈希、Runtime/Bootstrap 及自包含模式；不运行 SDK 的 UI 初始化或安装向导。当前本机无法完成的 Windows 验证交由真实 PR，步骤 9a 未通过前不开始 9b。
+
+### 步骤 9a 最终 PR 验证（2026-09-14）
+
+验证通过提交：`cd59964649814866a0374271cb889a50a7cf5150`。[PR build 34769429108](https://github.com/Jeric-X/SyncClipboard/actions/runs/34769429108)、[push build 34769427181](https://github.com/Jeric-X/SyncClipboard/actions/runs/34769427181)、[CodeQL 34769428698](https://github.com/Jeric-X/SyncClipboard/actions/runs/34769428698) 及 CodeFactor 均完成，103 项成功、8 项预期发布跳过。当前提交 Codex 评审完成，无新增可处理问题，五个线程全部解决；核对全部评审、行内和普通评论后再次确认 head 和检查状态未变。
+
+47 个 artifact 全部下载完成，五份 TRX 共 372 项非 UI 测试通过，0 失败/跳过。38 个 Windows/Linux 原始构建与 ZIP/Inno/AppImage/deb/rpm 组合通过完整性、资源、框架、自包含模式和原生架构检查。24 个 Windows 组合逐包核对 deps 中 AppSDK 2.4.0、WinUI 2.3.6、Foundation 2.3.9，WinUI 与 Bootstrap.Net 文件哈希匹配对应 NuGet；携带 App SDK 时另核对 XAML Controls 与 App Runtime 原生 DLL 哈希，不携带时确认未混入这些文件。完整报告 `/tmp/syncclipboard-pr419-cd59-package-audit.json`，SHA256 `361981fb8de9c38f6e9da757979d1194ea9ea092fbd675f35453604377632adf`。
+
+14 个 Linux 组合保留前置 Avalonia/Skia/HarfBuzz、Microsoft/EF/SQLite 版本与原生哈希检查，六个 Linux 包元数据通过。macOS 两架构 dmg 的资源、每包 19 个 dylib、依赖版本和严格签名通过，只读挂载均已卸载。当前 Server 与两架构容器 CI 各确认四轮 Production 启动/重启及两轮 API/认证/历史/传输检查，下载的服务器产物本机复验同样通过。报告前缀 `/tmp/syncclipboard-pr419-cd59-`，本地详细记录 `docs/ai_design/.local/PR-419-Artifacts-cd599646.md`。
+
+步骤 9a 非 UI 验证通过，允许进入 9b；没有启动桌面程序或图形安装向导，不代表后续升级已完成。
+
+## 步骤 9b：WinUIEx（2026-09-14）
+
+前置步骤通过提交：`cd59964649814866a0374271cb889a50a7cf5150`。状态：进行中；当前步骤通过真实 PR 的 Windows 编译、非 UI 测试、打包与评审前，不开始 9c。
+
+依据 [NuGet 2.9.3 依赖声明](https://www.nuget.org/packages/WinUIEx/2.9.3) 和[上游发布说明](https://github.com/dotMorten/WinUIEx/releases/tag/v2.9.3)，将 WinUIEx 2.3.4 升级为当前稳定版 2.9.3。新包目标 net8.0-windows10.0.19041，要求 Microsoft.WindowsAppSDK.WinUI >= 1.8.250906003；本项目 net10.0-windows10.0.19041.0 与步骤 9a 的 WinUI 2.3.6 满足要求。实际包源码提交为 `72f2975d2a237c0d7ad1113fe617d5894e66feb6`。
+
+只修改中央版本文件中的 WinUIEx；WinUI3 与测试项目还原均退出 0，实际解析差异均只有 WinUIEx 2.3.4 → 2.9.3，没有包降级或 TFM 冲突。依赖差异报告 `/tmp/syncclipboard-stage9b-resolved-dependency-diff.json`，日志 `/tmp/syncclipboard-stage9b-winui{-test,}-restore.log`。WindowManager.Get、MinWidth/MinHeight、窗口句柄/显示/置顶/前台扩展、WindowMessageMonitor 及其事件相关的 18 个旧包文档成员在新包中均存在；报告 `/tmp/syncclipboard-stage9b-api-comparison.json`。这仅为 API 静态核对，完整 C#/XAML 编译由当前 PR 的 Windows runner 验证，不据此宣称运行时窗口行为通过。
+
+本地 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按最低 360 项通过；报告 `/private/tmp/syncclipboard-stage9b-results/`。仓库格式检查退出 0，仅保留跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage9b-format.log`；diff 检查通过。没有新增模拟窗口测试，真实窗口、消息循环、热键与托盘行为均为 UI 范围排除。
+
+新 WinUIEx.dll 的程序集版本为 2.9.3.0，ProductVersion 为 `2.9.3+72f2975d2a237c0d7ad1113fe617d5894e66feb6`，包内 SHA256 为 `d4d66f42b613d50ad6756e10f18600210f5859a1cc74215972e244cc88c9a5d2`。当前 PR 产物检查须逐个 Windows 组合核对 deps 与实际 DLL，保留步骤 9a 的 App SDK 校验；不能把本机 NuGet 文件当作 CI 产物已经通过。
