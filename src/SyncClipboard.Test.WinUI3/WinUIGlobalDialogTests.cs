@@ -103,7 +103,7 @@ public class WinUIGlobalDialogTests
 
     private static void AssertButton(TASKDIALOGCONFIG config, int index, int id, string text)
     {
-        var pointer = config.pButtons + index * Marshal.SizeOf<TASKDIALOG_BUTTON>();
+        var pointer = config.pButtons + (index * Marshal.SizeOf<TASKDIALOG_BUTTON>());
         var button = Marshal.PtrToStructure<TASKDIALOG_BUTTON>(pointer);
         Assert.AreEqual(id, button.nButtonID);
         Assert.AreEqual(text, Marshal.PtrToStringUni(button.pszButtonText));

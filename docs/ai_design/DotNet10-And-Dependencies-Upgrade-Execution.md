@@ -644,3 +644,8 @@ WinUIGlobalDialog 增加内部可注入的原生调用委托，公开默认构�
 本地 Core 386、Desktop NonUI 6 项通过，0 失败/跳过，报告 `/tmp/syncclipboard-stage12c-results/`；Windows/macOS 还原、工作流语法及完整格式检查通过，后者仅有跨平台工作区加载警告。隔离项目链接实际 WinUIGlobalDialog、KeyboardMap 及新增测试源码，并编译现有 minidump/hook/hotkey 调用，0 警告/错误；该证据不代表在 macOS 完成 WinUI3 全量构建或运行 Windows 测试。
 
 产物审计新增七个 Vanara 5.0.7 net10.0-windows7.0 程序集的精确官方字节及依赖图检查，拒绝残留 Shared 和非 Windows 包引入 Vanara；已用官方资产核定规则，缺文件、旧 Shared、错误字节和 Linux 混入四种负例均拒绝。当前 head 的 Windows 测试、全平台 CI、55 个产物与评审仍待通过，步骤 12c 尚未通过，不进入 12d。
+
+
+### 步骤 12c 首轮 PR 反馈
+
+提交 `c30f4a54e5e321233baaad1ece26b11164b03e76` 的 CodeFactor 检出两处 SA1407：测试中原生按钮地址及结构偏移量计算混用加法和乘法，需显式标注优先级。已仅为乘法添加括号，不改变断言或产品行为；隔离编译 0 警告/错误，完整格式检查退出 0。两个问题分别追加本地修复日志；没有关闭检查或发送 GitHub 评论。修复后提交仍需完整 CI、产物与评审验证，当前步骤未通过。

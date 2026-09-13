@@ -47,7 +47,7 @@ public class VanaraInteropTests
         Assert.AreEqual(4 + nint.Size, Marshal.SizeOf<TASKDIALOG_BUTTON>());
         Assert.AreEqual((nint)4, Marshal.OffsetOf<TASKDIALOG_BUTTON>(nameof(TASKDIALOG_BUTTON.pszButtonText)));
         Assert.AreEqual(nint.Size == 8 ? 160 : 96, Marshal.SizeOf<TASKDIALOGCONFIG>());
-        Assert.AreEqual((nint)(16 + 6 * nint.Size),
+        Assert.AreEqual((nint)(16 + (6 * nint.Size)),
             Marshal.OffsetOf<TASKDIALOGCONFIG>(nameof(TASKDIALOGCONFIG.pButtons)));
     }
 
