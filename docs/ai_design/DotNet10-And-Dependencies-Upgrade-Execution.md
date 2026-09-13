@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–9d 及步骤 10 前置修复已通过，当前执行步骤 10：AWS SDK S3 v4 迁移。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9d 验证通过提交为 `b00ddd0d95cc2e501225df5e7e5948a5d155846f`；步骤 10 未通过前不进入 11。
-- 步骤 11–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–10（含全部子步骤和前置修复）已通过，当前执行步骤 11：图片处理依赖升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 10 验证通过提交为 `570614d86594402310d80495edafe037b11edab4`；步骤 11 未通过前不进入 12。
+- 步骤 12–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -19,6 +19,8 @@
 相关步骤直接采用计划第 3.2 节按步骤列出的 UI 排除清单，最终验收同样适用。编译绑定通过不代表运行时界面绑定通过；命令行启动的测试若初始化 UI 或访问真实桌面，也必须排除。此范围调整不改变已有验证结果，不将未执行的 UI 检查补记为通过。
 
 每步收尾时核对：需要 UI 的内容全部归入排除清单，待办只保留必要的非 UI 检查及当前提交的 PR CI/问题处理。文档中的“全平台验证”“全部检查”均受此范围限制，不要求执行 UI 验证后才能完成该步。
+
+图片编解码、像素/透明通道比较、格式转换和纯 Bitmap 数据转换属于可保留的数据检查，前提是不打开图片预览、不构造控件、不访问真实剪贴板。最终交付只报告约定范围内的非 UI 验证与评审问题处理结果，并列出 UI 排除项，不安排人工或解锁后补测。
 
 ## 步骤 0：基线证据
 
@@ -502,3 +504,36 @@ Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按
 在已有真实 MinIO 探针中新增连续进度不得下降的断言，旧实现于普通 2 MiB 文件上传即失败：`Upload progress decreased during signing or retry`，还未进入故障代理重试组。日志 `/tmp/syncclipboard-stage10-v4-regression-smoke.log`。修复为报告已读取位置的历史最大值，并以文件总长封顶；非可定位流保持累计读取语义。没有修改 UI 或以 UI 运行检查替代数据断言。
 
 修复后的七组完整 MinIO 检查通过，普通、空文件、大文件及重试传输同时满足进度单调、进度不超长、完成字节数和传输哈希要求；报告 `/tmp/syncclipboard-stage10-v4-monotonic-result.json`。Core 356、Desktop NonUI 4 项及格式检查再次通过，0 失败/跳过，报告 `/private/tmp/syncclipboard-stage10-v4-monotonic-results/`。本修复仍须新提交的 PR CI、完整产物与评审通过；先前 e7ed265d 的检查不能替代它。
+
+
+### 步骤 10 最终 PR 与产物验证
+
+验证通过提交 `570614d86594402310d80495edafe037b11edab4`：[PR run 34777597992](https://github.com/Jeric-X/SyncClipboard/actions/runs/34777597992)、[push run 34777596462](https://github.com/Jeric-X/SyncClipboard/actions/runs/34777596462)、[CodeQL 34777597644](https://github.com/Jeric-X/SyncClipboard/actions/runs/34777597644) 与 CodeFactor 均通过。最终 105 项成功、8 项预期发布跳过；当前提交 Codex 于 `2026-09-13T19:31:05.843724Z` 完成，无新增反馈。进度问题线程依据真实复现和修复后的 S3 CI 证据标记解决，全部六个线程均已解决；最终重新核对 head、评审、行内与普通评论无变化，没有发送 GitHub 评论。
+
+48 个 artifact 全部下载并与当前 run 清单核对。五份 TRX 合计 374 项通过，0 失败/跳过；S3 七组独立 CI 检查通过，实际 DLL 哈希、重试结果与本地修复报告一致。完整 38 个 Windows/Linux 包组合通过（24 个 Windows、14 个 Linux），每个组合均核对 S3/Core 的 NuGet 版本及 DLL 字节哈希，并保留全部前置包检查。报告 `/tmp/syncclipboard-pr419-5706-package-audit.json`，SHA256 `816366e31b90be9c83ae370a8b85a38b7168b1a56463e82d83d14b520ea4d2a0`。
+
+六个 Linux 包元数据和双架构 macOS 的签名、资源、依赖、各 19 个 dylib 架构与 AWS DLL 哈希均通过，挂载已卸载。Server 与 amd64/arm64 容器各四轮 Production 启动和两轮 API 冒烟成功；下载服务器产物本机复验同样通过。报告前缀 `/tmp/syncclipboard-pr419-5706-`；详细本地记录 `docs/ai_design/.local/PR-419-Artifacts-570614d8.md`。步骤 10 非 UI 验证通过，允许开始步骤 11；不代表后续升级已完成。监控 `pr419` 已按计划第 4 节在阶段通过后删除，下一阶段提交后再按需恢复。
+
+
+## 步骤 11：图片处理依赖准备（2026-09-14）
+
+前置步骤 10 已完整通过。尚未修改图片依赖版本，先冻结当前 Core、Test、WinUI3、macOS 依赖图到 `/private/tmp/syncclipboard-stage11-baseline-assets/`，准备旧版/新版一致的非 UI 图片数据回归。
+
+NuGet 实时索引核定 Q16 各包候选 14.17.1、SystemDrawing 8.0.27；搜索缓存曾返回 8.0.25，未采用该过时结果。已下载并读取 8.0.27 nuspec：要求 Magick.NET.Core >= 14.17.1、System.Drawing.Common >= 8.0.29，源码提交 `298053457c16f413a9df6edaca668b12289bea2d`；[14.17.1 发布说明](https://github.com/dlemstra/Magick.NET/releases/tag/14.17.1)。实际还原后的依赖版本及漏洞审计仍待执行，不将候选核对视为升级通过。
+
+本步需为 ClipboardImage 的保存/缓存、ImageHelper 的单帧/多帧兼容转换及图片尺寸、像素、透明通道、大图和无效输入建立非 UI 检查。原生库须覆盖 Windows x86/x64/arm64、Linux x64/arm64、macOS x64/arm64；x86 包继续保留时加入相应 Windows 构建及实际原生库执行，不能由既有 x64/arm64 包静态检查代替。官方 runner 清单已核对 macos-26-intel 和 windows-11-vs2026-arm 等原生架构标签；具体工作流必须由真实 PR 运行验证。没有启动图片预览或真实剪贴板。
+
+
+### 步骤 11 实现与本地非 UI 验证
+
+Q16 x64/x86/arm64/AnyCPU 统一由 14.9.1 升至 14.17.1，SystemDrawing 由 8.0.15 升至 8.0.27。实际 Magick.NET.Core 在 Core/Test/macOS 中由 14.9.1、在 WinUI3 中由 14.10.2 统一为 14.17.1；依赖图差异报告 `/tmp/syncclipboard-stage11-dependency-diff.json` 未发现其他产品传递依赖变化。Core 与 WinUI3 的显式 NuGet 漏洞查询均成功，所还原依赖图无当前已报告漏洞；这不是未知漏洞不存在的保证。
+
+新增 ImageProbe 直接调用产品 ClipboardImage 与 ImageHelper，验证 PNG/TIFF 的 RGBA 像素及透明通道、BMP 解码、文件/字节缓存与八个并发实例隔离、WebP/AVIF/HEIC/HEIF 到 JPEG、动画 WebP 到 GIF 的帧/尺寸/时间/颜色、4096×2048 大图的全部 32 MiB RGBA 数据，以及无效输入和取消后恢复。HEIC 使用仓库自生成的固定蓝色样本，SHA256 `c5b79609d8db76828d07fb803a5af8948e73c5cacef3dc597489d6db4528ab95`；产品所需的是解码，不依赖 NuGet 包没有提供的 HEIC 编码器。Windows 另检查 SystemDrawing 的纯 Bitmap 往返转换，不创建窗口、控件或真实剪贴板。
+
+Windows 探针直接引用 System.Drawing.Common 10.0.0，中央版本表相应补充该版本；这是对齐 WinUI3 已解析的 10.0.0，不是再次升级产品依赖。若只引用 Magick.NET.SystemDrawing，孤立探针会选择 8.0.29，从而无法验证实际产品组合。探针的 Directory.Packages.props 转发到 src 中的中央版本文件，不复制版本。
+
+本机 macOS arm64 的旧版和新版六组图片检查均通过。新版报告 `/tmp/syncclipboard-stage11-new-image-result-v2.json` 记录实际 ImageMagick 7.1.2-31、Magick.NET 14.17.1 和托管/Core/原生库哈希；原生 SHA256 `9b2fe24ad0f589459e34d4f2f2813f68e84274caf94b5d0ceab372328d60f263`。Windows x86 探针交叉发布成功且无警告，但未在 macOS 上运行，不能作为 Windows 运行证据。
+
+Core 356、Desktop NonUI 4 项通过，0 失败/跳过，TRX 位于 `/private/tmp/syncclipboard-stage11-results/`；仓库与探针格式检查均退出 0，仓库仅保留跨平台工作区加载警告。Windows/macOS 产品还原、actionlint 和 diff 检查通过。
+
+CI 新增七个实际 RID 图片任务：Windows x86/x64/arm64、Linux x64/arm64、macOS x64/arm64。各任务检查进程架构、运行产品图片路径并上传含库哈希的 JSON；Windows x86 同时编译保留的 WinUI3 产品。Windows arm64 使用原生 windows-11-arm runner。既有构建、测试和打包矩阵保留。预计新增七份报告，完整 PR run 共 55 个 artifact；图片共 45 组检查，另有既有 374 项 MSTest 与七组 S3 检查。以上 CI、跨平台原生执行、最终产物及评审均待本次提交实际通过，不能据本地结果开始步骤 12。

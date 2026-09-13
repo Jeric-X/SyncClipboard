@@ -109,6 +109,67 @@ jobs:
         path: s3-test-result.json
         if-no-files-found: error
 
+  image-test:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025-vs2026
+            rid: win-x86
+            platform: x86
+          - os: windows-2025-vs2026
+            rid: win-x64
+            platform: x64
+          - os: windows-11-arm
+            rid: win-arm64
+            platform: ARM64
+          - os: ubuntu-24.04
+            rid: linux-x64
+            platform: x64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+            platform: ARM64
+          - os: macos-26-intel
+            rid: osx-x64
+            platform: x64
+          - os: macos-26
+            rid: osx-arm64
+            platform: ARM64
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.302
+    - name: Show selected SDK and host architecture
+      run: dotnet --info
+    - uses: microsoft/setup-msbuild@v3
+      if: matrix.rid == 'win-x86'
+      with:
+        msbuild-architecture: x64
+    - name: Build the retained Windows x86 product
+      if: matrix.rid == 'win-x86'
+      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x86 /p:RuntimeIdentifier=win-x86 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=false /v:m -restore
+    - name: Publish the native image data probe
+      run: >-
+        dotnet publish build/verification/ImageProbe/ImageProbe.csproj
+        -c Release -r ${{ matrix.rid }} -p:Platform=${{ matrix.platform }}
+        --self-contained true -o image-probe
+    - name: Verify image data and native library without UI
+      shell: bash
+      run: |
+        probe=./image-probe/ImageProbe
+        if [[ "${{ runner.os }}" == "Windows" ]]; then probe+=.exe; fi
+        "$probe" "${{ matrix.rid }}" image-test-result.json
+    - name: Upload image verification evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: image-test-results-${{ matrix.rid }}
+        path: image-test-result.json
+        if-no-files-found: error
+
   winui-test:
     runs-on: windows-2025-vs2026
     steps:

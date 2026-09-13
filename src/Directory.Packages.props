@@ -12,11 +12,12 @@
     <PackageVersion Include="NativeNotification.Interface" Version="1.0.5" />
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
-    <PackageVersion Include="Magick.NET-Q16-x64" Version="14.9.1" />
-    <PackageVersion Include="Magick.NET-Q16-x86" Version="14.9.1" />
-    <PackageVersion Include="Magick.NET-Q16-arm64" Version="14.9.1" />
-    <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="14.9.1" />
-    <PackageVersion Include="Magick.NET.SystemDrawing" Version="8.0.15" />
+    <PackageVersion Include="Magick.NET-Q16-x64" Version="14.17.1" />
+    <PackageVersion Include="Magick.NET-Q16-x86" Version="14.17.1" />
+    <PackageVersion Include="Magick.NET-Q16-arm64" Version="14.17.1" />
+    <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="14.17.1" />
+    <PackageVersion Include="Magick.NET.SystemDrawing" Version="8.0.27" />
+    <PackageVersion Include="System.Drawing.Common" Version="10.0.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="ObservableCollections" Version="3.3.4" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />

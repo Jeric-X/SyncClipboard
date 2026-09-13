@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x86;x64;ARM64</Platforms>
+    <DefineConstants Condition="$(RuntimeIdentifier.StartsWith('win-'))">$(DefineConstants);WINDOWS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/SyncClipboard.Core/SyncClipboard.Core.csproj" />
+    <PackageReference Include="Magick.NET.SystemDrawing" Condition="$(RuntimeIdentifier.StartsWith('win-'))" />
+    <PackageReference Include="System.Drawing.Common" Condition="$(RuntimeIdentifier.StartsWith('win-'))" />
+    <None Update="Fixtures/blue-64x48.heic" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

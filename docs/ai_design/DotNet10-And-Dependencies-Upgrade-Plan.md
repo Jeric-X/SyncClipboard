@@ -50,7 +50,7 @@
 | H.NotifyIcon.WinUI | 2.3.0 | 2.4.1，要求 .NET 10，配套 Core/GeneratedIcons 2.4.1 | 9c |
 | WinUI CommunityToolkit SettingsControls/Converters | 8.2.250402 | 8.2.251219，配套 Extensions/Helpers/Triggers 同版 | 9d |
 | AWSSDK.S3 | 3.7.414 | 4.0.103.2，配套 AWSSDK.Core 4.0.102.4 | 10 |
-| Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | 各架构 Q16 同版；SystemDrawing 使用兼容配套版本 | 11 |
+| Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | Q16 14.17.1；SystemDrawing 8.0.27，配套 Core 14.17.1 | 11 |
 | SharpHook | 5.2.3 | 当前受支持的稳定版本 | 12a |
 | NativeNotification、NativeNotification.Interface | 1.0.5 | 配套升级；若无可用维护版本，记录维持或替代决定 | 12b |
 | Vanara.PInvoke 各包、Interop.UIAutomationClient、Toolkit.Uwp.Notifications | 见中央版本文件 | 分组核定兼容版本，不与热键迁移混做 | 12c–12e |
@@ -130,6 +130,7 @@ dotnet format --verify-no-changes --severity info --no-restore
 | --- | --- |
 | 桌面项目还原、C#/XAML 编译、静态分析、安装包解包检查 | 保留，按当前步骤独立验证 |
 | 使用 mock 的业务逻辑、ViewModel、数据转换及服务端 API 测试 | 确认初始化、执行和清理均不依赖 UI 后运行 |
+| 图片编解码、像素/透明通道比较、图片格式转换及纯 Bitmap 数据转换 | 保留；直接检查数据，不打开图片预览、不创建控件、不访问真实剪贴板 |
 | 创建窗口/控件、加载运行时界面、启动 UI 框架或依赖 UI 调度线程的测试 | 排除；隐藏窗口、无头模式和虚拟显示器也不执行 |
 | 桌面程序启动、图形安装向导、托盘、热键、通知、真实剪贴板及跨应用操作 | 排除，不安排人工补测或解锁后补测 |
 | UI 截图、视觉比较、交互验收 | 排除，不作为本步骤或最终交付的通过条件 |
@@ -365,6 +366,8 @@ dotnet format --verify-no-changes --severity info --no-restore
 **验证：** 最终 head 上运行第 3 节全部非 UI 验证和 R1–R5；确认范围内 PR 检查、评审、行内线程与普通评论无未解决的可处理问题。下载最终产物，检查实际版本和所有约定架构。缺少必要非 UI 构建/测试覆盖时由对应 CI 补齐；不要求 UI 会话或界面实测，不缩减构建架构矩阵。
 
 **通过条件：** 记录最终 head、PR、CI runs、测试计数、产物和非 UI 验证证据；所有前置步骤已通过，没有“待确认”的目标版本或范围内必要验证。实际 UI 行为统一标注“本计划不验证”，不作为阻塞，不声称 UI 已验收。删除监控 heartbeat，交由用户决定合并及发布。
+
+最终交付中的“无未解决问题”限定为约定的非 UI 检查与已处理的代码评审反馈，不表示已经验证界面行为。交付记录明确列出 UI 范围排除项即可，不附加人工 UI 验收或锁屏解除后的补测要求。
 
 ## 6. 每步证据模板与回退
 
