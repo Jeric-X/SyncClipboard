@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–12b（含全部子步骤和前置修复）已通过，当前执行步骤 12c：Vanara 升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12b 验证通过提交为 `4574899507c94acdbe1e8372944c17d249ff8aa1`；步骤 12c 未通过前不进入 12d。
-- 步骤 12d–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–12c（含全部子步骤和前置修复）已通过，当前执行步骤 12d：Interop.UIAutomationClient 版本核定与兼容验证。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12c 验证通过提交为 `81bdec694690812e01fb7fcc545c7f1f2f7e3679`；步骤 12d 未通过前不进入 12e。
+- 步骤 12e–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -658,3 +658,27 @@ WinUIGlobalDialog 增加内部可注入的原生调用委托，公开默认构�
 完整日志另发现两个本次新增的 CS0436，涉及 SDK 生成的 AutoInitialize 与 NativeMethods：新增 InternalsVisibleTo 使产品程序集中的内部 SDK 类型对测试可见，与测试自身生成类型重名。上一通过提交的同一 Windows job 没有这两个警告。测试到 WinUI 产品的引用改为显式 WinUIProduct 别名，并同步三处产品命名空间导入；不抑制警告，不关闭或改变 SDK 初始化。
 
 隔离编译使用当前 CI 的真实产品程序集、原始 SDK 初始化源码和实际新增测试：引用同时进入全局命名空间时复现两个 CS0436，仅保留 WinUIProduct 别名后 0 警告/错误。证据 `/tmp/syncclipboard-stage12c-alias-{baseline,fixed}.log`。Windows 测试还原与仓库格式检查退出 0；当前修复仍需 PR 验证全部 26 项用例并确认两警告消失，步骤 12c 尚未通过。
+
+
+### 步骤 12c 最终 PR 与产物验证
+
+验证通过提交 `81bdec694690812e01fb7fcc545c7f1f2f7e3679`：[PR run 34788050747](https://github.com/Jeric-X/SyncClipboard/actions/runs/34788050747)、[push run 34788048310](https://github.com/Jeric-X/SyncClipboard/actions/runs/34788048310)、[CodeQL 34788050577](https://github.com/Jeric-X/SyncClipboard/actions/runs/34788050577) 与 CodeFactor 均成功，119 项 SUCCESS、8 项预期发布 SKIPPED。合并测试提交 `ad8f3133bf195f0c32e90a203b74b9ad267b652a` 的父提交包含当前 head 和 master 基线。五份 TRX 共 430 项通过（Core 386、三平台 Desktop 各 6、WinUI3 26），0 失败/跳过；Windows 日志已确认 AutoInitialize 与 NativeMethods 两条 CS0436 消失，未抑制诊断或改变 SDK 初始化。
+
+全部 55 个 artifact 与当前 run 清单及 head 一致。完整 38 个 Windows/Linux 组合通过：24 个 Windows 组合逐包核对七个 Vanara 5.0.7 net10.0-windows7.0 程序集的官方字节与依赖图，没有残留 Shared；14 个 Linux 组合未混入 Vanara。前置 .NET/Microsoft/EF/SQLite、Avalonia/WinUI、AWS、图像、SharpHook、通知和资源检查全部保留。报告 `/tmp/syncclipboard-pr419-81bd-package-audit.json`，SHA256 `0a01144fc7216f920a4d3300258df63ef7a52df1737674fd803b442a9f06ae58`。
+
+六个 Linux deb/rpm 包元数据、macOS 双架构严格签名及每包 19 个 dylib、通知 SDK 注册器改写和全部前置程序集检查通过；macOS 无 Vanara，挂载均已卸载。七 RID 共 45 组图片及七组 S3 检查通过。服务器与双架构容器各四轮 Production 启动、两轮 API 冒烟通过，本机下载服务器复验相同。完整记录 `docs/ai_design/.local/PR-419-Artifacts-81bdec69.md`，没有执行任何 UI 验证。
+
+Codex 于 `2026-09-13T22:57:16.574124Z` 完成本 head 评审，阶段收尾复查无新增意见，八个线程均已解决；两项 CodeFactor SA1407 和两项新 CS0436 均已修复并验证。监控 pr419 已删除，步骤 12c 非 UI 验证通过，允许开始 12d；12d–18 仍须依次执行，整体升级尚未完成。
+
+
+## 步骤 12d：Interop.UIAutomationClient 版本核定与兼容验证
+
+2026-09-14 官方 NuGet 实时索引的最新稳定版为现用 `10.19041.0`，保留版本，不引入替代 UI 自动化框架。[官方包与版本](https://www.nuget.org/packages/Interop.UIAutomationClient/10.19041.0)。项目仅在 WinUI3 引用；各 Windows RID 选择 netcoreapp3.0 资产，包自身不依赖其他包，build target 保持 EmbedInteropTypes=false。六份升级前依赖图冻结于 `/private/tmp/syncclipboard-stage12d-baseline-assets/`，本步骤还原后图均未改变，报告 `/tmp/syncclipboard-stage12d-dependency-diff.json`。
+
+CurrentSelectedContentProvider 的单元素文本提取方法与 CaretPositionProvider 的单元素光标提取方法改为 internal，供现有友元测试访问；算法、COM 创建、原生入口和回退顺序不变。新增 21 项 NonUI 契约用例，使用严格托管接口 mock 检查不支持/失败模式、空选区、多段 Unicode/换行/空白保留、首个矩形和带符号坐标转换、TextPattern2 缺失/失败时回退、无选区、退化选区克隆后扩展，以及扩展失败/不完整矩形返回 null。原始范围不被修改，mock 对象不是 COM 对象。
+
+本地隔离宿主链接实际两个 provider 与原生声明源文件，只调用上述两个单元素入口，21 项通过、0 失败/跳过，报告 `/tmp/syncclipboard-stage12d-provider-results/`。不加载 WinUI SDK/界面，不创建 CUIAutomation8，不调用 GetCurrentSelectedContent/GetCaretPosition 的真实桌面入口、焦点/祖先元素查询、资源管理器 COM、Win32/MSAA 或剪贴板。临时 net10 宿主编译未执行的 Windows 专用方法时有 CA1416 提示，未屏蔽诊断；它不代替真实 Windows TFM 的编译/测试。首轮临时宿主因 /tmp 符号链接导致项目依赖未纳入还原图，改用规范化 /private/tmp 路径重新还原后通过，没有修改产品依赖来绕过问题。
+
+Core 386、Desktop NonUI 6 项通过，0 失败/跳过；新增测试格式检查、平台还原、仓库格式和工作流语法通过。Windows CI 最低通过数由 26 增至 47，五份真实 CI TRX 预期共 451 项。UI Automation 包审计新增版本、唯一文件、netcoreapp3.0 官方字节和非 Windows 无该依赖的检查，官方 DLL SHA256 `dcea43a1f5a2114b7bcc9e41cc1377064307611d0caa50f1ec203b887f4c20bb`；缺文件、错误字节、错误版本和 Linux 混入四种负例均拒绝。前一步 Windows 产物仅用于核定审计规则，不能作为本步骤通过证据。
+
+当前步骤仍待 Windows 完整测试、全平台 CI、全部 55 个产物和评审通过，不进入 12e。所有需要真实 UI/COM 客户端或桌面会话的验证继续范围排除，不安排人工或解锁后补测。

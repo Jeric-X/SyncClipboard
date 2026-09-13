@@ -54,7 +54,8 @@
 | SharpHook | 5.2.3 | 8.0.0，配套 libuiohook 2.0.0；迁移 API 并保留现有 XRecord 行为 | 12a |
 | NativeNotification、NativeNotification.Interface | 1.0.5 | 2026-09-14 核定均已是最新稳定版，保留配套 1.0.5 并独立验证兼容性 | 12b |
 | Vanara.PInvoke ComCtl32/DbgHelp/Kernel32/User32 | 4.0.1 | 配套 5.0.7，核对 Shared/Core 合并及生成式 API | 12c |
-| Interop.UIAutomationClient、Toolkit.Uwp.Notifications | 见中央版本文件 | 分组核定兼容版本，不与热键迁移混做 | 12d–12e |
+| Interop.UIAutomationClient | 10.19041.0 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 12d |
+| Microsoft.Toolkit.Uwp.Notifications | 7.1.3 | 核定兼容版本，不与其他原生依赖混做 | 12e |
 | CommunityToolkit.Mvvm、ObservableCollections | 8.4.0 / 3.3.4 | 分别核定稳定版本 | 13a–13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | 相同的稳定兼容版本 | 14 |
 | Swashbuckle.AspNetCore | 8.1.1 | 核定 ASP.NET Core 10 兼容版本 | 15 |
