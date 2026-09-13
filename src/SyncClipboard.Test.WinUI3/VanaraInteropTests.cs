@@ -1,6 +1,8 @@
+extern alias WinUIProduct;
+
 using SyncClipboard.Core.Models.Keyboard;
-using SyncClipboard.WinUI3.Win32;
 using System.Runtime.InteropServices;
+using WinUIProduct::SyncClipboard.WinUI3.Win32;
 using static Vanara.PInvoke.ComCtl32;
 using static Vanara.PInvoke.DbgHelp;
 using static Vanara.PInvoke.User32;

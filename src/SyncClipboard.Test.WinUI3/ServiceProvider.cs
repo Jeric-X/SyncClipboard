@@ -1,9 +1,11 @@
+extern alias WinUIProduct;
+
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Shared.Profiles;
-using SyncClipboard.WinUI3;
+using WinUIProduct::SyncClipboard.WinUI3;
 
 namespace SyncClipboard.Test.WinUI3;
 

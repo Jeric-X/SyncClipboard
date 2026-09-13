@@ -1,6 +1,8 @@
-using SyncClipboard.WinUI3.Services;
+extern alias WinUIProduct;
+
 using System.Runtime.InteropServices;
 using Vanara.PInvoke;
+using WinUIProduct::SyncClipboard.WinUI3.Services;
 using static Vanara.PInvoke.ComCtl32;
 
 namespace SyncClipboard.Test.WinUI3;
