@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–10（含全部子步骤和前置修复）已通过，当前执行步骤 11：图片处理依赖升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 10 验证通过提交为 `570614d86594402310d80495edafe037b11edab4`；步骤 11 未通过前不进入 12。
-- 步骤 12–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–11（含全部子步骤和前置修复）已通过，当前执行步骤 12a：SharpHook 升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 11 验证通过提交为 `086599a976b86d7e914f77ce1a1606aec3aa039f`；步骤 12a 未通过前不进入 12b。
+- 步骤 12b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -542,3 +542,42 @@ CI 新增七个实际 RID 图片任务：Windows x86/x64/arm64、Linux x64/arm64
 ### 步骤 11 首轮 PR 反馈修复
 
 提交 `709d928774ff502962ee161a5a27c5cb93d7bb5f` 触发真实七架构 CI。CodeFactor 报告 ImageProbe 样本公式六处 SA1407：乘除和加法缺少显式优先级括号。仅补充括号，像素公式、检查内容与数量不变；修复后探针格式检查和 macOS arm64 六组实际图片回归通过。首次格式重跑因沙箱禁止 MSBuild 命名管道而未执行成功，获得沙箱外执行权限后通过，没有关闭诊断。报告 `/tmp/syncclipboard-stage11-codefactor-image-result.json`。新修复提交仍须重新通过 PR 检查，首轮结果不代替最终提交。
+
+
+### 步骤 11 最终 PR 与产物验证
+
+验证通过提交 `086599a976b86d7e914f77ce1a1606aec3aa039f`：[PR run 34781102768](https://github.com/Jeric-X/SyncClipboard/actions/runs/34781102768)、[push run 34781100888](https://github.com/Jeric-X/SyncClipboard/actions/runs/34781100888)、[CodeQL 34781102480](https://github.com/Jeric-X/SyncClipboard/actions/runs/34781102480) 与 CodeFactor 均成功，最终 119 项 SUCCESS、8 项预期发布 SKIPPED。Codex 于 `2026-09-13T20:37:35.655958Z` 完成本 head 评审，无新增可处理反馈；最终复核六个线程均已解决，评审、行内及普通评论无新增问题。没有发送 GitHub 评论。
+
+五份 TRX 实际合计 374 项通过，0 失败/跳过。七个 RID 的图片任务全部成功，合计 45 组，执行架构、Magick/Core/原生库和 Windows SystemDrawing/Drawing.Common 哈希均与对应官方 NuGet 包一致；Windows x86 产品编译步骤确实运行成功。S3 七组协议检查、SDK 哈希和三次有界重试结果继续通过。
+
+全部 55 个 artifact 已下载并与当前 PR run 清单逐项匹配。完整 38 个 Windows/Linux 包组合（24 Windows、14 Linux）通过，逐包核对 Q16/Core/SystemDrawing 版本及实际托管/原生文件字节，保留前置依赖、运行时、架构、资源及包完整性检查。报告 `/tmp/syncclipboard-pr419-0865-package-audit.json`，SHA256 `3024e9e2d016f8ecfe0a8834680831a7ac6488ed3aa0b57bcd34303ffa238f1c`。六个 Linux 包的元数据检查通过。
+
+双架构 macOS 包均通过 strict codesign、各 19 个 dylib 架构与全部前置依赖核对。Magick 原生库的 LC_ID_DYLIB 在打包后变为 `@executable_path/../../Contents/MonoBundle/Magick.Native-Q16-<arch>.dll.dylib`；对官方 NuGet 临时副本应用该精确路径变换，再移除签名并归一化签名分配影响的 LINKEDIT vmsize 后，剩余完整字节逐一相同。损坏代码字节负例仍被拒绝，没有跳过原生检查或改写真实包。报告 `/tmp/syncclipboard-pr419-0865-macos-{arm64,x64}-audit2.json`，挂载均已卸载。
+
+Server 与 amd64/arm64 容器的实际 CI 日志各有四轮 Production 启动与两轮 API 冒烟成功证据，下载 Server 产物在本机复验同样通过。图片汇总报告 `/tmp/syncclipboard-pr419-0865-image-report-audit.json`；本地完整记录 `docs/ai_design/.local/PR-419-Artifacts-086599a9.md`。步骤 11 非 UI 验证通过，监控 pr419 已删除，允许进入 12a；后续升级仍未完成。
+
+
+## 步骤 12a：SharpHook 迁移准备（2026-09-14）
+
+前置步骤 11 已完整通过。官方 NuGet 实时索引及下载包核定 SharpHook 最新稳定版 8.0.0，当前使用 5.2.3；8.0.0 的 net10.0 资产无额外包依赖，源码提交 `a1093d81eb5d96608a7885949d4a5e21b98efec5`。依据：[官方包](https://www.nuget.org/packages/SharpHook/8.0.0)、[迁移指南](https://sharphook.tolik.io/articles/migration.html)、[发布说明](https://github.com/TolikPylypchuk/SharpHook/releases/tag/v8.0.0)。已冻结当前依赖图到 `/private/tmp/syncclipboard-stage12a-baseline-assets/`，尚未修改依赖或产品代码。
+
+需适配 SharpHook.Native → SharpHook.Data、事件模拟类型迁入 SharpHook.Simulation、EventSimulator.Create 初始化及 DI 管理的 IDisposable 生命周期、SimpleGlobalHook 构造和 Run 调用。项目当前使用 KeyPressed/KeyReleased，不依赖新版默认关闭的 KeyTyped。新版键码数值全部变化；项目配置使用自己的 Key 字符串枚举，应保留其格式。Vc102 改为 VcSection，VcKanji/VcHangul 合并至 VcHanja/VcKana，不能直接删除旧配置对应键或重复添加字典键；需覆盖输入映射、反向模拟映射以及注册/移除时的旧别名兼容。
+
+Linux 默认后端变化涉及新增权限需求；本步骤按官方兼容路径保留既有 XRecord 后端行为，在首次 SharpHook 使用前配置，避免升级同时引入新的桌面权限与行为要求。仍须打包完整的 libuiohook.so、libuiohook-xrecord.so、libuiohook-x11.so、libuiohook-wayland.so，并核对 Windows/macOS 原生文件及版本。不得为测试注册真实 hook、创建设备、发送模拟输入、请求系统权限或启动 UI；初始化、执行和清理均经审查的 mock/纯键码逻辑可测试。
+
+源代码检查和目标版本核定不代表本步骤通过。接下来先实现最小兼容改动和非 UI 回归，再进行本地检查、当前提交 PR CI/全部产物与评审；12a 未通过前不开始 12b。
+
+
+### 步骤 12a 实现与本地非 UI 验证
+
+SharpHook 5.2.3 → 8.0.0，采用 net10.0 资产。迁移 Data/Simulation 命名空间、SimpleGlobalHook 构造及 Run 调用。新增共享 SharpHookFactory，在真实模拟器或 hook 首次解析时设置 Linux XRecord 后端并检查返回值，避免在普通服务注册或非 UI DI 测试初始化时加载真实后端。EventSimulator 使用 Create，注册为 DI 工厂单例，随服务容器释放；hook 使用同一工厂确保后端配置顺序。
+
+键码表改用 VcSection，保留项目 Key 枚举及其 JSON 名称。VcHanja/VcKana 作为新版输入映射，反向映射仍接受旧 Key.Kanji/Key.Hangul；SharpHook 注册及注销边界统一别名，使旧名称和新名称对应同一热键槽，不改变 Windows 原生热键注册器或配置存储。新增 25 项 Core 纯逻辑/mock 检查及 2 项 Desktop NonUI 注册表检查，验证左右修饰键、全部反向映射、固定旧配置 JSON、别名匹配/注销、模拟事件顺序、后端/初始化失败及 DI 单例释放。测试 provider 全为 mock，没有真实 hook、设备初始化、输入事件或 UI 调度。
+
+本地 Core 381、Desktop NonUI 6 项通过，0 失败/跳过；报告 `/tmp/syncclipboard-stage12a-results/`。固定 JSON 加强后的 25 项回归再次通过，报告 `/tmp/syncclipboard-stage12a-keyboard-final/`。格式检查退出 0，仅跨平台工作区加载警告。Core 测试直接引用中央已有 Moq 4.20.72，其新增 Castle.Core/System.Diagnostics.EventLog 仅存在于测试图；Desktop/WinUI/macOS 产品依赖图仅 SharpHook 变更。Core 图另出现本地 arm64/AnyCPU 构建选择差异，Q16 版本仍为 14.17.1，没有再次升级图片依赖。依赖对照 `/tmp/syncclipboard-stage12a-dependency-diff.json`。
+
+Windows/macOS 产品还原和 Linux x64 交叉发布成功，Linux SharpHook.dll 与四个原生后端文件逐字节匹配 NuGet；完整本地依赖审计 `/tmp/syncclipboard-stage12a-linux-local-audit.json` 通过，缺少任一后端文件的负例被拒绝。真实全平台包仍待 PR 构建与下载检查。
+
+ELF 检查发现 8.0.0 的 Linux x64/arm64 XRecord 原生库均引用 GLIBC_2.38，并显式依赖 X11、Xtst、Xt、Xrandr、xkbcommon；证据 `/tmp/syncclipboard-stage12a-native-requirements.json`。因此 README 将桌面客户端 glibc 最低要求更新为 2.38，并明确这不适用于独立服务器；不能继续沿用仅 .NET 运行时的 2.27 下限。RPM/Debian 包声明补齐对应 XRecord 依赖。Ubuntu 24.04 的 Xt 包名为 [libxt6t64](https://packages.ubuntu.com/noble/libxt6t64)，xkbcommon 为 [libxkbcommon0](https://packages.ubuntu.com/noble/libxkbcommon0)。当前 PupNet 1.8 的包名配置不能编码版本约束，此限制在配置注释和 README 明示，后续步骤 17c/18 需继续核对；没有声称旧 glibc 系统可运行新版桌面客户端。
+
+CI 最低计数调整为 Core 381、每平台 Desktop NonUI 6、WinUI NonUI 6，预计五份 TRX 合计 405。保留步骤 11 的七架构图片任务、Windows x86 产品编译、S3 及全部包矩阵；预计仍有 55 个 artifact。当前步骤仍须新提交 PR CI、405 项非 UI 测试、所有产物与评审实际通过，不能开始 12b。

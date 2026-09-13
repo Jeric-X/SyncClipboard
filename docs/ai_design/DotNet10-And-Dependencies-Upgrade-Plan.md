@@ -51,7 +51,7 @@
 | WinUI CommunityToolkit SettingsControls/Converters | 8.2.250402 | 8.2.251219，配套 Extensions/Helpers/Triggers 同版 | 9d |
 | AWSSDK.S3 | 3.7.414 | 4.0.103.2，配套 AWSSDK.Core 4.0.102.4 | 10 |
 | Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | Q16 14.17.1；SystemDrawing 8.0.27，配套 Core 14.17.1 | 11 |
-| SharpHook | 5.2.3 | 当前受支持的稳定版本 | 12a |
+| SharpHook | 5.2.3 | 8.0.0，配套 libuiohook 2.0.0；迁移 API 并保留现有 XRecord 行为 | 12a |
 | NativeNotification、NativeNotification.Interface | 1.0.5 | 配套升级；若无可用维护版本，记录维持或替代决定 | 12b |
 | Vanara.PInvoke 各包、Interop.UIAutomationClient、Toolkit.Uwp.Notifications | 见中央版本文件 | 分组核定兼容版本，不与热键迁移混做 | 12c–12e |
 | CommunityToolkit.Mvvm、ObservableCollections | 8.4.0 / 3.3.4 | 分别核定稳定版本 | 13a–13b |

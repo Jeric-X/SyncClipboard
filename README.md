@@ -222,7 +222,9 @@ sudo systemctl enable --now syncclipboard.service
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
 
-文件名包含 `no-dotnet-runtime` 的桌面包需要安装与包架构一致的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)（包含 .NET 运行时）；普通包已包含运行时。Linux x64/arm64 需要 glibc 2.27 或更高版本、OpenSSL 1.1.1 或更高版本及发行版对应的原生依赖，系统支持范围以 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)为准。
+文件名包含 `no-dotnet-runtime` 的桌面包需要安装与包架构一致的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)（包含 .NET 运行时）；普通包已包含运行时。Linux x64/arm64 桌面客户端需要 glibc 2.38 或更高版本（SharpHook 8 随包原生库的要求）、OpenSSL 1.1.1 或更高版本，以及 X11、XTest、Xt、Xrandr 和 xkbcommon 原生库。发行版还须位于 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)内；仅满足 .NET 运行时的最低 glibc 版本不足以运行桌面客户端。上述 SharpHook 要求不适用于独立服务器。
+
+热键及复制/粘贴模拟继续使用 SharpHook 的 XRecord 后端；Wayland 会话沿用 XWayland 的限制，不启用需要额外设备权限的新低层后端。Ubuntu 24.04 对应的原生包为 `libx11-6`、`libxtst6`、`libxt6t64`、`libxrandr2`、`libxkbcommon0`；AppImage 和便携包也需要系统提供这些库。
 
 #### Arch Linux
 
