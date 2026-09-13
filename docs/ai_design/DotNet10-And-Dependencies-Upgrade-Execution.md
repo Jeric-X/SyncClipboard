@@ -1,13 +1,15 @@
-# .NET 10 与主要依赖升级执行记录
+# .NET 10 与主要依赖升级执行记录（仅非 UI 验证）
 
 执行计划：[分步升级计划](DotNet10-And-Dependencies-Upgrade-Plan.md)。本记录沿用计划中的非 UI 验证门槛；所有需要 UI 的检查均列为范围排除，不执行，也不作为进入下一步的前置条件。
+
+后续追加记录也必须遵守此范围：遇到需要 UI 的验证建议，记录为“UI 范围排除”，不新增 UI 测试或补测待办；相关代码兼容性问题仍通过源码分析、编译和可隔离的非 UI 检查处理。
 
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–9c 已通过，当前执行步骤 9d：核定 WinUI CommunityToolkit 升级及编译兼容性。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9c 验证通过提交为 `83020ce6994a1a8bc537fe8f9063c256bebe646a`；步骤 9d 未通过前不进入 10。
-- 步骤 10–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–9d 已通过，当前执行步骤 10 前置：S3 HTTP 签名和上传进度修复；通过后再迁移 SDK v4。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9d 验证通过提交为 `b00ddd0d95cc2e501225df5e7e5948a5d155846f`；步骤 10 未通过前不进入 11。
+- 步骤 11–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -426,3 +428,39 @@ Windows App SDK 的 Runtime 包声明 Framework AppX 版本 2.4.0.0；所选 Win
 BoolToVisibilityConverter 继承 BoolToObjectConverter，后者继承 DependencyObject 并注册 DependencyProperty，因此其运行时测试属于 UI 范围排除。SettingsCard/SettingsExpander 的实例化、主题、绑定显示、点击及真实 DispatcherQueue 调度也排除，只保留 C#/XAML 编译和资源/API 静态核对；不为验证这些内容初始化 UI。
 
 本地 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，报告 `/private/tmp/syncclipboard-stage9d-results/`；仓库格式检查退出 0，仅保留跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage9d-format.log`。工作流 YAML 语法与 diff 检查通过。新增 Windows 转换器用例尚未在本机执行，必须由 PR 的 Windows runner 验证；WinUI NonUI 最低通过数由 4 提高到 6，五份最终 CI TRX 预计合计 374 项，不能将本地 360 项当作新增 Windows 测试已通过。
+
+### 当前提交的测试与服务器证据
+
+提交 `b00ddd0d95cc2e501225df5e7e5948a5d155846f` 的 [PR run 34772867993](https://github.com/Jeric-X/SyncClipboard/actions/runs/34772867993) 已生成五份 TRX，实际合计 374 项通过，0 失败/跳过。WinUI 的 6 项包括 `BoolNegation_ConvertsBothDirections (True,False)` 和 `(False,True)`，均实际执行通过；其余为 Core 356 与三个平台 Desktop 各 4 项。仓库 TRX 校验器按最低 374 项复核通过，报告目录 `/tmp/syncclipboard-pr419-b00d-artifacts/`。
+
+Server 与 amd64/arm64 容器 CI 的实际日志分别包含四轮 Production 启动检查及两轮 API/认证/历史/传输冒烟，下载服务器在本机复验同样通过。两架构 macOS dmg 的签名、资源、依赖及每包 19 个 dylib 架构检查通过，挂载均已卸载。相关报告前缀 `/tmp/syncclipboard-pr419-b00d-`。这些证据不代替尚未完成的 Windows/Linux 完整产物矩阵与最终 PR 检查；步骤 9d 此时仍未通过。
+
+### 最终 PR 与产物验证
+
+上述提交的 PR run、[push run 34772866278](https://github.com/Jeric-X/SyncClipboard/actions/runs/34772866278) 和 [CodeQL 34772867838](https://github.com/Jeric-X/SyncClipboard/actions/runs/34772867838) 均成功完成。最终 103 SUCCESS、8 项预期发布 SKIPPED，无失败或待执行检查。当前提交 Codex 评审于 `2026-09-13T17:55:27.982282Z` 完成，五个历史线程均解决，行内及普通评论无新增可处理问题。
+
+全部 47 个 artifact 已下载并与当前 PR run 清单逐项核对。完整 38 个 Windows/Linux 包组合通过静态审计，其中 24 个 Windows 组合逐包核对五项 Toolkit 依赖及 DLL 的 NuGet 哈希，并保留七项 NotifyIcon 配套 DLL、38 个托盘资源、WinUIEx/AppSDK 及其他前置依赖检查；六个 Linux 包元数据也通过。完整报告 `/tmp/syncclipboard-pr419-b00d-package-audit.json`，SHA256 `a6b9c8b6861877d8b04f31ff2627131b8c9604d6ee950997698a2bc6f4078b91`；本地详情 `docs/ai_design/.local/PR-419-Artifacts-b00ddd0d.md`。
+
+结合前述 374 项测试、双架构 macOS 和 Server/容器证据，步骤 9d 非 UI 验证通过，允许进入步骤 10。没有执行 UI 验证，不表示后续步骤已完成。
+
+## 步骤 10 前置：S3 HTTP 端点与真实协议基线（2026-09-14）
+
+前置步骤通过提交：`b00ddd0d95cc2e501225df5e7e5948a5d155846f`。当前仍使用 AWSSDK.S3 3.7.414，尚未升级 v4；已从 NuGet 索引核定候选稳定版 4.0.103.2，包提供 net8.0 资产并要求 AWSSDK.Core `[4.0.102.4, 5.0.0)`。依据 [AWS V4 迁移说明](https://docs.aws.amazon.com/sdk-for-net/v4/developer-guide/net-dg-v4.html)，后续需处理可空值、默认 null 集合及重试模式变化，不启用全局 InitializeCollections 绕过适配。
+
+官方 MinIO 旧二进制下载地址返回 410，因此按[官方发布说明](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z)从固定源码构建：`go install github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z`，实际 Go 模块 `v0.0.0-20251015172955-9e49d5e7a648`，构建信息 `/tmp/syncclipboard-stage10-minio-buildinfo.txt`。测试服务仅监听随机 loopback 端口，关闭浏览器控制台，使用随机凭据和临时数据目录；不连接现有桶或用户账号。
+
+原始 v3 探针冻结在 `/tmp/syncclipboard-stage10-s3-v3-probe/`，对应二进制哈希 `/tmp/syncclipboard-stage10-v3-baseline-hashes.json`。真实 MinIO 测试的连接、空列表与初始化通过，但写入元数据时抛出 `When DisablePayloadSigning is true, the request must be sent over HTTPS`，日志 `/tmp/syncclipboard-stage10-v3-s3-smoke.log`。该基线失败不能计作通过。根因是所有自定义端点均设置 DisablePayloadSigning=true；[AWS 请求属性说明](https://docs.aws.amazon.com/sdkfornet/v4/apidocs/items/S3/TPutObjectRequest.html)明确限制该选项只能用于 HTTPS。
+
+最小修复仅在 HTTPS 自定义端点关闭 payload 签名，HTTP 保留签名；继续禁用自定义 PUT 的 chunk 编码，初始化目录标记也应用同一配置。这里修正了原 S3 协议说明中对“禁用 Payload Signing”的笼统描述：该行为只适用于 HTTPS。保留端点、区域、路径风格、凭据和清理配置语义，未改 SDK 包版本。
+
+新增 `build/verification/S3Probe/` 调用实际 S3Adapter，配合 `s3_smoke.py` 启动真实 MinIO 和只转发到该实例的故障代理。涵盖空内容、Unicode 元数据与 key、条件 ETag 更新、32 MiB/多文件/传输哈希、取消、两次 500 后成功重试、错误凭据、配置重建、超过 1000 个对象分页和前缀隔离。每次退出均清理隔离桶及 MinIO 进程；测试不构造 UI。新增 CI `s3-test` 使用固定 Go/MinIO 版本并上传实际 JSON 结果，必须经当前 PR 执行通过。
+
+初次修复后七组检查通过，报告 `/tmp/syncclipboard-stage10-v3-httpfix-s3-result2.json`：上传/下载各在注入两次 500 后第 3 次成功；持续 500 在第 4 次后由 20 秒显式取消终止，SDK 配置最多 5 次请求，不能称作已耗尽全部自动重试。上传签名前的流读取可能早于网络发送，因此上传取消只证明源流读取期间响应取消；下载取消发生在已读到响应数据后。后续探针另核对进度不超过文件长度和取消时限，最终证据尚待补齐。
+
+Core 356、Desktop NonUI 4 项最终通过，0 失败/跳过，报告 `/private/tmp/syncclipboard-stage10-httpfix-results/`；首次并发构建 Desktop 遇到共用 Core obj 文件锁，待 Core 构建结束后串行重跑成功，没有改动产品或降低检查。仓库格式检查退出 0（仅跨平台工作区加载警告），YAML 语法和 diff 检查通过。此时前置修复仍未通过 PR，不能开始 v4 迁移或步骤 11。
+
+补充的进度边界测试发现：SDK 为签名回退流并重新读取时，ProgressReadStream 累计同一批字节，导致上传进度超过文件长度。报告 `/tmp/syncclipboard-stage10-v3-httpfix-s3-smoke3.log`，该次失败不能计作通过。修复为可定位流按当前位置报告，不能定位的流仍累计字节数；探针同时检查普通上传和重试上传的进度上限，并检查取消覆盖上传后原有完整对象保持不变。此修复与 HTTP 签名兼容修复一起作为步骤 10 的前置提交，独立通过后才升级 SDK。
+
+两项修复后的七组完整协议检查通过，报告 `/tmp/syncclipboard-stage10-v3-httpfix-s3-result4.json`。普通/重试上传进度没有超过文件长度，取消覆盖上传后原对象仍完整；注入错误后的上传/下载各 3 次请求后成功，持续错误在 4 次请求后响应显式取消且未超过 25 秒验证上限。Core 356、Desktop NonUI 4 项再次通过，0 失败/跳过，TRX `/private/tmp/syncclipboard-stage10-httpfix-final-results/`。最终探针增加异常捕获与错误退出码，非法参数验证退出 1；完整流程失败时仍不能生成通过报告。当前 SDK 的程序集版本是 3.3.0.0，但实际包为 3.7.414，报告同时保存 DLL 哈希，不能混淆程序集与 NuGet 版本。
+
+新增 CI 任务会使 PR 另有一份 `s3-test-results` 产物；原五份 TRX 的最低总数仍为 374，S3 七组协议检查独立核验，不能混入 MSTest 计数。前置修复当前等待真实 PR 构建、MinIO 检查、产物与评审，不开始 v4 升级。

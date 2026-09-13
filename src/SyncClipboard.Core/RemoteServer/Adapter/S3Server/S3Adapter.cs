@@ -86,6 +86,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                 ContentBody = string.Empty,
                 ContentType = "application/x-directory"
             };
+            ApplyCompatibilityForPut(putRequest);
             await _s3Client.PutObjectAsync(putRequest, cancellationToken);
         }
     }
@@ -372,7 +373,8 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
         // Many S3-compatible endpoints (e.g. R2/OSS gateways) do not implement
         // streaming trailer signatures used by newer AWS SDK defaults.
         request.UseChunkEncoding = false;
-        request.DisablePayloadSigning = true;
+        // The SDK only permits unsigned payloads over HTTPS.
+        request.DisablePayloadSigning = _s3Config.ServiceURL.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ValidateConfig()
@@ -472,7 +474,8 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
 
             if (bytesRead > 0)
             {
-                _readBytes += (ulong)bytesRead;
+                // Signing and retries can rewind the source stream before reading it again.
+                _readBytes = _inner.CanSeek ? (ulong)_inner.Position : _readBytes + (ulong)bytesRead;
                 _progress.Report(new HttpDownloadProgress
                 {
                     BytesReceived = _readBytes,
