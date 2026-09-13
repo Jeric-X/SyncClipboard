@@ -535,8 +535,7 @@ public sealed partial class HistoryWindow : Window, IWindow
         bool handled)
     {
         var dragSource = FindItemDragSource(source, container);
-        if (dragSource is not null)
-            dragSource.CanDrag = !handled;
+        dragSource?.CanDrag = !handled;
 
         if (!handled)
             _viewModel.BeginMultiSelectLongPress(record);
@@ -930,10 +929,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private void DisableSelectorBarScrollBars()
     {
         var scrollView = FindDescendant<ScrollView>(_FilterSelectorBar);
-        if (scrollView != null)
-        {
-            scrollView.VerticalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
-        }
+        scrollView?.VerticalScrollBarVisibility = ScrollingScrollBarVisibility.Hidden;
     }
 
     private void SetNonClientPointerSource()

@@ -228,7 +228,7 @@ catch {
     exit 1
 }
 
-$binPath = Join-Path $rootDir "src\SyncClipboard.WinUI3\bin\$Architecture\Release\net9.0-windows10.0.19041.0\win-$Architecture"
+$binPath = Join-Path $rootDir "src\SyncClipboard.WinUI3\bin\$Architecture\Release\net10.0-windows10.0.19041.0\win-$Architecture"
 if (-not (Test-Path $binPath)) {
     Write-Error "找不到编译输出目录: $binPath"
     exit 1
