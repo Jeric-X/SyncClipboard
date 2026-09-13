@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–9a 已通过，当前执行步骤 9b：核定 WinUIEx 升级及编译兼容性。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9a 验证通过提交为 `cd59964649814866a0374271cb889a50a7cf5150`；步骤 9b 未通过前不进入 9c。
-- 步骤 9c–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–9b 已通过，当前执行步骤 9c：核定 H.NotifyIcon 升级及编译兼容性。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9b 验证通过提交为 `57f7083e99f6695f0e4d2e99ffad93ebb2828608`；步骤 9c 未通过前不进入 9d。
+- 步骤 9d–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -382,3 +382,25 @@ Windows App SDK 的 Runtime 包声明 Framework AppX 版本 2.4.0.0；所选 Win
 本地 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按最低 360 项通过；报告 `/private/tmp/syncclipboard-stage9b-results/`。仓库格式检查退出 0，仅保留跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage9b-format.log`；diff 检查通过。没有新增模拟窗口测试，真实窗口、消息循环、热键与托盘行为均为 UI 范围排除。
 
 新 WinUIEx.dll 的程序集版本为 2.9.3.0，ProductVersion 为 `2.9.3+72f2975d2a237c0d7ad1113fe617d5894e66feb6`，包内 SHA256 为 `d4d66f42b613d50ad6756e10f18600210f5859a1cc74215972e244cc88c9a5d2`。当前 PR 产物检查须逐个 Windows 组合核对 deps 与实际 DLL，保留步骤 9a 的 App SDK 校验；不能把本机 NuGet 文件当作 CI 产物已经通过。
+
+### 步骤 9b 最终 PR 验证（2026-09-14）
+
+验证通过提交：`57f7083e99f6695f0e4d2e99ffad93ebb2828608`。[PR build 34770612292](https://github.com/Jeric-X/SyncClipboard/actions/runs/34770612292)、[push build 34770608924](https://github.com/Jeric-X/SyncClipboard/actions/runs/34770608924)、[CodeQL 34770612038](https://github.com/Jeric-X/SyncClipboard/actions/runs/34770612038) 及 CodeFactor 均完成，103 项成功、8 项预期发布跳过。当前提交 Codex 评审完成，五个线程全部解决，无新增可处理行内或普通评论问题。
+
+全部 47 个 artifact 下载完成，五份真实 TRX 共 372 项非 UI 测试通过，0 失败/跳过。完整 38 个 Windows/Linux 包组合通过；24 个 Windows 组合逐包核对 WinUIEx 2.9.3 的 deps 与实际 DLL 哈希，并保留 App SDK 2.4.0 与前置依赖的检查。完整报告 `/tmp/syncclipboard-pr419-57f7-package-audit.json`，SHA256 `6d7528064aeaf360beb61b093c5832e45446a6709112914c7b358ca9de1c3a7b`。
+
+六个 Linux 包元数据与两架构 macOS dmg 的资源、签名、原生架构和依赖版本检查通过；每个 macOS 包检查 19 个 dylib，挂载已卸载。Server 与 amd64/arm64 容器 CI 均核验四轮启动与两轮 API 冒烟，下载的服务器产物本机复验同样通过。报告前缀 `/tmp/syncclipboard-pr419-57f7-`；本地详细记录 `docs/ai_design/.local/PR-419-Artifacts-57f7083e.md`。步骤 9b 非 UI 验证通过，允许进入 9c，不代表后续升级已完成。
+
+## 步骤 9c：H.NotifyIcon（2026-09-14）
+
+前置步骤通过提交：`57f7083e99f6695f0e4d2e99ffad93ebb2828608`。状态：进行中，当前提交的 PR 构建、非 UI 测试、产物与评审通过前，不开始 9d。
+
+依据 [NuGet 稳定版本与依赖声明](https://www.nuget.org/packages/H.NotifyIcon.WinUI/2.4.1)，将 H.NotifyIcon.WinUI 2.3.0 升级为 2.4.1，未选择 2.5 的预发布版本。新包目标 net10.0-windows10.0.17763，要求 AppSDK >= 1.6.250108002，与本项目 net10.0-windows10.0.19041.0/AppSDK 2.4.0 相容。两个 Windows 项目还原退出 0；实际配套变化为 H.NotifyIcon、H.GeneratedIcons.System.Drawing 2.3.0 → 2.4.1，以及 System.Drawing.Common、Microsoft.Win32.SystemEvents 9.0.1 → 10.0.0，其余包未变。报告 `/tmp/syncclipboard-stage9c-resolved-dependency-diff.json`。
+
+项目保留 SecondWindow 菜单、图标资源、双击/左击命令和效率模式回退语义。新包中相关 20 个旧版公开 API 文档成员仍存在；另外用 PEReader 直接读取新旧 DLL 元数据，确认 ContextMenuFlyout、IsContextMenuVisible、ContextMenuWindowHandle 三个反射属性仍具备私有实例 getter/setter，没有加载或初始化 UI 程序集。所选包源码提交 `bcaaabecf16566dd910a3798fe874014e251b28d` 中，这三个属性类型仍为 MenuFlyout?、bool、nint?。报告 `/tmp/syncclipboard-stage9c-api-comparison.json`、`/tmp/syncclipboard-stage9c-private-metadata.json`；[精确版本的 SecondWindow 源码](https://github.com/HavenDV/H.NotifyIcon/blob/bcaaabecf16566dd910a3798fe874014e251b28d/src/libs/H.NotifyIcon.Shared/TaskbarIcon.ContextMenu.WinUI.SecondWindow.cs)。完整 C#/XAML 编译仍由当前 PR 的 Windows runner 验证。
+
+已核对[上游问题 #271](https://github.com/HavenDV/H.NotifyIcon/issues/271)：报告者在 H.NotifyIcon 2.4.1/AppSDK 2.3.1 的 packaged WinUI 应用中遇到 SetBorderAndTitleBar 异常。本项目为 unpackaged/AppSDK 2.4.0，不能据此判定问题不适用或已修复。所选 2.4.1 与旧 2.3.0 的 SecondWindow 实现均含该调用，当前源码差异仅新增裁剪保留标注及其命名空间；没有证据支持改写产品菜单行为。该运行时 UI 问题记录为范围排除、不计通过、不安排解锁或人工补测，最终结果不声称托盘 UI 无问题。
+
+本地 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按最低 360 项通过；报告 `/private/tmp/syncclipboard-stage9c-results/`。格式检查退出 0，仅保留跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage9c-format.log`；diff 检查通过。既有 Magick.NET 漏洞仍由步骤 11 处理，不屏蔽警告。
+
+已记录三项 H.* 程序集 2.4.1 及四项配套 System.Drawing/SystemEvents 程序集 10.0.0 的实际 ProductVersion 与 NuGet 哈希，报告 `/tmp/syncclipboard-stage9c-package-assemblies.json`。当前 PR 产物须逐个 Windows 包核对这七个 DLL、五项依赖版本和托盘图标资源，并保留前置 WinUIEx/AppSDK 及其他平台检查；本机包元数据不能替代 PR 产物证据。

@@ -47,7 +47,8 @@
 | Avalonia.Diagnostics | 11.3.18 | 移除；需要工具时核定 AvaloniaUI.DiagnosticsSupport 版本 | 8 |
 | WindowsAppSDK、SDK.BuildTools | 1.8.260529003 / 10.0.26100.4948 | 2.4.0 / 10.0.28000.2705，执行时核对配套组件及部署要求 | 9a |
 | WinUIEx | 2.3.4 | 2.9.3，要求 net8.0-windows10.0.19041 与 WinUI >= 1.8.250906003 | 9b |
-| H.NotifyIcon、WinUI CommunityToolkit | 见中央版本文件 | 逐个核定当前稳定兼容版本 | 9c–9d |
+| H.NotifyIcon.WinUI | 2.3.0 | 2.4.1，要求 .NET 10，配套 Core/GeneratedIcons 2.4.1 | 9c |
+| WinUI CommunityToolkit | 见中央版本文件 | 核定当前稳定兼容版本 | 9d |
 | AWSSDK.S3 | 3.7.414 | 稳定 4.x，按官方 V4 迁移指南适配 | 10 |
 | Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | 各架构 Q16 同版；SystemDrawing 使用兼容配套版本 | 11 |
 | SharpHook | 5.2.3 | 当前受支持的稳定版本 | 12a |
