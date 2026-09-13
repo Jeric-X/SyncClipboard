@@ -375,7 +375,8 @@ public class DownloadService : Service
         try
         {
             var cachedProfile = historyRecord.ToProfile();
-            var valid = await cachedProfile.IsLocalDataValid(false, token);
+            var profileEnv = _serviceProvider.GetRequiredService<IProfileEnv>();
+            var valid = await cachedProfile.TryLocalize(profileEnv.GetPersistentDir(), false, token);
             if (!valid)
             {
                 historyRecord.IsLocalFileReady = false;
@@ -390,8 +391,8 @@ public class DownloadService : Service
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await _historyManager.RemoveHistory(historyRecord, token);
-            return null;
+            await _logger.WriteAsync(LOG_TAG, $"Failed to localize history cache: {ex.Message}");
+            throw;
         }
         return null;
     }
@@ -470,6 +471,10 @@ public class DownloadService : Service
                         await _historyManager.AddRemoteProfile(remoteProfile, cancelToken);
 
                     await DownloadFileProfileData(remoteProfile, cancelToken);
+                }
+                else if (!await remoteProfile.IsLocalDataValid(false, cancelToken))
+                {
+                    throw new ProfileDataDownloadException("Remote inline data does not match the profile hash.");
                 }
 
                 if (enableHistory)

@@ -1,4 +1,5 @@
 using System.Text;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
@@ -47,6 +48,7 @@ public class TextProfile : Profile
         }
         Size = entity.Size;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
+        TransferDataHash = string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataHash;
     }
 
     public TextProfile(ProfileDto dto)
@@ -55,6 +57,7 @@ public class TextProfile : Profile
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
+        TransferDataHash = dto.TransferDataHash;
         Size = dto.Size;
     }
 
@@ -76,51 +79,62 @@ public class TextProfile : Profile
             Text = _text,
             HasData = _hasTransferData,
             DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null,
+            TransferDataHash = _hasTransferData ? TransferDataHash : null,
             Size = await GetSize(token)
         };
     }
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
-        if (!HasTransferData)
-        {
-            if (quick)
-            {
-                return true;
-            }
-
-            try
-            {
-                await ValidateInlineTextHashAsync(await GetHash(token), token);
-                return true;
-            }
-            catch when (token.IsCancellationRequested is false)
-            {
-                return false;
-            }
-        }
-
-        if (File.Exists(_transferDataPath) is false)
-        {
-            return false;
-        }
-
         if (quick)
         {
-            return true;
+            return _fullText is not null || !HasTransferData || File.Exists(_transferDataPath);
         }
 
         try
         {
-            var hash = await GetHash(token);
-            await using var file = new FileStream(_transferDataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            var sha256Hex = await Utility.CalculateSHA256(file, token);
-            return string.Equals(hash, sha256Hex, StringComparison.OrdinalIgnoreCase);
+            return await IsInMemoryTextValid(token) || await IsTransferFileContentValid(token);
         }
         catch when (token.IsCancellationRequested is false)
         {
             return false;
         }
+    }
+
+    private async Task<bool> IsInMemoryTextValid(CancellationToken token)
+    {
+        if (_fullText is null && HasTransferData)
+        {
+            return false;
+        }
+
+        var textHash = await Utility.CalculateSHA256(_fullText ?? _text, token);
+        if (Hash is not null && !Utility.SHA256Same(textHash, Hash))
+        {
+            return false;
+        }
+
+        Hash ??= textHash;
+        TransferDataHash = HasTransferData ? textHash : null;
+        return true;
+    }
+
+    private async Task<bool> IsTransferFileContentValid(CancellationToken token)
+    {
+        if (!File.Exists(_transferDataPath))
+        {
+            return false;
+        }
+
+        var actualHash = await Utility.CalculateFileSHA256(_transferDataPath!, token);
+        if (Hash is not null && !Utility.SHA256Same(actualHash, Hash))
+        {
+            return false;
+        }
+
+        Hash ??= actualHash;
+        TransferDataHash = actualHash;
+        return true;
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -164,27 +178,40 @@ public class TextProfile : Profile
         Size = _text.Length;
     }
 
-    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
+    public override Task<bool> IsDataComplete(bool quick, CancellationToken token)
     {
-        if (await IsLocalDataValid(false, token))
+        return IsLocalDataValid(quick, token);
+    }
+
+    public override async Task<bool> TryLocalize(
+        string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
+    {
+        if (!await IsDataComplete(false, token))
+        {
+            if (clearInvalidLocalPaths && !token.IsCancellationRequested)
+            {
+                _transferDataName ??= Path.GetFileName(_transferDataPath);
+                _transferDataPath = null;
+            }
+            return false;
+        }
+
+        if (HasTransferData && _fullText is null)
+        {
+            _fullText = await File.ReadAllTextAsync(_transferDataPath!, Encoding.UTF8, token);
+        }
+        return true;
+    }
+
+    public override string? GetTransferDataSavePath(string persistentDir)
+    {
+        if (!HasTransferData)
         {
             return null;
         }
 
-        if (_transferDataPath is not null && File.Exists(_transferDataPath))
-        {
-            try
-            {
-                await SetTransferData(_transferDataPath, true, token);
-                return null;
-            }
-            catch when (token.IsCancellationRequested is false)
-            { }
-        }
-
-        _transferDataName ??= $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
-        var dataPath = Path.Combine(CreateWorkingDir(persistentDir, await GetHash(token)), _transferDataName);
-        return dataPath;
+        var name = _transferDataName ?? Path.GetFileName(_transferDataPath) ?? $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
+        return Path.Combine(QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty), name);
     }
 
     private readonly SemaphoreSlim _persistentLock = new(1, 1);
@@ -209,12 +236,17 @@ public class TextProfile : Profile
         await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
         _transferDataPath = path;
         _transferDataName = dataName;
+        TransferDataHash = Utility.NormalizeRequiredSHA256(await GetHash(token));
         _fullText = null;
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
+        if (!HasTransferData || !File.Exists(_transferDataPath))
+        {
+            TransferDataHash = null;
+        }
         var workingDir = QueryGetWorkingDir(persistentDir, Type, await GetHash(token));
         var path = GetPersistentPath(workingDir, _transferDataPath);
         return new ProfilePersistentInfo
@@ -224,15 +256,17 @@ public class TextProfile : Profile
             Size = await GetSize(token),
             Hash = await GetHash(token),
             TransferDataFile = path,
+            TransferDataHash = TransferDataHash,
             FilePaths = path is null ? [] : [path]
         };
     }
 
-    public override async Task<string?> PrepareTransferData(string persistentDir, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         var expectedHash = await GetHash(token);
         if (HasTransferData is false)
         {
+            TransferDataHash = null;
             await ValidateInlineTextHashAsync(expectedHash, token);
             return null;
         }
@@ -240,20 +274,19 @@ public class TextProfile : Profile
         return await PrepareTransferFileAsync(persistentDir, expectedHash, token);
     }
 
-    private async Task<string> PrepareTransferFileAsync(
-        string persistentDir,
-        string expectedHash,
-        CancellationToken token)
+    private async Task<FileHashInfo> PrepareTransferFileAsync(
+        string persistentDir, string expectedHash, CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
         var path = GetAvailableTransferDataPath();
 
         try
         {
-            await ValidateTransferDataHashAsync(path, expectedHash, token);
-            return path;
+            var hash = await ValidateTransferDataHashAsync(path, expectedHash, token);
+            TransferDataHash = hash;
+            return new FileHashInfo(path, hash);
         }
-        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
         {
             throw new LocalProfileDataUnavailableException(
                 $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
@@ -282,10 +315,8 @@ public class TextProfile : Profile
         }
     }
 
-    private static async Task ValidateTransferDataHashAsync(
-        string path,
-        string expectedHash,
-        CancellationToken token)
+    private static async Task<string> ValidateTransferDataHashAsync(
+        string path, string expectedHash, CancellationToken token)
     {
         var actualHash = await Utility.CalculateFileSHA256(path, token);
         if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
@@ -293,39 +324,64 @@ public class TextProfile : Profile
             throw new LocalProfileDataUnavailableException(
                 $"Text transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
         }
+
+        return actualHash;
     }
 
-    private static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
+    public override Task SetTransferData(string path, bool verify, CancellationToken token)
     {
-        return ex is IOException or UnauthorizedAccessException &&
-               ex is not LocalProfileDataUnavailableException &&
-               !token.IsCancellationRequested;
+        return SetTransferDataCore(path, null, verify, token);
     }
 
-    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
+    public override Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
     {
-        if (verify && File.Exists(path))
+        return SetTransferDataCore(file.Path, file.Hash, verify, token);
+    }
+
+    private async Task SetTransferDataCore(string path, string? transferDataHash, bool verify, CancellationToken token)
+    {
+        EnsureTransferDataExists(path);
+        if (transferDataHash is not null)
         {
-            var fileHash = await Utility.CalculateFileSHA256(path, token);
-            if (Hash is not null && !string.Equals(fileHash, Hash, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Transfer data file content does not match the text hash.");
-            }
-            Hash = fileHash;
+            transferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
+        }
+        else if (verify)
+        {
+            transferDataHash = await Utility.CalculateFileSHA256(path, token);
+        }
+        if (verify && Hash is not null && !Utility.SHA256Same(transferDataHash, Hash))
+        {
+            throw new InvalidOperationException("Transfer data file content does not match the text hash.");
         }
 
+        Hash ??= transferDataHash;
+        TransferDataHash = transferDataHash;
         _transferDataPath = path;
         _transferDataName = Path.GetFileName(path);
     }
 
-    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
+    private static void EnsureTransferDataExists(string path)
     {
-        if (File.Exists(_transferDataPath))
+        if (!File.Exists(path))
         {
-            return;
+            throw new FileNotFoundException($"Text transfer data file does not exist: {path}", path);
         }
+    }
 
-        await SetTransferData(path, true, token);
+    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
+    {
+        return SetAndMoveTransferDataCore(persistentDir, path, null, token);
+    }
+
+    public override Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token)
+    {
+        return SetAndMoveTransferDataCore(persistentDir, file.Path, file.Hash, token);
+    }
+
+    private async Task SetAndMoveTransferDataCore(
+        string persistentDir, string path, string? transferDataHash, CancellationToken token)
+    {
+        await SetTransferDataCore(path, transferDataHash, true, token);
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
@@ -343,16 +399,16 @@ public class TextProfile : Profile
         _transferDataName = Path.GetFileName(targetPath);
     }
 
-    public override async Task<ProfileLocalInfo> Localize(string _, bool quick, CancellationToken token)
+    public override async Task<ProfileLocalInfo> Localize(string _, CancellationToken token)
     {
-        if (HasTransferData is false || quick)
-        {
-            return new ProfileLocalInfo { Text = _text };
-        }
-
         if (_fullText is not null)
         {
             return new ProfileLocalInfo { Text = _fullText };
+        }
+
+        if (HasTransferData is false)
+        {
+            return new ProfileLocalInfo { Text = _text };
         }
 
         if (File.Exists(_transferDataPath))
@@ -373,5 +429,6 @@ public class TextProfile : Profile
         textTarget._transferDataName = _transferDataName;
         textTarget.Hash = Hash;
         textTarget.Size = Size;
+        textTarget.TransferDataHash = TransferDataHash;
     }
 }

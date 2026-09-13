@@ -19,6 +19,7 @@ public static class Mapper
             Stared = false,
             Pinned = false,
             TransferDataFile = profileEntity.TransferDataFile ?? string.Empty,
+            TransferDataHash = profileEntity.TransferDataHash,
             ExtraData = null,
             FilePaths = profileEntity.FilePaths,
         };
@@ -35,6 +36,7 @@ public static class Mapper
             Size = entity.Size,
             Hash = entity.Hash,
             TransferDataFile = string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataFile,
+            TransferDataHash = entity.TransferDataHash,
             FilePaths = entity.FilePaths
         };
         return Profile.Create(persistentDir, persistentInfo);
@@ -53,4 +55,3 @@ public static class Mapper
         };
     }
 }
-

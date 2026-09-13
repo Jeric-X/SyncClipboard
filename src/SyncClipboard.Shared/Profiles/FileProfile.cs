@@ -1,3 +1,4 @@
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
@@ -25,6 +26,7 @@ public class FileProfile : Profile
         }
         FileName = entity.Text;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
+        TransferDataHash = entity.TransferDataHash;
     }
 
     public FileProfile(string? fullPath, string? fileName = null, string? hash = null)
@@ -50,6 +52,7 @@ public class FileProfile : Profile
     public FileProfile(ProfileDto dto) : this(null, dto.DataName, dto.Hash)
     {
         Size = dto.Size;
+        TransferDataHash = dto.TransferDataHash;
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -58,7 +61,10 @@ public class FileProfile : Profile
         {
             return;
         }
-        Hash = await GetSHA256HashFromFile(FullPath, token);
+
+        var hashes = await GetHashesFromFile(FullPath, token);
+        Hash = hashes.ProfileHash;
+        TransferDataHash = hashes.TransferDataHash;
     }
 
     protected override Task ComputeSize(CancellationToken token)
@@ -82,6 +88,7 @@ public class FileProfile : Profile
             Text = FileName,
             HasData = true,
             DataName = FileName,
+            TransferDataHash = TransferDataHash,
             Size = await GetSize(token)
         };
     }
@@ -93,16 +100,41 @@ public class FileProfile : Profile
         return hash;
     }
 
-    protected async static Task<string> GetSHA256HashFromFile(string filePath, CancellationToken? cancelToken)
+    private protected async static Task<(string ProfileHash, string TransferDataHash)> GetHashesFromFile(
+        string filePath, CancellationToken token)
     {
-        cancelToken ??= CancellationToken.None;
-        var contentSha256Hex = await Utility.CalculateFileSHA256(filePath, cancelToken.Value);
+        var contentSha256Hex = await Utility.CalculateFileSHA256(filePath, token);
         var fileName = Path.GetFileName(filePath);
-        var hash = await CombineHash(fileName, contentSha256Hex, cancelToken.Value);
-        return hash;
+        var hash = await CombineHash(fileName, contentSha256Hex, token);
+        return (hash, contentSha256Hex);
     }
 
-    public override async Task<string?> PrepareTransferData(string _, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(string _, CancellationToken token)
+    {
+        var path = GetAvailableTransferDataPath();
+        (string ProfileHash, string TransferDataHash) hashes;
+        try
+        {
+            hashes = await GetHashesFromFile(path, token);
+        }
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to validate transfer data for File profile {Hash ?? "<unknown>"}.", ex);
+        }
+
+        if (Hash is not null && !Utility.SHA256Same(hashes.ProfileHash, Hash))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"File transfer data hash mismatch. Expected: {Hash}, Actual: {hashes.ProfileHash}.");
+        }
+
+        Hash ??= hashes.ProfileHash;
+        TransferDataHash = hashes.TransferDataHash;
+        return new FileHashInfo(path, hashes.TransferDataHash);
+    }
+
+    private string GetAvailableTransferDataPath()
     {
         var path = FullPath;
         if (path is null || !File.Exists(path))
@@ -111,63 +143,68 @@ public class FileProfile : Profile
                 $"Transfer data is unavailable for File profile {Hash ?? "<unknown>"}.");
         }
 
-        try
-        {
-            await ValidateTransferDataHashAsync(path, token);
-            return path;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
-                                   ex is not LocalProfileDataUnavailableException &&
-                                   !token.IsCancellationRequested)
-        {
-            throw new LocalProfileDataUnavailableException(
-                $"Failed to validate transfer data for File profile {Hash ?? "<unknown>"}.", ex);
-        }
+        return path;
     }
 
-    private async Task ValidateTransferDataHashAsync(string path, CancellationToken token)
+    public override Task SetTransferData(string path, bool verify, CancellationToken token)
     {
-        var expectedHash = await GetHash(token);
-        var actualHash = await GetSHA256HashFromFile(path, token);
-        if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new LocalProfileDataUnavailableException(
-                $"File transfer data hash mismatch. Expected: {expectedHash}, Actual: {actualHash}.");
-        }
+        return SetTransferDataCore(path, null, verify, token);
     }
 
-    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
+    public override Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
+    {
+        return SetTransferDataCore(file.Path, file.Hash, verify, token);
+    }
+
+    private async Task SetTransferDataCore(string path, string? transferDataHash, bool verify, CancellationToken token)
+    {
+        EnsureTransferDataExists(path);
+        if (transferDataHash is not null)
+        {
+            transferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
+        }
+        else if (verify)
+        {
+            transferDataHash = await Utility.CalculateFileSHA256(path, token);
+        }
+        var fileName = Path.GetFileName(path);
+        if (transferDataHash is not null)
+        {
+            var profileHash = await CombineHash(fileName, transferDataHash, token);
+            if (verify && Hash is not null && !Utility.SHA256Same(profileHash, Hash))
+            {
+                throw new InvalidDataException("Hash mismatch for the provided file.");
+            }
+            Hash ??= profileHash;
+        }
+
+        TransferDataHash = transferDataHash;
+        FullPath = path;
+        FileName = fileName;
+    }
+
+    private static void EnsureTransferDataExists(string path)
     {
         if (!File.Exists(path))
         {
             throw new FileNotFoundException($"File does not exist: {path}", path);
         }
-
-        if (!verify)
-        {
-            FullPath = path;
-            FileName = Path.GetFileName(path);
-            return;
-        }
-
-        var hash = await GetSHA256HashFromFile(path, token);
-        if (Hash is not null && string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase) is false)
-        {
-            throw new InvalidDataException("Hash mismatch for the provided file.");
-        }
-        Hash = hash;
-        FullPath = path;
-        FileName = Path.GetFileName(path);
     }
 
-    public override async Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
+    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
-        if (File.Exists(FullPath))
-        {
-            return;
-        }
+        return SetAndMoveTransferDataCore(persistentDir, path, null, token);
+    }
 
-        await SetTransferData(path, true, token);
+    public override Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token)
+    {
+        return SetAndMoveTransferDataCore(persistentDir, file.Path, file.Hash, token);
+    }
+
+    private async Task SetAndMoveTransferDataCore(
+        string persistentDir, string path, string? transferDataHash, CancellationToken token)
+    {
+        await SetTransferDataCore(path, transferDataHash, true, token);
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
         var persistentPath = GetPersistentPath(workingDir, path);
@@ -184,24 +221,24 @@ public class FileProfile : Profile
 
     public override async Task<bool> IsLocalDataValid(bool quick, CancellationToken token)
     {
-        if (string.IsNullOrEmpty(FullPath))
-            return false;
-
-        if (!File.Exists(FullPath))
+        var path = FullPath;
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
             return false;
 
         if (quick)
             return true;
 
-        if (Hash is null)
-        {
-            return true;
-        }
-
         try
         {
-            var hash = await GetSHA256HashFromFile(FullPath, token);
-            return string.Equals(hash, Hash, StringComparison.OrdinalIgnoreCase);
+            var hashes = await GetHashesFromFile(path, token);
+            if (Hash is not null && !Utility.SHA256Same(hashes.ProfileHash, Hash))
+            {
+                return false;
+            }
+
+            Hash ??= hashes.ProfileHash;
+            TransferDataHash = hashes.TransferDataHash;
+            return true;
         }
         catch when (token.IsCancellationRequested is false)
         {
@@ -209,20 +246,26 @@ public class FileProfile : Profile
         }
     }
 
-    public override async Task<string?> NeedsTransferData(string persistentDir, CancellationToken token)
+    public override Task<bool> IsDataComplete(bool quick, CancellationToken token)
     {
-        if (await IsLocalDataValid(false, token))
-        {
-            return null;
-        }
+        return IsLocalDataValid(quick, token);
+    }
 
-        var workingDir = CreateWorkingDir(persistentDir, Type, await GetHash(token));
-        if (FullPath is null)
+    public override async Task<bool> TryLocalize(
+        string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
+    {
+        var valid = await IsLocalDataValid(false, token);
+        if (!valid && clearInvalidLocalPaths && !token.IsCancellationRequested)
         {
-            return Path.Combine(workingDir, FileName);
+            FullPath = null;
         }
+        return valid;
+    }
 
-        return FullPath;
+    public override string GetTransferDataSavePath(string persistentDir)
+    {
+        var workingDir = QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty);
+        return Path.Combine(workingDir, FileName);
     }
 
     public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
@@ -241,11 +284,12 @@ public class FileProfile : Profile
             Size = await GetSize(token),
             Hash = await GetHash(token),
             TransferDataFile = path,
+            TransferDataHash = TransferDataHash,
             FilePaths = [path],
         };
     }
 
-    public override Task<ProfileLocalInfo> Localize(string localDir, bool quick, CancellationToken token)
+    public override Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
     {
         if (FullPath is null)
         {
@@ -268,5 +312,6 @@ public class FileProfile : Profile
         fileTarget.FileName = FileName;
         fileTarget.Hash = Hash;
         fileTarget.Size = Size;
+        fileTarget.TransferDataHash = TransferDataHash;
     }
 }

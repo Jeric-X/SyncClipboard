@@ -9,6 +9,8 @@ public class HistoryRecord
     public ProfileType Type { get; set; } = ProfileType.None;
     public string[] FilePath { get; set; } = [];
     public string Hash { get; set; } = string.Empty;
+    public string? TransferDataFile { get; set; }
+    public string? TransferDataHash { get; set; }
 
     public DateTime timestamp = DateTime.UtcNow;
     [BackingField(nameof(timestamp))]

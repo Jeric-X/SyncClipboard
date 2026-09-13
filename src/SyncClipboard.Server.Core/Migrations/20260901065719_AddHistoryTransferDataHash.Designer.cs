@@ -2,28 +2,37 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Server.Core.Utilities.History;
 
 #nullable disable
 
-namespace SyncClipboard.Core.Migrations
+namespace SyncClipboard.Server.Core.Migrations
 {
     [DbContext(typeof(HistoryDbContext))]
-    partial class HistoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260901065719_AddHistoryTransferDataHash")]
+    partial class AddHistoryTransferDataHash
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
 
-            modelBuilder.Entity("SyncClipboard.Core.Models.HistoryRecord", b =>
+            modelBuilder.Entity("SyncClipboard.Server.Core.Models.HistoryRecordEntity", b =>
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.PrimitiveCollection<string>("FilePath")
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExtraData")
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("FilePaths")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -36,9 +45,6 @@ namespace SyncClipboard.Core.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsLocalFileReady")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastAccessed")
@@ -56,29 +62,49 @@ namespace SyncClipboard.Core.Migrations
                     b.Property<bool>("Stared")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SyncStatus")
-                        .HasColumnType("INTEGER");
+                    b.PrimitiveCollection<string>("Tags")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("TransferDataFile")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TransferDataHash")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TransferDataMd5")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TransferDataSha256")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Type")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Version")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("ID");
+
+                    b.HasIndex("UserId", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_CreateTime_ID");
+
+                    b.HasIndex("UserId", "Stared", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_Stared_CreateTime_ID");
+
+                    b.HasIndex("UserId", "Stared", "Type", "CreateTime", "ID")
+                        .HasDatabaseName("IX_History_User_Stared_Type_CreateTime_ID");
 
                     b.ToTable("HistoryRecords");
                 });
