@@ -215,9 +215,9 @@ sealed class ImageDataProbe : IDisposable
         {
             var alpha = (byte)((i + seed) % 3 == 0 ? 0 : (i + seed) % 3 == 1 ? 128 : 255);
             pixels[i * 4] = alpha == 0 ? (byte)0 : (byte)(i + seed);
-            pixels[i * 4 + 1] = alpha == 0 ? (byte)0 : (byte)(i / width + seed * 5);
-            pixels[i * 4 + 2] = alpha == 0 ? (byte)0 : (byte)(i * 13 + seed);
-            pixels[i * 4 + 3] = alpha;
+            pixels[(i * 4) + 1] = alpha == 0 ? (byte)0 : (byte)((i / width) + (seed * 5));
+            pixels[(i * 4) + 2] = alpha == 0 ? (byte)0 : (byte)((i * 13) + seed);
+            pixels[(i * 4) + 3] = alpha;
         }
         return pixels;
     }

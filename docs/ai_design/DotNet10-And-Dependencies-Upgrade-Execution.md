@@ -537,3 +537,8 @@ Windows 探针直接引用 System.Drawing.Common 10.0.0，中央版本表相应�
 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，TRX 位于 `/private/tmp/syncclipboard-stage11-results/`；仓库与探针格式检查均退出 0，仓库仅保留跨平台工作区加载警告。Windows/macOS 产品还原、actionlint 和 diff 检查通过。
 
 CI 新增七个实际 RID 图片任务：Windows x86/x64/arm64、Linux x64/arm64、macOS x64/arm64。各任务检查进程架构、运行产品图片路径并上传含库哈希的 JSON；Windows x86 同时编译保留的 WinUI3 产品。Windows arm64 使用原生 windows-11-arm runner。既有构建、测试和打包矩阵保留。预计新增七份报告，完整 PR run 共 55 个 artifact；图片共 45 组检查，另有既有 374 项 MSTest 与七组 S3 检查。以上 CI、跨平台原生执行、最终产物及评审均待本次提交实际通过，不能据本地结果开始步骤 12。
+
+
+### 步骤 11 首轮 PR 反馈修复
+
+提交 `709d928774ff502962ee161a5a27c5cb93d7bb5f` 触发真实七架构 CI。CodeFactor 报告 ImageProbe 样本公式六处 SA1407：乘除和加法缺少显式优先级括号。仅补充括号，像素公式、检查内容与数量不变；修复后探针格式检查和 macOS arm64 六组实际图片回归通过。首次格式重跑因沙箱禁止 MSBuild 命名管道而未执行成功，获得沙箱外执行权限后通过，没有关闭诊断。报告 `/tmp/syncclipboard-stage11-codefactor-image-result.json`。新修复提交仍须重新通过 PR 检查，首轮结果不代替最终提交。
