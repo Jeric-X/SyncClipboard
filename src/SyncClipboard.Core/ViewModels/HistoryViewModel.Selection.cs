@@ -51,7 +51,7 @@ public partial class HistoryViewModel
     private HistoryRecordKey? selectionAnchor;
     private readonly ObservableCollection<HistoryRecordVM> visibleSelectedItems = [];
     private CoalescingTask<SelectionSummaryPart> selectionSummaryRefreshTask = null!;
-    private readonly object multiSelectLongPressLock = new();
+    private readonly Lock multiSelectLongPressLock = new();
     private CancellationTokenSource? multiSelectLongPressCancellation;
     private static readonly TimeSpan MultiSelectLongPressDelay = TimeSpan.FromMilliseconds(600);
 

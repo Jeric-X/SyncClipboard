@@ -86,7 +86,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     #endregion Hotkey
 
     private ProgressToastReporter? _progress;
-    private readonly object _progressLocker = new();
+    private readonly Lock _progressLocker = new();
 
     private readonly INotificationManager _notificationManager;
     private readonly ILogger _logger;

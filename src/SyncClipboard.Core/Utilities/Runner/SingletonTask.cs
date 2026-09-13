@@ -7,7 +7,7 @@ public class SingletonTask
     private CancelableTask? _task;
 
     private CancellationTokenSource _cts = new CancellationTokenSource();
-    private readonly object _ctsLock = new object();
+    private readonly Lock _ctsLock = new();
     private readonly SemaphoreSlim _taskSemaphore = new SemaphoreSlim(1, 1);
 
     public SingletonTask(CancelableTask task)

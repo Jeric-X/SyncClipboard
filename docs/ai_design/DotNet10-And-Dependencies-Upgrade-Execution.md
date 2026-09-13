@@ -5,12 +5,14 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–3 已通过，当前执行步骤 4：将独立服务器及容器升级 .NET 10；中央依赖版本保持基线。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 3 验证通过提交为 `a588ea95ac67e0dd91e60d22b5dbf78630d61952`；步骤 4 尚待当前改动的 PR 验证，不允许进入步骤 5。
-- 步骤 5–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–4 已通过，当前执行步骤 5：将 Shared/Core/Server.Core/Core 测试统一 .NET 10；中央依赖版本保持基线。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 4 验证通过提交为 `00c7c3737fc89716d73a89a31da0e57562d24373`；步骤 5 尚待当前改动的 PR 验证，不允许进入步骤 6。
+- 步骤 6–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
+
+各步骤及子步骤的记录统一使用“非 UI 验证通过”“范围内验证待完成/失败”和“UI 范围排除”区分结果。UI 排除项不列为待补测，不要求人工操作或 macOS 解锁；必要的非 UI 检查及当前提交的 PR CI/问题监控完成前，仍不得开始下一步。
 
 ## 步骤 0：基线证据
 
@@ -136,7 +138,7 @@ PupNet 修复的本地验证使用与 CI 相同的 1.8.0 工具：旧配置副�
 
 ## 步骤 4：独立服务器与容器升级 .NET 10
 
-前置步骤通过提交：`a588ea95ac67e0dd91e60d22b5dbf78630d61952`。状态：进行中。
+前置步骤通过提交：`a588ea95ac67e0dd91e60d22b5dbf78630d61952`。状态：已通过；以下保留过程记录，最终证据见本节末尾。
 
 Server 改为 net10.0，Server.Core/Shared 暂留 net8.0；同步 server-build 产物路径、中英文服务器运行时说明、两份调试配置及 AGENTS/CLAUDE。server-release 消费 `Server/publish/*`，与外层产物目录保持一致，无需修改，也不执行发布。
 
@@ -164,3 +166,42 @@ Docker 使用 `mcr.microsoft.com/dotnet/sdk:10.0.302-noble` 与 `mcr.microsoft.c
 修复后的实际服务器本地四轮首次启动/重启场景与原两轮冒烟全部通过；发布与格式检查退出 0（`/tmp/syncclipboard-stage4-startup-fixed.log`、`/tmp/syncclipboard-stage4-fixed-smoke.log`、`/tmp/syncclipboard-stage4-fixed-format.log`）。YAML/Python 语法及 diff 检查通过。新增 CI 门槛必须在修复后的 head 实际通过后，才允许进入步骤 5。
 
 后续 Core/EF 数据验证基线已准备：当前 Core net8/EF 9 实际生成 65 条客户端历史、32 个文件哈希，包含时间、收藏/置顶、同步/删除状态和 50+15 两页查询。基线 `/private/tmp/syncclipboard-client-db-baseline`，只读保留包 `/private/tmp/syncclipboard-client-net8-data-baseline.zip`，含源码、程序集指纹和期望结果；后续仅在副本上验证。产品 Core TFM 尚未改动。
+
+
+### 步骤 4 最终证据
+
+验证通过提交：`00c7c3737fc89716d73a89a31da0e57562d24373`。[PR build 34760281019](https://github.com/Jeric-X/SyncClipboard/actions/runs/34760281019)、[push build 34760278342](https://github.com/Jeric-X/SyncClipboard/actions/runs/34760278342)、[CodeQL 34760280696](https://github.com/Jeric-X/SyncClipboard/actions/runs/34760280696) 及 CodeFactor 完成，103 成功、8 预期发布任务跳过。当前 head 的 Codex 评审完成，原 4 个评审线程已解决，无新增可处理问题。
+
+新增首次启动场景在 Server、amd64 容器、arm64 容器中各实际执行 4 轮并通过；逐一读取三个 CI 日志确认命令行/环境变量端口、认证、Production Swagger 关闭、重启与正常退出均被覆盖。下载的新服务器产物本机复验亦通过，旧数据库副本全部字段、时间、排序、收藏/置顶、文件哈希及清理保持正确，原基线未改。47 个 artifact 下载完成，五份 TRX 共 362 通过、0 失败/跳过；38 项 Windows/Linux 包组合、6 项 Linux 元数据及两 macOS dmg 的资源/原生架构/严格签名检查通过。日志和报告前缀 `/tmp/syncclipboard-pr419-00c7-`。
+
+旧客户端数据另在独立 net10 宿主中使用当前 Core net8 验证，65 条记录、50+15 分页、时间/状态/收藏及 32 个文件哈希与基线完全一致（`/tmp/syncclipboard-client-db-net10-host.log`）；该证据不替代下一步实际 Core net10 的验证。步骤 4 通过，允许进入步骤 5，UI 排除项不计为通过。
+
+## 步骤 5：共享库与 Core 测试统一 .NET 10
+
+前置步骤通过提交：`00c7c3737fc89716d73a89a31da0e57562d24373`。状态：进行中。
+
+Shared、Core、Server.Core、Test 改为 net10.0，至此所有产品及测试项目均使用 .NET 10 对应目标。中央 NuGet 版本保持基线；SDK 仍由 global.json 选择 10.0.302 并允许同 feature band 的补丁滚动。CI 移除为旧项目目标显式安装的 8/9 SDK；Linux 打包保留 .NET 8 以运行 PupNet 1.8.0，待步骤 17c 处理。同步 AGENTS/CLAUDE；AppVeyor 路径属于先前记录的非活动遗留配置，不作为当前验证依据。
+
+升级前七个 RID 的条件符号已实际查询并保存 `/tmp/syncclipboard-core-rid-baseline.json`：win-x86/x64/arm64 仅 WINDOWS，linux-x64/arm64 仅 LINUX，osx-x64/arm64 仅 MACOS。本步须在实际 Core net10 上复核这些符号，完成范围内测试、各入口构建、旧客户端数据副本及新旧协议互通，并通过当前 head 的真实 PR 矩阵、评审和 R1–R5 后才允许步骤 6。
+
+
+### 步骤 5 本地适配与验证
+
+目标切换后格式检查新增 IDE0330、IDE0031 与 CA2263：22 个私有锁字段改用 `System.Threading.Lock`，逐字段核对没有 Monitor 调用或对象外传，保留原锁体；4 个事件退订采用空条件赋值，仍随后清空字段；服务器枚举筛选使用泛型 `Enum.GetValues<ProfileType>()`。另移除锁迁移后不再需要的 HubConnection 初值，以及 SDK 隐式导入的重复 using。未屏蔽诊断，未升级中央 NuGet 包。
+
+macOS arm64 本机 Release 验证结果：
+
+| 检查 | 结果与证据 |
+| --- | --- |
+| Core 与 Desktop 非 UI 测试 | 346 + 4 通过、0 失败/跳过；仓库 TRX 校验器按最低 350 项核验通过，`/private/tmp/syncclipboard-stage5-verified-results/` |
+| 框架与平台条件 | 11 个项目均为 net10 对应目标；7 个 RID 的 WINDOWS/MACOS/LINUX 与基线一致，`/tmp/syncclipboard-stage5-frameworks.json`、`/tmp/syncclipboard-stage5-core-rids.json` |
+| 入口编译/发布 | Server、Linux x64 自包含、Desktop.Default Windows TFM 编译及 macOS arm64 发布成功，日志 `/tmp/syncclipboard-stage5-final-*.log`；未启动桌面产物 |
+| 格式与静态检查 | 最终 format 退出 0，保留跨平台 workspace 加载警告；YAML 可解析，AGENTS/CLAUDE 共同说明一致，diff 检查通过，中央版本文件与基线一致 |
+| 实际 Core net10 读取旧客户端数据 | 65 条记录、50+15 分页、时间/排序/状态/收藏及 32 个文件哈希与旧库一致，`/tmp/syncclipboard-stage5-client-db-verify.log`；基线未修改 |
+| 实际 Server/Core net10 读取旧服务器数据 | 两次重启后 schema、全部字段、时间/排序/收藏/置顶和文件哈希保持一致；副本清理通过、原库保留，`/tmp/syncclipboard-stage5-final-persistence.json` |
+| 启动与 API | Production 命令行/环境变量各首次启动与重启共 4 轮通过；另两轮认证、API、文件、持久化和正常退出通过，`/tmp/syncclipboard-stage5-final-startup.log`、`/tmp/syncclipboard-stage5-final-smoke.log` |
+| 新旧协议 | 实际 net8/net10 客户端与旧 net8/新 net10 服务器四组互通通过，包含 Official/WebDAV、SignalR Profile/历史推送、显式停止再连接、预取消及完整性，`/tmp/syncclipboard-stage5-protocol-matrix.json` |
+| HTTP 代理 | 实际 Core net10 适配器通过 loopback 隔离代理，观察到 18 条 API/SignalR 协商及 WebSocket CONNECT 连接，无代理错误，`/tmp/syncclipboard-stage5-proxy.json` |
+| 服务器 HTTPS | 临时证书链/主机名验证、拒绝未信任证书、TLSv1.2、两轮认证/API/SignalR 协商、文件持久化及正常退出通过；未修改系统信任，`/tmp/syncclipboard-stage5-https.json` |
+
+以上 HTTPS 检查使用独立 TLS 测试客户端，不代表 OfficialAdapter 全部证书场景；显式断开再连接也不代表网络故障自动重连。自动重连、实际外部 S3/WebDAV 等专门回归仍按后续依赖步骤完成。Windows 原生构建/测试、完整平台及发行包矩阵须由当前提交的 PR 实际验证；步骤 5 尚未通过，不允许进入步骤 6。UI 排除项不执行、不计通过、不安排补测。

@@ -2,7 +2,7 @@ namespace SyncClipboard.Core.Utilities.Network;
 
 public sealed class NetworkAccountSwitchRuntimeState
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private bool _manualOverride;
     private string? _lastNetworkFingerprint;
 

@@ -74,16 +74,10 @@ public class HistoryService : ClipboardHander
 
     private void UnsubscribeFromServer()
     {
-        if (_historySyncServer != null)
-        {
-            _historySyncServer.HistoryChanged -= OnRemoteHistoryChanged;
-            _historySyncServer = null;
-        }
-        if (_currentServer != null)
-        {
-            _currentServer.PollStatusEvent -= OnPollStatusChanged;
-            _currentServer = null;
-        }
+        _historySyncServer?.HistoryChanged -= OnRemoteHistoryChanged;
+        _historySyncServer = null;
+        _currentServer?.PollStatusEvent -= OnPollStatusChanged;
+        _currentServer = null;
     }
 
     private void OnServerChanged(object? sender, EventArgs e)

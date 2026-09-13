@@ -8,7 +8,7 @@ namespace SyncClipboard.Core.Utilities
     {
         private readonly string LOG_FOLDER = option.Path;
         private readonly LoggerOption _option = option;
-        private static readonly object LOCKER = new();
+        private static readonly Lock LOCKER = new();
         private StreamWriter? _fileWriter;
         private string? _logFile;
 

@@ -10,7 +10,7 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
 {
     private readonly IWifiNetworkInfoProvider _wifiProvider = wifiProvider;
     private readonly ConfigManager _configManager = configManager;
-    private readonly object _listenerLock = new();
+    private readonly Lock _listenerLock = new();
     private EventHandler? _networkChanged;
     private bool _isListening;
 

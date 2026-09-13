@@ -10,7 +10,7 @@ public sealed class ForegroundWindowTrackingService : Service
     private readonly INativeWindowController _provider;
     private readonly ILogger _logger;
     private readonly bool _trackingEnabled;
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
     private WindowDetail? _currentPasteTargetWindow;
     private WindowDetail? _previousPasteTargetWindow;
     private NativeWindowInfo? _historyWindow;
