@@ -42,6 +42,26 @@ public class UtilitySHA256Tests
     }
 
     [TestMethod]
+    public async Task VerifyFileSHA256_RejectsMismatchedHash()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = Directory.CreateTempSubdirectory("SyncClipboard-SHA256-");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "file.txt");
+            await File.WriteAllTextAsync(path, "content", token);
+            var mismatchedHash = await Utility.CalculateSHA256("different content", token);
+
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => Utility.VerifyFileSHA256(path, mismatchedHash, token));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
     public async Task FileMatchesSHA256ChecksContentAndHandlesUnavailableData()
     {
         var token = TestContext.CancellationTokenSource.Token;

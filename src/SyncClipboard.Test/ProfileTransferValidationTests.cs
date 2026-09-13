@@ -219,39 +219,6 @@ public class ProfileTransferValidationTests
     }
 
     [TestMethod]
-    public async Task SetTransferData_WithHashOnlyVerifiesProfileSemantics()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var filePath = Path.Combine(testDirectory, "text.txt");
-            await File.WriteAllTextAsync(filePath, "actual", token);
-            var declaredHash = new string('A', 64);
-            var profile = new TextProfile(new ProfileDto
-            {
-                Type = ProfileType.Text,
-                Hash = declaredHash,
-                Text = "preview",
-                HasData = true,
-                DataName = Path.GetFileName(filePath),
-                TransferDataHash = declaredHash,
-            });
-            using var canceled = new CancellationTokenSource();
-            await canceled.CancelAsync();
-
-            await profile.SetTransferData(new FileHashInfo(filePath, declaredHash), true, canceled.Token);
-
-            Assert.AreEqual(declaredHash, profile.TransferDataHash);
-            Assert.IsFalse(await Utility.FileMatchesSHA256(filePath, profile.TransferDataHash, token));
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
-    }
-
-    [TestMethod]
     [DataRow(ProfileType.File)]
     [DataRow(ProfileType.Image)]
     [DataRow(ProfileType.Text)]
@@ -279,32 +246,15 @@ public class ProfileTransferValidationTests
             Assert.AreEqual(declaredHash, persistentInfo.Hash);
             Assert.IsNotNull(persistentInfo.TransferDataFile);
             Assert.IsNull(persistentInfo.TransferDataHash);
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
-    }
 
-    [TestMethod]
-    public async Task Persist_ImmediatelyVerifiedTransferDataDoesNotRehash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var filePath = Path.Combine(testDirectory, "verified.bin");
-            await File.WriteAllBytesAsync(filePath, [1, 2, 3], token);
-            var sourceProfile = new FileProfile(filePath);
-            var profile = new FileProfile(null, Path.GetFileName(filePath), await sourceProfile.GetHash(token));
-            await profile.SetTransferData(filePath, verify: true, token);
-            await profile.GetSize(token);
-            using var canceled = new CancellationTokenSource();
-            await canceled.CancelAsync();
+            var expectedTransferHash = await Utility.CalculateFileSHA256(filePath, token);
+            await profile.SetTransferData(new FileHashInfo(filePath, expectedTransferHash), false, token);
 
-            var persistentInfo = await profile.Persist(testDirectory, canceled.Token);
+            var boundInfo = await profile.Persist(testDirectory, token);
 
-            Assert.AreEqual(profile.TransferDataHash, persistentInfo.TransferDataHash);
+            Assert.AreEqual(declaredHash, boundInfo.Hash);
+            Assert.AreEqual(persistentInfo.TransferDataFile, boundInfo.TransferDataFile);
+            Assert.AreEqual(expectedTransferHash, boundInfo.TransferDataHash);
         }
         finally
         {

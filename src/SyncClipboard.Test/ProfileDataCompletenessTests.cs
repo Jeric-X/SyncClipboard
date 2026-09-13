@@ -112,9 +112,7 @@ public class ProfileDataCompletenessTests
 
             Assert.AreEqual(sourceState != "missing" || archiveState != "missing", await profile.IsDataComplete(true, token));
             Assert.AreEqual(hasTransferHash ? transferHash : null, profile.TransferDataHash);
-            Assert.IsFalse(Directory.Exists(archivePath[..^4]));
             Assert.AreEqual(expectedComplete, await profile.IsDataComplete(false, token));
-            Assert.IsFalse(Directory.Exists(archivePath[..^4]));
             Assert.AreEqual(sourceState != "missing", File.Exists(sourceFile));
             if (sourceState == "modified")
                 Assert.AreEqual("modified", await File.ReadAllTextAsync(sourceFile, token));

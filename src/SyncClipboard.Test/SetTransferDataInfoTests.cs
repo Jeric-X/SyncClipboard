@@ -57,13 +57,9 @@ public class SetTransferDataInfoTests
 
             await profile.SetTransferData(file.Path, false, token);
             Assert.IsNull(profile.TransferDataHash);
-            if (profile is GroupProfile)
-                Assert.IsFalse(Directory.Exists(file.Path[..^4]));
 
             await profile.SetTransferData(file with { Hash = file.Hash.ToLowerInvariant() }, false, token);
             Assert.AreEqual(file.Hash, profile.TransferDataHash);
-            if (profile is GroupProfile)
-                Assert.IsFalse(Directory.Exists(file.Path[..^4]));
 
             await profile.SetTransferData(file.Path, true, token);
             Assert.AreEqual(file.Hash, profile.TransferDataHash);

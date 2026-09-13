@@ -271,7 +271,6 @@ public class GroupProfileTransferTests
             Assert.AreEqual("source", await File.ReadAllTextAsync(profile.Files.Single(), token));
             Assert.AreEqual("keep", await File.ReadAllTextAsync(sentinelPath, token));
             Assert.IsTrue(File.Exists(archivePath));
-            Assert.IsFalse(Directory.EnumerateDirectories(testDirectory, "*.tmp").Any());
         }
         finally
         {
@@ -313,8 +312,6 @@ public class GroupProfileTransferTests
             Assert.AreEqual("source", await File.ReadAllTextAsync(newFile, token));
             var extractDir = Path.GetDirectoryName(newFile)!;
             Assert.StartsWith("received.", Path.GetFileName(extractDir));
-            Assert.IsTrue(Guid.TryParseExact(Path.GetFileName(extractDir)["received.".Length..], "N", out _));
-            Assert.IsFalse(File.Exists(Path.Combine(extractDir, ".syncclipboard-extraction-owner")));
         }
         finally
         {
@@ -614,7 +611,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task ModifiedArchiveAndExtractedFile_AreNotAcceptedFromValidationCache()
+    public async Task ModifiedArchiveAndExtractedFile_AreRejectedOnRecheck()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();

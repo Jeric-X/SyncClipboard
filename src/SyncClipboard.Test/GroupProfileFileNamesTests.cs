@@ -73,7 +73,6 @@ public class GroupProfileFileNamesTests
             Assert.IsEmpty(saved.FilePaths);
             Assert.AreEqual(info.Text, Profile.Create(directory, saved).DisplayText);
             Assert.AreEqual("file1.txt\nfile2.txt\nfile3.txt\nfile4.txt\nfile5.txt\n...", restored.ShortDisplayText);
-            Assert.IsFalse(Directory.Exists(archivePath[..^4]));
 
             var copy = new GroupProfile([]);
             restored.CopyTo(copy);

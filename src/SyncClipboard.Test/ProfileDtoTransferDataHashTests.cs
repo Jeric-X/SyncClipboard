@@ -73,20 +73,32 @@ public class ProfileDtoTransferDataHashTests
     }
 
     [TestMethod]
-    public async Task FileProfileDto_PreservesTransferDataHash()
+    [DataRow(ProfileType.File)]
+    [DataRow(ProfileType.Image)]
+    [DataRow(ProfileType.Text)]
+    [DataRow(ProfileType.Group)]
+    public async Task ProfileDto_PreservesTransferDataHashWithoutLocalData(ProfileType type)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
         try
         {
             var filePath = Path.Combine(testDirectory, "file.txt");
-            await File.WriteAllTextAsync(filePath, "file", token);
-            var profile = new FileProfile(filePath);
+            await File.WriteAllTextAsync(filePath, "content", token);
+            Profile profile = type switch
+            {
+                ProfileType.File => new FileProfile(filePath),
+                ProfileType.Image => new ImageProfile(filePath),
+                ProfileType.Text => new TextProfile(new string('T', 10241)),
+                _ => new GroupProfile([filePath]),
+            };
             await profile.PrepareTransferData(testDirectory, token);
 
             var dto = await profile.ToProfileDto(token);
             var restored = Profile.Create(dto);
 
+            Assert.AreEqual(type, dto.Type);
+            Assert.IsNotNull(profile.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
             Assert.IsFalse(await restored.IsDataComplete(false, token));
@@ -98,85 +110,7 @@ public class ProfileDtoTransferDataHashTests
     }
 
     [TestMethod]
-    public async Task ImageProfileDto_PreservesTransferDataHash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var filePath = Path.Combine(testDirectory, "image.png");
-            await File.WriteAllBytesAsync(filePath, [1, 2, 3, 4], token);
-            var profile = new ImageProfile(filePath);
-            await profile.PrepareTransferData(testDirectory, token);
-
-            var dto = await profile.ToProfileDto(token);
-            var restored = Profile.Create(dto);
-
-            Assert.AreEqual(ProfileType.Image, dto.Type);
-            Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
-            Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsDataComplete(false, token));
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task LongTextProfileDto_PreservesTransferDataHash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var profile = new TextProfile(new string('T', 10241));
-            await profile.PrepareTransferData(testDirectory, token);
-
-            var dto = await profile.ToProfileDto(token);
-            var restored = Profile.Create(dto);
-
-            Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
-            Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsDataComplete(false, token));
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task GroupProfileDto_PreservesTransferDataHash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var filePath = Path.Combine(testDirectory, "file.txt");
-            await File.WriteAllTextAsync(filePath, "group", token);
-            var profile = new GroupProfile([filePath]);
-            var archivePath = (await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token))?.Path;
-            Assert.IsNotNull(archivePath);
-
-            var dto = await profile.ToProfileDto(token);
-            var restored = Profile.Create(dto);
-
-            Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
-            Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsDataComplete(false, token));
-
-            await restored.SetTransferData(archivePath, verify: true, token);
-            Assert.IsTrue(await Utility.FileMatchesSHA256(archivePath, restored.TransferDataHash, token));
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task GroupProfileDto_DoesNotVerifyRemoteHashBinding()
+    public async Task GroupProfile_SetTransferDataRejectsMismatchedProfileHashWhenVerificationEnabled()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -203,7 +137,7 @@ public class ProfileDtoTransferDataHashTests
     }
 
     [TestMethod]
-    public async Task GroupProfileDto_AcceptsExternallyVerifiedBindingFromOfficialServer()
+    public async Task GroupProfile_SetTransferDataAcceptsBindingWhenVerificationDisabled()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -285,54 +219,6 @@ public class ProfileDtoTransferDataHashTests
         var record = await HistoryManager.ToRemoteHistoryRecord(profile, token);
 
         Assert.IsNull(record.TransferDataHash);
-    }
-
-    [TestMethod]
-    public async Task FileProfileDto_RejectsIncorrectRemoteTransferDataHash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var filePath = Path.Combine(testDirectory, "file.txt");
-            await File.WriteAllTextAsync(filePath, "file", token);
-            var sourceProfile = new FileProfile(filePath);
-            var dto = await sourceProfile.ToProfileDto(token);
-            dto.TransferDataHash = new string('D', 64);
-            var remoteProfile = Profile.Create(dto);
-
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => Utility.VerifyFileSHA256(filePath, remoteProfile.TransferDataHash, token));
-            Assert.IsFalse(await remoteProfile.IsDataComplete(false, token));
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task TextProfileDto_RejectsIncorrectRemoteTransferDataHash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var testDirectory = CreateTestDirectory();
-        try
-        {
-            var sourceProfile = new TextProfile(new string('T', 10241));
-            var transferPath = (await sourceProfile.PrepareTransferData(testDirectory, token))?.Path;
-            Assert.IsNotNull(transferPath);
-            var dto = await sourceProfile.ToProfileDto(token);
-            dto.TransferDataHash = new string('D', 64);
-            var remoteProfile = Profile.Create(dto);
-
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => Utility.VerifyFileSHA256(transferPath, remoteProfile.TransferDataHash, token));
-            Assert.IsFalse(await remoteProfile.IsDataComplete(false, token));
-        }
-        finally
-        {
-            Directory.Delete(testDirectory, recursive: true);
-        }
     }
 
     private static string CreateTestDirectory()

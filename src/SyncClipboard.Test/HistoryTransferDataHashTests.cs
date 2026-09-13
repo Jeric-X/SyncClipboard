@@ -258,7 +258,10 @@ public class HistoryTransferDataHashTests
     }
 
     [TestMethod]
-    public async Task GetTransferData_MissingGroupArchiveIsRegeneratedFromExtractedFiles()
+    [DataRow("missing")]
+    [DataRow("corrupted")]
+    [DataRow("unreadable")]
+    public async Task GetTransferData_UnavailableGroupArchiveIsRegeneratedFromExtractedFiles(string archiveState)
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var fixture = await TestFixture.CreateAsync(token);
@@ -279,84 +282,25 @@ public class HistoryTransferDataHashTests
         var storedArchivePath = Profile.GetFullPath(
             fixture.PersistentDirectory, entity.Type, entity.Hash, entity.TransferDataFile);
         Assert.IsNotNull(storedArchivePath);
-        File.Delete(storedArchivePath);
+        if (archiveState == "missing")
+            File.Delete(storedArchivePath);
+        else if (archiveState == "corrupted")
+            await File.WriteAllTextAsync(storedArchivePath, "corrupted", token);
+        await using var lockedArchive = archiveState == "unreadable"
+            ? new FileStream(storedArchivePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None)
+            : null;
 
         var regenerated = await fixture.Service.GetTransferDataByProfileId(
             "user", Profile.GetProfileId(ProfileType.Group, entity.Hash), token);
 
         Assert.IsNotNull(regenerated);
+        if (archiveState == "unreadable")
+            Assert.AreNotEqual(storedArchivePath, regenerated.Path);
         Assert.IsTrue(File.Exists(regenerated.Path));
         Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
         Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
-    }
-
-    [TestMethod]
-    public async Task GetTransferData_CorruptedGroupArchiveIsRegeneratedFromExtractedFiles()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var fixture = await TestFixture.CreateAsync(token);
-        var sourceFile = Path.Combine(fixture.RootDirectory, "corrupt-source.txt");
-        await File.WriteAllTextAsync(sourceFile, "regenerate", token);
-        var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "corrupt-client"), token))?.Path;
-        Assert.IsNotNull(archivePath);
-        var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
-        var dto = CreateGroupDto(await sourceProfile.GetHash(token));
-        await using (var stream = File.OpenRead(archivePath))
-        {
-            await fixture.Service.AddRecordDto("user", dto, transferDataHash, stream, token);
-        }
-
-        var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
-        var storedArchivePath = Profile.GetFullPath(
-            fixture.PersistentDirectory, entity.Type, entity.Hash, entity.TransferDataFile);
-        Assert.IsNotNull(storedArchivePath);
-        await File.WriteAllTextAsync(storedArchivePath, "corrupted", token);
-
-        var regenerated = await fixture.Service.GetTransferDataByProfileId(
-            "user", Profile.GetProfileId(ProfileType.Group, entity.Hash), token);
-
-        Assert.IsNotNull(regenerated);
-        Assert.IsTrue(File.Exists(regenerated.Path));
-        Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
-        Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
-        Assert.AreEqual(transferDataHash, regenerated.Hash);
-    }
-
-    [TestMethod]
-    public async Task GetTransferData_UnreadableGroupArchiveIsRegeneratedFromExtractedFiles()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var fixture = await TestFixture.CreateAsync(token);
-        var sourceFile = Path.Combine(fixture.RootDirectory, "locked-source.txt");
-        await File.WriteAllTextAsync(sourceFile, "regenerate", token);
-        var sourceProfile = new GroupProfile([sourceFile]);
-        var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "locked-client"), token))?.Path;
-        Assert.IsNotNull(archivePath);
-        var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
-        var dto = CreateGroupDto(await sourceProfile.GetHash(token));
-        await using (var stream = File.OpenRead(archivePath))
-        {
-            await fixture.Service.AddRecordDto("user", dto, transferDataHash, stream, token);
-        }
-
-        var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
-        var storedArchivePath = Profile.GetFullPath(
-            fixture.PersistentDirectory, entity.Type, entity.Hash, entity.TransferDataFile);
-        Assert.IsNotNull(storedArchivePath);
-
-        await using var lockedArchive = new FileStream(
-            storedArchivePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-        var regenerated = await fixture.Service.GetTransferDataByProfileId(
-            "user", Profile.GetProfileId(ProfileType.Group, entity.Hash), token);
-
-        Assert.IsNotNull(regenerated);
-        Assert.AreNotEqual(storedArchivePath, regenerated.Path);
-        Assert.IsTrue(File.Exists(regenerated.Path));
-        Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
-        Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
+        if (archiveState == "corrupted")
+            Assert.AreEqual(transferDataHash, regenerated.Hash);
     }
 
     [TestMethod]
