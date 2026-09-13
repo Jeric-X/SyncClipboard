@@ -77,8 +77,6 @@ jobs:
   s3-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      GOBIN: ${{ runner.temp }}/s3-tools
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-dotnet@v5
@@ -92,13 +90,15 @@ jobs:
       with:
         python-version: '3.12'
     - name: Build pinned MinIO test server
+      env:
+        GOBIN: ${{ runner.temp }}/s3-tools
       run: go install github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z
     - name: Build the non-UI S3 protocol probe
       run: dotnet build build/verification/S3Probe/S3Probe.csproj -c Release
     - name: Verify S3 operations and fault recovery against MinIO
       run: >-
         python build/verification/s3_smoke.py
-        --minio "$GOBIN/minio"
+        --minio "${{ runner.temp }}/s3-tools/minio"
         --probe build/verification/S3Probe/bin/Release/net10.0/S3Probe.dll
         --report s3-test-result.json
     - name: Upload S3 verification evidence

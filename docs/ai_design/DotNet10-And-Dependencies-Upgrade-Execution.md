@@ -464,3 +464,9 @@ Core 356、Desktop NonUI 4 项最终通过，0 失败/跳过，报告 `/private/
 两项修复后的七组完整协议检查通过，报告 `/tmp/syncclipboard-stage10-v3-httpfix-s3-result4.json`。普通/重试上传进度没有超过文件长度，取消覆盖上传后原对象仍完整；注入错误后的上传/下载各 3 次请求后成功，持续错误在 4 次请求后响应显式取消且未超过 25 秒验证上限。Core 356、Desktop NonUI 4 项再次通过，0 失败/跳过，TRX `/private/tmp/syncclipboard-stage10-httpfix-final-results/`。最终探针增加异常捕获与错误退出码，非法参数验证退出 1；完整流程失败时仍不能生成通过报告。当前 SDK 的程序集版本是 3.3.0.0，但实际包为 3.7.414，报告同时保存 DLL 哈希，不能混淆程序集与 NuGet 版本。
 
 新增 CI 任务会使 PR 另有一份 `s3-test-results` 产物；原五份 TRX 的最低总数仍为 374，S3 七组协议检查独立核验，不能混入 MSTest 计数。前置修复当前等待真实 PR 构建、MinIO 检查、产物与评审，不开始 v4 升级。
+
+### 首次 PR 反馈与修复
+
+前置提交 `05bb84cc4ee7627629c4a05768445a973f25db1c` 的 [PR run 34774908991](https://github.com/Jeric-X/SyncClipboard/actions/runs/34774908991) 在启动前失败，确切诊断是 core-test.yml 第 81 行的 `Unrecognized named-value: runner`。job 环境变量不能使用 runner 上下文；已将 GOBIN 移到安装步骤环境变量，并在运行步骤使用 runner.temp 路径。普通 YAML 语法检查无法发现这一错误，补用官方 actionlint v1.7.12 进行 GitHub 表达式语义检查，修复后退出 0。
+
+CodeFactor 同时报告 C# 探针复杂度 42、Python 驱动复杂度 21。已将 C# 七组验证提取为具名类方法，并拆分 Python 代理处理、服务等待/清理与报告核验；C# Require 条件及 Python require AST 比对确认断言未减少。编译和格式检查通过，重构后的真实 MinIO 七组检查再次通过，报告 `/tmp/syncclipboard-stage10-refactor-s3-result.json`，与原通过报告的检查清单一致，上传/下载故障重试均第 3 次成功。当前提交 Codex 评审于 `2026-09-13T18:36:51.631944Z` 完成且未新增反馈，但工作流与 CodeFactor 仍须修复提交的真实 PR 重新验证，前置步骤尚未通过。

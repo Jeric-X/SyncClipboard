@@ -14,7 +14,8 @@ using System.Text.Json;
 
 try
 {
-    await RunAsync(args);
+    using var probe = new S3ProtocolProbe(args);
+    await probe.RunAsync();
 }
 catch (Exception error)
 {
@@ -22,51 +23,79 @@ catch (Exception error)
     Environment.ExitCode = 1;
 }
 
-static async Task RunAsync(string[] args)
+sealed class S3ProtocolProbe : IDisposable
 {
-    if (args.Length != 3)
+    private const string prefix = "upgrade/中文 prefix";
+    private readonly string root;
+    private readonly string bucket;
+    private readonly Uri proxyEndpoint;
+    private readonly S3Config config;
+    private readonly AmazonS3Client client;
+    private readonly CancellationTokenSource deadline = new(TimeSpan.FromMinutes(4));
+    private readonly List<string> checks = [];
+    private CancellationToken token => deadline.Token;
+
+    public S3ProtocolProbe(string[] args)
     {
-        throw new ArgumentException("Expected endpoint, fault proxy and isolated output directory.");
+        if (args.Length != 3)
+        {
+            throw new ArgumentException("Expected endpoint, fault proxy and isolated output directory.");
+        }
+        var endpoint = new Uri(args[0]);
+        proxyEndpoint = new Uri(args[1]);
+        Require(endpoint.Scheme == "http" && endpoint.Host == "127.0.0.1", "Use the isolated loopback server.");
+        Require(proxyEndpoint.Scheme == "http" && proxyEndpoint.Host == "127.0.0.1", "Use the isolated loopback proxy.");
+        root = Directory.CreateDirectory(args[2]).FullName;
+        var accessKey = Environment.GetEnvironmentVariable("SYNCCLIPBOARD_S3_TEST_ACCESS_KEY")
+            ?? throw new InvalidOperationException("Missing test access key.");
+        var secretKey = Environment.GetEnvironmentVariable("SYNCCLIPBOARD_S3_TEST_SECRET_KEY")
+            ?? throw new InvalidOperationException("Missing test secret key.");
+        bucket = "syncclipboard-upgrade-" + Guid.NewGuid().ToString("N");
+        config = new S3Config
+        {
+            ServiceURL = endpoint.ToString(),
+            Region = "us-east-1",
+            BucketName = bucket,
+            ObjectPrefix = "/upgrade\\中文 prefix/",
+            ForcePathStyle = true,
+            AccessKeyId = accessKey,
+            SecretAccessKey = secretKey
+        };
+        client = new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), new AmazonS3Config
+        {
+            ServiceURL = endpoint.ToString(),
+            AuthenticationRegion = "us-east-1",
+            ForcePathStyle = true,
+            UseHttp = true,
+            RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
+            ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
+            HttpClientFactory = new DirectHttpClientFactory()
+        });
     }
-    var endpoint = new Uri(args[0]);
-    var proxyEndpoint = new Uri(args[1]);
-    Require(endpoint.Scheme == "http" && endpoint.Host == "127.0.0.1", "Use the isolated loopback server.");
-    Require(proxyEndpoint.Scheme == "http" && proxyEndpoint.Host == "127.0.0.1", "Use the isolated loopback proxy.");
-    var root = Directory.CreateDirectory(args[2]).FullName;
-    var accessKey = Environment.GetEnvironmentVariable("SYNCCLIPBOARD_S3_TEST_ACCESS_KEY")
-        ?? throw new InvalidOperationException("Missing test access key.");
-    var secretKey = Environment.GetEnvironmentVariable("SYNCCLIPBOARD_S3_TEST_SECRET_KEY")
-        ?? throw new InvalidOperationException("Missing test secret key.");
-    var bucket = "syncclipboard-upgrade-" + Guid.NewGuid().ToString("N");
-    var config = new S3Config
+
+    public async Task RunAsync()
     {
-        ServiceURL = endpoint.ToString(),
-        Region = "us-east-1",
-        BucketName = bucket,
-        ObjectPrefix = "/upgrade\\中文 prefix/",
-        ForcePathStyle = true,
-        AccessKeyId = accessKey,
-        SecretAccessKey = secretKey
-    };
-    const string prefix = "upgrade/中文 prefix";
-    using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(4));
-    var token = deadline.Token;
-    using var client = new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), new AmazonS3Config
+        await client.PutBucketAsync(new PutBucketRequest { BucketName = bucket }, token);
+        try
+        {
+            using var adapter = CreateAdapter(config);
+            await VerifyConnectionAsync(adapter);
+            var profile = await VerifyMetadataAsync(adapter);
+            var transferProfile = await VerifyFilesAsync(adapter, profile);
+            var (cancelBytes, cancelSource) = await VerifyCancellationAsync(adapter);
+            var persistentFailureCanceled = await VerifyRetriesAsync(cancelBytes, cancelSource);
+            await VerifyCredentialsAsync(transferProfile);
+            await VerifyCleanupAsync(adapter, transferProfile);
+            await WriteReportAsync(persistentFailureCanceled);
+        }
+        finally
+        {
+            await CleanupBucketAsync();
+        }
+    }
+
+    private async Task VerifyConnectionAsync(S3Adapter adapter)
     {
-        ServiceURL = endpoint.ToString(),
-        AuthenticationRegion = "us-east-1",
-        ForcePathStyle = true,
-        UseHttp = true,
-        RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
-        ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
-        HttpClientFactory = new DirectHttpClientFactory()
-    });
-    var checks = new List<string>();
-    var persistentFailureCanceled = false;
-    await client.PutBucketAsync(new PutBucketRequest { BucketName = bucket }, token);
-    try
-    {
-        using var adapter = CreateAdapter(config);
         await adapter.TestConnectionAsync(token);
         Require(await adapter.GetProfileAsync(token) is null, "Missing profile must return null.");
         await adapter.CleanupTempFilesAsync(token);
@@ -77,7 +106,10 @@ static async Task RunAsync(string[] args)
             Require(marker.ContentLength == 0, "Directory marker must be empty.");
         }
         Passed("connection, empty list, missing profile and idempotent initialization");
+    }
 
+    private async Task<ProfileDto> VerifyMetadataAsync(S3Adapter adapter)
+    {
         var profile = new ProfileDto { Text = "升级测试\n中文 😀", Hash = Hash(Encoding.UTF8.GetBytes("升级测试\n中文 😀")) };
         await adapter.SetProfileAsync(profile, token);
         var snapshot = await adapter.GetProfileSnapshotAsync(token);
@@ -90,7 +122,11 @@ static async Task RunAsync(string[] args)
         adapter.ApplyConfig();
         Require(await adapter.GetProfileAsync(token) == updated, "Recreating the client lost persisted data.");
         Passed("Unicode metadata, ETags, conditional conflict and client reconfiguration");
+        return profile;
+    }
 
+    private async Task<ProfileDto> VerifyFilesAsync(S3Adapter adapter, ProfileDto profile)
+    {
         foreach (var size in new[] { 0, 1024, 2 * 1024 * 1024, 32 * 1024 * 1024 })
         {
             var bytes = new byte[size];
@@ -111,7 +147,11 @@ static async Task RunAsync(string[] args)
         await adapter.SetProfileAsync(transferProfile, token);
         Require(await adapter.GetProfileAsync(token) == transferProfile, "Transfer hash metadata changed.");
         Passed("empty, binary, Unicode keys, 32 MiB, multiple files, transfer hashes and completion progress");
+        return transferProfile;
+    }
 
+    private async Task<(byte[] Bytes, string Source)> VerifyCancellationAsync(S3Adapter adapter)
+    {
         using (var canceled = new CancellationTokenSource())
         {
             canceled.Cancel();
@@ -141,7 +181,12 @@ static async Task RunAsync(string[] args)
         }
         await RoundTrip(adapter, "cancel-upload.bin", cancelBytes);
         Passed("pre-cancellation, upload source-read cancellation, in-flight download cancellation and subsequent transfer");
+        return (cancelBytes, cancelSource);
+    }
 
+    private async Task<bool> VerifyRetriesAsync(byte[] cancelBytes, string cancelSource)
+    {
+        var persistentFailureCanceled = false;
         using (var retried = CreateAdapter(config, new WebProxy(proxyEndpoint)))
         {
             await RoundTrip(retried, "retry-upload.bin", cancelBytes);
@@ -163,8 +208,12 @@ static async Task RunAsync(string[] args)
             Require(retryWatch.Elapsed < TimeSpan.FromSeconds(25), "Persistent failure did not terminate within the cancellation bound.");
         }
         Passed("real server through fault proxy: bounded retries and unchanged uploaded/downloaded bytes");
+        return persistentFailureCanceled;
+    }
 
-        using (var wrong = CreateAdapter(config with { SecretAccessKey = secretKey + "wrong" }))
+    private async Task VerifyCredentialsAsync(ProfileDto transferProfile)
+    {
+        using (var wrong = CreateAdapter(config with { SecretAccessKey = config.SecretAccessKey + "wrong" }))
         {
             try
             {
@@ -179,7 +228,10 @@ static async Task RunAsync(string[] args)
             Require(await alternate.GetProfileAsync(token) == transferProfile, "Alternate addressing lost data.");
         }
         Passed("invalid credentials rejected; configured addressing and prefix retain data");
+    }
 
+    private async Task VerifyCleanupAsync(S3Adapter adapter, ProfileDto transferProfile)
+    {
         await Put("outside/sentinel", "keep");
         await Parallel.ForEachAsync(Enumerable.Range(0, 1005), new ParallelOptions { MaxDegreeOfParallelism = 16, CancellationToken = token },
             async (i, _) => await Put(prefix + "/file/page-" + i.ToString("D4"), ""));
@@ -198,7 +250,10 @@ static async Task RunAsync(string[] args)
         using var sentinelReader = new StreamReader(sentinel.ResponseStream);
         Require(await sentinelReader.ReadToEndAsync(token) == "keep", "Cleanup escaped its prefix.");
         Passed("1005+ object pagination, keep-files setting, repeated empty cleanup and prefix isolation");
+    }
 
+    private async Task WriteReportAsync(bool persistentFailureCanceled)
+    {
         await File.WriteAllTextAsync(Path.Combine(root, "result.json"), JsonSerializer.Serialize(new
         {
             s3Assembly = typeof(AmazonS3Client).Assembly.GetName().Version?.ToString(),
@@ -208,7 +263,8 @@ static async Task RunAsync(string[] args)
             checks
         }, new JsonSerializerOptions { WriteIndented = true }), token);
     }
-    finally
+
+    private async Task CleanupBucketAsync()
     {
         using var cleanupDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(45));
         while (true)
@@ -277,6 +333,11 @@ static async Task RunAsync(string[] args)
         try { await action(); }
         catch (OperationCanceledException) { return; }
         throw new InvalidOperationException("Cancellation was ignored.");
+    }
+    public void Dispose()
+    {
+        client.Dispose();
+        deadline.Dispose();
     }
 }
 
