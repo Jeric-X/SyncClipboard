@@ -1,4 +1,5 @@
 using SyncClipboard.Shared;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
@@ -23,11 +24,15 @@ public class ProfileTransferValidationTests
             var expectedHash = await sourceProfile.GetHash(token);
             var profile = new FileProfile(null, Path.GetFileName(filePath), expectedHash);
             await profile.SetTransferData(filePath, verify: true, token);
+            var expectedTransferDataHash = profile.TransferDataHash;
 
             await File.WriteAllTextAsync(filePath, "after", token);
 
             await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
                 () => profile.PrepareTransferData(testDirectory, token));
+
+            Assert.AreEqual(expectedHash, await profile.GetHash(token));
+            Assert.AreEqual(expectedTransferDataHash, profile.TransferDataHash);
         }
         finally
         {
@@ -45,12 +50,16 @@ public class ProfileTransferValidationTests
             var filePath = Path.Combine(testDirectory, "image.png");
             await File.WriteAllBytesAsync(filePath, [1, 2, 3], token);
             var profile = new ImageProfile(filePath);
-            await profile.GetHash(token);
+            var expectedHash = await profile.GetHash(token);
+            var expectedTransferDataHash = profile.TransferDataHash;
 
             await File.WriteAllBytesAsync(filePath, [4, 5, 6], token);
 
             await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
                 () => profile.PrepareTransferData(testDirectory, token));
+
+            Assert.AreEqual(expectedHash, await profile.GetHash(token));
+            Assert.AreEqual(expectedTransferDataHash, profile.TransferDataHash);
         }
         finally
         {
@@ -196,7 +205,7 @@ public class ProfileTransferValidationTests
             using var canceled = new CancellationTokenSource();
             await canceled.CancelAsync();
 
-            await profile.SetTransferData(filePath, declaredHash, verify: true, canceled.Token);
+            await profile.SetTransferData(new FileHashInfo(filePath, declaredHash), true, canceled.Token);
 
             Assert.AreEqual(declaredHash, profile.TransferDataHash);
             Assert.IsFalse(await profile.IsTransferDataValid(token));

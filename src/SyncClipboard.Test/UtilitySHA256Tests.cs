@@ -5,6 +5,42 @@ namespace SyncClipboard.Test;
 [TestClass]
 public class UtilitySHA256Tests
 {
+    public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    public async Task InvalidHashesAreRejectedInsteadOfTreatedAsMissing()
+    {
+        string[] hashes = ["", " ", "malformed", new string('A', 63), new string('A', 65), new string('G', 64)];
+        foreach (var hash in hashes)
+        {
+            Assert.ThrowsExactly<ArgumentException>(() => Utility.NormalizeSHA256(hash));
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(
+                () => Utility.VerifyFileSHA256(string.Empty, hash, TestContext.CancellationTokenSource.Token));
+        }
+    }
+
+    [TestMethod]
+    public async Task MissingHashAndLowercaseHashRemainSupported()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = Directory.CreateTempSubdirectory("SyncClipboard-SHA256-");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "file.txt");
+            await File.WriteAllTextAsync(path, "content", token);
+            var expectedHash = await Utility.CalculateFileSHA256(path, token);
+
+            Assert.IsNull(Utility.NormalizeSHA256(null));
+            Assert.AreEqual(expectedHash, Utility.NormalizeSHA256(expectedHash.ToLowerInvariant()));
+            Assert.AreEqual(expectedHash, await Utility.VerifyFileSHA256(path, null, token));
+            Assert.AreEqual(expectedHash, await Utility.VerifyFileSHA256(path, expectedHash.ToLowerInvariant(), token));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
     [TestMethod]
     public void SHA256Same_IgnoresCaseAndDetectsDifferentHashes()
     {

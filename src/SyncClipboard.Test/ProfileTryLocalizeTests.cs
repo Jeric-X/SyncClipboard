@@ -1,4 +1,5 @@
 using SyncClipboard.Shared;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Utilities;
 
@@ -215,7 +216,7 @@ public class ProfileTryLocalizeTests
             // 模拟官方历史下载：验证新 ZIP 后绑定，再由无验证的 Localize 解压。
             await File.WriteAllBytesAsync(savePath, archiveBytes, token);
             var actualHash = await Utility.VerifyFileSHA256(savePath, transferHash, token);
-            await profile.SetTransferData(savePath, actualHash, verify: false, token);
+            await profile.SetTransferData(new FileHashInfo(savePath, actualHash), false, token);
             var localInfo = await profile.Localize(directory.FullName, token);
 
             Assert.AreEqual("source", await File.ReadAllTextAsync(localInfo.FilePaths.Single(), token));

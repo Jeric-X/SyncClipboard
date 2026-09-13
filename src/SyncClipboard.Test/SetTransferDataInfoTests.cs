@@ -45,6 +45,41 @@ public class SetTransferDataInfoTests
     [DataRow(ProfileType.Image)]
     [DataRow(ProfileType.Text)]
     [DataRow(ProfileType.Group)]
+    public async Task OverloadsPreserveHashAndVerificationSemantics(ProfileType type)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = Directory.CreateTempSubdirectory("SyncClipboard-PathOverloads-");
+        try
+        {
+            var (profile, file) = await CreateIncomingFile(directory.FullName, type, token);
+            var expectedProfileHash = await profile.GetHash(token);
+
+            await profile.SetTransferData(file.Path, false, token);
+            Assert.IsNull(profile.TransferDataHash);
+            if (profile is GroupProfile)
+                Assert.IsFalse(Directory.Exists(file.Path[..^4]));
+
+            await profile.SetTransferData(file with { Hash = file.Hash.ToLowerInvariant() }, false, token);
+            Assert.AreEqual(file.Hash, profile.TransferDataHash);
+            if (profile is GroupProfile)
+                Assert.IsFalse(Directory.Exists(file.Path[..^4]));
+
+            await profile.SetTransferData(file.Path, true, token);
+            Assert.AreEqual(file.Hash, profile.TransferDataHash);
+            Assert.AreEqual(expectedProfileHash, await profile.GetHash(token));
+            Assert.IsTrue(await profile.IsLocalDataValid(false, token));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
+    [DataRow(ProfileType.File)]
+    [DataRow(ProfileType.Image)]
+    [DataRow(ProfileType.Text)]
+    [DataRow(ProfileType.Group)]
     public async Task SetAndMoveTransferData_MovesFileInfoToPersistentDirectory(ProfileType type)
     {
         var token = TestContext.CancellationTokenSource.Token;

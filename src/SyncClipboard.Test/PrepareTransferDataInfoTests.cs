@@ -1,5 +1,6 @@
 using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
@@ -8,6 +9,29 @@ namespace SyncClipboard.Test;
 public class PrepareTransferDataInfoTests
 {
     public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow(ProfileType.File, null)]
+    [DataRow(ProfileType.File, "")]
+    [DataRow(ProfileType.Image, null)]
+    [DataRow(ProfileType.Image, "")]
+    public void RestoredFileRetainsHashWithoutTransferDataPath(ProfileType type, string? transferDataFile)
+    {
+        var info = new ProfilePersistentInfo
+        {
+            Type = type,
+            Text = "source.txt",
+            Size = 0,
+            Hash = new string('B', 64),
+            TransferDataFile = transferDataFile,
+            TransferDataHash = new string('a', 64)
+        };
+
+        FileProfile profile = type == ProfileType.Image ? new ImageProfile(info) : new FileProfile(info);
+
+        Assert.AreEqual(info.TransferDataHash, profile.TransferDataHash);
+        Assert.IsNull(profile.FullPath);
+    }
 
     [TestMethod]
     [DataRow(ProfileType.File)]

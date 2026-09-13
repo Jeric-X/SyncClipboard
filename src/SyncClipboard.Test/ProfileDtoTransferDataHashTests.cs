@@ -1,6 +1,7 @@
 using System.Text.Json;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Shared;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Utilities;
 
@@ -10,6 +11,51 @@ namespace SyncClipboard.Test;
 public class ProfileDtoTransferDataHashTests
 {
     public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow(ProfileType.File)]
+    [DataRow(ProfileType.Image)]
+    [DataRow(ProfileType.Text)]
+    [DataRow(ProfileType.Group)]
+    public async Task ConstructionAndDtoConversionPreserveOriginalTransferDataHash(ProfileType type)
+    {
+        string?[] hashes = [null, "", " ", "malformed", new string('A', 63), new string('A', 65),
+            new string('G', 64), new string('a', 64)];
+        foreach (var hash in hashes)
+        {
+            var dto = new ProfileDto
+            {
+                Type = type,
+                Text = "source.txt",
+                DataName = "data.bin",
+                HasData = true,
+                Hash = new string('B', 64),
+                Size = 10,
+                TransferDataHash = hash
+            };
+
+            var profile = Profile.Create(dto);
+            Assert.AreEqual(hash, profile.TransferDataHash);
+            var restoredDto = await profile.ToProfileDto(TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(hash, restoredDto.TransferDataHash);
+        }
+    }
+
+    [TestMethod]
+    public async Task InlineTextDtoOmitsTransferDataHash()
+    {
+        var profile = new TextProfile(new ProfileDto
+        {
+            Text = "inline",
+            HasData = false,
+            TransferDataHash = new string('A', 64)
+        });
+
+        var dto = await profile.ToProfileDto(TestContext.CancellationTokenSource.Token);
+
+        Assert.IsFalse(dto.HasData);
+        Assert.IsNull(dto.TransferDataHash);
+    }
 
     [TestMethod]
     public void MissingTransferDataHash_DeserializesAsNullAndNullIsOmitted()
@@ -147,7 +193,8 @@ public class ProfileDtoTransferDataHashTests
             var remoteProfile = Profile.Create(dto);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => remoteProfile.SetTransferData(archivePath, remoteProfile.TransferDataHash!, verify: true, token));
+                () => remoteProfile.SetTransferData(
+                    new FileHashInfo(archivePath, remoteProfile.TransferDataHash!), true, token));
         }
         finally
         {
@@ -174,7 +221,7 @@ public class ProfileDtoTransferDataHashTests
 
             var actualTransferDataHash = await Utility.VerifyFileSHA256(
                 archivePath, officialProfile.TransferDataHash, token);
-            await officialProfile.SetTransferData(archivePath, actualTransferDataHash, verify: false, token);
+            await officialProfile.SetTransferData(new FileHashInfo(archivePath, actualTransferDataHash), false, token);
             var persistentInfo = await officialProfile.Persist(
                 Path.Combine(testDirectory, "official-persistent"), token);
             Assert.IsTrue(await officialProfile.IsTransferDataValid(token));

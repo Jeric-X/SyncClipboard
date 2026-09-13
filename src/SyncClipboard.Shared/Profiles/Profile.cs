@@ -97,15 +97,10 @@ public abstract class Profile
     public abstract Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token);
     public abstract Task SetTransferData(string path, bool verify, CancellationToken token);
 
-    public abstract Task SetTransferData(string path, string transferDataHash, bool verify, CancellationToken token);
-
     /// <summary>
     /// 绑定调用方已核对 SHA-256 的文件；verify 仅控制 Profile 语义验证。
     /// </summary>
-    public Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
-    {
-        return SetTransferData(file.Path, file.Hash, verify, token);
-    }
+    public abstract Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token);
 
     public abstract Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token);
 

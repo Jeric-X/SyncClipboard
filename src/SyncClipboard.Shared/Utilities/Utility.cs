@@ -21,7 +21,7 @@ public static class Utility
 
     public static string? NormalizeSHA256(string? hash)
     {
-        if (string.IsNullOrWhiteSpace(hash))
+        if (hash is null)
         {
             return null;
         }
@@ -37,11 +37,6 @@ public static class Utility
     public static string NormalizeRequiredSHA256(string hash)
     {
         return NormalizeSHA256(hash) ?? throw new ArgumentException("SHA-256 hash cannot be empty.", nameof(hash));
-    }
-
-    public static string? NormalizeSHA256OrNull(string? hash)
-    {
-        return IsValidSHA256(hash) ? hash.ToUpperInvariant() : null;
     }
 
     public static async Task<string> CalculateSHA256(byte[] data, CancellationToken token)
@@ -66,8 +61,13 @@ public static class Utility
 
     public static async Task<string> VerifyFileSHA256(string path, string? expectedHash, CancellationToken token)
     {
+        if (expectedHash is not null && !IsValidSHA256(expectedHash))
+        {
+            throw new InvalidDataException($"Invalid SHA-256 hash: {expectedHash}.");
+        }
+
         var actualHash = await CalculateFileSHA256(path, token);
-        if (!string.IsNullOrEmpty(expectedHash) && !SHA256Same(actualHash, expectedHash))
+        if (expectedHash is not null && !SHA256Same(actualHash, expectedHash))
         {
             throw new InvalidDataException(
                 $"File SHA-256 mismatch. Expected: {expectedHash}, Actual: {actualHash}.");

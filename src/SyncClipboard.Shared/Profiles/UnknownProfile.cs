@@ -73,7 +73,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task SetTransferData(string path, string transferDataHash, bool verify, CancellationToken token)
+    public override Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
     {
         throw new NotImplementedException();
     }

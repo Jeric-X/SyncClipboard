@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -268,7 +269,10 @@ public class StorageBasedServerHelperTests
     }
 
     [TestMethod]
-    public async Task DownloadGroupProfile_MalformedTransferDataHashBackfillsVerifiedHash()
+    [DataRow("malformed")]
+    [DataRow("")]
+    [DataRow(" ")]
+    public async Task DownloadGroupProfile_MalformedTransferDataHashIsRejected(string transferDataHash)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -282,19 +286,22 @@ public class StorageBasedServerHelperTests
             var remoteFile = (await sourceProfile.PrepareTransferData(
                 Path.Combine(testDirectory, "remote-cache"), token))?.Path;
             Assert.IsNotNull(remoteFile);
-            var expectedTransferDataHash = sourceProfile.TransferDataHash;
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with
             {
-                TransferDataHash = "malformed",
+                TransferDataHash = transferDataHash,
             };
             var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
             var helper = CreateHelper(Path.Combine(testDirectory, "download"), adapter);
 
-            await helper.DownloadProfileDataAsync(Profile.Create(remoteProfile), cancellationToken: token);
+            var profile = Profile.Create(remoteProfile);
+            var exception = await Assert.ThrowsExactlyAsync<ProfileDataDownloadException>(
+                () => helper.DownloadProfileDataAsync(profile, cancellationToken: token));
 
-            Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
-            Assert.AreEqual(1, adapter.SetProfileCount);
-            Assert.AreEqual(expectedTransferDataHash, adapter.CurrentProfile?.TransferDataHash);
+            Assert.IsInstanceOfType<InvalidDataException>(exception.InnerException);
+            Assert.AreEqual(0, adapter.ConditionalSetAttemptCount);
+            Assert.AreEqual(0, adapter.SetProfileCount);
+            Assert.AreEqual(transferDataHash, profile.TransferDataHash);
+            Assert.AreEqual(transferDataHash, adapter.CurrentProfile?.TransferDataHash);
         }
         finally
         {

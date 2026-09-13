@@ -496,7 +496,7 @@ public class GroupProfileTransferTests
 
             File.Delete(sourceFile);
             var restoredProfile = Profile.Create(persistentDirectory, persistentInfo);
-            await restoredProfile.SetTransferData(archivePath, persistentInfo.TransferDataHash!, verify: false, token);
+            await restoredProfile.SetTransferData(new FileHashInfo(archivePath, persistentInfo.TransferDataHash!), false, token);
             var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
             Assert.IsFalse(File.Exists(extractedFile));
 
@@ -577,7 +577,7 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
 
             var restoredProfile = new GroupProfile([], profileHash);
-            await restoredProfile.SetTransferData(archivePath, sourceProfile.TransferDataHash!, verify: true, token);
+            await restoredProfile.SetTransferData(new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), true, token);
             var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
             await File.WriteAllTextAsync(extractedFile, "modified", token);
             Assert.IsFalse(await restoredProfile.IsLocalDataValid(false, token));
@@ -617,7 +617,7 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
 
             var restoredProfile = new GroupProfile([], profileHash);
-            await restoredProfile.SetTransferData(archivePath, sourceProfile.TransferDataHash!, verify: true, token);
+            await restoredProfile.SetTransferData(new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), true, token);
             var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
             await File.WriteAllTextAsync(extractedFile, "modified", token);
 
@@ -655,7 +655,7 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
 
             var firstProfile = new GroupProfile([], profileHash);
-            await firstProfile.SetTransferData(archivePath, sourceProfile.TransferDataHash!, verify: true, token);
+            await firstProfile.SetTransferData(new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), true, token);
 
             File.Delete(archivePath);
             using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
@@ -669,7 +669,7 @@ public class GroupProfileTransferTests
             Assert.AreNotEqual(sourceProfile.TransferDataHash, regeneratedTransferDataHash);
 
             var restartedProfile = new GroupProfile([], profileHash);
-            await restartedProfile.SetTransferData(archivePath, regeneratedTransferDataHash, verify: false, token);
+            await restartedProfile.SetTransferData(new FileHashInfo(archivePath, regeneratedTransferDataHash), false, token);
 
             var localInfo = await restartedProfile.Localize(Path.Combine(testDirectory, "local"), token);
 
@@ -737,7 +737,7 @@ public class GroupProfileTransferTests
             Assert.IsNotNull(archivePath);
 
             var cachedProfile = new GroupProfile([file], expectedHash);
-            await cachedProfile.SetTransferData(archivePath, sourceProfile.TransferDataHash!, verify: false, token);
+            await cachedProfile.SetTransferData(new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), false, token);
 
             string? regeneratedPath;
             await using (var lockedArchive = new FileStream(

@@ -49,7 +49,7 @@ public class GroupProfile : Profile
         _fileNames = GetFileNames(_files);
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
-        TransferDataHash = Utility.NormalizeSHA256OrNull(transferDataHash);
+        TransferDataHash = transferDataHash;
         if (_transferDataPath is not null)
         {
             _transferDataName = Path.GetFileName(_transferDataPath);
@@ -85,7 +85,7 @@ public class GroupProfile : Profile
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToArray();
         _transferDataName = dto.DataName;
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
-        TransferDataHash = Utility.NormalizeSHA256OrNull(dto.TransferDataHash);
+        TransferDataHash = dto.TransferDataHash;
         Size = dto.Size;
     }
 
@@ -615,9 +615,7 @@ public class GroupProfile : Profile
             Text = DisplayText,
             HasData = true,
             DataName = _transferDataName,
-            TransferDataHash = File.Exists(_transferDataPath) && Utility.IsValidSHA256(TransferDataHash)
-                ? TransferDataHash
-                : null,
+            TransferDataHash = TransferDataHash,
             Size = await GetSize(token)
         };
     }
@@ -714,7 +712,7 @@ public class GroupProfile : Profile
 
     public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
-        var extractDir = ValidateTransferDataPath(path);
+        ValidateTransferDataPath(path);
         if (!verify)
         {
             TransferDataHash = null;
@@ -723,24 +721,24 @@ public class GroupProfile : Profile
             return;
         }
 
-        await ExtractAndSetTransferData(
-            path, extractDir, await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false),
-            verifyProfileHash: true, token);
+        var file = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false));
+        await SetTransferData(file, true, token);
     }
 
-    public override async Task SetTransferData(
-        string path, string transferDataHash, bool verify, CancellationToken token)
+    public override async Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
     {
-        var extractDir = ValidateTransferDataPath(path);
-        var normalizedTransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
+        var extractDir = ValidateTransferDataPath(file.Path);
+        var transferDataHash = Utility.NormalizeRequiredSHA256(file.Hash);
 
         if (!verify)
         {
-            SetTransferDataPathAndHash(path, normalizedTransferDataHash);
+            _transferDataPath = file.Path;
+            _transferDataName = Path.GetFileName(file.Path);
+            TransferDataHash = transferDataHash;
             return;
         }
 
-        await ExtractAndSetTransferData(path, extractDir, normalizedTransferDataHash, verifyProfileHash: true, token);
+        await ExtractAndSetTransferData(file.Path, extractDir, transferDataHash, true, token);
     }
 
     private static string ValidateTransferDataPath(string path)
@@ -797,7 +795,7 @@ public class GroupProfile : Profile
             _transferDataName = Path.GetFileName(path);
             if (verifyProfileHash && transferDataHash is not null)
             {
-                TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
+                TransferDataHash = transferDataHash;
             }
         }
         catch
@@ -805,13 +803,6 @@ public class GroupProfile : Profile
             DeleteExtractionDirectory(temporaryExtractDir);
             throw;
         }
-    }
-
-    private void SetTransferDataPathAndHash(string path, string transferDataHash)
-    {
-        _transferDataPath = path;
-        _transferDataName = Path.GetFileName(path);
-        TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
     }
 
     private string[] CommitExtractionDirectory(
@@ -935,7 +926,7 @@ public class GroupProfile : Profile
         }
         else
         {
-            await SetTransferData(path, transferDataHash, verify: true, token);
+            await SetTransferData(new FileHashInfo(path, transferDataHash), true, token);
         }
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);

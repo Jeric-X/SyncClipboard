@@ -127,7 +127,7 @@ public class GroupProfileFileNamesTests
             });
             Assert.AreEqual(initialNames, profile.DisplayText);
 
-            await profile.SetTransferData(archivePath, source.TransferDataHash!, verify: false, token);
+            await profile.SetTransferData(new FileHashInfo(archivePath, source.TransferDataHash!), false, token);
             await profile.Localize(directory, token);
             var saved = await profile.Persist(directory, token);
 

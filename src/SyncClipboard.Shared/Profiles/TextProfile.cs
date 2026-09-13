@@ -48,8 +48,7 @@ public class TextProfile : Profile
         }
         Size = entity.Size;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
-        TransferDataHash = Utility.NormalizeSHA256OrNull(
-            string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataHash);
+        TransferDataHash = string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataHash;
     }
 
     public TextProfile(ProfileDto dto)
@@ -58,7 +57,7 @@ public class TextProfile : Profile
         Hash = string.IsNullOrEmpty(dto.Hash) ? null : dto.Hash;
         _hasTransferData = dto.HasData;
         _transferDataName = dto.DataName;
-        TransferDataHash = Utility.NormalizeSHA256OrNull(dto.TransferDataHash);
+        TransferDataHash = dto.TransferDataHash;
         Size = dto.Size;
     }
 
@@ -80,11 +79,7 @@ public class TextProfile : Profile
             Text = _text,
             HasData = _hasTransferData,
             DataName = _hasTransferData ? _transferDataName ?? Path.GetFileName(_transferDataPath) : null,
-            TransferDataHash = _hasTransferData &&
-                File.Exists(_transferDataPath) &&
-                Utility.IsValidSHA256(TransferDataHash)
-                ? TransferDataHash
-                : null,
+            TransferDataHash = _hasTransferData ? TransferDataHash : null,
             Size = await GetSize(token)
         };
     }
@@ -390,17 +385,28 @@ public class TextProfile : Profile
         if (!verify)
         {
             TransferDataHash = null;
-            SetTransferDataPath(path);
+            _transferDataPath = path;
+            _transferDataName = Path.GetFileName(path);
             return;
         }
 
-        SetTransferDataWithHash(path, await Utility.CalculateFileSHA256(path, token), verifyProfileSemantic: true);
+        var file = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, token));
+        await SetTransferData(file, true, token);
     }
 
-    public override Task SetTransferData(string path, string transferDataHash, bool verify, CancellationToken token)
+    public override Task SetTransferData(FileHashInfo file, bool verify, CancellationToken token)
     {
-        EnsureTransferDataExists(path);
-        SetTransferDataWithHash(path, Utility.NormalizeRequiredSHA256(transferDataHash), verifyProfileSemantic: verify);
+        EnsureTransferDataExists(file.Path);
+        var transferDataHash = Utility.NormalizeRequiredSHA256(file.Hash);
+        if (verify && Hash is not null && !Utility.SHA256Same(transferDataHash, Hash))
+        {
+            throw new InvalidOperationException("Transfer data file content does not match the text hash.");
+        }
+
+        Hash ??= transferDataHash;
+        TransferDataHash = transferDataHash;
+        _transferDataPath = file.Path;
+        _transferDataName = Path.GetFileName(file.Path);
         return Task.CompletedTask;
     }
 
@@ -410,26 +416,6 @@ public class TextProfile : Profile
         {
             throw new FileNotFoundException($"Text transfer data file does not exist: {path}", path);
         }
-    }
-
-    private void SetTransferDataWithHash(string path, string transferDataHash, bool verifyProfileSemantic)
-    {
-        if (verifyProfileSemantic &&
-            Hash is not null &&
-            !string.Equals(transferDataHash, Hash, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Transfer data file content does not match the text hash.");
-        }
-
-        Hash ??= transferDataHash;
-        TransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
-        SetTransferDataPath(path);
-    }
-
-    private void SetTransferDataPath(string path)
-    {
-        _transferDataPath = path;
-        _transferDataName = Path.GetFileName(path);
     }
 
     public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
@@ -452,7 +438,7 @@ public class TextProfile : Profile
         }
         else
         {
-            await SetTransferData(path, transferDataHash, verify: true, token);
+            await SetTransferData(new FileHashInfo(path, transferDataHash), true, token);
         }
 
         var workingDir = CreateWorkingDir(persistentDir, Type, Hash!);
