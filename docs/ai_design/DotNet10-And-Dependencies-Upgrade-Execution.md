@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–9b 已通过，当前执行步骤 9c：核定 H.NotifyIcon 升级及编译兼容性。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9b 验证通过提交为 `57f7083e99f6695f0e4d2e99ffad93ebb2828608`；步骤 9c 未通过前不进入 9d。
-- 步骤 9d–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–9c 已通过，当前执行步骤 9d：核定 WinUI CommunityToolkit 升级及编译兼容性。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9c 验证通过提交为 `83020ce6994a1a8bc537fe8f9063c256bebe646a`；步骤 9d 未通过前不进入 10。
+- 步骤 10–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -404,3 +404,25 @@ Windows App SDK 的 Runtime 包声明 Framework AppX 版本 2.4.0.0；所选 Win
 本地 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按最低 360 项通过；报告 `/private/tmp/syncclipboard-stage9c-results/`。格式检查退出 0，仅保留跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage9c-format.log`；diff 检查通过。既有 Magick.NET 漏洞仍由步骤 11 处理，不屏蔽警告。
 
 已记录三项 H.* 程序集 2.4.1 及四项配套 System.Drawing/SystemEvents 程序集 10.0.0 的实际 ProductVersion 与 NuGet 哈希，报告 `/tmp/syncclipboard-stage9c-package-assemblies.json`。当前 PR 产物须逐个 Windows 包核对这七个 DLL、五项依赖版本和托盘图标资源，并保留前置 WinUIEx/AppSDK 及其他平台检查；本机包元数据不能替代 PR 产物证据。
+
+### 步骤 9c 最终 PR 验证（2026-09-14）
+
+验证通过提交：`83020ce6994a1a8bc537fe8f9063c256bebe646a`。[PR build 34771724806](https://github.com/Jeric-X/SyncClipboard/actions/runs/34771724806)、[push build 34771722518](https://github.com/Jeric-X/SyncClipboard/actions/runs/34771722518)、[CodeQL 34771724519](https://github.com/Jeric-X/SyncClipboard/actions/runs/34771724519) 及 CodeFactor 全部完成，103 项成功、8 项预期发布跳过。当前提交 Codex 评审完成，全部五个线程解决，无新增可处理行内或普通评论问题。
+
+47 个 artifact 全部下载，五份 TRX 共 372 项非 UI 测试通过，0 失败/跳过。完整 38 个 Windows/Linux 包组合通过；24 个 Windows 组合逐包核对七项 NotifyIcon/GeneratedIcons/Drawing/SystemEvents DLL 与对应 NuGet 哈希、五项依赖版本、38 个托盘图标资源，并保留 WinUIEx、AppSDK 及前置依赖检查。报告 `/tmp/syncclipboard-pr419-8302-package-audit.json`，SHA256 `384d98b19e0e21ff8c6d4df13634f6560bbb50b41681dedcff86a2f3f0cac737`。
+
+六个 Linux 包元数据、两架构 macOS dmg 的签名/资源/原生架构及依赖版本均通过；每包检查 19 个 dylib，挂载已卸载。Server 与 amd64/arm64 容器 CI 均执行四轮启动及两轮 API 冒烟，下载的 Server 产物本机复验通过。报告前缀 `/tmp/syncclipboard-pr419-8302-`，本地记录 `docs/ai_design/.local/PR-419-Artifacts-83020ce6.md`。步骤 9c 非 UI 验证通过，允许进入 9d；上游 #271 的运行时 UI 限制继续保留，不宣称其已修复或验证。
+
+## 步骤 9d：WinUI CommunityToolkit（2026-09-14）
+
+前置步骤通过提交：`83020ce6994a1a8bc537fe8f9063c256bebe646a`。状态：进行中；当前 PR 编译、非 UI 测试、产物与评审通过前，不开始步骤 10。
+
+将 SettingsControls 与 Converters 8.2.250402 升级为稳定版 8.2.251219，未选择 8.3 预发布版。依据为[官方发布说明](https://github.com/CommunityToolkit/Windows/releases/tag/v8.2.251219)、[SettingsControls 依赖](https://www.nuget.org/packages/CommunityToolkit.WinUI.Controls.SettingsControls/8.2.251219)及[Converters 依赖](https://www.nuget.org/packages/CommunityToolkit.WinUI.Converters/8.2.251219)。两个 Windows 项目还原成功，实际选择 net9.0-windows10.0.19041 资产，要求 AppSDK >= 1.6.250108002，由当前 .NET 10/AppSDK 2.4.0 满足，没有引入 Uno 资产或依赖。
+
+实际解析差异仅为 SettingsControls、Converters、Extensions、Helpers、Triggers 五包统一到 8.2.251219；CommunityToolkit.Common 8.2.1、MVVM 与其他依赖未变。报告 `/tmp/syncclipboard-stage9d-resolved-dependency-diff.json`；五个实际 DLL 的 ProductVersion 均为 8.2.251219，包内版本/哈希报告 `/tmp/syncclipboard-stage9d-package-assemblies.json`。当前 PR 产物必须逐个 Windows 组合核对这五项依赖和 DLL，保留前置 NotifyIcon 图标/依赖检查及全部其他平台静态检查。
+
+项目实际使用 SettingsCard、SettingsExpander、DispatcherQueue 扩展，以及 BoolNegationConverter 和 BoolToVisibilityConverter。所选源码提交为 `a6b4dc451c0e54dd29f58743894a956100e7f713`；[BoolNegationConverter](https://github.com/CommunityToolkit/Windows/blob/a6b4dc451c0e54dd29f58743894a956100e7f713/components/Converters/src/BoolNegationConverter.cs) 是普通托管类，直接实现 IValueConverter，不创建 UI 对象或使用 UI 调度器。新增 ToolkitConverterTests 的两个 NonUI 数据用例，验证 true/false 在 Convert 和 ConvertBack 中的取反行为，覆盖热键编辑器实际使用的转换器；没有构造窗口或控件。
+
+BoolToVisibilityConverter 继承 BoolToObjectConverter，后者继承 DependencyObject 并注册 DependencyProperty，因此其运行时测试属于 UI 范围排除。SettingsCard/SettingsExpander 的实例化、主题、绑定显示、点击及真实 DispatcherQueue 调度也排除，只保留 C#/XAML 编译和资源/API 静态核对；不为验证这些内容初始化 UI。
+
+本地 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，报告 `/private/tmp/syncclipboard-stage9d-results/`；仓库格式检查退出 0，仅保留跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage9d-format.log`。工作流 YAML 语法与 diff 检查通过。新增 Windows 转换器用例尚未在本机执行，必须由 PR 的 Windows runner 验证；WinUI NonUI 最低通过数由 4 提高到 6，五份最终 CI TRX 预计合计 374 项，不能将本地 360 项当作新增 Windows 测试已通过。

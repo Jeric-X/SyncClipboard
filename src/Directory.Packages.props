@@ -44,8 +44,8 @@
     <PackageVersion Include="Moq" Version="4.20.72" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
-    <PackageVersion Include="CommunityToolkit.WinUI.Converters" Version="8.2.250402" />
+    <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
+    <PackageVersion Include="CommunityToolkit.WinUI.Converters" Version="8.2.251219" />
     <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
