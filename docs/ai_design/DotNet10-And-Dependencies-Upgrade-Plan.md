@@ -87,10 +87,10 @@ dotnet test src/SyncClipboard.Test.WinUI3 -c Release --filter "TestCategory=NonU
 
 Windows 构建同时覆盖 arm64，以及现有自包含/非自包含和 Windows App SDK 携带/不携带矩阵。命令按对应架构替换 `Platform` 和 `RuntimeIdentifier`。测试运行器与原生库使用一致架构；跨编译 arm64 不等于在 arm64 执行了测试。
 
-Linux 发布示例（步骤 3 前将框架改为 net8.0）：
+Linux 发布示例（当前为 net8.0，步骤 3 完成后改为 net10.0）：
 
 ```bash
-dotnet publish src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj -f net10.0 -r linux-x64 -c Release --self-contained true
+dotnet publish src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj -f net8.0 -r linux-x64 -c Release --self-contained true
 ```
 
 同时验证 linux-arm64 和非自包含产物；Windows 上另外验证 Desktop.Default 的 Windows TFM，因为 WinUI3 构建不能覆盖这个入口。

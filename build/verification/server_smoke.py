@@ -39,12 +39,17 @@ def expect(base_url, path, authorization, status=200, **kwargs):
     return body
 
 
+def require(condition, message):
+    if not condition:
+        raise AssertionError(message)
+
+
 def check_profile(base_url, authorization, text):
     profile = json.loads(expect(base_url, "/SyncClipboard.json", authorization))
-    assert profile["text"] == text, profile
-    assert profile["hash"].lower() == hashlib.sha256(text.encode()).hexdigest(), profile
+    require(profile["text"] == text, profile)
+    require(profile["hash"].lower() == hashlib.sha256(text.encode()).hexdigest(), profile)
     statistics = json.loads(expect(base_url, "/api/history/statistics", authorization))
-    assert statistics["activeCount"] >= 1, statistics
+    require(statistics["activeCount"] >= 1, statistics)
     return profile
 
 
@@ -54,11 +59,11 @@ def exercise(base_url, authorization):
     json.loads(expect(base_url, "/api/time", authorization))
     expect(base_url, "/api/version", authorization)
     swagger = json.loads(expect(base_url, "/swagger/v1/swagger.json", None))
-    assert "/api/history/query" in swagger["paths"], swagger.keys()
+    require("/api/history/query" in swagger["paths"], swagger.keys())
     negotiation = json.loads(expect(
         base_url, "/SyncClipboardHub/negotiate?negotiateVersion=1", authorization,
         method="POST", body=b""))
-    assert negotiation["connectionToken"] and negotiation["availableTransports"], negotiation
+    require(negotiation["connectionToken"] and negotiation["availableTransports"], negotiation)
 
     text = "Upgrade smoke: 中文 clipboard\n" + secrets.token_hex(8)
     dto = {"type": "Text", "text": text, "hasData": False,
@@ -71,11 +76,11 @@ def exercise(base_url, authorization):
     expect(base_url, "/SyncClipboard.json", authorization, method="PUT",
            body=json.dumps(dto).encode(), content_type="application/json")
     after = json.loads(expect(base_url, "/api/history/statistics", authorization))
-    assert after["activeCount"] == before["activeCount"], (before, after)
+    require(after["activeCount"] == before["activeCount"], (before, after))
     invalid = dict(dto, hash="0" * 64)
     expect(base_url, "/SyncClipboard.json", authorization, status=400, method="PUT",
            body=json.dumps(invalid).encode(), content_type="application/json")
-    assert check_profile(base_url, authorization, text) == first
+    require(check_profile(base_url, authorization, text) == first, "Rejected upload changed the profile")
 
     # File-backed text exercises binary transfer, integrity headers and download.
     payload = ("文件内容\n" * 4096).encode()
@@ -87,9 +92,9 @@ def exercise(base_url, authorization):
     expect(base_url, "/SyncClipboard.json", authorization, method="PUT",
            body=json.dumps(transfer).encode(), content_type="application/json")
     downloaded = expect(base_url, "/file/smoke.txt", authorization)
-    assert downloaded == payload, "File transfer did not round-trip"
+    require(downloaded == payload, "File transfer did not round-trip")
     profile = json.loads(expect(base_url, "/SyncClipboard.json", authorization))
-    assert profile["transferDataHash"].lower() == digest, profile
+    require(profile["transferDataHash"].lower() == digest, profile)
     return profile, payload
 
 
@@ -177,10 +182,11 @@ def running_server(args, root, password, authorization, attempt):
 
 def check_persistence(base_url, authorization, expected):
     profile, payload = expected
-    assert json.loads(expect(base_url, "/SyncClipboard.json", authorization)) == profile
-    assert expect(base_url, "/file/smoke.txt", authorization) == payload
+    require(json.loads(expect(base_url, "/SyncClipboard.json", authorization)) == profile,
+            "Restart lost the profile")
+    require(expect(base_url, "/file/smoke.txt", authorization) == payload, "Restart lost the file")
     statistics = json.loads(expect(base_url, "/api/history/statistics", authorization))
-    assert statistics["activeCount"] == 2, statistics
+    require(statistics["activeCount"] == 2, statistics)
 
 
 def main():
