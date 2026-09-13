@@ -1,6 +1,8 @@
 using SyncClipboard.Core.Interfaces;
+using System;
 using System.Threading.Tasks;
 using Vanara.InteropServices;
+using Vanara.PInvoke;
 using static Vanara.PInvoke.ComCtl32;
 
 namespace SyncClipboard.WinUI3.Services;
@@ -9,6 +11,22 @@ public sealed class WinUIGlobalDialog : IGlobalDialog
 {
     private const int PrimaryButtonId = 100;
     private const int CloseButtonId = 101;
+    private readonly Func<TASKDIALOGCONFIG, (HRESULT Result, int SelectedButtonId)> _invokeTaskDialog;
+
+    public WinUIGlobalDialog() : this(InvokeNativeTaskDialog)
+    {
+    }
+
+    internal WinUIGlobalDialog(Func<TASKDIALOGCONFIG, (HRESULT Result, int SelectedButtonId)> invokeTaskDialog)
+    {
+        _invokeTaskDialog = invokeTaskDialog;
+    }
+
+    private static (HRESULT Result, int SelectedButtonId) InvokeNativeTaskDialog(TASKDIALOGCONFIG config)
+    {
+        var result = TaskDialogIndirect(config, out var selectedButtonId, out _, out _);
+        return (result, selectedButtonId);
+    }
 
     public Task<bool> ShowConfirmationAsync(
         string title,
@@ -31,7 +49,7 @@ public sealed class WinUIGlobalDialog : IGlobalDialog
         return Task.CompletedTask;
     }
 
-    private static int ShowTaskDialog(
+    private int ShowTaskDialog(
         string title,
         string message,
         int defaultButtonId,
@@ -64,7 +82,8 @@ public sealed class WinUIGlobalDialog : IGlobalDialog
                 nDefaultButton = defaultButtonId,
             };
 
-            TaskDialogIndirect(config, out var selectedButtonId, out _, out _).ThrowIfFailed();
+            var (result, selectedButtonId) = _invokeTaskDialog(config);
+            result.ThrowIfFailed();
             return selectedButtonId;
         }
         finally

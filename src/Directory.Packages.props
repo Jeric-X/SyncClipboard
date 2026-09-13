@@ -51,9 +51,9 @@
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageVersion Include="WinUIEx" Version="2.9.3" />
-    <PackageVersion Include="Vanara.PInvoke.ComCtl32" Version="4.0.1" />
-    <PackageVersion Include="Vanara.PInvoke.DbgHelp" Version="4.0.1" />
-    <PackageVersion Include="Vanara.PInvoke.Kernel32" Version="4.0.1" />
-    <PackageVersion Include="Vanara.PInvoke.User32" Version="4.0.1" />
+    <PackageVersion Include="Vanara.PInvoke.ComCtl32" Version="5.0.7" />
+    <PackageVersion Include="Vanara.PInvoke.DbgHelp" Version="5.0.7" />
+    <PackageVersion Include="Vanara.PInvoke.Kernel32" Version="5.0.7" />
+    <PackageVersion Include="Vanara.PInvoke.User32" Version="5.0.7" />
   </ItemGroup>
 </Project>

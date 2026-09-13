@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–12a（含全部子步骤和前置修复）已通过，当前执行步骤 12b：NativeNotification 版本核定与兼容验证。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12a 验证通过提交为 `1d523f2f701cdf697de71373519effa13d70e4db`；步骤 12b 未通过前不进入 12c。
-- 步骤 12c–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–12b（含全部子步骤和前置修复）已通过，当前执行步骤 12c：Vanara 升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12b 验证通过提交为 `4574899507c94acdbe1e8372944c17d249ff8aa1`；步骤 12c 未通过前不进入 12d。
+- 步骤 12d–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -23,6 +23,8 @@
 图片编解码、像素/透明通道比较、格式转换和纯 Bitmap 数据转换属于可保留的数据检查，前提是不打开图片预览、不构造控件、不访问真实剪贴板。最终交付只报告约定范围内的非 UI 验证与评审问题处理结果，并列出 UI 排除项，不安排人工或解锁后补测。
 
 当前及后续原生桌面依赖的验证同样排除真实全局 hook、输入设备初始化、模拟按键和系统权限提示。mock 测试须覆盖初始化与释放边界，确保全程不调用真实桌面后端；不满足条件的检查直接列入 UI 范围排除，保留代码适配、编译及包内容检查。
+
+步骤 12c–12e 不调用真实 TaskDialog，不创建 UI Automation 客户端或初始化真实通知服务；步骤 14 的定时任务测试也必须隔离上述桌面操作。对应检查只验证编译、静态结构或 mock/纯逻辑路径，无法隔离的用例直接排除，不作为后续补测任务。每一步独立验证及 CI 提交 PR、监控问题的要求继续保留。
 
 ## 步骤 0：基线证据
 
@@ -615,3 +617,30 @@ NativeNotification 按平台提供 net8.0、net8.0-windows10.0.17763、net10.0-m
 本地 Core 386、Desktop NonUI 6 项通过，0 失败/跳过，报告 `/tmp/syncclipboard-stage12b-results/`；格式诊断修正后五项通知回归再次通过，报告 `/tmp/syncclipboard-stage12b-notification-final/`。完整格式检查退出 0，仅跨平台工作区加载警告；Windows/macOS 还原、工作流语法与 diff 检查通过。首次测试因沙箱命名管道权限失败，结束该尝试后在允许 MSBuild 的环境重跑通过，没有修改产品或降低测试要求。
 
 Core/Test/Desktop/WinUI/macOS 五份依赖图均未变化，报告 `/tmp/syncclipboard-stage12b-dependency-diff.json`。包审计增加各平台 NativeNotification 资产、Interface 及 Linux Tmds.DBus 的精确 NuGet 字节核对；前置阶段 Windows/Linux 产物已用于核定检查规则，缺失 Interface 的负例被拒绝，这些旧 head 结果不替代本步 PR 验证。CI 的 Core 最低数由 381 调整为 386，五份 TRX 预计合计 410；保留 45 组图片、七组 S3、55 个 artifact 和所有构建/打包矩阵。当前提交的完整 CI、产物和评审均待实际通过，尚不开始 12c。
+
+### 步骤 12b 最终 PR 与产物验证
+
+验证通过提交 `4574899507c94acdbe1e8372944c17d249ff8aa1`：[PR run 34785181519](https://github.com/Jeric-X/SyncClipboard/actions/runs/34785181519)、[push run 34785182015](https://github.com/Jeric-X/SyncClipboard/actions/runs/34785182015)、[CodeQL 34785181024](https://github.com/Jeric-X/SyncClipboard/actions/runs/34785181024) 与 CodeFactor 均成功，共 119 项 SUCCESS、8 项预期发布 SKIPPED。五份 TRX 共 410 项通过，0 失败/跳过；七 RID 共 45 组图片和七组 S3 检查通过。
+
+全部 55 个 artifact 与当前 run 清单一致，完整 38 个 Windows/Linux 组合（Windows 24、Linux 14）及六个 Linux 包元数据通过。各包 NativeNotification/Interface 与 Linux Tmds.DBus 的官方平台程序集字节一致，保留所有前置依赖核对；完整报告 `/tmp/syncclipboard-pr419-4574-package-audit.json`，SHA256 `957bb81db7662e9c5180ce3c15fc624f50d0eddf724daacac8b61cd936192554`。
+
+macOS NativeNotification.dll 经 SDK 的 managed-static registrar 重写，不能直接要求原始 NuGet 字节一致。已核对实际 26.5.10315 SDK 的 SelectRegistrar：Release macOS 默认使用此模式。只读 Cecil 元数据/IL 比较确认原有 16 类型、122 方法及字段、属性、事件和资源完全一致；差异仅为逐条审查过的七方法 ObjCRuntime.__Registrar__、注册该实例的模块初始化器，以及精确的 .NET 运行时/Microsoft.macOS 26.5 引用重定向。修改原有 IL、删方法、改注册器、增引用或资源的五种负例均被拒绝。Interface 原始字节一致，没有通过关闭注册器或改变发布行为来消除差异。
+
+双架构 macOS 最终包的上述程序集检查、严格签名、19 个 dylib 架构及前置依赖通过，挂载已卸载；报告 `/tmp/syncclipboard-pr419-4574-macos-x64-audit2.json` 与 `/tmp/syncclipboard-pr419-4574-macos-arm64-audit.json`。Server 与双架构容器各四轮 Production 启动、两轮 API 冒烟通过，本机下载产物复验相同。完整本地记录 `docs/ai_design/.local/PR-419-Artifacts-45748995.md`。
+
+Codex 于 `2026-09-13T22:00:02.885408Z` 完成本 head 评审，无新增意见；最终八个线程均已解决，行内反馈无变化，没有发送 GitHub 评论。步骤 12b 非 UI 验证通过，监控 pr419 已删除，允许开始 12c；未执行 UI 验证，后续升级仍未完成。
+
+## 步骤 12c：Vanara 版本与迁移范围
+
+2026-09-14 官方实时索引确认 ComCtl32、DbgHelp、Kernel32、User32 最新稳定版均为 5.0.7，四包由 4.0.1 配套升级；[NuGet 版本](https://www.nuget.org/packages/Vanara.PInvoke.User32/5.0.7)。升级前六份依赖图冻结于 `/private/tmp/syncclipboard-stage12c-baseline-assets/`。本项目实际引用仅在 WinUI3，涉及 TaskDialog 参数/内存、键码与热键及低层键盘 hook 签名、崩溃转储结构和调用。下一步核对 5.x 的 Shared/Core 合并、生成式 API 和结构布局，补齐可隔离的非 UI 验证，再提交当前步骤 PR；不显示对话框、不注册真实热键或 hook，不操作真实窗口/剪贴板。
+
+
+### 步骤 12c 实现与本地非 UI 验证
+
+已核对四包声明的精确源码提交 `f8473235041cce8e9c894dfb387e98dd9df789e9`。5.0.7 的 RegisterHotKey 使用 EnumRebase<VK, uint>，保留 uint 隐式转换；MiniDumpWriteDump 的 in 结构与可选参数仍接受现有调用；TaskDialogIndirect 和 hook 调用也通过隔离编译。无需为签名引入额外行为修改。WinUI3 及其测试依赖图从八个 4.0.1 包改为七个 5.0.7 包，Shared 合并入 Core；四份 Core/Test/Desktop/macOS 图不变，报告 `/tmp/syncclipboard-stage12c-dependency-diff.json`。
+
+WinUIGlobalDialog 增加内部可注入的原生调用委托，公开默认构造和实际 TaskDialogIndirect 调用保持原行为。新增 20 项 NonUI 用例：确认/取消返回值、Unicode 和多按钮原生内存载荷、单关闭按钮、HRESULT 失败与调用异常传播及配置字符串释放；左右修饰键/东亚别名、字母键和未知键转换；TaskDialog、minidump 结构布局以及合成键盘事件缓冲区解码。测试仅访问自有内存，原生对话框调用由委托替代，不构造控件、显示对话框、调用真实 hook 或查询桌面。Windows 最低通过数由 6 调整为 26，当前 CI 五份 TRX 预期共 430 项。
+
+本地 Core 386、Desktop NonUI 6 项通过，0 失败/跳过，报告 `/tmp/syncclipboard-stage12c-results/`；Windows/macOS 还原、工作流语法及完整格式检查通过，后者仅有跨平台工作区加载警告。隔离项目链接实际 WinUIGlobalDialog、KeyboardMap 及新增测试源码，并编译现有 minidump/hook/hotkey 调用，0 警告/错误；该证据不代表在 macOS 完成 WinUI3 全量构建或运行 Windows 测试。
+
+产物审计新增七个 Vanara 5.0.7 net10.0-windows7.0 程序集的精确官方字节及依赖图检查，拒绝残留 Shared 和非 Windows 包引入 Vanara；已用官方资产核定规则，缺文件、旧 Shared、错误字节和 Linux 混入四种负例均拒绝。当前 head 的 Windows 测试、全平台 CI、55 个产物与评审仍待通过，步骤 12c 尚未通过，不进入 12d。

@@ -53,7 +53,8 @@
 | Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | Q16 14.17.1；SystemDrawing 8.0.27，配套 Core 14.17.1 | 11 |
 | SharpHook | 5.2.3 | 8.0.0，配套 libuiohook 2.0.0；迁移 API 并保留现有 XRecord 行为 | 12a |
 | NativeNotification、NativeNotification.Interface | 1.0.5 | 2026-09-14 核定均已是最新稳定版，保留配套 1.0.5 并独立验证兼容性 | 12b |
-| Vanara.PInvoke 各包、Interop.UIAutomationClient、Toolkit.Uwp.Notifications | 见中央版本文件 | 分组核定兼容版本，不与热键迁移混做 | 12c–12e |
+| Vanara.PInvoke ComCtl32/DbgHelp/Kernel32/User32 | 4.0.1 | 配套 5.0.7，核对 Shared/Core 合并及生成式 API | 12c |
+| Interop.UIAutomationClient、Toolkit.Uwp.Notifications | 见中央版本文件 | 分组核定兼容版本，不与热键迁移混做 | 12d–12e |
 | CommunityToolkit.Mvvm、ObservableCollections | 8.4.0 / 3.3.4 | 分别核定稳定版本 | 13a–13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | 相同的稳定兼容版本 | 14 |
 | Swashbuckle.AspNetCore | 8.1.1 | 核定 ASP.NET Core 10 兼容版本 | 15 |
@@ -310,9 +311,9 @@ dotnet format --verify-no-changes --severity info --no-restore
 | --- | --- | --- |
 | 12a | SharpHook | 三平台编译、原生库包内容、键盘映射/修饰键纯逻辑和 mock 测试；R1/R2、全平台 PR，不注册真实热键或模拟输入 |
 | 12b | NativeNotification 与 Interface 配套 | 三平台编译、接口兼容及通知参数/回调逻辑的 mock 测试；R2、全平台 PR，不发送真实通知 |
-| 12c | Vanara.PInvoke 各模块配套 | 原生 API 签名、结构布局、资源打包及可隔离的错误处理测试；WinUI3/Core 非 UI 测试、Windows PR，不操作真实窗口/剪贴板 |
-| 12d | Interop.UIAutomationClient | COM 引用和调用签名编译兼容、窗口信息转换和降级分支的 mock 测试；Windows PR，不查询真实桌面元素 |
-| 12e | Microsoft.Toolkit.Uwp.Notifications | 通知载荷、激活参数解析测试及包内容检查；Windows PR，不发送通知或执行界面激活 |
+| 12c | Vanara.PInvoke 各模块配套 | 原生 API 签名、结构布局、资源打包及使用 mock 的错误处理测试；WinUI3/Core 非 UI 测试、Windows PR；不调用真实对话框、窗口、剪贴板、热键注册或键盘 hook |
+| 12d | Interop.UIAutomationClient | COM 引用和调用签名编译兼容、窗口信息转换和降级分支的 mock 测试；Windows PR；不创建真实 UI Automation 客户端、不查询桌面元素 |
+| 12e | Microsoft.Toolkit.Uwp.Notifications | 通知载荷、激活参数的纯解析测试及包内容检查；Windows PR；不初始化真实通知服务、不发送通知或执行界面激活 |
 
 每一行都必须单独通过第 4 节。废弃包没有直接升级路线时，先记录维护现状和迁移范围；需要替换技术方案的，等待明确决定，不借此引入未经评估的大重构。
 
@@ -328,7 +329,7 @@ dotnet format --verify-no-changes --severity info --no-restore
 
 **改动：** Quartz 与其 DI 扩展配套升级；核对注册方式、任务生命周期与取消行为，不改变产品调度策略。
 
-**验证：** DI 测试；查明实际注册的全部定时任务，验证启动、触发、关闭、取消、异常后的恢复以及重复注册；相关 PR 检查通过。
+**验证：** 非 UI DI 测试；查明实际注册的全部定时任务，通过隔离宿主和 mock 验证启动、触发、关闭、取消、异常后的恢复以及重复注册。任务中的界面、真实剪贴板、通知或输入操作不得实际执行；无法隔离的用例列为 UI 范围排除。相关 PR 检查通过。
 
 **通过条件：** 任务在原定时机执行，无重复执行、无法退出或后台异常。
 

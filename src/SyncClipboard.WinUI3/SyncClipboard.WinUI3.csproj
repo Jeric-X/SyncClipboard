@@ -204,4 +204,8 @@
     <Resource Include="Assets\upload017.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SyncClipboard.Test.WinUI3" />
+  </ItemGroup>
+
 </Project>
