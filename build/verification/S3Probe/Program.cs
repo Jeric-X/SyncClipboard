@@ -300,8 +300,10 @@ sealed class S3ProtocolProbe : IDisposable
         await File.WriteAllBytesAsync(source, bytes, token);
         HttpDownloadProgress lastUpload = default, lastDownload = default;
         ulong maximumUpload = 0;
+        var uploadRegressed = false;
         await adapter.UploadFileAsync(name, source, new InlineProgress(p =>
         {
+            uploadRegressed |= p.BytesReceived < lastUpload.BytesReceived;
             lastUpload = p;
             maximumUpload = Math.Max(maximumUpload, p.BytesReceived);
         }), token);
@@ -309,6 +311,7 @@ sealed class S3ProtocolProbe : IDisposable
         Require(Hash(bytes) == Hash(await File.ReadAllBytesAsync(destination, token)), "File bytes differ: " + name);
         Require(lastUpload.End && lastUpload.BytesReceived == (ulong)bytes.Length, "Upload completion progress differs.");
         Require(maximumUpload <= (ulong)bytes.Length, "Upload progress exceeds file length.");
+        Require(!uploadRegressed, "Upload progress decreased during signing or retry: " + name);
         Require(lastDownload.End && lastDownload.BytesReceived == (ulong)bytes.Length, "Download completion progress differs.");
         if (name == "retry-upload.bin")
         {

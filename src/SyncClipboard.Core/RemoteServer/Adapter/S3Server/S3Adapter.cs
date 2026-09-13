@@ -476,7 +476,9 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
             if (bytesRead > 0)
             {
                 // Signing and retries can rewind the source stream before reading it again.
-                _readBytes = _inner.CanSeek ? (ulong)_inner.Position : _readBytes + (ulong)bytesRead;
+                _readBytes = _totalBytes is { } totalBytes
+                    ? Math.Min(totalBytes, Math.Max(_readBytes, (ulong)_inner.Position))
+                    : _readBytes + (ulong)bytesRead;
                 _progress.Report(new HttpDownloadProgress
                 {
                     BytesReceived = _readBytes,

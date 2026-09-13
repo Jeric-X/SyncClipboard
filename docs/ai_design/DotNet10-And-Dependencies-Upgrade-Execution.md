@@ -493,3 +493,12 @@ SDK 默认重试模式改为 Standard；实测上限为 3 次总请求，原版�
 Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按最低 360 项复核通过；报告 `/private/tmp/syncclipboard-stage10-v4-results/`。WinUI3、WinUI3 测试及 macOS 还原成功，仓库格式检查退出 0，仅保留跨平台工作区加载警告；日志 `/tmp/syncclipboard-stage10-v4-format.log`。Windows 和其他架构的实际编译、374 项 CI MSTest、七组 CI S3 协议检查与完整产物矩阵仍须在当前提交的真实 PR 验证，不开始步骤 11。
 
 产物检查新增逐包核对 AWSSDK.S3/Core 的依赖版本和 net8.0 NuGet DLL 哈希：S3 为 `42776c7c8d2590279a5057894e56cf8d75475c29645017125f29eec88662a736`，Core 为 `222fced75324387f6b77acc00392a957aa916c3a3e87e6ac7c6b1814911c5232`。Windows/Linux 保留所有前置包检查，macOS 保留签名、资源、原生架构和前置依赖检查；不启动桌面应用。
+
+
+### PR 评审修复：源流回退时保持进度单调
+
+提交 `e7ed265d5d7f04332768e4939a7437e910613509` 的五份 TRX 共 374 项通过，七组 CI S3 检查与本地结果一致；双架构 macOS 和 Server/容器检查通过。但 [Codex 评审](https://github.com/Jeric-X/SyncClipboard/pull/419#discussion_r4000597648) 指出，直接使用流当前位置会在签名或重试回退后报告较小的进度，当前步骤因此未通过，不能开始步骤 11。
+
+在已有真实 MinIO 探针中新增连续进度不得下降的断言，旧实现于普通 2 MiB 文件上传即失败：`Upload progress decreased during signing or retry`，还未进入故障代理重试组。日志 `/tmp/syncclipboard-stage10-v4-regression-smoke.log`。修复为报告已读取位置的历史最大值，并以文件总长封顶；非可定位流保持累计读取语义。没有修改 UI 或以 UI 运行检查替代数据断言。
+
+修复后的七组完整 MinIO 检查通过，普通、空文件、大文件及重试传输同时满足进度单调、进度不超长、完成字节数和传输哈希要求；报告 `/tmp/syncclipboard-stage10-v4-monotonic-result.json`。Core 356、Desktop NonUI 4 项及格式检查再次通过，0 失败/跳过，报告 `/private/tmp/syncclipboard-stage10-v4-monotonic-results/`。本修复仍须新提交的 PR CI、完整产物与评审通过；先前 e7ed265d 的检查不能替代它。
