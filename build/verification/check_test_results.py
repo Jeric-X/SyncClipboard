@@ -2,7 +2,7 @@
 
 import argparse
 from pathlib import Path
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
         raise SystemExit(f"No TRX reports in {args.directory}")
     passed = 0
     for report in reports:
-        root = ET.parse(report).getroot()
+        root = ET.parse(report, forbid_dtd=True, forbid_entities=True, forbid_external=True).getroot()
         counters = root.find("{*}ResultSummary/{*}Counters")
         if counters is None:
             raise SystemExit(f"Missing test counters: {report}")

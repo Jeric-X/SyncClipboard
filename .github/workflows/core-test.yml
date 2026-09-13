@@ -27,6 +27,12 @@ jobs:
     - name: Run Core tests
       run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --logger trx --results-directory TestResults/core
 
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install verification dependencies
+      run: python -m pip install -r build/verification/requirements.txt
+
     - name: Verify Core test coverage
       run: python build/verification/check_test_results.py TestResults/core --minimum 346
 
@@ -55,6 +61,11 @@ jobs:
       run: dotnet --info
     - name: Test desktop services without UI
       run: dotnet test src/SyncClipboard.Test.Desktop -c Release --filter TestCategory=NonUI --logger trx --results-directory TestResults/desktop
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install verification dependencies
+      run: python -m pip install -r build/verification/requirements.txt
     - name: Verify non-UI test coverage
       run: python build/verification/check_test_results.py TestResults/desktop --minimum 4
     - name: Compile the alternative Windows entry point
@@ -86,6 +97,11 @@ jobs:
       run: msbuild src\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=false /v:m -restore
     - name: Test WinUI services without UI
       run: dotnet test src/SyncClipboard.Test.WinUI3 -c Release --no-build --no-restore -p:Platform=x64 -p:RuntimeIdentifier=win-x64 --filter TestCategory=NonUI --logger trx --results-directory TestResults/winui
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install verification dependencies
+      run: python -m pip install -r build/verification/requirements.txt
     - name: Verify non-UI test coverage
       run: python build/verification/check_test_results.py TestResults/winui --minimum 4
     - name: Upload test results
