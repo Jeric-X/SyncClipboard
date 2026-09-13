@@ -86,7 +86,8 @@ public abstract class Profile
     /// 验证并尝试准备完整的本地数据；没有可用数据时返回 false，默认保留原路径信息。
     /// </summary>
     /// <param name="clearInvalidLocalPaths">失败后是否清空无效的本地路径，供后续下载替换数据；不删除磁盘文件。</param>
-    public abstract Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default);
+    public abstract Task<bool> TryLocalize(
+        string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default);
     public abstract void CopyTo(Profile target);
 
     public abstract bool HasTransferData { get; }
@@ -94,16 +95,9 @@ public abstract class Profile
     /// 验证并准备传输文件，返回文件路径及对应的 SHA-256；无需传输文件时返回 null。
     /// </summary>
     public abstract Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token);
-    public abstract Task SetTransferData(
-        string path,
-        bool verify,
-        CancellationToken token);
+    public abstract Task SetTransferData(string path, bool verify, CancellationToken token);
 
-    public abstract Task SetTransferData(
-        string path,
-        string transferDataHash,
-        bool verify,
-        CancellationToken token);
+    public abstract Task SetTransferData(string path, string transferDataHash, bool verify, CancellationToken token);
 
     /// <summary>
     /// 绑定调用方已核对 SHA-256 的文件；verify 仅控制 Profile 语义验证。
@@ -113,16 +107,10 @@ public abstract class Profile
         return SetTransferData(file.Path, file.Hash, verify, token);
     }
 
-    public abstract Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        CancellationToken token);
+    public abstract Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token);
 
     public abstract Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        string transferDataHash,
-        CancellationToken token);
+        string persistentDir, string path, string transferDataHash, CancellationToken token);
 
     /// <summary>
     /// 验证 Profile 语义并移动调用方已核对 SHA-256 的文件。
@@ -139,9 +127,7 @@ public abstract class Profile
 
     protected async Task<bool> IsTransferDataValid(string? path, CancellationToken token)
     {
-        if (!Utility.IsValidSHA256(TransferDataHash) ||
-            string.IsNullOrEmpty(path) ||
-            !File.Exists(path))
+        if (!Utility.IsValidSHA256(TransferDataHash) || string.IsNullOrEmpty(path) || !File.Exists(path))
         {
             return false;
         }

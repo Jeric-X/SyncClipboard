@@ -254,8 +254,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
         catch (LocalProfileDataUnavailableException ex)
         {
-            throw new HistoryTransferDataException(
-                "Stored transfer data is invalid and cannot be regenerated.", ex);
+            throw new HistoryTransferDataException("Stored transfer data is invalid and cannot be regenerated.", ex);
         }
     }
 
@@ -450,8 +449,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 await transferFileStream.CopyToAsync(fs, token);
             }
 
-            var actualTransferDataHash = await Utility.VerifyFileSHA256(
-                filePath, declaredTransferDataHash, token);
+            var actualTransferDataHash = await Utility.VerifyFileSHA256(filePath, declaredTransferDataHash, token);
             await profile.SetTransferData(new FileHashInfo(filePath, actualTransferDataHash), true, token);
             actualTransferDataHash = profile.TransferDataHash
                 ?? throw new HistoryTransferDataException("Verified transfer data has no SHA-256 hash.");

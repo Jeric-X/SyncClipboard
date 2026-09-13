@@ -49,9 +49,7 @@ public class TextProfile : Profile
         Size = entity.Size;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
         TransferDataHash = Utility.NormalizeSHA256OrNull(
-            string.IsNullOrEmpty(entity.TransferDataFile)
-                ? null
-                : entity.TransferDataHash);
+            string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataHash);
     }
 
     public TextProfile(ProfileDto dto)
@@ -197,10 +195,8 @@ public class TextProfile : Profile
             return _fullText is not null || await IsLocalDataValid(true, token);
         }
 
-        if (_fullText is not null && string.Equals(
-                await Utility.CalculateSHA256(_fullText, token),
-                await GetHash(token),
-                StringComparison.OrdinalIgnoreCase))
+        if (_fullText is not null &&
+            string.Equals(await Utility.CalculateSHA256(_fullText, token), await GetHash(token), StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
@@ -229,7 +225,8 @@ public class TextProfile : Profile
         return false;
     }
 
-    public override async Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
+    public override async Task<bool> TryLocalize(
+        string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
         if (!await IsDataComplete(false, token))
         {
@@ -285,9 +282,7 @@ public class TextProfile : Profile
         _fullText = null;
     }
 
-    public override async Task<ProfilePersistentInfo> Persist(
-        string persistentDir,
-        CancellationToken token)
+    public override async Task<ProfilePersistentInfo> Persist(string persistentDir, CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
         if (HasTransferData && File.Exists(_transferDataPath))
@@ -329,9 +324,7 @@ public class TextProfile : Profile
     }
 
     private async Task<FileHashInfo> PrepareTransferFileAsync(
-        string persistentDir,
-        string expectedHash,
-        CancellationToken token)
+        string persistentDir, string expectedHash, CancellationToken token)
     {
         await WriteFullTextToFile(persistentDir, token);
         var path = GetAvailableTransferDataPath();
@@ -372,9 +365,7 @@ public class TextProfile : Profile
     }
 
     private static async Task<string> ValidateTransferDataHashAsync(
-        string path,
-        string expectedHash,
-        CancellationToken token)
+        string path, string expectedHash, CancellationToken token)
     {
         var actualHash = await Utility.CalculateFileSHA256(path, token);
         if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
@@ -393,10 +384,7 @@ public class TextProfile : Profile
                !token.IsCancellationRequested;
     }
 
-    public override async Task SetTransferData(
-        string path,
-        bool verify,
-        CancellationToken token)
+    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
         EnsureTransferDataExists(path);
         if (!verify)
@@ -406,23 +394,13 @@ public class TextProfile : Profile
             return;
         }
 
-        SetTransferDataWithHash(
-            path,
-            await Utility.CalculateFileSHA256(path, token),
-            verifyProfileSemantic: true);
+        SetTransferDataWithHash(path, await Utility.CalculateFileSHA256(path, token), verifyProfileSemantic: true);
     }
 
-    public override Task SetTransferData(
-        string path,
-        string transferDataHash,
-        bool verify,
-        CancellationToken token)
+    public override Task SetTransferData(string path, string transferDataHash, bool verify, CancellationToken token)
     {
         EnsureTransferDataExists(path);
-        SetTransferDataWithHash(
-            path,
-            Utility.NormalizeRequiredSHA256(transferDataHash),
-            verifyProfileSemantic: verify);
+        SetTransferDataWithHash(path, Utility.NormalizeRequiredSHA256(transferDataHash), verifyProfileSemantic: verify);
         return Task.CompletedTask;
     }
 
@@ -434,10 +412,7 @@ public class TextProfile : Profile
         }
     }
 
-    private void SetTransferDataWithHash(
-        string path,
-        string transferDataHash,
-        bool verifyProfileSemantic)
+    private void SetTransferDataWithHash(string path, string transferDataHash, bool verifyProfileSemantic)
     {
         if (verifyProfileSemantic &&
             Hash is not null &&
@@ -457,28 +432,19 @@ public class TextProfile : Profile
         _transferDataName = Path.GetFileName(path);
     }
 
-    public override Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        CancellationToken token)
+    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         return SetAndMoveTransferDataCore(persistentDir, path, null, token);
     }
 
     public override Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        string transferDataHash,
-        CancellationToken token)
+        string persistentDir, string path, string transferDataHash, CancellationToken token)
     {
         return SetAndMoveTransferDataCore(persistentDir, path, transferDataHash, token);
     }
 
     private async Task SetAndMoveTransferDataCore(
-        string persistentDir,
-        string path,
-        string? transferDataHash,
-        CancellationToken token)
+        string persistentDir, string path, string? transferDataHash, CancellationToken token)
     {
         if (transferDataHash is null)
         {

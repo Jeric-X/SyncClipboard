@@ -36,8 +36,7 @@ public static class Utility
 
     public static string NormalizeRequiredSHA256(string hash)
     {
-        return NormalizeSHA256(hash)
-            ?? throw new ArgumentException("SHA-256 hash cannot be empty.", nameof(hash));
+        return NormalizeSHA256(hash) ?? throw new ArgumentException("SHA-256 hash cannot be empty.", nameof(hash));
     }
 
     public static string? NormalizeSHA256OrNull(string? hash)

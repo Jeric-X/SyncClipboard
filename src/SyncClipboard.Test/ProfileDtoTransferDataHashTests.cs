@@ -120,10 +120,7 @@ public class ProfileDtoTransferDataHashTests
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
             Assert.IsFalse(await restored.IsTransferDataValid(token));
 
-            await restored.SetTransferData(
-                archivePath,
-                verify: true,
-                token);
+            await restored.SetTransferData(archivePath, verify: true, token);
             Assert.IsTrue(await restored.IsTransferDataValid(token));
         }
         finally
@@ -143,19 +140,14 @@ public class ProfileDtoTransferDataHashTests
             await File.WriteAllTextAsync(filePath, "group", token);
             var sourceProfile = new GroupProfile([filePath]);
             var archivePath = (await sourceProfile.PrepareTransferData(
-                Path.Combine(testDirectory, "persistent"),
-                token))?.Path;
+                Path.Combine(testDirectory, "persistent"), token))?.Path;
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
             var remoteProfile = Profile.Create(dto);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => remoteProfile.SetTransferData(
-                    archivePath,
-                    remoteProfile.TransferDataHash!,
-                    verify: true,
-                    token));
+                () => remoteProfile.SetTransferData(archivePath, remoteProfile.TransferDataHash!, verify: true, token));
         }
         finally
         {
@@ -174,25 +166,17 @@ public class ProfileDtoTransferDataHashTests
             await File.WriteAllTextAsync(filePath, "group", token);
             var sourceProfile = new GroupProfile([filePath]);
             var archivePath = (await sourceProfile.PrepareTransferData(
-                Path.Combine(testDirectory, "persistent"),
-                token))?.Path;
+                Path.Combine(testDirectory, "persistent"), token))?.Path;
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
             var officialProfile = Profile.Create(dto);
 
             var actualTransferDataHash = await Utility.VerifyFileSHA256(
-                archivePath,
-                officialProfile.TransferDataHash,
-                token);
-            await officialProfile.SetTransferData(
-                archivePath,
-                actualTransferDataHash,
-                verify: false,
-                token);
+                archivePath, officialProfile.TransferDataHash, token);
+            await officialProfile.SetTransferData(archivePath, actualTransferDataHash, verify: false, token);
             var persistentInfo = await officialProfile.Persist(
-                Path.Combine(testDirectory, "official-persistent"),
-                token);
+                Path.Combine(testDirectory, "official-persistent"), token);
             Assert.IsTrue(await officialProfile.IsTransferDataValid(token));
             Assert.AreEqual(dto.TransferDataHash, persistentInfo.TransferDataHash);
         }
@@ -213,21 +197,15 @@ public class ProfileDtoTransferDataHashTests
             await File.WriteAllTextAsync(filePath, "group", token);
             var sourceProfile = new GroupProfile([filePath]);
             var archivePath = (await sourceProfile.PrepareTransferData(
-                Path.Combine(testDirectory, "source-persistent"),
-                token))?.Path;
+                Path.Combine(testDirectory, "source-persistent"), token))?.Path;
             Assert.IsNotNull(archivePath);
             var dto = await sourceProfile.ToProfileDto(token);
             dto.Hash = new string('D', 64);
             var unverifiedProfile = Profile.Create(dto);
-            await unverifiedProfile.SetTransferData(
-                archivePath,
-                verify: false,
-                token);
+            await unverifiedProfile.SetTransferData(archivePath, verify: false, token);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => unverifiedProfile.Persist(
-                    Path.Combine(testDirectory, "unverified-persistent"),
-                    token));
+                () => unverifiedProfile.Persist(Path.Combine(testDirectory, "unverified-persistent"), token));
         }
         finally
         {
@@ -272,10 +250,7 @@ public class ProfileDtoTransferDataHashTests
             var remoteProfile = Profile.Create(dto);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => Utility.VerifyFileSHA256(
-                    filePath,
-                    remoteProfile.TransferDataHash,
-                    token));
+                () => Utility.VerifyFileSHA256(filePath, remoteProfile.TransferDataHash, token));
             Assert.IsFalse(await remoteProfile.IsTransferDataValid(token));
         }
         finally
@@ -299,10 +274,7 @@ public class ProfileDtoTransferDataHashTests
             var remoteProfile = Profile.Create(dto);
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => Utility.VerifyFileSHA256(
-                    transferPath,
-                    remoteProfile.TransferDataHash,
-                    token));
+                () => Utility.VerifyFileSHA256(transferPath, remoteProfile.TransferDataHash, token));
             Assert.IsFalse(await remoteProfile.IsTransferDataValid(token));
         }
         finally

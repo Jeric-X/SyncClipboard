@@ -9,9 +9,7 @@ public static class ProfileExtentions
     {
         var cacheManager = AppCore.Current.Services.GetRequiredService<LocalFileCacheManager>();
         var cachedFile = await cacheManager.GetCachedFileInfoAsync(
-            profile.Type.ToString(),
-            await profile.GetHash(token),
-            token);
+            profile.Type.ToString(), await profile.GetHash(token), token);
         if (cachedFile is not null)
         {
             await profile.SetTransferData(cachedFile, false, token);

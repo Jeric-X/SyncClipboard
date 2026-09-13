@@ -162,10 +162,7 @@ public class ProfileTransferValidationTests
 
             for (var index = 0; index < profiles.Length; index++)
             {
-                await profiles[index].SetTransferData(
-                    paths[index],
-                    verify: false,
-                    canceled.Token);
+                await profiles[index].SetTransferData(paths[index], verify: false, canceled.Token);
 
                 Assert.IsNull(profiles[index].TransferDataHash);
                 Assert.IsFalse(await profiles[index].IsTransferDataValid(token));
@@ -199,11 +196,7 @@ public class ProfileTransferValidationTests
             using var canceled = new CancellationTokenSource();
             await canceled.CancelAsync();
 
-            await profile.SetTransferData(
-                filePath,
-                declaredHash,
-                verify: true,
-                canceled.Token);
+            await profile.SetTransferData(filePath, declaredHash, verify: true, canceled.Token);
 
             Assert.AreEqual(declaredHash, profile.TransferDataHash);
             Assert.IsFalse(await profile.IsTransferDataValid(token));
@@ -224,14 +217,8 @@ public class ProfileTransferValidationTests
             var filePath = Path.Combine(testDirectory, "verified.bin");
             await File.WriteAllBytesAsync(filePath, [1, 2, 3], token);
             var sourceProfile = new FileProfile(filePath);
-            var profile = new FileProfile(
-                null,
-                Path.GetFileName(filePath),
-                await sourceProfile.GetHash(token));
-            await profile.SetTransferData(
-                filePath,
-                verify: true,
-                token);
+            var profile = new FileProfile(null, Path.GetFileName(filePath), await sourceProfile.GetHash(token));
+            await profile.SetTransferData(filePath, verify: true, token);
             await profile.GetSize(token);
             using var canceled = new CancellationTokenSource();
             await canceled.CancelAsync();

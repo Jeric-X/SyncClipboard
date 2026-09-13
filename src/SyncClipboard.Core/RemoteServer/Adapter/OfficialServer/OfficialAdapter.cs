@@ -347,9 +347,7 @@ public sealed class OfficialAdapter(
     }
 
     public async Task UploadHistoryAsync(
-        HistoryRecordDto dto,
-        FileHashInfo? file,
-        IProgress<HttpDownloadProgress>? progress = null,
+        HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -383,8 +381,7 @@ public sealed class OfficialAdapter(
                 ArgumentException.ThrowIfNullOrWhiteSpace(file.Path);
                 var normalizedTransferDataHash = Utility.NormalizeSHA256(file.Hash)
                     ?? throw new ArgumentException(
-                        "Transfer data hash is required when uploading history data.",
-                        nameof(file));
+                        "Transfer data hash is required when uploading history data.", nameof(file));
                 var stream = new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 HttpContent fileContent = progress is null
                     ? new StreamContent(stream)
@@ -392,9 +389,7 @@ public sealed class OfficialAdapter(
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
                 content.Add(fileContent, "data", Path.GetFileName(file.Path));
 
-                request.Headers.Add(
-                    HistoryTransferDataHeaders.TransferDataHash,
-                    normalizedTransferDataHash);
+                request.Headers.Add(HistoryTransferDataHeaders.TransferDataHash, normalizedTransferDataHash);
             }
 
             using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -408,9 +403,7 @@ public sealed class OfficialAdapter(
     }
 
     private static async Task EnsureHistoryUploadSucceeded(
-        HistoryRecordDto dto,
-        HttpResponseMessage response,
-        CancellationToken cancellationToken)
+        HistoryRecordDto dto, HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -444,24 +437,16 @@ public sealed class OfficialAdapter(
     }
 
     public async Task<string?> DownloadHistoryDataAsync(
-        string profileId,
-        string localPath,
-        IProgress<HttpDownloadProgress>? progress = null,
+        string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history/{HttpUtility.UrlEncode(profileId)}/data");
             using var response = await _httpClient.GetAsync(
-                url,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken);
+                url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
-            return await SaveHistoryDataResponseAsync(
-                response,
-                localPath,
-                progress,
-                cancellationToken);
+            return await SaveHistoryDataResponseAsync(response, localPath, progress, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -471,9 +456,7 @@ public sealed class OfficialAdapter(
     }
 
     internal static async Task<string?> SaveHistoryDataResponseAsync(
-        HttpResponseMessage response,
-        string localPath,
-        IProgress<HttpDownloadProgress>? progress,
+        HttpResponseMessage response, string localPath, IProgress<HttpDownloadProgress>? progress,
         CancellationToken cancellationToken)
     {
         var temporaryPath = $"{localPath}.{Guid.NewGuid():N}.download";
@@ -497,12 +480,7 @@ public sealed class OfficialAdapter(
                 : IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
             await using (var fileStream = new FileStream(
-                temporaryPath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.None,
-                DownloadBufferSize,
-                useAsync: true))
+                temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, DownloadBufferSize, useAsync: true))
             {
                 var buffer = new byte[DownloadBufferSize];
                 int bytesRead;
@@ -544,9 +522,7 @@ public sealed class OfficialAdapter(
 
     private static string? ReadTransferDataHash(HttpResponseMessage response)
     {
-        if (!response.Headers.TryGetValues(
-                HistoryTransferDataHeaders.TransferDataHash,
-                out var values))
+        if (!response.Headers.TryGetValues(HistoryTransferDataHeaders.TransferDataHash, out var values))
         {
             return null;
         }

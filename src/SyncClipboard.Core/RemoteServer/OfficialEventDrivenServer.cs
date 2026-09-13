@@ -230,7 +230,9 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.GetHistoryAsync(page, before, after, modifiedAfter, types, searchText, starred, sortByLastAccessed);
     }
 
-    public Task<string?> DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public Task<string?> DownloadHistoryDataAsync(
+        string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
@@ -249,20 +251,14 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
     }
 
     public Task UploadHistoryAsync(
-        HistoryRecordDto dto,
-        FileHashInfo? file,
-        IProgress<HttpDownloadProgress>? progress = null,
+        HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
-        return syncServer.UploadHistoryAsync(
-            dto,
-            file,
-            progress,
-            cancellationToken);
+        return syncServer.UploadHistoryAsync(dto, file, progress, cancellationToken);
     }
 
     public Task<DateTimeOffset> GetServerTimeAsync(CancellationToken cancellationToken = default)

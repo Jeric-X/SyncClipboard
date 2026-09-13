@@ -42,8 +42,7 @@ public class DelegateExtentionTests
         try
         {
             var observedTask = DelegateExtention.SafeFireAndForgetCoreAsync(
-                () => completion.Task,
-                timeout: TimeSpan.FromMilliseconds(50));
+                () => completion.Task, timeout: TimeSpan.FromMilliseconds(50));
 
             await observedTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
 

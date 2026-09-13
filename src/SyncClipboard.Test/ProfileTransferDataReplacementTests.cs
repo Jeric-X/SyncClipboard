@@ -162,7 +162,8 @@ public class ProfileTransferDataReplacementTests
         return (profile, targetPath);
     }
 
-    private static async Task SetAndMove(Profile profile, string persistentDir, string path, bool suppliedHash, CancellationToken token)
+    private static async Task SetAndMove(
+        Profile profile, string persistentDir, string path, bool suppliedHash, CancellationToken token)
     {
         if (suppliedHash)
         {

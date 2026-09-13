@@ -275,9 +275,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
-        if (!entity.IsLocalFileReady &&
-            entity.TransferDataFile is null &&
-            entity.TransferDataHash is null)
+        if (!entity.IsLocalFileReady && entity.TransferDataFile is null && entity.TransferDataHash is null)
         {
             return;
         }

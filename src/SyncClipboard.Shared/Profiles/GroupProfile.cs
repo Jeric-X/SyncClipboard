@@ -43,10 +43,7 @@ public class GroupProfile : Profile
     }
 
     public GroupProfile(
-        IEnumerable<string> files,
-        string hash,
-        string? dataPath = null,
-        string? transferDataHash = null)
+        IEnumerable<string> files, string hash, string? dataPath = null, string? transferDataHash = null)
     {
         _files = [.. files];
         _fileNames = GetFileNames(_files);
@@ -324,9 +321,7 @@ public class GroupProfile : Profile
     }
 
     private async Task<bool> CanReuseTransferArchiveAsync(
-        string archivePath,
-        string expectedHash,
-        CancellationToken token)
+        string archivePath, string expectedHash, CancellationToken token)
     {
         try
         {
@@ -690,10 +685,7 @@ public class GroupProfile : Profile
     }
 
     private async Task<(string[] Files, string? ProfileHash, long? Size)> ExtractTransferData(
-        string extractDir,
-        string path,
-        bool verifyProfileHash,
-        CancellationToken token)
+        string extractDir, string path, bool verifyProfileHash, CancellationToken token)
     {
         await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
@@ -720,10 +712,7 @@ public class GroupProfile : Profile
         return (topLevelFiles, profileHash, size);
     }
 
-    public override async Task SetTransferData(
-        string path,
-        bool verify,
-        CancellationToken token)
+    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
         var extractDir = ValidateTransferDataPath(path);
         if (!verify)
@@ -735,18 +724,12 @@ public class GroupProfile : Profile
         }
 
         await ExtractAndSetTransferData(
-            path,
-            extractDir,
-            await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false),
-            verifyProfileHash: true,
-            token);
+            path, extractDir, await Utility.CalculateFileSHA256(path, token).ConfigureAwait(false),
+            verifyProfileHash: true, token);
     }
 
     public override async Task SetTransferData(
-        string path,
-        string transferDataHash,
-        bool verify,
-        CancellationToken token)
+        string path, string transferDataHash, bool verify, CancellationToken token)
     {
         var extractDir = ValidateTransferDataPath(path);
         var normalizedTransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
@@ -757,12 +740,7 @@ public class GroupProfile : Profile
             return;
         }
 
-        await ExtractAndSetTransferData(
-            path,
-            extractDir,
-            normalizedTransferDataHash,
-            verifyProfileHash: true,
-            token);
+        await ExtractAndSetTransferData(path, extractDir, normalizedTransferDataHash, verifyProfileHash: true, token);
     }
 
     private static string ValidateTransferDataPath(string path)
@@ -786,10 +764,7 @@ public class GroupProfile : Profile
         }
 
         var extractDir = Path.GetFullPath(Path.Combine(archiveDirectory, archiveStem));
-        if (!string.Equals(
-            Path.GetDirectoryName(extractDir),
-            archiveDirectory,
-            StringComparison.Ordinal))
+        if (!string.Equals(Path.GetDirectoryName(extractDir), archiveDirectory, StringComparison.Ordinal))
         {
             throw new InvalidDataException($"Zip extraction directory must be a child of its archive directory: {path}");
         }
@@ -798,34 +773,17 @@ public class GroupProfile : Profile
     }
 
     private async Task ExtractAndSetTransferData(
-        string path,
-        string extractDir,
-        string? transferDataHash,
-        bool verifyProfileHash,
-        CancellationToken token)
+        string path, string extractDir, string? transferDataHash, bool verifyProfileHash, CancellationToken token)
     {
         var temporaryExtractDir = $"{extractDir}.{Guid.NewGuid():N}.tmp";
         Directory.CreateDirectory(temporaryExtractDir);
 
         try
         {
-            var extractedData = await ExtractTransferData(
-                temporaryExtractDir,
-                path,
-                verifyProfileHash,
-                token);
-            var ownershipMarker = CreateExtractionOwnershipMarker(
-                extractedData.ProfileHash ?? Hash,
-                transferDataHash);
-            await WriteExtractionOwnershipMarker(
-                temporaryExtractDir,
-                ownershipMarker,
-                token);
-            _files = CommitExtractionDirectory(
-                temporaryExtractDir,
-                extractDir,
-                extractedData.Files,
-                ownershipMarker);
+            var extractedData = await ExtractTransferData(temporaryExtractDir, path, verifyProfileHash, token);
+            var ownershipMarker = CreateExtractionOwnershipMarker(extractedData.ProfileHash ?? Hash, transferDataHash);
+            await WriteExtractionOwnershipMarker(temporaryExtractDir, ownershipMarker, token);
+            _files = CommitExtractionDirectory(temporaryExtractDir, extractDir, extractedData.Files, ownershipMarker);
             if (_fileNames.Length == 0)
             {
                 _fileNames = GetFileNames(_files);
@@ -857,10 +815,7 @@ public class GroupProfile : Profile
     }
 
     private string[] CommitExtractionDirectory(
-        string temporaryExtractDir,
-        string extractDir,
-        string[] extractedFiles,
-        string ownershipMarker)
+        string temporaryExtractDir, string extractDir, string[] extractedFiles, string ownershipMarker)
     {
         if (!Directory.Exists(extractDir))
         {
@@ -907,8 +862,7 @@ public class GroupProfile : Profile
         var markerPath = Path.Combine(extractDir, ExtractionOwnershipFileName);
         try
         {
-            return File.Exists(markerPath) &&
-                HasSameExtractionOwner(File.ReadAllText(markerPath), ownershipMarker);
+            return File.Exists(markerPath) && HasSameExtractionOwner(File.ReadAllText(markerPath), ownershipMarker);
         }
         catch
         {
@@ -916,32 +870,23 @@ public class GroupProfile : Profile
         }
     }
 
-    private static bool HasSameExtractionOwner(
-        string existingMarker,
-        string expectedMarker)
+    private static bool HasSameExtractionOwner(string existingMarker, string expectedMarker)
     {
         var existingParts = existingMarker.Split('\n');
         var expectedParts = expectedMarker.Split('\n');
         return existingParts is ["1", var existingProfileHash, _] &&
             expectedParts is ["1", var expectedProfileHash, _] &&
             !string.IsNullOrEmpty(expectedProfileHash) &&
-            string.Equals(
-                existingProfileHash,
-                expectedProfileHash,
-                StringComparison.OrdinalIgnoreCase);
+            string.Equals(existingProfileHash, expectedProfileHash, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string CreateExtractionOwnershipMarker(
-        string? profileHash,
-        string? transferDataHash)
+    private static string CreateExtractionOwnershipMarker(string? profileHash, string? transferDataHash)
     {
         return $"1\n{profileHash?.ToUpperInvariant()}\n{transferDataHash?.ToUpperInvariant()}";
     }
 
     private static async Task WriteExtractionOwnershipMarker(
-        string extractDir,
-        string ownershipMarker,
-        CancellationToken token)
+        string extractDir, string ownershipMarker, CancellationToken token)
     {
         var markerPath = Path.Combine(extractDir, ExtractionOwnershipFileName);
         if (File.Exists(markerPath) || Directory.Exists(markerPath))
@@ -953,10 +898,7 @@ public class GroupProfile : Profile
         await File.WriteAllTextAsync(markerPath, ownershipMarker, token).ConfigureAwait(false);
     }
 
-    private static string[] RemapExtractedFiles(
-        string[] extractedFiles,
-        string sourceDirectory,
-        string targetDirectory)
+    private static string[] RemapExtractedFiles(string[] extractedFiles, string sourceDirectory, string targetDirectory)
     {
         return extractedFiles
             .Select(file => Path.Combine(targetDirectory, Path.GetRelativePath(sourceDirectory, file)))
@@ -973,28 +915,19 @@ public class GroupProfile : Profile
         { }
     }
 
-    public override Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        CancellationToken token)
+    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         return SetAndMoveTransferDataCore(persistentDir, path, null, token);
     }
 
     public override Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        string transferDataHash,
-        CancellationToken token)
+        string persistentDir, string path, string transferDataHash, CancellationToken token)
     {
         return SetAndMoveTransferDataCore(persistentDir, path, transferDataHash, token);
     }
 
     private async Task SetAndMoveTransferDataCore(
-        string persistentDir,
-        string path,
-        string? transferDataHash,
-        CancellationToken token)
+        string persistentDir, string path, string? transferDataHash, CancellationToken token)
     {
         if (transferDataHash is null)
         {
@@ -1015,10 +948,7 @@ public class GroupProfile : Profile
 
         var targetPath = Path.Combine(workingDir, _transferDataName!);
         _files = CommitExtractionDirectory(
-            path[..^4],
-            targetPath[..^4],
-            _files!,
-            CreateExtractionOwnershipMarker(Hash, TransferDataHash));
+            path[..^4], targetPath[..^4], _files!, CreateExtractionOwnershipMarker(Hash, TransferDataHash));
         File.Move(path, targetPath, true);
         _transferDataPath = targetPath;
     }
@@ -1058,7 +988,8 @@ public class GroupProfile : Profile
         return IsTransferDataValid(_transferDataPath, token);
     }
 
-    public override async Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
+    public override async Task<bool> TryLocalize(
+        string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
         if (await IsLocalDataValid(false, token))
         {
@@ -1076,17 +1007,14 @@ public class GroupProfile : Profile
 
         var path = _transferDataPath!;
         await ExtractAndSetTransferData(
-            path,
-            ValidateTransferDataPath(path),
-            TransferDataHash,
-            verifyProfileHash: false,
-            token);
+            path, ValidateTransferDataPath(path), TransferDataHash, verifyProfileHash: false, token);
         return true;
     }
 
     public override string GetTransferDataSavePath(string persistentDir)
     {
-        return Path.Combine(QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty), _transferDataName ?? CreateNewDataFileName());
+        return Path.Combine(
+            QueryGetWorkingDir(persistentDir, Type, Hash ?? string.Empty), _transferDataName ?? CreateNewDataFileName());
     }
 
     public override async Task<bool> IsDataComplete(bool quick, CancellationToken token)
@@ -1110,10 +1038,7 @@ public class GroupProfile : Profile
                 return await IsTransferDataValid(token);
             }
 
-            await VerifyExistingTransferArchiveAsync(
-                transferDataPath,
-                await GetHash(token),
-                token);
+            await VerifyExistingTransferArchiveAsync(transferDataPath, await GetHash(token), token);
             TransferDataHash = Utility.NormalizeRequiredSHA256(
                 await Utility.CalculateFileSHA256(transferDataPath, token));
             return true;
@@ -1155,16 +1080,11 @@ public class GroupProfile : Profile
 
         if (!Utility.IsValidSHA256(TransferDataHash))
         {
-            await SetTransferData(
-                _transferDataPath,
-                verify: true,
-                token);
+            await SetTransferData(_transferDataPath, verify: true, token);
         }
     }
 
-    private async Task<ProfilePersistentInfo> CreatePersistentInfo(
-        string workingDir,
-        CancellationToken token)
+    private async Task<ProfilePersistentInfo> CreatePersistentInfo(string workingDir, CancellationToken token)
     {
         return new ProfilePersistentInfo
         {
@@ -1309,16 +1229,11 @@ public class GroupProfile : Profile
 
     public override async Task<ProfileLocalInfo> Localize(string localDir, CancellationToken token)
     {
-        if (!await IsLocalDataValid(true, token) &&
-            _transferDataPath is not null &&
-            File.Exists(_transferDataPath))
+        if (!await IsLocalDataValid(true, token) && _transferDataPath is not null && File.Exists(_transferDataPath))
         {
             await ExtractAndSetTransferData(
-                _transferDataPath,
-                ValidateTransferDataPath(_transferDataPath),
-                TransferDataHash,
-                verifyProfileHash: false,
-                token);
+                _transferDataPath, ValidateTransferDataPath(_transferDataPath), TransferDataHash,
+                verifyProfileHash: false, token);
         }
         ArgumentNullException.ThrowIfNull(_files);
 

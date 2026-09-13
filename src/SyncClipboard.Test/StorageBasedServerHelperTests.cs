@@ -93,8 +93,7 @@ public class StorageBasedServerHelperTests
             Assert.AreEqual(1, adapter.SetProfileCount);
             Assert.IsFalse(string.IsNullOrEmpty(adapter.CurrentProfile?.Hash));
             Assert.AreEqual(
-                await Utility.CalculateFileSHA256(remoteFile, token),
-                adapter.CurrentProfile?.TransferDataHash);
+                await Utility.CalculateFileSHA256(remoteFile, token), adapter.CurrentProfile?.TransferDataHash);
         }
         finally
         {
@@ -246,8 +245,7 @@ public class StorageBasedServerHelperTests
             await File.WriteAllTextAsync(sourceFile, "group content", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var remoteFile = (await sourceProfile.PrepareTransferData(
-                Path.Combine(testDirectory, "remote-cache"),
-                token))?.Path;
+                Path.Combine(testDirectory, "remote-cache"), token))?.Path;
             Assert.IsNotNull(remoteFile);
             var expectedTransferDataHash = sourceProfile.TransferDataHash;
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with
@@ -257,9 +255,7 @@ public class StorageBasedServerHelperTests
             var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
             var helper = CreateHelper(Path.Combine(testDirectory, "download"), adapter);
 
-            await helper.DownloadProfileDataAsync(
-                Profile.Create(remoteProfile),
-                cancellationToken: token);
+            await helper.DownloadProfileDataAsync(Profile.Create(remoteProfile), cancellationToken: token);
 
             Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
             Assert.AreEqual(1, adapter.SetProfileCount);
@@ -284,8 +280,7 @@ public class StorageBasedServerHelperTests
             await File.WriteAllTextAsync(sourceFile, "group content", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var remoteFile = (await sourceProfile.PrepareTransferData(
-                Path.Combine(testDirectory, "remote-cache"),
-                token))?.Path;
+                Path.Combine(testDirectory, "remote-cache"), token))?.Path;
             Assert.IsNotNull(remoteFile);
             var expectedTransferDataHash = sourceProfile.TransferDataHash;
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with
@@ -295,9 +290,7 @@ public class StorageBasedServerHelperTests
             var adapter = new TestStorageAdapter(remoteFile, remoteProfile);
             var helper = CreateHelper(Path.Combine(testDirectory, "download"), adapter);
 
-            await helper.DownloadProfileDataAsync(
-                Profile.Create(remoteProfile),
-                cancellationToken: token);
+            await helper.DownloadProfileDataAsync(Profile.Create(remoteProfile), cancellationToken: token);
 
             Assert.AreEqual(1, adapter.ConditionalSetAttemptCount);
             Assert.AreEqual(1, adapter.SetProfileCount);
@@ -438,8 +431,7 @@ public class StorageBasedServerHelperTests
             await File.WriteAllTextAsync(sourceFile, "group content", token);
             var sourceProfile = new GroupProfile([sourceFile]);
             var remoteFile = (await sourceProfile.PrepareTransferData(
-                Path.Combine(testDirectory, "remote-cache"),
-                token))?.Path;
+                Path.Combine(testDirectory, "remote-cache"), token))?.Path;
             Assert.IsNotNull(remoteFile);
             var remoteProfile = (await sourceProfile.ToProfileDto(token)) with { Hash = string.Empty };
             var adapter = new TestStorageAdapter(remoteFile, remoteProfile);

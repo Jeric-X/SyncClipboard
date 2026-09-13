@@ -24,9 +24,7 @@ public class GroupProfileFileNamesTests
             await File.WriteAllTextAsync(filePath, "content", token);
             Directory.CreateDirectory(folderPath);
             string[] paths = [filePath, folderPath + Path.DirectorySeparatorChar];
-            var profile = knownHash
-                ? new GroupProfile(paths, new string('A', 64))
-                : new GroupProfile(paths);
+            var profile = knownHash ? new GroupProfile(paths, new string('A', 64)) : new GroupProfile(paths);
 
             var info = await profile.Persist(directory, token);
 

@@ -6,18 +6,13 @@ public static class DelegateExtention
     /// 发起异步操作并记录异常，默认最多等待五分钟，调用方无需等待。
     /// 超时仅停止等待，不取消底层操作。
     /// </summary>
-    public static void SafeFireAndForget(
-        this Func<Task> action,
-        string? logTag = null,
-        TimeSpan? timeout = null)
+    public static void SafeFireAndForget(this Func<Task> action, string? logTag = null, TimeSpan? timeout = null)
     {
         _ = SafeFireAndForgetCoreAsync(action, logTag, timeout);
     }
 
     internal static async Task SafeFireAndForgetCoreAsync(
-        Func<Task> action,
-        string? logTag = null,
-        TimeSpan? timeout = null)
+        Func<Task> action, string? logTag = null, TimeSpan? timeout = null)
     {
         try
         {

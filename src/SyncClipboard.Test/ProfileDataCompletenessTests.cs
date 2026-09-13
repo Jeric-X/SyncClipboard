@@ -18,10 +18,7 @@ public class ProfileDataCompletenessTests
     [DataRow("missing", "modified", false, false)]
     [DataRow("missing", "missing", true, false)]
     public async Task Group_AnyCompleteRepresentationIsEnough(
-        string sourceState,
-        string archiveState,
-        bool hasTransferHash,
-        bool expectedComplete)
+        string sourceState, string archiveState, bool hasTransferHash, bool expectedComplete)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();

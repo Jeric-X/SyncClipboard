@@ -48,13 +48,9 @@ internal class StorageBasedServerHelper(IServiceProvider sp, IServerAdapter serv
             var fileName = Path.GetFileName(dataPath);
             await _serverAdapter.DownloadFileAsync(fileName, dataPath, progress, cancellationToken);
             var transferDataHash = await Utility.VerifyFileSHA256(
-                dataPath,
-                profile.TransferDataHash,
-                cancellationToken);
+                dataPath, profile.TransferDataHash, cancellationToken);
             await profile.SetAndMoveTransferData(
-                persistentDir,
-                new FileHashInfo(dataPath, transferDataHash),
-                cancellationToken);
+                persistentDir, new FileHashInfo(dataPath, transferDataHash), cancellationToken);
             if (shouldFillBack)
             {
                 await FillBackRemoteProfile(profile, cancellationToken);

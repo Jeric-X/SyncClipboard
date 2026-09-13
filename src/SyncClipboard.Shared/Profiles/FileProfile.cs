@@ -27,9 +27,7 @@ public class FileProfile : Profile
         FileName = entity.Text;
         Hash = string.IsNullOrEmpty(entity.Hash) ? null : entity.Hash;
         TransferDataHash = Utility.NormalizeSHA256OrNull(
-            string.IsNullOrEmpty(entity.TransferDataFile)
-                ? null
-                : entity.TransferDataHash);
+            string.IsNullOrEmpty(entity.TransferDataFile) ? null : entity.TransferDataHash);
     }
 
     public FileProfile(string? fullPath, string? fileName = null, string? hash = null)
@@ -112,8 +110,7 @@ public class FileProfile : Profile
     }
 
     private protected async static Task<(string ProfileHash, string TransferDataHash)> GetHashesFromFile(
-        string filePath,
-        CancellationToken token)
+        string filePath, CancellationToken token)
     {
         var contentSha256Hex = await Utility.CalculateFileSHA256(filePath, token);
         var fileName = Path.GetFileName(filePath);
@@ -158,10 +155,7 @@ public class FileProfile : Profile
         return hashes.TransferDataHash;
     }
 
-    public override async Task SetTransferData(
-        string path,
-        bool verify,
-        CancellationToken token)
+    public override async Task SetTransferData(string path, bool verify, CancellationToken token)
     {
         EnsureTransferDataExists(path);
         if (!verify)
@@ -171,17 +165,11 @@ public class FileProfile : Profile
             return;
         }
 
-        SetTransferDataWithHash(
-            path,
-            await GetHashesFromFile(path, token),
-            verifyProfileSemantic: true);
+        SetTransferDataWithHash(path, await GetHashesFromFile(path, token), verifyProfileSemantic: true);
     }
 
     public override async Task SetTransferData(
-        string path,
-        string transferDataHash,
-        bool verify,
-        CancellationToken token)
+        string path, string transferDataHash, bool verify, CancellationToken token)
     {
         EnsureTransferDataExists(path);
         var normalizedTransferDataHash = Utility.NormalizeRequiredSHA256(transferDataHash);
@@ -202,9 +190,7 @@ public class FileProfile : Profile
     }
 
     private void SetTransferDataWithHash(
-        string path,
-        (string ProfileHash, string TransferDataHash) hashes,
-        bool verifyProfileSemantic)
+        string path, (string ProfileHash, string TransferDataHash) hashes, bool verifyProfileSemantic)
     {
         if (verifyProfileSemantic &&
             Hash is not null &&
@@ -224,28 +210,19 @@ public class FileProfile : Profile
         FileName = Path.GetFileName(path);
     }
 
-    public override Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        CancellationToken token)
+    public override Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token)
     {
         return SetAndMoveTransferDataCore(persistentDir, path, null, token);
     }
 
     public override Task SetAndMoveTransferData(
-        string persistentDir,
-        string path,
-        string transferDataHash,
-        CancellationToken token)
+        string persistentDir, string path, string transferDataHash, CancellationToken token)
     {
         return SetAndMoveTransferDataCore(persistentDir, path, transferDataHash, token);
     }
 
     private async Task SetAndMoveTransferDataCore(
-        string persistentDir,
-        string path,
-        string? transferDataHash,
-        CancellationToken token)
+        string persistentDir, string path, string? transferDataHash, CancellationToken token)
     {
         if (transferDataHash is null)
         {
@@ -317,7 +294,8 @@ public class FileProfile : Profile
         return IsLocalDataValid(quick, token);
     }
 
-    public override async Task<bool> TryLocalize(string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
+    public override async Task<bool> TryLocalize(
+        string localDir, bool clearInvalidLocalPaths = false, CancellationToken token = default)
     {
         var valid = await IsLocalDataValid(false, token);
         if (!valid && clearInvalidLocalPaths && !token.IsCancellationRequested)

@@ -102,10 +102,7 @@ public sealed class LocalFileCacheManager : IDisposable
         return (await GetCachedFileInfoAsync(cacheType, id, token))?.Path;
     }
 
-    internal async Task<FileHashInfo?> GetCachedFileInfoAsync(
-        string cacheType,
-        string id,
-        CancellationToken token)
+    internal async Task<FileHashInfo?> GetCachedFileInfoAsync(string cacheType, string id, CancellationToken token)
     {
         await _semaphore.WaitAsync(token);
         try
@@ -153,7 +150,8 @@ public sealed class LocalFileCacheManager : IDisposable
         return SaveCacheEntryAsync(cacheType, id, filePath, null, token);
     }
 
-    public Task SaveCacheEntryAsync(string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
+    public Task SaveCacheEntryAsync(
+        string cacheType, string id, string filePath, object? metadata = null, CancellationToken token = default)
     {
         return SaveCacheEntryCoreAsync(cacheType, id, filePath, null, metadata, token);
     }
@@ -166,12 +164,14 @@ public sealed class LocalFileCacheManager : IDisposable
     /// <summary>
     /// 保存已由调用方确认的文件及 SHA-256，不重复读取文件计算 hash。
     /// </summary>
-    public Task SaveCacheEntryAsync(string cacheType, string id, FileHashInfo file, object? metadata = null, CancellationToken token = default)
+    public Task SaveCacheEntryAsync(
+        string cacheType, string id, FileHashInfo file, object? metadata = null, CancellationToken token = default)
     {
         return SaveCacheEntryCoreAsync(cacheType, id, file.Path, Utility.NormalizeRequiredSHA256(file.Hash), metadata, token);
     }
 
-    private async Task SaveCacheEntryCoreAsync(string cacheType, string id, string filePath, string? fileHash, object? metadata, CancellationToken token)
+    private async Task SaveCacheEntryCoreAsync(
+        string cacheType, string id, string filePath, string? fileHash, object? metadata, CancellationToken token)
     {
         await _semaphore.WaitAsync(token);
         try
@@ -183,8 +183,7 @@ public sealed class LocalFileCacheManager : IDisposable
             var entry = await dbContext.CacheEntries
                 .FirstOrDefaultAsync(e => e.Id == id && e.CacheType == cacheType, token);
 
-            var cachedFileHash = fileHash ?? Convert.ToHexString(
-                await CalculateFileHashAsync(filePath, token));
+            var cachedFileHash = fileHash ?? Convert.ToHexString(await CalculateFileHashAsync(filePath, token));
             if (entry == null)
             {
                 entry = new LocalFileCacheEntry
@@ -328,9 +327,7 @@ public sealed class LocalFileCacheManager : IDisposable
         }
     }
 
-    private static async Task<string?> GetValidatedFileHashAsync(
-        LocalFileCacheEntry entry,
-        CancellationToken token)
+    private static async Task<string?> GetValidatedFileHashAsync(LocalFileCacheEntry entry, CancellationToken token)
     {
         try
         {

@@ -40,7 +40,9 @@ public interface IOfficialSyncServer
     /// The SHA-256 hash verified against the downloaded response body, or <see langword="null"/>
     /// when a legacy server does not provide one.
     /// </returns>
-    Task<string?> DownloadHistoryDataAsync(string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null, CancellationToken cancellationToken = default);
+    Task<string?> DownloadHistoryDataAsync(
+        string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update history record to server with optimistic concurrency.
@@ -56,9 +58,7 @@ public interface IOfficialSyncServer
     /// 服务器已存在记录或拒绝传输数据时抛出对应异常。
     /// </summary>
     Task UploadHistoryAsync(
-        HistoryRecordDto dto,
-        FileHashInfo? file,
-        IProgress<HttpDownloadProgress>? progress = null,
+        HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

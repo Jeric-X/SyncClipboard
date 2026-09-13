@@ -58,10 +58,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         string? path;
         try
         {
-            var transferData = await _historyService.GetTransferDataByProfileId(
-                HARD_CODED_USER_ID,
-                profileId,
-                token);
+            var transferData = await _historyService.GetTransferDataByProfileId(HARD_CODED_USER_ID, profileId, token);
             if (transferData is null)
             {
                 return NotFound();
@@ -176,11 +173,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             }
 
             var serverDto = await _historyService.AddRecordDto(
-                HARD_CODED_USER_ID,
-                dto,
-                declaredTransferDataHash,
-                fileStream,
-                token);
+                HARD_CODED_USER_ID, dto, declaredTransferDataHash, fileStream, token);
             return Ok(serverDto);
         }
         catch (ArgumentException ex)
@@ -232,9 +225,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
     private string? GetDeclaredTransferDataHash()
     {
-        if (!Request.Headers.TryGetValue(
-                HistoryTransferDataHeaders.TransferDataHash,
-                out var values))
+        if (!Request.Headers.TryGetValue(HistoryTransferDataHeaders.TransferDataHash, out var values))
         {
             return null;
         }

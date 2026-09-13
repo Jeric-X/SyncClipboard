@@ -84,9 +84,7 @@ public static class MapperExtensions
             Size = entity.Size,
             Version = entity.Version,
             IsDeleted = entity.IsDeleted,
-            HasData = !entity.IsLocalFileReady ||
-                entity.FilePath.Length > 0 ||
-                entity.TransferDataFile is not null
+            HasData = !entity.IsLocalFileReady || entity.FilePath.Length > 0 || entity.TransferDataFile is not null
         };
     }
 

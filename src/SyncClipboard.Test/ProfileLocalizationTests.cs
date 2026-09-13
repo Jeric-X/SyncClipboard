@@ -96,8 +96,7 @@ public class ProfileLocalizationTests
             await CreateArchive(path, "../outside.txt", token);
             var profile = new GroupProfile([], string.Empty, path);
 
-            await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-                () => profile.Localize(directory, token));
+            await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => profile.Localize(directory, token));
 
             Assert.IsFalse(File.Exists(Path.Combine(directory, "outside.txt")));
             Assert.IsFalse(Directory.EnumerateDirectories(directory).Any());
@@ -121,8 +120,7 @@ public class ProfileLocalizationTests
             var localInfo = await firstProfile.Localize(directory, token);
             var secondProfile = new GroupProfile([], string.Empty, path);
 
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => secondProfile.Localize(directory, token));
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(() => secondProfile.Localize(directory, token));
 
             Assert.AreEqual("content", await File.ReadAllTextAsync(localInfo.FilePaths.Single(), token));
         }

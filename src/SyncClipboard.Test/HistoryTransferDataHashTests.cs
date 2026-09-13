@@ -57,12 +57,7 @@ public class HistoryTransferDataHashTests
 
         await using var stream = File.OpenRead(archivePath);
         await Assert.ThrowsExactlyAsync<HistoryTransferDataException>(
-            () => fixture.Service.AddRecordDto(
-                "user",
-                dto,
-                new string('B', 64),
-                stream,
-                token));
+            () => fixture.Service.AddRecordDto("user", dto, new string('B', 64), stream, token));
 
         Assert.AreEqual(0, await fixture.DbContext.HistoryRecords.CountAsync(token));
     }
@@ -76,8 +71,7 @@ public class HistoryTransferDataHashTests
         await File.WriteAllTextAsync(sourceFile, "content", token);
         var sourceProfile = new GroupProfile([sourceFile]);
         var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "client"),
-            token))?.Path;
+            Path.Combine(fixture.RootDirectory, "client"), token))?.Path;
         Assert.IsNotNull(archivePath);
 
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
@@ -142,8 +136,7 @@ public class HistoryTransferDataHashTests
         await File.WriteAllTextAsync(sourceFile, "resurrect", token);
         var sourceProfile = new GroupProfile([sourceFile]);
         var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "resurrect-client"),
-            token))?.Path;
+            Path.Combine(fixture.RootDirectory, "resurrect-client"), token))?.Path;
         Assert.IsNotNull(archivePath);
         var incomingTransferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
@@ -155,12 +148,7 @@ public class HistoryTransferDataHashTests
         await fixture.DbContext.SaveChangesAsync(token);
 
         await using var stream = File.OpenRead(archivePath);
-        var result = await fixture.Service.AddRecordDto(
-            "user",
-            dto,
-            incomingTransferDataHash,
-            stream,
-            token);
+        var result = await fixture.Service.AddRecordDto("user", dto, incomingTransferDataHash, stream, token);
 
         Assert.IsFalse(result.IsDeleted);
         Assert.AreEqual(incomingTransferDataHash, existing.TransferDataHash);
@@ -172,10 +160,7 @@ public class HistoryTransferDataHashTests
         var token = TestContext.CancellationTokenSource.Token;
         await using var fixture = await TestFixture.CreateAsync(token);
         var profileHash = new string('B', 64);
-        var workingDirectory = Profile.CreateWorkingDir(
-            fixture.PersistentDirectory,
-            ProfileType.Group,
-            profileHash);
+        var workingDirectory = Profile.CreateWorkingDir(fixture.PersistentDirectory, ProfileType.Group, profileHash);
         var archivePath = Path.Combine(workingDirectory, "verified.zip");
         await CreateArchiveAsync(archivePath, "different.txt", "different", token);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
@@ -190,18 +175,14 @@ public class HistoryTransferDataHashTests
         await fixture.DbContext.SaveChangesAsync(token);
 
         var result = await fixture.Service.GetTransferDataByProfileId(
-            "user",
-            Profile.GetProfileId(ProfileType.Group, profileHash),
-            token);
+            "user", Profile.GetProfileId(ProfileType.Group, profileHash), token);
         Assert.AreEqual(archivePath, result?.Path);
         Assert.AreEqual(transferDataHash, result?.Hash);
 
         await File.WriteAllTextAsync(archivePath, "changed", token);
         await Assert.ThrowsExactlyAsync<HistoryTransferDataException>(
             () => fixture.Service.GetTransferDataByProfileId(
-                "user",
-                Profile.GetProfileId(ProfileType.Group, profileHash),
-                token));
+                "user", Profile.GetProfileId(ProfileType.Group, profileHash), token));
     }
 
     [TestMethod]
@@ -213,43 +194,28 @@ public class HistoryTransferDataHashTests
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
         var sourceProfile = new GroupProfile([sourceFile]);
         var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "regenerate-client"),
-            token))?.Path;
+            Path.Combine(fixture.RootDirectory, "regenerate-client"), token))?.Path;
         Assert.IsNotNull(archivePath);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
         await using (var stream = File.OpenRead(archivePath))
         {
-            await fixture.Service.AddRecordDto(
-                "user",
-                dto,
-                transferDataHash,
-                stream,
-                token);
+            await fixture.Service.AddRecordDto("user", dto, transferDataHash, stream, token);
         }
 
         var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
         var storedArchivePath = Profile.GetFullPath(
-            fixture.PersistentDirectory,
-            entity.Type,
-            entity.Hash,
-            entity.TransferDataFile);
+            fixture.PersistentDirectory, entity.Type, entity.Hash, entity.TransferDataFile);
         Assert.IsNotNull(storedArchivePath);
         File.Delete(storedArchivePath);
 
         var regenerated = await fixture.Service.GetTransferDataByProfileId(
-            "user",
-            Profile.GetProfileId(ProfileType.Group, entity.Hash),
-            token);
+            "user", Profile.GetProfileId(ProfileType.Group, entity.Hash), token);
 
         Assert.IsNotNull(regenerated);
         Assert.IsTrue(File.Exists(regenerated.Path));
-        Assert.AreEqual(
-            await Utility.CalculateFileSHA256(regenerated.Path, token),
-            regenerated.Hash);
-        Assert.AreEqual(
-            regenerated.Hash,
-            entity.TransferDataHash);
+        Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
+        Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
     }
 
     [TestMethod]
@@ -261,40 +227,27 @@ public class HistoryTransferDataHashTests
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
         var sourceProfile = new GroupProfile([sourceFile]);
         var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "corrupt-client"),
-            token))?.Path;
+            Path.Combine(fixture.RootDirectory, "corrupt-client"), token))?.Path;
         Assert.IsNotNull(archivePath);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
         await using (var stream = File.OpenRead(archivePath))
         {
-            await fixture.Service.AddRecordDto(
-                "user",
-                dto,
-                transferDataHash,
-                stream,
-                token);
+            await fixture.Service.AddRecordDto("user", dto, transferDataHash, stream, token);
         }
 
         var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
         var storedArchivePath = Profile.GetFullPath(
-            fixture.PersistentDirectory,
-            entity.Type,
-            entity.Hash,
-            entity.TransferDataFile);
+            fixture.PersistentDirectory, entity.Type, entity.Hash, entity.TransferDataFile);
         Assert.IsNotNull(storedArchivePath);
         await File.WriteAllTextAsync(storedArchivePath, "corrupted", token);
 
         var regenerated = await fixture.Service.GetTransferDataByProfileId(
-            "user",
-            Profile.GetProfileId(ProfileType.Group, entity.Hash),
-            token);
+            "user", Profile.GetProfileId(ProfileType.Group, entity.Hash), token);
 
         Assert.IsNotNull(regenerated);
         Assert.IsTrue(File.Exists(regenerated.Path));
-        Assert.AreEqual(
-            await Utility.CalculateFileSHA256(regenerated.Path, token),
-            regenerated.Hash);
+        Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
         Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
         Assert.AreEqual(transferDataHash, regenerated.Hash);
     }
@@ -308,45 +261,29 @@ public class HistoryTransferDataHashTests
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
         var sourceProfile = new GroupProfile([sourceFile]);
         var archivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "locked-client"),
-            token))?.Path;
+            Path.Combine(fixture.RootDirectory, "locked-client"), token))?.Path;
         Assert.IsNotNull(archivePath);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
         await using (var stream = File.OpenRead(archivePath))
         {
-            await fixture.Service.AddRecordDto(
-                "user",
-                dto,
-                transferDataHash,
-                stream,
-                token);
+            await fixture.Service.AddRecordDto("user", dto, transferDataHash, stream, token);
         }
 
         var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
         var storedArchivePath = Profile.GetFullPath(
-            fixture.PersistentDirectory,
-            entity.Type,
-            entity.Hash,
-            entity.TransferDataFile);
+            fixture.PersistentDirectory, entity.Type, entity.Hash, entity.TransferDataFile);
         Assert.IsNotNull(storedArchivePath);
 
         await using var lockedArchive = new FileStream(
-            storedArchivePath,
-            FileMode.Open,
-            FileAccess.ReadWrite,
-            FileShare.None);
+            storedArchivePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         var regenerated = await fixture.Service.GetTransferDataByProfileId(
-            "user",
-            Profile.GetProfileId(ProfileType.Group, entity.Hash),
-            token);
+            "user", Profile.GetProfileId(ProfileType.Group, entity.Hash), token);
 
         Assert.IsNotNull(regenerated);
         Assert.AreNotEqual(storedArchivePath, regenerated.Path);
         Assert.IsTrue(File.Exists(regenerated.Path));
-        Assert.AreEqual(
-            await Utility.CalculateFileSHA256(regenerated.Path, token),
-            regenerated.Hash);
+        Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
         Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
     }
 
@@ -358,10 +295,7 @@ public class HistoryTransferDataHashTests
         var sourcePath = Path.Combine(fixture.RootDirectory, "file.bin");
         await File.WriteAllTextAsync(sourcePath, "content", token);
         var profileHash = await new FileProfile(sourcePath).GetHash(token);
-        var workingDirectory = Profile.CreateWorkingDir(
-            fixture.PersistentDirectory,
-            ProfileType.File,
-            profileHash);
+        var workingDirectory = Profile.CreateWorkingDir(fixture.PersistentDirectory, ProfileType.File, profileHash);
         var filePath = Path.Combine(workingDirectory, "file.bin");
         await File.WriteAllTextAsync(filePath, "content", token);
         var transferDataHash = await Utility.CalculateFileSHA256(filePath, token);
@@ -382,13 +316,10 @@ public class HistoryTransferDataHashTests
             },
         };
 
-        var result = await controller.GetTransferData(
-            Profile.GetProfileId(ProfileType.File, profileHash),
-            token);
+        var result = await controller.GetTransferData(Profile.GetProfileId(ProfileType.File, profileHash), token);
 
         Assert.AreEqual(
-            transferDataHash,
-            controller.Response.Headers[HistoryTransferDataHeaders.TransferDataHash].ToString());
+            transferDataHash, controller.Response.Headers[HistoryTransferDataHeaders.TransferDataHash].ToString());
         Assert.IsInstanceOfType<FileStreamResult>(result);
         await ((FileStreamResult)result).FileStream.DisposeAsync();
     }
@@ -413,11 +344,7 @@ public class HistoryTransferDataHashTests
         using var response = CreateTransferDataResponse(bytes, transferDataHash);
         var localPath = Path.Combine(fixture.RootDirectory, "download", "data.bin");
 
-        var actualHash = await OfficialAdapter.SaveHistoryDataResponseAsync(
-            response,
-            localPath,
-            progress: null,
-            token);
+        var actualHash = await OfficialAdapter.SaveHistoryDataResponseAsync(response, localPath, progress: null, token);
 
         Assert.AreEqual(transferDataHash, actualHash);
         CollectionAssert.AreEqual(bytes, await File.ReadAllBytesAsync(localPath, token));
@@ -430,16 +357,10 @@ public class HistoryTransferDataHashTests
         await using var fixture = await TestFixture.CreateAsync(token);
         var localPath = Path.Combine(fixture.RootDirectory, "data.bin");
         await File.WriteAllTextAsync(localPath, "existing", token);
-        using var response = CreateTransferDataResponse(
-            Encoding.UTF8.GetBytes("rejected"),
-            new string('A', 64));
+        using var response = CreateTransferDataResponse(Encoding.UTF8.GetBytes("rejected"), new string('A', 64));
 
         await Assert.ThrowsExactlyAsync<RemoteHistoryDataRejectedException>(
-            () => OfficialAdapter.SaveHistoryDataResponseAsync(
-                response,
-                localPath,
-                progress: null,
-                token));
+            () => OfficialAdapter.SaveHistoryDataResponseAsync(response, localPath, progress: null, token));
 
         Assert.AreEqual("existing", await File.ReadAllTextAsync(localPath, token));
         Assert.AreEqual(0, Directory.GetFiles(fixture.RootDirectory, "*.download").Length);
@@ -455,11 +376,7 @@ public class HistoryTransferDataHashTests
         var archivePath = Path.Combine(fileDirectory, "ordinary.zip");
         await CreateArchiveAsync(archivePath, "unexpected.txt", "unexpected", token);
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
-        var controller = new SyncClipboardController(
-            null!,
-            null!,
-            fixture.ServerEnv,
-            fixture.Service);
+        var controller = new SyncClipboardController(null!, null!, fixture.ServerEnv, fixture.Service);
         var dto = new ProfileDto
         {
             Type = ProfileType.Group,
@@ -486,8 +403,7 @@ public class HistoryTransferDataHashTests
         await File.WriteAllTextAsync(sourceFile, "ordinary", token);
         var sourceProfile = new GroupProfile([sourceFile]);
         var clientArchivePath = (await sourceProfile.PrepareTransferData(
-            Path.Combine(fixture.RootDirectory, "ordinary-client"),
-            token))?.Path;
+            Path.Combine(fixture.RootDirectory, "ordinary-client"), token))?.Path;
         Assert.IsNotNull(clientArchivePath);
         var dto = await sourceProfile.ToProfileDto(token);
         var fileDirectory = Path.Combine(fixture.ServerEnv.GetDataRootPath(), "file");
@@ -495,11 +411,7 @@ public class HistoryTransferDataHashTests
         File.Copy(clientArchivePath, Path.Combine(fileDirectory, dto.DataName!));
         var hubContext = new TestHubContext();
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var controller = new SyncClipboardController(
-            hubContext,
-            cache,
-            fixture.ServerEnv,
-            fixture.Service);
+        var controller = new SyncClipboardController(hubContext, cache, fixture.ServerEnv, fixture.Service);
 
         var result = await controller.PutSyncProfile(dto, token);
 
@@ -521,25 +433,18 @@ public class HistoryTransferDataHashTests
         };
     }
 
-    private static HttpResponseMessage CreateTransferDataResponse(
-        byte[] bytes,
-        string transferDataHash)
+    private static HttpResponseMessage CreateTransferDataResponse(byte[] bytes, string transferDataHash)
     {
         var response = new HttpResponseMessage
         {
             Content = new ByteArrayContent(bytes),
         };
-        response.Headers.Add(
-            HistoryTransferDataHeaders.TransferDataHash,
-            transferDataHash);
+        response.Headers.Add(HistoryTransferDataHeaders.TransferDataHash, transferDataHash);
         return response;
     }
 
     private static async Task CreateArchiveAsync(
-        string archivePath,
-        string entryName,
-        string content,
-        CancellationToken token)
+        string archivePath, string entryName, string content, CancellationToken token)
     {
         using var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create);
         var entry = archive.CreateEntry(entryName);
@@ -550,10 +455,7 @@ public class HistoryTransferDataHashTests
     private sealed class TestFixture : IAsyncDisposable
     {
         private TestFixture(
-            string rootDirectory,
-            string persistentDirectory,
-            HistoryDbContext dbContext,
-            ServerEnvProvider serverEnv,
+            string rootDirectory, string persistentDirectory, HistoryDbContext dbContext, ServerEnvProvider serverEnv,
             HistoryService service)
         {
             RootDirectory = rootDirectory;
@@ -584,10 +486,7 @@ public class HistoryTransferDataHashTests
             await dbContext.Database.EnsureCreatedAsync(token);
             var persistentDirectory = serverEnv.GetPersistentDir();
             Directory.CreateDirectory(persistentDirectory);
-            var service = new HistoryService(
-                dbContext,
-                new TestProfileEnv(persistentDirectory),
-                null!);
+            var service = new HistoryService(dbContext, new TestProfileEnv(persistentDirectory), null!);
             return new TestFixture(rootDirectory, persistentDirectory, dbContext, serverEnv, service);
         }
 

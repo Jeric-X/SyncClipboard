@@ -236,10 +236,9 @@ public class SyncClipboardController(
 
         try
         {
-            var actualTransferDataHash = await Utility.VerifyFileSHA256(
-                previousDataPath, dto.TransferDataHash, token);
-            await profile.SetAndMoveTransferData(_serverEnv.GetPersistentDir(),
-                new FileHashInfo(previousDataPath, actualTransferDataHash), token);
+            var actualTransferDataHash = await Utility.VerifyFileSHA256(previousDataPath, dto.TransferDataHash, token);
+            await profile.SetAndMoveTransferData(
+                _serverEnv.GetPersistentDir(), new FileHashInfo(previousDataPath, actualTransferDataHash), token);
         }
         catch when (!token.IsCancellationRequested)
         {

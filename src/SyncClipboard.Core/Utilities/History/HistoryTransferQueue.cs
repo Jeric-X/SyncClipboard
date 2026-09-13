@@ -581,16 +581,10 @@ public class HistoryTransferQueue : IDisposable
             ?? throw new InvalidOperationException("Profile does not support transfer data.");
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(localDataPath))!);
         var transferDataHash = await server.DownloadHistoryDataAsync(
-            task.ProfileId,
-            localDataPath,
-            task.ProgressReporter,
-            ct);
+            task.ProfileId, localDataPath, task.ProgressReporter, ct);
         if (Utility.IsValidSHA256(transferDataHash))
         {
-            await profile.SetTransferData(
-                new FileHashInfo(localDataPath, transferDataHash),
-                false,
-                ct);
+            await profile.SetTransferData(new FileHashInfo(localDataPath, transferDataHash), false, ct);
         }
         else
         {
@@ -638,11 +632,7 @@ public class HistoryTransferQueue : IDisposable
 
         try
         {
-            await server.UploadHistoryAsync(
-                recordDto,
-                transferData,
-                task.ProgressReporter,
-                ct);
+            await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, ct);
         }

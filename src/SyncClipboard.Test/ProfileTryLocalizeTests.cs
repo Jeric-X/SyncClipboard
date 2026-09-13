@@ -105,7 +105,9 @@ public class ProfileTryLocalizeTests
         Assert.IsFalse(await profile.TryLocalize(Path.GetTempPath(), false, TestContext.CancellationTokenSource.Token));
         Assert.AreEqual(path, profile.Files.Single());
         Assert.AreEqual(Path.GetFileName(path), profile.DisplayText);
-        Assert.AreEqual(path, (await profile.Localize(Path.GetTempPath(), TestContext.CancellationTokenSource.Token)).FilePaths.Single());
+        Assert.AreEqual(
+            path,
+            (await profile.Localize(Path.GetTempPath(), TestContext.CancellationTokenSource.Token)).FilePaths.Single());
 
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();

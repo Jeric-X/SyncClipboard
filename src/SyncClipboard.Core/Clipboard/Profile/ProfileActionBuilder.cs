@@ -14,8 +14,7 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
             new MenuItem(Strings.Copy, () =>
             {
                 DelegateExtention.SafeFireAndForget(
-                    () => setter.Set(profile, CancellationToken.None),
-                    nameof(ProfileActionBuilder));
+                    () => setter.Set(profile, CancellationToken.None), nameof(ProfileActionBuilder));
             }),
         ];
 
