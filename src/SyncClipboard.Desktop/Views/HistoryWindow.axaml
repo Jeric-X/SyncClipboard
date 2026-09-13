@@ -172,36 +172,36 @@
                         Orientation="Horizontal"
                         Spacing="4">
                 <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.WindowTopmost}" Classes="FontIcon" IsChecked="{Binding IsTopmost, Mode=TwoWay}">
-                    <ui:FontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <ui:FAFontIcon Glyph="&#xE840;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ToggleButton>
                 <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.OnlyShowStarred}" Classes="FontIcon" IsChecked="{Binding OnlyShowStarred, Mode=TwoWay}">
-                    <ui:FontIcon Glyph="&#xE734;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <ui:FAFontIcon Glyph="&#xE734;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ToggleButton>
                 <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.PreviewPanel}" Classes="FontIcon" IsChecked="{Binding ShowPreviewPanel, Mode=TwoWay}">
-                    <ui:FontIcon Glyph="&#xE145;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <ui:FAFontIcon Glyph="&#xE145;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ToggleButton>
                 <Button x:Name="_MenuButton"
                         Width="24"
                         Height="24"
                         VerticalAlignment="Center">
-                    <ui:FontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <ui:FAFontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     <Button.Flyout>
                         <ui:FAMenuFlyout>
-                            <ui:MenuFlyoutItem Text="{x:Static i18n:Strings.OperationInstructions}" Command="{Binding ShowOperationInstructionsCommand}" />
-                            <ui:MenuFlyoutSeparator />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
-                            <ui:MenuFlyoutSeparator />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
-                            <ui:MenuFlyoutSeparator />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowCaretPosition}" IsChecked="{Binding FollowCaretPosition, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowForegroundWindowScreen}" IsChecked="{Binding FollowForegroundWindowScreen, Mode=TwoWay}" />
-                            <ui:ToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowMousePosition}" IsChecked="{Binding FollowMousePosition, Mode=TwoWay}" />
-                            <ui:MenuFlyoutSeparator />
-                            <ui:MenuFlyoutItem Text="{x:Static i18n:Strings.FontScale}" Click="FontScaleMenuItem_Click" />
+                            <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.OperationInstructions}" Command="{Binding ShowOperationInstructionsCommand}" />
+                            <ui:FAMenuFlyoutSeparator />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowCaretPosition}" IsChecked="{Binding FollowCaretPosition, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowForegroundWindowScreen}" IsChecked="{Binding FollowForegroundWindowScreen, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.FollowMousePosition}" IsChecked="{Binding FollowMousePosition, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
+                            <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.FontScale}" Click="FontScaleMenuItem_Click" />
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -211,7 +211,7 @@
                                 Height="24"
                                 VerticalAlignment="Center"
                                 Command="{Binding CloseCommand}">
-                            <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                     </OnPlatform.Windows>
                     <OnPlatform.Default>
@@ -224,15 +224,15 @@
                          Grid.Column="0"
                          VerticalContentAlignment="Center"
                          Text="{Binding SearchText}"
-                         Watermark="{x:Static i18n:Strings.HistorySearchPlaceholder}" />
+                         PlaceholderText="{x:Static i18n:Strings.HistorySearchPlaceholder}" />
                 <StackPanel Grid.Column="1" VerticalAlignment="Top" Orientation="Horizontal">
                     <Button Width="32"
                             Height="32"
                             Command="{Binding RefreshCommand}"
                             ToolTip.Tip="{x:Static i18n:Strings.Refresh}">
                         <Grid>
-                            <ui:FontIcon Glyph="&#xE72C;" FontFamily="{StaticResource SymbolThemeFontFamily}" IsVisible="{Binding !IsLoading}" />
-                            <ui:ProgressRing Width="16"
+                            <ui:FAFontIcon Glyph="&#xE72C;" FontFamily="{StaticResource SymbolThemeFontFamily}" IsVisible="{Binding !IsLoading}" />
+                            <ui:FAProgressRing Width="16"
                                              Height="16"
                                              HorizontalAlignment="Center"
                                              VerticalAlignment="Center"
@@ -244,7 +244,7 @@
                             Height="32"
                             Command="{Binding ScrollToTopCommand}"
                             ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
-                        <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        <ui:FAFontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </Button>
                 </StackPanel>
             </Grid>
@@ -391,7 +391,7 @@
                                    LineSpacing="2">
                             <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FontIcon x:Name="_SelectAllIcon"
+                                    <ui:FAFontIcon x:Name="_SelectAllIcon"
                                                  Glyph="&#xE739;"
                                                  FontFamily="{StaticResource SymbolThemeFontFamily}"
                                                  FontSize="16" />
@@ -400,19 +400,19 @@
                             </Button>
                             <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectDelete}" Command="{Binding ConfirmDeleteSelectedCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    <ui:FAFontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                     <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectDelete}" />
                                 </StackPanel>
                             </Button>
                             <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectStar}" Command="{Binding ConfirmToggleSelectedStarredCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FontIcon x:Name="_ToggleStarIcon" Glyph="&#xE734;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    <ui:FAFontIcon x:Name="_ToggleStarIcon" Glyph="&#xE734;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                     <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectStar}" />
                                 </StackPanel>
                             </Button>
                             <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectExit}" Command="{Binding ExitMultiSelectCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                    <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                     <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectExit}" />
                                 </StackPanel>
                             </Button>
@@ -420,7 +420,7 @@
                     </Grid>
                 </Border>
             </Grid>
-            <ui:InfoBar x:Name="_InfoBar"
+            <ui:FAInfoBar x:Name="_InfoBar"
                         Grid.Row="2"
                         Width="400"
                         Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"

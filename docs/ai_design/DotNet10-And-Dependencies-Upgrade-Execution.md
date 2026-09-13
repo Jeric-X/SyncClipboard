@@ -5,14 +5,16 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–6 已通过，当前执行步骤 7：升级 EF Core / SQLite，验证旧数据库副本兼容性与原生库。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 6 验证通过提交为 `d16e70788a26cfb9d69eaa83e5e9db946db64e37`；步骤 7 已完成本地适配和验证，尚待当前提交的 PR 全平台验证，不允许进入步骤 8。
-- 步骤 8–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–7 已通过，当前执行步骤 8：升级 Avalonia 12 与必要配套 UI 依赖，执行编译及非 UI 验证。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 7 验证通过提交为 `f476db56241e0b66e4a02ada97c8febb7ec2d4af`；步骤 8 已完成代码适配，正在独立验证；当前提交的 PR 门槛通过前不允许进入步骤 9。
+- 步骤 9–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
 
 各步骤及子步骤的记录统一使用“非 UI 验证通过”“范围内验证待完成/失败”和“UI 范围排除”区分结果。下文历史记录中的“已通过”也仅指非 UI 范围。UI 排除项不列为待执行、阻塞或待补测，不要求人工操作或 macOS 解锁；必要的非 UI 检查及当前提交的 PR CI/问题监控完成前，仍不得开始下一步。
+
+相关步骤直接采用计划第 3.2 节按步骤列出的 UI 排除清单，最终验收同样适用。编译绑定通过不代表运行时界面绑定通过；命令行启动的测试若初始化 UI 或访问真实桌面，也必须排除。此范围调整不改变已有验证结果，不将未执行的 UI 检查补记为通过。
 
 ## 步骤 0：基线证据
 
@@ -255,7 +257,7 @@ macOS arm64 本机 Release 验证结果：
 
 ## 步骤 7：升级 EF Core / SQLite
 
-前置步骤通过提交：`d16e70788a26cfb9d69eaa83e5e9db946db64e37`。状态：进行中。先核定稳定 EF Core 10.0 补丁及 SQLite 原生依赖；以旧客户端、旧服务器数据库副本验证迁移、查询、分页、收藏/置顶、删除/清理、时间和文件哈希，保留原始数据基线。不得仅因版本升级生成空迁移或重建数据库。
+前置步骤通过提交：`d16e70788a26cfb9d69eaa83e5e9db946db64e37`。状态：非 UI 验证通过；以下保留过程记录，最终证据见本节末尾。先核定稳定 EF Core 10.0 补丁及 SQLite 原生依赖；以旧客户端、旧服务器数据库副本验证迁移、查询、分页、收藏/置顶、删除/清理、时间和文件哈希，保留原始数据基线。不得仅因版本升级生成空迁移或重建数据库。
 
 ### 步骤 7 版本与适配
 
@@ -278,3 +280,39 @@ Linux x64 自包含发布通过；包内 EF 与 Microsoft.Data.Sqlite 程序集�
 macOS 首次增量发布时，输出目录已是 SQLite 3.53.3，但 `.app` 中残留 3.46.1，故该产物未通过；证据 `/tmp/syncclipboard-stage7-macos-incremental-mismatch.json`。执行目标项目 `dotnet clean` 后重新发布，实际应用包更新为 3.53.3。项目在 Build 后复制许可证，原始 publish 包尚需既有 CI 的 BundleTool 重新签名；执行同一脚本后严格签名通过，实际包内 EF/Sqlite 程序集为 10.0.12（`/tmp/syncclipboard-stage7-macos-native-verified.json`）。未启动桌面应用。计划已增加原生依赖升级的干净发布与最终包核验要求。
 
 最终 Core 352 项、Desktop NonUI 4 项通过，0 失败/跳过；Core TRX 位于 `/private/tmp/syncclipboard-stage7-final2-results/core/`，Desktop TRX 位于 `/private/tmp/syncclipboard-stage7-final-results/desktop/`。新增测试初次格式检查提示缺少取消令牌，补齐后重跑 Core 和完整格式检查均通过，格式日志 `/tmp/syncclipboard-stage7-final-format.log`（退出 0，仅保留跨平台工作区加载警告）。步骤 7 尚待当前提交的 PR 全平台 CI、产物及评审验证，未允许进入步骤 8。Magick.NET 的既有漏洞仍在步骤 11 处理，不屏蔽警告。
+
+### 步骤 7 最终证据
+
+验证通过提交：`f476db56241e0b66e4a02ada97c8febb7ec2d4af`。[PR build 34765898062](https://github.com/Jeric-X/SyncClipboard/actions/runs/34765898062)、[push build 34765896549](https://github.com/Jeric-X/SyncClipboard/actions/runs/34765896549)、[CodeQL 34765897850](https://github.com/Jeric-X/SyncClipboard/actions/runs/34765897850) 及 CodeFactor 完成，103 项成功、8 项预期发布跳过。最终再次读取当前 head、checks、reviews、全部线程和评论，当前 Codex 评审完成且无新增问题，原 4 个线程均已解决。
+
+全部 47 个 artifact 下载完成；五份 TRX 经仓库校验器核对共 368 项非 UI 测试通过，0 失败/跳过。38 项 Windows/Linux 构建与安装/便携包组合通过完整性、运行时、资源和原生架构检查；每包实际核验 5 个 EF/Sqlite 程序集为 10.0.12、SQLitePCLRaw 依赖全套为 2.1.12，并对原生 SQLite 与对应 RID 的 NuGet 字节计算哈希比对。报告 `/tmp/syncclipboard-pr419-f476-package-audit.json`，SHA256 `829045a12637892771c143bcce83fc4ee8f178cf83f367678d23391567f41f92`；6 个 Linux deb/rpm 元数据检查通过。
+
+两架构 macOS dmg 的主程序、19 个 dylib、资源和严格签名通过，实际包内微软/EF 程序集为 10.0.12，SQLitePCLRaw 程序集为 2.1.12，原生 SQLite 为 3.53.3，没有本地增量发布时出现的旧库残留。两个只读挂载均已卸载，未执行桌面程序。报告 `/tmp/syncclipboard-pr419-f476-macos-{arm64,x64}.json`。
+
+当前 CI Server、amd64 容器、arm64 容器各确认执行 4 轮 Production 首次启动/重启及 2 轮 API/认证/历史/传输检查。下载的当前 Server 产物在本机再次通过 4 轮启动和旧数据库副本检查：两次重启保持 schema、时间、收藏/置顶、记录和文件哈希，清空后无残留，原库未改动（`/tmp/syncclipboard-pr419-f476-persistence.json`）。步骤 7 非 UI 验证通过，允许进入步骤 8；不代表整个依赖升级已完成。
+
+## 步骤 8：升级 Avalonia 12 与必要配套依赖
+
+前置步骤通过提交：`f476db56241e0b66e4a02ada97c8febb7ec2d4af`。状态：进行中。先核定 Avalonia、FluentAvalonia、AsyncImageLoader 与 BreadcrumbBar 的稳定兼容组合，再进行 C#/XAML/API 适配；仅执行约定的非 UI 验证，不初始化 UI 框架或真实桌面。
+
+### 版本与兼容适配
+
+本步固定 Avalonia/Desktop/Themes.Fluent/Fonts.Inter 12.1.2、FluentAvaloniaUI 3.1.0、AsyncImageLoader.Avalonia 3.8.0。三者的目标框架和依赖要求分别核对 [Avalonia 包](https://www.nuget.org/packages/Avalonia/12.1.2)、[FluentAvalonia 包](https://www.nuget.org/packages/FluentAvaloniaUI/3.1.0)、[图片加载器包](https://www.nuget.org/packages/AsyncImageLoader.Avalonia/3.8.0)。FluentAvalonia 3 要求 .NET 10/Avalonia 12，必须在同一验证单元迁移。
+
+移除 Avalonia.Diagnostics，以及仍依赖 FluentAvalonia 2/Avalonia 11 ItemsRepeater 的 FluentAvalonia.BreadcrumbBar 2.0.2；使用 FluentAvalonia 3 内置的 FABreadcrumbBar、FAItemsRepeater 和 FAStackLayout。删除旧面包屑样式引用和已移除依赖的 About 列表项，保留仓库原许可证文件。没有复制第三方控件源码，也没有启用新的诊断工具或 Wayland 后端。
+
+根据实际 NuGet 包中记录的 FluentAvalonia 源码提交 `215ee0481e8b0e6d396cbe2a0f33dc791c5646ab` 核对 [面包屑元素工厂](https://github.com/amwx/FluentAvalonia/blob/215ee0481e8b0e6d396cbe2a0f33dc791c5646ab/src/FluentAvalonia/UI/Controls/BreadcrumbBar/BreadcrumbElementFactory.cs) 和项目中使用的控件 API：新工厂会将条目的 Content 设置为数据对象，因此标题改放在 ContentTemplate 中；点击索引仍传入原 ViewModel 的零基索引。原根节点/中间节点返回、当前节点不跳转及导航参数由新增四项纯 ViewModel 测试覆盖。测试使用记录调用的 IMainWindow 替身，不创建窗口、控件或 UI 调度器；这不证明实际面包屑的显示或交互已通过。
+
+其余必要迁移包括 FluentAvalonia 控件与事件类型的 FA 前缀、窗口装饰 API、MenuItemToggleType、PlaceholderText、Binding.Mode、FocusChangedEventArgs、PNG 编码参数，以及剪贴板扩展方法命名空间；移除 BindingPlugins 旧验证器配置。Avalonia 12 拖拽 API 要求最初的 PointerPressedEventArgs，两处拖拽入口保留按下事件并在取消时清理，继续使用既有阈值、选择逻辑和 DataTransfer。macOS 专属入口的 TryGetFeature 泛型扩展改用 Avalonia 命名空间，平台编译已覆盖这项修正。依据为 [Avalonia 12 迁移说明](https://v11.docs.avaloniaui.net/docs/avalonia12-breaking-changes/) 及所选版本的包内 API 文档。
+
+还原实际解析 SkiaSharp 3.119.4、HarfBuzzSharp 8.3.1.3；FluentAvalonia 的 ColorPicker/DataGrid 为 12.1.0，构建工具 Avalonia.BuildServices 为独立版本 11.3.2。未将这些有效的传递依赖强制改为 Avalonia 主包版本；旧 BreadcrumbBar、ItemsRepeater 11 和 Diagnostics 已不在桌面依赖图中。
+
+### 本地非 UI 验证（2026-09-14）
+
+- 最终 Core 356 项、Desktop NonUI 4 项通过，0 失败/跳过；TRX 位于 `/private/tmp/syncclipboard-stage8-final-results/`，仓库校验器按最低 360 项通过。CI Core 门槛同步提升到 356，五个测试任务预计合计 372 项，最终以当前 PR 报告核定。
+- Desktop Release 与 Debug 的 C#/XAML 编译通过；Desktop.Default 的 Windows TFM Release 编译通过。日志分别为 `/tmp/syncclipboard-stage8-build4.log`、`/tmp/syncclipboard-stage8-debug.log`、`/tmp/syncclipboard-stage8-default-windows.log`。Windows 原生打包与运行非 UI 测试仍须由当前 PR 的 Windows runner 验证。
+- Linux x64 自包含发布通过，输出 `/private/tmp/syncclipboard-stage8-linux`。检查 runtimeconfig/deps、产品程序集 net10、资源及六个原生文件的架构；新 Avalonia/FluentAvalonia/图片加载器和 Skia/HarfBuzz 的实际程序集版本正确，两个 Linux 图形原生库与对应 RID 的 NuGet 文件哈希一致。沿用并通过前置步骤的 Microsoft 10.0.12、EF 10.0.12、SQLitePCLRaw 2.1.12 检查。报告 `/tmp/syncclipboard-stage8-linux-native-verified.json`。
+- macOS arm64 先 clean 后 publish，修复扩展命名空间编译错误后发布通过；随后运行 BundleTool 的资源/重新签名步骤。最终包主程序和 19 个 dylib 架构正确，严格签名、图标、产品程序集 net10、Microsoft/EF/SQLite 版本及八个桌面依赖程序集版本均通过。报告 `/tmp/syncclipboard-stage8-macos-native-verified.json`；没有启动桌面程序。两架构 dmg 与其他平台全部发行产物仍待当前 PR 检查。
+- 仓库规定的 `dotnet format --verify-no-changes --severity info --no-restore` 退出 0；日志 `/tmp/syncclipboard-stage8-format.log`。保留跨平台工作区加载警告，完整平台验证由 PR 补齐。
+
+本步骤所有运行时 XAML、视觉、窗口/面包屑交互、真实拖拽/剪贴板/热键/通知检查均为 UI 范围排除，不执行、不计通过、不安排补测。Magick.NET 14.9.1 的既有漏洞警告保持可见，按步骤 11 处理。本步尚未通过当前提交的全平台 PR CI、产物与评审门槛，不允许进入步骤 9。

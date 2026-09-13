@@ -9,9 +9,9 @@ using System.Linq;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class NetworkRuleEditDialog : ContentDialog
+public partial class NetworkRuleEditDialog : FAContentDialog
 {
-    protected override Type StyleKeyOverride => typeof(ContentDialog);
+    protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
     public NetworkAccountSwitchViewModel ViewModel { get; }
     public NetworkRuleEditor Editor { get; }
@@ -60,7 +60,7 @@ public partial class NetworkRuleEditDialog : ContentDialog
         IsPrimaryButtonEnabled = string.IsNullOrEmpty(message);
     }
 
-    private void DialogClosed(ContentDialog sender, ContentDialogClosedEventArgs args)
+    private void DialogClosed(FAContentDialog sender, FAContentDialogClosedEventArgs args)
     {
         Editor.PropertyChanged -= EditorPropertyChanged;
         Closed -= DialogClosed;

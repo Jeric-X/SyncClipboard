@@ -29,17 +29,17 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ui:SettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.AccountType}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+        <ui:FASettingsExpander Grid.Row="0" Header="{x:Static i18n:Strings.AccountType}">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <ComboBox MinWidth="200"
                           ItemsSource="{Binding LoginTypes}"
                           SelectedItem="{Binding SelectedType, Mode=TwoWay}"
                           PlaceholderText="{x:Static i18n:Strings.SelectAccountType}" />
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
-        <ui:Frame x:Name="ConfigurationFrame" Grid.Row="1" Margin="0,10,0,0" />
+            </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
+        <ui:FAFrame x:Name="ConfigurationFrame" Grid.Row="1" Margin="0,10,0,0" />
     </Grid>
 </UserControl>
