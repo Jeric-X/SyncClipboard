@@ -180,9 +180,9 @@ class TestServer:
 
 
 @contextmanager
-def running_server(args, root, password, authorization, attempt):
+def running_server(args, root, password, authorization, attempt, server_type=TestServer):
     with (root / f"server-{attempt}.log").open("w+") as log:
-        server = TestServer(args, root, password, log)
+        server = server_type(args, root, password, log)
         try:
             server.start()
             server.wait_ready(authorization)

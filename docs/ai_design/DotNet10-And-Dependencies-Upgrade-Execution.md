@@ -149,3 +149,18 @@ Docker 使用 `mcr.microsoft.com/dotnet/sdk:10.0.302-noble` 与 `mcr.microsoft.c
 容器 CI 增加 Ubuntu 24.04 和主机架构一致性检查，并记录实际运行时。冒烟检查现在要求进程/容器正常退出，容器在检查退出码与 OOM 状态后清理；超时强杀或非零退出均失败。本机真实服务器正常退出通过，退出码 23 的命令行进程被校验器正确拒绝。Docker 分支待真实 CI 验证。
 
 仓库格式检查退出 0（`/tmp/syncclipboard-stage4-format.log`，保留跨平台工作区加载警告）；YAML/Python 语法、AGENTS/CLAUDE 一致性及框架边界检查通过。中央 NuGet 版本未变，SQLitePCLRaw 已知漏洞仍待步骤 7 处理。步骤 4 尚待新 head 的 CI、评审、实际容器与产物验证，不允许进入步骤 5。
+
+
+### 步骤 4 首轮结果及首次启动修复
+
+`27b2f0de19152ff15ed66a9d518c7722c7d34920` 的 [PR build 34759199481](https://github.com/Jeric-X/SyncClipboard/actions/runs/34759199481)、[push build 34759197877](https://github.com/Jeric-X/SyncClipboard/actions/runs/34759197877) 与 [CodeQL 34759199232](https://github.com/Jeric-X/SyncClipboard/actions/runs/34759199232) 完成：103 成功、8 预期发布任务跳过，当前 head 的评审完成、无新增未解决问题。47 个 artifact 已下载；362 项非 UI 测试、38 项 Windows/Linux 包组合、6 项 Linux 元数据、两 macOS dmg 的签名/资源/架构检查均通过。报告目录前缀 `/tmp/syncclipboard-pr419-27b2-`。容器实测 Ubuntu 24.04.5 LTS、SDK 10.0.302、最终 ASP.NET Core/.NET 10.0.12，amd64/arm64 均通过挂载、认证、端口、持久化和正常退出检查。
+
+该 PR 服务器产物另通过旧数据副本验证和 HTTPS 两轮冒烟：TLSv1.2、主机名/证书链校验、拒绝未信任证书、认证、SignalR 协商、文件完整性与重启后持久化通过，未改系统证书信任（`/tmp/syncclipboard-pr419-27b2-https.json`）。实际适配器 HTTP 代理检查观察到 18 条连接，覆盖 Profile/文件/历史 API 与 SignalR 协商、WebSocket CONNECT；普通 HTTP 连接被测试代理显式关闭以观察每条路由（`/tmp/syncclipboard-stage4-proxy.json`）。这不表示自动重连或 S3 集成已验证。
+
+追加的 Production 空配置目录检查发现首次启动问题：复制默认 appsettings.json 后追加 JSON provider，使命令行端口被文件内的 5033 覆盖。已有相同源码路径也存在该问题；上述 CI 成功不足以覆盖此场景，因此步骤 4 尚未通过。修复改为复制后重新加载现有 provider，保留默认配置优先级；依据：[ASP.NET Core 配置优先级](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-10.0)。
+
+新增 `build/verification/server_startup_smoke.py`，由 Server 发布及两架构容器 CI 执行：空目录首次启动复制默认配置，分别验证命令行和环境变量覆盖端口，环境变量认证生效、默认账号被拒绝、Production 不暴露 Swagger，并重启检查持久化和正常退出。容器使用不同于默认值的 5034 内部端口，映射至宿主 loopback 随机端口；不发布镜像或操作 UI。
+
+修复后的实际服务器本地四轮首次启动/重启场景与原两轮冒烟全部通过；发布与格式检查退出 0（`/tmp/syncclipboard-stage4-startup-fixed.log`、`/tmp/syncclipboard-stage4-fixed-smoke.log`、`/tmp/syncclipboard-stage4-fixed-format.log`）。YAML/Python 语法及 diff 检查通过。新增 CI 门槛必须在修复后的 head 实际通过后，才允许进入步骤 5。
+
+后续 Core/EF 数据验证基线已准备：当前 Core net8/EF 9 实际生成 65 条客户端历史、32 个文件哈希，包含时间、收藏/置顶、同步/删除状态和 50+15 两页查询。基线 `/private/tmp/syncclipboard-client-db-baseline`，只读保留包 `/private/tmp/syncclipboard-client-net8-data-baseline.zip`，含源码、程序集指纹和期望结果；后续仅在副本上验证。产品 Core TFM 尚未改动。
