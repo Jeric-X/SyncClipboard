@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
 
@@ -86,6 +87,50 @@ public class ProfileLocalizationTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Group_LocalizationPreservesTransferDataBinding(bool tryLocalize)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = CreateTestDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "data.zip");
+            await CreateArchive(path, "data.txt", token);
+            var transferHash = await Utility.CalculateFileSHA256(path, token);
+            var profile = new GroupProfile(new ProfilePersistentInfo
+            {
+                Type = ProfileType.Group,
+                Hash = new string('A', 64),
+                Text = "data.txt",
+                Size = 7,
+                FilePaths = [],
+                TransferDataFile = path,
+                TransferDataHash = transferHash,
+            });
+            var before = await profile.Persist(directory, token);
+            var beforeDto = await profile.ToProfileDto(token);
+
+            if (tryLocalize)
+                Assert.IsTrue(await profile.TryLocalize(directory, false, token));
+            else
+                await profile.Localize(directory, token);
+
+            var after = await profile.Persist(directory, token);
+            Assert.AreEqual(before.TransferDataFile, after.TransferDataFile);
+            Assert.AreEqual(before.TransferDataHash, after.TransferDataHash);
+            Assert.AreEqual(before.Hash, after.Hash);
+            Assert.AreEqual(before.Size, after.Size);
+            Assert.AreEqual(beforeDto.DataName, (await profile.ToProfileDto(token)).DataName);
+            Assert.AreEqual("content", await File.ReadAllTextAsync(profile.Files.Single(), token));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task Group_LocalizeStillRejectsPathTraversal()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -108,7 +153,7 @@ public class ProfileLocalizationTests
     }
 
     [TestMethod]
-    public async Task Group_LocalizeWithoutProfileHashDoesNotClaimExistingExtraction()
+    public async Task Group_LocalizeWithoutProfileHashUsesSeparateExtractionDirectories()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var directory = CreateTestDirectory();
@@ -120,8 +165,10 @@ public class ProfileLocalizationTests
             var localInfo = await firstProfile.Localize(directory, token);
             var secondProfile = new GroupProfile([], string.Empty, path);
 
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(() => secondProfile.Localize(directory, token));
+            var secondLocalInfo = await secondProfile.Localize(directory, token);
 
+            Assert.AreNotEqual(localInfo.FilePaths.Single(), secondLocalInfo.FilePaths.Single());
+            Assert.AreEqual("content", await File.ReadAllTextAsync(secondLocalInfo.FilePaths.Single(), token));
             Assert.AreEqual("content", await File.ReadAllTextAsync(localInfo.FilePaths.Single(), token));
         }
         finally

@@ -382,21 +382,19 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         Stream? transferFileStream, CancellationToken token)
     {
         var entity = incoming.ToEntity(userId);
-        Profile? profile = null;
 
         if (transferFileStream != null)
         {
-            profile = await SaveTransferDataAsync(entity, declaredTransferDataHash, transferFileStream, token);
+            await SaveTransferDataAsync(entity, declaredTransferDataHash, transferFileStream, token);
         }
         else
         {
             entity.TransferDataHash = null;
-        }
-
-        profile ??= entity.ToProfile(_persistentDir);
-        if (await profile.IsLocalDataValid(true, token) is false)
-        {
-            throw new ArgumentException("Needs tranfer data.");
+            var profile = entity.ToProfile(_persistentDir);
+            if (!await profile.IsLocalDataValid(false, token))
+            {
+                throw new ArgumentException("Local data is missing or does not match the profile hash.");
+            }
         }
 
         await _dbContext.HistoryRecords.AddAsync(entity, token);
@@ -477,20 +475,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
         catch
         { }
-
-        if (filePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-        {
-            try
-            {
-                var extractDirectory = filePath[..^4];
-                if (Directory.Exists(extractDirectory))
-                {
-                    Directory.Delete(extractDirectory, recursive: true);
-                }
-            }
-            catch
-            { }
-        }
 
         try
         {

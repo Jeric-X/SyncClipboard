@@ -23,11 +23,6 @@ public class UnknownProfile : Profile
         return Task.FromResult(false);
     }
 
-    public override Task<bool> IsTransferDataValid(CancellationToken token)
-    {
-        return Task.FromResult(false);
-    }
-
     public override Task<bool> IsDataComplete(bool quick, CancellationToken token)
     {
         return Task.FromResult(false);
@@ -83,8 +78,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task SetAndMoveTransferData(
-        string persistentDir, string path, string transferDataHash, CancellationToken token)
+    public override Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token)
     {
         throw new NotImplementedException();
     }

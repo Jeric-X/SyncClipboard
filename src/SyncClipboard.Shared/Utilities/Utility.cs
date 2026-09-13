@@ -59,6 +59,27 @@ public static class Utility
         return Convert.ToHexString(hashBytes);
     }
 
+    /// <summary>
+    /// 检查文件是否匹配指定的 SHA-256；缺少有效 hash、文件不可用或校验失败时返回 false，取消异常向外传播。
+    /// </summary>
+    public static async Task<bool> FileMatchesSHA256(string? path, string? expectedHash, CancellationToken token)
+    {
+        if (!IsValidSHA256(expectedHash) || string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            var actualHash = await CalculateFileSHA256(path, token);
+            return SHA256Same(actualHash, expectedHash);
+        }
+        catch when (!token.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
     public static async Task<string> VerifyFileSHA256(string path, string? expectedHash, CancellationToken token)
     {
         if (expectedHash is not null && !IsValidSHA256(expectedHash))

@@ -124,6 +124,41 @@ public class ProfileTransferValidationTests
     }
 
     [TestMethod]
+    [DataRow("matching", true)]
+    [DataRow("missing", true)]
+    [DataRow("mismatched", false)]
+    public async Task TextIsLocalDataValid_ValidatesRemoteInlineText(string hashKind, bool expectedValid)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        const string text = "remote inline text";
+        var actualHash = await Utility.CalculateSHA256(text, token);
+        var declaredHash = hashKind switch
+        {
+            "matching" => actualHash.ToLowerInvariant(),
+            "missing" => null,
+            _ => new string('A', 64)
+        };
+        var profile = Profile.Create(new ProfileDto
+        {
+            Type = ProfileType.Text,
+            Text = text,
+            Hash = declaredHash!,
+            HasData = false,
+        });
+
+        Assert.AreEqual(expectedValid, await profile.IsLocalDataValid(false, token));
+        Assert.IsNull(profile.TransferDataHash);
+        if (expectedValid)
+        {
+            Assert.IsTrue(Utility.SHA256Same(actualHash, await profile.GetHash(token)));
+        }
+        else
+        {
+            Assert.AreEqual(declaredHash, await profile.GetHash(token));
+        }
+    }
+
+    [TestMethod]
     public async Task FileTransferDataHash_EqualsFileContentHash()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -174,7 +209,7 @@ public class ProfileTransferValidationTests
                 await profiles[index].SetTransferData(paths[index], verify: false, canceled.Token);
 
                 Assert.IsNull(profiles[index].TransferDataHash);
-                Assert.IsFalse(await profiles[index].IsTransferDataValid(token));
+                Assert.IsFalse(await Utility.FileMatchesSHA256(paths[index], profiles[index].TransferDataHash, token));
             }
         }
         finally
@@ -208,7 +243,42 @@ public class ProfileTransferValidationTests
             await profile.SetTransferData(new FileHashInfo(filePath, declaredHash), true, canceled.Token);
 
             Assert.AreEqual(declaredHash, profile.TransferDataHash);
-            Assert.IsFalse(await profile.IsTransferDataValid(token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(filePath, profile.TransferDataHash, token));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    [DataRow(ProfileType.File)]
+    [DataRow(ProfileType.Image)]
+    [DataRow(ProfileType.Text)]
+    public async Task Persist_DoesNotValidateTransferData(ProfileType type)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "data.txt");
+            await File.WriteAllTextAsync(filePath, "actual content", token);
+            var declaredHash = new string('A', 64);
+            var profile = Profile.Create(new ProfileDto
+            {
+                Type = type,
+                Hash = declaredHash,
+                Text = "preview",
+                HasData = true,
+                DataName = Path.GetFileName(filePath),
+            });
+            await profile.SetTransferData(filePath, false, token);
+
+            var persistentInfo = await profile.Persist(testDirectory, token);
+
+            Assert.AreEqual(declaredHash, persistentInfo.Hash);
+            Assert.IsNotNull(persistentInfo.TransferDataFile);
+            Assert.IsNull(persistentInfo.TransferDataHash);
         }
         finally
         {

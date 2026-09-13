@@ -472,6 +472,10 @@ public class DownloadService : Service
 
                     await DownloadFileProfileData(remoteProfile, cancelToken);
                 }
+                else if (!await remoteProfile.IsLocalDataValid(false, cancelToken))
+                {
+                    throw new ProfileDataDownloadException("Remote inline data does not match the profile hash.");
+                }
 
                 if (enableHistory)
                     await _historyManager.AddLocalProfile(remoteProfile, token: cancelToken);

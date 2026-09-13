@@ -1,6 +1,7 @@
 using SyncClipboard.Shared;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
 
@@ -29,9 +30,9 @@ public class SetTransferDataInfoTests
             await profile.SetTransferData(file, verify, token);
 
             Assert.AreEqual(file.Hash, profile.TransferDataHash);
-            Assert.IsTrue(await profile.IsTransferDataValid(token));
-            if (profile is GroupProfile)
-                Assert.AreEqual(verify, Directory.Exists(file.Path[..^4]));
+            Assert.IsTrue(await Utility.FileMatchesSHA256(file.Path, profile.TransferDataHash, token));
+            if (profile is GroupProfile group)
+                Assert.AreEqual(verify, group.Files?.Length > 0);
             Assert.AreEqual(file, await profile.PrepareTransferData(directory.FullName, token));
         }
         finally
@@ -125,7 +126,7 @@ public class SetTransferDataInfoTests
             await profile.SetTransferData(new FileHashInfo(path, suppliedHash), true, token);
 
             Assert.AreEqual(suppliedHash, profile.TransferDataHash);
-            Assert.IsFalse(await profile.IsTransferDataValid(token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(path, profile.TransferDataHash, token));
         }
         finally
         {
@@ -150,13 +151,13 @@ public class SetTransferDataInfoTests
             profile.CopyTo(copy);
 
             Assert.AreEqual(file.Hash, copy.TransferDataHash);
-            Assert.IsTrue(await profile.IsTransferDataValid(token));
-            Assert.IsTrue(await copy.IsTransferDataValid(token));
+            Assert.IsTrue(await profile.IsDataComplete(false, token));
+            Assert.IsTrue(await copy.IsDataComplete(false, token));
 
             await File.WriteAllTextAsync(file.Path, "modified", token);
 
-            Assert.IsFalse(await profile.IsTransferDataValid(token));
-            Assert.IsFalse(await copy.IsTransferDataValid(token));
+            Assert.IsFalse(await profile.IsDataComplete(false, token));
+            Assert.IsFalse(await copy.IsDataComplete(false, token));
             Assert.AreEqual(file.Hash, profile.TransferDataHash);
             Assert.AreEqual(file.Hash, copy.TransferDataHash);
         }

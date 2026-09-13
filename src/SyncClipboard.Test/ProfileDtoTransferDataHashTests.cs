@@ -89,7 +89,7 @@ public class ProfileDtoTransferDataHashTests
 
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsTransferDataValid(token));
+            Assert.IsFalse(await restored.IsDataComplete(false, token));
         }
         finally
         {
@@ -115,7 +115,7 @@ public class ProfileDtoTransferDataHashTests
             Assert.AreEqual(ProfileType.Image, dto.Type);
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsTransferDataValid(token));
+            Assert.IsFalse(await restored.IsDataComplete(false, token));
         }
         finally
         {
@@ -138,7 +138,7 @@ public class ProfileDtoTransferDataHashTests
 
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsTransferDataValid(token));
+            Assert.IsFalse(await restored.IsDataComplete(false, token));
         }
         finally
         {
@@ -164,10 +164,10 @@ public class ProfileDtoTransferDataHashTests
 
             Assert.AreEqual(profile.TransferDataHash, dto.TransferDataHash);
             Assert.AreEqual(profile.TransferDataHash, restored.TransferDataHash);
-            Assert.IsFalse(await restored.IsTransferDataValid(token));
+            Assert.IsFalse(await restored.IsDataComplete(false, token));
 
             await restored.SetTransferData(archivePath, verify: true, token);
-            Assert.IsTrue(await restored.IsTransferDataValid(token));
+            Assert.IsTrue(await Utility.FileMatchesSHA256(archivePath, restored.TransferDataHash, token));
         }
         finally
         {
@@ -224,7 +224,7 @@ public class ProfileDtoTransferDataHashTests
             await officialProfile.SetTransferData(new FileHashInfo(archivePath, actualTransferDataHash), false, token);
             var persistentInfo = await officialProfile.Persist(
                 Path.Combine(testDirectory, "official-persistent"), token);
-            Assert.IsTrue(await officialProfile.IsTransferDataValid(token));
+            Assert.IsTrue(await officialProfile.IsDataComplete(false, token));
             Assert.AreEqual(dto.TransferDataHash, persistentInfo.TransferDataHash);
         }
         finally
@@ -234,7 +234,7 @@ public class ProfileDtoTransferDataHashTests
     }
 
     [TestMethod]
-    public async Task GroupProfile_DoesNotPersistUnverifiedBinding()
+    public async Task GroupProfile_PersistDoesNotValidateOrExtractTransferData()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -251,8 +251,13 @@ public class ProfileDtoTransferDataHashTests
             var unverifiedProfile = Profile.Create(dto);
             await unverifiedProfile.SetTransferData(archivePath, verify: false, token);
 
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => unverifiedProfile.Persist(Path.Combine(testDirectory, "unverified-persistent"), token));
+            var persistentInfo = await unverifiedProfile.Persist(
+                Path.Combine(testDirectory, "unverified-persistent"), token);
+
+            Assert.AreEqual(dto.Hash, persistentInfo.Hash);
+            Assert.IsNotNull(persistentInfo.TransferDataFile);
+            Assert.IsNull(persistentInfo.TransferDataHash);
+            Assert.IsEmpty(persistentInfo.FilePaths);
         }
         finally
         {
@@ -298,7 +303,7 @@ public class ProfileDtoTransferDataHashTests
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => Utility.VerifyFileSHA256(filePath, remoteProfile.TransferDataHash, token));
-            Assert.IsFalse(await remoteProfile.IsTransferDataValid(token));
+            Assert.IsFalse(await remoteProfile.IsDataComplete(false, token));
         }
         finally
         {
@@ -322,7 +327,7 @@ public class ProfileDtoTransferDataHashTests
 
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
                 () => Utility.VerifyFileSHA256(transferPath, remoteProfile.TransferDataHash, token));
-            Assert.IsFalse(await remoteProfile.IsTransferDataValid(token));
+            Assert.IsFalse(await remoteProfile.IsDataComplete(false, token));
         }
         finally
         {

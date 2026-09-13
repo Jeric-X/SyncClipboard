@@ -42,6 +42,45 @@ public class UtilitySHA256Tests
     }
 
     [TestMethod]
+    public async Task FileMatchesSHA256ChecksContentAndHandlesUnavailableData()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = Directory.CreateTempSubdirectory("SyncClipboard-ValidateSHA256-");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "file.txt");
+            await File.WriteAllTextAsync(path, "content", token);
+            var expectedHash = await Utility.CalculateFileSHA256(path, token);
+
+            Assert.IsTrue(await Utility.FileMatchesSHA256(path, expectedHash.ToLowerInvariant(), token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(null, expectedHash, token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(string.Empty, expectedHash, token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(path, null, token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(path, "malformed", token));
+
+            await using (var lockedFile = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                Assert.IsFalse(await Utility.FileMatchesSHA256(path, expectedHash, token));
+            }
+
+            using var canceled = new CancellationTokenSource();
+            await canceled.CancelAsync();
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                () => Utility.FileMatchesSHA256(path, expectedHash, canceled.Token));
+
+            await File.WriteAllTextAsync(path, "changed", token);
+            Assert.IsFalse(await Utility.FileMatchesSHA256(path, expectedHash, token));
+
+            File.Delete(path);
+            Assert.IsFalse(await Utility.FileMatchesSHA256(path, expectedHash, token));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
     public void SHA256Same_IgnoresCaseAndDetectsDifferentHashes()
     {
         var hash = new string('A', 64);

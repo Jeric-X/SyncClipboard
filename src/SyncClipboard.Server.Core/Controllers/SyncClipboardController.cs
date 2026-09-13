@@ -205,6 +205,10 @@ public class SyncClipboardController(
     private async Task<IActionResult> CreateAndSaveNewProfile(ProfileDto dto, CancellationToken token)
     {
         var newProfile = Profile.Create(dto with { TransferDataHash = null });
+        if (!dto.HasData && !await newProfile.IsLocalDataValid(false, token))
+        {
+            return BadRequest("Inline data does not match the profile hash.");
+        }
         var transferDataError = await SetTransferData(dto, newProfile, token);
         if (transferDataError is not null)
         {

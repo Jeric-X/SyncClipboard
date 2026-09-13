@@ -72,8 +72,7 @@ public class ProfileActionBuilderTest
             var archivePath = (await sourceProfile.PrepareTransferData(directory, token))?.Path;
             Assert.IsNotNull(archivePath);
             var profile = new GroupProfile([], await sourceProfile.GetHash(token), archivePath, sourceProfile.TransferDataHash);
-            var extractedPath = Path.Combine(archivePath[..^4], "source.txt");
-            Assert.IsFalse(File.Exists(extractedPath));
+            Assert.IsEmpty(profile.Files);
 
             if (primary)
             {
@@ -87,7 +86,8 @@ public class ProfileActionBuilderTest
                 Assert.IsTrue(actions.Any(action => action.Text == Strings.Open));
             }
 
-            CollectionAssert.AreEqual(new[] { extractedPath }, profile.Files);
+            var extractedPath = profile.Files.Single();
+            Assert.AreEqual("source.txt", Path.GetFileName(extractedPath));
             Assert.AreEqual("content", await File.ReadAllTextAsync(extractedPath, token));
         }
         finally

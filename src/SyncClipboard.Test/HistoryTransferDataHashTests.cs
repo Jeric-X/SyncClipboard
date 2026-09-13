@@ -30,6 +30,41 @@ public class HistoryTransferDataHashTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AddRecordDto_InlineTextWithoutFileRequiresMatchingHash(bool matchingHash)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        const string text = "inline history text";
+        var actualHash = await Utility.CalculateSHA256(text, token);
+        var dto = new HistoryRecordDto
+        {
+            Type = ProfileType.Text,
+            Text = text,
+            Hash = matchingHash ? actualHash.ToLowerInvariant() : new string('A', 64),
+            Size = text.Length,
+            HasData = false,
+        };
+
+        if (!matchingHash)
+        {
+            await Assert.ThrowsExactlyAsync<ArgumentException>(
+                () => fixture.Service.AddRecordDto("user", dto, null, null, token));
+            Assert.AreEqual(0, await fixture.DbContext.HistoryRecords.CountAsync(token));
+            return;
+        }
+
+        var result = await fixture.Service.AddRecordDto("user", dto, null, null, token);
+        var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
+
+        Assert.AreEqual(text, entity.Text);
+        Assert.IsTrue(Utility.SHA256Same(actualHash, entity.Hash));
+        Assert.IsTrue(Utility.SHA256Same(actualHash, result.Hash));
+        Assert.IsNull(entity.TransferDataHash);
+    }
+
+    [TestMethod]
     public async Task AddRecordDto_GroupWithMatchingArchiveHashStillRequiresSemanticValidation()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -60,6 +95,43 @@ public class HistoryTransferDataHashTests
             () => fixture.Service.AddRecordDto("user", dto, new string('B', 64), stream, token));
 
         Assert.AreEqual(0, await fixture.DbContext.HistoryRecords.CountAsync(token));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AddRecordDto_RejectedUploadPreservesExistingExtractionDirectory(bool mismatchedTransferHash)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        var dto = CreateGroupDto(new string('A', 64));
+        var existing = dto.ToEntity("user");
+        existing.IsDeleted = true;
+        existing.TransferDataFile = "data.zip";
+        fixture.DbContext.HistoryRecords.Add(existing);
+        await fixture.DbContext.SaveChangesAsync(token);
+
+        var workingDir = Profile.CreateWorkingDir(fixture.PersistentDirectory, dto.Type, dto.Hash);
+        var uploadPath = Path.Combine(workingDir, existing.TransferDataFile);
+        var oldExtractDir = uploadPath[..^4];
+        Directory.CreateDirectory(oldExtractDir);
+        var sentinelPath = Path.Combine(oldExtractDir, "keep.txt");
+        await File.WriteAllTextAsync(sentinelPath, "existing content", token);
+        var archivePath = Path.Combine(fixture.RootDirectory, "incoming.zip");
+        await CreateArchiveAsync(archivePath, "unexpected.txt", "unexpected", token);
+        var declaredHash = mismatchedTransferHash
+            ? new string('B', 64)
+            : await Utility.CalculateFileSHA256(archivePath, token);
+
+        await using var stream = File.OpenRead(archivePath);
+        await Assert.ThrowsExactlyAsync<HistoryTransferDataException>(
+            () => fixture.Service.AddRecordDto("user", dto, declaredHash, stream, token));
+
+        Assert.AreEqual("existing content", await File.ReadAllTextAsync(sentinelPath, token));
+        Assert.IsFalse(File.Exists(uploadPath));
+        CollectionAssert.AreEqual(new[] { oldExtractDir }, Directory.GetDirectories(workingDir));
+        Assert.IsTrue(existing.IsDeleted);
+        Assert.AreEqual(1, await fixture.DbContext.HistoryRecords.CountAsync(token));
     }
 
     [TestMethod]
@@ -364,6 +436,64 @@ public class HistoryTransferDataHashTests
 
         Assert.AreEqual("existing", await File.ReadAllTextAsync(localPath, token));
         Assert.AreEqual(0, Directory.GetFiles(fixture.RootDirectory, "*.download").Length);
+    }
+
+    [TestMethod]
+    public async Task PutSyncProfile_InvalidInlineTextDoesNotPersistOrPublish()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        var hubContext = new TestHubContext();
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var controller = new SyncClipboardController(hubContext, cache, fixture.ServerEnv, fixture.Service);
+        var profilePath = Path.Combine(fixture.ServerEnv.GetDataRootPath(), "SyncClipboard.json");
+        var dto = new ProfileDto
+        {
+            Type = ProfileType.Text,
+            Hash = await Utility.CalculateSHA256("original", token),
+            Text = "altered",
+            HasData = false,
+        };
+
+        var result = await controller.PutSyncProfile(dto, token);
+
+        Assert.IsInstanceOfType<BadRequestObjectResult>(result);
+        Assert.AreEqual(0, await fixture.DbContext.HistoryRecords.CountAsync(token));
+        Assert.IsNull(hubContext.Client.LastProfile);
+        Assert.IsFalse(cache.TryGetValue(profilePath, out _));
+        Assert.IsFalse(File.Exists(profilePath));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PutSyncProfile_ValidInlineTextPersistsAndPublishes(bool omitHash)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        var hubContext = new TestHubContext();
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var controller = new SyncClipboardController(hubContext, cache, fixture.ServerEnv, fixture.Service);
+        const string text = "inline text";
+        var actualHash = await Utility.CalculateSHA256(text, token);
+        var dto = new ProfileDto
+        {
+            Type = ProfileType.Text,
+            Hash = omitHash ? string.Empty : actualHash.ToLowerInvariant(),
+            Text = text,
+            HasData = false,
+        };
+
+        var result = await controller.PutSyncProfile(dto, token);
+
+        Assert.IsInstanceOfType<OkResult>(result);
+        var entity = await fixture.DbContext.HistoryRecords.SingleAsync(token);
+        Assert.AreEqual(text, entity.Text);
+        Assert.IsTrue(Utility.SHA256Same(actualHash, entity.Hash));
+        Assert.IsNull(entity.TransferDataHash);
+        Assert.IsNotNull(hubContext.Client.LastProfile);
+        Assert.AreEqual(text, hubContext.Client.LastProfile.Text);
+        Assert.IsTrue(Utility.SHA256Same(actualHash, hubContext.Client.LastProfile.Hash));
     }
 
     [TestMethod]

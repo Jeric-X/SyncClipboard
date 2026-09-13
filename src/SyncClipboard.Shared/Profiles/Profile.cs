@@ -16,7 +16,6 @@ public abstract class Profile
     public abstract string DisplayText { get; }
     public abstract string ShortDisplayText { get; }
     public abstract Task<bool> IsLocalDataValid(bool quick, CancellationToken token);
-    public abstract Task<bool> IsTransferDataValid(CancellationToken token);
 
     /// <summary>
     /// 检查本地数据或传输文件是否至少有一份完整可用；不保证数据已完成本地化。
@@ -104,39 +103,15 @@ public abstract class Profile
 
     public abstract Task SetAndMoveTransferData(string persistentDir, string path, CancellationToken token);
 
-    public abstract Task SetAndMoveTransferData(
-        string persistentDir, string path, string transferDataHash, CancellationToken token);
-
     /// <summary>
     /// 验证 Profile 语义并移动调用方已核对 SHA-256 的文件。
     /// </summary>
-    public Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token)
-    {
-        return SetAndMoveTransferData(persistentDir, file.Path, file.Hash, token);
-    }
+    public abstract Task SetAndMoveTransferData(string persistentDir, FileHashInfo file, CancellationToken token);
     /// <summary>
     /// 仅根据现有元数据计算接收传输文件的保存路径，不验证数据或创建目录。
     /// 不支持传输文件时返回 null。
     /// </summary>
     public abstract string? GetTransferDataSavePath(string persistentDir);
-
-    protected async Task<bool> IsTransferDataValid(string? path, CancellationToken token)
-    {
-        if (!Utility.IsValidSHA256(TransferDataHash) || string.IsNullOrEmpty(path) || !File.Exists(path))
-        {
-            return false;
-        }
-
-        try
-        {
-            var actualHash = await Utility.CalculateFileSHA256(path, token);
-            return Utility.SHA256Same(actualHash, TransferDataHash);
-        }
-        catch when (!token.IsCancellationRequested)
-        {
-            return false;
-        }
-    }
 
     public async Task<string> GetProfileId(CancellationToken token)
     {

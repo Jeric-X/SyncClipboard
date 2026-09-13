@@ -155,14 +155,18 @@ public class ProfileTryLocalizeTests
             var archivePath = (await profile.PrepareTransferData(directory.FullName, token))?.Path;
             Assert.IsNotNull(archivePath);
             await File.WriteAllTextAsync(sourceFile, "modified", token);
-            // 解压目标被普通文件占用：这是本地操作失败，不能当成需要下载。
-            await File.WriteAllTextAsync(archivePath[..^4], "occupied", token);
+            // 文件 hash 已由外部确认，但内容不是 ZIP：解压失败不能当成需要下载。
+            await File.WriteAllTextAsync(archivePath, "invalid archive", token);
+            var actualHash = await Utility.CalculateFileSHA256(archivePath, token);
+            await profile.SetTransferData(new FileHashInfo(archivePath, actualHash), false, token);
 
-            await Assert.ThrowsAsync<IOException>(() => profile.TryLocalize(directory.FullName, clearInvalidLocalPaths, token));
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => profile.TryLocalize(directory.FullName, clearInvalidLocalPaths, token));
 
             Assert.AreEqual(sourceFile, profile.Files.Single());
             Assert.AreEqual("modified", await File.ReadAllTextAsync(sourceFile, token));
-            Assert.AreEqual("occupied", await File.ReadAllTextAsync(archivePath[..^4], token));
+            var extractionPattern = Path.GetFileNameWithoutExtension(archivePath) + ".*";
+            Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(archivePath)!, extractionPattern));
         }
         finally
         {

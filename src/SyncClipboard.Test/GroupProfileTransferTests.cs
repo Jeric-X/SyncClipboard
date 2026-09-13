@@ -266,9 +266,9 @@ public class GroupProfileTransferTests
             await File.WriteAllTextAsync(sentinelPath, "keep", token);
             var profile = new GroupProfile([], await sourceProfile.GetHash(token));
 
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => profile.SetTransferData(archivePath, verify: true, token));
+            await profile.SetTransferData(archivePath, verify: true, token);
 
+            Assert.AreEqual("source", await File.ReadAllTextAsync(profile.Files.Single(), token));
             Assert.AreEqual("keep", await File.ReadAllTextAsync(sentinelPath, token));
             Assert.IsTrue(File.Exists(archivePath));
             Assert.IsFalse(Directory.EnumerateDirectories(testDirectory, "*.tmp").Any());
@@ -280,7 +280,9 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task SetTransferData_OwnershipMarkerAllowsReplacementByNewProfileInstance()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task SetTransferData_AlwaysUsesUniqueExtractionDirectories(bool reuseInstance)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -298,15 +300,21 @@ public class GroupProfileTransferTests
 
             var firstProfile = new GroupProfile([], profileHash);
             await firstProfile.SetTransferData(archivePath, verify: true, token);
-            var extractedFile = Path.Combine(testDirectory, "received", "source.txt");
+            var extractedFile = firstProfile.Files.Single();
             await File.WriteAllTextAsync(extractedFile, "stale", token);
 
-            var restartedProfile = new GroupProfile([], profileHash);
+            var restartedProfile = reuseInstance ? firstProfile : new GroupProfile([], profileHash);
             await restartedProfile.SetTransferData(archivePath, verify: true, token);
 
-            Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
+            Assert.AreEqual("stale", await File.ReadAllTextAsync(extractedFile, token));
             Assert.HasCount(1, restartedProfile.Files);
-            Assert.AreEqual(extractedFile, restartedProfile.Files[0]);
+            var newFile = restartedProfile.Files.Single();
+            Assert.AreNotEqual(extractedFile, newFile);
+            Assert.AreEqual("source", await File.ReadAllTextAsync(newFile, token));
+            var extractDir = Path.GetDirectoryName(newFile)!;
+            Assert.StartsWith("received.", Path.GetFileName(extractDir));
+            Assert.IsTrue(Guid.TryParseExact(Path.GetFileName(extractDir)["received.".Length..], "N", out _));
+            Assert.IsFalse(File.Exists(Path.Combine(extractDir, ".syncclipboard-extraction-owner")));
         }
         finally
         {
@@ -471,7 +479,7 @@ public class GroupProfileTransferTests
 
             Assert.AreEqual(archivePath, reusedPath);
             Assert.AreEqual(persistentInfo.TransferDataHash, restoredProfile.TransferDataHash);
-            Assert.IsTrue(await restoredProfile.IsTransferDataValid(token));
+            Assert.IsTrue(await Utility.FileMatchesSHA256(reusedPath, restoredProfile.TransferDataHash, token));
         }
         finally
         {
@@ -497,15 +505,17 @@ public class GroupProfileTransferTests
             File.Delete(sourceFile);
             var restoredProfile = Profile.Create(persistentDirectory, persistentInfo);
             await restoredProfile.SetTransferData(new FileHashInfo(archivePath, persistentInfo.TransferDataHash!), false, token);
-            var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
-            Assert.IsFalse(File.Exists(extractedFile));
+            var archiveDirectory = Path.GetDirectoryName(archivePath)!;
+            var extractionPattern = Path.GetFileNameWithoutExtension(archivePath) + ".*";
+            Assert.IsEmpty(Directory.GetDirectories(archiveDirectory, extractionPattern));
 
             Assert.IsTrue(await restoredProfile.IsDataComplete(false, token));
-            Assert.IsFalse(File.Exists(extractedFile));
+            Assert.IsEmpty(Directory.GetDirectories(archiveDirectory, extractionPattern));
 
             Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, false, token));
             var localInfo = await restoredProfile.Localize(Path.Combine(testDirectory, "local"), token);
 
+            var extractedFile = localInfo.FilePaths.Single();
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
             CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
             Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
@@ -551,7 +561,7 @@ public class GroupProfileTransferTests
             CollectionAssert.AreEqual(new[] { secondSourceFile }, cachedProfile.Files);
             Assert.AreEqual("legacy", await File.ReadAllTextAsync(legacyFile, token));
             Assert.IsNotNull(cachedProfile.TransferDataHash);
-            Assert.IsTrue(await cachedProfile.IsTransferDataValid(token));
+            Assert.IsTrue(await Utility.FileMatchesSHA256(archivePath, cachedProfile.TransferDataHash, token));
         }
         finally
         {
@@ -578,7 +588,7 @@ public class GroupProfileTransferTests
 
             var restoredProfile = new GroupProfile([], profileHash);
             await restoredProfile.SetTransferData(new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), true, token);
-            var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
+            var extractedFile = restoredProfile.Files.Single();
             await File.WriteAllTextAsync(extractedFile, "modified", token);
             Assert.IsFalse(await restoredProfile.IsLocalDataValid(false, token));
 
@@ -591,8 +601,10 @@ public class GroupProfileTransferTests
 
             var localInfo = await restoredProfile.Localize(Path.Combine(testDirectory, "local"), token);
 
-            Assert.AreEqual(tryLocalize ? "source" : "modified", await File.ReadAllTextAsync(extractedFile, token));
-            CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
+            Assert.AreEqual("modified", await File.ReadAllTextAsync(extractedFile, token));
+            var currentFile = localInfo.FilePaths.Single();
+            Assert.AreEqual(tryLocalize ? "source" : "modified", await File.ReadAllTextAsync(currentFile, token));
+            Assert.AreEqual(tryLocalize, currentFile != extractedFile);
             Assert.AreEqual(tryLocalize, await restoredProfile.IsLocalDataValid(false, token));
         }
         finally
@@ -618,7 +630,7 @@ public class GroupProfileTransferTests
 
             var restoredProfile = new GroupProfile([], profileHash);
             await restoredProfile.SetTransferData(new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), true, token);
-            var extractedFile = Path.Combine(archivePath[..^4], Path.GetFileName(sourceFile));
+            var extractedFile = restoredProfile.Files.Single();
             await File.WriteAllTextAsync(extractedFile, "modified", token);
 
             File.Delete(archivePath);
@@ -631,7 +643,7 @@ public class GroupProfileTransferTests
 
             Assert.IsFalse(await restoredProfile.TryLocalize(persistentDirectory, false, token));
             Assert.IsFalse(await restoredProfile.IsDataComplete(false, token));
-            Assert.IsFalse(await restoredProfile.IsTransferDataValid(token));
+            Assert.IsFalse(await Utility.FileMatchesSHA256(archivePath, restoredProfile.TransferDataHash, token));
         }
         finally
         {
@@ -640,7 +652,7 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task Localize_RegeneratedArchiveForSameProfile_ReplacesOwnedExtractionDirectory()
+    public async Task Localize_RegeneratedArchiveForSameProfile_PreservesPreviousExtractionDirectory()
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -675,6 +687,8 @@ public class GroupProfileTransferTests
 
             Assert.AreEqual("source", await File.ReadAllTextAsync(localInfo.FilePaths.Single(), token));
             Assert.AreEqual(regeneratedTransferDataHash, restartedProfile.TransferDataHash);
+            Assert.AreNotEqual(firstProfile.Files.Single(), localInfo.FilePaths.Single());
+            Assert.AreEqual("source", await File.ReadAllTextAsync(firstProfile.Files.Single(), token));
         }
         finally
         {

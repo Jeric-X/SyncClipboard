@@ -1,4 +1,5 @@
 using SyncClipboard.Shared;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Utilities;
 
@@ -54,8 +55,15 @@ public class ProfileTransferDataReplacementTests
                 Assert.IsFalse(File.Exists(incomingPath));
             if (profile is GroupProfile restoredGroup)
             {
-                Assert.AreEqual(Path.Combine(targetPath[..^4], "source.txt"), restoredGroup.Files.Single());
+                var extractDir = Path.GetDirectoryName(restoredGroup.Files.Single())!;
+                Assert.AreEqual(Path.GetDirectoryName(targetPath), Path.GetDirectoryName(extractDir));
+                Assert.StartsWith(Path.GetFileNameWithoutExtension(targetPath) + ".", Path.GetFileName(extractDir));
                 Assert.AreEqual(Content, await File.ReadAllTextAsync(restoredGroup.Files.Single(), token));
+                var persistentInfo = await restoredGroup.Persist(persistentDir, token);
+                var recreated = Profile.Create(persistentDir, persistentInfo);
+                var localInfo = await recreated.Localize(persistentDir, token);
+                CollectionAssert.AreEqual(restoredGroup.Files, localInfo.FilePaths);
+                Assert.IsTrue(await recreated.IsLocalDataValid(false, token));
             }
         }
         finally
@@ -110,18 +118,18 @@ public class ProfileTransferDataReplacementTests
             var persistentDir = Path.Combine(directory.FullName, "persistent");
             var (profile, targetPath) = await CreateProfileWithData(directory.FullName, persistentDir, ProfileType.Group, token);
             var originalData = await File.ReadAllBytesAsync(targetPath, token);
-            File.Delete(Path.Combine(targetPath[..^4], ".syncclipboard-extraction-owner"));
+            Directory.CreateDirectory(targetPath[..^4]);
             var unrelatedFile = Path.Combine(targetPath[..^4], "unrelated.txt");
             await File.WriteAllTextAsync(unrelatedFile, "keep", token);
             var incomingDir = Directory.CreateDirectory(Path.Combine(directory.FullName, "incoming")).FullName;
             var incomingPath = Path.Combine(incomingDir, Path.GetFileName(targetPath));
             File.Copy(targetPath, incomingPath);
 
-            await Assert.ThrowsAsync<InvalidDataException>(() => SetAndMove(profile, persistentDir, incomingPath, true, token));
+            await SetAndMove(profile, persistentDir, incomingPath, true, token);
 
             Assert.AreEqual("keep", await File.ReadAllTextAsync(unrelatedFile, token));
             CollectionAssert.AreEqual(originalData, await File.ReadAllBytesAsync(targetPath, token));
-            Assert.IsTrue(File.Exists(incomingPath));
+            Assert.IsFalse(File.Exists(incomingPath));
         }
         finally
         {
@@ -168,7 +176,7 @@ public class ProfileTransferDataReplacementTests
         if (suppliedHash)
         {
             var actualHash = await Utility.VerifyFileSHA256(path, null, token);
-            await profile.SetAndMoveTransferData(persistentDir, path, actualHash, token);
+            await profile.SetAndMoveTransferData(persistentDir, new FileHashInfo(path, actualHash), token);
         }
         else
         {

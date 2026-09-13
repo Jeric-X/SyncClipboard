@@ -1,5 +1,7 @@
+using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test;
 
@@ -7,6 +9,69 @@ namespace SyncClipboard.Test;
 public class ProfileDataCompletenessTests
 {
     public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow(ProfileType.File)]
+    [DataRow(ProfileType.Image)]
+    [DataRow(ProfileType.Text)]
+    public async Task FileAndTextChecksUseProfileSemanticsAndRefreshTransferHash(ProfileType type)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = Directory.CreateTempSubdirectory("SyncClipboard-SemanticCheck-");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "source.txt");
+            var content = new string('T', 20000);
+            await File.WriteAllTextAsync(path, content, token);
+            Profile source = type switch
+            {
+                ProfileType.File => new FileProfile(path),
+                ProfileType.Image => new ImageProfile(path),
+                _ => new TextProfile(content)
+            };
+            var expectedHash = await source.GetHash(token);
+            var expectedTransferHash = await Utility.CalculateFileSHA256(path, token);
+            var info = new ProfilePersistentInfo
+            {
+                Type = type,
+                Text = "source.txt",
+                Size = content.Length,
+                Hash = expectedHash.ToLowerInvariant(),
+                FilePaths = [path],
+                TransferDataFile = path
+            };
+
+            foreach (var complete in new[] { false, true })
+            {
+                foreach (var transferHash in new[] { null, "malformed", new string('A', 64), expectedTransferHash })
+                {
+                    var profile = Profile.Create(directory.FullName, info with { TransferDataHash = transferHash });
+                    Assert.IsTrue(complete
+                        ? await profile.IsDataComplete(true, token)
+                        : await profile.IsLocalDataValid(true, token));
+                    Assert.AreEqual(transferHash, profile.TransferDataHash);
+                    Assert.IsTrue(complete
+                        ? await profile.IsDataComplete(false, token)
+                        : await profile.IsLocalDataValid(false, token));
+                    Assert.AreEqual(expectedTransferHash, profile.TransferDataHash);
+                }
+
+                var mismatched = Profile.Create(directory.FullName, info with
+                {
+                    Hash = new string('B', 64),
+                    TransferDataHash = expectedTransferHash
+                });
+                Assert.IsFalse(complete
+                    ? await mismatched.IsDataComplete(false, token)
+                    : await mismatched.IsLocalDataValid(false, token));
+                Assert.AreEqual(expectedTransferHash, mismatched.TransferDataHash);
+            }
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
 
     [TestMethod]
     [DataRow("valid", "missing", true, true)]
@@ -80,10 +145,11 @@ public class ProfileDataCompletenessTests
             var filePath = Path.Combine(testDirectory, "file.png");
             await File.WriteAllBytesAsync(filePath, [1, 2, 3], token);
             Profile profile = image ? new ImageProfile(filePath) : new FileProfile(filePath);
-            await profile.GetHash(token);
 
             Assert.IsTrue(await profile.IsDataComplete(true, token));
+            Assert.IsNull(profile.TransferDataHash);
             Assert.IsTrue(await profile.IsDataComplete(false, token));
+            Assert.AreEqual(await Utility.CalculateFileSHA256(filePath, token), profile.TransferDataHash);
             await File.WriteAllBytesAsync(filePath, [4, 5, 6], token);
             Assert.IsTrue(await profile.IsDataComplete(true, token));
             Assert.IsFalse(await profile.IsDataComplete(false, token));
@@ -111,6 +177,8 @@ public class ProfileDataCompletenessTests
             Assert.IsTrue(await profile.IsDataComplete(true, token));
             Assert.IsTrue(await profile.IsDataComplete(false, token));
             Assert.IsTrue(await profile.TryLocalize(testDirectory, false, token));
+            Assert.IsTrue(await profile.IsLocalDataValid(false, token));
+            Assert.AreEqual(length > 10240 ? await profile.GetHash(token) : null, profile.TransferDataHash);
             Assert.IsFalse(Directory.EnumerateFileSystemEntries(testDirectory).Any());
         }
         finally
