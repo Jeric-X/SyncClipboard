@@ -113,8 +113,14 @@ Desktop、Test.Desktop 改为 net10.0，Default 改为 `net10.0-windows10.0.1776
 
 当前步骤须通过 Desktop 非 UI 测试、Default 双 TFM 编译、macOS 双架构发布及真实 PR 的原平台打包矩阵；新产物运行框架和包内容待验证，暂不允许步骤 4。
 
-Linux 包元数据同步 .NET 10 的 glibc >= 2.27 和 OpenSSL >= 1.1.1 要求：RPM 约束现有 Requires，deb 保留原 Recommends 策略并使用 libssl3t64/libssl3/libssl1.1 备选名。未把运行时包名写成强制包管理器依赖，避免拒绝通过官方脚本安装的运行时；中英文安装说明要求 no-dotnet-runtime 包安装匹配架构的 ASP.NET Core 10 运行时。依据：[支持系统/libc 表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)、[OpenSSL 变更](https://learn.microsoft.com/en-us/dotnet/core/compatibility/cryptography/10.0/openssl-version-requirement)、[Ubuntu 原生依赖](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install)，2026-09-13 核对。新 deb/rpm 元数据须随 PR 产物实际检查。
+Linux 安装文档明确 .NET 10 的 glibc >= 2.27 和 OpenSSL >= 1.1.1 要求。首次尝试把版本约束及 libssl 备选表达式写入包配置，被 PupNet 1.8.0 的 SafeNoSpace/安全字符校验拒绝；该工具只支持包名。当前修复保留 RPM Requires 与 deb Recommends 的原策略，添加显式 glibc 并将旧 libssl 名称改为 libssl3，不声称包管理器已强制上述版本下限。未把运行时包名写成强制包管理器依赖，避免拒绝通过官方脚本安装的运行时；中英文安装说明要求 no-dotnet-runtime 包安装匹配架构的 ASP.NET Core 10 运行时。依据：[支持系统/libc 表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)、[OpenSSL 变更](https://learn.microsoft.com/en-us/dotnet/core/compatibility/cryptography/10.0/openssl-version-requirement)、[Ubuntu 原生依赖](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install)，2026-09-13 核对。新 deb/rpm 元数据须随 PR 产物实际检查。
 
 本机 SDK 10.0.302 下 Desktop net10 非 UI 测试 4 通过、0 失败/跳过；Linux x64 自包含发布、Default Windows TFM 编译、macOS arm64 发布均退出 0，日志分别为 `/tmp/syncclipboard-stage3-desktop-test.log`、`/tmp/syncclipboard-stage3-linux-publish.log`、`/tmp/syncclipboard-stage3-default-windows-build.log`、`/tmp/syncclipboard-stage3-macos-publish.log`。资产确认 Avalonia/FluentAvalonia 仍为原版本；Linux 运行框架为 net10.0，本机自包含运行时为 10.0.10。格式检查新增 IDE0330：将轮询监听器的私有同步锁改为 System.Threading.Lock，保留三处临界区；最终复验结果待补充。
 
 最终本地复验：Desktop net10 非 UI 4 通过、0 失败/跳过（`/tmp/syncclipboard-stage3-final-results/`）；macOS arm64 发布退出 0（`/tmp/syncclipboard-stage3-macos-final.log`）；仓库完整格式检查退出 0（`/tmp/syncclipboard-stage3-format-final.log`，跨平台工作区加载警告保留，最终全量结论待 CI）。工作流 YAML、AGENTS/CLAUDE 指令一致性及 `git diff --check` 通过。步骤 3 尚待新 head 的 CI、评审和产物证据。
+
+步骤 3 首轮 Linux 打包失败原因已定位为上述 PupNet 配置语法限制，相关取消和跳过均不计通过；本步需在修复后的新 head 重新验证完整打包矩阵。源码依据：[v1.8.0 配置读取器](https://github.com/kuiperzone/PupNet-Deploy/blob/v1.8.0/PupNet/ConfigurationReader.cs)，原工具版本继续保留，步骤 17c 再核定升级。
+
+PupNet 修复的本地验证使用与 CI 相同的 1.8.0 工具：旧配置副本通过 --upgrade-conf 命令复现拒绝，修正后的 deb/rpm/AppImage 副本均成功解析（退出码 0），报告目录 `/private/tmp/syncclipboard-pupnet-config-check/`。此检查仅证明配置解析，不能替代真实 Linux 打包；新 head 仍须重新跑 PR。
+
+补充非 UI 协议验证：临时 SDK.Web net10 宿主直接编译现有服务器 Program.cs 并引用原 Server.Core；实际 OfficialAdapter/WebDavAdapter 命令行探针分别以 net8/net10 编译。四种客户端/宿主组合均通过认证、Profile/文件完整性、历史查询、SignalR Profile/历史推送、显式断开重连及取消。重复内容更名后按服务器返回的 canonical DataName 下载，符合服务器复用既有历史记录的协议；不把上传临时文件名当作最终引用。报告 `/tmp/syncclipboard-stage3-protocol-matrix.json`，探针 `/private/tmp/syncclipboard-protocol-probe/`，宿主 `/private/tmp/syncclipboard-stage3-headless-host/`，驱动 `/private/tmp/syncclipboard_protocol_matrix.py`。这不覆盖网络中断后的自动重连、代理/HTTPS 或外部 S3/WebDAV 服务；后续相应依赖步骤仍需专门回归。产品 Server TFM 未提前变更。
