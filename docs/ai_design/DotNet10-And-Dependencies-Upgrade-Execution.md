@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1 已通过，当前执行步骤 2：将 WinUI3 入口及测试改为 .NET 10；中央依赖版本保持基线。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 1 验证通过提交为 `f144fa7fc3bef5ee9f55ca636d561fc0cbcca607`；步骤 2 尚待当前改动的 PR 验证，不允许进入步骤 3。
-- 步骤 3–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1、2 已通过，当前执行步骤 3：将 Avalonia 桌面层、Default 入口及测试改为 .NET 10；中央依赖版本保持基线。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 2 验证通过提交为 `8d0eb50fec2ba4d16bef61d4233502da45bff058`；步骤 3 尚待当前改动的 PR 验证，不允许进入步骤 4。
+- 步骤 4–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -96,3 +96,25 @@ CodeFactor 三项问题分别修复为：HTTPConnection 只允许本机 HTTP 且
 本机 SDK 10.0.302 已成功还原两个 WinUI3 项目，资产包含 net10 的 win-x86/x64/arm64 目标；WindowsAppSDK 仍解析为 1.8.260529003。MSBuild 属性查询确认两个 TFM 和原最低系统声明；工作流 YAML 解析通过，AGENTS/CLAUDE 除各自标题和工具介绍外指令一致。旧 Magick.NET 14.9.1 与 SQLitePCLRaw.lib.e_sqlite3 2.1.10 的漏洞警告保持可见，分别在步骤 11 和步骤 7 处理，最终交付前必须核验处理结果。
 
 仓库格式检查发现 WinUI3 默认语言版本变化后两处 IDE0031；仅将 HistoryWindow 中两处空值检查赋值改为条件赋值。沙箱首次因命名管道权限失败，沙箱外修复后运行 `cd src && dotnet format --verify-no-changes --severity info --no-restore` 退出码 0，日志 `/tmp/syncclipboard-stage2-format-final.log`。仍有跨平台工作区加载警告，Windows 全量编译结论待 CI。`git diff --check` 通过。
+
+### 步骤 2 最终通过证据
+
+验证通过提交：`8d0eb50fec2ba4d16bef61d4233502da45bff058`。[PR build 34756063481](https://github.com/Jeric-X/SyncClipboard/actions/runs/34756063481)、[push build 34756061780](https://github.com/Jeric-X/SyncClipboard/actions/runs/34756061780)、[CodeQL 34756063226](https://github.com/Jeric-X/SyncClipboard/actions/runs/34756063226) 及 CodeFactor 完成。最终 103 项成功、8 项预期发布任务跳过，无失败或运行中检查；现有 4 个评审线程已解决，当前 head 的 Codex 评审完成，无新增可处理问题。
+
+下载全部 47 个 artifact；五份 TRX 由仓库校验器实际解析：Core 346、三平台 Desktop 各 4、WinUI3 net10.0 为 4，共 362 通过、0 失败/跳过。38 个 Windows/Linux 构建和包组合通过完整性、框架、自包含模式、资源和原生 CPU 架构检查；报告 `/tmp/syncclipboard-pr419-8d0e-package-audit.json`，退出码 0。Windows 产物声明 net10.0，非自包含框架最低版本 10.0.0，自包含实际携带 .NET/ASP.NET Core 10.0.11；Linux 保留 net8。两个 macOS dmg 的主程序、每包 19 个 dylib、资源及严格签名通过，已卸载；下载的服务器 DLL 两轮隔离 API/持久化冒烟通过。全程未启动桌面产物。
+
+步骤 2 通过，允许进入步骤 3；这不表示后续依赖升级或 UI 验收完成。
+
+## 步骤 3：Avalonia 桌面层、Default 入口与测试升级 .NET 10
+
+前置步骤通过提交：`8d0eb50fec2ba4d16bef61d4233502da45bff058`。状态：进行中。
+
+Desktop、Test.Desktop 改为 net10.0，Default 改为 `net10.0-windows10.0.17763.0;net10.0`，MacOS 保持 net10.0-macos；Avalonia 11.3.18、FluentAvalonia 2.3.0 及全部中央依赖版本不变。同步 Linux 发布 TFM、备用 Windows 入口 CI、调试配置及 AGENTS/CLAUDE。ReleaseAva 调试任务原来发布共享类库并寻找其可执行文件，随入口路径同步修正为 Default 项目，显式选择 net10.0。
+
+当前步骤须通过 Desktop 非 UI 测试、Default 双 TFM 编译、macOS 双架构发布及真实 PR 的原平台打包矩阵；新产物运行框架和包内容待验证，暂不允许步骤 4。
+
+Linux 包元数据同步 .NET 10 的 glibc >= 2.27 和 OpenSSL >= 1.1.1 要求：RPM 约束现有 Requires，deb 保留原 Recommends 策略并使用 libssl3t64/libssl3/libssl1.1 备选名。未把运行时包名写成强制包管理器依赖，避免拒绝通过官方脚本安装的运行时；中英文安装说明要求 no-dotnet-runtime 包安装匹配架构的 ASP.NET Core 10 运行时。依据：[支持系统/libc 表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)、[OpenSSL 变更](https://learn.microsoft.com/en-us/dotnet/core/compatibility/cryptography/10.0/openssl-version-requirement)、[Ubuntu 原生依赖](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install)，2026-09-13 核对。新 deb/rpm 元数据须随 PR 产物实际检查。
+
+本机 SDK 10.0.302 下 Desktop net10 非 UI 测试 4 通过、0 失败/跳过；Linux x64 自包含发布、Default Windows TFM 编译、macOS arm64 发布均退出 0，日志分别为 `/tmp/syncclipboard-stage3-desktop-test.log`、`/tmp/syncclipboard-stage3-linux-publish.log`、`/tmp/syncclipboard-stage3-default-windows-build.log`、`/tmp/syncclipboard-stage3-macos-publish.log`。资产确认 Avalonia/FluentAvalonia 仍为原版本；Linux 运行框架为 net10.0，本机自包含运行时为 10.0.10。格式检查新增 IDE0330：将轮询监听器的私有同步锁改为 System.Threading.Lock，保留三处临界区；最终复验结果待补充。
+
+最终本地复验：Desktop net10 非 UI 4 通过、0 失败/跳过（`/tmp/syncclipboard-stage3-final-results/`）；macOS arm64 发布退出 0（`/tmp/syncclipboard-stage3-macos-final.log`）；仓库完整格式检查退出 0（`/tmp/syncclipboard-stage3-format-final.log`，跨平台工作区加载警告保留，最终全量结论待 CI）。工作流 YAML、AGENTS/CLAUDE 指令一致性及 `git diff --check` 通过。步骤 3 尚待新 head 的 CI、评审和产物证据。

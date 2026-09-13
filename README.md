@@ -222,6 +222,8 @@ sudo systemctl enable --now syncclipboard.service
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
 
+文件名包含 `no-dotnet-runtime` 的桌面包需要安装与包架构一致的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)（包含 .NET 运行时）；普通包已包含运行时。Linux x64/arm64 需要 glibc 2.27 或更高版本、OpenSSL 1.1.1 或更高版本及发行版对应的原生依赖，系统支持范围以 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)为准。
+
 #### Arch Linux
 
 Arch Linux 用户可以直接从[AUR](https://aur.archlinux.org/packages/syncclipboard-desktop)安装（由 [@devome](https://github.com/devome) 维护）：

@@ -217,6 +217,8 @@ Download the installation package starting with `SyncClipboard_macos_` from the 
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_linux_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page.
 
+Desktop packages with `no-dotnet-runtime` in the filename require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture, which includes the .NET runtime. Other packages bundle the runtime. Linux x64/arm64 requires glibc 2.27 or later, OpenSSL 1.1.1 or later, and the native dependencies for your distribution. See the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md).
+
 #### Arch Linux
 
 Arch Linux users can directly install from [AUR](https://aur.archlinux.org/packages/syncclipboard-desktop) (maintained by [@devome](https://github.com/devome)):

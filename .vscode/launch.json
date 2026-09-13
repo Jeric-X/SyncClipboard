@@ -26,7 +26,7 @@
             "preLaunchTask": "DebugLinux",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
+                "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Debug/net10.0/SyncClipboard.Desktop.Default.dll"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -43,7 +43,7 @@
             "preLaunchTask": "DebugLinux",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Debug/net8.0/SyncClipboard.Desktop.Default.dll"
+                "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Debug/net10.0/SyncClipboard.Desktop.Default.dll"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -59,7 +59,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "ReleaseAva",
-            "program": "${workspaceFolder}/src/SyncClipboard.Desktop/bin/Release/net8.0/linux-x64/publish/SyncClipboard.Desktop",
+            "program": "${workspaceFolder}/src/SyncClipboard.Desktop.Default/bin/Release/net10.0/linux-x64/publish/SyncClipboard.Desktop.Default",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

@@ -70,7 +70,7 @@ jobs:
       run: python build/verification/check_test_results.py TestResults/desktop --minimum 4
     - name: Compile the alternative Windows entry point
       if: runner.os == 'Windows'
-      run: dotnet build src/SyncClipboard.Desktop.Default -c Release -f net8.0-windows10.0.17763.0
+      run: dotnet build src/SyncClipboard.Desktop.Default -c Release -f net10.0-windows10.0.17763.0
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v7
