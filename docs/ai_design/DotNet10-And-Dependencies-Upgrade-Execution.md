@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–11（含全部子步骤和前置修复）已通过，当前执行步骤 12a：SharpHook 升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 11 验证通过提交为 `086599a976b86d7e914f77ce1a1606aec3aa039f`；步骤 12a 未通过前不进入 12b。
-- 步骤 12b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–12a（含全部子步骤和前置修复）已通过，当前执行步骤 12b：NativeNotification 版本核定与兼容验证。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12a 验证通过提交为 `1d523f2f701cdf697de71373519effa13d70e4db`；步骤 12b 未通过前不进入 12c。
+- 步骤 12c–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -589,3 +589,29 @@ CI 最低计数调整为 Core 381、每平台 Desktop NonUI 6、WinUI NonUI 6，
 提交 `2714a3608984f31a6cebb8fc0032db1c8bc3baf2` 的评审发现英文 README 仍保留 glibc 2.27，未同步中文说明中的 SharpHook 8 原生依赖要求。已将英文桌面要求改为 glibc 2.38，列出 X11/XTest/Xt/Xrandr/xkbcommon 及 Ubuntu 24.04 包名，并同步 XRecord/XWayland 和独立服务器范围说明。依据仍为本步骤已检查的 NuGet 原生 ELF 依赖；未执行真实桌面验证。
 
 该提交下载的 Server 产物在本机通过四轮 Production 启动和两轮 API 冒烟；Core CI 报告 381 项通过。上述仅为阶段证据，不能代替文档修复后当前 head 的完整 CI、产物及评审验证，步骤 12a 尚未通过。
+
+### 步骤 12a 最终 PR 与产物验证
+
+验证通过提交 `1d523f2f701cdf697de71373519effa13d70e4db`：[PR run 34783783165](https://github.com/Jeric-X/SyncClipboard/actions/runs/34783783165)、[push run 34783781093](https://github.com/Jeric-X/SyncClipboard/actions/runs/34783781093)、[CodeQL 34783782802](https://github.com/Jeric-X/SyncClipboard/actions/runs/34783782802) 与 CodeFactor 均成功，共 119 项 SUCCESS、8 项预期发布 SKIPPED。五份 TRX 合计 405 项通过，0 失败/跳过；七 RID 图片报告共 45 组及 S3 七组检查通过，依赖哈希和重试次数均已复核。
+
+全部 55 个 artifact 与当前 PR run 清单一致。完整 38 个 Windows/Linux 组合（24 个 Windows、14 个 Linux）通过，保留全部前置依赖检查，并逐包确认 SharpHook 8 net10.0 托管文件、Windows 原生 DLL、Linux 四后端库的官方 NuGet 字节和 CPU 架构。完整报告 `/tmp/syncclipboard-pr419-1d52-package-audit.json`，SHA256 `48a8087d0e8fd01e7bcf1e8cb7daf9c3daab020cf6ae6424e6ca84a630d6c9e5`。
+
+六个 Linux deb/rpm 包元数据包含新增原生依赖；双架构 macOS 包严格签名、19 个 dylib 架构和 SharpHook 文件核对通过，仅允许已知 bundle install-name 与签名元数据变换，挂载已卸载。Server 与双架构容器 CI 各四轮 Production 启动及两轮 API 冒烟通过，下载 Server 产物本机相同检查通过。本地完整记录 `docs/ai_design/.local/PR-419-Artifacts-1d523f2f.md`，所有检查均未启动 UI。
+
+当前 head 的 Codex 评审于 `2026-09-13T21:34:10.702715Z` 完成。英文 Linux 要求遗漏已修复；另有意见认为删除 `SimpleGlobalHook(true)` 改变异步事件分发，经 [5.2.3 精确源码](https://github.com/TolikPylypchuk/SharpHook/blob/eaadf9e7db2d0c3b83680e22009c9796d5e71dad/SharpHook/GlobalHookBase.cs#L135) 与 [8.0.0 精确源码](https://github.com/TolikPylypchuk/SharpHook/blob/a1093d81eb5d96608a7885949d4a5e21b98efec5/src/SharpHook/SimpleGlobalHook.cs) 核对不成立：旧参数只设置 RunAsync 所建线程的 IsBackground，项目升级前后均在线程池调用 Run；两版 SimpleGlobalHook 均直接同步 DispatchEvent。保留既有行为，没有为此切换事件分发模型或执行真实 hook/UI。
+
+最终八个评审线程均已处理并解决，未新增可处理反馈，没有发送 GitHub 评论。步骤 12a 非 UI 验证通过，监控 pr419 已删除，允许进入 12b；后续升级仍未完成。
+
+## 步骤 12b：NativeNotification 版本核定
+
+2026-09-14 查询官方 NuGet 实时版本索引，NativeNotification 与 NativeNotification.Interface 最新稳定版均为现用的 1.0.5；保留配套版本，不虚构升级或切换其他通知方案。[NativeNotification 版本与依赖](https://www.nuget.org/packages/NativeNotification/1.0.5)。两个包均声明源码提交 `810605cedc431de35cba7f9ba333027c65be9031`，已下载精确源码审查接口与初始化行为。
+
+NativeNotification 按平台提供 net8.0、net8.0-windows10.0.17763、net10.0-macos26.0 资产；Interface 为 net8.0。Linux 依赖 Tmds.DBus 0.92.0，Windows 依赖 Toolkit.Uwp.Notifications 7.1.3，本步骤不混入后续 12e 升级。既有依赖图冻结于 `/private/tmp/syncclipboard-stage12b-baseline-assets/`。接下来验证通知参数与回调的 mock 路径、三平台编译和实际包资产；不创建真实通知管理器、不显示通知或访问通知中心。本步骤尚未通过。
+
+### 步骤 12b 实现与本地非 UI 验证
+
+新增五项 NativeNotificationTests，调用实际产品 ShowText、SharedQuickMessage、ProfileActionBuilder.ToActionButtons 和 keyed DI 注册。公共 NotificationManagerBase 的初始化只创建托管会话字典；平台 Create/Show/Remove 均由 mock 接管。检查 Unicode/多行载荷、可选按钮、两秒时长、共享实例复用及旧按钮清除、移除后重新显示的顺序、按钮过滤/顺序/独立回调和无动作按钮，以及通知单例只创建一次。回调只修改测试计数，不复制、打开文件或访问桌面。
+
+本地 Core 386、Desktop NonUI 6 项通过，0 失败/跳过，报告 `/tmp/syncclipboard-stage12b-results/`；格式诊断修正后五项通知回归再次通过，报告 `/tmp/syncclipboard-stage12b-notification-final/`。完整格式检查退出 0，仅跨平台工作区加载警告；Windows/macOS 还原、工作流语法与 diff 检查通过。首次测试因沙箱命名管道权限失败，结束该尝试后在允许 MSBuild 的环境重跑通过，没有修改产品或降低测试要求。
+
+Core/Test/Desktop/WinUI/macOS 五份依赖图均未变化，报告 `/tmp/syncclipboard-stage12b-dependency-diff.json`。包审计增加各平台 NativeNotification 资产、Interface 及 Linux Tmds.DBus 的精确 NuGet 字节核对；前置阶段 Windows/Linux 产物已用于核定检查规则，缺失 Interface 的负例被拒绝，这些旧 head 结果不替代本步 PR 验证。CI 的 Core 最低数由 381 调整为 386，五份 TRX 预计合计 410；保留 45 组图片、七组 S3、55 个 artifact 和所有构建/打包矩阵。当前提交的完整 CI、产物和评审均待实际通过，尚不开始 12c。
