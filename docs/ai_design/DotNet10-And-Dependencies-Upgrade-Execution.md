@@ -22,6 +22,8 @@
 
 图片编解码、像素/透明通道比较、格式转换和纯 Bitmap 数据转换属于可保留的数据检查，前提是不打开图片预览、不构造控件、不访问真实剪贴板。最终交付只报告约定范围内的非 UI 验证与评审问题处理结果，并列出 UI 排除项，不安排人工或解锁后补测。
 
+当前及后续原生桌面依赖的验证同样排除真实全局 hook、输入设备初始化、模拟按键和系统权限提示。mock 测试须覆盖初始化与释放边界，确保全程不调用真实桌面后端；不满足条件的检查直接列入 UI 范围排除，保留代码适配、编译及包内容检查。
+
 ## 步骤 0：基线证据
 
 2026-09-13 核对 master 的 [build run 34751690107](https://github.com/Jeric-X/SyncClipboard/actions/runs/34751690107)：head 与上述基线相同，结论 success。Windows x64/arm64 的运行时和 App SDK 组合、Linux x64/arm64 的现有包格式组合、macOS 两架构、Server、Core 测试和格式检查均通过。非标签提交对应的发布任务跳过，不能计作构建证据。
@@ -581,3 +583,9 @@ Windows/macOS 产品还原和 Linux x64 交叉发布成功，Linux SharpHook.dll
 ELF 检查发现 8.0.0 的 Linux x64/arm64 XRecord 原生库均引用 GLIBC_2.38，并显式依赖 X11、Xtst、Xt、Xrandr、xkbcommon；证据 `/tmp/syncclipboard-stage12a-native-requirements.json`。因此 README 将桌面客户端 glibc 最低要求更新为 2.38，并明确这不适用于独立服务器；不能继续沿用仅 .NET 运行时的 2.27 下限。RPM/Debian 包声明补齐对应 XRecord 依赖。Ubuntu 24.04 的 Xt 包名为 [libxt6t64](https://packages.ubuntu.com/noble/libxt6t64)，xkbcommon 为 [libxkbcommon0](https://packages.ubuntu.com/noble/libxkbcommon0)。当前 PupNet 1.8 的包名配置不能编码版本约束，此限制在配置注释和 README 明示，后续步骤 17c/18 需继续核对；没有声称旧 glibc 系统可运行新版桌面客户端。
 
 CI 最低计数调整为 Core 381、每平台 Desktop NonUI 6、WinUI NonUI 6，预计五份 TRX 合计 405。保留步骤 11 的七架构图片任务、Windows x86 产品编译、S3 及全部包矩阵；预计仍有 55 个 artifact。当前步骤仍须新提交 PR CI、405 项非 UI 测试、所有产物与评审实际通过，不能开始 12b。
+
+### 步骤 12a 评审修复：英文 Linux 要求
+
+提交 `2714a3608984f31a6cebb8fc0032db1c8bc3baf2` 的评审发现英文 README 仍保留 glibc 2.27，未同步中文说明中的 SharpHook 8 原生依赖要求。已将英文桌面要求改为 glibc 2.38，列出 X11/XTest/Xt/Xrandr/xkbcommon 及 Ubuntu 24.04 包名，并同步 XRecord/XWayland 和独立服务器范围说明。依据仍为本步骤已检查的 NuGet 原生 ELF 依赖；未执行真实桌面验证。
+
+该提交下载的 Server 产物在本机通过四轮 Production 启动和两轮 API 冒烟；Core CI 报告 381 项通过。上述仅为阶段证据，不能代替文档修复后当前 head 的完整 CI、产物及评审验证，步骤 12a 尚未通过。

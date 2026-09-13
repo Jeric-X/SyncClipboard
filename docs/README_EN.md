@@ -217,7 +217,9 @@ Download the installation package starting with `SyncClipboard_macos_` from the 
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_linux_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page.
 
-Desktop packages with `no-dotnet-runtime` in the filename require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture, which includes the .NET runtime. Other packages bundle the runtime. Linux x64/arm64 requires glibc 2.27 or later, OpenSSL 1.1.1 or later, and the native dependencies for your distribution. See the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md).
+Desktop packages with `no-dotnet-runtime` in the filename require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture, which includes the .NET runtime. Other packages bundle the runtime. The Linux x64/arm64 desktop client requires glibc 2.38 or later (required by the bundled SharpHook 8 native libraries), OpenSSL 1.1.1 or later, and the X11, XTest, Xt, Xrandr and xkbcommon native libraries. Your distribution must also be on the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md); meeting the .NET runtime's minimum glibc version alone is insufficient for the desktop client. These SharpHook requirements do not apply to the standalone server.
+
+Hotkeys and copy/paste simulation continue to use SharpHook's XRecord backend. Wayland sessions retain the XWayland limitations; the new low-level backend requiring additional device permissions is not enabled. On Ubuntu 24.04, install `libx11-6`, `libxtst6`, `libxt6t64`, `libxrandr2` and `libxkbcommon0`. AppImage and portable packages also require these system libraries.
 
 #### Arch Linux
 
