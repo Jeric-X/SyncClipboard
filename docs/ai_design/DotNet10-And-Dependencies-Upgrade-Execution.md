@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–4 已通过，当前执行步骤 5：将 Shared/Core/Server.Core/Core 测试统一 .NET 10；中央依赖版本保持基线。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 4 验证通过提交为 `00c7c3737fc89716d73a89a31da0e57562d24373`；步骤 5 尚待当前改动的 PR 验证，不允许进入步骤 6。
-- 步骤 6–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–5 已通过，当前执行步骤 6：升级微软 DI、Logging.Console、SignalR.Client 与 Http.Json 基础库。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 5 验证通过提交为 `38f925cb5d15c688e147f96a64bc247b658d7d0e`；步骤 6 已完成本地改动与验证，尚待独立 PR 验证，不允许进入步骤 7。
+- 步骤 7–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -178,7 +178,7 @@ Docker 使用 `mcr.microsoft.com/dotnet/sdk:10.0.302-noble` 与 `mcr.microsoft.c
 
 ## 步骤 5：共享库与 Core 测试统一 .NET 10
 
-前置步骤通过提交：`00c7c3737fc89716d73a89a31da0e57562d24373`。状态：进行中。
+前置步骤通过提交：`00c7c3737fc89716d73a89a31da0e57562d24373`。状态：已通过；以下保留过程记录，最终证据见本节末尾。
 
 Shared、Core、Server.Core、Test 改为 net10.0，至此所有产品及测试项目均使用 .NET 10 对应目标。中央 NuGet 版本保持基线；SDK 仍由 global.json 选择 10.0.302 并允许同 feature band 的补丁滚动。CI 移除为旧项目目标显式安装的 8/9 SDK；Linux 打包保留 .NET 8 以运行 PupNet 1.8.0，待步骤 17c 处理。同步 AGENTS/CLAUDE；AppVeyor 路径属于先前记录的非活动遗留配置，不作为当前验证依据。
 
@@ -205,3 +205,41 @@ macOS arm64 本机 Release 验证结果：
 | 服务器 HTTPS | 临时证书链/主机名验证、拒绝未信任证书、TLSv1.2、两轮认证/API/SignalR 协商、文件持久化及正常退出通过；未修改系统信任，`/tmp/syncclipboard-stage5-https.json` |
 
 以上 HTTPS 检查使用独立 TLS 测试客户端，不代表 OfficialAdapter 全部证书场景；显式断开再连接也不代表网络故障自动重连。自动重连、实际外部 S3/WebDAV 等专门回归仍按后续依赖步骤完成。Windows 原生构建/测试、完整平台及发行包矩阵须由当前提交的 PR 实际验证；步骤 5 尚未通过，不允许进入步骤 6。UI 排除项不执行、不计通过、不安排补测。
+
+
+### 步骤 5 最终证据
+
+验证通过提交：`38f925cb5d15c688e147f96a64bc247b658d7d0e`。[PR build 34762087310](https://github.com/Jeric-X/SyncClipboard/actions/runs/34762087310)、[push build 34762085899](https://github.com/Jeric-X/SyncClipboard/actions/runs/34762085899)、[CodeQL 34762087083](https://github.com/Jeric-X/SyncClipboard/actions/runs/34762087083) 及 CodeFactor 均完成，103 项成功、8 项预期发布任务跳过。当前提交的 Codex 评审完成，无新增可处理问题，原 4 个线程全部解决。
+
+47 个 artifact 全部下载；5 份 TRX 共 362 项非 UI 测试通过、0 失败/跳过。38 项 Windows/Linux 包组合及 6 项 Linux 元数据检查通过；两架构 macOS 包每包 19 个 dylib、主程序、资源及严格签名通过并卸载。除 runtimeconfig/deps 外，新增仅解析 PE 元数据的检查：每个包的入口、Core、Shared、Server.Core 及适用的 Desktop 程序集，其 TargetFrameworkAttribute 均为 .NETCoreApp,Version=v10.0；实际旧 net8 Core 被该检查正确拒绝。没有执行桌面产物。
+
+分别读取 Server、amd64、arm64 CI 日志，均实际通过 4 轮 Production 首次启动/重启和 2 轮 API 冒烟；容器运行于 Ubuntu 24.04.5 LTS、ASP.NET Core/.NET 10.0.12。下载的新 Server 产物在本机复验首次启动、旧数据副本及 HTTPS 通过。报告前缀 `/tmp/syncclipboard-pr419-38f9-`。全部 11 个项目 TFM 统一为 .NET 10 对应目标，中央 NuGet 保持基线；步骤 5 非 UI 验证通过，允许进入步骤 6。
+
+## 步骤 6：升级微软基础库
+
+前置步骤通过提交：`38f925cb5d15c688e147f96a64bc247b658d7d0e`。状态：进行中。先核定 DI、Logging.Console、SignalR.Client、System.Net.Http.Json 的稳定 10.0 补丁及传递依赖，再作本步改动；EF、Swagger 等按后续独立步骤处理。
+
+
+2026-09-13 首次核定本步四个包的候选稳定版本均为 10.0.12：
+[DI](https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection/10.0.12)、
+[Logging.Console](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Console/10.0.12)、
+[SignalR.Client](https://www.nuget.org/packages/Microsoft.AspNetCore.SignalR.Client/10.0.12)、
+[Http.Json](https://www.nuget.org/packages/System.Net.Http.Json/10.0.12)。10.0.12 为 2026-09-08 发布的稳定补丁；11.0 仍为预发行，不纳入本计划。首次仅修改中央版本文件中这四项，随后按下文处理冗余引用；还原前 assets 快照保存在 `/private/tmp/syncclipboard-stage6-baseline/`，还原后比较实际依赖图。
+
+按[官方 .NET 10 兼容性清单](https://learn.microsoft.com/en-us/dotnet/core/compatibility/10) 核对 DI keyed service、配置 null、Console 日志及 JSON 行为。当前客户端自动恢复由 OfficialEventDrivenServer/TestAliveHelper 管理，不能仅测试 HubConnection 的显式重建；本步另须通过实际断网/恢复模拟验证。内置服务器直接通过独立测试宿主调用 Web.StartAsync，替代真实托盘与通知等 UI 服务。
+
+
+还原后的 NU1510 指出 Http.Json 直接引用冗余。实际 net10 assets 中该包 compile/runtime 都是 `_._`，发布产物没有独立 Http.Json DLL 或 deps 运行资产；它已经使用 .NET 10 共享框架实现。因此按[官方 NU1510 处理要求](https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/10.0/nu1510-pruned-references) 移除 Core 唯一直接引用及对应中央版本项，保留所有 Http.Json API 调用，由部署运行时供给实现。最终本步三个独立 NuGet 包为 10.0.12，Http.Json 不再有单独包版本；不以屏蔽警告或虚报包版本处理。
+
+
+### 步骤 6 本地验证
+
+最终组合在 macOS arm64 Release 下验证：Core 346、Desktop NonUI 4 项通过，0 失败/跳过，TRX 校验器最低 350 项通过（`/private/tmp/syncclipboard-stage6-final-results/`）。还原图确认相关微软传递组件均解析至 10.0.12，Http.Json 包已移除；无 NU1510、包降级或依赖冲突，EF/SQLite、Swagger 版本未变（`/tmp/syncclipboard-stage6-final-dependency-diff.json`）。Linux x64 自包含、macOS arm64 发布及 Desktop.Default Windows TFM 编译通过，未运行桌面产物。
+
+独立验证宿主调用真实 `Web.StartAsync`，通过 `AppCore.ConfigCommonService` 与 keyed DI 获取实际 OfficialAdapter，并使用实际 OfficialEventDrivenServer/TestAliveHelper；托盘和通知使用 mock，Profile 环境、应用配置和 Core 日志为测试实现；微软 Console 日志提供程序保持真实。服务只监听 loopback，配置/数据库写入临时目录。先验证推送，再停止服务器形成真实连接中断，保留至少 11 秒离线健康检查窗口，重新启动同一端口；未手工调用客户端 StartListening，客户端自行重连并再次通过推送和 HTTP JSON 读取，预取消请求被拒绝。结构化 Console 日志标记仅输出一次，宿主正常退出（`/tmp/syncclipboard-stage6-final-reconnect.json` 与 `.log`）。
+
+实际加载信息：SignalR.Client.Core、DI.Abstractions、Logging.Console 的 ProductVersion 为 10.0.12；Http.Json 来自本机共享运行时 10.0.10。后者跟随部署运行时的补丁版本，不能将移除的 NuGet 候选版本写成实际运行版本。早期临时宿主在服务器运行中重写监听配置触发 Kestrel 热重载，导致自身请求竞态；调整为旧服务器停止后再写重启端口，未为测试问题修改产品代码。最终组合已重新执行通过。
+
+冻结的 net8/微软 9 客户端与当前 net10/微软 10.0.12 客户端，分别连接旧 net8 服务器和步骤 5 的 net10 服务器产物，四组 Official/WebDAV、Profile/文件哈希、历史、SignalR 推送、显式连接重建及预取消通过（`/tmp/syncclipboard-stage6-final-protocol-matrix.json`）。本步独立 Server 的源码和依赖图不受这三个 Core 基础包引用影响；内置服务器加载新依赖的路径由上面的真实宿主覆盖。实际客户端 HTTP 代理检查通过，观察到 18 条普通 API/协商与 WebSocket CONNECT 路由，无代理错误（`/tmp/syncclipboard-stage6-proxy.json`）。
+
+最终格式检查退出 0（`/tmp/syncclipboard-stage6-final-format.log`），保留跨平台工作区加载警告；diff 检查通过。步骤 6 尚待当前提交的 PR 全平台构建/测试与评审；通过前不进入步骤 7。既有 SQLitePCLRaw 与 Magick.NET 漏洞警告保留，分别在步骤 7、11 处理；UI 项持续排除，不安排补测。

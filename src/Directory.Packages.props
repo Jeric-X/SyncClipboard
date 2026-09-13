@@ -6,13 +6,12 @@
     <PackageVersion Include="AWSSDK.S3" Version="3.7.414" />
     <PackageVersion Include="AsyncImageLoader.Avalonia" Version="3.3.0" />
     <PackageVersion Include="Interop.UIAutomationClient" Version="10.19041.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
     <PackageVersion Include="NativeNotification" Version="1.0.5" />
     <PackageVersion Include="NativeNotification.Interface" Version="1.0.5" />
     <PackageVersion Include="Quartz" Version="3.14.0" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.14.0" />
-    <PackageVersion Include="System.Net.Http.Json" Version="9.0.8" />
     <PackageVersion Include="Magick.NET-Q16-x64" Version="14.9.1" />
     <PackageVersion Include="Magick.NET-Q16-x86" Version="14.9.1" />
     <PackageVersion Include="Magick.NET-Q16-arm64" Version="14.9.1" />
@@ -20,7 +19,7 @@
     <PackageVersion Include="Magick.NET.SystemDrawing" Version="8.0.15" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="ObservableCollections" Version="3.3.4" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.1" />
     <PackageVersion Include="CodeCracker.CSharp" Version="1.1.0" />
