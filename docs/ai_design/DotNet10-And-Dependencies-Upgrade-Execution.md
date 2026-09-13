@@ -5,14 +5,14 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–5 已通过，当前执行步骤 6：升级微软 DI、Logging.Console、SignalR.Client 与 Http.Json 基础库。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 5 验证通过提交为 `38f925cb5d15c688e147f96a64bc247b658d7d0e`；步骤 6 已完成本地改动与验证，尚待独立 PR 验证，不允许进入步骤 7。
-- 步骤 7–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–6 已通过，当前执行步骤 7：升级 EF Core / SQLite，验证旧数据库副本兼容性与原生库。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 6 验证通过提交为 `d16e70788a26cfb9d69eaa83e5e9db946db64e37`；步骤 7 已完成本地适配和验证，尚待当前提交的 PR 全平台验证，不允许进入步骤 8。
+- 步骤 8–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
 
-各步骤及子步骤的记录统一使用“非 UI 验证通过”“范围内验证待完成/失败”和“UI 范围排除”区分结果。UI 排除项不列为待补测，不要求人工操作或 macOS 解锁；必要的非 UI 检查及当前提交的 PR CI/问题监控完成前，仍不得开始下一步。
+各步骤及子步骤的记录统一使用“非 UI 验证通过”“范围内验证待完成/失败”和“UI 范围排除”区分结果。下文历史记录中的“已通过”也仅指非 UI 范围。UI 排除项不列为待执行、阻塞或待补测，不要求人工操作或 macOS 解锁；必要的非 UI 检查及当前提交的 PR CI/问题监控完成前，仍不得开始下一步。
 
 ## 步骤 0：基线证据
 
@@ -217,7 +217,7 @@ macOS arm64 本机 Release 验证结果：
 
 ## 步骤 6：升级微软基础库
 
-前置步骤通过提交：`38f925cb5d15c688e147f96a64bc247b658d7d0e`。状态：进行中。先核定 DI、Logging.Console、SignalR.Client、System.Net.Http.Json 的稳定 10.0 补丁及传递依赖，再作本步改动；EF、Swagger 等按后续独立步骤处理。
+前置步骤通过提交：`38f925cb5d15c688e147f96a64bc247b658d7d0e`。状态：已通过；以下保留过程记录，最终证据见本节末尾。先核定 DI、Logging.Console、SignalR.Client、System.Net.Http.Json 的稳定 10.0 补丁及传递依赖，再作本步改动；EF、Swagger 等按后续独立步骤处理。
 
 
 2026-09-13 首次核定本步四个包的候选稳定版本均为 10.0.12：
@@ -243,3 +243,38 @@ macOS arm64 本机 Release 验证结果：
 冻结的 net8/微软 9 客户端与当前 net10/微软 10.0.12 客户端，分别连接旧 net8 服务器和步骤 5 的 net10 服务器产物，四组 Official/WebDAV、Profile/文件哈希、历史、SignalR 推送、显式连接重建及预取消通过（`/tmp/syncclipboard-stage6-final-protocol-matrix.json`）。本步独立 Server 的源码和依赖图不受这三个 Core 基础包引用影响；内置服务器加载新依赖的路径由上面的真实宿主覆盖。实际客户端 HTTP 代理检查通过，观察到 18 条普通 API/协商与 WebSocket CONNECT 路由，无代理错误（`/tmp/syncclipboard-stage6-proxy.json`）。
 
 最终格式检查退出 0（`/tmp/syncclipboard-stage6-final-format.log`），保留跨平台工作区加载警告；diff 检查通过。步骤 6 尚待当前提交的 PR 全平台构建/测试与评审；通过前不进入步骤 7。既有 SQLitePCLRaw 与 Magick.NET 漏洞警告保留，分别在步骤 7、11 处理；UI 项持续排除，不安排补测。
+
+
+### 步骤 6 最终证据
+
+验证通过提交：`d16e70788a26cfb9d69eaa83e5e9db946db64e37`。[PR build 34763804621](https://github.com/Jeric-X/SyncClipboard/actions/runs/34763804621)、[push build 34763802133](https://github.com/Jeric-X/SyncClipboard/actions/runs/34763802133)、[CodeQL 34763804354](https://github.com/Jeric-X/SyncClipboard/actions/runs/34763804354) 及 CodeFactor 完成，103 项成功、8 项预期发布跳过。当前 Codex 评审完成，无新增可处理问题，原 4 个线程已解决。
+
+全部 47 个 artifact 已下载，五份真实 TRX 共 362 项非 UI 测试通过、0 失败/跳过。38 项 Windows/Linux 包组合、6 项 Linux 元数据、两架构 macOS 包的资源/架构/严格签名检查通过。每包实际核验 DI、DI.Abstractions、Console 日志、SignalR.Client.Core、Http.Connections.Client 的 ProductVersion 为 10.0.12；入口和自有共享程序集仍为 .NET 10，deps 中不含冗余 Http.Json 包。自包含 Windows/Linux 的 Http.Json 随运行时为 10.0.11；macOS 为 10.0.10，与 CoreLib 的数字补丁及源码提交一致（CoreLib 额外带 servicing 构建后缀）；非自包含产物由安装的 .NET 10 运行时提供。未将 NuGet 版本误认为所有框架程序集版本。
+
+当前 Server 与两架构容器 CI 日志均确认执行 4 轮首次启动/重启与 2 轮 API 冒烟；下载的服务器产物本机首次启动复验通过。报告前缀 `/tmp/syncclipboard-pr419-d16e-`。步骤 6 非 UI 验证通过，允许进入步骤 7；不代表后续依赖升级已完成。
+
+## 步骤 7：升级 EF Core / SQLite
+
+前置步骤通过提交：`d16e70788a26cfb9d69eaa83e5e9db946db64e37`。状态：进行中。先核定稳定 EF Core 10.0 补丁及 SQLite 原生依赖；以旧客户端、旧服务器数据库副本验证迁移、查询、分页、收藏/置顶、删除/清理、时间和文件哈希，保留原始数据基线。不得仅因版本升级生成空迁移或重建数据库。
+
+### 步骤 7 版本与适配
+
+三个直接 EF 包（Core、Sqlite、Design）统一从 9.0.8 升级为 10.0.12，精确版本仅写入中央版本文件。[官方 NuGet 依赖](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Sqlite/10.0.12)要求 SQLitePCLRaw 至少 2.1.12；实际还原为 bundle/core/provider/lib 全套 2.1.12，原生 SQLite 为 3.53.3。本步使用 EF 配套依赖，不额外引入 SQLitePCLRaw 3 的新包分拆。原 2.1.10 漏洞警告消失，未添加漏洞抑制。EF Design 同步带入 Roslyn 5、MSBuild 18 等设计期依赖，完整差异保存在 `/tmp/syncclipboard-stage7-SyncClipboard.Core-dependencies.json` 和对应 Server.Core 报告中。
+
+[EF 10 破坏性变更](https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-10.0/breaking-changes)包含集合参数翻译和 SQLite 时间读取语义变化。本项目数据库时间使用 DateTime 与既有 UTC 属性处理；未启用旧时间行为开关，未添加空迁移、重建数据库或改动持久化模型。新增 `HistorySqliteTimeTests` 六项非 UI 回归，覆盖客户端/服务端无偏移旧时间、正负偏移时间以及保存后重新读取，均核对 UTC 时刻和 Kind。CI Core 最低通过数由 346 提高为 352，必须由当前 PR 实际执行证明。
+
+### 步骤 7 本地数据库与协议证据
+
+- 冻结的 net8/EF9 客户端数据库副本：65 条记录的全部字段、时间、状态、两页结果及 32 个文件哈希一致；原始基线 226 个文件的哈希未变。报告 `/tmp/syncclipboard-stage7-client-db-verify.log`。
+- 使用当前实际 HistoryManager 的独立宿主，平台服务用 mock 且不初始化 UI：旧库排序、游标分页、Unicode 搜索、收藏查询、807 个键的分批精确收藏和版本递增通过；软删除清除记录的文件关联及工作目录；过期清理删除应删项，保留收藏、置顶、已同步和近期项；最终清空数据库通过。报告 `/private/tmp/syncclipboard-stage7-history-manager-output/result.json`。
+- 冻结的旧服务器数据库副本：两次重启前后 schema、记录、时间、收藏/置顶及文件哈希不变，清空 API 删除数据和历史文件，原始基线不变。报告 `/tmp/syncclipboard-stage7-server-persistence.json`。
+- 另由实际旧 net8 服务器生成 65 条记录，包含相同时间戳、收藏和置顶；新服务器在两轮启动中与旧版的 12 种查询响应逐项一致，包括 50/15/0 分页、类型过滤、Unicode 搜索、访问时间排序和带正负偏移的时间范围，schema 与原始数据保持不变。基线 `/private/tmp/syncclipboard-stage7-server-paging-fixture-v2/baseline`，报告 `/tmp/syncclipboard-stage7-server-paging.json`。首版临时探针误把 UTF-8 字节数作为文本长度，旧服务器正确拒绝上传；按协议改为 UTF-16 长度并另建基线目录，未修改产品校验。
+- 新旧客户端分别连接新旧服务器，四组认证、Official/WebDAV、Profile/文件完整性、历史、SignalR 推送、显式重连及取消均通过。报告 `/tmp/syncclipboard-stage7-protocol-matrix.json`。当前服务器四轮 Production 首次启动/重启、命令行/环境配置优先级、认证、端口及正常退出通过，日志 `/tmp/syncclipboard-stage7-server-startup.log`。本步未把这些检查扩大解释为所有外部 S3/WebDAV 服务已经验收。
+
+### 步骤 7 本地产物检查
+
+Linux x64 自包含发布通过；包内 EF 与 Microsoft.Data.Sqlite 程序集均为 10.0.12，SQLitePCLRaw 依赖为 2.1.12，原生 SQLite 字节与该 RID 的 NuGet 包一致，其余既有程序集、运行时和架构检查通过（`/tmp/syncclipboard-stage7-linux-package-audit.json`）。Desktop.Default Windows TFM 编译通过。
+
+macOS 首次增量发布时，输出目录已是 SQLite 3.53.3，但 `.app` 中残留 3.46.1，故该产物未通过；证据 `/tmp/syncclipboard-stage7-macos-incremental-mismatch.json`。执行目标项目 `dotnet clean` 后重新发布，实际应用包更新为 3.53.3。项目在 Build 后复制许可证，原始 publish 包尚需既有 CI 的 BundleTool 重新签名；执行同一脚本后严格签名通过，实际包内 EF/Sqlite 程序集为 10.0.12（`/tmp/syncclipboard-stage7-macos-native-verified.json`）。未启动桌面应用。计划已增加原生依赖升级的干净发布与最终包核验要求。
+
+最终 Core 352 项、Desktop NonUI 4 项通过，0 失败/跳过；Core TRX 位于 `/private/tmp/syncclipboard-stage7-final2-results/core/`，Desktop TRX 位于 `/private/tmp/syncclipboard-stage7-final-results/desktop/`。新增测试初次格式检查提示缺少取消令牌，补齐后重跑 Core 和完整格式检查均通过，格式日志 `/tmp/syncclipboard-stage7-final-format.log`（退出 0，仅保留跨平台工作区加载警告）。步骤 7 尚待当前提交的 PR 全平台 CI、产物及评审验证，未允许进入步骤 8。Magick.NET 的既有漏洞仍在步骤 11 处理，不屏蔽警告。
