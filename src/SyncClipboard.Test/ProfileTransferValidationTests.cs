@@ -41,6 +41,40 @@ public class ProfileTransferValidationTests
     }
 
     [TestMethod]
+    public async Task FilePrepareTransferData_WrapsReadFailureButPropagatesCancellation()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "file.txt");
+            await File.WriteAllTextAsync(filePath, "content", token);
+            var profile = new FileProfile(filePath);
+            var expectedHash = await profile.GetHash(token);
+            var expectedTransferHash = profile.TransferDataHash;
+
+            await using (var lockedFile = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                var exception = await Assert.ThrowsExactlyAsync<LocalProfileDataUnavailableException>(
+                    () => profile.PrepareTransferData(testDirectory, token));
+                Assert.IsInstanceOfType<IOException>(exception.InnerException);
+            }
+
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                () => profile.PrepareTransferData(testDirectory, cancellation.Token));
+
+            Assert.AreEqual(expectedHash, await profile.GetHash(token));
+            Assert.AreEqual(expectedTransferHash, profile.TransferDataHash);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task ImagePrepareTransferData_FileChangedAfterHashThrows()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -155,6 +189,34 @@ public class ProfileTransferValidationTests
         else
         {
             Assert.AreEqual(declaredHash, await profile.GetHash(token));
+        }
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TextIsLocalDataValid_FallsBackToFileWhenInMemoryHashDoesNotMatch(bool validFile)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var filePath = Path.Combine(testDirectory, "text.txt");
+            var expectedText = new string('F', 10241);
+            await File.WriteAllTextAsync(filePath, expectedText, token);
+            var expectedHash = await Utility.CalculateFileSHA256(filePath, token);
+            var profile = new TextProfile(new string('T', 10241));
+            await profile.SetTransferData(new FileHashInfo(filePath, expectedHash), false, token);
+            if (!validFile)
+                await File.WriteAllTextAsync(filePath, "changed", token);
+
+            Assert.AreEqual(validFile, await profile.IsLocalDataValid(false, token));
+            Assert.AreEqual(expectedHash, await profile.GetHash(token));
+            Assert.AreEqual(expectedHash, profile.TransferDataHash);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
         }
     }
 

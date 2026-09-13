@@ -1352,7 +1352,7 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var profile = historyRecord.ToProfile();
-        var valid = await profile.IsLocalDataValid(true, token);
+        var valid = await profile.IsDataComplete(true, token);
 
         if (!valid)
         {
@@ -1422,7 +1422,7 @@ public partial class HistoryViewModel : ObservableObject
 
         var record = vm.ToHistoryRecord();
         var profile = record.ToProfile();
-        var valid = await profile.IsLocalDataValid(false, CancellationToken.None);
+        var valid = await profile.IsDataComplete(false, CancellationToken.None);
         if (!valid)
         {
             ShowWindowToastInfo("Local file is missing or changed, this record will be removed.");

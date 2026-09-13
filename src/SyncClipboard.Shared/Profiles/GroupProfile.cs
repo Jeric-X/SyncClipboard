@@ -403,7 +403,7 @@ public class GroupProfile : Profile
                     $"Group transfer archive hash mismatch. Expected: {expectedHash}, Actual: {archiveHash}.");
             }
         }
-        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
         {
             throw new LocalProfileDataUnavailableException(
                 $"Failed to validate transfer data for Group profile {expectedHash}.", ex);
@@ -487,7 +487,7 @@ public class GroupProfile : Profile
             subDirectories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
             subFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
         }
-        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
         {
             throw new LocalProfileDataUnavailableException($"Failed to read local Group directory: {path}", ex);
         }
@@ -517,13 +517,6 @@ public class GroupProfile : Profile
                 entries.Add(entry);
             }
         }
-    }
-
-    private static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
-    {
-        return ex is IOException or UnauthorizedAccessException &&
-               ex is not LocalProfileDataUnavailableException &&
-               !token.IsCancellationRequested;
     }
 
     private static void TryDeleteFile(string path)
@@ -556,7 +549,7 @@ public class GroupProfile : Profile
                 81920,
                 useAsync: true);
         }
-        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
         {
             throw new LocalProfileDataUnavailableException($"Failed to open local Group file: {sourcePath}", ex);
         }
@@ -576,7 +569,7 @@ public class GroupProfile : Profile
                 {
                     read = await sourceStream.ReadAsync(buffer.AsMemory(0, 81920), token).ConfigureAwait(false);
                 }
-                catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+                catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
                 {
                     throw new LocalProfileDataUnavailableException($"Failed to read local Group file: {sourcePath}", ex);
                 }
@@ -659,7 +652,7 @@ public class GroupProfile : Profile
                     Directory.CreateDirectory(destPath);
                 }
             }
-            else if (!File.Exists(destPath))
+            else
             {
                 var destDir = Path.GetDirectoryName(destPath);
                 if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))

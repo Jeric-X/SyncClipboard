@@ -111,6 +111,31 @@ public class FileProfile : Profile
 
     public override async Task<FileHashInfo?> PrepareTransferData(string _, CancellationToken token)
     {
+        var path = GetAvailableTransferDataPath();
+        (string ProfileHash, string TransferDataHash) hashes;
+        try
+        {
+            hashes = await GetHashesFromFile(path, token);
+        }
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"Failed to validate transfer data for File profile {Hash ?? "<unknown>"}.", ex);
+        }
+
+        if (Hash is not null && !Utility.SHA256Same(hashes.ProfileHash, Hash))
+        {
+            throw new LocalProfileDataUnavailableException(
+                $"File transfer data hash mismatch. Expected: {Hash}, Actual: {hashes.ProfileHash}.");
+        }
+
+        Hash ??= hashes.ProfileHash;
+        TransferDataHash = hashes.TransferDataHash;
+        return new FileHashInfo(path, hashes.TransferDataHash);
+    }
+
+    private string GetAvailableTransferDataPath()
+    {
         var path = FullPath;
         if (path is null || !File.Exists(path))
         {
@@ -118,26 +143,7 @@ public class FileProfile : Profile
                 $"Transfer data is unavailable for File profile {Hash ?? "<unknown>"}.");
         }
 
-        try
-        {
-            var hashes = await GetHashesFromFile(path, token);
-            if (Hash is not null && !Utility.SHA256Same(hashes.ProfileHash, Hash))
-            {
-                throw new LocalProfileDataUnavailableException(
-                    $"File transfer data hash mismatch. Expected: {Hash}, Actual: {hashes.ProfileHash}.");
-            }
-
-            Hash ??= hashes.ProfileHash;
-            TransferDataHash = hashes.TransferDataHash;
-            return new FileHashInfo(path, hashes.TransferDataHash);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException &&
-                                   ex is not LocalProfileDataUnavailableException &&
-                                   !token.IsCancellationRequested)
-        {
-            throw new LocalProfileDataUnavailableException(
-                $"Failed to validate transfer data for File profile {Hash ?? "<unknown>"}.", ex);
-        }
+        return path;
     }
 
     public override Task SetTransferData(string path, bool verify, CancellationToken token)

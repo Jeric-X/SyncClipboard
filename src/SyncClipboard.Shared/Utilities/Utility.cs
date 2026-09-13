@@ -1,11 +1,22 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using SyncClipboard.Shared.Profiles;
 
 namespace SyncClipboard.Shared.Utilities;
 
 public static class Utility
 {
+    /// <summary>
+    /// 仅包装未分类的本地读取异常；已分类的 Profile 数据异常和取消中的操作继续向外传播。
+    /// </summary>
+    public static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
+    {
+        return ex is IOException or UnauthorizedAccessException &&
+               ex is not LocalProfileDataUnavailableException &&
+               !token.IsCancellationRequested;
+    }
+
     /// <summary>
     /// 忽略大小写比较 SHA-256 字符串，不校验格式；两个 null 视为相同。
     /// </summary>

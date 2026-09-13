@@ -93,36 +93,48 @@ public class TextProfile : Profile
 
         try
         {
-            if (_fullText is not null || !HasTransferData)
-            {
-                var textHash = await Utility.CalculateSHA256(_fullText ?? _text, token);
-                if (Hash is null || Utility.SHA256Same(textHash, Hash))
-                {
-                    Hash ??= textHash;
-                    TransferDataHash = HasTransferData ? textHash : null;
-                    return true;
-                }
-            }
-
-            if (!File.Exists(_transferDataPath))
-            {
-                return false;
-            }
-
-            var actualHash = await Utility.CalculateFileSHA256(_transferDataPath!, token);
-            if (Hash is not null && !Utility.SHA256Same(actualHash, Hash))
-            {
-                return false;
-            }
-
-            Hash ??= actualHash;
-            TransferDataHash = actualHash;
-            return true;
+            return await IsInMemoryTextValid(token) || await IsTransferFileContentValid(token);
         }
         catch when (token.IsCancellationRequested is false)
         {
             return false;
         }
+    }
+
+    private async Task<bool> IsInMemoryTextValid(CancellationToken token)
+    {
+        if (_fullText is null && HasTransferData)
+        {
+            return false;
+        }
+
+        var textHash = await Utility.CalculateSHA256(_fullText ?? _text, token);
+        if (Hash is not null && !Utility.SHA256Same(textHash, Hash))
+        {
+            return false;
+        }
+
+        Hash ??= textHash;
+        TransferDataHash = HasTransferData ? textHash : null;
+        return true;
+    }
+
+    private async Task<bool> IsTransferFileContentValid(CancellationToken token)
+    {
+        if (!File.Exists(_transferDataPath))
+        {
+            return false;
+        }
+
+        var actualHash = await Utility.CalculateFileSHA256(_transferDataPath!, token);
+        if (Hash is not null && !Utility.SHA256Same(actualHash, Hash))
+        {
+            return false;
+        }
+
+        Hash ??= actualHash;
+        TransferDataHash = actualHash;
+        return true;
     }
 
     protected override async Task ComputeHash(CancellationToken token)
@@ -274,7 +286,7 @@ public class TextProfile : Profile
             TransferDataHash = hash;
             return new FileHashInfo(path, hash);
         }
-        catch (Exception ex) when (ShouldWrapLocalReadFailure(ex, token))
+        catch (Exception ex) when (Utility.ShouldWrapLocalReadFailure(ex, token))
         {
             throw new LocalProfileDataUnavailableException(
                 $"Failed to validate transfer data for Text profile {Hash ?? "<unknown>"}.", ex);
@@ -314,13 +326,6 @@ public class TextProfile : Profile
         }
 
         return actualHash;
-    }
-
-    private static bool ShouldWrapLocalReadFailure(Exception ex, CancellationToken token)
-    {
-        return ex is IOException or UnauthorizedAccessException &&
-               ex is not LocalProfileDataUnavailableException &&
-               !token.IsCancellationRequested;
     }
 
     public override Task SetTransferData(string path, bool verify, CancellationToken token)

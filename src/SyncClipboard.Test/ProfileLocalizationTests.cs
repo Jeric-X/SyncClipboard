@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
@@ -198,6 +199,58 @@ public class ProfileLocalizationTests
             var localInfo = await profile.Localize(directory, token);
 
             Assert.AreEqual(text, localInfo.Text);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    [DataRow("data.txt")]
+    [DataRow("./data.txt")]
+    [DataRow("DATA.txt")]
+    public async Task Group_LocalizeRejectsDestinationFileCollisions(string secondEntryName)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var directory = CreateTestDirectory();
+        try
+        {
+            // Probe the actual filesystem so case-sensitive volumes can still extract distinct names.
+            var probePath = Path.Combine(directory, "data.txt");
+            await File.WriteAllTextAsync(probePath, "probe", token);
+            var pathsCollide = File.Exists(Path.Combine(directory, secondEntryName));
+            File.Delete(probePath);
+
+            var archivePath = Path.Combine(directory, "data.zip");
+            using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                using (var writer = new StreamWriter(archive.CreateEntry("data.txt").Open()))
+                    await writer.WriteAsync("first".AsMemory(), token);
+                using (var writer = new StreamWriter(archive.CreateEntry(secondEntryName).Open()))
+                    await writer.WriteAsync("second".AsMemory(), token);
+            }
+
+            var transferHash = await Utility.CalculateFileSHA256(archivePath, token);
+            var profile = new GroupProfile([], new string('A', 64));
+            await profile.SetTransferData(new FileHashInfo(archivePath, transferHash), false, token);
+
+            if (pathsCollide)
+            {
+                await Assert.ThrowsExactlyAsync<IOException>(() => profile.Localize(directory, token));
+                Assert.AreEqual(0, profile.Files.Length);
+                Assert.AreEqual(0, Directory.GetDirectories(directory).Length);
+            }
+            else
+            {
+                var localInfo = await profile.Localize(directory, token);
+                Assert.AreEqual(2, localInfo.FilePaths.Length);
+                Assert.AreEqual("first", await File.ReadAllTextAsync(localInfo.FilePaths[0], token));
+                Assert.AreEqual("second", await File.ReadAllTextAsync(localInfo.FilePaths[1], token));
+            }
+
+            Assert.IsTrue(File.Exists(archivePath));
+            Assert.AreEqual(transferHash, profile.TransferDataHash);
         }
         finally
         {
