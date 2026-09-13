@@ -69,7 +69,6 @@ public partial class ServerConfigPage : UserControl
         _viewModel.CustomConfigurationFilePath = fileName ?? _viewModel.CustomConfigurationFilePath;
     }
 
-
     private void ServerSettingDialog_OkClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
     {
         ArgumentNullException.ThrowIfNull(_serverConfigDialog);
@@ -84,7 +83,6 @@ public partial class ServerConfigPage : UserControl
         args.Cancel = true;
         return;
     }
-
 
     private void SetServerConfig(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

@@ -316,3 +316,7 @@ macOS 首次增量发布时，输出目录已是 SQLite 3.53.3，但 `.app` 中�
 - 仓库规定的 `dotnet format --verify-no-changes --severity info --no-restore` 退出 0；日志 `/tmp/syncclipboard-stage8-format.log`。保留跨平台工作区加载警告，完整平台验证由 PR 补齐。
 
 本步骤所有运行时 XAML、视觉、窗口/面包屑交互、真实拖拽/剪贴板/热键/通知检查均为 UI 范围排除，不执行、不计通过、不安排补测。Magick.NET 14.9.1 的既有漏洞警告保持可见，按步骤 11 处理。本步尚未通过当前提交的全平台 PR CI、产物与评审门槛，不允许进入步骤 9。
+
+### 首轮 PR 问题
+
+步骤 8 首次提交 `c0e51291abd900fd86b1f9c96339c5f0e1321cbb` 后，CodeFactor 报告 ServerConfigPage 两处连续空行（SA1507）。最小修复仅删除这两行空白；核对非空白 token 序列未变，仓库格式检查和 diff 检查通过。新提交仍须重新检查全平台 CI、CodeFactor、评审与产物；未忽略检查或提前进入下一步。
