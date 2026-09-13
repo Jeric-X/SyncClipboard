@@ -18,6 +18,10 @@ jobs:
       with:
         dotnet-version: |
           8.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Install dependencies
       working-directory: ./src
@@ -31,8 +35,26 @@ jobs:
         mkdir server
         cp -r src/SyncClipboard.Server/bin/Release/net8.0/publish/ server/
 
+    - name: Verify published server without UI
+      run: python3 build/verification/server_smoke.py --server-dll server/publish/SyncClipboard.Server.dll
+
     - name: Upload build artifacts SyncClipboard.Server
       uses: actions/upload-artifact@v7
       with:
         name: SyncClipboard.Server
         path: server/
+
+  container-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build server container on the native architecture
+      run: docker build -f src/SyncClipboard.Server/Dockerfile -t syncclipboard-upgrade-check src
+    - name: Show container architecture
+      run: docker run --rm --entrypoint uname syncclipboard-upgrade-check -m
+    - name: Verify container without publishing
+      run: python3 build/verification/server_smoke.py --container syncclipboard-upgrade-check

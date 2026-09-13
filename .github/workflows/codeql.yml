@@ -77,7 +77,12 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: |
+          9.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3

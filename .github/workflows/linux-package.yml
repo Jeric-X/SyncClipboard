@@ -70,6 +70,10 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
+            10.0.302
+
+      - name: Show selected SDK
+        run: dotnet --info
 
       - name: Download last-job-built artifact
         uses: actions/download-artifact@v8

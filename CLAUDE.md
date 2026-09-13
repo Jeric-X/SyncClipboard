@@ -10,6 +10,8 @@ SyncClipboard is a cross-platform clipboard synchronization tool (Windows/macOS/
 
 This is a multi-platform .NET solution. The sln cannot be built as a whole (it contains platform-specific projects that fail on incompatible OS/arch). All projects use [central package management](https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management) via `src/Directory.Packages.props`. Commands below are run from the repo root unless noted.
 
+The repository pins .NET SDK 10.0.302 in `global.json`. Install the .NET 8/9 runtimes while their target frameworks or tools remain in use; SDK 10 alone cannot run these test hosts.
+
 ### Windows (WinUI3)
 
 WinUI3 is the primary Windows client (`net9.0-windows10.0.19041.0`). Requires the Windows App SDK — only builds on Windows. The CI uses msbuild, not dotnet CLI.
@@ -87,6 +89,8 @@ dotnet test src/SyncClipboard.Test.WinUI3   # Windows only
 # Run a single test
 dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 ```
+
+For non-UI validation, run Desktop and WinUI3 tests with `--filter "TestCategory=NonUI"`. These explicitly audited cases avoid desktop initialization. The original mixed DI cases are classified `RequiresUI` and remain available for separate UI-enabled runs; their exclusion is not a passing result.
 
 Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
 

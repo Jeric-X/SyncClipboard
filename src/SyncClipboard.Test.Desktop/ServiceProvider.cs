@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop;
+using SyncClipboard.Shared.Profiles;
 
 namespace SyncClipboard.Test.Desktop;
 
@@ -20,10 +22,28 @@ public class ServiceProvider
     }
 
     [TestMethod]
+    [TestCategory("RequiresUI")]
     [SystemServiceProviderDataSource]
     [PlatformServiceProviderDataSource]
     public void ConfigedServices(Type type)
     {
         Assert.IsNotNull(Services?.GetService(type));
+    }
+
+    [TestMethod]
+    [TestCategory("NonUI")]
+    [DataRow(typeof(IAppConfig))]
+    [DataRow(typeof(IGlobalDialog))]
+    [DataRow(typeof(IClipboardSetter<TextProfile>))]
+    [DataRow(typeof(IClipboardSetter<FileProfile>))]
+    public void ConfiguredNonUiServices_CanBeResolved(Type type)
+    {
+        Assert.IsNotNull(Services?.GetRequiredService(type));
+    }
+
+    [TestCleanup]
+    public void CleanupServices()
+    {
+        Services?.Dispose();
     }
 }

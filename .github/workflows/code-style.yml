@@ -18,11 +18,20 @@ jobs:
       with:
         dotnet-version: |
           9.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
+
+    - name: Select Xcode Version
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '26.6'
 
     - name: Install dependencies
       working-directory: ./src
       run: |
-        dotnet workload install macos
+        dotnet workload install macos --version 10.0.302.1
         dotnet workload restore
         dotnet restore
 

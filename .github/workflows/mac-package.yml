@@ -34,7 +34,10 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: | 
-            10.0.x
+            10.0.302
+
+      - name: Show selected SDK
+        run: dotnet --info
 
       - name: Select Xcode Version
         uses: maxim-lobanov/setup-xcode@v1
@@ -44,7 +47,7 @@ jobs:
       - name: Install dotnet workload and dependencies
         working-directory: ./src/SyncClipboard.Desktop.MacOS
         run: |
-          dotnet workload install macos
+          dotnet workload install macos --version 10.0.302.1
           dotnet restore
 
       # - name

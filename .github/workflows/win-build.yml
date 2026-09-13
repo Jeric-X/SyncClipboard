@@ -37,6 +37,10 @@ jobs:
       with:
         dotnet-version: |
           9.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3

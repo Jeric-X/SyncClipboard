@@ -16,9 +16,81 @@ jobs:
       with:
         dotnet-version: |
           8.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Restore dependencies
       run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj
 
     - name: Run Core tests
-      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore
+      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --logger trx --results-directory TestResults/core
+
+    - name: Verify Core test coverage
+      run: python build/verification/check_test_results.py TestResults/core --minimum 346
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: core-test-results
+        path: TestResults/core
+
+  desktop-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025-vs2026, ubuntu-latest, macos-26]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: |
+          8.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
+    - name: Test desktop services without UI
+      run: dotnet test src/SyncClipboard.Test.Desktop -c Release --filter TestCategory=NonUI --logger trx --results-directory TestResults/desktop
+    - name: Verify non-UI test coverage
+      run: python build/verification/check_test_results.py TestResults/desktop --minimum 4
+    - name: Compile the alternative Windows entry point
+      if: runner.os == 'Windows'
+      run: dotnet build src/SyncClipboard.Desktop.Default -c Release -f net8.0-windows10.0.17763.0
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: desktop-test-results-${{ matrix.os }}
+        path: TestResults/desktop
+
+  winui-test:
+    runs-on: windows-2025-vs2026
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: |
+          9.0.x
+          10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
+    - uses: microsoft/setup-msbuild@v3
+      with:
+        msbuild-architecture: x64
+    - name: Build WinUI tests
+      run: msbuild src\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=false /v:m -restore
+    - name: Test WinUI services without UI
+      run: dotnet test src/SyncClipboard.Test.WinUI3 -c Release --no-build --no-restore -p:Platform=x64 -p:RuntimeIdentifier=win-x64 --filter TestCategory=NonUI --logger trx --results-directory TestResults/winui
+    - name: Verify non-UI test coverage
+      run: python build/verification/check_test_results.py TestResults/winui --minimum 4
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: winui-test-results
+        path: TestResults/winui
