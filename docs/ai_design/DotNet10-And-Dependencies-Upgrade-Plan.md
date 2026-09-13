@@ -45,7 +45,8 @@
 | AsyncImageLoader.Avalonia | 3.3.0 | 3.8.0，已声明支持 Avalonia 12 | 8 |
 | FluentAvalonia.BreadcrumbBar | 2.0.2 | 兼容版本、受维护替代或最小移植，不能假设旧包可用 | 8 |
 | Avalonia.Diagnostics | 11.3.18 | 移除；需要工具时核定 AvaloniaUI.DiagnosticsSupport 版本 | 8 |
-| WindowsAppSDK、SDK.BuildTools、WinUIEx、H.NotifyIcon、WinUI CommunityToolkit | 见中央版本文件 | 逐个核定当前稳定兼容版本 | 9a–9d |
+| WindowsAppSDK、SDK.BuildTools | 1.8.260529003 / 10.0.26100.4948 | 2.4.0 / 10.0.28000.2705，执行时核对配套组件及部署要求 | 9a |
+| WinUIEx、H.NotifyIcon、WinUI CommunityToolkit | 见中央版本文件 | 逐个核定当前稳定兼容版本 | 9b–9d |
 | AWSSDK.S3 | 3.7.414 | 稳定 4.x，按官方 V4 迁移指南适配 | 10 |
 | Magick.NET Q16 各架构包、SystemDrawing | 14.9.1 / 8.0.15 | 各架构 Q16 同版；SystemDrawing 使用兼容配套版本 | 11 |
 | SharpHook | 5.2.3 | 当前受支持的稳定版本 | 12a |

@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–7 已通过，当前执行步骤 8：升级 Avalonia 12 与必要配套 UI 依赖，执行编译及非 UI 验证。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 7 验证通过提交为 `f476db56241e0b66e4a02ada97c8febb7ec2d4af`；步骤 8 已完成代码适配，正在独立验证；当前提交的 PR 门槛通过前不允许进入步骤 9。
-- 步骤 9–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–8 已通过，当前执行步骤 9a：核定 Windows App SDK 与配套 BuildTools 升级，执行编译及非 UI 验证。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 8 验证通过提交为 `a8d0aca4ae12a818e37d080d4b4e609ba47c6de2`；步骤 9a 已完成版本更新及本地非 UI 验证，尚待当前提交 PR 的 Windows 构建与产物验证，不允许进入步骤 9b。
+- 步骤 9b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -293,7 +293,7 @@ macOS 首次增量发布时，输出目录已是 SQLite 3.53.3，但 `.app` 中�
 
 ## 步骤 8：升级 Avalonia 12 与必要配套依赖
 
-前置步骤通过提交：`f476db56241e0b66e4a02ada97c8febb7ec2d4af`。状态：进行中。先核定 Avalonia、FluentAvalonia、AsyncImageLoader 与 BreadcrumbBar 的稳定兼容组合，再进行 C#/XAML/API 适配；仅执行约定的非 UI 验证，不初始化 UI 框架或真实桌面。
+前置步骤通过提交：`f476db56241e0b66e4a02ada97c8febb7ec2d4af`。状态：非 UI 验证通过；以下保留过程记录，最终证据见本节末尾。先核定 Avalonia、FluentAvalonia、AsyncImageLoader 与 BreadcrumbBar 的稳定兼容组合，再进行 C#/XAML/API 适配；仅执行约定的非 UI 验证，不初始化 UI 框架或真实桌面。
 
 ### 版本与兼容适配
 
@@ -320,3 +320,41 @@ macOS 首次增量发布时，输出目录已是 SQLite 3.53.3，但 `.app` 中�
 ### 首轮 PR 问题
 
 步骤 8 首次提交 `c0e51291abd900fd86b1f9c96339c5f0e1321cbb` 后，CodeFactor 报告 ServerConfigPage 两处连续空行（SA1507）。最小修复仅删除这两行空白；核对非空白 token 序列未变，仓库格式检查和 diff 检查通过。新提交仍须重新检查全平台 CI、CodeFactor、评审与产物；未忽略检查或提前进入下一步。
+
+
+### 当前 PR 评审核对
+
+修复提交 `a8d0aca4ae12a818e37d080d4b4e609ba47c6de2` 的 CodeFactor 已通过。当前 Codex 评审提出 [面包屑模板建议](https://github.com/Jeric-X/SyncClipboard/pull/419#discussion_r4000141125)，认为控件工厂会无条件套一层 FABreadcrumbBarItem。核对实际 FluentAvalonia 3.1.0 对应源码 `215ee0481e8b0e6d396cbe2a0f33dc791c5646ab`：BreadcrumbElementFactory 对模板已经返回 FABreadcrumbBarItem 的情况设置 Content 后直接返回，仅其他类型才创建容器；FABreadcrumbBar 的 repeater 使用该工厂。现有模板只返回一个面包屑容器，其 ContentTemplate 返回 TextBlock，所述嵌套路径不成立。保留已编译通过的模板，按不适用建议解决线程；未发送 GitHub 评论，也未运行 UI。详细判断依据已在本节版本适配说明及本地问题日志中保留。
+
+当前五份 CI TRX 已全部核验：Core 356、三平台 Desktop 各 4、WinUI3 4，共 372 项通过、0 失败/跳过，四项新增导航测试均实际执行。两架构 macOS dmg 已通过严格签名、原生架构、资源及实际依赖版本检查；完整 Windows/Linux 安装包矩阵仍在收集，尚未宣布步骤 8 通过。
+
+
+### 步骤 8 最终证据
+
+验证通过提交：`a8d0aca4ae12a818e37d080d4b4e609ba47c6de2`。[PR build 34768060046](https://github.com/Jeric-X/SyncClipboard/actions/runs/34768060046)、[push build 34768058047](https://github.com/Jeric-X/SyncClipboard/actions/runs/34768058047)、[CodeQL 34768059583](https://github.com/Jeric-X/SyncClipboard/actions/runs/34768059583) 及 CodeFactor 均完成；最终 103 项成功、8 项预期发布跳过，无失败或运行中检查。再次读取当前 head、reviews/decision、行内线程及普通评论，当前 Codex 评审已完成，五个线程全部解决；面包屑建议的源码核对结论见上文。
+
+全部 47 个 artifact 下载完成，五份 TRX 共 372 项非 UI 测试通过，0 失败/跳过。38 个 Windows/Linux 原始构建与 ZIP/Inno/AppImage/deb/rpm 组合通过完整性、资源、net10 框架、自包含模式及原生架构检查；ZIP CRC 和 Inno 每个数据文件完整性均实际核验。14 个 Linux 组合逐包核对八个新桌面依赖程序集版本，Skia/HarfBuzz 原生库与相应 RID NuGet 文件哈希一致；保留 Microsoft/EF/SQLite 的前置检查。报告 `/tmp/syncclipboard-pr419-a8d0-package-audit.json`，SHA256 `60f2f20325529027ac9111761bd9b91e4977313890f055bf73b6dc5da501eaab`。六个 Linux 包元数据检查通过。
+
+macOS arm64/x64 两个 dmg 的主程序、每包 19 个 dylib、资源及严格签名均通过；实际八个桌面依赖程序集版本符合目标，Microsoft/EF/SQLite 及框架组件版本检查通过，两次只读挂载均已卸载。报告 `/tmp/syncclipboard-pr419-a8d0-macos-{arm64,x64}.json`。当前 PR 的 Server、amd64/arm64 容器均从日志确认四轮 Production 启动/重启及两轮 API/认证/历史/传输成功；下载的 Server 产物在本机隔离环境复验同样通过。
+
+步骤 8 非 UI 验证通过，允许进入步骤 9a；未执行 UI 验收，不代表后续依赖升级已完成。
+
+## 步骤 9a：Windows App SDK 与配套 BuildTools
+
+前置步骤通过提交：`a8d0aca4ae12a818e37d080d4b4e609ba47c6de2`。状态：进行中。先核定当前稳定版本和配套要求，保留 WinUIEx、NotifyIcon、Toolkit 版本，独立完成 Windows x64/arm64 构建和 App SDK/.NET 携带矩阵及非 UI 检查后再开始步骤 9b。
+
+
+### 版本与本地还原
+
+2026-09-14 核定 [Windows App SDK 2.4.0](https://www.nuget.org/packages/Microsoft.WindowsAppSDK/2.4.0) 和 [Windows SDK BuildTools 10.0.28000.2705](https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools/10.0.28000.2705) 为当前稳定版，中央版本分别从 1.8.260529003 和 10.0.26100.4948 升级。按 [官方 2.x 发布说明](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/release-notes/windows-app-sdk-2-0) 核对新版本编号、传递包重组和生成入口修复；本项目使用 PackageReference，不适用文档针对 C++ packages.config 的卸载/重加流程。
+
+WinUI3 与 Test.WinUI3 在本机 SDK 10.0.302 下还原成功，没有包降级、冲突或不兼容 TFM 错误；仍为 net10.0-windows10.0.19041.0，保留最低系统声明和 x86/x64/arm64 RID。实际传递依赖包括 Runtime 2.4.0、WinUI 2.3.6、Foundation 2.3.9、Base 2.0.4、InteractiveExperiences 2.1.6、WebView2 1.0.3719.77 和 MSIX BuildTools 1.7.251221100；新增 Search 2.4.4 和 MachineLearning 2.1.74 来自原有 App SDK 聚合包依赖。未额外添加功能，也未提前升级 WinUIEx、NotifyIcon 或 Toolkit。还原日志 `/tmp/syncclipboard-stage9a-winui-restore.log` 与 `/tmp/syncclipboard-stage9a-winui-test-restore.log`，完整依赖差异 `/tmp/syncclipboard-stage9a-resolved-dependency-diff.json`。
+
+macOS 不能替代 Windows MSBuild/XAML 编译、WinUI3 非 UI 测试与 Windows 打包。本步骤最终通过依赖当前提交在真实 PR 的 Windows runner 验证全部 x64/arm64、.NET/App SDK 携带组合，并检查实际运行时包、bootstrap/程序集版本、资源与原生架构；不启动 UI，也不执行图形安装向导。
+
+
+### 本地验证与待验证范围
+
+Core 356 项、Desktop NonUI 4 项通过，0 失败/跳过；仓库 TRX 校验器按最低 360 项通过，报告 `/private/tmp/syncclipboard-stage9a-results/`。仓库 `dotnet format --verify-no-changes --severity info --no-restore` 退出 0，日志 `/tmp/syncclipboard-stage9a-format.log`，保留跨平台工作区加载警告。`git diff --check` 通过。
+
+Windows App SDK 的 Runtime 包声明 Framework AppX 版本 2.4.0.0；所选 WinUI 组件的 Microsoft.WinUI.dll 程序集版本仍为 3.0.0.0，Bootstrap.Net 为 2.0.0.0，不能只依据程序集主版本判断升级是否生效。后续产物核验须结合 deps 中的包版本、对应 NuGet 文件哈希、Runtime/Bootstrap 及自包含模式；不运行 SDK 的 UI 初始化或安装向导。当前本机无法完成的 Windows 验证交由真实 PR，步骤 9a 未通过前不开始 9b。
