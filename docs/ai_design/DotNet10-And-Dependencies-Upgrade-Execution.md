@@ -2,12 +2,12 @@
 
 执行计划：[分步升级计划](DotNet10-And-Dependencies-Upgrade-Plan.md)。本记录沿用计划中的非 UI 验证门槛；所有需要 UI 的检查均列为范围排除，不执行，也不作为进入下一步的前置条件。
 
-后续追加记录也必须遵守此范围：遇到需要 UI 的验证建议，记录为“UI 范围排除”，不新增 UI 测试或补测待办；相关代码兼容性问题仍通过源码分析、编译和可隔离的非 UI 检查处理。
+后续追加记录也必须遵守此范围，无论 macOS 是否锁屏：遇到需要 UI 的验证建议，记录为“UI 范围排除”，不新增 UI 测试或补测待办；相关代码兼容性问题仍通过源码分析、编译和可隔离的非 UI 检查处理。每一步仍须独立完成必要的非 UI 验证，涉及 CI 的内容仍须提交 PR 并监控、处理问题后，才能进入下一步。
 
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–9d 已通过，当前执行步骤 10 前置：S3 HTTP 签名和上传进度修复；通过后再迁移 SDK v4。
+- 步骤 1–9d 及步骤 10 前置修复已通过，当前执行步骤 10：AWS SDK S3 v4 迁移。
 - PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 9d 验证通过提交为 `b00ddd0d95cc2e501225df5e7e5948a5d155846f`；步骤 10 未通过前不进入 11。
 - 步骤 11–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
@@ -470,3 +470,26 @@ Core 356、Desktop NonUI 4 项最终通过，0 失败/跳过，报告 `/private/
 前置提交 `05bb84cc4ee7627629c4a05768445a973f25db1c` 的 [PR run 34774908991](https://github.com/Jeric-X/SyncClipboard/actions/runs/34774908991) 在启动前失败，确切诊断是 core-test.yml 第 81 行的 `Unrecognized named-value: runner`。job 环境变量不能使用 runner 上下文；已将 GOBIN 移到安装步骤环境变量，并在运行步骤使用 runner.temp 路径。普通 YAML 语法检查无法发现这一错误，补用官方 actionlint v1.7.12 进行 GitHub 表达式语义检查，修复后退出 0。
 
 CodeFactor 同时报告 C# 探针复杂度 42、Python 驱动复杂度 21。已将 C# 七组验证提取为具名类方法，并拆分 Python 代理处理、服务等待/清理与报告核验；C# Require 条件及 Python require AST 比对确认断言未减少。编译和格式检查通过，重构后的真实 MinIO 七组检查再次通过，报告 `/tmp/syncclipboard-stage10-refactor-s3-result.json`，与原通过报告的检查清单一致，上传/下载故障重试均第 3 次成功。当前提交 Codex 评审于 `2026-09-13T18:36:51.631944Z` 完成且未新增反馈，但工作流与 CodeFactor 仍须修复提交的真实 PR 重新验证，前置步骤尚未通过。
+
+### 前置修复最终通过
+
+修复提交 `93e68023caca43c44fe763486253af45d2afd165` 的 [PR run 34775465345](https://github.com/Jeric-X/SyncClipboard/actions/runs/34775465345)、[push run 34775464080](https://github.com/Jeric-X/SyncClipboard/actions/runs/34775464080) 和 [CodeQL 34775465033](https://github.com/Jeric-X/SyncClipboard/actions/runs/34775465033) 全部成功。最终 105 SUCCESS、8 项预期发布 SKIPPED，无失败或待执行检查，CodeFactor 已恢复成功。当前提交 Codex 评审于 `2026-09-13T18:46:08.335173Z` 完成，五个历史线程均解决，无新增评审或评论问题。
+
+五份真实 TRX 共 374 项通过，0 失败/跳过；两条流水线的 MinIO 检查均实际成功，独立 S3 JSON 中的七组检查及 AWS DLL 哈希与本地一致。48 个 artifact 全部下载，完整 38 个 Windows/Linux 包组合、六 Linux 包元数据、双架构 macOS 签名/依赖/各 19 个 dylib 检查通过；Server 与双架构容器各四轮启动和两轮 API 冒烟成功，下载服务器本机复验同样通过。完整产物报告 `/tmp/syncclipboard-pr419-93e6-package-audit.json`，SHA256 `3fb0eeddef74ec1803e223df12f6ab489b37d750f7257190cbed8c9a3fd9d69b`，本地详情 `docs/ai_design/.local/PR-419-Artifacts-93e68023.md`。
+
+步骤 10 前置修复非 UI 验证通过，允许迁移 SDK v4；并不表示步骤 10 主升级或 11–18 已完成。
+
+
+## 步骤 10：AWS SDK S3 v4（2026-09-14）
+
+前置修复通过提交 `93e68023caca43c44fe763486253af45d2afd165`。将 AWSSDK.S3 3.7.414 升级至稳定版 4.0.103.2，实际解析 AWSSDK.Core 3.7.401.10 → 4.0.102.4；[NuGet 版本与依赖](https://www.nuget.org/packages/AWSSDK.S3/4.0.103.2)。Core、WinUI3、macOS 依赖图差异均只有这两个包，选择 net8.0 资产，没有其他传递依赖变化。报告 `/tmp/syncclipboard-stage10-v4-resolved-dependency-diff.json`。
+
+根据 [AWS v4 迁移指南](https://docs.aws.amazon.com/sdk-for-net/v4/developer-guide/net-dg-v4.html)，将分页标记改为 `IsTruncated == true`，并在清理前检查 S3Objects 是否为 null/空列表；正常批量删除和兼容回退共用检查后的集合。未打开全局集合初始化开关。原有地址、Region、ForcePathStyle、代理、WHEN_REQUIRED 校验和设置、流生命周期与前置 HTTP 签名修复继续保留。
+
+SDK 默认重试模式改为 Standard；实测上限为 3 次总请求，原版为 5 次。连续两次 HTTP 500 后，上传/下载均第 3 次成功且字节哈希正确；持续错误在第 3 次请求后自动耗尽，`persistentFailureCanceled=false`，没有无限重试。v4 不再允许 us-east-1 客户端跨区域访问 AWS 桶，迁移已有 AWS 账号时 Region 应填写桶实际区域；本项目保持显式 Region 配置与空值默认 us-east-1。这里没有实际访问 AWS 云账号，也没有将 MinIO 结果写成所有云厂商已验证。
+
+同一套真实 MinIO 七组协议检查全部通过：空列表和目录标记、Unicode 元数据/ETag 冲突、空文件/32 MiB/多文件/哈希与完成进度、取消、故障代理重试、错误凭据与配置重建、1005+ 分页和重复清理/前缀隔离。报告 `/tmp/syncclipboard-stage10-v4-s3-result.json`，日志 `/tmp/syncclipboard-stage10-v4-s3-smoke.log`；对照修复后的 v3 报告，七组检查名称完全相同。本轮使用本机 HTTP MinIO；ForcePathStyle=false 搭配 IP 端点不等同于验证真实 DNS 虚拟主机寻址，HTTPS 云端和各云厂商差异不能由此推断。
+
+Core 356、Desktop NonUI 4 项通过，0 失败/跳过，仓库 TRX 校验器按最低 360 项复核通过；报告 `/private/tmp/syncclipboard-stage10-v4-results/`。WinUI3、WinUI3 测试及 macOS 还原成功，仓库格式检查退出 0，仅保留跨平台工作区加载警告；日志 `/tmp/syncclipboard-stage10-v4-format.log`。Windows 和其他架构的实际编译、374 项 CI MSTest、七组 CI S3 协议检查与完整产物矩阵仍须在当前提交的真实 PR 验证，不开始步骤 11。
+
+产物检查新增逐包核对 AWSSDK.S3/Core 的依赖版本和 net8.0 NuGet DLL 哈希：S3 为 `42776c7c8d2590279a5057894e56cf8d75475c29645017125f29eec88662a736`，Core 为 `222fced75324387f6b77acc00392a957aa916c3a3e87e6ac7c6b1814911c5232`。Windows/Linux 保留所有前置包检查，macOS 保留签名、资源、原生架构和前置依赖检查；不启动桌面应用。

@@ -264,9 +264,10 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                 MaxKeys = 1000
             };
             var listResponse = await _s3Client.ListObjectsV2Async(listRequest, cancellationToken);
-            continuationToken = listResponse.IsTruncated ? listResponse.NextContinuationToken : null;
+            continuationToken = listResponse.IsTruncated == true ? listResponse.NextContinuationToken : null;
 
-            if (listResponse.S3Objects.Count == 0)
+            var objects = listResponse.S3Objects;
+            if (objects is null || objects.Count == 0)
             {
                 continue;
             }
@@ -275,7 +276,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
             {
                 BucketName = _s3Config.BucketName
             };
-            foreach (var obj in listResponse.S3Objects)
+            foreach (var obj in objects)
             {
                 deleteRequest.AddKey(obj.Key);
             }
@@ -291,7 +292,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                     throw;
                 }
 
-                foreach (var obj in listResponse.S3Objects)
+                foreach (var obj in objects)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var deleteObj = new DeleteObjectRequest
