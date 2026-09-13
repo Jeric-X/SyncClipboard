@@ -1,13 +1,13 @@
 # .NET 10 与主要依赖升级执行记录
 
-执行计划：[分步升级计划](DotNet10-And-Dependencies-Upgrade-Plan.md)。本记录不替代计划中的任何验证门槛。
+执行计划：[分步升级计划](DotNet10-And-Dependencies-Upgrade-Plan.md)。本记录沿用计划中的非 UI 验证门槛；所有需要 UI 的检查均列为范围排除，不执行，也不作为进入下一步的前置条件。
 
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1、2 已通过，当前执行步骤 3：将 Avalonia 桌面层、Default 入口及测试改为 .NET 10；中央依赖版本保持基线。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 2 验证通过提交为 `8d0eb50fec2ba4d16bef61d4233502da45bff058`；步骤 3 尚待当前改动的 PR 验证，不允许进入步骤 4。
-- 步骤 4–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–3 已通过，当前执行步骤 4：将独立服务器及容器升级 .NET 10；中央依赖版本保持基线。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 3 验证通过提交为 `a588ea95ac67e0dd91e60d22b5dbf78630d61952`；步骤 4 尚待当前改动的 PR 验证，不允许进入步骤 5。
+- 步骤 5–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -107,11 +107,11 @@ CodeFactor 三项问题分别修复为：HTTPConnection 只允许本机 HTTP 且
 
 ## 步骤 3：Avalonia 桌面层、Default 入口与测试升级 .NET 10
 
-前置步骤通过提交：`8d0eb50fec2ba4d16bef61d4233502da45bff058`。状态：进行中。
+前置步骤通过提交：`8d0eb50fec2ba4d16bef61d4233502da45bff058`。状态：已通过（见本节最终证据）。
 
 Desktop、Test.Desktop 改为 net10.0，Default 改为 `net10.0-windows10.0.17763.0;net10.0`，MacOS 保持 net10.0-macos；Avalonia 11.3.18、FluentAvalonia 2.3.0 及全部中央依赖版本不变。同步 Linux 发布 TFM、备用 Windows 入口 CI、调试配置及 AGENTS/CLAUDE。ReleaseAva 调试任务原来发布共享类库并寻找其可执行文件，随入口路径同步修正为 Default 项目，显式选择 net10.0。
 
-当前步骤须通过 Desktop 非 UI 测试、Default 双 TFM 编译、macOS 双架构发布及真实 PR 的原平台打包矩阵；新产物运行框架和包内容待验证，暂不允许步骤 4。
+本步骤的门槛为 Desktop 非 UI 测试、Default 双 TFM 编译、macOS 双架构发布及真实 PR 的原平台打包矩阵；以下保留实施与修复过程，最终结论见本节末尾。
 
 Linux 安装文档明确 .NET 10 的 glibc >= 2.27 和 OpenSSL >= 1.1.1 要求。首次尝试把版本约束及 libssl 备选表达式写入包配置，被 PupNet 1.8.0 的 SafeNoSpace/安全字符校验拒绝；该工具只支持包名。当前修复保留 RPM Requires 与 deb Recommends 的原策略，添加显式 glibc 并将旧 libssl 名称改为 libssl3，不声称包管理器已强制上述版本下限。未把运行时包名写成强制包管理器依赖，避免拒绝通过官方脚本安装的运行时；中英文安装说明要求 no-dotnet-runtime 包安装匹配架构的 ASP.NET Core 10 运行时。依据：[支持系统/libc 表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)、[OpenSSL 变更](https://learn.microsoft.com/en-us/dotnet/core/compatibility/cryptography/10.0/openssl-version-requirement)、[Ubuntu 原生依赖](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install)，2026-09-13 核对。新 deb/rpm 元数据须随 PR 产物实际检查。
 
@@ -124,3 +124,28 @@ Linux 安装文档明确 .NET 10 的 glibc >= 2.27 和 OpenSSL >= 1.1.1 要求�
 PupNet 修复的本地验证使用与 CI 相同的 1.8.0 工具：旧配置副本通过 --upgrade-conf 命令复现拒绝，修正后的 deb/rpm/AppImage 副本均成功解析（退出码 0），报告目录 `/private/tmp/syncclipboard-pupnet-config-check/`。此检查仅证明配置解析，不能替代真实 Linux 打包；新 head 仍须重新跑 PR。
 
 补充非 UI 协议验证：临时 SDK.Web net10 宿主直接编译现有服务器 Program.cs 并引用原 Server.Core；实际 OfficialAdapter/WebDavAdapter 命令行探针分别以 net8/net10 编译。四种客户端/宿主组合均通过认证、Profile/文件完整性、历史查询、SignalR Profile/历史推送、显式断开重连及取消。重复内容更名后按服务器返回的 canonical DataName 下载，符合服务器复用既有历史记录的协议；不把上传临时文件名当作最终引用。报告 `/tmp/syncclipboard-stage3-protocol-matrix.json`，探针 `/private/tmp/syncclipboard-protocol-probe/`，宿主 `/private/tmp/syncclipboard-stage3-headless-host/`，驱动 `/private/tmp/syncclipboard_protocol_matrix.py`。这不覆盖网络中断后的自动重连、代理/HTTPS 或外部 S3/WebDAV 服务；后续相应依赖步骤仍需专门回归。产品 Server TFM 未提前变更。
+
+
+### 步骤 3 最终证据
+
+验证通过提交：`a588ea95ac67e0dd91e60d22b5dbf78630d61952`。[PR build 34758064136](https://github.com/Jeric-X/SyncClipboard/actions/runs/34758064136)、[push build 34758062022](https://github.com/Jeric-X/SyncClipboard/actions/runs/34758062022)、[CodeQL 34758063806](https://github.com/Jeric-X/SyncClipboard/actions/runs/34758063806) 及 CodeFactor 完成。最终 103 项成功、8 项预期发布任务跳过，无失败或运行中检查；当前 head 的 Codex 评审完成，4 个原评审线程均已解决，无新增可处理评论。
+
+下载全部 47 个 artifact。五份 TRX 经校验共 362 通过、0 失败/跳过；38 个 Windows/Linux 构建目录和包组合的完整性、net10 运行框架、自包含模式、资源及原生库架构检查通过，报告 `/tmp/syncclipboard-pr419-a588-package-audit.json`（SHA-256 `90c756b9c6bcec2d199721761ed924e6f35e1fc4672d8c8f6c4dec489b1ddc3b`）。4 个 deb、2 个 rpm 的名称、版本、架构与修复后的依赖元数据通过，报告 `/tmp/syncclipboard-pr419-a588-linux-metadata.json`。两个 macOS dmg 的主程序、各 19 个 dylib、资源及严格签名检查通过，已卸载。服务器产物仍为 net8，两轮 API/持久化冒烟通过。
+
+步骤 3 通过，允许进入步骤 4。UI 排除项不计通过，此结论不表示剩余升级已完成。
+
+## 步骤 4：独立服务器与容器升级 .NET 10
+
+前置步骤通过提交：`a588ea95ac67e0dd91e60d22b5dbf78630d61952`。状态：进行中。
+
+Server 改为 net10.0，Server.Core/Shared 暂留 net8.0；同步 server-build 产物路径、中英文服务器运行时说明、两份调试配置及 AGENTS/CLAUDE。server-release 消费 `Server/publish/*`，与外层产物目录保持一致，无需修改，也不执行发布。
+
+Docker 使用 `mcr.microsoft.com/dotnet/sdk:10.0.302-noble` 与 `mcr.microsoft.com/dotnet/aspnet:10.0-noble`，明确 Ubuntu 24.04 Noble，SDK 与 global.json 对齐；运行时标签保留同一主版本的补丁更新。依据：[官方默认基础系统变更](https://learn.microsoft.com/en-us/dotnet/core/compatibility/containers/10.0/default-images-use-ubuntu)、[官方镜像标签](https://github.com/dotnet/dotnet-docker/blob/main/README.aspnet.md)。本机未配置 Docker；标签实际可拉取、发行版、运行时、架构和冒烟结果须由当前 PR 的 amd64/arm64 原生容器作业证明，不能以文档或 Dockerfile 文本代替。
+
+旧版服务器产物已生成隔离数据基线 `/private/tmp/syncclipboard-server-net8-fixture/baseline`，包含两条历史、收藏/置顶、时间与文件；测试仅使用副本。临时 net10 宿主已验证两次重启后 schema、所有记录字段、文件哈希、排序和收藏查询保持一致，并验证副本清理成功、原基线未改。此准备性检查不替代本步骤实际 Server net10 产物的 R3/R4，后者须在发布后重新执行。
+
+本机实际 Server net10 Release 发布成功（`/tmp/syncclipboard-stage4-publish.log`）；两轮认证/API/文件/持久化冒烟及正常退出通过（`/tmp/syncclipboard-stage4-smoke.log`）。新旧客户端与实际 net8/net10 服务器四组互通通过（`/tmp/syncclipboard-stage4-protocol-matrix.json`），覆盖 Official/WebDAV 协议、SignalR Profile/历史推送、显式重连、取消及数据完整性；自动重连、代理/HTTPS、外部 S3/WebDAV 仍需后续专门回归。实际新服务器读取旧库副本、两次重启、全部字段/时间/排序/收藏/置顶、文件哈希及清理通过，原库保留（`/tmp/syncclipboard-stage4-persistence.json`）。
+
+容器 CI 增加 Ubuntu 24.04 和主机架构一致性检查，并记录实际运行时。冒烟检查现在要求进程/容器正常退出，容器在检查退出码与 OOM 状态后清理；超时强杀或非零退出均失败。本机真实服务器正常退出通过，退出码 23 的命令行进程被校验器正确拒绝。Docker 分支待真实 CI 验证。
+
+仓库格式检查退出 0（`/tmp/syncclipboard-stage4-format.log`，保留跨平台工作区加载警告）；YAML/Python 语法、AGENTS/CLAUDE 一致性及框架边界检查通过。中央 NuGet 版本未变，SQLitePCLRaw 已知漏洞仍待步骤 7 处理。步骤 4 尚待新 head 的 CI、评审、实际容器与产物验证，不允许进入步骤 5。

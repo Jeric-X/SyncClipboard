@@ -77,7 +77,7 @@
             "preLaunchTask": "Debug Server",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/src/SyncClipboard.Server/bin/debug/net8.0/SyncClipboard.Server.dll",
+                "${workspaceFolder}/src/SyncClipboard.Server/bin/debug/net10.0/SyncClipboard.Server.dll",
                 "--contentRoot",
                 "./"
             ],
@@ -96,7 +96,7 @@
             "preLaunchTask": "Release",
             "program": "dotnet",
             "args": [
-                "${workspaceFolder}/src/SyncClipboard.Server/bin/release/net8.0/publish/SyncClipboard.Server.dll",
+                "${workspaceFolder}/src/SyncClipboard.Server/bin/release/net10.0/publish/SyncClipboard.Server.dll",
                 "--contentRoot",
                 "./"
             ],

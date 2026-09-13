@@ -33,7 +33,7 @@ jobs:
     - name: copy SyncClipboard.Server
       run: |
         mkdir server
-        cp -r src/SyncClipboard.Server/bin/Release/net8.0/publish/ server/
+        cp -r src/SyncClipboard.Server/bin/Release/net10.0/publish/ server/
 
     - name: Verify published server without UI
       run: python3 build/verification/server_smoke.py --server-dll server/publish/SyncClipboard.Server.dll
@@ -54,7 +54,11 @@ jobs:
     - uses: actions/checkout@v6
     - name: Build server container on the native architecture
       run: docker build -f src/SyncClipboard.Server/Dockerfile -t syncclipboard-upgrade-check src
-    - name: Show container architecture
-      run: docker run --rm --entrypoint uname syncclipboard-upgrade-check -m
+    - name: Verify container platform and show runtime
+      run: |
+        test "$(docker run --rm --entrypoint uname syncclipboard-upgrade-check -m)" = "$(uname -m)"
+        docker run --rm --entrypoint sh syncclipboard-upgrade-check -c '. /etc/os-release; test "$ID" = ubuntu && test "$VERSION_ID" = 24.04'
+        docker run --rm --entrypoint cat syncclipboard-upgrade-check /etc/os-release
+        docker run --rm --entrypoint dotnet syncclipboard-upgrade-check --info
     - name: Verify container without publishing
       run: python3 build/verification/server_smoke.py --container syncclipboard-upgrade-check

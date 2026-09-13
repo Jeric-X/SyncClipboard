@@ -113,7 +113,7 @@ class TestServer:
     def start(self):
         if self.args.container:
             self.container = subprocess.check_output([
-                "docker", "run", "--detach", "--rm", "--user", f"{os.getuid()}:{os.getgid()}",
+                "docker", "run", "--detach", "--user", f"{os.getuid()}:{os.getgid()}",
                 "--publish", "127.0.0.1::5033",
                 "--volume", f"{self.root}:/app/data", "--env", "ASPNETCORE_ENVIRONMENT=Development",
                 "--env", "ASPNETCORE_URLS=http://+:5033", self.args.container], text=True).strip()
@@ -154,15 +154,29 @@ class TestServer:
 
     def stop(self):
         if self.container:
-            subprocess.run(["docker", "stop", "--time", "10", self.container], check=False,
-                           stdout=subprocess.DEVNULL)
-        if self.process and self.process.poll() is None:
-            self.process.terminate()
             try:
-                self.process.wait(timeout=15)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+                subprocess.run(["docker", "stop", "--time", "10", self.container], check=True,
+                               stdout=subprocess.DEVNULL, timeout=30)
+                state = json.loads(subprocess.check_output(
+                    ["docker", "inspect", "--format", "{{json .State}}", self.container], text=True))
+                require(not state["Running"] and not state["OOMKilled"] and state["ExitCode"] == 0,
+                        f"Container did not shut down cleanly: {state}")
+            except Exception:
+                self.print_log()
+                raise
+            finally:
+                subprocess.run(["docker", "rm", "--force", self.container], check=True,
+                               stdout=subprocess.DEVNULL, timeout=30)
+        if self.process:
+            if self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait()
+                    raise TimeoutError("Server required a forced shutdown") from None
+            require(self.process.returncode == 0, f"Server exited with {self.process.returncode}")
 
 
 @contextmanager

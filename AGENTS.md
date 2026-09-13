@@ -53,7 +53,7 @@ Replace `osx-x64` with `osx-arm64` for Apple Silicon.
 
 ### Server
 
-The standalone server is cross-platform `net8.0`.
+The standalone server is cross-platform `net10.0`.
 
 ```bash
 # Restore
@@ -158,7 +158,7 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 
 ## Code Conventions
 
-- Target framework: desktop projects use `net10.0` (with platform-qualified entry targets); Core, Shared, Server.Core, Server and Core tests remain `net8.0` during the staged migration.
+- Target framework: desktop projects and the standalone Server use `net10.0` (with platform-qualified desktop entry targets); Core, Shared, Server.Core and Core tests remain `net8.0` during the staged migration.
 - Nullable reference types enabled project-wide (`<Nullable>enable</Nullable>`).
 - Central package management: add/update versions only in `Directory.Packages.props`.
 - The project uses MSTest with Moq for mocking. Test data source attributes (`PlatformServiceProviderDataSource`, `SystemServiceProviderDataSource`) drive DI validation tests.
