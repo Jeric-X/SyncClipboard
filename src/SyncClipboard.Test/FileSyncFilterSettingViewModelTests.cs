@@ -5,6 +5,7 @@ using SyncClipboard.Shared.Models;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class FileSyncFilterSettingViewModelTests
 {
     private static readonly string[] ExpectedDistinctPatterns = [".tmp", ".log"];

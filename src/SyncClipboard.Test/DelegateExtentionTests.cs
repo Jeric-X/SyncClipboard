@@ -3,6 +3,7 @@ using SyncClipboard.Core.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class DelegateExtentionTests
 {
     public TestContext TestContext { get; set; } = null!;

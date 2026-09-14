@@ -7,6 +7,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileTransferValidationTests
 {
     public TestContext TestContext { get; set; } = null!;

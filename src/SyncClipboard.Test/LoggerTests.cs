@@ -6,6 +6,7 @@ using SyncClipboard.Core.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class LoggerTests
 {
     private string _directory = null!;

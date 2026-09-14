@@ -6,6 +6,7 @@ using SyncClipboard.Shared.Profiles.Models;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class GroupProfileFileNamesTests
 {
     public TestContext TestContext { get; set; } = null!;

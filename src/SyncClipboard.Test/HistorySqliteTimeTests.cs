@@ -8,6 +8,7 @@ using ServerHistoryContext = SyncClipboard.Server.Core.Utilities.History.History
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class HistorySqliteTimeTests
 {
     public TestContext TestContext { get; set; } = null!;

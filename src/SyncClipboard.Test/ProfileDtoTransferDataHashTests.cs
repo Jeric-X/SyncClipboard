@@ -8,6 +8,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileDtoTransferDataHashTests
 {
     public TestContext TestContext { get; set; } = null!;

@@ -11,6 +11,7 @@ using System.Reflection;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class SyncClipboardConfigRegistryTests
 {
     [TestMethod]

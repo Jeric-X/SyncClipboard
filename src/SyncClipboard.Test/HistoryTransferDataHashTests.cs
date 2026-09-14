@@ -25,6 +25,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class HistoryTransferDataHashTests
 {
     public TestContext TestContext { get; set; } = null!;

@@ -5,6 +5,7 @@ using SyncClipboard.Shared.Profiles;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileActionBuilderTest
 {
     private readonly ProfileActionBuilder _builder = new(null!, new TestProfileEnv());

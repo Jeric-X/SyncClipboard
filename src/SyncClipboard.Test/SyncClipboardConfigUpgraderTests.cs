@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class SyncClipboardConfigUpgraderTests
 {
     private static readonly string[] ExpectedLegacyBlackList = [".tmp", ".log"];

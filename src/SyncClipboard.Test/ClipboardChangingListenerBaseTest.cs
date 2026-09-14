@@ -6,6 +6,7 @@ using SyncClipboard.Shared.Profiles;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ClipboardChangingListenerBaseTest
 {
     public TestContext TestContext { get; set; } = null!;

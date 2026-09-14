@@ -138,7 +138,7 @@ public partial class HistoryRecordVM : ObservableObject
     public partial double DownloadProgress { get; set; } = 0; // 0.0 - 100.0 百分比
 
     [ObservableProperty]
-    public partial bool IsDownloadPending { get; set; } = false; // 上传相关属性
+    public partial bool IsDownloadPending { get; set; } = false;
 
     // 上传相关属性
     [ObservableProperty]

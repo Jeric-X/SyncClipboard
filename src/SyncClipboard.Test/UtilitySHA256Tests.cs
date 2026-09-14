@@ -3,6 +3,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class UtilitySHA256Tests
 {
     public TestContext TestContext { get; set; } = null!;

@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ConfigRecoveryServiceTests
 {
     private string _directory = null!;

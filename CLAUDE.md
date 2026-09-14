@@ -90,7 +90,7 @@ dotnet test src/SyncClipboard.Test.WinUI3   # Windows only
 dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 ```
 
-For non-UI validation, run Desktop and WinUI3 tests with `--filter "TestCategory=NonUI"`. These explicitly audited cases avoid desktop initialization. The original mixed DI cases are classified `RequiresUI` and remain available for separate UI-enabled runs; their exclusion is not a passing result.
+For non-UI validation, run Core, Desktop and WinUI3 tests with `--filter "TestCategory=NonUI"`. These explicitly audited cases avoid desktop initialization. Keep UI-dependent tests in separate classes from class-level `NonUI` categories. The original mixed DI cases are classified `RequiresUI` and remain available for separate UI-enabled runs; their exclusion is not a passing result.
 
 Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
 

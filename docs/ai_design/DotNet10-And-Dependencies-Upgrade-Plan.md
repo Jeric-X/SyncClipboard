@@ -57,7 +57,7 @@
 | Interop.UIAutomationClient | 10.19041.0 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 12d |
 | Microsoft.Toolkit.Uwp.Notifications | 7.1.3 | 2026-09-14 核定已是最新稳定版，保留并独立验证通知载荷兼容性 | 12e |
 | CommunityToolkit.Mvvm | 8.4.0 | 8.4.2；核对 Roslyn 5.0 / C# 14 源生成器选择与兼容性 | 13a |
-| ObservableCollections | 3.3.4 | 核定稳定版本 | 13b |
+| ObservableCollections | 3.3.4 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | 相同的稳定兼容版本 | 14 |
 | Swashbuckle.AspNetCore | 8.1.1 | 核定 ASP.NET Core 10 兼容版本 | 15 |
 | Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | 保持 VSTest，逐组核定稳定兼容版本 | 16a–16c |
@@ -71,16 +71,16 @@ FluentAvalonia 与图片加载器的依据分别为 [NuGet 依赖声明](https:/
 
 以下命令从仓库根目录运行，除格式检查外。框架参数使用**当前步骤实际目标框架**；不要提前给尚未升级的项目指定 net10.0。
 
-运行测试前逐项确认是否依赖 UI。下列 `dotnet test` 命令只在整个测试项目均不依赖 UI 时直接执行；否则使用明确的测试分类或 `--filter` 仅运行非 UI 用例，并记录原总数、纳入数、UI 排除数及用例名称/原因。DI 测试若构造窗口或初始化交互桌面，同样属于排除项；能够通过既有 mock 在无 UI 环境运行的 DI、ViewModel、转换器和集合测试继续执行。不得将测试发现成功或 UI 用例被排除写成整套测试通过。
+运行测试前逐项确认是否依赖 UI。Core、Desktop、WinUI3 测试统一使用下列 `--filter "TestCategory=NonUI"` 命令，不直接运行未筛选的整个测试项目；记录原总数、纳入数、UI 排除数及用例名称/原因。DI 测试若构造窗口或初始化交互桌面，同样属于排除项；能够通过既有 mock 在无 UI 环境运行的 DI、ViewModel、转换器和集合测试继续执行。不得将测试发现成功或 UI 用例被排除写成整套测试通过。
 
-Desktop/WinUI3 的混合测试项目采用明确的非 UI 白名单：审查测试初始化、数据源、服务构造及清理过程后，将安全用例标为 `TestCategory("NonUI")`，使用下面的正向筛选命令。分类尚未完成时先分类，再运行；不直接运行整个混合测试项目，也不只用 `TestCategory!=RequiresUI` 排除已知用例，以免新加入或未分类的 UI 用例被执行。筛选结果为零项不算验证通过。
+所有测试项目采用明确的非 UI 白名单：审查测试初始化、数据源、服务构造及清理过程后，将安全用例标为 `TestCategory("NonUI")`，使用下面的正向筛选命令。分类尚未完成时先分类，再运行；不只用 `TestCategory!=RequiresUI` 排除已知用例，以免新加入或未分类的 UI 用例被执行。向带有类级 NonUI 分类的测试类新增用例时，同样重新审查其完整执行路径。筛选结果为零项不算验证通过。
 
 ```bash
 dotnet build src/SyncClipboard.Shared -c Release
 dotnet build src/SyncClipboard.Server.Core -c Release
 dotnet build src/SyncClipboard.Core -c Release
 dotnet build src/SyncClipboard.Desktop -c Release
-dotnet test src/SyncClipboard.Test -c Release
+dotnet test src/SyncClipboard.Test -c Release --filter "TestCategory=NonUI"
 dotnet test src/SyncClipboard.Test.Desktop -c Release --filter "TestCategory=NonUI"
 ```
 
@@ -158,6 +158,8 @@ dotnet format --verify-no-changes --severity info --no-restore
 2. 独立执行其余构建、非 UI 测试、协议/数据及产物检查；任一必要检查失败或缺少证据时，当前步骤保持未通过。
 3. 对当前提交完成 PR CI 与问题监控；涉及 UI 验证的评审建议沿用本范围约定，但指出的代码兼容性问题仍须检查和适配。
 4. 记录“非 UI 验证通过”及对应提交和证据后再进入下一步。UI 排除项不阻塞推进，最终交付也不要求补做 UI 验证。
+
+阶段记录和 PR 描述中的 UI 项统一写作“范围排除：按用户要求不验证”，不写作“待验证”“待解锁”或“待人工验收”。此规则同样适用于后续新增的检查项；编译或 mock 检查通过时，只报告这些检查的结果，不将对应 UI 行为标为通过。
 
 | 编号 | 必须验证的行为 |
 | --- | --- |

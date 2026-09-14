@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–12e（含全部子步骤和前置修复）已通过，当前执行步骤 13a：CommunityToolkit.Mvvm 版本核定与升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12e 验证通过提交为 `527efe6bed5a4132c966499e1f968a3a4dd7393d`；步骤 13a 未通过前不进入 13b。
-- 步骤 13b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–13a（含全部子步骤和前置修复）已通过，当前执行步骤 13b：ObservableCollections 版本核定与升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 13a 验证通过提交为 `6c92d16692c24554cc15d4642347bdd1090f59c1`；步骤 13b 未通过前不进入 14。
+- 步骤 14–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -26,9 +26,11 @@
 | 真实 TaskDialog、UI Automation 客户端、通知服务、图形安装向导、Swagger UI | 范围排除；不以命令行入口作为非 UI 的判断依据 |
 | UI 截图、视觉比较、人工交互及解锁后补测 | 范围排除；不列入待办或通过条件 |
 
-每步独立记录必要非 UI 检查的结果，完成当前提交的 PR CI 与问题监控后再进入下一步。混合测试项目使用经审查的非 UI 筛选条件，记录实际执行数及 UI 排除项；筛选后零项不能算通过。无法隔离 UI 操作的用例直接排除，定时任务测试同样适用。
+每步独立记录必要非 UI 检查的结果，完成当前提交的 PR CI 与问题监控后再进入下一步。Core、Desktop、WinUI3 测试统一使用经审查的 `--filter "TestCategory=NonUI"` 正向筛选，记录实际执行数及 UI 排除项；不直接执行未筛选的整个测试项目，筛选后零项不能算通过。无法隔离 UI 操作的用例直接排除，定时任务测试同样适用。
 
 需要 UI 的内容统一记录为“范围排除：按用户要求不验证”，实际执行数量为 0，不计作通过、不列为阻塞、不安排补测。范围内检查仍有失败或缺少证据时，当前步骤保持未通过。仅缺少 UI 验证时，不影响已满足其余门槛的步骤继续推进。
+
+后续阶段记录和 PR 描述沿用同一表述，不把 UI 排除项写成“待验证”“待解锁”或“待人工验收”；本次文档调整本身不执行任何 UI 检查。
 
 历史记录及最终交付中的“已通过”“全部检查”“全平台验证”均限定在上述非 UI 范围内。编译、mock 和包检查不能证明实际 UI 行为已验收；本次范围调整不改变已有验证结果。
 
@@ -751,3 +753,38 @@ Codex 于 `2026-09-14T00:07:48.655185Z` 完成本 head 评审；最终八个线�
 最终 Core 411、Desktop NonUI 6 项通过，0 失败/跳过，TRX `/tmp/syncclipboard-stage13a-final-results/`；编译无新增警告。WinUI3、macOS 和 WinUI3 测试项目还原成功。六份依赖图只有 CommunityToolkit.Mvvm 8.4.0 → 8.4.2，无其余包增删或元数据变化，报告 `/tmp/syncclipboard-stage13a-dependency-diff.json`。仓库格式检查退出 0（仅跨平台工作区加载警告），actionlint 与 diff 检查通过。
 
 CI Core 最低通过数从 386 提升为 411，五份 TRX 预期共 487 项（411 + 3 × 6 + 58）；保留全部构建/打包矩阵、七 RID 45 组图片、七组 S3 和 55 个 artifact。产物审计增加 Mvvm 8.4.2 的平台资产、唯一程序集和官方包字节核对，错误版本/平台、缺失/重复或损坏文件的负例均被拒绝。当前步骤仍待本次提交的完整 PR CI、产物及评审验证，不开始 13b。
+
+
+步骤 13a 已提交至 `6c92d16692c24554cc15d4642347bdd1090f59c1`，当前 [PR run 34794355248](https://github.com/Jeric-X/SyncClipboard/actions/runs/34794355248) 仍在验证中。迁移后的 Core 再次生成源码并成功构建，0 警告/错误；30 份 ObservableProperty 生成文件共 169 个属性的名称、类型、相等判断、通知/命令调用及 setter 语句逐项静态核对。去除 backing-field 名称与 C# partial 声明差异后，仅 HistoryRecordVM.FilePath 的旧值局部变量可空标注变化，已核对对应回调签名；报告 `/tmp/syncclipboard-stage13a-generated-contract.json`。该检查不执行 ViewModel 或 UI。
+
+
+### 步骤 13a 最终通过记录
+
+验证通过提交 `6c92d16692c24554cc15d4642347bdd1090f59c1`：[PR run 34794355248](https://github.com/Jeric-X/SyncClipboard/actions/runs/34794355248)、[push run 34794352515](https://github.com/Jeric-X/SyncClipboard/actions/runs/34794352515)、[CodeQL 34794354872](https://github.com/Jeric-X/SyncClipboard/actions/runs/34794354872) 与 CodeFactor 全部成功，共 119 项 SUCCESS、8 项预期发布 SKIPPED。合并测试提交 `032292d1edb9bb712bf220f16fa04baf85122e0f` 的父提交为 master 基线和当前 head。五份 TRX 共 487 项通过（Core 411、三平台 Desktop 各 6、WinUI3 58），0 失败/跳过；实际 CI 包含全部 25 项新增 MVVM 用例，Windows 测试日志无新增编译警告。
+
+55 个 artifact 全部下载且精确匹配当前 run/head 及既有清单。38 个 Windows/Linux 组合（24 Windows、14 Linux）逐包通过唯一 MVVM 8.4.2 程序集及正确平台官方资产检查，保留全部前置依赖、原生库、架构、运行时及资源检查。报告 `/tmp/syncclipboard-pr419-6c92-package-audit.json`，SHA256 `06069da7176f123c1b65023b7c0aba82fd3b5437dec7f368c0b23f4b6da16671`。
+
+六份 Linux deb/rpm 元数据与 macOS 双架构静态审计通过，每个 DMG 检查严格签名、19 个 dylib、通知注册器改写及全部前置依赖；MVVM 使用官方 net8.0 资产，挂载均已卸载。七 RID 45 组图片及七组 S3 检查通过。服务器/双架构容器 CI 各四轮 Production 启动和两轮 API 冒烟通过，下载 Server 产物本机复验相同。
+
+Codex 于 `2026-09-14T01:04:27.489345Z` 完成本 head 评审，无新增意见；八个线程全部解决，行内反馈无变化，普通评论仅更新评审状态。完整本地记录 `docs/ai_design/.local/PR-419-Artifacts-6c92d166.md`。步骤 13a 非 UI 验证通过，允许进入 13b；整体升级尚未完成，不执行 UI 验证。
+
+
+## 步骤 13b：ObservableCollections 兼容性验证
+
+2026-09-14 官方实时 NuGet 索引和[官方发布](https://github.com/Cysharp/ObservableCollections/releases/tag/v3.3.4)确认 3.3.4 仍是最新稳定版，保留当前中央版本，不虚构升级。包源码提交 `094f7df69f4b2f805788f14f9d389694f687b1a1`，官方 nupkg SHA256 `ff848f9936b3ad0705e485bf913d196320f03825803c6985515cb00abbc3831b`；提供 net6.0/net8.0/netstandard2.0/netstandard2.1 资产，当前使用的 net8.0 无传递依赖。六份前置依赖图冻结于 `/private/tmp/syncclipboard-stage13b-baseline-assets/`。
+
+实际使用位于 HistoryViewModel 的 ObservableList → CreateView → ToNotifyCollectionChanged 路径，以及过滤、插入/删除和历史选择逻辑。下一步审查通知、筛选和释放语义并补齐不初始化实际 HistoryViewModel/UI 的集合与可隔离逻辑回归，再完成独立 PR CI/产物/评审门槛。本步源码核对同时清理此前属性迁移时误复制到上一行末尾的四处重复注释；原位置注释保留，不改变代码行为。步骤 13b 尚未通过，不进入 14。
+
+
+### 步骤 13b 本地实现与测试范围
+
+新增 16 项集合回归，使用项目的纯 HistoryRecord 和 HistoryRecordKey，通过 ObservableList → CreateView → ToNotifyCollectionChanged 路径验证过滤后的增删替换索引、身份及选择键保持、两页数据添加的单项通知/Count、范围删除、两种历史时间排序与反转、实际静态删除选择目标、清空重载及泛型/非泛型 IList 访问。同步上下文替身会拒绝任何 Post/Send；另有队列式假调度器检查延迟通知载荷，两个 Dispose 用例确认退订边界。没有构造实际 HistoryViewModel 或 UI，选择交互仍范围排除。
+
+首次复合验证命令被自动审批拒绝，理由是未筛选的 Core 测试可能超出非 UI 范围。随后核对全部 38 个 Core 测试类的入口、初始化、清理和替身，对 33 个尚未标注的类补充 NonUI 分类；本地与 CI 均改为正向筛选，并同步 AGENTS.md/CLAUDE.md。[范围清单](Core-NonUI-Test-Scope.md)列出每类依据。筛选后的 Core 427 项全部通过，包含前一阶段全部 411 项和新增 16 项，无缺失、失败或跳过；不是通过减少覆盖绕过审批。原先安全的依赖还原与格式检查单独完成。
+
+
+### 步骤 13b 本地验证结果
+
+最终 Core NonUI 427、Desktop NonUI 6 项通过，0 失败/跳过；仓库 TRX 校验器分别按最低 427/6 项核定。六份依赖图的 targets/libraries 与步骤开始时完全一致，报告 `/tmp/syncclipboard-stage13b-dependency-diff.json`。33 个既有测试文件逐一比较，改动仅为添加 NonUI 类级分类，没有修改断言或删除用例。
+
+WinUI3、macOS 和 WinUI3 测试项目还原完成；仓库格式检查退出 0（`/tmp/syncclipboard-stage13b-final-format3.log`，仅跨平台工作区加载警告），actionlint 和 diff 检查通过。CI Core 最低数提升至 427，五份 TRX 要求合计 503 项（427 + 3 × 6 + 58）。保留全部 55 个 artifact 和既有构建、打包、图片、S3、服务器与容器检查；产物审计新增 ObservableCollections 3.3.4 唯一程序集和官方 net8.0 资产核对，缺失、重复、损坏、旧版本及错误框架五种负例均被拒绝。当前仍须完成本次提交的完整 PR CI、产物及评审验证，步骤 13b 未通过，不进入 14。

@@ -13,6 +13,7 @@ using System.Net;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class StorageBasedServerHelperTests
 {
     public TestContext TestContext { get; set; } = null!;

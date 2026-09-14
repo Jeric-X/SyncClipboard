@@ -9,6 +9,7 @@ using SyncClipboard.Core.Utilities.Network;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class NetworkRuleMatcherTests
 {
     private static readonly AccountConfig AccountOne = new() { AccountId = "1", AccountType = "WebDAV" };

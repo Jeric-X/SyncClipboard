@@ -61,14 +61,14 @@ public partial class HistoryViewModel
     public partial bool IsMultiSelecting { get; set; }
 
     [ObservableProperty]
-    public partial int SelectedHistoryCount { get; set; } /// <summary>The number of selected records that are currently starred.</summary>
+    public partial int SelectedHistoryCount { get; set; }
 
     /// <summary>The number of selected records that are currently starred.</summary>
     [ObservableProperty]
     public partial int SelectedStarredHistoryCount { get; set; }
 
     [ObservableProperty]
-    public partial int SelectedInCurrentFilterCount { get; set; } /// <summary>True, false or null for checked, unchecked and partial current-filter selection.</summary>
+    public partial int SelectedInCurrentFilterCount { get; set; }
 
     /// <summary>True, false or null for checked, unchecked and partial current-filter selection.</summary>
     [ObservableProperty]

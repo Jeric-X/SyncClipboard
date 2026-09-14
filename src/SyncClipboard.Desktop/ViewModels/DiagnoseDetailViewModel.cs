@@ -50,7 +50,7 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
     public partial int? Int_32 { get; set; }
 
     [ObservableProperty]
-    public partial Bitmap? Bitmap { get; set; } //[ObservableProperty]
+    public partial Bitmap? Bitmap { get; set; }
 
     //[ObservableProperty]
     //private string? unicode;

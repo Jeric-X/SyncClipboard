@@ -23,7 +23,7 @@ jobs:
       run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj
 
     - name: Run Core tests
-      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --logger trx --results-directory TestResults/core
+      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --filter TestCategory=NonUI --logger trx --results-directory TestResults/core
 
     - uses: actions/setup-python@v6
       with:
@@ -32,7 +32,7 @@ jobs:
       run: python -m pip install -r build/verification/requirements.txt
 
     - name: Verify Core test coverage
-      run: python build/verification/check_test_results.py TestResults/core --minimum 411
+      run: python build/verification/check_test_results.py TestResults/core --minimum 427
 
     - name: Upload test results
       if: always()

@@ -3,6 +3,7 @@ using SyncClipboard.Shared.Profiles;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileWorkingDirectoryTests
 {
     [TestMethod]

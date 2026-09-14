@@ -6,6 +6,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class SetTransferDataInfoTests
 {
     public TestContext TestContext { get; set; } = null!;

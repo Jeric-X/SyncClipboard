@@ -3,6 +3,7 @@ using SyncClipboard.Core.Utilities.Runner;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class SingletonTaskTest
 {
     public TestContext TestContext { get; set; } = null!;

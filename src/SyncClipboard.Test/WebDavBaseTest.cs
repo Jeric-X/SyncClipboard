@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class WebDavBaseTest
 {
     public TestContext TestContext { get; set; } = null!;

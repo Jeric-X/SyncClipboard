@@ -4,6 +4,7 @@ using System.Text.Json;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileDtoTests
 {
     [TestMethod]

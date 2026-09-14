@@ -5,6 +5,7 @@ using SyncClipboard.Core.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ForegroundWindowMonitorTests
 {
     [TestMethod]
