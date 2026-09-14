@@ -70,7 +70,7 @@ Clients and servers v3.1.1 and above are incompatible with previous versions. Al
 
 ## Server
 ### Standalone Server
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Run with:
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
@@ -192,6 +192,9 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 </details>
 
 ### Windows
+
+Requires Windows 10 2004 (build 19041) or later and an OS version on the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md). Packages with `no-dotnet-runtime` require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture; other packages bundle .NET. Windows App SDK bundling rules remain unchanged.
+
 #### Installer
 
 Download the exe installer starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click to run the installer and it will be ready to use.
@@ -205,6 +208,9 @@ Download the zip file starting with `SyncClipboard_win_` from the [Release](http
 - If the interface icons are displayed incorrectly on Windows 10, download and install the Microsoft [Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons) font.
 
 ### macOS
+
+Requires macOS 14 or later. Choose arm64 for Apple Silicon or x64 for Intel Macs; these packages include the .NET runtime.
+
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
 
@@ -214,6 +220,9 @@ Download the installation package starting with `SyncClipboard_macos_` from the 
 - Some features require simulating keyboard input to perform copy or paste operations, which depend on Accessibility permissions. SyncClipboard will prompt for authorization when needed.
 
 ### Linux
+
+Packages with `no-dotnet-runtime` require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture; other packages bundle the runtime. See the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md) for Linux requirements; the existing desktop components still require their native dependencies.
+
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_linux_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page.
 

@@ -65,11 +65,16 @@ jobs:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
+      # PupNet 1.8.0 still runs on .NET 8; product projects use .NET 10.
       - name: Install .NET
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
+            10.0.302
+
+      - name: Show selected SDK
+        run: dotnet --info
 
       - name: Download last-job-built artifact
         uses: actions/download-artifact@v8

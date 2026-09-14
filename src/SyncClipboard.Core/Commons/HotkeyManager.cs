@@ -13,7 +13,7 @@ public class HotkeyManager
     private readonly ConfigManager _configManager;
     private readonly List<UniqueCommandCollection> _commandCollections = [];
     private readonly Dictionary<string, HotkeyStatus> _hotkeyCommandMap = [];
-    private readonly object _registrationLock = new();
+    private readonly Lock _registrationLock = new();
 
     private HotkeyConfig _hotkeyConfig = new();
 

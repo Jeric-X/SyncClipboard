@@ -25,7 +25,7 @@ public class DownloadService : Service
     private bool _isEventDrivenModeActive = false;
     private bool _isQuickDownload = false;
     private bool _isQuickDownloadAndPaste = false;
-    private readonly object _serviceStateLocker = new();
+    private readonly Lock _serviceStateLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
     private Profile? _localProfileCache;

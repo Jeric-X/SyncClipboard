@@ -179,20 +179,14 @@ public partial class HistoryRecordVM : ObservableObject
 
     internal void UnsubscribeDownloadProgress()
     {
-        if (downloadProgressReporter != null)
-        {
-            downloadProgressReporter.ProgressChanged -= OnDownloadProgressChanged;
-            downloadProgressReporter = null;
-        }
+        downloadProgressReporter?.ProgressChanged -= OnDownloadProgressChanged;
+        downloadProgressReporter = null;
     }
 
     internal void UnsubscribeUploadProgress()
     {
-        if (uploadProgressReporter != null)
-        {
-            uploadProgressReporter.ProgressChanged -= OnUploadProgressChanged;
-            uploadProgressReporter = null;
-        }
+        uploadProgressReporter?.ProgressChanged -= OnUploadProgressChanged;
+        uploadProgressReporter = null;
     }
 
     internal void SubscribeDownloadProgress(Progress<HttpDownloadProgress> progress)

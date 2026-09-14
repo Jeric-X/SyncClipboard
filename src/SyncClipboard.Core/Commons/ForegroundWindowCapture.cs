@@ -8,7 +8,7 @@ public sealed class ForegroundWindowCapture(
     INativeHotkeyRegistry nativeHotkeyRegistry,
     INativeWindowController foregroundWindowInfoProvider)
 {
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
     private Hotkey? _registeredHotkey;
 
     public event Action<WindowInfo>? WindowCaptured;

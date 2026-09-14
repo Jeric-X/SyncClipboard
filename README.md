@@ -75,7 +75,7 @@ v3.1.1及以上的客户端、服务器与之前的版本不兼容，同步网�
 
 ## 服务器
 ### 独立服务器
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 8.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 10.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
@@ -196,6 +196,9 @@ sudo systemctl enable --now syncclipboard.service
 </details>
 
 ### Windows
+
+最低系统版本为 Windows 10 2004（build 19041），且须位于 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)内。`no-dotnet-runtime` 包需要安装同架构的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)；其余包携带 .NET 运行时。Windows App SDK 的携带规则不变。
+
 #### 安装板
 
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的exe安装包，双击运行安装程序后即可使用
@@ -209,6 +212,9 @@ sudo systemctl enable --now syncclipboard.service
 - 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
 ### macOS
+
+需要 macOS 14 或更高版本。Apple Silicon 选择 arm64，Intel Mac 选择 x64；安装包已包含 .NET 运行时。
+
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 
@@ -219,6 +225,9 @@ sudo systemctl enable --now syncclipboard.service
 - 部分功能需要模拟键盘输入实现复制或粘贴，依赖辅助功能权限，软件在需要时会弹窗提示授权
 
 ### Linux
+
+`no-dotnet-runtime` 包需要安装同架构的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)；其余包携带运行时。.NET 10 的 Linux 系统要求见[官方支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)，仍需安装现有桌面组件的原生依赖。
+
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
 

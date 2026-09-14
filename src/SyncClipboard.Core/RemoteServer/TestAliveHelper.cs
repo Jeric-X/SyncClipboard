@@ -3,7 +3,7 @@
 internal sealed class TestAliveHelper(Func<CancellationToken, Task<bool>> _func) : IDisposable
 {
     private CancellationTokenSource? _testAliveCancellationTokenSource;
-    private readonly object _testAliveLock = new object();
+    private readonly Lock _testAliveLock = new();
     private readonly TimeSpan _testAliveInterval = TimeSpan.FromSeconds(10);
 
     public void Dispose()

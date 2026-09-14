@@ -9,7 +9,7 @@ namespace SyncClipboard.Core.UserServices;
 public sealed class HotkeyBlacklistService : Service
 {
     private const string Tag = "HotkeyBlacklist";
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
     private CancellationTokenSource? _debounceCancellation;
     private HotkeyBlacklistConfig _config = new();
     private bool _isBlacklisted;

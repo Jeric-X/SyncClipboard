@@ -9,7 +9,7 @@ public sealed class ForegroundWindowMonitor(
     ILogger logger) : IForegroundWindowMonitor, IDisposable
 {
     private const string Tag = "ForegroundWindowMonitor";
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
     private Action<WindowDetail?>? _foregroundWindowChanged;
     private bool _isWatching;
     private bool _disposed;
