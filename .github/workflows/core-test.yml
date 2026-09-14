@@ -32,7 +32,7 @@ jobs:
       run: python -m pip install -r build/verification/requirements.txt
 
     - name: Verify Core test results
-      run: python build/verification/check_test_results.py TestResults/core --minimum 442
+      run: python build/verification/check_test_results.py TestResults/core --minimum 444
 
     - name: Verify Core code coverage collection
       run: python build/verification/check_code_coverage.py TestResults/core --require-package SyncClipboard.Core SyncClipboard.Shared SyncClipboard.Server.Core

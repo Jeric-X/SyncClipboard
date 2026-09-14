@@ -16,8 +16,12 @@ public class LocalFileCacheCleanupJob(LocalFileCacheManager cacheManager, ILogge
         {
             await _logger.WriteAsync("Starting cache cleanup job...");
 
-            var orphanCount = await _cacheManager.CleanupOrphanRecordsAsync();
+            var orphanCount = await _cacheManager.CleanupOrphanRecordsAsync(cancellationToken);
             await _logger.WriteAsync($"Cache cleanup completed: Removed {orphanCount} orphan records");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

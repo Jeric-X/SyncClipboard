@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NativeNotification.Interface;
@@ -13,6 +14,7 @@ using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Shared.Profiles;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -95,6 +97,7 @@ static class QuartzJobChecks
             quartzSha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(typeof(IJob).Assembly.Location))).ToLowerInvariant(),
             checks,
             canceledJobs = jobs.CanceledJobs,
+            runningCleanupCancellationJobs = jobs.RunningCancellationJobs,
             historyCancellationWhileWaiting = true,
             uiCallbacksExecuted = 0
         }, ReportOptions));
@@ -205,6 +208,8 @@ static class QuartzJobChecks
         Check(orphan.CreationTimeUtc < DateTime.UtcNow.AddDays(-7), "fixture aged creation time");
         await jobs.Canceled<OrphanedHistoryCleanupJob>();
         Check(Directory.Exists(orphan.FullName), "canceled orphan cleanup preserves folders");
+        await jobs.CanceledAfterQuery<OrphanedHistoryCleanupJob>();
+        Check(Directory.Exists(orphan.FullName), "running canceled orphan cleanup preserves folders");
         await jobs.Execute<OrphanedHistoryCleanupJob>();
         Check(!Directory.Exists(orphan.FullName) && Directory.Exists(young.FullName)
             && Directory.Exists(history.GetRecordWorkingDir(rows[1])!), "only aged orphan removed");
@@ -223,6 +228,8 @@ static class QuartzJobChecks
         }
         await jobs.Canceled<LocalFileCacheCleanupJob>();
         using (var db = new LocalFileCacheDbContext()) Check(await db.CacheEntries.CountAsync() == 2, "canceled cache cleanup preserves rows");
+        await jobs.CanceledAfterQuery<LocalFileCacheCleanupJob>();
+        using (var db = new LocalFileCacheDbContext()) Check(await db.CacheEntries.CountAsync() == 2, "running canceled cache cleanup preserves rows");
         await jobs.Execute<LocalFileCacheCleanupJob>();
         using (var db = new LocalFileCacheDbContext()) Check(await db.CacheEntries.CountAsync() == 1 && await db.CacheEntries.AnyAsync(x => x.Id == "present"), "only missing-file cache entry removed");
         Check(File.Exists(cacheFile), "cache cleanup does not delete present files");
@@ -275,6 +282,7 @@ static class QuartzJobChecks
 sealed class JobRunner(IServiceProvider services)
 {
     public int CanceledJobs { get; private set; }
+    public int RunningCancellationJobs { get; private set; }
 
     public async Task Execute<T>(CancellationToken token = default) where T : class, IJob
     {
@@ -282,6 +290,22 @@ sealed class JobRunner(IServiceProvider services)
         var context = new Mock<IJobExecutionContext>(MockBehavior.Strict);
         context.SetupGet(x => x.CancellationToken).Returns(token);
         await scope.ServiceProvider.GetRequiredService<T>().Execute(context.Object, token);
+    }
+
+    public async Task CanceledAfterQuery<T>() where T : class, IJob
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var observer = new QueryCancellation(cancellation);
+        try
+        {
+            await Execute<T>(cancellation.Token);
+            throw new InvalidOperationException(typeof(T).Name + " swallowed cancellation after its query started.");
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            QuartzJobChecks.Check(observer.QueryObserved, "canceled only after a real database query");
+            RunningCancellationJobs++;
+        }
     }
 
     public async Task Canceled<T>() where T : class, IJob
@@ -297,6 +321,45 @@ sealed class JobRunner(IServiceProvider services)
         {
             CanceledJobs++;
         }
+    }
+}
+
+// Cancel after the real SELECT has executed, before its rows are consumed. No timing or UI dependency.
+sealed class QueryCancellation : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>, IDisposable
+{
+    private readonly CancellationTokenSource _cancellation;
+    private readonly List<IDisposable> _subscriptions = [];
+    private readonly IDisposable _listeners;
+    public bool QueryObserved { get; private set; }
+
+    public QueryCancellation(CancellationTokenSource cancellation)
+    {
+        _cancellation = cancellation;
+        _listeners = DiagnosticListener.AllListeners.Subscribe(this);
+    }
+
+    public void OnNext(DiagnosticListener listener)
+    {
+        if (listener.Name == "Microsoft.EntityFrameworkCore")
+            _subscriptions.Add(listener.Subscribe(this));
+    }
+
+    public void OnNext(KeyValuePair<string, object?> value)
+    {
+        if (!QueryObserved && value.Key == RelationalEventId.CommandExecuted.Name
+            && value.Value is CommandExecutedEventData data && data.Command.CommandText.StartsWith("SELECT", StringComparison.Ordinal))
+        {
+            QueryObserved = true;
+            _cancellation.Cancel();
+        }
+    }
+
+    public void OnError(Exception error) => throw new InvalidOperationException("Database diagnostics failed.", error);
+    public void OnCompleted() { }
+    public void Dispose()
+    {
+        _listeners.Dispose();
+        foreach (var subscription in _subscriptions) subscription.Dispose();
     }
 }
 

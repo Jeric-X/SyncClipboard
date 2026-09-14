@@ -1080,3 +1080,25 @@ PupNet 1.9 起不再附带 appimagetool。AppImage 任务安装官方稳定版 a
 只获取官方工具源码并在本地编译，0 警告/错误；本地 --version/--help 正常。仅对临时配置副本执行 --upgrade-conf -y，新旧配置规范化后完全相同，AppImageVersionOutput=true 原本已启用，保持既有版本文件名。结合上游源码确认 deb/rpm 输出命名匹配现有 CI 重命名规则。配置检查未执行 BuildHost、PostPublish 或应用运行，仓库配置只更新工具版本注释；证据 `/private/tmp/syncclipboard-stage17c/config-check/` 与 `/tmp/syncclipboard-stage17c-local-tool-build.log`。
 
 11 份项目依赖图 targets/libraries 不变；package.sh/PostPublish.sh 的 bash 语法、actionlint、diff 检查通过，仓库格式检查退出 0，仅既有跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage17c-format.log`。实际 Linux 包生成与重命名需本阶段当前提交的 PR CI 验证，并等待完整 CI/评审后才能进入 18。完全信任 CI 编译产物，不下载或复用远程产物审计，UI 验证执行 0。
+
+
+步骤17c提交 `19900d25e7f056dc4d389df1b0e05cf15f98976d` 已推送。[PR run34825478991](https://github.com/Jeric-X/SyncClipboard/actions/runs/34825478991)、[push run34825474514](https://github.com/Jeric-X/SyncClipboard/actions/runs/34825474514)、CodeQL34825478612已启动，本head评审正在运行。首次完整反馈核对未发现新增问题，11个线程均已处理；监控pr419已创建，每10分钟。当前步骤仍未通过，不进入18，不下载远程编译产物。
+
+
+当前提交五份CI测试日志已确认Core442、三平台Desktop各6、WinUI58，共518项NonUI测试全部通过，0失败/跳过；产品覆盖率校验及三平台Quartz各10组/六项取消入口通过。汇总 `/tmp/syncclipboard-stage17c-ci-tests.json`，日志 `/tmp/syncclipboard-pr419-1990-{core,desktop-linux,desktop-macos,desktop-windows,winui}.log`。Linux实际打包、其余构建和本head评审仍在运行，17c尚未通过。
+
+
+本提交PR和push工作流的10个Linux安装包组合均实际成功：x64/arm64的AppImage、deb及x64的rpm，均包含自包含/非自包含。日志确认PupNet Deploy 1.10.0运行，实际打包、既有模式重命名和上传步骤完成，证据 `/tmp/syncclipboard-pr419-1990-{appimage-arm64,rpm-x64,deb-arm64}.log` 与 `-progress4.json`、`-push-progress4.json`。appimagetool从固定1.9.1发布URL安装，其自报横幅为continuous build/8c8c91f，不将URL标签解释为额外二进制版本审计。只读取CI日志，未下载生成的安装包；完整Windows/macOS构建及本head评审仍须收齐后才通过17c。
+
+
+### 步骤 17c 评审修复：运行中的清理任务取消
+
+提交19900d25的CI最终汇总119 SUCCESS、8 SKIPPED，PR CLEAN，但本head评审于2026-09-14T09:09:56.191239Z完成时新增[P2反馈](https://github.com/Jeric-X/SyncClipboard/pull/419#discussion_r4003702561)：清理任务仅把令牌交给Task.Run，委托开始后的扫描和递归删除不观察取消，仍可能延迟Quartz关闭并超过替换实例的10秒等待。因此17c未通过，不进入18。
+
+修复将令牌传入孤儿历史目录、应用数据及本地缓存清理实际路径。历史/缓存查询改为可取消异步枚举，信号量等待、逐行/目录处理与数据库保存接收令牌；取消异常不再被普通错误处理吞掉。新增共享文件清理方法在每个文件/目录边界检查取消，递归删除时不遍历目录链接的目标。历史已删除数据清理也使用此方法和可取消查询，并在目录删除完成后才清除记录的文件信息，避免取消时先丢掉重试所需路径。现有清理保留规则、Quartz注册/间隔和等待安全释放次序保持不变。操作系统单次文件操作本身不能被托管令牌抢占，本次保证各操作之间可以停止；没有声称实际桌面重启已验证。
+
+新增FileSysCancellationTests两项确定性回归：执行前取消保持全部数据；首个目录及其子文件清理后取消保留下一文件，并可继续清理。Core原442项逐项保留，现444全部通过；Desktop原6项不变且通过，0失败/跳过。覆盖率与实际产品程序集命中校验通过，报告 `/private/tmp/syncclipboard-stage17c-fixed-results/`；首次完整Core命令因runsettings路径笔误未执行测试，改用仓库nonui-coverage.runsettings后通过，日志 `/tmp/syncclipboard-stage17c-fixed-core2.log`、`-fixed-desktop.log`。
+
+Quartz实际生产任务探针仍10组、六项提前取消，加上孤儿历史/缓存两项查询开始后的取消：订阅EF数据库命令完成诊断，仅在真实SELECT执行后取消，确认异常传出且目录/数据库记录保留，之后正常清理和重复清理成功。报告 `/tmp/syncclipboard-stage17c-cancellation-quartz.json`，日志同前缀-cancellation-quartz.log，新增字段runningCleanupCancellationJobs=2由CI校验器强制核对；不依赖计时、UI或实际桌面。
+
+11份依赖图不变，仓库及探针格式、actionlint、diff通过；CI Core最低数提高至444，五份测试合计预期520项。问题已追加本地修复日志，线程PRRT_kwDOBXBc9s6iDINR待修复提交的全套CI/评审通过后解决，不发送评论。仍完全信任CI产物，不下载远程编译产物或做二进制审计。

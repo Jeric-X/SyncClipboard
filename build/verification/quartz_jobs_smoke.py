@@ -27,11 +27,12 @@ def main():
         if data.get("passed") is not True or len(data.get("checks", [])) != 10:
             raise RuntimeError("Incomplete Quartz production-job verification")
         if (data.get("canceledJobs") != 6 or data.get("uiCallbacksExecuted") != 0
-                or data.get("historyCancellationWhileWaiting") is not True):
+                or data.get("historyCancellationWhileWaiting") is not True
+                or data.get("runningCleanupCancellationJobs") != 2):
             raise RuntimeError("Cancellation or UI isolation verification failed")
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    print("Quartz production jobs: 10 groups passed, six cancellation entries, no UI execution.")
+    print("Quartz production jobs: 10 groups passed, six cancellation entries, two running cleanup cancellations, no UI execution.")
 
 
 if __name__ == "__main__":
