@@ -17,7 +17,7 @@ public class UpdateJob(ConfigManager configManager, UpdateChecker updateChecker,
         cancellationToken.ThrowIfCancellationRequested();
         if (configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp)
         {
-            return new ValueTask(dispatcher.RunOnMainThreadAsync(updateChecker.RunAutoUpdateFlow));
+            return new ValueTask(dispatcher.RunOnMainThreadAsync(updateChecker.RunAutoUpdateFlow, cancellationToken));
         }
         return ValueTask.CompletedTask;
     }

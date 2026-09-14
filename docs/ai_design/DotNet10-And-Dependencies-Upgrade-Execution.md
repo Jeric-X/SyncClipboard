@@ -1013,3 +1013,25 @@ Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Too
 临时 AnalyzerProbe 导入仓库中央包版本和相同 .editorconfig，使用 SDK 10.0.302、net10.0/C# 14，只编译不运行；主构造函数和集合表达式编译成功，故意空 catch 产生预期 CC0004。修复探针后再编译为 0 警告/错误，两个 SARIF 分别只有 CC0004 和无诊断，没有分析器加载/执行异常。首次临时项目把中央包属性导入得过晚，触发 NU1015；改为标准 Directory.Packages.props 导入后还原成功，产品配置未受影响。日志 `/tmp/syncclipboard-stage17a-analyzer-probe2.log`、`-analyzer-fixed.log`。此探针证明当前编译器下可加载并产生诊断，不声称旧分析器覆盖所有 C# 14 语义。
 
 保留原七项 CC0105/CC0001/CC0034/CC0057/CC0061/CC0074/CC0072 排除，没有扩大禁用范围。11 份项目依赖图 targets/libraries 完全不变。仓库格式检查退出 0，仅跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage17a-format.log`；沿用已核实的格式专用 CS0103 排除，实际构建不排除此错误。本阶段只改计划和记录，仍必须通过当前提交 Windows 实际编译、全部 PR CI 和完整评审后才进入 17b。未下载编译产物，UI 验证执行 0。
+
+步骤17a提交 `a80450ccefb522e32e5d24d15814dad76e626e30` 已推送。[PR run 34816306776](https://github.com/Jeric-X/SyncClipboard/actions/runs/34816306776)、[push run 34816303089](https://github.com/Jeric-X/SyncClipboard/actions/runs/34816303089) 和CodeQL34816306347已启动。初次核对完整评审正文、行内/普通评论无新增可处理问题，10个线程均已解决；本head评审仍在运行。监控pr419已创建，每10分钟检查。当前阶段尚未通过，不进入17b。
+
+当前提交已完成的Core438、Linux/macOS Desktop各6以及push工作流WinUI58项NonUI测试均通过，0失败/跳过；相关覆盖率校验通过，Linux/macOS Quartz探针10组及六项取消入口通过。Windows实际编译日志无AD0001/CS8032/CS8784/CS8785分析器加载或执行异常，证据 `/tmp/syncclipboard-pr419-a804-winui-push.log`；其余测试日志为同前缀core、desktop-linux、desktop-macos。当前PR工作流剩余Windows任务、打包和本head评审尚未结束，不能据此通过17a。
+
+PR工作流的五份实际测试日志现已收齐：Core438、三平台Desktop各6、WinUI58，合计514项通过，0失败/跳过；五个任务均通过产品覆盖率校验，三平台Quartz各10组及六项取消入口通过，未出现分析器异常。汇总 `/tmp/syncclipboard-stage17a-ci-tests.json`。状态观察进程曾因GitHub API网络EOF终止；直接API确认同一run仍在运行后恢复只读观察，没有重跑CI。完整构建/打包和评审仍待结束。
+
+步骤17a的PR run34816306776已完成，58项任务全部成功，CodeQL34816306347成功；push run34816303089仍有构建任务运行，本head自动评审仍在运行。再次核对无新增正文/行内反馈、10个线程均已处理，仍不进入17b。
+
+当前head所有CI已终止成功：PR58项成功，push58项成功及8项发布任务预期跳过，CodeQL/CodeFactor成功，汇总119 SUCCESS、8 SKIPPED，PR CLEAN。证据 `/tmp/syncclipboard-pr419-a804-pr-complete.json`、`-push-complete.json`、`-final-runs.json`。自动评审摘要仍显示本提交Running，因此尚不标记阶段最终通过，监控继续。
+
+### 步骤 17a 评审补修：重启前取消运行中的更新任务
+
+自动评审于2026-09-14T07:35:03.929566Z完成，新增[P2线程](https://github.com/Jeric-X/SyncClipboard/pull/419#discussion_r4003049029)：旧实例优雅关闭只等待Quartz任务，更新流程丢失取消令牌，长时间更新会超过替换实例的10秒互斥锁等待，导致重启后没有实例存活。该反馈可从源码和隔离调度器验证，虽然涉及重启入口，仍不执行实际UI或应用重启。步骤17a保持未通过，不进入17b。
+
+新增纯内存任务回归在旧实现复现等待取消超时，`/tmp/syncclipboard-stage17a-restart-repro.log`。核对Quartz4.1.0精确源码c4184eb558b6ec1856b66947fcc1e3fa4a40c2fc的[关闭实现](https://github.com/quartznet/quartznet/blob/c4184eb558b6ec1856b66947fcc1e3fa4a40c2fc/src/Quartz/Core/QuartzScheduler.cs)，使用其ShutdownJobInterruption.WhenWaitingForJobs配置：停止触发后取消运行任务，仍等待任务和作用域安全结束。保留异步关闭，不用10秒超时强行释放仍在运行的服务。
+
+UpdateJob通过IThreadDispatcher新增的取消重载传递Quartz令牌，UpdateChecker.RunAutoUpdateFlow接受该令牌并传给现有SingletonTask/HTTP检查和下载链。取消重载在提交前及回调执行前检查令牌，避免排队后取消的回调开始实际更新。真实UI回调仍范围排除。非UI测试仅主动执行记录令牌的纯委托；生产UpdateJob探针以严格替身核对回调目标、方法和令牌，绝不执行该回调。
+
+修复后15项Quartz专项通过，完整Core442和Desktop6通过，0失败/跳过；原Core438项逐项保留，仅新增关闭取消/释放次序1项及令牌传递/提前取消3项，Desktop用例完全不变。TRX/Cobertura位于 `/private/tmp/syncclipboard-stage17a-fixed-results/`，计数及实际产品程序集命中校验通过；11份依赖图不变，对比 `/tmp/syncclipboard-stage17a-fixed-test-comparison.json`。实际Quartz探针10组、六项取消入口、更新令牌交接通过，`/tmp/syncclipboard-stage17a-fixed-quartz.json`，UI回调执行0。Windows测试还原、仓库与探针格式、actionlint及diff检查通过。
+
+CI Core最低数提升至442，五份测试合计预期518项。修复后的新提交仍须完整CI和评审通过；不能沿用a80450cc的成功结果。该问题已追加本地日志，线程PRRT_kwDOBXBc9s6iBelw待新提交验证后解决，不发送评论。完全信任CI产物，不下载远程编译产物或做二进制审计。

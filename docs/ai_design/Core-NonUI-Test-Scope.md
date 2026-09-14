@@ -8,7 +8,7 @@
 
 步骤 16a 迁移 MSTest 4.4：测试初始化、数据源、替身及 UI 分类保持不变。变更限于 TestContext.CancellationToken、集合数量/顺序/成员断言和一处异常断言的等价 API 适配。异常用例仍要求产生 IO/权限错误，并显式拒绝 LocalProfileDataUnavailableException；四处字节序列比较先 await 读取文件，再调用 Span 重载。所有文件仍为临时测试数据，未增加真实 UI 路径。
 
-本项目的 39 个测试类已核对测试入口、字段初始化、初始化/清理方法及使用的替身，均标为 `TestCategory("NonUI")`。本地与 CI 使用 `--filter TestCategory=NonUI` 正向筛选。当前 438 项全部通过，包含步骤 13b 的全部 427 项和新增 11 项 Quartz 非 UI 回归，没有因筛选漏掉已有用例。
+本项目的 39 个测试类已核对测试入口、字段初始化、初始化/清理方法及使用的替身，均标为 `TestCategory("NonUI")`。本地与 CI 使用 `--filter TestCategory=NonUI` 正向筛选。步骤 17a 评审补修将预期总数从 438 增至 442：新增生产关闭取消/释放次序回归，以及纯委托的取消传递、入队前取消、回调前取消三种情况，没有删除原用例。新增调度替身只保存委托，测试主动执行的委托仅记录令牌，不调用 UpdateChecker、UI 调度线程或任何 UI；生产 UpdateJob 的真实回调仍不执行。
 
 项目没有 AssemblyInitialize/ClassInitialize、动态数据源或平台服务数据源的测试入口。SystemServiceProviderDataSource/PlatformServiceProviderDataSource 在本项目仅定义，未被测试方法使用；不能据此运行其他项目的混合 DI 测试。被测项目引用 Core，无桌面入口或 Avalonia/WinUI 控件初始化。测试涉及图片时只处理数据、文件和哈希。
 
@@ -44,7 +44,7 @@
 | [ProfileTryLocalizeTests](../../src/SyncClipboard.Test/ProfileTryLocalizeTests.cs) | 22 | Profile/DTO/传输数据、序列化与临时文件检查；不访问系统剪贴板或启动应用。 |
 | [ProfileWorkingDirectoryTests](../../src/SyncClipboard.Test/ProfileWorkingDirectoryTests.cs) | 3 | Profile/DTO/传输数据、序列化与临时文件检查；不访问系统剪贴板或启动应用。 |
 | [SetTransferDataInfoTests](../../src/SyncClipboard.Test/SetTransferDataInfoTests.cs) | 21 | Profile/DTO/传输数据、序列化与临时文件检查；不访问系统剪贴板或启动应用。 |
-| [QuartzCompatibilityTests](../../src/SyncClipboard.Test/QuartzCompatibilityTests.cs) | 11 | 生产任务仅构造调度元数据并交给严格 IScheduler mock；真实调度器仅运行内存探针，验证 DI、作用域、取消、失败恢复和关闭，不执行生产清理或更新任务。 |
+| [QuartzCompatibilityTests](../../src/SyncClipboard.Test/QuartzCompatibilityTests.cs) | 15 | 生产任务仅构造调度元数据并交给严格 IScheduler mock；真实调度器仅运行内存探针，验证 DI、作用域、取消、失败恢复和关闭。取消重载只用记录令牌的纯委托，不执行生产清理或更新任务、UI 框架及其真实回调。 |
 | [SharpHookKeyboardTests](../../src/SyncClipboard.Test/SharpHookKeyboardTests.cs) | 25 | 键码映射与注入的 backend/simulation/hook provider mock，构造和释放均不访问设备。 |
 | [SingletonTaskTest](../../src/SyncClipboard.Test/SingletonTaskTest.cs) | 2 | 隔离的任务互斥和取消逻辑。 |
 | [StorageBasedServerHelperTests](../../src/SyncClipboard.Test/StorageBasedServerHelperTests.cs) | 14 | TestStorageAdapter 复制临时文件，TestTrayIcon/TestLogger 为空操作。 |

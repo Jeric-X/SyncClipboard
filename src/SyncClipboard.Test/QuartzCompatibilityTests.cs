@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Quartz;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Job;
 using System.Collections.Concurrent;
 
@@ -295,12 +296,124 @@ public class QuartzCompatibilityTests
         Assert.AreEqual(1, state.DisposedScopes);
     }
 
-    private static ServiceProvider ProbeServices(ProbeState state)
+    [TestMethod]
+    public async Task RealScheduler_ProductShutdownCancelsRunningJobsBeforeDisposingServices()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var cleanupCancellation = new CancellationTokenSource();
+        var state = new ProbeState
+        {
+            Execute = async token =>
+            {
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, cleanupCancellation.Token);
+                started.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, linked.Token);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    canceled.TrySetResult();
+                    await release.Task;
+                }
+            }
+        };
+        await using var services = ProbeServices(state, useProductConfiguration: true);
+        var scheduler = await services.GetRequiredService<ISchedulerFactory>().GetScheduler(TestCancellation);
+        await scheduler.ScheduleJob(JobBuilder.Create<ProbeJob>().Build(), TriggerBuilder.Create().StartNow().Build(), cancellationToken: TestCancellation);
+        Task? shutdown = null;
+        try
+        {
+            await scheduler.Start(TestCancellation);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellation);
+            shutdown = AppCore.StopSchedulerAndDisposeServicesAsync(services, scheduler);
+            await canceled.Task.WaitAsync(TimeSpan.FromSeconds(3), TestCancellation);
+            Assert.IsFalse(shutdown.IsCompleted);
+            Assert.AreEqual(0, state.DisposedScopes);
+            release.TrySetResult();
+            await shutdown.WaitAsync(TimeSpan.FromSeconds(5), TestCancellation);
+            Assert.AreEqual(1, state.DisposedScopes);
+            Assert.AreEqual(SchedulerStatus.Shutdown, scheduler.Status);
+        }
+        finally
+        {
+            cleanupCancellation.Cancel();
+            release.TrySetResult();
+            if (shutdown is not null)
+                await shutdown.WaitAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
+            else
+                await scheduler.Shutdown(waitForJobsToComplete: true, cancellationToken: CancellationToken.None);
+        }
+    }
+
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public async Task UpdateDispatch_ForwardsCancellationAndRejectsCanceledCallbacks(bool cancelBeforeDispatch, bool cancelBeforeCallback)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var recorder = new CallbackRecorder();
+        IThreadDispatcher dispatcher = recorder;
+        var calls = 0;
+        var observedToken = CancellationToken.None;
+        Task Record(CancellationToken token)
+        {
+            calls++;
+            observedToken = token;
+            return Task.CompletedTask;
+        }
+
+        if (cancelBeforeDispatch)
+        {
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(() => dispatcher.RunOnMainThreadAsync(Record, cancellation.Token));
+            Assert.IsNull(recorder.Callback);
+        }
+        else
+        {
+            await dispatcher.RunOnMainThreadAsync(Record, cancellation.Token);
+            Assert.IsNotNull(recorder.Callback);
+            Assert.AreEqual(0, calls);
+            if (cancelBeforeCallback)
+            {
+                cancellation.Cancel();
+                await Assert.ThrowsAsync<OperationCanceledException>(recorder.Callback);
+            }
+            else
+            {
+                // This callback only records a token; it never enters UpdateChecker or a UI dispatcher.
+                await recorder.Callback();
+                Assert.AreEqual(cancellation.Token, observedToken);
+            }
+        }
+        Assert.AreEqual(cancelBeforeDispatch || cancelBeforeCallback ? 0 : 1, calls);
+    }
+
+    private sealed class CallbackRecorder : IThreadDispatcher
+    {
+        public Func<Task>? Callback { get; private set; }
+        public bool IsMainThread => throw new InvalidOperationException("No UI thread is available.");
+        public Task RunOnMainThreadAsync(Func<Task> func)
+        {
+            Callback = func;
+            return Task.CompletedTask;
+        }
+        public Task<T> RunOnMainThreadAsync<T>(Func<Task<T>> func) => throw new InvalidOperationException("Unexpected dispatch.");
+        public Task RunOnMainThreadAsync(Action action) => throw new InvalidOperationException("Unexpected dispatch.");
+    }
+
+    private static ServiceProvider ProbeServices(ProbeState state, bool useProductConfiguration = false)
     {
         var services = new ServiceCollection();
         services.AddSingleton(state);
         services.AddScoped<ProbeScope>();
-        services.AddQuartz();
+        if (useProductConfiguration)
+            AppCore.ConfigCommonService(services);
+        else
+            services.AddQuartz();
         return services.BuildServiceProvider();
     }
 

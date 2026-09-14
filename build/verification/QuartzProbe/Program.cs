@@ -236,9 +236,12 @@ static class QuartzJobChecks
         Check(dispatch.Dispatches == 0, "disabled or canceled update does not dispatch");
         checks.Add("UpdateJob: disabled and canceled configuration");
         config.SetConfig(config.GetConfig<ProgramConfig>() with { CheckUpdateOnStartUp = true });
-        await jobs.Execute<UpdateJob>();
+        using var cancellation = new CancellationTokenSource();
+        dispatch.ExpectedToken = cancellation.Token;
+        await jobs.Execute<UpdateJob>(cancellation.Token);
         Check(dispatch.Dispatches == 1, "enabled update hands its callback to the substitute");
-        checks.Add("UpdateJob: enabled callback identity without executing UI");
+        checks.Add("UpdateJob: enabled callback identity and cancellation token without executing UI");
+        dispatch.ExpectedToken = CancellationToken.None;
         dispatch.Fail = true;
         try
         {
@@ -302,13 +305,16 @@ sealed class UpdateDispatchProbe
     public Mock<IThreadDispatcher> Dispatcher { get; } = new(MockBehavior.Strict);
     public int Dispatches { get; private set; }
     public bool Fail { get; set; }
+    public CancellationToken ExpectedToken { get; set; }
 
     public UpdateDispatchProbe(UpdateChecker updater)
     {
-        Dispatcher.Setup(x => x.RunOnMainThreadAsync(It.IsAny<Func<Task>>())).Callback((Func<Task> callback) =>
+        Dispatcher.Setup(x => x.RunOnMainThreadAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()))
+            .Callback((Func<CancellationToken, Task> callback, CancellationToken token) =>
         {
             QuartzJobChecks.Check(ReferenceEquals(callback.Target, updater)
                 && callback.Method.Name == nameof(UpdateChecker.RunAutoUpdateFlow), "update callback identity");
+            QuartzJobChecks.Check(token == ExpectedToken, "update cancellation token forwarded");
             Dispatches++;
             // Do not invoke the callback: it would enter the real update/UI flow.
         }).Returns(() => Fail ? Task.FromException(new InvalidOperationException("Expected dispatcher failure.")) : Task.CompletedTask);

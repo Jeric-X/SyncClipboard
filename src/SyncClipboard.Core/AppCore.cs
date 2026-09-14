@@ -369,7 +369,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IForegroundWindowMonitor>(sp => sp.GetRequiredService<ForegroundWindowMonitor>());
             services.AddTransient<ForegroundWindowCapture>();
             services.AddTransient<GithubUpdater>();
-            services.AddQuartz();
+            services.AddQuartz(quartz => quartz.ConfigureScheduler(options =>
+                options.ShutdownJobInterruption = ShutdownJobInterruption.WhenWaitingForJobs));
             services.AddTransient<AppInstance>();
             services.AddSingleton(sp => ManagerFactory.GetNotificationManager(
                 new NativeNotificationOption
