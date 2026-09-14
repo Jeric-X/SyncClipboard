@@ -54,7 +54,7 @@ public class SharpHookKeyboardTests
         var restored = JsonSerializer.Deserialize<Hotkey>(json)!;
 
         Assert.AreEqual(original, restored);
-        CollectionAssert.Contains(restored.Keys, legacy);
+        Assert.Contains(legacy, restored.Keys);
         Assert.AreEqual(nativeKey, KeyCodeMap.MapReverse[legacy]);
         var normalized = KeyCodeMap.NormalizeHotkey(restored);
         Assert.AreEqual(new Hotkey(Key.Ctrl, canonical), normalized);
@@ -105,11 +105,11 @@ public class SharpHookKeyboardTests
         }
 
         var modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
-        CollectionAssert.AreEqual(new[]
-        {
+        Assert.AreSequenceEqual(
+        [
             (EventType.KeyPressed, modifier), (EventType.KeyPressed, KeyCode.VcV),
             (EventType.KeyReleased, KeyCode.VcV), (EventType.KeyReleased, modifier)
-        }, events.ToArray());
+        ], events.ToArray());
         backend.Verify(x => x.SetLinuxMode(LinuxMode.XRecord), isLinux ? Times.Once() : Times.Never());
         simulation.Verify(x => x.InitializeVirtualDevices("SyncClipboard"), Times.Once());
         simulation.Verify(x => x.DestroyVirtualDevices(), Times.Once());

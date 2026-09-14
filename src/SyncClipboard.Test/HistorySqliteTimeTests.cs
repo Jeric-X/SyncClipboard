@@ -22,7 +22,7 @@ public class HistorySqliteTimeTests
     [DataRow(true, "2026-09-13 01:00:00-04:00")]
     public async Task PersistedHistoryTimes_PreserveUtcInstantAfterReadAndSave(bool server, string storedTime)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync(token);
         await using DbContext db = server ? new ServerContext(connection) : new ClientContext(connection);

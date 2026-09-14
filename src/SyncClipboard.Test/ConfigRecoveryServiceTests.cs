@@ -50,7 +50,7 @@ public class ConfigRecoveryServiceTests
         Assert.AreEqual(invalidJson, File.ReadAllText(backup));
         Assert.AreEqual(1, dialog.ConfirmationCount);
         Assert.AreEqual(0, dialog.MessageCount);
-        Assert.IsTrue(logger.Messages.Any(message => message.Contains("Replaced invalid configuration")));
+        Assert.Contains(message => message.Contains("Replaced invalid configuration"), logger.Messages);
     }
 
     [TestMethod]
@@ -140,8 +140,8 @@ public class ConfigRecoveryServiceTests
 
         Assert.IsNull(result);
         Assert.AreEqual(0, dialog.ConfirmationCount);
-        Assert.IsTrue(logger.Messages.Any(message => message.Contains("duplicate key")));
-        Assert.IsTrue(logger.Messages.Any(message => message.Contains("application will exit")));
+        Assert.Contains(message => message.Contains("duplicate key"), logger.Messages);
+        Assert.Contains(message => message.Contains("application will exit"), logger.Messages);
     }
 
     [TestMethod]
@@ -159,8 +159,8 @@ public class ConfigRecoveryServiceTests
 
         Assert.IsNull(result);
         Assert.AreEqual(0, dialog.ConfirmationCount);
-        Assert.IsTrue(logger.Messages.Any(message => message.Contains("path unavailable")));
-        Assert.IsTrue(logger.Messages.Any(message => message.Contains("Failed to determine the configuration path")));
+        Assert.Contains(message => message.Contains("path unavailable"), logger.Messages);
+        Assert.Contains(message => message.Contains("Failed to determine the configuration path"), logger.Messages);
     }
 
     [TestMethod]
@@ -223,12 +223,11 @@ public class ConfigRecoveryServiceTests
         Assert.IsTrue(result);
         Assert.AreEqual(2, attempts);
         Assert.AreEqual(2, dialog.ConfirmationCount);
-        CollectionAssert.AreEqual(
-            new[] { Strings.RestoreCurrentConfig, Strings.Retry },
-            dialog.PrimaryButtonTexts);
-        Assert.AreEqual(
+        Assert.AreSequenceEqual(
+            new[] { Strings.RestoreCurrentConfig, Strings.Retry }, dialog.PrimaryButtonTexts);
+        Assert.HasCount(
             1,
-            Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Count());
+            Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json"));
     }
 
     [TestMethod]
@@ -251,7 +250,7 @@ public class ConfigRecoveryServiceTests
         Assert.IsFalse(result);
         Assert.IsFalse(restoreCalled);
         Assert.AreEqual(0, dialog.ConfirmationCount);
-        Assert.IsTrue(logger.Messages.Any(message => message.Contains("application will exit")));
+        Assert.Contains(message => message.Contains("application will exit"), logger.Messages);
     }
 
     [TestMethod]

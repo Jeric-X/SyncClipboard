@@ -63,7 +63,7 @@
 | ObservableCollections | 3.3.4 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | Quartz 4.1.0；DI 已并入主包，移除独立空包引用 | 14 |
 | Swashbuckle.AspNetCore / Microsoft.OpenApi | 8.1.1 / 1.6.23（传递） | 10.2.3 / 2.12.2，OpenAPI 固定为上游 v10 对应的 2.x 系列 | 15 |
-| Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | 保持 VSTest，逐组核定稳定兼容版本 | 16a–16c |
+| Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | 16a 核定 Test SDK 18.10.0 / MSTest 4.4.0，保持 VSTest；coverlet 与 Moq 分别在后续子步骤核定 | 16a–16c |
 | CodeCracker、Containers.Tools.Targets、PupNet | 1.1.0 / 1.22.1 / 1.8.0 | 逐项检查维护状态与工具运行时要求 | 17a–17c |
 
 FluentAvalonia 与图片加载器的依据分别为 [NuGet 依赖声明](https://www.nuget.org/packages/FluentAvaloniaUI/3.1.0) 和 [图片加载器发布说明](https://www.nuget.org/packages/AsyncImageLoader.Avalonia/3.8.0)。其余未列精确目标的项目，必须在执行对应步骤时填入版本与官方来源后再修改；若没有更新，记录“当前已是可用稳定版”，不能虚构升级。
@@ -123,7 +123,7 @@ docker build -f src/SyncClipboard.Server/Dockerfile -t syncclipboard-upgrade-che
 代码格式检查从 `src/` 执行仓库规定命令：
 
 ```bash
-dotnet format --verify-no-changes --severity info --no-restore
+dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnostics CS0103
 ```
 
 先完成对应平台依赖还原。若本机受到平台项目限制，记录未覆盖部分并交由已配置工作负载的 CI 验证，不将局部检查写成全量通过。执行命令后记录退出码、测试数量和失败/跳过情况；仅“命令启动成功”不能作为通过证据。
@@ -361,6 +361,8 @@ dotnet format --verify-no-changes --severity info --no-restore
 | 16c | Moq | 三套项目中的范围内测试重新通过，特别是非 UI 的 DI/平台服务 mock；无因默认行为变化而漏测 |
 
 不把升级测试包和测试运行器迁移合在一起，不用大面积修改断言掩盖行为变化。每个子步骤都须完成 PR 监控。
+
+16a 于 2026-09-14 核定 [Microsoft.NET.Test.Sdk 18.10.0](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.10.0) 和 [MSTest.TestAdapter 4.4.0](https://www.nuget.org/packages/MSTest.TestAdapter/4.4.0)，TestFramework 同版。按 [MSTest v4 迁移说明](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-mstest-migration-v3-v4) 核对 API、分析器与测试发现变化。继续使用 Microsoft.NET.Sdk 和显式 Test SDK 引用，不启用 MTP 或 WinUI 测试宿主；比较实际用例名称与数量，不用变化后的 TestCase.Id 判断用例缺失。
 
 ### 步骤 17a–17c：依次处理分析器与构建工具
 

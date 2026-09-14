@@ -28,7 +28,7 @@ public partial class MvvmCompatibilityTests
         model.Value = "after ✓";
         model.Value = "after ✓";
 
-        CollectionAssert.AreEqual(ValueEvents, events);
+        Assert.AreSequenceEqual(ValueEvents, events);
     }
 
     [TestMethod]
@@ -46,7 +46,7 @@ public partial class MvvmCompatibilityTests
         model.TreeList = null;
 
         Assert.IsFalse(model.ShowTreeList);
-        CollectionAssert.AreEqual(TreeEvents, events);
+        Assert.AreSequenceEqual(TreeEvents, events);
         services.VerifyNoOtherCalls();
     }
 
@@ -85,7 +85,7 @@ public partial class MvvmCompatibilityTests
         model.Name = "valid";
         Assert.IsFalse(model.HasErrors);
         Assert.IsEmpty(model.GetErrors(nameof(model.Name)));
-        CollectionAssert.AreEqual(ValidationEvents, errors);
+        Assert.AreSequenceEqual(ValidationEvents, errors);
     }
 
     [TestMethod]
@@ -107,7 +107,7 @@ public partial class MvvmCompatibilityTests
         command.Execute("second");
 
         Assert.AreEqual(2, changes);
-        CollectionAssert.AreEqual(RecordedValues, model.Recorded);
+        Assert.AreSequenceEqual(RecordedValues, model.Recorded);
     }
 
     [TestMethod]
@@ -132,7 +132,7 @@ public partial class MvvmCompatibilityTests
             Assert.IsTrue(cancel.CanExecute(null));
             cancel.Execute(null);
             Assert.IsTrue(observedToken.IsCancellationRequested);
-            await Assert.ThrowsAsync<OperationCanceledException>(() => execution.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token));
+            await Assert.ThrowsAsync<OperationCanceledException>(() => execution.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationToken));
             Assert.IsFalse(command.IsRunning);
             Assert.IsFalse(cancel.CanExecute(null));
             Assert.IsTrue(command.CanExecute(null));
@@ -149,7 +149,7 @@ public partial class MvvmCompatibilityTests
         finally
         {
             command.Cancel();
-            try { await execution.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token); }
+            try { await execution.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationToken); }
             catch (OperationCanceledException) { }
         }
     }

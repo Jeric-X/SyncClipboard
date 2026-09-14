@@ -98,10 +98,12 @@ Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI valid
 
 ```bash
 # Check formatting (from src/ directory)
-dotnet format --verify-no-changes --severity info --no-restore
+dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnostics CS0103
 ```
 
 Rules are defined in `src/.editorconfig`.
+
+The format-only CS0103 exclusion avoids MSTest 4's migration fixer collecting missing generated names from the cross-platform design-time workspace. Do not suppress this diagnostic in builds: each platform's actual compilation must still pass. All MSTest analyzer rules remain enabled.
 
 ## Architecture
 

@@ -27,7 +27,7 @@ public class ProfileTransferDataReplacementTests
     [DataRow(ProfileType.Group, true, true)]
     public async Task ExistingDataIsReplacedAndBoundToPersistentPath(ProfileType type, bool suppliedHash, bool inPlace)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-Replacement-");
         try
         {
@@ -48,7 +48,8 @@ public class ProfileTransferDataReplacementTests
             Assert.AreEqual(await Utility.CalculateFileSHA256(targetPath, token), profile.TransferDataHash);
             Assert.AreEqual(targetPath, (await profile.PrepareTransferData(persistentDir, token))?.Path);
             Assert.IsTrue(await profile.IsLocalDataValid(false, token));
-            CollectionAssert.AreEqual(data, await File.ReadAllBytesAsync(targetPath, token));
+            var persistedBytes = await File.ReadAllBytesAsync(targetPath, token);
+            Assert.AreSequenceEqual(data, persistedBytes);
             if (!inPlace)
                 Assert.IsFalse(File.Exists(incomingPath));
             if (profile is GroupProfile restoredGroup)
@@ -60,7 +61,7 @@ public class ProfileTransferDataReplacementTests
                 var persistentInfo = await restoredGroup.Persist(persistentDir, token);
                 var recreated = Profile.Create(persistentDir, persistentInfo);
                 var localInfo = await recreated.Localize(persistentDir, token);
-                CollectionAssert.AreEqual(restoredGroup.Files, localInfo.FilePaths);
+                Assert.AreSequenceEqual(restoredGroup.Files, localInfo.FilePaths);
                 Assert.IsTrue(await recreated.IsLocalDataValid(false, token));
             }
         }
@@ -80,7 +81,7 @@ public class ProfileTransferDataReplacementTests
     [DataRow(ProfileType.Group, true)]
     public async Task ExistingDataDoesNotBypassValidationOfIncomingData(ProfileType type, bool suppliedHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-Replacement-");
         try
         {
@@ -96,7 +97,8 @@ public class ProfileTransferDataReplacementTests
 
             Assert.AreEqual(originalHash, profile.TransferDataHash);
             Assert.IsTrue(await profile.IsLocalDataValid(false, token));
-            CollectionAssert.AreEqual(originalData, await File.ReadAllBytesAsync(targetPath, token));
+            var persistedBytes = await File.ReadAllBytesAsync(targetPath, token);
+            Assert.AreSequenceEqual(originalData, persistedBytes);
             Assert.IsTrue(File.Exists(incomingPath));
         }
         finally
@@ -108,7 +110,7 @@ public class ProfileTransferDataReplacementTests
     [TestMethod]
     public async Task GroupReplacementDoesNotOverwriteUnownedExtractionDirectory()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-Replacement-");
         try
         {
@@ -125,7 +127,8 @@ public class ProfileTransferDataReplacementTests
             await SetAndMove(profile, persistentDir, incomingPath, true, token);
 
             Assert.AreEqual("keep", await File.ReadAllTextAsync(unrelatedFile, token));
-            CollectionAssert.AreEqual(originalData, await File.ReadAllBytesAsync(targetPath, token));
+            var persistedBytes = await File.ReadAllBytesAsync(targetPath, token);
+            Assert.AreSequenceEqual(originalData, persistedBytes);
             Assert.IsFalse(File.Exists(incomingPath));
         }
         finally

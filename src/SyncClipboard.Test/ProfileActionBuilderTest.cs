@@ -62,7 +62,7 @@ public class ProfileActionBuilderTest
     [DataRow(true)]
     public async Task GroupActionsLocalizeTransferArchiveBeforeUsingPaths(bool primary)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Path.Combine(Path.GetTempPath(), $"SyncClipboard-Actions-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
         try

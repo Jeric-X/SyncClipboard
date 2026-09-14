@@ -30,7 +30,7 @@ public class ToastPayloadContractTests
         Assert.AreEqual("toast", xml.Name.LocalName);
         var binding = xml.Element("visual")!.Element("binding")!;
         Assert.AreEqual("ToastGeneric", (string?)binding.Attribute("template"));
-        CollectionAssert.AreEqual(TextBindings, binding.Elements("text").Select(x => x.Value).ToArray());
+        Assert.AreSequenceEqual(TextBindings, binding.Elements("text").Select(x => x.Value).ToArray());
         Assert.AreEqual(includeImage ? image.OriginalString : null, (string?)binding.Element("image")?.Attribute("src"));
         Assert.IsNull(xml.Element("actions"));
         Assert.IsFalse(session.IsAlive);
@@ -74,7 +74,7 @@ public class ToastPayloadContractTests
         var binding = Parse(session.Build()).Element("visual")!.Element("binding")!;
         var progress = binding.Element("progress")!;
 
-        CollectionAssert.AreEqual(TextBindings, binding.Elements("text").Select(x => x.Value).ToArray());
+        Assert.AreSequenceEqual(TextBindings, binding.Elements("text").Select(x => x.Value).ToArray());
         Assert.AreEqual("{PROGRESS_BINDING_TITLE}", (string?)progress.Attribute("title"));
         Assert.AreEqual(indeterminate ? "indeterminate" : "{PROGRESS_BINDING_VALUE}", (string?)progress.Attribute("value"));
         Assert.AreEqual("{PROGRESS_BINDING_VALUE_TIP}", (string?)progress.Attribute("valueStringOverride"));

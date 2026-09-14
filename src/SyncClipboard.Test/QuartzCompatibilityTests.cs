@@ -12,7 +12,7 @@ namespace SyncClipboard.Test;
 public class QuartzCompatibilityTests
 {
     public TestContext TestContext { get; set; } = null!;
-    private CancellationToken TestCancellation => TestContext.CancellationTokenSource.Token;
+    private CancellationToken TestCancellation => TestContext.CancellationToken;
 
     [TestMethod]
     public async Task CoreRegistration_ResolvesOneSchedulerAndDisposesItAsynchronously()
@@ -249,7 +249,7 @@ public class QuartzCompatibilityTests
         }
         Assert.AreEqual(2, state.Executions);
         Assert.HasCount(2, state.ScopeIds);
-        Assert.AreEqual(2, state.ScopeIds.Distinct().Count());
+        Assert.HasCount(2, state.ScopeIds.Distinct());
         Assert.AreEqual(2, state.DisposedScopes);
         Assert.AreEqual(SchedulerStatus.Shutdown, actual.Status);
     }

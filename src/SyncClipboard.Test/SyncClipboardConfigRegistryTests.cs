@@ -54,13 +54,11 @@ public class SyncClipboardConfigRegistryTests
     [TestMethod]
     public void AccountConfigRegistry_ScansKnownTypesAndPriorities()
     {
-        CollectionAssert.AreEqual(
-            new[]
-            {
+        Assert.AreSequenceEqual(
+            [
                 new AdapterConfigRegistration(OfficialConfig.ConfigTypeName, typeof(OfficialConfig), 1),
                 new AdapterConfigRegistration(WebDavConfig.ConfigTypeName, typeof(WebDavConfig), 2),
                 new AdapterConfigRegistration(S3Config.ConfigTypeName, typeof(S3Config), 3),
-            },
-            AccountConfigRegistry.Configurations.ToArray());
+            ], AccountConfigRegistry.Configurations.ToArray());
     }
 }

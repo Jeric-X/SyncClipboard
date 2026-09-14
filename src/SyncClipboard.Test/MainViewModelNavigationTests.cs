@@ -24,8 +24,8 @@ public class MainViewModelNavigationTests
 
         viewModel.BreadcrumbBarClicked(index);
 
-        CollectionAssert.AreEqual(pages.Take(index + 1).ToArray(), viewModel.BreadcrumbList.ToArray());
-        Assert.AreEqual(index < pages.Length - 1 ? 1 : 0, window.Calls.Count);
+        Assert.AreSequenceEqual(pages.Take(index + 1).ToArray(), viewModel.BreadcrumbList.ToArray());
+        Assert.HasCount(index < pages.Length - 1 ? 1 : 0, window.Calls);
         if (window.Calls.Count > 0)
             Assert.AreEqual(new NavigationCall(pages[index], NavigationTransitionEffect.FromLeft, null), window.Calls[0]);
     }
@@ -40,16 +40,16 @@ public class MainViewModelNavigationTests
         var parameter = new object();
 
         viewModel.NavigateToNextLevel(PageDefinition.License, parameter);
-        CollectionAssert.AreEqual(new[] { PageDefinition.About, PageDefinition.License }, viewModel.BreadcrumbList.ToArray());
+        Assert.AreSequenceEqual([PageDefinition.About, PageDefinition.License], viewModel.BreadcrumbList.ToArray());
         viewModel.NavigateToLastLevel();
         viewModel.NavigateToLastLevel();
 
-        CollectionAssert.AreEqual(new[] { PageDefinition.About }, viewModel.BreadcrumbList.ToArray());
-        CollectionAssert.AreEqual(new[]
-        {
+        Assert.AreSequenceEqual([PageDefinition.About], viewModel.BreadcrumbList.ToArray());
+        Assert.AreSequenceEqual(
+        [
             new NavigationCall(PageDefinition.License, NavigationTransitionEffect.FromRight, parameter),
             new NavigationCall(PageDefinition.About, NavigationTransitionEffect.FromLeft, null)
-        }, window.Calls.ToArray());
+        ], window.Calls.ToArray());
     }
 
     private sealed record NavigationCall(PageDefinition Page, NavigationTransitionEffect Effect, object? Parameter);

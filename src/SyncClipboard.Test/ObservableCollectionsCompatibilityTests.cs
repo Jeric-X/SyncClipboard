@@ -87,7 +87,7 @@ public class ObservableCollectionsCompatibilityTests
         items.CollectionChanged += (_, e) =>
         {
             Assert.AreEqual(NotifyCollectionChangedAction.Add, e.Action);
-            Assert.AreEqual(1, e.NewItems!.Count);
+            Assert.HasCount(1, e.NewItems!);
             Assert.AreEqual(seen, e.NewStartingIndex);
             seen++;
             Assert.AreEqual(seen, items.Count);
@@ -274,13 +274,13 @@ public class ObservableCollectionsCompatibilityTests
         items.CollectionChanged += (_, e) => { if (e.Action == NotifyCollectionChangedAction.Reset) resets++; };
 
         source.Clear();
-        Assert.AreEqual(0, nonGeneric.Count);
+        Assert.IsEmpty(nonGeneric);
         Assert.IsEmpty((IList<HistoryRecord>)items);
         var next = Record(3);
         source.Add(next);
 
         Assert.AreEqual(1, resets);
-        Assert.AreEqual(1, ((ICollection)items).Count);
+        Assert.HasCount(1, (ICollection)items);
         Assert.AreSame(next, nonGeneric[0]);
         Assert.AreSame(next, ((IList<HistoryRecord>)items)[0]);
         Assert.AreEqual(0, items.IndexOf(next));

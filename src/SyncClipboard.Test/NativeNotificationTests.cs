@@ -30,7 +30,7 @@ public class NativeNotificationTests
         {
             Assert.AreEqual("同步结果", notification.Object.Title);
             Assert.AreEqual("文件 ✓\n第二行", notification.Object.Message);
-            Assert.AreEqual(includeButtons ? 1 : 0, notification.Object.Buttons.Count);
+            Assert.HasCount(includeButtons ? 1 : 0, notification.Object.Buttons);
         });
 
         var returned = manager.Object.ShowText("同步结果", "文件 ✓\n第二行", buttons);
@@ -66,7 +66,7 @@ public class NativeNotificationTests
             Assert.IsFalse(option.Silent);
             Assert.AreEqual(shown == 1 ? "首次" : "再次", notification.Object.Title);
             Assert.AreEqual(shown == 1 ? "正在同步" : "已完成", notification.Object.Message);
-            CollectionAssert.AreEqual(shown == 1 ? new[] { button } : [], notification.Object.Buttons);
+            Assert.AreSequenceEqual(shown == 1 ? new[] { button } : [], notification.Object.Buttons);
         });
 
         manager.Object.SharedQuickMessage("首次", "正在同步", [button]);
@@ -92,14 +92,14 @@ public class NativeNotificationTests
 
         var buttons = ProfileActionBuilder.ToActionButtons(items);
 
-        CollectionAssert.AreEqual(ButtonLabels, buttons.Select(x => x.Text).ToArray());
-        Assert.AreEqual(buttons.Count, buttons.Select(x => x.ActionId).Distinct().Count());
+        Assert.AreSequenceEqual(ButtonLabels, buttons.Select(x => x.Text).ToArray());
+        Assert.HasCount(buttons.Count, buttons.Select(x => x.ActionId).Distinct());
         Assert.IsTrue(buttons.All(x => !string.IsNullOrEmpty(x.ActionId)));
         Assert.IsEmpty(calls);
         buttons[2].Callback!();
         buttons[1].Callback!();
         buttons[0].Callback!();
-        CollectionAssert.AreEqual(CallbackOrder, calls);
+        Assert.AreSequenceEqual(CallbackOrder, calls);
     }
 
     [TestMethod]

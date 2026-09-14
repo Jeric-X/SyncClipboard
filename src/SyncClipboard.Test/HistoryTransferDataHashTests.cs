@@ -35,7 +35,7 @@ public class HistoryTransferDataHashTests
     [DataRow(true)]
     public async Task AddRecordDto_InlineTextWithoutFileRequiresMatchingHash(bool matchingHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         const string text = "inline history text";
         var actualHash = await Utility.CalculateSHA256(text, token);
@@ -68,7 +68,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task AddRecordDto_GroupWithMatchingArchiveHashStillRequiresSemanticValidation()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var archivePath = Path.Combine(fixture.RootDirectory, "invalid-group.zip");
         await CreateArchiveAsync(archivePath, "unexpected.txt", "unexpected", token);
@@ -85,7 +85,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task AddRecordDto_RejectsDeclaredHashThatDoesNotMatchRequestBody()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var archivePath = Path.Combine(fixture.RootDirectory, "mismatched-group.zip");
         await CreateArchiveAsync(archivePath, "unexpected.txt", "unexpected", token);
@@ -103,7 +103,7 @@ public class HistoryTransferDataHashTests
     [DataRow(true)]
     public async Task AddRecordDto_RejectedUploadPreservesExistingExtractionDirectory(bool mismatchedTransferHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var dto = CreateGroupDto(new string('A', 64));
         var existing = dto.ToEntity("user");
@@ -130,7 +130,7 @@ public class HistoryTransferDataHashTests
 
         Assert.AreEqual("existing content", await File.ReadAllTextAsync(sentinelPath, token));
         Assert.IsFalse(File.Exists(uploadPath));
-        CollectionAssert.AreEqual(new[] { oldExtractDir }, Directory.GetDirectories(workingDir));
+        Assert.AreSequenceEqual([oldExtractDir], Directory.GetDirectories(workingDir));
         Assert.IsTrue(existing.IsDeleted);
         Assert.AreEqual(1, await fixture.DbContext.HistoryRecords.CountAsync(token));
     }
@@ -138,7 +138,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task AddRecordDto_ValidGroupPersistsServerCalculatedArchiveHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var sourceFile = Path.Combine(fixture.RootDirectory, "source.txt");
         await File.WriteAllTextAsync(sourceFile, "content", token);
@@ -164,7 +164,7 @@ public class HistoryTransferDataHashTests
     [DataRow(true, true)]
     public async Task AddRecordDto_ExistingDataOnlyAcceptsVerifiedReplacementWhenDeleted(bool deleted, bool invalidHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var sourceFile = Path.Combine(fixture.RootDirectory, "existing.txt");
         await File.WriteAllTextAsync(sourceFile, "content", token);
@@ -203,7 +203,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task AddRecordDto_ResurrectedGroupUsesIncomingArchiveHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var sourceFile = Path.Combine(fixture.RootDirectory, "resurrect-source.txt");
         await File.WriteAllTextAsync(sourceFile, "resurrect", token);
@@ -230,7 +230,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task GetTransferData_KnownArchiveHashSkipsGroupSemanticValidationButRejectsByteChanges()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var profileHash = new string('B', 64);
         var workingDirectory = Profile.CreateWorkingDir(fixture.PersistentDirectory, ProfileType.Group, profileHash);
@@ -264,7 +264,7 @@ public class HistoryTransferDataHashTests
     [DataRow("unreadable")]
     public async Task GetTransferData_UnavailableGroupArchiveIsRegeneratedFromExtractedFiles(string archiveState)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var sourceFile = Path.Combine(fixture.RootDirectory, "regenerate-source.txt");
         await File.WriteAllTextAsync(sourceFile, "regenerate", token);
@@ -319,7 +319,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task GetTransferData_ReturnsHashInResponseHeader()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var sourcePath = Path.Combine(fixture.RootDirectory, "file.bin");
         await File.WriteAllTextAsync(sourcePath, "content", token);
@@ -366,7 +366,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task SaveHistoryDataResponse_MatchingHeaderPublishesFileAndReturnsHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var bytes = Encoding.UTF8.GetBytes("downloaded history data");
         var transferDataHash = await Utility.CalculateSHA256(bytes, token);
@@ -376,13 +376,14 @@ public class HistoryTransferDataHashTests
         var actualHash = await OfficialAdapter.SaveHistoryDataResponseAsync(response, localPath, progress: null, token);
 
         Assert.AreEqual(transferDataHash, actualHash);
-        CollectionAssert.AreEqual(bytes, await File.ReadAllBytesAsync(localPath, token));
+        var downloadedBytes = await File.ReadAllBytesAsync(localPath, token);
+        Assert.AreSequenceEqual(bytes, downloadedBytes);
     }
 
     [TestMethod]
     public async Task SaveHistoryDataResponse_MismatchedHeaderDoesNotReplaceExistingFile()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var localPath = Path.Combine(fixture.RootDirectory, "data.bin");
         await File.WriteAllTextAsync(localPath, "existing", token);
@@ -392,13 +393,13 @@ public class HistoryTransferDataHashTests
             () => OfficialAdapter.SaveHistoryDataResponseAsync(response, localPath, progress: null, token));
 
         Assert.AreEqual("existing", await File.ReadAllTextAsync(localPath, token));
-        Assert.AreEqual(0, Directory.GetFiles(fixture.RootDirectory, "*.download").Length);
+        Assert.IsEmpty(Directory.GetFiles(fixture.RootDirectory, "*.download"));
     }
 
     [TestMethod]
     public async Task PutSyncProfile_InvalidInlineTextDoesNotPersistOrPublish()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var hubContext = new TestHubContext();
         using var cache = new MemoryCache(new MemoryCacheOptions());
@@ -426,7 +427,7 @@ public class HistoryTransferDataHashTests
     [DataRow(true)]
     public async Task PutSyncProfile_ValidInlineTextPersistsAndPublishes(bool omitHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var hubContext = new TestHubContext();
         using var cache = new MemoryCache(new MemoryCacheOptions());
@@ -456,7 +457,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task PutSyncProfile_GroupWithMatchingArchiveHashStillRequiresSemanticValidation()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var fileDirectory = Path.Combine(fixture.ServerEnv.GetDataRootPath(), "file");
         Directory.CreateDirectory(fileDirectory);
@@ -484,7 +485,7 @@ public class HistoryTransferDataHashTests
     [TestMethod]
     public async Task PutSyncProfile_ValidGroupPersistsAndPublishesServerVerifiedHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         await using var fixture = await TestFixture.CreateAsync(token);
         var sourceFile = Path.Combine(fixture.RootDirectory, "ordinary-source.txt");
         await File.WriteAllTextAsync(sourceFile, "ordinary", token);

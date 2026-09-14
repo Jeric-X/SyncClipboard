@@ -16,7 +16,7 @@ public class GroupProfileFileNamesTests
     [DataRow(true)]
     public async Task LocalConstructorsInitializeNamesBeforePersistence(bool knownHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -54,7 +54,7 @@ public class GroupProfileFileNamesTests
     [TestMethod]
     public async Task ArchiveOnlyHistoryPreservesAllNamesAcrossPersistence()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -108,7 +108,7 @@ public class GroupProfileFileNamesTests
     [DataRow("preview.txt", "preview.txt")]
     public async Task ExtractionOnlyFillsUnknownNames(string initialNames, string expectedNames)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {

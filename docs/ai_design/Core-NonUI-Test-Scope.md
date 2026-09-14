@@ -6,6 +6,8 @@
 
 同阶段重新核对 `QuartzCompatibilityTests` 的优雅关闭用例：改为调用生产的 `StopSchedulerAndDisposeServicesAsync`，以内存任务的完成信号验证关闭任务先返回未完成状态、允许调用者继续释放任务，随后完成调度器与容器释放。测试不创建 UI 调度器或模拟交互桌面，不执行 UpdateJob 的真实回调；此证据不代表桌面退出交互已经验收。
 
+步骤 16a 迁移 MSTest 4.4：测试初始化、数据源、替身及 UI 分类保持不变。变更限于 TestContext.CancellationToken、集合数量/顺序/成员断言和一处异常断言的等价 API 适配。异常用例仍要求产生 IO/权限错误，并显式拒绝 LocalProfileDataUnavailableException；四处字节序列比较先 await 读取文件，再调用 Span 重载。所有文件仍为临时测试数据，未增加真实 UI 路径。
+
 本项目的 39 个测试类已核对测试入口、字段初始化、初始化/清理方法及使用的替身，均标为 `TestCategory("NonUI")`。本地与 CI 使用 `--filter TestCategory=NonUI` 正向筛选。当前 438 项全部通过，包含步骤 13b 的全部 427 项和新增 11 项 Quartz 非 UI 回归，没有因筛选漏掉已有用例。
 
 项目没有 AssemblyInitialize/ClassInitialize、动态数据源或平台服务数据源的测试入口。SystemServiceProviderDataSource/PlatformServiceProviderDataSource 在本项目仅定义，未被测试方法使用；不能据此运行其他项目的混合 DI 测试。被测项目引用 Core，无桌面入口或 Avalonia/WinUI 控件初始化。测试涉及图片时只处理数据、文件和哈希。

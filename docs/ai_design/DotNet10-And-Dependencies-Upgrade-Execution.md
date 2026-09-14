@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–14（含全部子步骤和前置修复）已通过，当前执行步骤 15：Swagger / OpenAPI 升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 14 验证通过提交为 `356cf8e7f951cef3a1286158d275892740bbfcc9`；步骤 15 未通过前不进入 16a。
-- 步骤 16a–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–15（含全部子步骤和前置修复）已通过，当前执行步骤 16a：Test SDK 与 MSTest 升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 15 验证通过提交为 `55ea1e44e2e5f111cdaa7d0ac331f938ab71229b`；步骤 16a 未通过前不进入 16b。
+- 步骤 16b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -914,3 +914,27 @@ Swashbuckle.AspNetCore 8.1.1 → 10.2.3，Microsoft.OpenApi 显式固定 2.12.2�
 Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Toolkit 通知包解析 System.Drawing.Common 4.7.0，冻结的步骤 15 基线已含同一警告。仅在该 Windows TFM 添加显式引用，沿用中央表已有的 10.0.0，与 WinUI3 和 Windows 图片探针对齐；Linux 引用不变，不屏蔽警告。[对应公告](https://github.com/advisories/GHSA-rxg9-xrhp-64gj) 的运行时影响限 macOS/Linux，此处处理的是遗留依赖及还原警告，不据此声称 Windows 运行时存在同一漏洞。
 
 修复后实际依赖图中 Windows 使用 System.Drawing.Common / Microsoft.Win32.SystemEvents 10.0.0，net10.0 图没有 System.Drawing.Common；NuGet 日志为空，Default 编译 0 警告/错误、格式检查通过，记录 `/tmp/syncclipboard-stage15-default-drawing-build.log`。所有修复尚待新提交的完整 CI 与评审验证，步骤 15 未通过。
+
+修复提交 `55ea1e44e2e5f111cdaa7d0ac331f938ab71229b` 已推送。[Windows Core CI 103861322854](https://github.com/Jeric-X/SyncClipboard/actions/runs/34807213205/job/103861322854) 成功，实际日志确认 438 项通过、0 失败/跳过，覆盖原失败的 ZIP 恢复用例与生产关闭方法的内存任务验证，证据 `/tmp/syncclipboard-pr419-55ea-core-success.log`。Codex 于 `2026-09-14T04:51:57.711042Z` 完成本 head 评审，无新增行内反馈；原 P1 线程待其余必要平台 CI 确认后解决。其他 CI 仍在运行，步骤 15 未通过，不进入 16a。
+
+三平台 Desktop、WinUI NonUI 任务随后全部成功；Windows Desktop 任务 `103861322877` 中替代 Windows 入口编译成功，WinUI 任务 `103861322865` 中产品/测试编译及非 UI 覆盖检查成功。基于这些结果及新评审无新增问题，P1 线程 `PRRT_kwDOBXBc9s6h_X-t` 已标记解决，没有发送评论。Windows ARM64 构建及部分 Linux 打包仍在运行，完整阶段门槛尚未通过。
+
+### 步骤 15 最终通过记录
+
+验证通过提交 `55ea1e44e2e5f111cdaa7d0ac331f938ab71229b`：[PR run 34807213205](https://github.com/Jeric-X/SyncClipboard/actions/runs/34807213205) 的 58 个任务全部成功，[push run 34807210688](https://github.com/Jeric-X/SyncClipboard/actions/runs/34807210688) 的 58 个任务成功、8 个发布任务预期跳过；[CodeQL 34807212934](https://github.com/Jeric-X/SyncClipboard/actions/runs/34807212934) 及 CodeFactor 成功。最终 119 SUCCESS、8 SKIPPED，PR 为 CLEAN；新评审完成且无新增问题，9 个线程均解决。跳过项仅为草稿/正式发布、平台发布及 Homebrew/winget 提交。
+
+日志确认 Core 438、三平台 Desktop 各 6、WinUI 58，共 514 项非 UI 测试通过，0 失败/跳过，三平台 Quartz 探针各 10 组检查通过。服务器与容器的 Swagger 契约、四模式 HTTP 验证及必要平台构建/打包均已通过。信任 CI 编译产物，没有下载远程二进制，也未执行 UI 验证。最终证据 `/tmp/syncclipboard-pr419-55ea-complete.json`、`/tmp/syncclipboard-pr419-55ea-pr-complete.json`、`/tmp/syncclipboard-pr419-55ea-push-complete.json` 及测试日志。监控 `pr419` 已删除，允许进入步骤 16a；整体升级尚未完成。
+
+## 步骤 16a：Test SDK 与 MSTest（进行中）
+
+官方 NuGet 索引核定 Microsoft.NET.Test.Sdk 18.10.0、MSTest.TestAdapter/TestFramework 4.4.0 为最新稳定版，分别从 17.14.1 / 3.10.4 升级。元数据、升级前 11 份依赖图及本地测试报告保存在 `/private/tmp/syncclipboard-stage16a/`。精确源码提交为 VSTest `5b0c2fc69de12eb4383a7b6b38acab164a2f68fb`、MSTest `a81dff85c81f88b1cd0421619225b1037341d201`。coverlet 6.0.4 与 Moq 4.20.72 未改动。
+
+首次编译无警告/错误，原 Core 438 与 Desktop 6 项直接通过，用例名称逐项无增减。但仓库格式检查发现新版分析器要求迁移 138 处 TestContext 取消令牌访问、集合断言及一处 catch 内断言。仅使用相应官方修复器并人工核对语义，不关闭规则、不删除用例。集合比较保持数量、顺序和成员要求；异常用例改为显式捕获并检查异常，仍拒绝 LocalProfileDataUnavailableException，只接受 IO/权限错误。四处字节数组比较因新增 Span 重载不能跨 await 保存参数，改为先读取文件再比较；没有改变文件内容或预期结果。
+
+三套测试的实际 MSBuild 属性均为 EnableMSTestRunner=false、IsTestingPlatformApplication=false，UseWinUI/UseUwpTools 未启用，adapter/framework 均选择普通 net9.0 平台服务目录。继续使用 VSTest；MSTest 依赖携带的 MTP 包不代表启用了 MTP。自定义 DI DataSource 仍仅返回 Type 元数据，混合 UI DI 执行继续排除。产品依赖图未改变，仅三套测试图更新测试框架、TestHost/ObjectModel/CodeCoverage 18.10.0 与 Testing.Platform 2.4.0 等依赖，移除旧 AdapterUtilities/VSTestBridge，报告 `/tmp/syncclipboard-stage16a-dependency-diff.json`。
+
+适配后 Core 438、Desktop 6 项全部通过，0 失败/跳过；最终 TRX 位于 `/private/tmp/syncclipboard-stage16a-ready/`，仓库报告校验器通过，用例名称多重集与升级前逐项一致，未增删测试。报告 `/tmp/syncclipboard-stage16a-ready-inventory.json`。WinUI 的两处通知断言仍只比较 XML 数据；Windows 编译和 58 项非 UI 测试交由当前提交 CI 验证。
+
+格式工具的新 CS0103 输出源于 MSTest 4 的 [ClassCleanupBehavior 迁移修复器](https://github.com/microsoft/testfx/blob/a81dff85c81f88b1cd0421619225b1037341d201/src/Analyzers/MSTest.Analyzers.CodeFixes/RemoveClassCleanupBehaviorArgumentFixer.cs)：它注册此编译诊断，导致格式工具收集 macOS 设计时工作区缺少 WinUI/资源生成代码的错误。本仓库没有待迁移的 ClassCleanupBehavior；格式命令仅增加 `--exclude-diagnostics CS0103`，实际平台构建仍强制检查 CS0103，没有修改 NoWarn、编译器或 MSTest 规则。CI 与 AGENTS/CLAUDE 同步该命令，完整格式检查退出 0，仅有跨平台工作区加载警告；actionlint 与 diff 检查通过。这项 CI 调整也必须由本阶段 PR 验证。
+
+当前阶段本地检查已完成，提交后的全部 CI 与评审尚待通过，不进入 16b。

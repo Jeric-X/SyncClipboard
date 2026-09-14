@@ -36,4 +36,7 @@ jobs:
     - name: Check code style info
       working-directory: ./src
       run: |
-        dotnet format --verify-no-changes --severity info --no-restore
+        # MSTest 4's ClassCleanupBehavior fixer registers CS0103 globally, including
+        # WinUI/resource generated names unavailable in this macOS design-time workspace.
+        # Real platform builds still enforce CS0103; no compiler/analyzer rule is disabled.
+        dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnostics CS0103

@@ -19,11 +19,11 @@ public class ClipboardChangingListenerBaseTest
         TaskCompletionSource changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
         listener.Changed += (_, _) => changed.TrySetResult();
 
-        await LocalClipboard.Semaphore.WaitAsync(TestContext.CancellationTokenSource.Token);
+        await LocalClipboard.Semaphore.WaitAsync(TestContext.CancellationToken);
         try
         {
             listener.Trigger();
-            await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+            await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
 
             Assert.AreEqual(1, factory.GetMetaInfomationCallCount, "Native clipboard synchronization belongs in the platform factory, not the business-layer mutex.");
         }
@@ -52,7 +52,7 @@ public class ClipboardChangingListenerBaseTest
         listener.Trigger();
         listener.Trigger();
 
-        await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
 
         Assert.AreEqual(3, factory.GetMetaInfomationCallCount);
         Assert.AreEqual(3, changedCount);
