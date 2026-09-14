@@ -299,8 +299,13 @@ public class HistoryTransferDataHashTests
         Assert.IsTrue(File.Exists(regenerated.Path));
         Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
         Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
-        if (archiveState == "corrupted")
-            Assert.AreEqual(transferDataHash, regenerated.Hash);
+        // ZIP entry timestamps can change on regeneration even when the file content is identical.
+        using var regeneratedArchive = ZipFile.OpenRead(regenerated.Path);
+        Assert.HasCount(1, regeneratedArchive.Entries);
+        var entry = regeneratedArchive.Entries.Single();
+        Assert.AreEqual(Path.GetFileName(sourceFile), entry.FullName);
+        using var reader = new StreamReader(entry.Open());
+        Assert.AreEqual("regenerate", await reader.ReadToEndAsync(token));
     }
 
     [TestMethod]
