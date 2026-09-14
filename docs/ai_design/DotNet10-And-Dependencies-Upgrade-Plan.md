@@ -55,7 +55,7 @@
 | NativeNotification、NativeNotification.Interface | 1.0.5 | 2026-09-14 核定均已是最新稳定版，保留配套 1.0.5 并独立验证兼容性 | 12b |
 | Vanara.PInvoke ComCtl32/DbgHelp/Kernel32/User32 | 4.0.1 | 配套 5.0.7，核对 Shared/Core 合并及生成式 API | 12c |
 | Interop.UIAutomationClient | 10.19041.0 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 12d |
-| Microsoft.Toolkit.Uwp.Notifications | 7.1.3 | 核定兼容版本，不与其他原生依赖混做 | 12e |
+| Microsoft.Toolkit.Uwp.Notifications | 7.1.3 | 2026-09-14 核定已是最新稳定版，保留并独立验证通知载荷兼容性 | 12e |
 | CommunityToolkit.Mvvm、ObservableCollections | 8.4.0 / 3.3.4 | 分别核定稳定版本 | 13a–13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | 相同的稳定兼容版本 | 14 |
 | Swashbuckle.AspNetCore | 8.1.1 | 核定 ASP.NET Core 10 兼容版本 | 15 |
@@ -386,6 +386,8 @@ dotnet format --verify-no-changes --severity info --no-restore
 验证命令、OS、架构、退出码、测试总数/通过/失败/跳过数：
 非 UI 回归编号、结果、产物和证据：
 UI 排除用例/检查清单、数量与原因（本计划不验证，不计通过，不阻塞）：
+需要 UI 的检查实际执行数量：0；本地与 CI 均适用
+混合测试项目的非 UI 筛选条件及实际执行数（不得为零）：
 排除项处理：不执行 UI 验证；仅记录相关兼容性分析与已完成的编译/静态检查，不以它们代替 UI 验收
 是否存在需要 UI 的待办：否；发现此类检查时移入上述排除清单
 非 UI 测试边界：初始化、执行、清理均不启动 UI、不访问真实桌面、不触发权限提示；否则范围排除

@@ -7,9 +7,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–12c（含全部子步骤和前置修复）已通过，当前执行步骤 12d：Interop.UIAutomationClient 版本核定与兼容验证。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12c 验证通过提交为 `81bdec694690812e01fb7fcc545c7f1f2f7e3679`；步骤 12d 未通过前不进入 12e。
-- 步骤 12e–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–12d（含全部子步骤和前置修复）已通过，当前执行步骤 12e：Microsoft.Toolkit.Uwp.Notifications 版本核定与兼容验证。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 12d 验证通过提交为 `794d7b623358b477fbe1a2d05fca71fed2c4baef`；步骤 12e 未通过前不进入 13a。
+- 步骤 13a–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 验证范围统一遵循计划第 3.2 节：保留 UI 项目的编译、静态检查、包内容检查及经审查的非 UI 测试；需要创建窗口/控件、初始化 UI 框架或使用 UI 调度线程的检查均排除，包括隐藏窗口和无头 UI 测试。每步记录具体排除项及原因；仅这些 UI 项未验证不阻塞下一步，范围内检查仍须独立通过，CI 相关改动仍须提交 PR 并监控问题。阶段或最终结果仅表示非 UI 验证通过。
@@ -18,7 +18,7 @@
 
 相关步骤直接采用计划第 3.2 节按步骤列出的 UI 排除清单，最终验收同样适用。编译绑定通过不代表运行时界面绑定通过；命令行启动的测试若初始化 UI 或访问真实桌面，也必须排除。此范围调整不改变已有验证结果，不将未执行的 UI 检查补记为通过。
 
-每步收尾时核对：需要 UI 的内容全部归入排除清单，待办只保留必要的非 UI 检查及当前提交的 PR CI/问题处理。文档中的“全平台验证”“全部检查”均受此范围限制，不要求执行 UI 验证后才能完成该步。
+每步收尾时核对：需要 UI 的内容全部归入排除清单，实际执行数量为 0；混合测试项目记录非 UI 筛选条件及实际执行数，筛选后零项不能算通过。待办只保留必要的非 UI 检查及当前提交的 PR CI/问题处理。文档中的“全平台验证”“全部检查”均受此范围限制，不要求执行 UI 验证后才能完成该步。
 
 图片编解码、像素/透明通道比较、格式转换和纯 Bitmap 数据转换属于可保留的数据检查，前提是不打开图片预览、不构造控件、不访问真实剪贴板。最终交付只报告约定范围内的非 UI 验证与评审问题处理结果，并列出 UI 排除项，不安排人工或解锁后补测。
 
@@ -682,3 +682,31 @@ CurrentSelectedContentProvider 的单元素文本提取方法与 CaretPositionPr
 Core 386、Desktop NonUI 6 项通过，0 失败/跳过；新增测试格式检查、平台还原、仓库格式和工作流语法通过。Windows CI 最低通过数由 26 增至 47，五份真实 CI TRX 预期共 451 项。UI Automation 包审计新增版本、唯一文件、netcoreapp3.0 官方字节和非 Windows 无该依赖的检查，官方 DLL SHA256 `dcea43a1f5a2114b7bcc9e41cc1377064307611d0caa50f1ec203b887f4c20bb`；缺文件、错误字节、错误版本和 Linux 混入四种负例均拒绝。前一步 Windows 产物仅用于核定审计规则，不能作为本步骤通过证据。
 
 当前步骤仍待 Windows 完整测试、全平台 CI、全部 55 个产物和评审通过，不进入 12e。所有需要真实 UI/COM 客户端或桌面会话的验证继续范围排除，不安排人工或解锁后补测。
+
+### 步骤 12d CI 与非 UI 验证证据
+
+提交 `794d7b623358b477fbe1a2d05fca71fed2c4baef` 的 [PR run 34789650486](https://github.com/Jeric-X/SyncClipboard/actions/runs/34789650486)、[push run 34789648924](https://github.com/Jeric-X/SyncClipboard/actions/runs/34789648924)、[CodeQL 34789650219](https://github.com/Jeric-X/SyncClipboard/actions/runs/34789650219) 和 CodeFactor 已成功，119 项 SUCCESS、8 项预期发布 SKIPPED。合并测试提交 `088007f2fb3770948f7408ca1d64501cd6f8751a` 包含本提交及 master 基线。五份下载的 TRX 确认 451 项通过（Core 386、三平台 Desktop 各 6、WinUI3 47），0 失败/跳过；Windows TRX 包含全部新增 21 项 mock 契约用例，实际日志未出现 CS0436。
+
+七 RID 的 45 组图片检查及官方程序集哈希、七组 S3 检查与重试次数均已核对。服务器及双架构容器 CI 各四轮 Production 启动、两轮 API 检查通过，下载服务器在本机复验相同。六个 Linux 包元数据与 macOS 双架构包检查通过；每个 macOS 包的 19 个 dylib、严格签名、前置依赖及无 Windows UIAutomation/Vanara 载荷均已核对，挂载已卸载。没有执行 UI 验证。
+
+远程清单已核对全部 55 个 artifact 的名称、所属 run/head 和未过期状态。Codex 于 `2026-09-13T23:29:06.914326Z` 完成本提交评审，八个线程均已解决、行内反馈无变化。完整包审计与最终复查结果见下文。
+
+
+### 步骤 12d 最终通过记录
+
+上述提交的全部 55 个 artifact 已下载并与当前 run/head 清单逐项匹配。完整 38 个 Windows/Linux 组合审计通过：24 个 Windows 组合逐包核对 Interop.UIAutomationClient 10.19041.0 的唯一 netcoreapp3.0 官方程序集及依赖声明；14 个 Linux 组合没有混入该 Windows 依赖。Vanara 七包和所有前置 .NET、Microsoft、EF/SQLite、Avalonia/WinUI、AWS、图像、SharpHook、通知及资源检查全部保留并通过。报告 `/tmp/syncclipboard-pr419-794d-package-audit.json`，SHA256 `8921b5f89f1ec3e6a2c81c6cb774f3c3cb859161a86d7651a9169370a0294946`。
+
+最终远程复查仍为 119 项 SUCCESS、8 项预期发布 SKIPPED，八个评审线程均已解决，行内及普通评论无变化。451 项非 UI 测试、七 RID 45 组图片、七组 S3、六个 Linux 包元数据、macOS 双架构及服务器/容器检查均通过。完整本地记录 `docs/ai_design/.local/PR-419-Artifacts-794d7b62.md`。监控 pr419 已删除，步骤 12d 非 UI 验证通过，允许开始 12e；整体升级尚未完成。
+
+
+## 步骤 12e：Microsoft.Toolkit.Uwp.Notifications 版本核定与兼容验证
+
+2026-09-14 官方实时 NuGet 索引确认现用 `7.1.3` 已是最新稳定版，保留版本。[官方包](https://www.nuget.org/packages/Microsoft.Toolkit.Uwp.Notifications/7.1.3)。它由 NativeNotification 1.0.5 的 Windows 资产间接引入，当前 WinUI3 及其测试选择 `lib/net5.0-windows10.0.17763/Microsoft.Toolkit.Uwp.Notifications.dll`；System.Drawing.Common 实际仍为前置步骤核定的 10.0.0。六份基线图冻结于 `/private/tmp/syncclipboard-stage12e-baseline-assets/`，还原后均不变，报告 `/tmp/syncclipboard-stage12e-dependency-diff.json`。
+
+新增 11 项 NonUI 载荷契约用例：实际 ToastSession/ProgressSession 的受保护 GetBuilder 经测试子类暴露，仅构造托管数据；验证三个文本绑定、可选图片 URI、按钮顺序、Unicode/XML 特殊字符与原样激活参数、进度绑定和不确定状态、静音 XML，以及重建载荷时清理旧图片/按钮且不修改旧载荷。构造函数仅保存未使用的空 manager；不创建 WindowsNotificationManager，不调用 Show/Update/Remove、GetToast/GetXml、WinRT 通知服务、真实激活或界面操作。按钮回调不执行，通知 IsAlive 始终为 false。
+
+官方包重新下载后与缓存 Windows DLL 字节一致，SHA256 `e6676557727bc03cf7bceb1cb7b46ec4623ed7eb57813e8f04785bcd9d868b05`。包声明的源码提交 `72205c9add7c3fc1ed63bb77e6fc101e39f1ac33` 中 AddAudio 对空 src 的处理与实际发行 DLL 不同；只读 IL 检查及隔离探针确认真实 DLL 接受 NativeNotification 使用的 AddAudio(null, null, true)，并生成 silent=true、无 src 的 XML。以官方发行资产和真实执行为准，没有据源码差异臆测故障或修改产品行为。证据 `/tmp/syncclipboard-stage12e-source-audit.json`。
+
+本地隔离测试直接引用官方 Windows 依赖 DLL，11 项通过、0 失败/跳过，TRX 位于 `/tmp/syncclipboard-stage12e-toast-results/`；临时 net10.0 宿主对 Windows 标注 API 的 CA1416 提示保留，不把此探针当作真实 Windows 平台验证。Core 386、Desktop NonUI 6 项通过，0 失败/跳过；Windows/macOS 还原、仓库格式检查、actionlint 和 diff 检查通过，仓库格式检查只有跨平台工作区加载警告。
+
+Windows CI 最低通过数从 47 调整为 58，五份 TRX 预期共 462 项；既有七 RID 45 组图片、七组 S3、完整平台矩阵和 55 个 artifact 要求保留。产物审计新增该 Toolkit 的精确版本、唯一文件及官方 Windows 资产字节核对，非 Windows 不得混入；缺文件、错误字节、错误版本、Linux 混入和重复 DLL 五种负例均拒绝。上一步产物仅用于核定审计规则，不能代替本步证据。当前提交仍待完整 Windows CI、全部产物及评审通过，不进入 13a。
