@@ -853,3 +853,9 @@ Windows、macOS 和 WinUI3 测试项目还原通过。六份依赖图均移除 Q
 最终 Core NonUI 438、Desktop NonUI 6 项全部通过，0 失败/跳过；TRX 位于 `/tmp/syncclipboard-stage14-final-results/`，仓库报告校验器按 438/6 项验证通过。最终探针构建 0 警告/错误，探针格式检查退出 0，仓库格式检查退出 0（仅跨平台工作区加载警告），actionlint 与 diff 检查通过。
 
 三平台 Desktop CI 串行增加探针构建和相同包装命令，报告写入各自 `TestResults/desktop/quartz-job-result.json` 并随原 artifact 上传，仍保留 55 个 artifact 和五份合计 514 项的 TRX 门槛。当前仍待本阶段提交的完整 PR CI、三平台探针、所有产物及评审通过，步骤 14 未通过，不进入 15。
+
+### 步骤 14 首次 PR 与探针结构修复
+
+提交 `cf3728d2f4f3fba0345faacc5b80e9a6f76b212f` 已推送至 PR 419，[PR run 34801582104](https://github.com/Jeric-X/SyncClipboard/actions/runs/34801582104) 已确认三平台 Desktop 非 UI 测试与实际任务探针成功，其余检查仍在进行。八个既有评审线程均已解决，初次读取无新增行内反馈；当前提交的新评审尚未完成。监控 `pr419` 每 10 分钟检查当前阶段。
+
+CodeFactor 报告新增探针顶层长方法复杂度 46。已按任务拆为命名验证方法，单独封装任务执行/取消助手和严格更新调度替身；不关闭规则、不删除用例。源码比较确认全部字符串常量与 Check 表达式保留，报告 `/tmp/syncclipboard-stage14-codefactor-contract.json`。重构后构建 0 警告/错误，探针格式检查通过；实际 10 组检查、六项预取消、等待中取消及 Quartz 版本/哈希报告与重构前逐项完全相同，报告 `/tmp/syncclipboard-stage14-codefactor-jobs.json`。两项便携隔离入口负例再次通过。后续须由修复提交重新完成全部 PR 门槛，不能沿用旧 head 结果宣告当前阶段通过。
