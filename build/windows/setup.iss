@@ -45,7 +45,7 @@ ShowLanguageDialog=auto
 LanguageDetectionMethod=uilanguage
 ArchitecturesAllowed={#TargetArch}
 ArchitecturesInstallIn64BitMode={#TargetArch}
-MinVersion=10.0
+MinVersion=10.0.19041
 
 [Languages]
 Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"

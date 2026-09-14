@@ -8,41 +8,84 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class ServerConfigViewModel : ObservableObject
 {
+    // Loading saved values must not persist partial settings or invoke platform services.
+    private readonly bool _isInitializing = true;
+
     #region server properties
     [ObservableProperty]
-    private bool serverEnable;
-    partial void OnServerEnableChanged(bool value) => ServerConfig = ServerConfig with { SwitchOn = value };
+    public partial bool ServerEnable { get; set; }
+
+    partial void OnServerEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { SwitchOn = value };
+    }
 
     [ObservableProperty]
-    private bool enableHttps;
-    partial void OnEnableHttpsChanged(bool value) => ServerConfig = ServerConfig with { EnableHttps = value };
+    public partial bool EnableHttps { get; set; }
+
+    partial void OnEnableHttpsChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { EnableHttps = value };
+    }
 
     public static readonly IEnumerable<string> CertificatePemFileTypes = [".pem"];
     [ObservableProperty]
-    private string certificatePemPath = string.Empty;
-    partial void OnCertificatePemPathChanged(string value) => ServerConfig = ServerConfig with { CertificatePemPath = value };
+    public partial string CertificatePemPath { get; set; } = string.Empty;
+
+    partial void OnCertificatePemPathChanged(string value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { CertificatePemPath = value };
+    }
 
     public static readonly IEnumerable<string> CertificatePemKeyFileTypes = [".pem"];
     [ObservableProperty]
-    private string certificatePemKeyPath = string.Empty;
-    partial void OnCertificatePemKeyPathChanged(string value) => ServerConfig = ServerConfig with { CertificatePemKeyPath = value };
+    public partial string CertificatePemKeyPath { get; set; } = string.Empty;
+
+    partial void OnCertificatePemKeyPathChanged(string value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { CertificatePemKeyPath = value };
+    }
 
     [ObservableProperty]
-    private bool enableCustomConfigurationFile;
-    partial void OnEnableCustomConfigurationFileChanged(bool value) => ServerConfig = ServerConfig with { EnableCustomConfigurationFile = value };
+    public partial bool EnableCustomConfigurationFile { get; set; }
+
+    partial void OnEnableCustomConfigurationFileChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { EnableCustomConfigurationFile = value };
+    }
 
     public static readonly IEnumerable<string> CustomConfigurationFileTypes = [".json"];
     [ObservableProperty]
-    private string customConfigurationFilePath = string.Empty;
-    partial void OnCustomConfigurationFilePathChanged(string value) => ServerConfig = ServerConfig with { CustomConfigurationFilePath = value };
+    public partial string CustomConfigurationFilePath { get; set; } = string.Empty;
+
+    partial void OnCustomConfigurationFilePathChanged(string value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { CustomConfigurationFilePath = value };
+    }
 
     [ObservableProperty]
-    private uint maxHistoryCount;
-    partial void OnMaxHistoryCountChanged(uint value) => ServerConfig = ServerConfig with { MaxHistoryCount = value };
+    public partial uint MaxHistoryCount { get; set; }
+
+    partial void OnMaxHistoryCountChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { MaxHistoryCount = value };
+    }
 
     [ObservableProperty]
-    private uint historyRetentionMinutes;
-    partial void OnHistoryRetentionMinutesChanged(uint value) => ServerConfig = ServerConfig with { HistoryRetentionMinutes = value };
+    public partial uint HistoryRetentionMinutes { get; set; }
+
+    partial void OnHistoryRetentionMinutesChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ServerConfig = ServerConfig with { HistoryRetentionMinutes = value };
+    }
 
     [RelayCommand]
     private static void OpenCustomConfigDescLink()
@@ -52,9 +95,12 @@ public partial class ServerConfigViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
-    private ServerConfig serverConfig = new();
+    public partial ServerConfig ServerConfig { get; set; } = new();
+
     partial void OnServerConfigChanged(ServerConfig value)
     {
+        if (_isInitializing) return;
+
         ServerEnable = value.SwitchOn;
         EnableHttps = value.EnableHttps;
         CertificatePemPath = value.CertificatePemPath;
@@ -77,7 +123,7 @@ public partial class ServerConfigViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
-    public bool showServerPassword = false;
+    public partial bool ShowServerPassword { get; set; } = false;
 
     public string ServerConfigDescription =>
 @$"{I18n.Strings.Port}{new string('\t', int.Parse(I18n.Strings.PortTabRepeat))}: {ServerConfig.Port}
@@ -97,15 +143,16 @@ public partial class ServerConfigViewModel : ObservableObject
     {
         _configManager = configManager;
         _configManager.ListenConfig<ServerConfig>(config => ServerConfig = config);
-        serverConfig = _configManager.GetConfig<ServerConfig>();
-        serverEnable = serverConfig.SwitchOn;
-        enableHttps = serverConfig.EnableHttps;
-        certificatePemPath = serverConfig.CertificatePemPath;
-        certificatePemKeyPath = serverConfig.CertificatePemKeyPath;
-        enableCustomConfigurationFile = serverConfig.EnableCustomConfigurationFile;
-        customConfigurationFilePath = serverConfig.CustomConfigurationFilePath;
-        maxHistoryCount = serverConfig.MaxHistoryCount;
-        historyRetentionMinutes = serverConfig.HistoryRetentionMinutes;
+        ServerConfig = _configManager.GetConfig<ServerConfig>();
+        ServerEnable = ServerConfig.SwitchOn;
+        EnableHttps = ServerConfig.EnableHttps;
+        CertificatePemPath = ServerConfig.CertificatePemPath;
+        CertificatePemKeyPath = ServerConfig.CertificatePemKeyPath;
+        EnableCustomConfigurationFile = ServerConfig.EnableCustomConfigurationFile;
+        CustomConfigurationFilePath = ServerConfig.CustomConfigurationFilePath;
+        MaxHistoryCount = ServerConfig.MaxHistoryCount;
+        HistoryRetentionMinutes = ServerConfig.HistoryRetentionMinutes;
+        _isInitializing = false;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

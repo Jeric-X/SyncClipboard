@@ -1,3 +1,4 @@
+using Avalonia.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
@@ -109,7 +110,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         if (bitmap is not null)
         {
             using var stream = new MemoryStream();
-            bitmap.Save(stream);
+            bitmap.Save(stream, PngBitmapEncoderOptions.Default);
             meta.Image = ClipboardImage.TryCreateImage(stream.ToArray());
         }
     }

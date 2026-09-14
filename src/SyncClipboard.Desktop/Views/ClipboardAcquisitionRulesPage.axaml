@@ -15,13 +15,13 @@
         <vm:ClipboardAcquisitionRulesViewModel />
     </Design.DataContext>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardAcquisitionRules}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TextImageCoexistRule}">
-                    <ui:SettingsExpanderItem.Footer>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardAcquisitionRules}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.TextImageCoexistRule}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ComboBox SelectedItem="{Binding TextImageRuleSelection, Mode=TwoWay}" ItemsSource="{x:Static vm:ClipboardAcquisitionRulesViewModel.TextImageRules}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=m:TextImageRule}">
@@ -29,9 +29,9 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
     </StackPanel>
 </UserControl>

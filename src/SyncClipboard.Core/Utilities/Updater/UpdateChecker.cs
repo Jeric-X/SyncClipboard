@@ -126,9 +126,9 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         notificationManager.ShowText(stateText, I18n.Strings.CheckOnAboutPage, buttons);
     }
 
-    public Task RunAutoUpdateFlow()
+    public Task RunAutoUpdateFlow(CancellationToken cancellationToken = default)
     {
-        return SingletonTask(token => AutoUpdateFlow(true, token))(CancellationToken.None);
+        return SingletonTask(token => AutoUpdateFlow(true, token))(cancellationToken);
     }
 
     public Task RunUpdateFlow()

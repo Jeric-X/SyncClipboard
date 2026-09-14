@@ -21,7 +21,8 @@ internal partial class DiagnoseViewModel : ObservableObject
 
     private ProgramConfig _config;
     [ObservableProperty]
-    private bool autoRefresh;
+    public partial bool AutoRefresh { get; set; }
+
     partial void OnAutoRefreshChanged(bool value) => _configManager.SetConfig(_config with { DiagnosePageAutoRefresh = value });
 
     private readonly IClipboardChangingListener _clipboardListener;

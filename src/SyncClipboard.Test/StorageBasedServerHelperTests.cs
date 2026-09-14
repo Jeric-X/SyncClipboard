@@ -13,6 +13,7 @@ using System.Net;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class StorageBasedServerHelperTests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -20,7 +21,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_EmptyRemoteHashBackfillsMetadataWithoutUploadingFile()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -61,7 +62,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_MissingRemoteVersionBackfillsMetadataUnconditionally()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -105,7 +106,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_EmptyRemoteSizeBackfillsMetadata()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -146,7 +147,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_RemoteProfileChangedBeforeBackfillDoesNotOverwriteMetadata()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -195,7 +196,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_CompleteRemoteMetadataDoesNotRewriteMetadata()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -236,7 +237,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadGroupProfile_MissingTransferDataHashBackfillsVerifiedHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -274,7 +275,7 @@ public class StorageBasedServerHelperTests
     [DataRow(" ")]
     public async Task DownloadGroupProfile_MalformedTransferDataHashIsRejected(string transferDataHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -312,7 +313,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_RemoteProfileChangedDuringConditionalBackfillDoesNotOverwriteMetadata()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -361,7 +362,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadLegacyFileImageProfile_BackfillsOriginalWireType()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -399,7 +400,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadTransferredTextProfile_EmptyRemoteHashBackfillsMetadata()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -428,7 +429,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadGroupProfile_EmptyRemoteHashBackfillsMetadata()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -461,7 +462,7 @@ public class StorageBasedServerHelperTests
     [TestMethod]
     public async Task DownloadFileProfile_BackfillSnapshotFailureStillDownloadsFile()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {

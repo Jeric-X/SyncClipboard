@@ -1,3 +1,5 @@
+# Legacy reference: old project paths/toolchain; not a supported build entry point.
+# Current builds use .github/workflows/build-entry-pr.yml and build-entry.yml.
 version: 1.0.{build}
 image: Visual Studio 2022
 configuration: Release

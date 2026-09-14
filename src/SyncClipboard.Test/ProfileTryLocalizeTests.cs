@@ -6,6 +6,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileTryLocalizeTests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -48,7 +49,7 @@ public class ProfileTryLocalizeTests
     [DataRow(true)]
     public async Task SavePath_UsesPersistentDirectoryInsteadOfExistingLocalPath(bool image)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SavePath-");
         try
         {
@@ -75,7 +76,7 @@ public class ProfileTryLocalizeTests
     [TestMethod]
     public async Task Text_TryLocalizeLoadsFullTextFromValidatedFile()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-TryLocalize-");
         try
         {
@@ -103,12 +104,12 @@ public class ProfileTryLocalizeTests
         var path = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.txt");
         var profile = new GroupProfile([path], new string('A', 64));
 
-        Assert.IsFalse(await profile.TryLocalize(Path.GetTempPath(), false, TestContext.CancellationTokenSource.Token));
+        Assert.IsFalse(await profile.TryLocalize(Path.GetTempPath(), false, TestContext.CancellationToken));
         Assert.AreEqual(path, profile.Files.Single());
         Assert.AreEqual(Path.GetFileName(path), profile.DisplayText);
         Assert.AreEqual(
             path,
-            (await profile.Localize(Path.GetTempPath(), TestContext.CancellationTokenSource.Token)).FilePaths.Single());
+            (await profile.Localize(Path.GetTempPath(), TestContext.CancellationToken)).FilePaths.Single());
 
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -125,7 +126,7 @@ public class ProfileTryLocalizeTests
         try
         {
             var path = Path.Combine(directory.FullName, "file.txt");
-            await File.WriteAllTextAsync(path, "content", TestContext.CancellationTokenSource.Token);
+            await File.WriteAllTextAsync(path, "content", TestContext.CancellationToken);
             var profile = new FileProfile(path, hash: new string('A', 64));
             using var cancellation = new CancellationTokenSource();
             cancellation.Cancel();
@@ -145,7 +146,7 @@ public class ProfileTryLocalizeTests
     [DataRow(true)]
     public async Task Group_ExtractionFailurePropagatesAndPreservesOldPaths(bool clearInvalidLocalPaths)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-TryLocalize-");
         try
         {
@@ -179,7 +180,7 @@ public class ProfileTryLocalizeTests
     [DataRow(true)]
     public async Task Group_ClearedPathsAllowDownloadedArchiveToReplaceOldFiles(bool missingLocalFile)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-TryLocalize-");
         try
         {
@@ -251,7 +252,7 @@ public class ProfileTryLocalizeTests
     [DataRow(true, true)]
     public async Task FileOrImage_ClearsInvalidPathOnlyWhenRequested(bool image, bool clearInvalidLocalPaths)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-TryLocalize-");
         try
         {
@@ -285,7 +286,7 @@ public class ProfileTryLocalizeTests
     [DataRow(true)]
     public async Task Text_ClearsInvalidPathButPreservesDownloadName(bool clearInvalidLocalPaths)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-TryLocalize-");
         try
         {
@@ -318,7 +319,7 @@ public class ProfileTryLocalizeTests
     public async Task UnsupportedProfileHasNoSavePath()
     {
         var profile = new UnknownProfile();
-        Assert.IsFalse(await profile.TryLocalize(Path.GetTempPath(), false, TestContext.CancellationTokenSource.Token));
+        Assert.IsFalse(await profile.TryLocalize(Path.GetTempPath(), false, TestContext.CancellationToken));
         Assert.IsNull(profile.GetTransferDataSavePath(Path.GetTempPath()));
         Assert.IsNull(new TextProfile("inline").GetTransferDataSavePath(Path.GetTempPath()));
     }

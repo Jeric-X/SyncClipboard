@@ -224,7 +224,7 @@ internal sealed class CaretPositionProvider(ILogger logger) : ICaretPositionProv
         }
     }
 
-    private ScreenPosition? TryGetCaretFromElement(IUIAutomationElement element)
+    internal ScreenPosition? TryGetCaretFromElement(IUIAutomationElement element)
     {
         _logger.Write(Tag, $"TryGetCaretFromElement: Name='{element.CurrentName}', ClassName='{element.CurrentClassName}'");
 

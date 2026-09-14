@@ -14,11 +14,203 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: |
-          8.0.x
+        dotnet-version: 10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Restore dependencies
       run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj
 
     - name: Run Core tests
-      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore
+      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --filter TestCategory=NonUI --collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings --logger trx --results-directory TestResults/core
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install verification dependencies
+      run: python -m pip install -r build/verification/requirements.txt
+
+    - name: Verify Core test results
+      run: python build/verification/check_test_results.py TestResults/core --minimum 444
+
+    - name: Verify Core code coverage collection
+      run: python build/verification/check_code_coverage.py TestResults/core --require-package SyncClipboard.Core SyncClipboard.Shared SyncClipboard.Server.Core
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: core-test-results
+        path: TestResults/core
+
+  desktop-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025-vs2026, ubuntu-latest, macos-26]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
+    - name: Test desktop services without UI
+      run: dotnet test src/SyncClipboard.Test.Desktop -c Release --filter TestCategory=NonUI --collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings --logger trx --results-directory TestResults/desktop
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install verification dependencies
+      run: python -m pip install -r build/verification/requirements.txt
+    - name: Verify non-UI test results
+      run: python build/verification/check_test_results.py TestResults/desktop --minimum 6
+    - name: Verify desktop code coverage collection
+      run: python build/verification/check_code_coverage.py TestResults/desktop --require-package SyncClipboard.Desktop
+    - name: Build the isolated non-UI Quartz job probe
+      run: dotnet build build/verification/QuartzProbe/QuartzProbe.csproj -c Release
+    - name: Verify Quartz production jobs with temporary data
+      run: >-
+        python build/verification/quartz_jobs_smoke.py
+        --probe build/verification/QuartzProbe/bin/Release/net10.0/QuartzProbe.dll
+        --report TestResults/desktop/quartz-job-result.json
+    - name: Compile the alternative Windows entry point
+      if: runner.os == 'Windows'
+      run: dotnet build src/SyncClipboard.Desktop.Default -c Release -f net10.0-windows10.0.17763.0
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: desktop-test-results-${{ matrix.os }}
+        path: TestResults/desktop
+
+  s3-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.302
+    - uses: actions/setup-go@v7
+      with:
+        go-version: '1.26.5'
+        cache: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Build pinned MinIO test server
+      env:
+        GOBIN: ${{ runner.temp }}/s3-tools
+      run: go install github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z
+    - name: Build the non-UI S3 protocol probe
+      run: dotnet build build/verification/S3Probe/S3Probe.csproj -c Release
+    - name: Verify S3 operations and fault recovery against MinIO
+      run: >-
+        python build/verification/s3_smoke.py
+        --minio "${{ runner.temp }}/s3-tools/minio"
+        --probe build/verification/S3Probe/bin/Release/net10.0/S3Probe.dll
+        --report s3-test-result.json
+    - name: Upload S3 verification evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: s3-test-results
+        path: s3-test-result.json
+        if-no-files-found: error
+
+  image-test:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025-vs2026
+            rid: win-x86
+            platform: x86
+          - os: windows-2025-vs2026
+            rid: win-x64
+            platform: x64
+          - os: windows-11-arm
+            rid: win-arm64
+            platform: ARM64
+          - os: ubuntu-24.04
+            rid: linux-x64
+            platform: x64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+            platform: ARM64
+          - os: macos-26-intel
+            rid: osx-x64
+            platform: x64
+          - os: macos-26
+            rid: osx-arm64
+            platform: ARM64
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.302
+    - name: Show selected SDK and host architecture
+      run: dotnet --info
+    - uses: microsoft/setup-msbuild@v3
+      if: matrix.rid == 'win-x86'
+      with:
+        msbuild-architecture: x64
+    - name: Build the retained Windows x86 product
+      if: matrix.rid == 'win-x86'
+      run: msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x86 /p:RuntimeIdentifier=win-x86 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=false /v:m -restore
+    - name: Publish the native image data probe
+      run: >-
+        dotnet publish build/verification/ImageProbe/ImageProbe.csproj
+        -c Release -r ${{ matrix.rid }} -p:Platform=${{ matrix.platform }}
+        --self-contained true -o image-probe
+    - name: Verify image data and native library without UI
+      shell: bash
+      run: |
+        probe=./image-probe/ImageProbe
+        if [[ "${{ runner.os }}" == "Windows" ]]; then probe+=.exe; fi
+        "$probe" "${{ matrix.rid }}" image-test-result.json
+    - name: Upload image verification evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: image-test-results-${{ matrix.rid }}
+        path: image-test-result.json
+        if-no-files-found: error
+
+  winui-test:
+    runs-on: windows-2025-vs2026
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
+    - uses: microsoft/setup-msbuild@v3
+      with:
+        msbuild-architecture: x64
+    - name: Build WinUI tests
+      run: msbuild src\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=false /v:m -restore
+    - name: Test WinUI services without UI
+      run: dotnet test src/SyncClipboard.Test.WinUI3 -c Release --no-build --no-restore -p:Platform=x64 -p:RuntimeIdentifier=win-x64 --filter TestCategory=NonUI --collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings --logger trx --results-directory TestResults/winui
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install verification dependencies
+      run: python -m pip install -r build/verification/requirements.txt
+    - name: Verify non-UI test results
+      run: python build/verification/check_test_results.py TestResults/winui --minimum 58
+    - name: Verify WinUI product code coverage collection
+      run: python build/verification/check_code_coverage.py TestResults/winui --require-package SyncClipboard
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: winui-test-results
+        path: TestResults/winui

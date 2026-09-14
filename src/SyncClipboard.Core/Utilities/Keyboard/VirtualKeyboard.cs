@@ -1,5 +1,5 @@
-﻿using SharpHook;
-using SharpHook.Native;
+﻿using SharpHook.Data;
+using SharpHook.Simulation;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 

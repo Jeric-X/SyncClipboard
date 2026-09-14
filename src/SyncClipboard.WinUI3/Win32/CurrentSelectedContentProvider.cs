@@ -88,7 +88,7 @@ internal sealed class CurrentSelectedContentProvider(
         return null;
     }
 
-    private static string? TryGetSelectedText(IUIAutomationElement element)
+    internal static string? TryGetSelectedText(IUIAutomationElement element)
     {
         object? pattern;
         try

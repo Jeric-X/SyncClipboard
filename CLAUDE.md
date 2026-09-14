@@ -10,9 +10,11 @@ SyncClipboard is a cross-platform clipboard synchronization tool (Windows/macOS/
 
 This is a multi-platform .NET solution. The sln cannot be built as a whole (it contains platform-specific projects that fail on incompatible OS/arch). All projects use [central package management](https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management) via `src/Directory.Packages.props`. Commands below are run from the repo root unless noted.
 
+The repository selects .NET SDK 10.0.302 with `latestPatch` roll-forward in `global.json`. All product and test projects target .NET 10. Linux packaging uses PupNet 1.10.0 on .NET 10, with appimagetool 1.9.1 for AppImage and rpmbuild for RPM.
+
 ### Windows (WinUI3)
 
-WinUI3 is the primary Windows client (`net9.0-windows10.0.19041.0`). Requires the Windows App SDK — only builds on Windows. The CI uses msbuild, not dotnet CLI.
+WinUI3 is the primary Windows client (`net10.0-windows10.0.19041.0`). Requires the Windows App SDK — only builds on Windows. The CI uses msbuild, not dotnet CLI.
 
 ```bash
 # Restore
@@ -28,21 +30,21 @@ For `arm64`, swap `/p:Platform=arm64 /p:RuntimeIdentifier=win-arm64`. Set `/p:Se
 
 ### Linux (Avalonia)
 
-Linux uses `SyncClipboard.Desktop.Default` (Avalonia, `net8.0`).
+Linux uses `SyncClipboard.Desktop.Default` (Avalonia, `net10.0`).
 
 ```bash
-dotnet build src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj
+dotnet build src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csproj -f net10.0
 ```
 
 ### macOS (Avalonia)
 
-macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. CI runs from the project directory.
+macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. The application requires macOS 14 or later. Run the following commands from the repository root.
 
 ```bash
-# Restore (from src/SyncClipboard.Desktop.MacOS/)
+# Restore
 dotnet restore src/SyncClipboard.Desktop.MacOS
 
-# Publish (CI command, from src/SyncClipboard.Desktop.MacOS/)
+# Publish (same project and configuration as CI)
 dotnet publish src/SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj \
   -r osx-x64 -c Release
 ```
@@ -51,7 +53,7 @@ Replace `osx-x64` with `osx-arm64` for Apple Silicon.
 
 ### Server
 
-The standalone server is cross-platform `net8.0`.
+The standalone server is cross-platform `net10.0`.
 
 ```bash
 # Restore
@@ -88,16 +90,20 @@ dotnet test src/SyncClipboard.Test.WinUI3   # Windows only
 dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 ```
 
+For non-UI validation, run Core, Desktop and WinUI3 tests with `--filter "TestCategory=NonUI"`. These explicitly audited cases avoid desktop initialization. Keep UI-dependent tests in separate classes from class-level `NonUI` categories. The original mixed DI cases are classified `RequiresUI` and remain available for separate UI-enabled runs; their exclusion is not a passing result.
+
 Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
 
 ### Code Style
 
 ```bash
 # Check formatting (from src/ directory)
-dotnet format --verify-no-changes --severity info --no-restore
+dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnostics CS0103
 ```
 
 Rules are defined in `src/.editorconfig`.
+
+The format-only CS0103 exclusion avoids MSTest 4's migration fixer collecting missing generated names from the cross-platform design-time workspace. Do not suppress this diagnostic in builds: each platform's actual compilation must still pass. All MSTest analyzer rules remain enabled.
 
 ## Architecture
 
@@ -112,9 +118,9 @@ SyncClipboard.Core ───────────┘  — Core business logic
     ↑
 SyncClipboard.Desktop         — Shared Avalonia desktop UI: clipboard factory, views, tray icon, hotkeys
     ↑
-    ├── SyncClipboard.Desktop.Default   — Windows/Linux desktop executable (Avalonia, net8.0)
+    ├── SyncClipboard.Desktop.Default   — Windows/Linux desktop executable (Avalonia, net10.0)
     ├── SyncClipboard.Desktop.MacOS     — macOS desktop executable (Avalonia, net10.0-macos)
-    └── SyncClipboard.WinUI3            — WinUI3 native Windows executable (net9.0-windows10.0.19041.0)
+    └── SyncClipboard.WinUI3            — WinUI3 native Windows executable (net10.0-windows10.0.19041.0)
 
 SyncClipboard.Server           — Standalone server executable (wraps SyncClipboard.Server.Core)
 ```
@@ -154,7 +160,7 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 
 ## Code Conventions
 
-- Target framework: primarily `net8.0`, with `net10.0-macos` for the macOS project and `net9.0-windows10.0.19041.0` for WinUI3.
+- Target framework: all product and test projects use `net10.0`, with platform-qualified targets for macOS and Windows entry points and WinUI3 tests.
 - Nullable reference types enabled project-wide (`<Nullable>enable</Nullable>`).
 - Central package management: add/update versions only in `Directory.Packages.props`.
 - The project uses MSTest with Moq for mocking. Test data source attributes (`PlatformServiceProviderDataSource`, `SystemServiceProviderDataSource`) drive DI validation tests.

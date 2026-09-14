@@ -10,10 +10,11 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class HotkeyViewModel : ObservableObject
 {
     [ObservableProperty]
-    private ReadOnlyCollection<CommandCollectionViewModel>? commandCollections;
+    public partial ReadOnlyCollection<CommandCollectionViewModel>? CommandCollections { get; set; }
 
     [ObservableProperty]
-    private Hotkey editingHotkey = Hotkey.Nothing;
+    public partial Hotkey EditingHotkey { get; set; } = Hotkey.Nothing;
+
     partial void OnEditingHotkeyChanged(Hotkey value)
     {
         var copyHotkey = new Hotkey(OperatingSystem.IsMacOS() ? Key.Meta : Key.Ctrl, Key.C);
@@ -29,12 +30,12 @@ public partial class HotkeyViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SetHotkeyCanExecute))]
     [NotifyCanExecuteChangedFor(nameof(SetHotkeyCommand))]
-    private bool isEditingHasError = false;
+    public partial bool IsEditingHasError { get; set; } = false;
 
     public bool SetHotkeyCanExecute => !IsEditingHasError;
 
     [ObservableProperty]
-    private string editingCmdId = string.Empty;
+    public partial string EditingCmdId { get; set; } = string.Empty;
 
     [RelayCommand(CanExecute = nameof(SetHotkeyCanExecute))]
     private void SetHotkey()

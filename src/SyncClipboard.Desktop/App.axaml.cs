@@ -1,7 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
@@ -26,6 +25,7 @@ public partial class App : Application
 
     private IClassicDesktopStyleApplicationLifetime _appLife;
     public AppCore AppCore { get; private set; }
+    private bool _isExiting;
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     public App()
@@ -50,10 +50,6 @@ public partial class App : Application
 
     public override async void OnFrameworkInitializationCompleted()
     {
-        // Line below is needed to remove Avalonia data validation.
-        // Without this line you will get duplicate validations from both Avalonia and CT
-        BindingPlugins.DataValidators.RemoveAt(0);
-
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -108,9 +104,22 @@ public partial class App : Application
         };
     }
 
-    public void ExitApp()
+    public async void ExitApp()
     {
-        AppCore.Stop();
-        _appLife.Shutdown();
+        if (_isExiting)
+            return;
+        _isExiting = true;
+        try
+        {
+            await AppCore.StopAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.WriteLine($"Shutdown failed: {exception}");
+        }
+        finally
+        {
+            _appLife.Shutdown();
+        }
     }
 }

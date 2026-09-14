@@ -4,6 +4,7 @@ using SharpHook;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 using SyncClipboard.Desktop.ClipboardAva.Fingerprint;
@@ -61,7 +62,7 @@ public class AppServices
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
         services.AddTransient<IClipboardSetter<GroupProfile>, FileClipboardSetter>();
 
-        services.AddSingleton<IGlobalHook>((sp) => new SimpleGlobalHook(true));
+        services.AddSingleton<IGlobalHook>(sp => sp.GetRequiredService<SharpHookFactory>().CreateGlobalHook());
 
         services.AddTransient<IFontManager, FontManager>();
         services.AddTransient<IThreadDispatcher, ThreadDispatcher>();

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using NativeNotification;
 using NativeNotification.Interface;
 using Quartz;
-using SharpHook;
+using SharpHook.Simulation;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
@@ -48,9 +48,12 @@ namespace SyncClipboard.Core
         public ConfigManager ConfigManager { get; }
 
         private ServiceManager? ServiceManager { get; set; }
+        private readonly Lazy<Task> _stopTask;
+        private IScheduler? _scheduler;
 
         public AppCore(IServiceProvider serviceProvider)
         {
+            _stopTask = new Lazy<Task>(StopCoreAsync);
             Services = serviceProvider;
             Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
             SyncClipboardConfigRegistry.EnsureInitialized();
@@ -181,7 +184,8 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
-            Job.SetUpSchedulerJobs(Services);
+            _scheduler = Services.GetRequiredService<IScheduler>();
+            Job.SetUpSchedulerJobs(Services).GetAwaiter().GetResult();
         }
 
         private void RunStartUpCommands()
@@ -298,12 +302,33 @@ namespace SyncClipboard.Core
             }
         }
 
-        public void Stop()
+        public Task StopAsync() => _stopTask.Value;
+
+        private async Task StopCoreAsync()
         {
             NotificationManager.RomoveAllNotifications();
             ServiceManager?.StopAllService();
-            var disposable = Services as IDisposable;
-            disposable?.Dispose();
+            await StopSchedulerAndDisposeServicesAsync(Services, _scheduler);
+        }
+
+        internal static async Task StopSchedulerAndDisposeServicesAsync(IServiceProvider services, IScheduler? scheduler)
+        {
+            // Keep the calling context available, then dispose the remaining application services there.
+            if (scheduler is not null)
+                await scheduler.Shutdown(waitForJobsToComplete: true);
+            await DisposeServicesAsync(services);
+        }
+
+        internal static async Task DisposeServicesAsync(IServiceProvider services)
+        {
+            if (services is IAsyncDisposable asyncDisposable)
+            {
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            }
+            else if (services is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         public static void ConfigCommonService(IServiceCollection services)
@@ -326,7 +351,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<LoggerOption>();
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
-            services.AddSingleton<IEventSimulator, EventSimulator>();
+            services.AddSingleton<SharpHookFactory>();
+            services.AddSingleton<IEventSimulator>(sp => sp.GetRequiredService<SharpHookFactory>().CreateEventSimulator());
             services.AddTransient<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<HistorySyncer>();
@@ -343,8 +369,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IForegroundWindowMonitor>(sp => sp.GetRequiredService<ForegroundWindowMonitor>());
             services.AddTransient<ForegroundWindowCapture>();
             services.AddTransient<GithubUpdater>();
-            services.AddQuartz();
-            services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
+            services.AddQuartz(quartz => quartz.ConfigureScheduler(options =>
+                options.ShutdownJobInterruption = ShutdownJobInterruption.WhenWaitingForJobs));
             services.AddTransient<AppInstance>();
             services.AddSingleton(sp => ManagerFactory.GetNotificationManager(
                 new NativeNotificationOption

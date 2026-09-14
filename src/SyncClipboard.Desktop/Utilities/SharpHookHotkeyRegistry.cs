@@ -1,6 +1,6 @@
 ﻿using Avalonia.Threading;
 using SharpHook;
-using SharpHook.Native;
+using SharpHook.Data;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Utilities.Keyboard;
@@ -101,12 +101,12 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
     public bool RegisterForSystemHotkey(Hotkey hotkey, Action action)
     {
         CheckGlobalHook();
-        return _globalHook.IsRunning && _registedHotkeys.TryAdd(hotkey, action);
+        return _globalHook.IsRunning && _registedHotkeys.TryAdd(KeyCodeMap.NormalizeHotkey(hotkey), action);
     }
 
     public void UnRegisterForSystemHotkey(Hotkey hotkey)
     {
-        _registedHotkeys.Remove(hotkey);
+        _registedHotkeys.Remove(KeyCodeMap.NormalizeHotkey(hotkey));
     }
 
     private void CheckForMacPermission()
@@ -139,7 +139,7 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
                 return;
 
             CheckForMacPermission();
-            Task.Run(_globalHook.Run).ContinueWith(task =>
+            Task.Run(() => _globalHook.Run()).ContinueWith(task =>
             {
                 _globalHookRunEvent.Set();
             }, TaskContinuationOptions.NotOnRanToCompletion);

@@ -22,7 +22,7 @@ public class HistoryTransferQueue : IDisposable
     private readonly Queue<TransferTask> _pendingTasks = new();
     private readonly ConcurrentDictionary<string, TransferTask> _activeTasks = new();
     public readonly SemaphoreSlim ActiveTaskAddMutex = new(1, 1);
-    private readonly object _queueLock = new();
+    private readonly Lock _queueLock = new();
 
     // 并发控制
     private readonly SemaphoreSlim _workerSemaphore = new(4, 4); // 并行度=4

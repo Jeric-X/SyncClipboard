@@ -2,6 +2,20 @@ namespace SyncClipboard.Shared.Utilities;
 
 public static class FileSys
 {
+    public static void DeleteFileSystemEntries(IEnumerable<FileSystemInfo> entries, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        foreach (var entry in entries)
+        {
+            token.ThrowIfCancellationRequested();
+            // Delete directory links themselves without traversing their targets.
+            if (entry is DirectoryInfo directory && (entry.Attributes & FileAttributes.ReparsePoint) == 0)
+                DeleteFileSystemEntries(directory.EnumerateFileSystemInfos(), token);
+            token.ThrowIfCancellationRequested();
+            entry.Delete();
+        }
+    }
+
     public static Task<bool> FileExistsAsync(string path)
     {
         return Task.Run(() => File.Exists(path));

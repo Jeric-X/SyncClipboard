@@ -23,13 +23,26 @@ public partial class NetworkRuleEditor : ObservableObject
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
 
-    [ObservableProperty] private string name = string.Empty;
-    [ObservableProperty] private bool enabled = true;
-    [ObservableProperty] private DisplayedAccountConfig? targetAccount;
-    [ObservableProperty] private NetworkOption<NetworkRuleMatchMode> selectedMatchMode = NetworkAccountSwitchViewModel.MatchModes[0];
-    [ObservableProperty] private NetworkInterfaceChoice? selectedInterface;
-    [ObservableProperty] private string wifiText = string.Empty;
-    [ObservableProperty] private string ipText = string.Empty;
+    [ObservableProperty]
+    public partial string Name { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool Enabled { get; set; } = true;
+
+    [ObservableProperty]
+    public partial DisplayedAccountConfig? TargetAccount { get; set; }
+
+    [ObservableProperty]
+    public partial NetworkOption<NetworkRuleMatchMode> SelectedMatchMode { get; set; } = NetworkAccountSwitchViewModel.MatchModes[0];
+
+    [ObservableProperty]
+    public partial NetworkInterfaceChoice? SelectedInterface { get; set; }
+
+    [ObservableProperty]
+    public partial string WifiText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string IpText { get; set; } = string.Empty;
 
     public override string ToString() => string.IsNullOrWhiteSpace(Name) ? Strings.AddRule : Name;
 }
@@ -56,17 +69,35 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     private bool _autoSaveEnabled;
     private bool _active;
 
-    [ObservableProperty] private bool enabled;
-    [ObservableProperty] private bool notifyOnChange = true;
-    [ObservableProperty] private NetworkOption<NetworkNoMatchAction> selectedNoMatchAction = NoMatchActions[0];
-    [ObservableProperty] private DisplayedAccountConfig? defaultAccount;
-    [ObservableProperty] private NetworkRuleEditor? selectedRule;
-    [ObservableProperty] private string statusText = Strings.Disabled;
-    [ObservableProperty] private string wifiPermissionStatusText = Strings.WifiNotRequested;
-    [ObservableProperty] private string wifiPermissionButtonText = Strings.RequestPermission;
-    [ObservableProperty] private bool canRequestWifiAccess = true;
-    [ObservableProperty] private bool canOpenWifiSettings;
+    [ObservableProperty]
+    public partial bool Enabled { get; set; }
 
+    [ObservableProperty]
+    public partial bool NotifyOnChange { get; set; } = true;
+
+    [ObservableProperty]
+    public partial NetworkOption<NetworkNoMatchAction> SelectedNoMatchAction { get; set; } = NoMatchActions[0];
+
+    [ObservableProperty]
+    public partial DisplayedAccountConfig? DefaultAccount { get; set; }
+
+    [ObservableProperty]
+    public partial NetworkRuleEditor? SelectedRule { get; set; }
+
+    [ObservableProperty]
+    public partial string StatusText { get; set; } = Strings.Disabled;
+
+    [ObservableProperty]
+    public partial string WifiPermissionStatusText { get; set; } = Strings.WifiNotRequested;
+
+    [ObservableProperty]
+    public partial string WifiPermissionButtonText { get; set; } = Strings.RequestPermission;
+
+    [ObservableProperty]
+    public partial bool CanRequestWifiAccess { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool CanOpenWifiSettings { get; set; }
     public ObservableCollection<DisplayedAccountConfig> Accounts { get; } = [];
     public ObservableCollection<NetworkInterfaceChoice> Interfaces { get; } = [];
     public ObservableCollection<NetworkRuleEditor> Rules { get; } = [];

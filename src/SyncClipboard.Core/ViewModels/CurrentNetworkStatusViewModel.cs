@@ -29,9 +29,11 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
     private readonly IThreadDispatcher _dispatcher;
     private bool _active;
 
-    [ObservableProperty] private string summaryText = Strings.NoNetworkConnections;
-    [ObservableProperty] private bool showEmptyState = true;
+    [ObservableProperty]
+    public partial string SummaryText { get; set; } = Strings.NoNetworkConnections;
 
+    [ObservableProperty]
+    public partial bool ShowEmptyState { get; set; } = true;
     public ObservableCollection<NetworkConnectionStatusItem> Connections { get; } = [];
 
     public CurrentNetworkStatusViewModel(NetworkAccountSwitchService service, IThreadDispatcher dispatcher)

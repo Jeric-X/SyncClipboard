@@ -17,7 +17,8 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
-    private bool isEnabled;
+    public partial bool IsEnabled { get; set; }
+
     partial void OnIsEnabledChanged(bool value)
     {
         if (!_isLoading)
@@ -27,14 +28,13 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private bool isCapturing;
+    public partial bool IsCapturing { get; set; }
 
     [ObservableProperty]
-    private string captureHint = string.Empty;
+    public partial string CaptureHint { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool isSystemHotkeysSuspended;
-
+    public partial bool IsSystemHotkeysSuspended { get; set; }
     public ObservableCollection<EditableWindowInfo> BlackList { get; } = [];
 
     public event Action<WindowInfo>? WindowCaptured;

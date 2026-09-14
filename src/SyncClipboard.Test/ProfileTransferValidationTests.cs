@@ -7,6 +7,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileTransferValidationTests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -14,7 +15,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task FilePrepareTransferData_FileChangedAfterVerifiedSetThrows()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -43,7 +44,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task FilePrepareTransferData_WrapsReadFailureButPropagatesCancellation()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -77,7 +78,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task ImagePrepareTransferData_FileChangedAfterHashThrows()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -104,7 +105,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task TextPrepareTransferData_TransferFileChangedAfterHashThrows()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -127,7 +128,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task TextPrepareTransferData_InlineTextDiffersFromStoredHashThrows()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var expectedHash = await new TextProfile("before").GetHash(token);
         var profile = new TextProfile(new ProfilePersistentInfo
         {
@@ -144,7 +145,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task TextIsLocalDataValid_InlineTextDiffersFromStoredHashReturnsFalse()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var expectedHash = await new TextProfile("before").GetHash(token);
         var profile = new TextProfile(new ProfilePersistentInfo
         {
@@ -163,7 +164,7 @@ public class ProfileTransferValidationTests
     [DataRow("mismatched", false)]
     public async Task TextIsLocalDataValid_ValidatesRemoteInlineText(string hashKind, bool expectedValid)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         const string text = "remote inline text";
         var actualHash = await Utility.CalculateSHA256(text, token);
         var declaredHash = hashKind switch
@@ -197,7 +198,7 @@ public class ProfileTransferValidationTests
     [DataRow(true)]
     public async Task TextIsLocalDataValid_FallsBackToFileWhenInMemoryHashDoesNotMatch(bool validFile)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -223,7 +224,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task FileTransferDataHash_EqualsFileContentHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -246,7 +247,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task SetTransferData_UnverifiedProfilesAttachFilesWithoutHashing()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -286,7 +287,7 @@ public class ProfileTransferValidationTests
     [DataRow(ProfileType.Text)]
     public async Task Persist_DoesNotValidateTransferData(ProfileType type)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -327,7 +328,7 @@ public class ProfileTransferValidationTests
     [TestMethod]
     public async Task LongTextTransferDataHash_EqualsProfileHashAndPersists()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {

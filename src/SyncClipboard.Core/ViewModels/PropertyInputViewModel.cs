@@ -5,34 +5,34 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class PropertyInputViewModel : ObservableObject
 {
     [ObservableProperty]
-    private string propertyName = "";
+    public partial string PropertyName { get; set; } = "";
 
     [ObservableProperty]
-    private string displayName = "";
+    public partial string DisplayName { get; set; } = "";
 
     [ObservableProperty]
-    private Type? propertyType;
+    public partial Type? PropertyType { get; set; }
 
     [ObservableProperty]
-    private PropertyInputType inputType = PropertyInputType.Text;
+    public partial PropertyInputType InputType { get; set; } = PropertyInputType.Text;
 
     [ObservableProperty]
-    private string value = "";
+    public partial string Value { get; set; } = "";
 
     [ObservableProperty]
-    private bool boolValue = false;
+    public partial bool BoolValue { get; set; } = false;
 
     [ObservableProperty]
-    private double numericValue = 0.0;
+    public partial double NumericValue { get; set; } = 0.0;
 
     [ObservableProperty]
-    private string? errorMessage;
+    public partial string? ErrorMessage { get; set; }
 
     [ObservableProperty]
-    private string? description;
+    public partial string? Description { get; set; }
 
     [ObservableProperty]
-    private string? watermark;
+    public partial string? Watermark { get; set; }
 
     public bool IsText => InputType == PropertyInputType.Text;
     public bool IsPassword => InputType == PropertyInputType.Password;

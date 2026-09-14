@@ -3,6 +3,7 @@ using SyncClipboard.Core.Utilities.Runner;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class SingletonTaskTest
 {
     public TestContext TestContext { get; set; } = null!;
@@ -33,10 +34,10 @@ public class SingletonTaskTest
         });
 
         var runningTask = singletonTask.Run();
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
 
         singletonTask.Cancel();
 
-        await runningTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        await runningTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
     }
 }

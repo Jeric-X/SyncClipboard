@@ -30,7 +30,15 @@ class Program
             var path = Path.Combine(Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
             File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
             App.Current?.Logger?.Write($"UnhandledException {e.GetType()} {e.Message} \n {e.StackTrace}");
-            App.Current?.AppCore?.Stop();
+            // The event loop has already failed; cleanup must not wait indefinitely for dispatcher work.
+            try
+            {
+                App.Current?.AppCore?.StopAsync().Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception shutdownException)
+            {
+                System.Diagnostics.Trace.WriteLine($"Shutdown after an unhandled exception failed: {shutdownException}");
+            }
         }
     }
 

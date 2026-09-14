@@ -15,16 +15,16 @@ public partial class FileSyncFilterSettingPage : UserControl
         _viewModel = App.Current.Services.GetRequiredService<FileSyncFilterSettingViewModel>();
         DataContext = _viewModel;
         InitializeComponent();
-        AddHandler(Frame.NavigatedToEvent, OnNavigatedTo, RoutingStrategies.Direct);
-        AddHandler(Frame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedToEvent, OnNavigatedTo, RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
     }
 
-    private void OnNavigatedFrom(object? sender, NavigationEventArgs e)
+    private void OnNavigatedFrom(object? sender, FANavigationEventArgs e)
     {
         App.Current.MainWindow.EnableScrollViewer();
     }
 
-    private void OnNavigatedTo(object? sender, NavigationEventArgs e)
+    private void OnNavigatedTo(object? sender, FANavigationEventArgs e)
     {
         App.Current.MainWindow.DispableScrollViewer();
     }
@@ -34,7 +34,7 @@ public partial class FileSyncFilterSettingPage : UserControl
         var editor = FileSyncFilterSettingViewModel.CreateRuleEditor();
         var dialog = new FileFilterRuleEditDialog(editor);
         var result = await dialog.ShowAsync(App.Current.MainWindow);
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             _viewModel.AddItem(editor.ToRule());
         }
@@ -50,7 +50,7 @@ public partial class FileSyncFilterSettingPage : UserControl
         var editor = FileSyncFilterSettingViewModel.CreateRuleEditor(item.ToRule());
         var dialog = new FileFilterRuleEditDialog(editor);
         var result = await dialog.ShowAsync(App.Current.MainWindow);
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             _viewModel.UpdateItem(item, editor.ToRule());
         }

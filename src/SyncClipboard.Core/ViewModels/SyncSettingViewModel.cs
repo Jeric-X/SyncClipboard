@@ -14,6 +14,9 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SyncSettingViewModel : ObservableObject
 {
+    // Preserve saved values until every setting has been loaded.
+    private readonly bool _isInitializing = true;
+
     #region account management
     private static readonly DisplayedAccountConfig NoAccountOption = new()
     {
@@ -23,25 +26,27 @@ public partial class SyncSettingViewModel : ObservableObject
     };
 
     [ObservableProperty]
-    private DisplayedAccountConfig? selectedAccount;
+    public partial DisplayedAccountConfig? SelectedAccount { get; set; }
 
     [ObservableProperty]
-    private bool isLoggedIn = false;
+    public partial bool IsLoggedIn { get; set; } = false;
 
     [ObservableProperty]
-    private bool hasMultipleAccounts = false;
+    public partial bool HasMultipleAccounts { get; set; } = false;
 
     [ObservableProperty]
-    private bool showQueryInterval = false;
+    public partial bool ShowQueryInterval { get; set; } = false;
 
     [ObservableProperty]
-    private string accountAutoSwitchDescription = Strings.Disabled;
+    public partial string AccountAutoSwitchDescription { get; set; } = Strings.Disabled;
 
     [ObservableProperty]
-    private bool accountAutoSwitchEnabled;
+    public partial bool AccountAutoSwitchEnabled { get; set; }
 
     partial void OnAccountAutoSwitchEnabledChanged(bool value)
     {
+        if (_isInitializing) return;
+
         var config = _configManager.GetConfig<NetworkAccountSwitchConfig>();
         if (config.Enabled != value)
         {
@@ -206,73 +211,156 @@ public partial class SyncSettingViewModel : ObservableObject
 
     #region client
     [ObservableProperty]
-    private bool syncEnable;
-    partial void OnSyncEnableChanged(bool value) => ClientConfig = ClientConfig with { SyncSwitchOn = value };
+    public partial bool SyncEnable { get; set; }
+
+    partial void OnSyncEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { SyncSwitchOn = value };
+    }
 
     [ObservableProperty]
-    private uint intervalTime;
-    partial void OnIntervalTimeChanged(uint value) => ClientConfig = ClientConfig with { IntervalTime = value };
+    public partial uint IntervalTime { get; set; }
+
+    partial void OnIntervalTimeChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { IntervalTime = value };
+    }
 
     [ObservableProperty]
-    private uint retryTimes;
-    partial void OnRetryTimesChanged(uint value) => ClientConfig = ClientConfig with { RetryTimes = value };
+    public partial uint RetryTimes { get; set; }
+
+    partial void OnRetryTimesChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { RetryTimes = value };
+    }
 
     [ObservableProperty]
-    private uint timeOut;
-    partial void OnTimeOutChanged(uint value) => ClientConfig = ClientConfig with { TimeOut = value };
+    public partial uint TimeOut { get; set; }
+
+    partial void OnTimeOutChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { TimeOut = value };
+    }
 
     [ObservableProperty]
-    private uint maxFileSize;
-    partial void OnMaxFileSizeChanged(uint value) => ClientConfig = ClientConfig with { MaxFileByte = value * 1024 * 1024 };
+    public partial uint MaxFileSize { get; set; }
+
+    partial void OnMaxFileSizeChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { MaxFileByte = value * 1024 * 1024 };
+    }
 
     [ObservableProperty]
-    private bool notifyOnDownloaded;
-    partial void OnNotifyOnDownloadedChanged(bool value) => ClientConfig = ClientConfig with { NotifyOnDownloaded = value };
+    public partial bool NotifyOnDownloaded { get; set; }
+
+    partial void OnNotifyOnDownloadedChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { NotifyOnDownloaded = value };
+    }
 
     [ObservableProperty]
-    private bool notifyOnManualUpload;
-    partial void OnNotifyOnManualUploadChanged(bool value) => ClientConfig = ClientConfig with { NotifyOnManualUpload = value };
+    public partial bool NotifyOnManualUpload { get; set; }
+
+    partial void OnNotifyOnManualUploadChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { NotifyOnManualUpload = value };
+    }
 
     [ObservableProperty]
-    private bool doNotUploadWhenCut;
-    partial void OnDoNotUploadWhenCutChanged(bool value) => ClientConfig = ClientConfig with { DoNotUploadWhenCut = value };
+    public partial bool DoNotUploadWhenCut { get; set; }
+
+    partial void OnDoNotUploadWhenCutChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { DoNotUploadWhenCut = value };
+    }
 
     [ObservableProperty]
-    private bool ignoreExcludeForSyncSuggestion;
-    partial void OnIgnoreExcludeForSyncSuggestionChanged(bool value) => ClientConfig = ClientConfig with { IgnoreExcludeForSyncSuggestion = value };
+    public partial bool IgnoreExcludeForSyncSuggestion { get; set; }
+
+    partial void OnIgnoreExcludeForSyncSuggestionChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { IgnoreExcludeForSyncSuggestion = value };
+    }
 
     [ObservableProperty]
-    private bool notifyFileSyncProgress;
-    partial void OnNotifyFileSyncProgressChanged(bool value) => ClientConfig = ClientConfig with { NotifyFileSyncProgress = value };
+    public partial bool NotifyFileSyncProgress { get; set; }
+
+    partial void OnNotifyFileSyncProgressChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { NotifyFileSyncProgress = value };
+    }
 
     [ObservableProperty]
-    private bool uploadEnable;
-    partial void OnUploadEnableChanged(bool value) => ClientConfig = ClientConfig with { PushSwitchOn = value };
+    public partial bool UploadEnable { get; set; }
+
+    partial void OnUploadEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { PushSwitchOn = value };
+    }
 
     [ObservableProperty]
-    private bool downloadEnable;
-    partial void OnDownloadEnableChanged(bool value) => ClientConfig = ClientConfig with { PullSwitchOn = value };
+    public partial bool DownloadEnable { get; set; }
+
+    partial void OnDownloadEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { PullSwitchOn = value };
+    }
 
     [ObservableProperty]
-    private bool textEnable;
-    partial void OnTextEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadText = value };
+    public partial bool TextEnable { get; set; }
+
+    partial void OnTextEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { EnableUploadText = value };
+    }
 
     [ObservableProperty]
-    private bool imageEnable;
-    partial void OnImageEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadImage = value };
+    public partial bool ImageEnable { get; set; }
+
+    partial void OnImageEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { EnableUploadImage = value };
+    }
 
     [ObservableProperty]
-    private bool singleFileEnable;
-    partial void OnSingleFileEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadSingleFile = value };
+    public partial bool SingleFileEnable { get; set; }
+
+    partial void OnSingleFileEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { EnableUploadSingleFile = value };
+    }
 
     [ObservableProperty]
-    private bool multiFileEnable;
-    partial void OnMultiFileEnableChanged(bool value) => ClientConfig = ClientConfig with { EnableUploadMultiFile = value };
+    public partial bool MultiFileEnable { get; set; }
+
+    partial void OnMultiFileEnableChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClientConfig = ClientConfig with { EnableUploadMultiFile = value };
+    }
 
     [ObservableProperty]
-    private SyncConfig clientConfig;
+    public partial SyncConfig ClientConfig { get; set; }
+
     partial void OnClientConfigChanged(SyncConfig value)
     {
+        if (_isInitializing) return;
+
         IntervalTime = value.IntervalTime;
         RetryTimes = value.RetryTimes;
         SyncEnable = value.SyncSwitchOn;
@@ -323,15 +411,18 @@ public partial class SyncSettingViewModel : ObservableObject
     public bool IsLinux { get; } = OperatingSystem.IsLinux();
 
     [ObservableProperty]
-    private bool wlClipboardEnabled;
+    public partial bool WlClipboardEnabled { get; set; }
+
     partial void OnWlClipboardEnabledChanged(bool value) => UpdateProhibitSource("wl-clipboard", value);
 
     [ObservableProperty]
-    private bool xClipEnabled;
+    public partial bool XClipEnabled { get; set; }
+
     partial void OnXClipEnabledChanged(bool value) => UpdateProhibitSource("xclip", value);
 
     [ObservableProperty]
-    private bool avaloniaEnabled;
+    public partial bool AvaloniaEnabled { get; set; }
+
     partial void OnAvaloniaEnabledChanged(bool value) => UpdateProhibitSource("Avalonia", value);
 
     private void UpdateProhibitSource(string sourceName, bool enabled)
@@ -397,27 +488,27 @@ public partial class SyncSettingViewModel : ObservableObject
         _configManager.ListenConfig<NetworkAccountSwitchConfig>(OnNetworkAccountSwitchConfigChanged);
         _accountManager.SavedAccountsChanged += OnSavedAccountsChanged;
         _accountManager.CurrentAccountChanged += OnCurrentAccountChanged;
-        accountAutoSwitchEnabled = _configManager.GetConfig<NetworkAccountSwitchConfig>().Enabled;
-        accountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
+        AccountAutoSwitchEnabled = _configManager.GetConfig<NetworkAccountSwitchConfig>().Enabled;
+        AccountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
+        ClientConfig = _configManager.GetConfig<SyncConfig>();
+        IntervalTime = ClientConfig.IntervalTime;
+        RetryTimes = ClientConfig.RetryTimes;
+        SyncEnable = ClientConfig.SyncSwitchOn;
+        TimeOut = ClientConfig.TimeOut;
+        MaxFileSize = ClientConfig.MaxFileByte / 1024 / 1024;
+        NotifyOnDownloaded = ClientConfig.NotifyOnDownloaded;
+        NotifyOnManualUpload = ClientConfig.NotifyOnManualUpload;
+        DoNotUploadWhenCut = ClientConfig.DoNotUploadWhenCut;
+        IgnoreExcludeForSyncSuggestion = ClientConfig.IgnoreExcludeForSyncSuggestion;
+        NotifyFileSyncProgress = ClientConfig.NotifyFileSyncProgress;
+        UploadEnable = ClientConfig.PushSwitchOn;
+        DownloadEnable = ClientConfig.PullSwitchOn;
+        TextEnable = ClientConfig.EnableUploadText;
+        ImageEnable = ClientConfig.EnableUploadImage;
+        SingleFileEnable = ClientConfig.EnableUploadSingleFile;
+        MultiFileEnable = ClientConfig.EnableUploadMultiFile;
 
-        clientConfig = _configManager.GetConfig<SyncConfig>();
-        intervalTime = clientConfig.IntervalTime;
-        retryTimes = clientConfig.RetryTimes;
-        syncEnable = clientConfig.SyncSwitchOn;
-        timeOut = clientConfig.TimeOut;
-        maxFileSize = clientConfig.MaxFileByte / 1024 / 1024;
-        notifyOnDownloaded = clientConfig.NotifyOnDownloaded;
-        notifyOnManualUpload = clientConfig.NotifyOnManualUpload;
-        doNotUploadWhenCut = clientConfig.DoNotUploadWhenCut;
-        ignoreExcludeForSyncSuggestion = clientConfig.IgnoreExcludeForSyncSuggestion;
-        notifyFileSyncProgress = clientConfig.NotifyFileSyncProgress;
-        uploadEnable = clientConfig.PushSwitchOn;
-        downloadEnable = clientConfig.PullSwitchOn;
-        textEnable = clientConfig.EnableUploadText;
-        imageEnable = clientConfig.EnableUploadImage;
-        singleFileEnable = clientConfig.EnableUploadSingleFile;
-        multiFileEnable = clientConfig.EnableUploadMultiFile;
-
+        _isInitializing = false;
         LoadClipboardFactoryConfig(_configManager.GetConfig<ClipboardFactoryConfig>());
 
         LoadSavedAccounts();

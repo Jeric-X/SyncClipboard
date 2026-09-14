@@ -21,7 +21,7 @@ public partial class ProxySettingViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EnableCustomAddress))]
-    public LocaleString<ProxyType> type;
+    public partial LocaleString<ProxyType> Type { get; set; }
     public string Address { get; set; }
 
     public bool EnableCustomAddress => Type.Key == ProxyType.Custom;
@@ -31,7 +31,7 @@ public partial class ProxySettingViewModel : ObservableObject
         this.configManager = configManager;
 
         var config = configManager.GetConfig<ProxyConfig>();
-        type = Types.Match(config.Type);
+        Type = Types.Match(config.Type);
         Address = config.Address;
     }
 

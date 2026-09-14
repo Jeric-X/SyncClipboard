@@ -7,22 +7,43 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class CliboardAssistantViewModel : ObservableObject
 {
-    [ObservableProperty]
-    private bool easyCopyImageSwitchOn;
-    partial void OnEasyCopyImageSwitchOnChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { EasyCopyImageSwitchOn = value };
+    // Loading saved values must not persist partial settings or invoke platform services.
+    private readonly bool _isInitializing = true;
 
     [ObservableProperty]
-    private bool downloadWebImage;
-    partial void OnDownloadWebImageChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { DownloadWebImage = value };
+    public partial bool EasyCopyImageSwitchOn { get; set; }
+
+    partial void OnEasyCopyImageSwitchOnChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClipboardAssistConfig = ClipboardAssistConfig with { EasyCopyImageSwitchOn = value };
+    }
 
     [ObservableProperty]
-    private bool convertSwitchOn;
-    partial void OnConvertSwitchOnChanged(bool value) => ClipboardAssistConfig = ClipboardAssistConfig with { ConvertSwitchOn = value };
+    public partial bool DownloadWebImage { get; set; }
+
+    partial void OnDownloadWebImageChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClipboardAssistConfig = ClipboardAssistConfig with { DownloadWebImage = value };
+    }
 
     [ObservableProperty]
-    private ClipboardAssistConfig clipboardAssistConfig;
+    public partial bool ConvertSwitchOn { get; set; }
+
+    partial void OnConvertSwitchOnChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ClipboardAssistConfig = ClipboardAssistConfig with { ConvertSwitchOn = value };
+    }
+
+    [ObservableProperty]
+    public partial ClipboardAssistConfig ClipboardAssistConfig { get; set; }
+
     partial void OnClipboardAssistConfigChanged(ClipboardAssistConfig value)
     {
+        if (_isInitializing) return;
+
         EasyCopyImageSwitchOn = value.EasyCopyImageSwitchOn;
         DownloadWebImage = value.DownloadWebImage;
         ConvertSwitchOn = value.ConvertSwitchOn;
@@ -44,9 +65,10 @@ public partial class CliboardAssistantViewModel : ObservableObject
         _mainVM = mainVM;
 
         _configManager.ListenConfig<ClipboardAssistConfig>(config => ClipboardAssistConfig = config);
-        clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
-        easyCopyImageSwitchOn = clipboardAssistConfig.EasyCopyImageSwitchOn;
-        downloadWebImage = clipboardAssistConfig.DownloadWebImage;
-        convertSwitchOn = clipboardAssistConfig.ConvertSwitchOn;
+        ClipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
+        EasyCopyImageSwitchOn = ClipboardAssistConfig.EasyCopyImageSwitchOn;
+        DownloadWebImage = ClipboardAssistConfig.DownloadWebImage;
+        ConvertSwitchOn = ClipboardAssistConfig.ConvertSwitchOn;
+        _isInitializing = false;
     }
 }

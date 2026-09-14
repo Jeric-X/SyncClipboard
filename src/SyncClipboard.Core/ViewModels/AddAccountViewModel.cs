@@ -25,13 +25,13 @@ public partial class AddAccountViewModel : ObservableObject
     public ObservableCollection<string> LoginTypes { get; } = [];
 
     [ObservableProperty]
-    private string selectedType = "";
+    public partial string SelectedType { get; set; } = "";
 
     [ObservableProperty]
-    private string configurationPageName = "";
+    public partial string ConfigurationPageName { get; set; } = "";
 
     [ObservableProperty]
-    private NavigationInfoType navigationInfo = new("", "");
+    public partial NavigationInfoType NavigationInfo { get; set; } = new("", "");
 
     partial void OnSelectedTypeChanged(string value)
     {

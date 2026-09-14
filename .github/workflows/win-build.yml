@@ -35,8 +35,10 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: |
-          9.0.x
+        dotnet-version: 10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
@@ -60,7 +62,7 @@ jobs:
         /v:m -restore
 
     - name: copy SyncClipboard.WinUI3
-      run: xcopy src\SyncClipboard.WinUI3\bin\${{ matrix.cpu }}\Release\net9.0-windows10.0.19041.0\win-${{ matrix.cpu }} WinUI3\ /s /e
+      run: xcopy src\SyncClipboard.WinUI3\bin\${{ matrix.cpu }}\Release\net10.0-windows10.0.19041.0\win-${{ matrix.cpu }} WinUI3\ /s /e
 
     - name: set update info
       shell: bash

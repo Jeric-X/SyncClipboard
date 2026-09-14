@@ -1,4 +1,4 @@
-﻿using SharpHook.Native;
+﻿using SharpHook.Data;
 using SyncClipboard.Core.Models.Keyboard;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
@@ -84,7 +84,7 @@ public static class KeyCodeMap
         [KeyCode.VcPeriod] = Key.Period,
         [KeyCode.VcSlash] = Key.Slash,
         [KeyCode.VcSpace] = Key.Space,
-        [KeyCode.Vc102] = Key.OEM_102,
+        [KeyCode.VcSection] = Key.OEM_102,
         [KeyCode.VcMisc] = Key.OEM_8,
         [KeyCode.VcPrintScreen] = Key.PrintScreen,
         [KeyCode.VcScrollLock] = Key.Scroll,
@@ -161,8 +161,6 @@ public static class KeyCodeMap
         [KeyCode.VcKatakana] = Key.Katakana,
         [KeyCode.VcHiragana] = Key.Hiragana,
         [KeyCode.VcKana] = Key.Kana,
-        [KeyCode.VcKanji] = Key.Kanji,
-        [KeyCode.VcHangul] = Key.Hangul,
         [KeyCode.VcJunja] = Key.Junja,
         [KeyCode.VcFinal] = Key.Final,
         [KeyCode.VcHanja] = Key.Hanja,
@@ -179,7 +177,23 @@ public static class KeyCodeMap
         [KeyCode.VcJpComma] = Key.JpComma
     };
 
-    public static readonly Dictionary<Key, KeyCode> MapReverse = Reverse(Map);
+    public static readonly Dictionary<Key, KeyCode> MapReverse = CreateReverseMap();
+
+    // SharpHook 8 merges these physical key codes; keep persisted Key names unchanged.
+    public static Hotkey NormalizeHotkey(Hotkey hotkey) => new(hotkey.Keys.Select(key => key switch
+    {
+        Key.Kanji => Key.Hanja,
+        Key.Hangul => Key.Kana,
+        _ => key
+    }));
+
+    private static Dictionary<Key, KeyCode> CreateReverseMap()
+    {
+        var map = Reverse(Map);
+        map[Key.Kanji] = KeyCode.VcHanja;
+        map[Key.Hangul] = KeyCode.VcKana;
+        return map;
+    }
 
     private static Dictionary<TV, TK> Reverse<TK, TV>(Dictionary<TK, TV> oldDict) where TV : notnull where TK : notnull
     {

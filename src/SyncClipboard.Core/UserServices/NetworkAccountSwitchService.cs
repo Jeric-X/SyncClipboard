@@ -27,7 +27,7 @@ public sealed class NetworkAccountSwitchService(
     private readonly SemaphoreSlim _evaluationLock = new(1, 1);
     private readonly AsyncLatestWinsDebouncer _debouncer = new();
     private readonly NetworkAccountSwitchRuntimeState _runtimeState = new();
-    private readonly object _monitoringLock = new();
+    private readonly Lock _monitoringLock = new();
 
     private NetworkAccountSwitchConfig _config = configManager.GetConfig<NetworkAccountSwitchConfig>();
     private EventHandler? _statusChanged;

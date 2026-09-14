@@ -63,7 +63,8 @@ public class Program
             try
             {
                 File.Copy(defaultAppSettingsPath, targetAppSettingsPath);
-                configurationManager.AddJsonFile(targetAppSettingsPath);
+                // Load the new file without overriding environment or command-line providers.
+                ((IConfigurationRoot)configurationManager).Reload();
                 Console.WriteLine($"Copied default appsettings.json to {targetAppSettingsPath}");
             }
             catch (Exception ex)

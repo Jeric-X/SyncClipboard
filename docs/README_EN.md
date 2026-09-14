@@ -70,7 +70,7 @@ Clients and servers v3.1.1 and above are incompatible with previous versions. Al
 
 ## Server
 ### Standalone Server
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Run with:
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
@@ -192,6 +192,11 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 </details>
 
 ### Windows
+
+Requires Windows 10 2004 (build 19041) or later and an OS edition/version on the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md). Choose the x64 or arm64 package matching your system.
+
+Packages with `no-dotnet-runtime` in the filename require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture. Packages with `no-win-app-sdk` require the [Windows App SDK 2.4 Runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads). Both runtimes are required when both markers appear; packages without a marker bundle the corresponding runtime.
+
 #### Installer
 
 Download the exe installer starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click to run the installer and it will be ready to use.
@@ -201,10 +206,12 @@ Download the exe installer starting with `SyncClipboard_win_` from the [Release]
 Download the zip file starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Extract it and run `SyncClipboard.exe`.
 
 #### Troubleshooting
-- The minimum supported OS version is Windows 10 2004.
 - If the interface icons are displayed incorrectly on Windows 10, download and install the Microsoft [Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons) font.
 
 ### macOS
+
+Requires macOS 14 or later. Choose arm64 for Apple Silicon or x64 for Intel Macs; these packages include the .NET runtime. [.NET 10 currently supports macOS 14, 15 and 26](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md). [Avalonia lists macOS 26 as Tier 1 and 14/15 as Tier 2](https://docs.avaloniaui.net/docs/supported-platforms).
+
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
 
@@ -216,6 +223,10 @@ Download the installation package starting with `SyncClipboard_macos_` from the 
 ### Linux
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_linux_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page.
+
+Desktop packages with `no-dotnet-runtime` in the filename require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture, which includes the .NET runtime. Other packages bundle the runtime. The Linux x64/arm64 desktop client requires glibc 2.38 or later (required by the bundled SharpHook 8 native libraries), OpenSSL 1.1.1 or later, and the X11, XTest, Xt, Xrandr and xkbcommon native libraries. Your distribution must also be on the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md); meeting the .NET runtime's minimum glibc version alone is insufficient for the desktop client. These SharpHook requirements do not apply to the standalone server.
+
+Hotkeys and copy/paste simulation continue to use SharpHook's XRecord backend. Wayland sessions retain the XWayland limitations; the new low-level backend requiring additional device permissions is not enabled. On Ubuntu 24.04, install `libx11-6`, `libxtst6`, `libxt6t64`, `libxrandr2` and `libxkbcommon0`. AppImage and portable packages also require these system libraries.
 
 #### Arch Linux
 

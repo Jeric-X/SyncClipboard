@@ -24,22 +24,22 @@ public partial class AccountConfigEditViewModel(
     private CancellationTokenSource? _testCancellationTokenSource;
 
     [ObservableProperty]
-    private string accountType = "";
+    public partial string AccountType { get; set; } = "";
 
     [ObservableProperty]
-    private string accountId = "";
+    public partial string AccountId { get; set; } = "";
 
     [ObservableProperty]
-    private bool isLoading = false;
+    public partial bool IsLoading { get; set; } = false;
 
     [ObservableProperty]
-    private bool? testResult = null; // null=未测试, true=成功, false=失败
+    public partial bool? TestResult { get; set; } = null; // null=未测试, true=成功, false=失败
 
     [ObservableProperty]
-    private string? errorMessage;
+    public partial string? ErrorMessage { get; set; }
 
     [ObservableProperty]
-    private bool hasError = false;
+    public partial bool HasError { get; set; } = false;
 
     public bool ShowTestResult => TestResult.HasValue;
     public bool IsTestSuccess => TestResult == true;

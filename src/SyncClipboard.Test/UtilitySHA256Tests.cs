@@ -3,6 +3,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class UtilitySHA256Tests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -15,14 +16,14 @@ public class UtilitySHA256Tests
         {
             Assert.ThrowsExactly<ArgumentException>(() => Utility.NormalizeSHA256(hash));
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => Utility.VerifyFileSHA256(string.Empty, hash, TestContext.CancellationTokenSource.Token));
+                () => Utility.VerifyFileSHA256(string.Empty, hash, TestContext.CancellationToken));
         }
     }
 
     [TestMethod]
     public async Task MissingHashAndLowercaseHashRemainSupported()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SHA256-");
         try
         {
@@ -44,7 +45,7 @@ public class UtilitySHA256Tests
     [TestMethod]
     public async Task VerifyFileSHA256_RejectsMismatchedHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SHA256-");
         try
         {
@@ -64,7 +65,7 @@ public class UtilitySHA256Tests
     [TestMethod]
     public async Task FileMatchesSHA256ChecksContentAndHandlesUnavailableData()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-ValidateSHA256-");
         try
         {

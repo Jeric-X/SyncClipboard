@@ -24,7 +24,7 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     #region Icon Animatinon
     private const int ANIMATED_ICON_DELAY_TIME = 150;
-    private readonly object _animationLock = new();
+    private readonly Lock _animationLock = new();
     private Timer? _iconTimer;
     private bool _isShowingDanamicIcon;
     private bool _isActive = true;

@@ -11,7 +11,7 @@ public sealed class CoalescingTask<TRequest>(
     private readonly Func<TRequest, TRequest, TRequest> merge = merge;
     private readonly Func<TRequest, CancellationToken, Task> execute = execute;
     private readonly Func<Exception, Task>? onException = onException;
-    private readonly object syncRoot = new();
+    private readonly Lock syncRoot = new();
     private TRequest pendingRequest = default!;
     private bool hasPendingRequest;
     private TaskCompletionSource? activeCompletion;

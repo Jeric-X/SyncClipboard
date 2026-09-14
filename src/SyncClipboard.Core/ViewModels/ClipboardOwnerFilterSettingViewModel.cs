@@ -20,7 +20,8 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
     ];
 
     [ObservableProperty]
-    private LocaleString<string> filterMode = Modes[0];
+    public partial LocaleString<string> FilterMode { get; set; } = Modes[0];
+
     partial void OnFilterModeChanged(LocaleString<string> value)
     {
         UpdateFilterList();
@@ -28,7 +29,8 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
     }
 
     [ObservableProperty]
-    private ClipboardOwnerFilterConfig filterConfig = new();
+    public partial ClipboardOwnerFilterConfig FilterConfig { get; set; } = new();
+
     partial void OnFilterConfigChanged(ClipboardOwnerFilterConfig value)
     {
         FilterMode = Modes.FirstOrDefault(x => x.Key == FilterConfig.FilterMode) ?? Modes[0];
@@ -39,10 +41,10 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    private bool enableText = false;
+    public partial bool EnableText { get; set; } = false;
 
     [ObservableProperty]
-    private bool isListening = false;
+    public partial bool IsListening { get; set; } = false;
 
     public string? Description => EnableText ? Strings.ClipboardOwnerFilterDescription : null;
 
@@ -194,25 +196,18 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
     private readonly IClipboardChangingListener _clipboardChangingListener = clipboardChangingListener;
 }
 
-public partial class EditableWindowInfo : ObservableObject
+public partial class EditableWindowInfo(WindowInfo info) : ObservableObject
 {
     [ObservableProperty]
-    private string processName = "";
+    public partial string ProcessName { get; set; } = info.ProcessName ?? "";
 
     [ObservableProperty]
-    private string windowTitle = "";
+    public partial string WindowTitle { get; set; } = info.WindowTitle ?? "";
 
     [ObservableProperty]
-    private string executableName = "";
+    public partial string ExecutableName { get; set; } = info.ExecutableName ?? "";
 
     public bool IsEmpty => string.IsNullOrWhiteSpace(ProcessName) && string.IsNullOrWhiteSpace(WindowTitle) && string.IsNullOrWhiteSpace(ExecutableName);
-
-    public EditableWindowInfo(WindowInfo info)
-    {
-        ProcessName = info.ProcessName ?? "";
-        WindowTitle = info.WindowTitle ?? "";
-        ExecutableName = info.ExecutableName ?? "";
-    }
 
     public WindowInfo ToWindowInfo() => new()
     {

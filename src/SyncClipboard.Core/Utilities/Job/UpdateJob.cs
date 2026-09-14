@@ -12,12 +12,13 @@ public class UpdateJob(ConfigManager configManager, UpdateChecker updateChecker,
     private readonly UpdateChecker updateChecker = updateChecker;
     private readonly IThreadDispatcher dispatcher = dispatcher;
 
-    public Task Execute(IJobExecutionContext context)
+    public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp)
         {
-            return dispatcher.RunOnMainThreadAsync(updateChecker.RunAutoUpdateFlow);
+            return new ValueTask(dispatcher.RunOnMainThreadAsync(updateChecker.RunAutoUpdateFlow, cancellationToken));
         }
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

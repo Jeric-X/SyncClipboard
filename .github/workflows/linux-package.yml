@@ -65,11 +65,14 @@ jobs:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
+      # PupNet 1.10.0 and the product projects both run on .NET 10.
       - name: Install .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: |
-            8.0.x
+          dotnet-version: 10.0.302
+
+      - name: Show selected SDK
+        run: dotnet --info
 
       - name: Download last-job-built artifact
         uses: actions/download-artifact@v8
@@ -87,10 +90,29 @@ jobs:
         with:
           name: feature
 
-      - name: Install pupnet and denpendencies
+      - name: Install PupNet
         run: |
-          dotnet tool install -g KuiperZone.PupNet --version 1.8.0
-          sudo apt install libfuse2
+          dotnet tool install -g KuiperZone.PupNet --version 1.10.0
+          pupnet --version
+
+      - name: Install AppImage builder
+        if: matrix.package-type == 'AppImage'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+          mkdir -p "$RUNNER_TEMP/pupnet-tools"
+          # PupNet selects the tool by host architecture; this runner is x64 for both target architectures.
+          curl --fail --location --retry 3 \
+            https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage \
+            --output "$RUNNER_TEMP/pupnet-tools/appimagetool-x86_64.AppImage"
+          chmod +x "$RUNNER_TEMP/pupnet-tools/appimagetool-x86_64.AppImage"
+          echo "$RUNNER_TEMP/pupnet-tools" >> "$GITHUB_PATH"
+
+      - name: Install RPM builder
+        if: matrix.package-type == 'rpm'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
 
       - name: Package
         run: >

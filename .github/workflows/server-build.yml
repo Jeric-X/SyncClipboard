@@ -16,8 +16,10 @@ jobs:
     - name: Install .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: |
-          8.0.x
+        dotnet-version: 10.0.302
+
+    - name: Show selected SDK
+      run: dotnet --info
 
     - name: Install dependencies
       working-directory: ./src
@@ -29,10 +31,42 @@ jobs:
     - name: copy SyncClipboard.Server
       run: |
         mkdir server
-        cp -r src/SyncClipboard.Server/bin/Release/net8.0/publish/ server/
+        cp -r src/SyncClipboard.Server/bin/Release/net10.0/publish/ server/
+
+    - name: Verify published server without UI
+      run: python3 build/verification/server_smoke.py --server-dll server/publish/SyncClipboard.Server.dll
+
+    - name: Verify first-start configuration without UI
+      run: python3 build/verification/server_startup_smoke.py --server-dll server/publish/SyncClipboard.Server.dll
+
+    - name: Verify Swagger JSON and built-in diagnostic mode without UI
+      run: |
+        dotnet build build/verification/BuiltInServerProbe -c Release
+        python3 build/verification/swagger_smoke.py --server-dll server/publish/SyncClipboard.Server.dll --probe-dll build/verification/BuiltInServerProbe/bin/Release/net10.0/BuiltInServerProbe.dll
 
     - name: Upload build artifacts SyncClipboard.Server
       uses: actions/upload-artifact@v7
       with:
         name: SyncClipboard.Server
         path: server/
+
+  container-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build server container on the native architecture
+      run: docker build -f src/SyncClipboard.Server/Dockerfile -t syncclipboard-upgrade-check src
+    - name: Verify container platform and show runtime
+      run: |
+        test "$(docker run --rm --entrypoint uname syncclipboard-upgrade-check -m)" = "$(uname -m)"
+        docker run --rm --entrypoint sh syncclipboard-upgrade-check -c '. /etc/os-release; test "$ID" = ubuntu && test "$VERSION_ID" = 24.04'
+        docker run --rm --entrypoint cat syncclipboard-upgrade-check /etc/os-release
+        docker run --rm --entrypoint dotnet syncclipboard-upgrade-check --info
+    - name: Verify container without publishing
+      run: python3 build/verification/server_smoke.py --container syncclipboard-upgrade-check
+    - name: Verify container first-start configuration
+      run: python3 build/verification/server_startup_smoke.py --container syncclipboard-upgrade-check

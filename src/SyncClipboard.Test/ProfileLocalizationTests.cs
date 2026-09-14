@@ -7,6 +7,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileLocalizationTests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -20,7 +21,7 @@ public class ProfileLocalizationTests
     [DataRow(ProfileType.Text, true)]
     public async Task Localize_DoesNotValidateFileContent(ProfileType type, bool hasTransferHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -50,7 +51,7 @@ public class ProfileLocalizationTests
             if (type == ProfileType.Text)
                 Assert.AreEqual("current content", localInfo.Text);
             else
-                CollectionAssert.AreEqual(new[] { path }, localInfo.FilePaths);
+                Assert.AreSequenceEqual([path], localInfo.FilePaths);
             Assert.AreEqual(expectedHash, await profile.GetHash(token));
             Assert.AreEqual(transferHash, profile.TransferDataHash);
             Assert.IsFalse(await profile.IsDataComplete(false, token));
@@ -66,7 +67,7 @@ public class ProfileLocalizationTests
     [DataRow(true)]
     public async Task Group_LocalizeExtractsWithoutValidatingOrCreatingHashes(bool hasHashes)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -92,7 +93,7 @@ public class ProfileLocalizationTests
     [DataRow(true)]
     public async Task Group_LocalizationPreservesTransferDataBinding(bool tryLocalize)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -134,7 +135,7 @@ public class ProfileLocalizationTests
     [TestMethod]
     public async Task Group_LocalizeStillRejectsPathTraversal()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -145,7 +146,7 @@ public class ProfileLocalizationTests
             await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => profile.Localize(directory, token));
 
             Assert.IsFalse(File.Exists(Path.Combine(directory, "outside.txt")));
-            Assert.IsFalse(Directory.EnumerateDirectories(directory).Any());
+            Assert.IsEmpty(Directory.EnumerateDirectories(directory));
         }
         finally
         {
@@ -156,7 +157,7 @@ public class ProfileLocalizationTests
     [TestMethod]
     public async Task Group_LocalizeWithoutProfileHashUsesSeparateExtractionDirectories()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -184,7 +185,7 @@ public class ProfileLocalizationTests
     [DataRow(20000, true)]
     public async Task Text_LocalizeAlwaysReturnsFullText(int length, bool restoredFromDisk)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -212,7 +213,7 @@ public class ProfileLocalizationTests
     [DataRow("DATA.txt")]
     public async Task Group_LocalizeRejectsDestinationFileCollisions(string secondEntryName)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = CreateTestDirectory();
         try
         {
@@ -238,13 +239,13 @@ public class ProfileLocalizationTests
             if (pathsCollide)
             {
                 await Assert.ThrowsExactlyAsync<IOException>(() => profile.Localize(directory, token));
-                Assert.AreEqual(0, profile.Files.Length);
-                Assert.AreEqual(0, Directory.GetDirectories(directory).Length);
+                Assert.IsEmpty(profile.Files);
+                Assert.IsEmpty(Directory.GetDirectories(directory));
             }
             else
             {
                 var localInfo = await profile.Localize(directory, token);
-                Assert.AreEqual(2, localInfo.FilePaths.Length);
+                Assert.HasCount(2, localInfo.FilePaths);
                 Assert.AreEqual("first", await File.ReadAllTextAsync(localInfo.FilePaths[0], token));
                 Assert.AreEqual("second", await File.ReadAllTextAsync(localInfo.FilePaths[1], token));
             }

@@ -9,14 +9,19 @@ public class LocalFileCacheCleanupJob(LocalFileCacheManager cacheManager, ILogge
     private readonly LocalFileCacheManager _cacheManager = cacheManager;
     private readonly ILogger _logger = logger;
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             await _logger.WriteAsync("Starting cache cleanup job...");
 
-            var orphanCount = await _cacheManager.CleanupOrphanRecordsAsync();
+            var orphanCount = await _cacheManager.CleanupOrphanRecordsAsync(cancellationToken);
             await _logger.WriteAsync($"Cache cleanup completed: Removed {orphanCount} orphan records");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

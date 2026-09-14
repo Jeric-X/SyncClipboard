@@ -15,7 +15,7 @@ public partial class DiagnosePage : UserControl
 
     private void SettingsExpanderItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var para = (sender as SettingsExpanderItem)?.Content;
+        var para = (sender as FASettingsExpanderItem)?.Content;
         var page = new PageDefinition("DiagnoseDetail", "DiagnoseDetail");
 
         App.Current.MainWindow.NavigateToNextLevel(page, para);

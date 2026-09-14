@@ -1,4 +1,4 @@
-<ui:ContentDialog x:Class="SyncClipboard.Desktop.Views.FileFilterRuleEditDialog"
+<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.FileFilterRuleEditDialog"
                   xmlns="https://github.com/avaloniaui"
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                   xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -20,11 +20,11 @@
                 </DataTemplate>
             </ComboBox.ItemTemplate>
         </ComboBox>
-        <TextBox Watermark="{x:Static i18n:Strings.FileFilterPattern}" Text="{Binding Editor.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox PlaceholderText="{x:Static i18n:Strings.FileFilterPattern}" Text="{Binding Editor.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         <HyperlinkButton HorizontalAlignment="Left"
                          Padding="0"
                          Content="{x:Static i18n:Strings.RegularExpressionQuickReference}"
                          Click="RegularExpressionQuickReference_Click" />
         <TextBlock x:Name="_ValidationMessage" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
     </StackPanel>
-</ui:ContentDialog>
+</ui:FAContentDialog>

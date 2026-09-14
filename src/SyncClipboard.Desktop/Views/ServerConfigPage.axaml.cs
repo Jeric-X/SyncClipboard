@@ -69,8 +69,7 @@ public partial class ServerConfigPage : UserControl
         _viewModel.CustomConfigurationFilePath = fileName ?? _viewModel.CustomConfigurationFilePath;
     }
 
-
-    private void ServerSettingDialog_OkClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
+    private void ServerSettingDialog_OkClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
     {
         ArgumentNullException.ThrowIfNull(_serverConfigDialog);
         var res = _viewModel.SetServerConfig(_serverConfigDialog.Url, _serverConfigDialog.UserName, _serverConfigDialog.Password);
@@ -85,7 +84,6 @@ public partial class ServerConfigPage : UserControl
         return;
     }
 
-
     private void SetServerConfig(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         _serverConfigDialog = new ServerSettingDialog
@@ -95,7 +93,7 @@ public partial class ServerConfigPage : UserControl
             UserName = _viewModel.ServerConfig.UserName,
             Url = _viewModel.ServerConfig.Port.ToString()
         };
-        var dialog = new ContentDialog
+        var dialog = new FAContentDialog
         {
             Title = Strings.Settings,
             PrimaryButtonText = Strings.Confirm,

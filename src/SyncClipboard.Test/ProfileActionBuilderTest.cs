@@ -5,6 +5,7 @@ using SyncClipboard.Shared.Profiles;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class ProfileActionBuilderTest
 {
     private readonly ProfileActionBuilder _builder = new(null!, new TestProfileEnv());
@@ -61,7 +62,7 @@ public class ProfileActionBuilderTest
     [DataRow(true)]
     public async Task GroupActionsLocalizeTransferArchiveBeforeUsingPaths(bool primary)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Path.Combine(Path.GetTempPath(), $"SyncClipboard-Actions-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
         try

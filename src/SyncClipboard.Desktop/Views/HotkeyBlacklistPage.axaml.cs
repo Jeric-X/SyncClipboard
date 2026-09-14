@@ -19,13 +19,13 @@ public partial class HotkeyBlacklistPage : UserControl
         DataContext = _viewModel;
         InitializeComponent();
         _viewModel.WindowCaptured += OnWindowCaptured;
-        AddHandler(Frame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
     }
 
     private async void AddItemClick(object? _, RoutedEventArgs __)
     {
         var dialog = new WindowInfoEditDialog();
-        if (await dialog.ShowAsync(App.Current.MainWindow) == ContentDialogResult.Primary)
+        if (await dialog.ShowAsync(App.Current.MainWindow) == FAContentDialogResult.Primary)
         {
             _viewModel.AddItem(dialog.GetWindowInfo());
         }
@@ -36,7 +36,7 @@ public partial class HotkeyBlacklistPage : UserControl
         if (sender is not Button { DataContext: EditableWindowInfo item }) return;
         var dialog = new WindowInfoEditDialog();
         dialog.SetWindowInfo(item.ToWindowInfo());
-        if (await dialog.ShowAsync(App.Current.MainWindow) == ContentDialogResult.Primary)
+        if (await dialog.ShowAsync(App.Current.MainWindow) == FAContentDialogResult.Primary)
         {
             _viewModel.UpdateItem(item, dialog.GetWindowInfo());
         }
@@ -64,14 +64,14 @@ public partial class HotkeyBlacklistPage : UserControl
             App.Current.MainWindow.Show();
             var dialog = new WindowInfoEditDialog();
             dialog.SetWindowInfo(info);
-            if (await dialog.ShowAsync(App.Current.MainWindow) == ContentDialogResult.Primary)
+            if (await dialog.ShowAsync(App.Current.MainWindow) == FAContentDialogResult.Primary)
             {
                 _viewModel.AddItem(dialog.GetWindowInfo());
             }
         });
     }
 
-    private void OnNavigatedFrom(object? sender, NavigationEventArgs e)
+    private void OnNavigatedFrom(object? sender, FANavigationEventArgs e)
     {
         _viewModel.StopCapture();
         _viewModel.WindowCaptured -= OnWindowCaptured;

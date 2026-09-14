@@ -41,7 +41,7 @@ public partial class HistoryWindow : Window, IWindow
 
         this.ExtendClientAreaToDecorationsHint = true;
         if (!OperatingSystem.IsMacOS())
-            this.ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome;
+            this.WindowDecorations = WindowDecorations.None;
 
         InitializeComponent();
         InitializeScrollWatcher();
@@ -374,7 +374,7 @@ public partial class HistoryWindow : Window, IWindow
         flyout.Items.Clear();
         foreach (var action in actions)
         {
-            var item = new MenuFlyoutItem { Text = action.Text };
+            var item = new FAMenuFlyoutItem { Text = action.Text };
             if (action.Action is not null)
             {
                 item.Click += (_, __) => action.Action();
@@ -507,6 +507,7 @@ public partial class HistoryWindow : Window, IWindow
         _pendingDragItem = clickedItem;
         _dragSource = item;
         _dragPointer = e.Pointer;
+        _dragStartEventArgs = e;
         e.Pointer.Capture(item);
     }
 
@@ -541,7 +542,7 @@ public partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        if (!_isPendingDrag || _pendingDragItem == null || _dragSource == null)
+        if (!_isPendingDrag || _pendingDragItem == null || _dragSource == null || _dragStartEventArgs == null)
             return;
 
         var currentPoint = e.GetPosition(null);
@@ -555,6 +556,7 @@ public partial class HistoryWindow : Window, IWindow
         _viewModel.CancelMultiSelectLongPress();
         e.Handled = true;
         var item = _pendingDragItem;
+        var dragStartEventArgs = _dragStartEventArgs;
         ResetPendingDrag();
 
         try
@@ -565,7 +567,7 @@ public partial class HistoryWindow : Window, IWindow
             if (success)
             {
                 var result = await DragDrop.DoDragDropAsync(
-                    e,
+                    dragStartEventArgs,
                     dataTransfer,
                     AvaloniaDragDropEffects.Copy);
             }
@@ -810,6 +812,7 @@ public partial class HistoryWindow : Window, IWindow
     private HistoryRecordVM? _pendingDragItem;
     private Control? _dragSource;
     private IPointer? _dragPointer;
+    private PointerPressedEventArgs? _dragStartEventArgs;
 
     private void ResetPointerInteractionState()
     {
@@ -822,6 +825,7 @@ public partial class HistoryWindow : Window, IWindow
     {
         _dragPointer?.Capture(null);
         _dragPointer = null;
+        _dragStartEventArgs = null;
         _isPendingDrag = false;
         _pendingDragItem = null;
         _dragSource = null;

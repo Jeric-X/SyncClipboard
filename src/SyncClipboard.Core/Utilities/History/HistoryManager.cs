@@ -94,7 +94,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             {
                 try
                 {
-                    Directory.Delete(workingDir, true);
+                    FileSys.DeleteFileSystemEntries([new DirectoryInfo(workingDir)], token);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -446,9 +450,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var deletedRecords = _dbContext.HistoryRecords
+        var deletedRecords = await _dbContext.HistoryRecords
             .Where(r => r.IsDeleted && (r.FilePath.Length > 0 || r.TransferDataFile != null) && r.IsLocalFileReady)
-            .ToList();
+            .ToListAsync(token);
 
         if (deletedRecords.Count == 0)
         {
@@ -457,11 +461,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         foreach (var record in deletedRecords)
         {
+            token.ThrowIfCancellationRequested();
+            await DeleteWorkingDirAsync(record, token);
             record.FilePath = [];
             record.TransferDataFile = null;
             record.TransferDataHash = null;
             record.IsLocalFileReady = false;
-            await DeleteWorkingDirAsync(record, token);
         }
 
         _dbContext.HistoryRecords.RemoveRange(deletedRecords);
@@ -472,6 +477,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         try
         {
             if (!EnableCleanup)
@@ -503,58 +509,57 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 _logger.Write("HistoryManager", $"Cleaned up {deleted} expired history records");
             }
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.Write("HistoryManager", $"Error during history cleanup: {ex.Message}");
         }
     }
 
-    public void CleanupOrphanedHistoryFolders()
+    public async Task CleanupOrphanedHistoryFolders(CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         try
         {
             var historyFolder = Env.HistoryFileFolder;
             if (!Directory.Exists(historyFolder))
-            {
                 return;
+
+            using var dbContext = new HistoryDbContext();
+            var records = dbContext.HistoryRecords.Select(r => new { r.Type, r.Hash }).AsAsyncEnumerable();
+            var existingDirectoryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            await foreach (var record in records.WithCancellation(token))
+            {
+                token.ThrowIfCancellationRequested();
+                existingDirectoryNames.Add(Profile.GetWorkingDirName(record.Type, record.Hash));
             }
 
-            using var _dbContext = new HistoryDbContext();
-            var existingDirectoryNames = _dbContext.HistoryRecords
-                .Select(r => new { r.Type, r.Hash })
-                .AsEnumerable()
-                .Select(r => Profile.GetWorkingDirName(r.Type, r.Hash))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var directories = new DirectoryInfo(historyFolder).GetDirectories();
+            var directories = new DirectoryInfo(historyFolder).EnumerateDirectories();
             var cutoffTime = DateTime.Now.AddDays(-7); // 7天前的时间点
-
-            foreach (var dirInfo in directories)
+            foreach (var directory in directories)
             {
+                token.ThrowIfCancellationRequested();
                 try
                 {
-                    if (existingDirectoryNames.Contains(dirInfo.Name))
-                    {
-                        continue;
-                    }
-
-                    if (dirInfo.CreationTime <= cutoffTime)
-                    {
-                        try
-                        {
-                            dirInfo.Delete(recursive: true);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Write("HistoryManager", $"Failed to delete orphaned folder {dirInfo.FullName}: {ex.Message}");
-                        }
-                    }
+                    if (!existingDirectoryNames.Contains(directory.Name) && directory.CreationTime <= cutoffTime)
+                        FileSys.DeleteFileSystemEntries([directory], token);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
-                    _logger.Write("HistoryManager", $"Error checking folder {dirInfo.FullName}: {ex.Message}");
+                    _logger.Write("HistoryManager", $"Failed to clean orphaned folder {directory.FullName}: {ex.Message}");
                 }
             }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

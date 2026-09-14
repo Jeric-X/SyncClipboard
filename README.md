@@ -75,7 +75,7 @@ v3.1.1及以上的客户端、服务器与之前的版本不兼容，同步网�
 
 ## 服务器
 ### 独立服务器
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 8.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 10.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```
@@ -196,6 +196,11 @@ sudo systemctl enable --now syncclipboard.service
 </details>
 
 ### Windows
+
+最低系统版本为 Windows 10 2004（build 19041），运行环境还须位于 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)内。选择与系统架构匹配的 x64 或 arm64 包。
+
+文件名包含 `no-dotnet-runtime` 时，先安装同架构的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)；包含 `no-win-app-sdk` 时，还需安装 [Windows App SDK 2.4 运行时](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads)。两个标记同时出现时，两种运行时都需要安装；没有这些标记的包已携带对应运行时。
+
 #### 安装板
 
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的exe安装包，双击运行安装程序后即可使用
@@ -205,10 +210,12 @@ sudo systemctl enable --now syncclipboard.service
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的zip文件，解压后运行`SyncClipboard.exe`
 
 #### 故障排除
-- 支持的最低系统版本为Windows10 2004
 - 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
 ### macOS
+
+需要 macOS 14 或更高版本；Apple Silicon 选择 arm64，Intel Mac 选择 x64，安装包已包含 .NET 运行时。当前 [.NET 10 支持 macOS 14、15、26](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)；[Avalonia 将 macOS 26 列为 Tier 1、14/15 列为 Tier 2](https://docs.avaloniaui.net/docs/supported-platforms)。
+
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 
@@ -221,6 +228,10 @@ sudo systemctl enable --now syncclipboard.service
 ### Linux
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_linux_`开头的安装包
+
+文件名包含 `no-dotnet-runtime` 的桌面包需要安装与包架构一致的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)（包含 .NET 运行时）；普通包已包含运行时。Linux x64/arm64 桌面客户端需要 glibc 2.38 或更高版本（SharpHook 8 随包原生库的要求）、OpenSSL 1.1.1 或更高版本，以及 X11、XTest、Xt、Xrandr 和 xkbcommon 原生库。发行版还须位于 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)内；仅满足 .NET 运行时的最低 glibc 版本不足以运行桌面客户端。上述 SharpHook 要求不适用于独立服务器。
+
+热键及复制/粘贴模拟继续使用 SharpHook 的 XRecord 后端；Wayland 会话沿用 XWayland 的限制，不启用需要额外设备权限的新低层后端。Ubuntu 24.04 对应的原生包为 `libx11-6`、`libxtst6`、`libxt6t64`、`libxrandr2`、`libxkbcommon0`；AppImage 和便携包也需要系统提供这些库。
 
 #### Arch Linux
 

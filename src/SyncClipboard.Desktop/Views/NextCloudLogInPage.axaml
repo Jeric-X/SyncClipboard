@@ -41,7 +41,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Spacing="5">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ui:FontIcon Glyph="&#xE12B;" FontSize="15" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FAFontIcon Glyph="&#xE12B;" FontSize="15" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                             <TextBlock Margin="0,0,0,0" Text="{x:Static i18n:Strings.Address}" FontSize="15" />
                         </StackPanel>
                         <TextBox Text="{Binding UserInputUrl, Mode=TwoWay}" />
@@ -91,7 +91,7 @@
                             <TreeView.ItemTemplate>
                                 <TreeDataTemplate ItemsSource="{Binding Children, Mode=OneWay}">
                                     <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <ui:FontIcon Glyph="&#xE838;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                        <ui:FAFontIcon Glyph="&#xE838;" FontSize="16" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                         <TextBlock Text="{Binding Name}" />
                                     </StackPanel>
                                 </TreeDataTemplate>

@@ -14,26 +14,52 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel : ObservableObject
 {
-    [ObservableProperty]
-    private bool hideWindowOnStartUp;
-    partial void OnHideWindowOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { HideWindowOnStartup = value };
+    // Loading saved values must not persist partial settings or invoke platform services.
+    private readonly bool _isInitializing = true;
 
     [ObservableProperty]
-    private bool diagnoseMode;
-    partial void OnDiagnoseModeChanged(bool value) => ProgramConfig = ProgramConfig with { DiagnoseMode = value };
+    public partial bool HideWindowOnStartUp { get; set; }
+
+    partial void OnHideWindowOnStartUpChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ProgramConfig = ProgramConfig with { HideWindowOnStartup = value };
+    }
 
     [ObservableProperty]
-    private uint logRemainDays;
-    partial void OnLogRemainDaysChanged(uint value) => ProgramConfig = ProgramConfig with { LogRemainDays = value };
+    public partial bool DiagnoseMode { get; set; }
+
+    partial void OnDiagnoseModeChanged(bool value)
+    {
+        if (_isInitializing) return;
+        ProgramConfig = ProgramConfig with { DiagnoseMode = value };
+    }
 
     [ObservableProperty]
-    private uint tempFileRemainDays;
-    partial void OnTempFileRemainDaysChanged(uint value) => ProgramConfig = ProgramConfig with { TempFileRemainDays = value };
+    public partial uint LogRemainDays { get; set; }
+
+    partial void OnLogRemainDaysChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ProgramConfig = ProgramConfig with { LogRemainDays = value };
+    }
 
     [ObservableProperty]
-    private string font;
+    public partial uint TempFileRemainDays { get; set; }
+
+    partial void OnTempFileRemainDaysChanged(uint value)
+    {
+        if (_isInitializing) return;
+        ProgramConfig = ProgramConfig with { TempFileRemainDays = value };
+    }
+
+    [ObservableProperty]
+    public partial string Font { get; set; }
+
     partial void OnFontChanged(string value)
     {
+        if (_isInitializing) return;
+
         ProgramConfig = ProgramConfig with { Font = value };
         _services.GetRequiredService<IMainWindow>().SetFont(value);
     }
@@ -54,9 +80,12 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private ProgramConfig programConfig;
+    public partial ProgramConfig ProgramConfig { get; set; }
+
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
+        if (_isInitializing) return;
+
         HideWindowOnStartUp = value.HideWindowOnStartup;
         var isSynchronizingStartUpSettings = _isSynchronizingStartUpSettings;
         _isSynchronizingStartUpSettings = true;
@@ -73,8 +102,13 @@ public partial class SystemSettingViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ChangingLangInfo))]
-    private LanguageModel language;
-    partial void OnLanguageChanged(LanguageModel value) => ProgramConfig = ProgramConfig with { Language = value.LocaleTag };
+    public partial LanguageModel Language { get; set; }
+
+    partial void OnLanguageChanged(LanguageModel value)
+    {
+        if (_isInitializing) return;
+        ProgramConfig = ProgramConfig with { Language = value.LocaleTag };
+    }
 
     public static readonly LanguageModel[] Languages = I18nHelper.SupportedLanguage;
     public string DisplayMemberPath = nameof(LanguageModel.DisplayName);
@@ -88,9 +122,11 @@ public partial class SystemSettingViewModel : ObservableObject
     ];
 
     [ObservableProperty]
-    private LocaleString<string> theme;
+    public partial LocaleString<string> Theme { get; set; }
+
     partial void OnThemeChanged(LocaleString<string> value)
     {
+        if (_isInitializing) return;
         ProgramConfig = ProgramConfig with { Theme = value.Key };
     }
 
@@ -107,16 +143,20 @@ public partial class SystemSettingViewModel : ObservableObject
     ];
 
     [ObservableProperty]
-    private LocaleString<bool> userConfigPosition;
+    public partial LocaleString<bool> UserConfigPosition { get; set; }
+
     partial void OnUserConfigPositionChanged(LocaleString<bool> value)
     {
+        if (_isInitializing) return;
+
         _staticConfig.SetConfig(_staticConfig.GetConfig<EnvConfig>() with { PortableUserConfig = value.Key });
     }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsIndependentAppDataDirectory))]
     [NotifyPropertyChangedFor(nameof(IsUsingCustomIndependentAppDataDirectory))]
-    private LocaleString<bool> portableAppDataFolderPosition;
+    public partial LocaleString<bool> PortableAppDataFolderPosition { get; set; }
+
     async partial void OnPortableAppDataFolderPositionChanged(LocaleString<bool> value)
     {
         try
@@ -166,37 +206,42 @@ public partial class SystemSettingViewModel : ObservableObject
     private bool _currentPortableAppDataFolder;
 
     public SystemSettingViewModel(ConfigManager configManager, StaticConfig staticConfig, IServiceProvider serviceProvider)
+        : this(configManager, staticConfig, serviceProvider, StartUpHelper.GetWindowsTaskRunAsAdministrator())
+    {
+    }
+
+    internal SystemSettingViewModel(ConfigManager configManager, StaticConfig staticConfig, IServiceProvider serviceProvider,
+        bool? taskRunAsAdministrator)
     {
         _configManager = configManager;
         _staticConfig = staticConfig;
         _services = serviceProvider;
         _logger = serviceProvider.GetRequiredService<ILogger>();
-
-        programConfig = _configManager.GetConfig<ProgramConfig>();
-        var taskRunAsAdministrator = StartUpHelper.GetWindowsTaskRunAsAdministrator();
-        if (taskRunAsAdministrator is bool runAsAdministrator && runAsAdministrator != programConfig.StartUpAsAdministrator)
+        ProgramConfig = _configManager.GetConfig<ProgramConfig>();
+        if (taskRunAsAdministrator is bool runAsAdministrator && runAsAdministrator != ProgramConfig.StartUpAsAdministrator)
         {
-            programConfig = programConfig with { StartUpAsAdministrator = runAsAdministrator };
-            _configManager.SetConfig(programConfig);
+            ProgramConfig = ProgramConfig with { StartUpAsAdministrator = runAsAdministrator };
+            _configManager.SetConfig(ProgramConfig);
         }
 
         _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
-        language = Languages.FirstOrDefault(x => x.LocaleTag == programConfig.Language) ?? Languages[0];
-        font = programConfig.Font;
-        theme = Themes.FirstOrDefault(x => x.Key == programConfig.Theme) ?? Themes[0];
-        hideWindowOnStartUp = programConfig.HideWindowOnStartup;
-        startUpAsAdministrator = taskRunAsAdministrator ?? programConfig.StartUpAsAdministrator;
-        logRemainDays = programConfig.LogRemainDays;
-        tempFileRemainDays = programConfig.TempFileRemainDays;
-        diagnoseMode = programConfig.DiagnoseMode;
+        Language = Languages.FirstOrDefault(x => x.LocaleTag == ProgramConfig.Language) ?? Languages[0];
+        Font = ProgramConfig.Font;
+        Theme = Themes.FirstOrDefault(x => x.Key == ProgramConfig.Theme) ?? Themes[0];
+        HideWindowOnStartUp = ProgramConfig.HideWindowOnStartup;
+        StartUpAsAdministrator = taskRunAsAdministrator ?? ProgramConfig.StartUpAsAdministrator;
+        LogRemainDays = ProgramConfig.LogRemainDays;
+        TempFileRemainDays = ProgramConfig.TempFileRemainDays;
+        DiagnoseMode = ProgramConfig.DiagnoseMode;
 
         _staticConfig.ListenConfig<EnvConfig>(OnEnvConfigChanged);
         var envConfig = _staticConfig.GetConfig<EnvConfig>();
-        userConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);
+        UserConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);
 
         _currentPortableAppDataFolder = envConfig.PortableAppDataFolder;
-        portableAppDataFolderPosition = LocaleString<bool>.Match(PortableAppDataFolderPositions, _currentPortableAppDataFolder);
+        PortableAppDataFolderPosition = LocaleString<bool>.Match(PortableAppDataFolderPositions, _currentPortableAppDataFolder);
         _isInitializingPortableAppDataFolder = false;
+        _isInitializing = false;
     }
 
     public bool ShowStartUpSetting { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
@@ -223,15 +268,18 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private bool isMovingAppData;
+    public partial bool IsMovingAppData { get; set; }
 
     [ObservableProperty]
-    private string appDataMoveProgress = string.Empty;
+    public partial string AppDataMoveProgress { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool startUpAsAdministrator;
+    public partial bool StartUpAsAdministrator { get; set; }
+
     async partial void OnStartUpAsAdministratorChanged(bool value)
     {
+        if (_isInitializing) return;
+
         var updateTask = OperatingSystem.IsWindows() && StartUpHelper.Status();
         await UpdateStartUpSettingsAsync(
             updateTask: updateTask,

@@ -24,7 +24,7 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     ];
 
     [ObservableProperty]
-    private LocaleString<string> filterMode = Modes[0];
+    public partial LocaleString<string> FilterMode { get; set; } = Modes[0];
 
     partial void OnFilterModeChanged(LocaleString<string> value)
     {
@@ -37,7 +37,7 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private FileFilterConfig filterConfig = new();
+    public partial FileFilterConfig FilterConfig { get; set; } = new();
 
     partial void OnFilterConfigChanged(FileFilterConfig value)
     {
@@ -54,8 +54,7 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private bool enableList;
-
+    public partial bool EnableList { get; set; }
     public ObservableCollection<EditableFileFilterRule> FilterList { get; } = [];
 
     private bool _isUpdating;
@@ -213,19 +212,13 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     };
 }
 
-public partial class EditableFileFilterRule : ObservableObject
+public partial class EditableFileFilterRule(FileFilterRule rule) : ObservableObject
 {
     [ObservableProperty]
-    private string pattern = "";
+    public partial string Pattern { get; set; } = rule.Pattern;
 
     [ObservableProperty]
-    private LocaleString<FileFilterMatchMode> matchMode = FileSyncFilterSettingViewModel.MatchModes[0];
-
-    public EditableFileFilterRule(FileFilterRule rule)
-    {
-        Pattern = rule.Pattern;
-        MatchMode = LocaleString<FileFilterMatchMode>.Match(FileSyncFilterSettingViewModel.MatchModes, rule.MatchMode);
-    }
+    public partial LocaleString<FileFilterMatchMode> MatchMode { get; set; } = LocaleString<FileFilterMatchMode>.Match(FileSyncFilterSettingViewModel.MatchModes, rule.MatchMode);
 
     public FileFilterRule ToRule() => new()
     {
@@ -237,10 +230,10 @@ public partial class EditableFileFilterRule : ObservableObject
 public partial class FileFilterRuleEditor : ObservableObject
 {
     [ObservableProperty]
-    private string pattern = "";
+    public partial string Pattern { get; set; } = "";
 
     [ObservableProperty]
-    private LocaleString<FileFilterMatchMode> matchMode = FileSyncFilterSettingViewModel.MatchModes[0];
+    public partial LocaleString<FileFilterMatchMode> MatchMode { get; set; } = FileSyncFilterSettingViewModel.MatchModes[0];
 
     public FileFilterRuleEditor(FileFilterRule? rule = null)
     {

@@ -8,6 +8,7 @@ using SyncClipboard.Core.ViewModels;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class FileFilterHelperTests
 {
     [TestMethod]

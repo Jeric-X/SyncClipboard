@@ -5,11 +5,11 @@ namespace SyncClipboard.Core.ViewModels.Sub;
 public partial class ServiceStatus : ObservableObject
 {
     [ObservableProperty]
-    private bool isError = false;
+    public partial bool IsError { get; set; } = false;
 
     [ObservableProperty]
-    private string statusString = "";
+    public partial string StatusString { get; set; } = "";
 
     [ObservableProperty]
-    private string name = "";
+    public partial string Name { get; set; } = "";
 }

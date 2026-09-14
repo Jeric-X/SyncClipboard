@@ -17,30 +17,41 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
     private readonly MultiSourceClipboardReader Clipboard = App.Current.Services.GetRequiredService<MultiSourceClipboardReader>();
 
     [ObservableProperty]
-    private bool isImage;
-    [ObservableProperty]
-    private bool isText;
-    [ObservableProperty]
-    private bool isString;
-    [ObservableProperty]
-    private bool isNumber;
+    public partial bool IsImage { get; set; }
 
     [ObservableProperty]
-    private string? csharpString;
+    public partial bool IsText { get; set; }
+
     [ObservableProperty]
-    private string? ansi;
+    public partial bool IsString { get; set; }
+
     [ObservableProperty]
-    private string? utf8;
+    public partial bool IsNumber { get; set; }
+
     [ObservableProperty]
-    private string? utf16;
+    public partial string? CsharpString { get; set; }
+
     [ObservableProperty]
-    private string? utf32;
+    public partial string? Ansi { get; set; }
+
     [ObservableProperty]
-    private uint? uint_32;
+    public partial string? Utf8 { get; set; }
+
     [ObservableProperty]
-    private int? int_32;
+    public partial string? Utf16 { get; set; }
+
     [ObservableProperty]
-    private Bitmap? bitmap;
+    public partial string? Utf32 { get; set; }
+
+    [ObservableProperty]
+    public partial uint? Uint_32 { get; set; }
+
+    [ObservableProperty]
+    public partial int? Int_32 { get; set; }
+
+    [ObservableProperty]
+    public partial Bitmap? Bitmap { get; set; }
+
     //[ObservableProperty]
     //private string? unicode;
     //[ObservableProperty]

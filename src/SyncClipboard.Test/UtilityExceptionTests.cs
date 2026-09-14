@@ -4,6 +4,7 @@ using SyncClipboard.Shared.Utilities;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[TestCategory("NonUI")]
 public class UtilityExceptionTests
 {
     [TestMethod]

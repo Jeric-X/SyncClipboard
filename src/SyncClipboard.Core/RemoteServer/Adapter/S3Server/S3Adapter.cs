@@ -6,7 +6,6 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Net;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.S3Server;
@@ -18,7 +17,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
     private const int BufferSize = 1024 * 128;
 
     private readonly ILogger _logger;
-    private readonly object _clientLock = new();
+    private readonly Lock _clientLock = new();
 
     private S3Config _s3Config = new();
     private SyncConfig _syncConfig = new();
@@ -87,6 +86,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                 ContentBody = string.Empty,
                 ContentType = "application/x-directory"
             };
+            ApplyCompatibilityForPut(putRequest);
             await _s3Client.PutObjectAsync(putRequest, cancellationToken);
         }
     }
@@ -264,9 +264,10 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                 MaxKeys = 1000
             };
             var listResponse = await _s3Client.ListObjectsV2Async(listRequest, cancellationToken);
-            continuationToken = listResponse.IsTruncated ? listResponse.NextContinuationToken : null;
+            continuationToken = listResponse.IsTruncated == true ? listResponse.NextContinuationToken : null;
 
-            if (listResponse.S3Objects.Count == 0)
+            var objects = listResponse.S3Objects;
+            if (objects is null || objects.Count == 0)
             {
                 continue;
             }
@@ -275,7 +276,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
             {
                 BucketName = _s3Config.BucketName
             };
-            foreach (var obj in listResponse.S3Objects)
+            foreach (var obj in objects)
             {
                 deleteRequest.AddKey(obj.Key);
             }
@@ -291,7 +292,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                     throw;
                 }
 
-                foreach (var obj in listResponse.S3Objects)
+                foreach (var obj in objects)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var deleteObj = new DeleteObjectRequest
@@ -373,7 +374,8 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
         // Many S3-compatible endpoints (e.g. R2/OSS gateways) do not implement
         // streaming trailer signatures used by newer AWS SDK defaults.
         request.UseChunkEncoding = false;
-        request.DisablePayloadSigning = true;
+        // The SDK only permits unsigned payloads over HTTPS.
+        request.DisablePayloadSigning = _s3Config.ServiceURL.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ValidateConfig()
@@ -473,7 +475,10 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
 
             if (bytesRead > 0)
             {
-                _readBytes += (ulong)bytesRead;
+                // Signing and retries can rewind the source stream before reading it again.
+                _readBytes = _totalBytes is { } totalBytes
+                    ? Math.Min(totalBytes, Math.Max(_readBytes, (ulong)_inner.Position))
+                    : _readBytes + (ulong)bytesRead;
                 _progress.Report(new HttpDownloadProgress
                 {
                     BytesReceived = _readBytes,
@@ -481,15 +486,8 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                     End = false
                 });
             }
-            else
-            {
-                _progress.Report(new HttpDownloadProgress
-                {
-                    BytesReceived = _readBytes,
-                    TotalBytesToReceive = _totalBytes,
-                    End = true
-                });
-            }
+            // EOF can precede a signing rewind or retry; UploadFileAsync reports completion
+            // only after PutObjectAsync succeeds.
         }
 
         public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
