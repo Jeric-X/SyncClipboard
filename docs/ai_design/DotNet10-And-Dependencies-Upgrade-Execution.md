@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–16b（含全部子步骤和前置修复）已通过，当前执行步骤 16c：Moq 版本与 mock 兼容性。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 16b 验证通过提交为 `022165a9ada2bf9435f357315a7ed51a1f96cfe5`；步骤 16c 未通过前不进入 17a。
-- 步骤 17a–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–16c（含全部子步骤和前置修复）已通过，当前执行步骤 17a：CodeCracker 维护状态与分析器兼容性。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 16c 验证通过提交为 `a88cb22e9d2cf568db1f2e0052a59f965bde6d68`；步骤 17a 未通过前不进入 17b。
+- 步骤 17b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -994,3 +994,22 @@ Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Too
 核对现有mock覆盖：Core的严格IServiceProvider、MVVM初始化、通知键控DI/属性/回调、Quartz调度器及SharpHook提供者；Desktop仅mock已运行hook，验证注册状态及从未启动hook，不抛出事件或执行UI调度；WinUI的UIAutomation契约使用严格接口替身验证属性、返回值与异常，不创建真实COM/UIAutomation实例。通知CallBase仅运行管理会话字典的公共基类，平台Create被mock替换。没有改变MockBehavior、默认返回、调用次数/参数验证或测试分类。
 
 本阶段独立Core438、Desktop6全部通过，0失败/跳过，用例名称与16b逐项一致；覆盖率采集及目标程序集命中检查通过。报告 `/private/tmp/syncclipboard-stage16c-results/` 与 `/tmp/syncclipboard-stage16c-comparison.json`。源代码、测试和CI配置没有变化，本提交只记录版本核定和阶段证据；Windows58项及三平台既有验证仍必须在本阶段提交上通过PR CI。当前尚待提交和全部CI/评审，不进入17a。
+
+步骤16c提交 `a88cb22e9d2cf568db1f2e0052a59f965bde6d68` 已推送。[PR run 34814177471](https://github.com/Jeric-X/SyncClipboard/actions/runs/34814177471)、[push run 34814174076](https://github.com/Jeric-X/SyncClipboard/actions/runs/34814174076) 和CodeQL34814177052已启动；当前head评审正在运行，首次完整反馈检查无新增问题，旧线程均已处理。监控pr419已创建，每10分钟检查。必须当前提交全部CI/评审通过后才进入17a，整体升级仍未完成。
+
+本阶段当前提交的Windows Core438、三平台Desktop各6、WinUI58，共514项NonUI测试全部通过，0失败/跳过；五个测试任务的覆盖率报告校验及三平台Quartz10组/六项取消入口均通过。日志 `/tmp/syncclipboard-pr419-a88c-core-complete.log`、`-desktop-macos.log`、`-desktop-linux.log`、`-desktop-windows.log`、`-winui.log`。首次读取Core日志遇网络EOF，仅重取同一成功任务日志后确认完整，不将网络读取失败视作CI失败。当前提交自动评审于2026-09-14T06:43:14.213652Z完成，无新增问题，10个线程均已处理；其余构建/打包仍待完成，尚不进入17a。
+
+
+### 步骤 16c 最终通过记录
+
+验证通过提交 `a88cb22e9d2cf568db1f2e0052a59f965bde6d68`：[PR run 34814177471](https://github.com/Jeric-X/SyncClipboard/actions/runs/34814177471) 的58项任务全部成功，[push run 34814174076](https://github.com/Jeric-X/SyncClipboard/actions/runs/34814174076) 的58项成功、8项发布任务预期跳过；CodeQL34814177052与CodeFactor成功。总计119 SUCCESS、8 SKIPPED，PR状态CLEAN，当前评审完成无新增问题，10个线程均已处理。
+
+514项NonUI测试、五个任务的产品代码覆盖率校验、三平台Quartz及其他必要协议/平台构建/打包全部通过。不下载或复用远程编译产物做二进制审计，UI验证执行0。最终证据 `/tmp/syncclipboard-pr419-a88c-complete.json`、`-pr-complete.json`、`-push-complete.json`、`-final-runs.json`、`-final-threads.json` 及测试日志。监控pr419已删除，允许进入17a；整体升级未完成。
+
+## 步骤 17a：CodeCracker 维护状态与编译器兼容性（进行中）
+
+2026-09-14 官方 NuGet 索引确认 CodeCracker.CSharp 1.1.0 仍为最新稳定版；仅 WinUI3 产品项目引用，保留版本及原 PrivateAssets/IncludeAssets 配置。官方 v1.1.0 发布于 2018-05-20，仓库未归档，最新提交 9c69a36b7fda87d3eaa087c9e015ae4c5e898865 为 2024-02-13 的 Dependabot 构建依赖更新。包元数据未提供精确源码提交，不把仓库最新提交当作包源码。元数据记录 `/private/tmp/syncclipboard-stage17a/`、`/tmp/syncclipboard-stage17a-{repo,release,last-commit}.json`。
+
+临时 AnalyzerProbe 导入仓库中央包版本和相同 .editorconfig，使用 SDK 10.0.302、net10.0/C# 14，只编译不运行；主构造函数和集合表达式编译成功，故意空 catch 产生预期 CC0004。修复探针后再编译为 0 警告/错误，两个 SARIF 分别只有 CC0004 和无诊断，没有分析器加载/执行异常。首次临时项目把中央包属性导入得过晚，触发 NU1015；改为标准 Directory.Packages.props 导入后还原成功，产品配置未受影响。日志 `/tmp/syncclipboard-stage17a-analyzer-probe2.log`、`-analyzer-fixed.log`。此探针证明当前编译器下可加载并产生诊断，不声称旧分析器覆盖所有 C# 14 语义。
+
+保留原七项 CC0105/CC0001/CC0034/CC0057/CC0061/CC0074/CC0072 排除，没有扩大禁用范围。11 份项目依赖图 targets/libraries 完全不变。仓库格式检查退出 0，仅跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage17a-format.log`；沿用已核实的格式专用 CS0103 排除，实际构建不排除此错误。本阶段只改计划和记录，仍必须通过当前提交 Windows 实际编译、全部 PR CI 和完整评审后才进入 17b。未下载编译产物，UI 验证执行 0。
