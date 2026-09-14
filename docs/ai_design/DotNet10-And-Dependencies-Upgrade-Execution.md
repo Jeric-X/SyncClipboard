@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–16a（含全部子步骤和前置修复）已通过，当前执行步骤 16b：coverlet 覆盖率采集。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 16a 验证通过提交为 `cd132345e47e48f2f5b76984e6b7eb43067aa632`；步骤 16b 未通过前不进入 16c。
-- 步骤 16c–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–16b（含全部子步骤和前置修复）已通过，当前执行步骤 16c：Moq 版本与 mock 兼容性。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 16b 验证通过提交为 `022165a9ada2bf9435f357315a7ed51a1f96cfe5`；步骤 16c 未通过前不进入 17a。
+- 步骤 17a–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -974,3 +974,23 @@ Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Too
 新增runsettings仅纳入SyncClipboard产品程序集、排除测试程序集；覆盖率采集不改变NonUI测试筛选及初始化/清理范围。CI在现有Core、三平台Desktop、WinUI测试命令上启用采集，保留原438/6/58计数校验；另检查报告存在、有效非零覆盖，以及Core/Shared/Server.Core、Desktop或WinUI产品程序集有实际命中。WinUI产品程序集名为SyncClipboard，明确用此名称检查。VSTest可能保存原始附件和部署副本，逐份校验但不累加重复副本。
 
 报告校验器通过真实基线/新报告正例与六种负例：零命中汇总、缺少目标程序集、目标程序集无命中、非法汇总、损坏XML、缺失报告。使用既有defusedxml读取，不引入依赖。WinUI依赖还原、仓库格式、actionlint和diff检查通过；实际Windows/三平台采集必须由本提交PR验证。本地没有启动UI，也没有下载编译产物。本阶段尚未提交并完成CI/评审，不进入16c。
+
+步骤16b提交 `022165a9ada2bf9435f357315a7ed51a1f96cfe5` 已推送至PR419。[PR run 34812426943](https://github.com/Jeric-X/SyncClipboard/actions/runs/34812426943)、[push run 34812423050](https://github.com/Jeric-X/SyncClipboard/actions/runs/34812423050) 和CodeQL34812426503已启动；首次检查未发现新增反馈，10个旧线程均已处理，本head评审正在运行。监控pr419已按每10分钟创建。必须收齐当前head三套测试的实际采集/报告校验及全部CI、评审结果，尚不进入16c。
+
+当前提交的五个测试任务已全部成功，实际日志确认Core438、三平台Desktop各6、WinUI58，共514项通过、0失败/跳过。新增报告校验均实际运行：Windows Core报告4174/16500行且Core/Shared/Server.Core均有命中；Linux/Windows Desktop报告215/21211行，macOS Desktop205/21211行，均确认Desktop程序集命中；WinUI报告541/36594行，确认产品程序集SyncClipboard命中。报告副本未累加。日志 `/tmp/syncclipboard-pr419-0221-{core,desktop-linux,desktop-macos,desktop-windows,winui}.log`。三平台Quartz10组与六项取消入口同时通过。自动评审于2026-09-14T06:19:08.136562Z完成，无新增正文/行内问题，10个线程均已处理。剩余构建/打包仍在运行，步骤16b尚未最终通过。
+
+
+### 步骤 16b 最终通过记录
+
+验证通过提交 `022165a9ada2bf9435f357315a7ed51a1f96cfe5`：[PR run 34812426943](https://github.com/Jeric-X/SyncClipboard/actions/runs/34812426943) 的58项任务全部成功，[push run 34812423050](https://github.com/Jeric-X/SyncClipboard/actions/runs/34812423050) 的58项成功、8项发布任务预期跳过。CodeQL34812426503及CodeFactor成功；总计119 SUCCESS、8 SKIPPED，PR状态CLEAN。当前提交评审完成，无新增问题，10个线程均已处理。
+
+514项非UI测试及全部五个测试任务的覆盖率采集/报告校验通过，目标产品程序集都有实际命中；三平台Quartz与其余必要协议/平台构建、打包成功。不下载远程编译产物，UI验证执行0。证据 `/tmp/syncclipboard-pr419-0221-complete.json`、`-pr-complete.json`、`-push-complete.json`、`-final-runs.json`、`-final-threads.json` 和五份测试日志。监控pr419已删除，允许进入16c，整体升级未完成。
+
+
+## 步骤 16c：Moq 版本与 mock 兼容性（进行中）
+
+2026-09-14 官方NuGet索引和发布页确认Moq4.20.72已是最新稳定版，保留现有版本，不虚构升级。包对应源码959fc5128f868fdcbdbb70dbfca86330980431ba，元数据及11份基线依赖图位于 `/private/tmp/syncclipboard-stage16c/`。三个测试项目均解析lib/net6.0/Moq.dll与Castle.Core5.1.1，由.NET10测试宿主执行；这不是.NET6运行时要求。11份依赖图完全不变。
+
+核对现有mock覆盖：Core的严格IServiceProvider、MVVM初始化、通知键控DI/属性/回调、Quartz调度器及SharpHook提供者；Desktop仅mock已运行hook，验证注册状态及从未启动hook，不抛出事件或执行UI调度；WinUI的UIAutomation契约使用严格接口替身验证属性、返回值与异常，不创建真实COM/UIAutomation实例。通知CallBase仅运行管理会话字典的公共基类，平台Create被mock替换。没有改变MockBehavior、默认返回、调用次数/参数验证或测试分类。
+
+本阶段独立Core438、Desktop6全部通过，0失败/跳过，用例名称与16b逐项一致；覆盖率采集及目标程序集命中检查通过。报告 `/private/tmp/syncclipboard-stage16c-results/` 与 `/tmp/syncclipboard-stage16c-comparison.json`。源代码、测试和CI配置没有变化，本提交只记录版本核定和阶段证据；Windows58项及三平台既有验证仍必须在本阶段提交上通过PR CI。当前尚待提交和全部CI/评审，不进入17a。
