@@ -380,6 +380,8 @@ dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnos
 
 17a 于 2026-09-14 核定 CodeCracker.CSharp 1.1.0 仍为最新稳定版，保留现有版本和七项既有规则排除，不关闭分析器。[官方最新发布](https://github.com/code-cracker/code-cracker/releases/tag/v1.1.0) 日期为 2018-05-20，仓库未归档，最新提交为 2024-02-13 的构建依赖更新；这些记录不能证明持续适配新语言版本。临时纯编译探针使用 SDK 10.0.302、net10.0/C# 14 和项目相同规则配置，确认分析器对空 catch 产生 CC0004、修正后诊断消失，且能解析主构造函数与集合表达式。该检查证明当前用法下分析器能够加载并工作，不代表旧分析器覆盖所有新语法；实际 WinUI3 编译仍须通过本阶段 PR CI。
 
+17b 于 2026-09-14 核定并升级 [Containers.Tools.Targets 1.23.0](https://www.nuget.org/packages/Microsoft.VisualStudio.Azure.Containers.Tools.Targets/1.23.0)，该版本增加 Podman 支持。按[官方属性说明](https://learn.microsoft.com/en-us/visualstudio/containers/container-msbuild-properties?view=visualstudio)，将 Server 的 DockerfileContext 改为 ContainerBuildContext，值仍为 `..`，对应仓库 `src` 目录。保留 Dockerfile、Linux 目标和 Release 的 Regular 模式，不切换容器引擎。本地验证属性求值、发布和非 UI HTTP/首次启动回归；本机无 Docker CLI，实际 amd64/arm64 原生 Docker 构建与两组容器冒烟由本阶段 PR 的 server-build/container-test 验证。IDE 启动、调试界面以及 Compose 中的远程发布镜像不执行。
+
 ### 步骤 18：最终非 UI 集成验收与交接
 
 **改动：** 汇总实际版本、支持系统、运行时安装说明和所有活动脚本；同步 AGENTS/CLAUDE，清理本次升级留下的失效配置。任何新修复都要重新验证受影响部分。

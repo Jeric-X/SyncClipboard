@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–16c（含全部子步骤和前置修复）已通过，当前执行步骤 17a：CodeCracker 维护状态与分析器兼容性。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 16c 验证通过提交为 `a88cb22e9d2cf568db1f2e0052a59f965bde6d68`；步骤 17a 未通过前不进入 17b。
-- 步骤 17b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–17a（含全部子步骤和评审修复）已通过，当前执行步骤 17b：Containers.Tools.Targets 与容器配置兼容性。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 17a 验证通过提交为 `c8ea1102005bf22ceff965872c5cf7852674a982`；步骤 17b 未通过前不进入 17c。
+- 步骤 17c–18：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -1035,3 +1035,25 @@ UpdateJob通过IThreadDispatcher新增的取消重载传递Quartz令牌，Update
 修复后15项Quartz专项通过，完整Core442和Desktop6通过，0失败/跳过；原Core438项逐项保留，仅新增关闭取消/释放次序1项及令牌传递/提前取消3项，Desktop用例完全不变。TRX/Cobertura位于 `/private/tmp/syncclipboard-stage17a-fixed-results/`，计数及实际产品程序集命中校验通过；11份依赖图不变，对比 `/tmp/syncclipboard-stage17a-fixed-test-comparison.json`。实际Quartz探针10组、六项取消入口、更新令牌交接通过，`/tmp/syncclipboard-stage17a-fixed-quartz.json`，UI回调执行0。Windows测试还原、仓库与探针格式、actionlint及diff检查通过。
 
 CI Core最低数提升至442，五份测试合计预期518项。修复后的新提交仍须完整CI和评审通过；不能沿用a80450cc的成功结果。该问题已追加本地日志，线程PRRT_kwDOBXBc9s6iBelw待新提交验证后解决，不发送评论。完全信任CI产物，不下载远程编译产物或做二进制审计。
+
+重启取消修复提交 `c8ea1102005bf22ceff965872c5cf7852674a982` 已推送。[PR run34819793133](https://github.com/Jeric-X/SyncClipboard/actions/runs/34819793133)、[push run34819789352](https://github.com/Jeric-X/SyncClipboard/actions/runs/34819789352)、CodeQL34819792612正在运行，本head评审已启动；首次检查无新增问题。11个线程中重启P2仍待新提交验证后解决，其余10个已处理。监控pr419已更新为当前提交和442/6/58门槛，每10分钟；步骤17a未通过，不进入17b。
+
+修复提交的五个CI测试任务现已完成：Windows Core442、三平台Desktop各6、WinUI58，共518项NonUI测试通过，0失败/跳过；覆盖率校验和三平台Quartz10组/六取消入口/令牌交接均通过，汇总 `/tmp/syncclipboard-stage17a-fixed-ci-tests.json`。本head评审于2026-09-14T07:57:29.903077Z完成，无新增正文或行内问题；重启P2线程PRRT_kwDOBXBc9s6iBelw经实际Windows回归及三平台探针证据标记解决，11个线程均已处理，未发送评论。其余构建/打包仍待结束，阶段尚未最终通过。
+
+### 步骤 17a 最终通过记录
+
+验证通过提交 `c8ea1102005bf22ceff965872c5cf7852674a982`：[PR run34819793133](https://github.com/Jeric-X/SyncClipboard/actions/runs/34819793133) 58项全部成功，[push run34819789352](https://github.com/Jeric-X/SyncClipboard/actions/runs/34819789352) 58项成功、8项发布任务预期跳过，CodeQL34819792612与CodeFactor成功。汇总119 SUCCESS、8 SKIPPED，PR CLEAN；本head自动评审于2026-09-14T07:57:29.903077Z完成，无新增问题，11个线程均已处理。
+
+518项NonUI测试、五份覆盖率校验、三平台Quartz及其余必要协议/构建/打包全部通过。完全信任CI产物，未下载或审计远程编译产物，UI验证执行0。最终证据 `/tmp/syncclipboard-pr419-c8ea-complete.json`、`-pr-complete.json`、`-push-complete.json`、`-latest-runs.json`、`-final-threads.json` 与 `/tmp/syncclipboard-stage17a-fixed-ci-tests.json`。监控pr419已删除，允许进入17b；整体升级仍未完成。
+
+## 步骤 17b：容器工具与配置兼容性（进行中）
+
+2026-09-14 官方NuGet索引确认 Microsoft.VisualStudio.Azure.Containers.Tools.Targets 最新稳定版1.23.0，从1.22.1升级；官方变更为增加Podman支持。本项目继续使用Docker。版本/包元数据和11份基线依赖图位于 `/private/tmp/syncclipboard-stage17b/`；nuspec提供提交9b098373e85a4daf3f0cf716ab3a27b02470f7dc但没有仓库URL，不据此构造未经核实的源码链接。
+
+仅Server引用此构建包。使用1.23.0支持的新属性ContainerBuildContext替代DockerfileContext，保留`..`，相对Server Dockerfile仍指向src；求值前后Linux、net10.0和Release的Regular模式一致，记录 `/tmp/syncclipboard-stage17b-baseline-properties.json`、`-properties.json`。包的props/targets文本确认新属性传给容器构建任务。Dockerfile仍使用.NET10 Ubuntu24.04基础镜像、SDK10.0.302、原多阶段构建、5033端口和/app/data内容目录；Compose仍是现有远程发布镜像的使用示例，不拉取或运行该镜像。未新增IDE启动/调试或UI验证。
+
+11份项目依赖图比较仅Server的容器工具1.22.1→1.23.0变化；其余包和10份图不变。Server各目标下该包仅提供build资产，没有compile/runtime资产，不把包的.NETFramework4.7.2元数据解释为产品需安装该运行时。报告 `/tmp/syncclipboard-stage17b-dependency-diff.json`。
+
+本地dotnet restore与Release发布通过；发布目录 `/private/tmp/syncclipboard-stage17b-publish/`。server_smoke两轮API/认证/历史/传输数据通过；server_startup_smoke的命令行/环境配置各首次和重启四轮通过，均临时目录与回环HTTP、无UI。日志 `/tmp/syncclipboard-stage17b-{restore,publish,server-smoke,server-startup,format}.log`，仓库格式检查退出0，仅跨平台工作区加载警告。
+
+本机无Docker CLI，不安装/启动图形容器工具。当前阶段提交必须由既有PR的Ubuntu amd64/arm64原生runner实际执行Docker构建、平台/系统确认、API与首次启动容器冒烟，以及独立Server发布/Swagger JSON检查，并完成全套CI/评审。无需下载CI编译产物；步骤17b尚未通过，不进入17c。
