@@ -938,3 +938,12 @@ Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Too
 格式工具的新 CS0103 输出源于 MSTest 4 的 [ClassCleanupBehavior 迁移修复器](https://github.com/microsoft/testfx/blob/a81dff85c81f88b1cd0421619225b1037341d201/src/Analyzers/MSTest.Analyzers.CodeFixes/RemoveClassCleanupBehaviorArgumentFixer.cs)：它注册此编译诊断，导致格式工具收集 macOS 设计时工作区缺少 WinUI/资源生成代码的错误。本仓库没有待迁移的 ClassCleanupBehavior；格式命令仅增加 `--exclude-diagnostics CS0103`，实际平台构建仍强制检查 CS0103，没有修改 NoWarn、编译器或 MSTest 规则。CI 与 AGENTS/CLAUDE 同步该命令，完整格式检查退出 0，仅有跨平台工作区加载警告；actionlint 与 diff 检查通过。这项 CI 调整也必须由本阶段 PR 验证。
 
 当前阶段本地检查已完成，提交后的全部 CI 与评审尚待通过，不进入 16b。
+
+
+### 步骤 16a 补修：S3 上传完成标记
+
+首轮提交 `5a61a2e8ff0d25120f3b09abbf30ffc79bd3e340` 已推送，监控 `pr419` 每 10 分钟检查。复查完整评审正文发现，步骤 15 的 `2026-09-14T04:31:10Z` 评审除退出 P1 线程外，正文还包含 S3 中间 EOF 提前报告完成的 P2；此前只核对行内线程而漏处理这项正文反馈。因此步骤 15 的收尾记录不能代表这项既有反馈已解决，本阶段先补修，整体升级仍未完成。后续必须同时核对 reviews 的正文、行内线程和普通评论。
+
+原 ProgressReadStream 在 SDK 签名或重试的源流 EOF 设置 End=true，上传方法在 PutObjectAsync 成功后又报告一次完成。现有 S3 探针增加成功完成只报告一次、失败/取消不报告完成的检查；原实现已在空文件上传中复现，日志 `/tmp/syncclipboard-stage16a-s3-repro.log`。修复移除源流 EOF 完成报告，保留成功请求后的最终报告、单调有界进度和现有取消行为。验证仅使用本地编译的协议探针、源码构建的 MinIO、临时文件与回环 HTTP；不运行通知 UI，不下载或审计远程编译产物。修复后的本地结果及新提交 CI 尚待完成。
+
+修复后七组真实 S3 协议检查通过，包括普通/空文件/32 MiB/并行上传、两次 500 后重试成功、持续失败与取消；新增完成标记断言全部通过。证据 `/tmp/syncclipboard-stage16a-s3-fixed.json`。Core 438 项再次通过，0 失败/跳过，仓库格式检查退出 0。额外单独检查 S3Probe 格式时发现其原有 token 命名、CreateAdapter 可静态化和 JsonSerializerOptions 缓存三项提示，均不在本次改动中；该探针不属于仓库格式 CI 的解决方案范围，不据此声称此额外检查通过，也不作无关格式改动。实际探针编译无警告/错误。修复提交的 CI 与完整评审仍待通过，不进入 16b。

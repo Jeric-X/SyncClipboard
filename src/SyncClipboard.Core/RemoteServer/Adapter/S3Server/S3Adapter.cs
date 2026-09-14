@@ -486,15 +486,8 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                     End = false
                 });
             }
-            else
-            {
-                _progress.Report(new HttpDownloadProgress
-                {
-                    BytesReceived = _readBytes,
-                    TotalBytesToReceive = _totalBytes,
-                    End = true
-                });
-            }
+            // EOF can precede a signing rewind or retry; UploadFileAsync reports completion
+            // only after PutObjectAsync succeeds.
         }
 
         public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);

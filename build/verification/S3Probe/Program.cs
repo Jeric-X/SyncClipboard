@@ -165,8 +165,14 @@ sealed class S3ProtocolProbe : IDisposable
         await Put(prefix + "/file/cancel-upload.bin", preservedObject);
         using (var cancelUpload = CancellationTokenSource.CreateLinkedTokenSource(token))
         {
-            var progress = new InlineProgress(p => { if (p.BytesReceived >= 128 * 1024) cancelUpload.Cancel(); });
+            var uploadCompletions = 0;
+            var progress = new InlineProgress(p =>
+            {
+                if (p.End) uploadCompletions++;
+                if (p.BytesReceived >= 128 * 1024) cancelUpload.Cancel();
+            });
             await ExpectCanceled(() => adapter.UploadFileAsync("cancel-upload.bin", cancelSource, progress, cancelUpload.Token));
+            Require(uploadCompletions == 0, "Canceled upload reported completion.");
         }
         using (var preserved = await client.GetObjectAsync(bucket, prefix + "/file/cancel-upload.bin", token))
         using (var reader = new StreamReader(preserved.ResponseStream))
@@ -195,9 +201,11 @@ sealed class S3ProtocolProbe : IDisposable
             using var retryDeadline = CancellationTokenSource.CreateLinkedTokenSource(token);
             retryDeadline.CancelAfter(TimeSpan.FromSeconds(20));
             var retryWatch = Stopwatch.StartNew();
+            var uploadCompletions = 0;
             try
             {
-                await retried.UploadFileAsync("always-fail.bin", cancelSource, cancellationToken: retryDeadline.Token);
+                var progress = new InlineProgress(p => { if (p.End) uploadCompletions++; });
+                await retried.UploadFileAsync("always-fail.bin", cancelSource, progress, retryDeadline.Token);
                 throw new InvalidOperationException("Persistent server failure was ignored.");
             }
             catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.InternalServerError) { }
@@ -206,6 +214,7 @@ sealed class S3ProtocolProbe : IDisposable
                 persistentFailureCanceled = true;
             }
             Require(retryWatch.Elapsed < TimeSpan.FromSeconds(25), "Persistent failure did not terminate within the cancellation bound.");
+            Require(uploadCompletions == 0, "Failed upload reported completion during signing or retries.");
         }
         Passed("real server through fault proxy: bounded retries and unchanged uploaded/downloaded bytes");
         return persistentFailureCanceled;
@@ -301,8 +310,10 @@ sealed class S3ProtocolProbe : IDisposable
         HttpDownloadProgress lastUpload = default, lastDownload = default;
         ulong maximumUpload = 0;
         var uploadRegressed = false;
+        var uploadCompletions = 0;
         await adapter.UploadFileAsync(name, source, new InlineProgress(p =>
         {
+            if (p.End) uploadCompletions++;
             uploadRegressed |= p.BytesReceived < lastUpload.BytesReceived;
             lastUpload = p;
             maximumUpload = Math.Max(maximumUpload, p.BytesReceived);
@@ -310,6 +321,7 @@ sealed class S3ProtocolProbe : IDisposable
         await adapter.DownloadFileAsync(name, destination, new InlineProgress(p => lastDownload = p), token);
         Require(Hash(bytes) == Hash(await File.ReadAllBytesAsync(destination, token)), "File bytes differ: " + name);
         Require(lastUpload.End && lastUpload.BytesReceived == (ulong)bytes.Length, "Upload completion progress differs.");
+        Require(uploadCompletions == 1, "Upload reported completion before the request succeeded: " + name);
         Require(maximumUpload <= (ulong)bytes.Length, "Upload progress exceeds file length.");
         Require(!uploadRegressed, "Upload progress decreased during signing or retry: " + name);
         Require(lastDownload.End && lastDownload.BytesReceived == (ulong)bytes.Length, "Download completion progress differs.");
