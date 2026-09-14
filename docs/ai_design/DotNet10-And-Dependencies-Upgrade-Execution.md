@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–15（含全部子步骤和前置修复）已通过，当前执行步骤 16a：Test SDK 与 MSTest 升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 15 验证通过提交为 `55ea1e44e2e5f111cdaa7d0ac331f938ab71229b`；步骤 16a 未通过前不进入 16b。
-- 步骤 16b–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–16a（含全部子步骤和前置修复）已通过，当前执行步骤 16b：coverlet 覆盖率采集。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 16a 验证通过提交为 `cd132345e47e48f2f5b76984e6b7eb43067aa632`；步骤 16b 未通过前不进入 16c。
+- 步骤 16c–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -947,3 +947,30 @@ Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Too
 原 ProgressReadStream 在 SDK 签名或重试的源流 EOF 设置 End=true，上传方法在 PutObjectAsync 成功后又报告一次完成。现有 S3 探针增加成功完成只报告一次、失败/取消不报告完成的检查；原实现已在空文件上传中复现，日志 `/tmp/syncclipboard-stage16a-s3-repro.log`。修复移除源流 EOF 完成报告，保留成功请求后的最终报告、单调有界进度和现有取消行为。验证仅使用本地编译的协议探针、源码构建的 MinIO、临时文件与回环 HTTP；不运行通知 UI，不下载或审计远程编译产物。修复后的本地结果及新提交 CI 尚待完成。
 
 修复后七组真实 S3 协议检查通过，包括普通/空文件/32 MiB/并行上传、两次 500 后重试成功、持续失败与取消；新增完成标记断言全部通过。证据 `/tmp/syncclipboard-stage16a-s3-fixed.json`。Core 438 项再次通过，0 失败/跳过，仓库格式检查退出 0。额外单独检查 S3Probe 格式时发现其原有 token 命名、CreateAdapter 可静态化和 JsonSerializerOptions 缓存三项提示，均不在本次改动中；该探针不属于仓库格式 CI 的解决方案范围，不据此声称此额外检查通过，也不作无关格式改动。实际探针编译无警告/错误。修复提交的 CI 与完整评审仍待通过，不进入 16b。
+
+修复提交 `cd132345e47e48f2f5b76984e6b7eb43067aa632` 已推送；当前 [PR run 34810664267](https://github.com/Jeric-X/SyncClipboard/actions/runs/34810664267)、[push run 34810660034](https://github.com/Jeric-X/SyncClipboard/actions/runs/34810660034) 和 CodeQL 34810663794 正在验证。已取消被替代的 5a61a2e8 两个旧构建运行以释放资源，旧取消结果不作为当前提交通过证据。当前格式任务 103871188881 成功，Windows Core 103871189031 的日志确认 438 通过、0 失败/跳过，S3 103871189039 日志确认七组通过，包括新增完成标记断言。证据 `/tmp/syncclipboard-pr419-cd13-style.log`、`/tmp/syncclipboard-pr419-cd13-core.log`、`/tmp/syncclipboard-pr419-cd13-s3.log`。其余必要 CI 与当前提交评审尚未完成，步骤 16a 未通过，不进入 16b。监控 `pr419` 保持每 10 分钟检查。
+
+
+### 步骤 16a 评审核对：TRX completed 字段
+
+[评审 P1](https://github.com/Jeric-X/SyncClipboard/pull/419#discussion_r4002527532) 认为成功的 VSTest 报告应含 completed=total，因此要求放宽校验。当前实际 Core438、三平台 Desktop6 的 CI 均通过原校验器，本地 TRX 的 completed 均为0。进一步核对所用 VSTest 精确源码：[TestRunSummary 构造函数](https://github.com/microsoft/vstest/blob/5b0c2fc69de12eb4383a7b6b38acab164a2f68fb/src/Microsoft.TestPlatform.Extensions.TrxLogger/ObjectModel/TestRunSummary.cs#L104) 显式将 completed 写为0；[TestOutcome 定义](https://github.com/microsoft/vstest/blob/5b0c2fc69de12eb4383a7b6b38acab164a2f68fb/src/Microsoft.TestPlatform.Extensions.TrxLogger/ObjectModel/TestOutcome.cs#L84) 将 Completed 与 Passed 分开，前者不代表已判断成功。ResultSummary 的 outcome=Completed 与 Counters.completed 含义不同，现有校验器已接受前者。该反馈不适用于本项目实际 VSTest 报告，不修改测试门槛。当前 WinUI CI 与完整阶段仍待完成；线程 PRRT_kwDOBXBc9s6iAJJ4 待核对后解决，不发送评论。
+
+当前 WinUI 58 项与其 TRX 校验均已通过，日志 `/tmp/syncclipboard-pr419-cd13-winui.log`；至此 Core438、三平台 Desktop 各6、WinUI58 共514项非UI测试全部成功、0失败/跳过。三平台 Quartz 探针各10组及六项取消入口也通过。TRX评审线程 PRRT_kwDOBXBc9s6iAJJ4 已依据精确官方源码和三套测试实际CI证据标记解决，GraphQL确认 isResolved=true；未发送评论，未修改通过条件。其余构建/打包和完整阶段CI仍待完成。
+
+
+### 步骤 16a 最终通过记录
+
+验证通过提交 `cd132345e47e48f2f5b76984e6b7eb43067aa632`：[PR run 34810664267](https://github.com/Jeric-X/SyncClipboard/actions/runs/34810664267) 的58项任务全部成功，[push run 34810660034](https://github.com/Jeric-X/SyncClipboard/actions/runs/34810660034) 的58项成功、8项发布任务预期跳过；CodeQL 34810663794和CodeFactor成功。最终119 SUCCESS、8 SKIPPED，PR状态CLEAN。当前评审于2026-09-14T05:53:48.290271Z完成，TRX误报已按官方源码及实际测试证据处理；10个线程全部解决，没有未处理的评审正文/行内/普通评论事项。
+
+514项非UI测试、三平台Quartz探针、S3七组协议及其新增完成标记断言通过；各平台构建和打包成功，未下载或复用远程产物做二进制审计，UI验证实际执行0。证据 `/tmp/syncclipboard-pr419-cd13-complete.json`、`-pr-complete.json`、`-push-complete.json`、`-final-runs.json`、`-final-threads.json` 及各测试日志。监控pr419已删除，允许进入16b；整体升级仍未完成。
+
+
+## 步骤 16b：coverlet 覆盖率采集（进行中）
+
+官方NuGet索引于2026-09-14核定coverlet.collector最新稳定版10.0.1，从6.0.4升级；精确源码提交d21b5b6a08d48f51405ba2c5c5660f91a565776d，元数据与升级前11份依赖图保存于 `/private/tmp/syncclipboard-stage16b/`。官方10系列新增.NET10支持；现有SDK10.0.302和TestSDK18.10.0满足其VSTest要求。继续使用VSTest collector，没有加入coverlet.MTP/msbuild或改变测试宿主。三份测试依赖图仅coverlet.collector版本变化，八份产品依赖图不变；Moq留待16c。
+
+旧6.0.4和新10.0.1均使用同一runsettings采集Core438、Desktop6，全部通过且测试名称逐项无增减、0失败/跳过。新旧Core报告均命中4165/16500行，Desktop报告均命中205/21211行；这些是各测试项目报告内的产品代码行数，不跨报告相加，也不代表UI覆盖。最终TRX/Cobertura位于 `/private/tmp/syncclipboard-stage16b-final/`，对比报告 `/tmp/syncclipboard-stage16b-comparison.json`。
+
+新增runsettings仅纳入SyncClipboard产品程序集、排除测试程序集；覆盖率采集不改变NonUI测试筛选及初始化/清理范围。CI在现有Core、三平台Desktop、WinUI测试命令上启用采集，保留原438/6/58计数校验；另检查报告存在、有效非零覆盖，以及Core/Shared/Server.Core、Desktop或WinUI产品程序集有实际命中。WinUI产品程序集名为SyncClipboard，明确用此名称检查。VSTest可能保存原始附件和部署副本，逐份校验但不累加重复副本。
+
+报告校验器通过真实基线/新报告正例与六种负例：零命中汇总、缺少目标程序集、目标程序集无命中、非法汇总、损坏XML、缺失报告。使用既有defusedxml读取，不引入依赖。WinUI依赖还原、仓库格式、actionlint和diff检查通过；实际Windows/三平台采集必须由本提交PR验证。本地没有启动UI，也没有下载编译产物。本阶段尚未提交并完成CI/评审，不进入16c。

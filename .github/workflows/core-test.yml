@@ -23,7 +23,7 @@ jobs:
       run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj
 
     - name: Run Core tests
-      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --filter TestCategory=NonUI --logger trx --results-directory TestResults/core
+      run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore --filter TestCategory=NonUI --collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings --logger trx --results-directory TestResults/core
 
     - uses: actions/setup-python@v6
       with:
@@ -31,8 +31,11 @@ jobs:
     - name: Install verification dependencies
       run: python -m pip install -r build/verification/requirements.txt
 
-    - name: Verify Core test coverage
+    - name: Verify Core test results
       run: python build/verification/check_test_results.py TestResults/core --minimum 438
+
+    - name: Verify Core code coverage collection
+      run: python build/verification/check_code_coverage.py TestResults/core --require-package SyncClipboard.Core SyncClipboard.Shared SyncClipboard.Server.Core
 
     - name: Upload test results
       if: always()
@@ -56,14 +59,16 @@ jobs:
     - name: Show selected SDK
       run: dotnet --info
     - name: Test desktop services without UI
-      run: dotnet test src/SyncClipboard.Test.Desktop -c Release --filter TestCategory=NonUI --logger trx --results-directory TestResults/desktop
+      run: dotnet test src/SyncClipboard.Test.Desktop -c Release --filter TestCategory=NonUI --collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings --logger trx --results-directory TestResults/desktop
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
     - name: Install verification dependencies
       run: python -m pip install -r build/verification/requirements.txt
-    - name: Verify non-UI test coverage
+    - name: Verify non-UI test results
       run: python build/verification/check_test_results.py TestResults/desktop --minimum 6
+    - name: Verify desktop code coverage collection
+      run: python build/verification/check_code_coverage.py TestResults/desktop --require-package SyncClipboard.Desktop
     - name: Build the isolated non-UI Quartz job probe
       run: dotnet build build/verification/QuartzProbe/QuartzProbe.csproj -c Release
     - name: Verify Quartz production jobs with temporary data
@@ -193,14 +198,16 @@ jobs:
     - name: Build WinUI tests
       run: msbuild src\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=false /v:m -restore
     - name: Test WinUI services without UI
-      run: dotnet test src/SyncClipboard.Test.WinUI3 -c Release --no-build --no-restore -p:Platform=x64 -p:RuntimeIdentifier=win-x64 --filter TestCategory=NonUI --logger trx --results-directory TestResults/winui
+      run: dotnet test src/SyncClipboard.Test.WinUI3 -c Release --no-build --no-restore -p:Platform=x64 -p:RuntimeIdentifier=win-x64 --filter TestCategory=NonUI --collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings --logger trx --results-directory TestResults/winui
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
     - name: Install verification dependencies
       run: python -m pip install -r build/verification/requirements.txt
-    - name: Verify non-UI test coverage
+    - name: Verify non-UI test results
       run: python build/verification/check_test_results.py TestResults/winui --minimum 58
+    - name: Verify WinUI product code coverage collection
+      run: python build/verification/check_code_coverage.py TestResults/winui --require-package SyncClipboard
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v7

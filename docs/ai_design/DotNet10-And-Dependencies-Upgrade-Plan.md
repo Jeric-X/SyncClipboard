@@ -63,7 +63,7 @@
 | ObservableCollections | 3.3.4 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | Quartz 4.1.0；DI 已并入主包，移除独立空包引用 | 14 |
 | Swashbuckle.AspNetCore / Microsoft.OpenApi | 8.1.1 / 1.6.23（传递） | 10.2.3 / 2.12.2，OpenAPI 固定为上游 v10 对应的 2.x 系列 | 15 |
-| Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | 16a 核定 Test SDK 18.10.0 / MSTest 4.4.0，保持 VSTest；coverlet 与 Moq 分别在后续子步骤核定 | 16a–16c |
+| Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | Test SDK 18.10.0 / MSTest 4.4.0 / coverlet 10.0.1，保持 VSTest；Moq 在 16c 核定 | 16a–16c |
 | CodeCracker、Containers.Tools.Targets、PupNet | 1.1.0 / 1.22.1 / 1.8.0 | 逐项检查维护状态与工具运行时要求 | 17a–17c |
 
 FluentAvalonia 与图片加载器的依据分别为 [NuGet 依赖声明](https://www.nuget.org/packages/FluentAvaloniaUI/3.1.0) 和 [图片加载器发布说明](https://www.nuget.org/packages/AsyncImageLoader.Avalonia/3.8.0)。其余未列精确目标的项目，必须在执行对应步骤时填入版本与官方来源后再修改；若没有更新，记录“当前已是可用稳定版”，不能虚构升级。
@@ -363,6 +363,8 @@ dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnos
 不把升级测试包和测试运行器迁移合在一起，不用大面积修改断言掩盖行为变化。每个子步骤都须完成 PR 监控。
 
 16a 于 2026-09-14 核定 [Microsoft.NET.Test.Sdk 18.10.0](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.10.0) 和 [MSTest.TestAdapter 4.4.0](https://www.nuget.org/packages/MSTest.TestAdapter/4.4.0)，TestFramework 同版。按 [MSTest v4 迁移说明](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-mstest-migration-v3-v4) 核对 API、分析器与测试发现变化。继续使用 Microsoft.NET.Sdk 和显式 Test SDK 引用，不启用 MTP 或 WinUI 测试宿主；比较实际用例名称与数量，不用变化后的 TestCase.Id 判断用例缺失。
+
+16b 于 2026-09-14 核定 [coverlet.collector 10.0.1](https://www.nuget.org/packages/coverlet.collector/10.0.1)。三套测试使用 `--collect:"XPlat Code Coverage" --settings build/verification/nonui-coverage.runsettings`，仍以 `TestCategory=NonUI` 正向筛选。CI 除检查原测试计数外，还用 `check_code_coverage.py` 检查 Cobertura 报告存在、命中计数有效且对应产品程序集确有命中；报告目录随测试报告保存。此步骤验证覆盖率采集有效，不设 UI 覆盖率门槛，不把覆盖率百分比解释为 UI 验收。
 
 ### 步骤 17a–17c：依次处理分析器与构建工具
 
