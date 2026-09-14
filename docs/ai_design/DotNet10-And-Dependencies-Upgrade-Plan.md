@@ -382,6 +382,8 @@ dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnos
 
 17b 于 2026-09-14 核定并升级 [Containers.Tools.Targets 1.23.0](https://www.nuget.org/packages/Microsoft.VisualStudio.Azure.Containers.Tools.Targets/1.23.0)，该版本增加 Podman 支持。按[官方属性说明](https://learn.microsoft.com/en-us/visualstudio/containers/container-msbuild-properties?view=visualstudio)，将 Server 的 DockerfileContext 改为 ContainerBuildContext，值仍为 `..`，对应仓库 `src` 目录。保留 Dockerfile、Linux 目标和 Release 的 Regular 模式，不切换容器引擎。本地验证属性求值、发布和非 UI HTTP/首次启动回归；本机无 Docker CLI，实际 amd64/arm64 原生 Docker 构建与两组容器冒烟由本阶段 PR 的 server-build/container-test 验证。IDE 启动、调试界面以及 Compose 中的远程发布镜像不执行。
 
+17c 于 2026-09-14 核定 [PupNet 1.10.0](https://github.com/kuiperzone/PupNet-Deploy/releases/tag/v1.10.0)，工具自身改为 net10.0，因此 Linux 打包任务仅安装 SDK 10.0.302。1.9 起不再内嵌 appimagetool，AppImage 任务显式安装 [appimagetool 1.9.1](https://github.com/AppImage/appimagetool/releases/tag/1.9.1) 与 libfuse2；RPM 任务显式安装 rpm。appimagetool 按 runner 主机架构选择，现有 x64 runner 为两种目标架构使用 x86_64 构建工具。保留现有包类型、自包含组合及 arm64 RPM 排除；保留配置中的 AppImageVersionOutput=true、包版本/发行号和现有文件命名。只对配置副本运行本地编译 PupNet 的解析检查，Linux 实际打包和重命名由本阶段 PR CI 验证。构建工具安装及 CI 作业间传递构建输入属于打包流程，不新增产品二进制验证或下载产物审计。
+
 ### 步骤 18：最终非 UI 集成验收与交接
 
 **改动：** 汇总实际版本、支持系统、运行时安装说明和所有活动脚本；同步 AGENTS/CLAUDE，清理本次升级留下的失效配置。任何新修复都要重新验证受影响部分。

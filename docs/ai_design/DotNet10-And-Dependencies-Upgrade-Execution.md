@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–17a（含全部子步骤和评审修复）已通过，当前执行步骤 17b：Containers.Tools.Targets 与容器配置兼容性。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 17a 验证通过提交为 `c8ea1102005bf22ceff965872c5cf7852674a982`；步骤 17b 未通过前不进入 17c。
-- 步骤 17c–18：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–17b（含全部子步骤和评审修复）已通过，当前执行步骤 17c：PupNet 与打包工具运行时。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 17b 验证通过提交为 `cc2022c0aaa67b4e507d5467850995b67a97eaf9`；步骤 17c 未通过前不进入 18。
+- 步骤 18：待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -1057,3 +1057,26 @@ CI Core最低数提升至442，五份测试合计预期518项。修复后的新�
 本地dotnet restore与Release发布通过；发布目录 `/private/tmp/syncclipboard-stage17b-publish/`。server_smoke两轮API/认证/历史/传输数据通过；server_startup_smoke的命令行/环境配置各首次和重启四轮通过，均临时目录与回环HTTP、无UI。日志 `/tmp/syncclipboard-stage17b-{restore,publish,server-smoke,server-startup,format}.log`，仓库格式检查退出0，仅跨平台工作区加载警告。
 
 本机无Docker CLI，不安装/启动图形容器工具。当前阶段提交必须由既有PR的Ubuntu amd64/arm64原生runner实际执行Docker构建、平台/系统确认、API与首次启动容器冒烟，以及独立Server发布/Swagger JSON检查，并完成全套CI/评审。无需下载CI编译产物；步骤17b尚未通过，不进入17c。
+
+步骤17b提交 `cc2022c0aaa67b4e507d5467850995b67a97eaf9` 已推送。[PR run34822154967](https://github.com/Jeric-X/SyncClipboard/actions/runs/34822154967)、[push run34822150921](https://github.com/Jeric-X/SyncClipboard/actions/runs/34822150921)、CodeQL34822154689已启动，本head评审正在运行，首次完整反馈核对无新增问题，11个线程均已处理。监控pr419已创建，每10分钟检查。仍须当前提交的双架构容器/Server以及全部CI和评审通过，不进入17c。
+
+本提交Server发布与双架构容器任务均成功。实际日志确认Ubuntu24.04原生amd64/arm64分别执行Docker构建并运行各自架构的.NET10；两个容器各两轮API/认证/历史/传输数据及四轮命令行/环境配置首次启动与重启检查通过。独立Server也完成同样六轮检查及四种Swagger JSON诊断/环境组合，未访问Swagger UI。证据 `/tmp/syncclipboard-pr419-cc20-server.log`、`-container-amd64.log`、`-container-arm64.log`。其余完整CI与本head评审仍待结束，17b尚未最终通过。
+
+当前提交的Core442、三平台Desktop各6、WinUI58，共518项NonUI测试均通过、0失败/跳过；五份覆盖率校验和三平台Quartz探针通过，汇总 `/tmp/syncclipboard-stage17b-ci-tests.json`。本head自动评审于2026-09-14T08:25:10.270285Z完成，无新增正文或行内问题，11个线程均已处理。完整构建/打包仍待结束，17b尚未最终通过。
+
+### 步骤 17b 最终通过记录
+
+验证通过提交 `cc2022c0aaa67b4e507d5467850995b67a97eaf9`：[PR run34822154967](https://github.com/Jeric-X/SyncClipboard/actions/runs/34822154967) 58项全部成功，[push run34822150921](https://github.com/Jeric-X/SyncClipboard/actions/runs/34822150921) 58项成功、8项发布任务预期跳过，CodeQL34822154689和CodeFactor成功。汇总119 SUCCESS、8 SKIPPED，PR CLEAN；本head评审于2026-09-14T08:25:10.270285Z完成，无新增问题，11个线程均已处理。
+
+518项NonUI测试、覆盖率及三平台Quartz检查通过；Server发布、双架构原生Docker构建/平台检查与各六轮HTTP/首次启动验证、四种Swagger JSON组合均实际成功。完全信任CI产物，未下载或审计远程编译产物，UI验证执行0。证据 `/tmp/syncclipboard-pr419-cc20-complete.json`、`-pr-complete.json`、`-push-complete.json`、`-latest-runs.json`、`-final-threads.json`，三份Server/容器日志和 `/tmp/syncclipboard-stage17b-ci-tests.json`。监控pr419已删除，允许进入17c；整体升级未完成。
+
+
+## 步骤 17c：PupNet 与 Linux 打包工具
+
+2026-09-14 官方 NuGet 索引与 GitHub 发布确认 KuiperZone.PupNet 1.10.0 为最新稳定版，v1.10.0 对应源码提交 `90793a199180da1ff2437bcbda83dedde2420d5f`。工具项目自身为 net10.0/框架依赖工具，未引用额外 NuGet 包。将 Linux 打包 CI 从 1.8.0 升至 1.10.0，移除该任务的 SDK 8.0.x，继续固定 SDK 10.0.302；AGENTS/CLAUDE 同步工具要求。
+
+PupNet 1.9 起不再附带 appimagetool。AppImage 任务安装官方稳定版 appimagetool 1.9.1 和 libfuse2，将其原始文件名加入 PATH；按 runner 主机 x64 架构选择构建工具，目标仍由既有 linux-x64/linux-arm64 参数决定。RPM 任务显式安装 rpm。保留原 10 个 Linux 安装包组合、arm64 RPM 排除、显式 --kind、版本与发行号、输出重命名、自包含与非自包含配置；不新增包类型或发布行为。
+
+只获取官方工具源码并在本地编译，0 警告/错误；本地 --version/--help 正常。仅对临时配置副本执行 --upgrade-conf -y，新旧配置规范化后完全相同，AppImageVersionOutput=true 原本已启用，保持既有版本文件名。结合上游源码确认 deb/rpm 输出命名匹配现有 CI 重命名规则。配置检查未执行 BuildHost、PostPublish 或应用运行，仓库配置只更新工具版本注释；证据 `/private/tmp/syncclipboard-stage17c/config-check/` 与 `/tmp/syncclipboard-stage17c-local-tool-build.log`。
+
+11 份项目依赖图 targets/libraries 不变；package.sh/PostPublish.sh 的 bash 语法、actionlint、diff 检查通过，仓库格式检查退出 0，仅既有跨平台工作区加载警告，日志 `/tmp/syncclipboard-stage17c-format.log`。实际 Linux 包生成与重命名需本阶段当前提交的 PR CI 验证，并等待完整 CI/评审后才能进入 18。完全信任 CI 编译产物，不下载或复用远程产物审计，UI 验证执行 0。
