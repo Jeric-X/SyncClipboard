@@ -12,21 +12,21 @@ public partial class HistoryRecordVM : ObservableObject
     public HistoryRecordVM(HistoryRecord record)
     {
         id = record.ID;
-        text = record.Text;
+        Text = record.Text;
         Type = record.Type;
-        filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
+        FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         Hash = record.Hash;
         TransferDataFile = record.TransferDataFile;
         TransferDataHash = record.TransferDataHash;
         Size = record.Size;
-        timestamp = record.Timestamp;
-        lastAccessed = record.LastAccessed;
-        stared = record.Stared;
-        pinned = record.Pinned;
-        syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
+        Timestamp = record.Timestamp;
+        LastAccessed = record.LastAccessed;
+        Stared = record.Stared;
+        Pinned = record.Pinned;
+        SyncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
             record.IsLocalFileReady ? SyncStatus.Synced : SyncStatus.ServerOnly;
-        isLocalFileReady = record.IsLocalFileReady;
-        previewImage = isLocalFileReady && filePath.Length > 0 ? filePath[0] : null;
+        IsLocalFileReady = record.IsLocalFileReady;
+        PreviewImage = IsLocalFileReady && FilePath.Length > 0 ? FilePath[0] : null;
         UpdateRelativeTime();
     }
 
@@ -38,37 +38,40 @@ public partial class HistoryRecordVM : ObservableObject
     private readonly IThreadDispatcher _threadDispatcher = AppCore.Current.Services.GetRequiredService<IThreadDispatcher>();
 
     [ObservableProperty]
-    private string text;
+    public partial string Text { get; set; }
     public ProfileType Type { get; set; }
     [ObservableProperty]
-    private string[] filePath;
-    partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
+    public partial string[] FilePath { get; set; }
+
+    partial void OnFilePathChanged(string[] oldValue, string[] newValue) => UpdatePreviewImage();
 
     public string Hash { get; set; }
     public string? TransferDataFile { get; set; }
     public string? TransferDataHash { get; set; }
     public HistoryRecordKey Key => new(Type, Hash);
     [ObservableProperty]
-    private bool isSelected;
+    public partial bool IsSelected { get; set; }
     public long Size { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RelativeTime))]
-    private DateTime timestamp;
+    public partial DateTime Timestamp { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RelativeTime))]
-    private DateTime lastAccessed;
+    public partial DateTime LastAccessed { get; set; }
+
     [ObservableProperty]
-    private bool stared;
+    public partial bool Stared { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RelativeTime))]
     [NotifyPropertyChangedFor(nameof(FullDateTime))]
-    private bool sortByLastAccessed;
+    public partial bool SortByLastAccessed { get; set; }
 
     partial void OnSortByLastAccessedChanged(bool oldValue, bool newValue) => UpdateRelativeTime();
 
     [ObservableProperty]
-    private string relativeTime = string.Empty;
+    public partial string RelativeTime { get; set; } = string.Empty;
 
     public string FullDateTime
     {
@@ -119,55 +122,57 @@ public partial class HistoryRecordVM : ObservableObject
     }
 
     [ObservableProperty]
-    private bool pinned;
+    public partial bool Pinned { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
-    private SyncStatus syncState;
+    public partial SyncStatus SyncState { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
     [NotifyPropertyChangedFor(nameof(ShowDownloadProgress))]
-    private bool isDownloading = false;
+    public partial bool IsDownloading { get; set; } = false;
 
     [ObservableProperty]
-    private double downloadProgress = 0; // 0.0 - 100.0 百分比
+    public partial double DownloadProgress { get; set; } = 0; // 0.0 - 100.0 百分比
 
     [ObservableProperty]
-    private bool isDownloadPending = false;
+    public partial bool IsDownloadPending { get; set; } = false; // 上传相关属性
 
     // 上传相关属性
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
     [NotifyPropertyChangedFor(nameof(ShowUploadProgress))]
-    private bool isUploading = false;
+    public partial bool IsUploading { get; set; } = false;
 
     [ObservableProperty]
-    private double uploadProgress = 0; // 0.0 - 100.0 百分比
+    public partial double UploadProgress { get; set; } = 0; // 0.0 - 100.0 百分比
 
     [ObservableProperty]
-    private bool isUploadPending = false;
+    public partial bool IsUploadPending { get; set; } = false;
 
     public bool ShowUploadButton => SyncState == SyncStatus.LocalOnly && IsLocalFileReady && !IsUploading;
     public bool ShowUploadProgress => IsUploading;
 
     [ObservableProperty]
-    private bool hasError = false;
+    public partial bool HasError { get; set; } = false;
 
     [ObservableProperty]
-    private string errorMessage = string.Empty;
+    public partial string ErrorMessage { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDownloadButton))]
     [NotifyPropertyChangedFor(nameof(ShowUploadButton))]
-    private bool isLocalFileReady;
+    public partial bool IsLocalFileReady { get; set; }
+
     partial void OnIsLocalFileReadyChanged(bool oldValue, bool newValue) => UpdatePreviewImage();
 
     public bool ShowDownloadButton => !IsLocalFileReady && SyncState != SyncStatus.LocalOnly && !IsDownloading;
     public bool ShowDownloadProgress => IsDownloading;
 
     [ObservableProperty]
-    public string? previewImage;
+    public partial string? PreviewImage { get; set; }
 
     private void UpdatePreviewImage()
     {

@@ -10,6 +10,9 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class HistorySettingViewModel : ObservableObject
 {
+    // Loading saved values must not persist partial settings or invoke platform services.
+    private readonly bool _isInitializing = true;
+
     private readonly ConfigManager _configManager;
     private readonly HistoryManager _historyManager;
     private readonly IMainWindowDialog _dialog;
@@ -23,12 +26,13 @@ public partial class HistorySettingViewModel : ObservableObject
         _remoteServerFactory = remoteServerFactory;
 
         var config = configManager.GetConfig<HistoryConfig>();
-        enableHistory = config.EnableHistory;
-        enableSyncHistory = config.EnableSyncHistory;
-        autoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
-        maxItemCount = config.MaxItemCount;
-        historyRetentionMinutes = config.HistoryRetentionMinutes;
+        EnableHistory = config.EnableHistory;
+        EnableSyncHistory = config.EnableSyncHistory;
+        AutoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
+        MaxItemCount = config.MaxItemCount;
+        HistoryRetentionMinutes = config.HistoryRetentionMinutes;
 
+        _isInitializing = false;
         UpdateServerSyncSupported();
 
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
@@ -67,27 +71,47 @@ public partial class HistorySettingViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private bool enableHistory;
-    partial void OnEnableHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableHistory = value });
+    public partial bool EnableHistory { get; set; }
+
+    partial void OnEnableHistoryChanged(bool value)
+    {
+        if (!_isInitializing) _configManager.SetConfig(GetCurrentRecord() with { EnableHistory = value });
+    }
 
     [ObservableProperty]
-    private bool enableSyncHistory;
-    partial void OnEnableSyncHistoryChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
+    public partial bool EnableSyncHistory { get; set; }
+
+    partial void OnEnableSyncHistoryChanged(bool value)
+    {
+        if (!_isInitializing) _configManager.SetConfig(GetCurrentRecord() with { EnableSyncHistory = value });
+    }
 
     [ObservableProperty]
-    private bool autoDeleteMissingLocalFiles;
-    partial void OnAutoDeleteMissingLocalFilesChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { AutoDeleteMissingLocalFiles = value });
+    public partial bool AutoDeleteMissingLocalFiles { get; set; }
+
+    partial void OnAutoDeleteMissingLocalFilesChanged(bool value)
+    {
+        if (!_isInitializing) _configManager.SetConfig(GetCurrentRecord() with { AutoDeleteMissingLocalFiles = value });
+    }
 
     [ObservableProperty]
-    private uint maxItemCount;
-    partial void OnMaxItemCountChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { MaxItemCount = value });
+    public partial uint MaxItemCount { get; set; }
+
+    partial void OnMaxItemCountChanged(uint value)
+    {
+        if (!_isInitializing) _configManager.SetConfig(GetCurrentRecord() with { MaxItemCount = value });
+    }
 
     [ObservableProperty]
-    private uint historyRetentionMinutes;
-    partial void OnHistoryRetentionMinutesChanged(uint value) => _configManager.SetConfig(GetCurrentRecord() with { HistoryRetentionMinutes = value });
+    public partial uint HistoryRetentionMinutes { get; set; }
+
+    partial void OnHistoryRetentionMinutesChanged(uint value)
+    {
+        if (!_isInitializing) _configManager.SetConfig(GetCurrentRecord() with { HistoryRetentionMinutes = value });
+    }
 
     [ObservableProperty]
-    private bool serverSyncSupported;
+    public partial bool ServerSyncSupported { get; set; }
 
     [RelayCommand]
     private async Task ClearLocalHistoryAsync()

@@ -30,10 +30,10 @@ public partial class HistoryViewModel : ObservableObject
     private bool _hasShownWindow;
 
     [ObservableProperty]
-    private bool showInfoBar = false;
+    public partial bool ShowInfoBar { get; set; } = false;
 
     [ObservableProperty]
-    private string infoBarMessage = string.Empty;
+    public partial string InfoBarMessage { get; set; } = string.Empty;
 
     private CancellationTokenSource? infoBarCancellationSource;
 
@@ -56,7 +56,7 @@ public partial class HistoryViewModel : ObservableObject
     private IOfficialSyncServer? historySyncServer;
 
     [ObservableProperty]
-    private bool _enableSyncHistory;
+    public partial bool EnableSyncHistory { get; set; }
 
     private readonly HistoryTransferQueue _transferQueue;
     private readonly IThreadDispatcher _threadDispatcher;
@@ -158,8 +158,8 @@ public partial class HistoryViewModel : ObservableObject
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
         var currentServer = remoteServerFactory.Current;
-        _enableSyncHistory = runtimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory;
-        historySyncServer = _enableSyncHistory ? currentServer as IOfficialSyncServer : null;
+        EnableSyncHistory = runtimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory;
+        historySyncServer = EnableSyncHistory ? currentServer as IOfficialSyncServer : null;
 
         runtimeConfig.ListenConfig<RuntimeHistoryConfig>(OnHistoryConfigChanged);
 
@@ -215,7 +215,8 @@ public partial class HistoryViewModel : ObservableObject
     private bool IsStarredScopeActive => OnlyShowStarred || SelectedFilter == HistoryFilterType.Starred;
 
     [ObservableProperty]
-    private HistoryFilterType selectedFilter = HistoryFilterType.All;
+    public partial HistoryFilterType SelectedFilter { get; set; } = HistoryFilterType.All;
+
     partial void OnSelectedFilterChanged(HistoryFilterType value)
     {
         _ = Reload();
@@ -224,7 +225,8 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private string searchText = string.Empty;
+    public partial string SearchText { get; set; } = string.Empty;
+
     partial void OnSearchTextChanged(string value)
     {
         _ = Reload();
@@ -330,7 +332,7 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private bool serverConnected = true;
+    public partial bool ServerConnected { get; set; } = true;
 
     public bool OnlyShowStarred
     {
@@ -606,7 +608,7 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoading))]
-    private bool isLoadingLocal = false;
+    public partial bool IsLoadingLocal { get; set; } = false;
 
     private bool _isLocalEnd = false;
     private bool IsEnd => _isLocalEnd;

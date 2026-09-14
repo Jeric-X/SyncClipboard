@@ -18,7 +18,7 @@
     <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="14.17.1" />
     <PackageVersion Include="Magick.NET.SystemDrawing" Version="8.0.27" />
     <PackageVersion Include="System.Drawing.Common" Version="10.0.0" />
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="ObservableCollections" Version="3.3.4" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />

@@ -15,12 +15,14 @@ public partial class ClipboardAcquisitionRulesViewModel : ObservableObject
     ];
 
     [ObservableProperty]
-    private LocaleString<TextImageRule> textImageRuleSelection = LocaleString<TextImageRule>.Match(TextImageRules, TextImageRule.Text);
+    public partial LocaleString<TextImageRule> TextImageRuleSelection { get; set; } = LocaleString<TextImageRule>.Match(TextImageRules, TextImageRule.Text);
+
     partial void OnTextImageRuleSelectionChanged(LocaleString<TextImageRule> value) =>
         AcquisitionConfig = AcquisitionConfig with { TextImageRule = value.Key };
 
     [ObservableProperty]
-    private ClipboardAcquisitionConfig acquisitionConfig = new();
+    public partial ClipboardAcquisitionConfig AcquisitionConfig { get; set; } = new();
+
     partial void OnAcquisitionConfigChanged(ClipboardAcquisitionConfig value)
     {
         TextImageRuleSelection = LocaleString<TextImageRule>.Match(TextImageRules, value.TextImageRule);

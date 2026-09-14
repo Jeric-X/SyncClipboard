@@ -32,13 +32,13 @@ public partial class HistoryViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedItem))]
-    private int selectedIndex = -1;
+    public partial int SelectedIndex { get; set; } = -1;
 
     partial void OnSelectedIndexChanged(int value) => PreviewedHistoryItem = SelectedItem;
 
     /// <summary>The record currently shown by the preview panel, independent of the batch selection.</summary>
     [ObservableProperty]
-    private HistoryRecordVM? previewedHistoryItem;
+    public partial HistoryRecordVM? PreviewedHistoryItem { get; set; }
 
     public HistoryRecordVM? SelectedItem => SelectedIndex >= 0 && SelectedIndex < HistoryItemCount
         ? ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex]
@@ -58,24 +58,24 @@ public partial class HistoryViewModel
     public ReadOnlyObservableCollection<HistoryRecordVM> VisibleSelectedItems { get; private set; } = null!;
 
     [ObservableProperty]
-    private bool isMultiSelecting;
+    public partial bool IsMultiSelecting { get; set; }
 
     [ObservableProperty]
-    private int selectedHistoryCount;
+    public partial int SelectedHistoryCount { get; set; } /// <summary>The number of selected records that are currently starred.</summary>
 
     /// <summary>The number of selected records that are currently starred.</summary>
     [ObservableProperty]
-    private int selectedStarredHistoryCount;
+    public partial int SelectedStarredHistoryCount { get; set; }
 
     [ObservableProperty]
-    private int selectedInCurrentFilterCount;
+    public partial int SelectedInCurrentFilterCount { get; set; } /// <summary>True, false or null for checked, unchecked and partial current-filter selection.</summary>
 
     /// <summary>True, false or null for checked, unchecked and partial current-filter selection.</summary>
     [ObservableProperty]
-    private bool? isCurrentFilterFullySelected = false;
+    public partial bool? IsCurrentFilterFullySelected { get; set; } = false;
 
     [ObservableProperty]
-    private bool areSelectedRecordsStarred;
+    public partial bool AreSelectedRecordsStarred { get; set; }
 
     private void InitializeSelection()
     {

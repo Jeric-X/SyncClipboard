@@ -11,6 +11,9 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class AboutViewModel : ObservableObject
 {
+    // Loading saved values must not persist partial settings or invoke platform services.
+    private readonly bool _isInitializing = true;
+
     public string Version => _appConfig.AppVersion;
 
     private readonly ConfigManager _configManager;
@@ -18,23 +21,32 @@ public partial class AboutViewModel : ObservableObject
     private readonly IAppConfig _appConfig;
 
     [ObservableProperty]
-    private bool checkUpdateOnStartUp;
+    public partial bool CheckUpdateOnStartUp { get; set; }
+
     partial void OnCheckUpdateOnStartUpChanged(bool value)
     {
+        if (_isInitializing) return;
+
         _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateOnStartUp = value });
     }
 
     [ObservableProperty]
-    private bool autoDownloadUpdate;
+    public partial bool AutoDownloadUpdate { get; set; }
+
     partial void OnAutoDownloadUpdateChanged(bool value)
     {
+        if (_isInitializing) return;
+
         _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { AutoDownloadUpdate = value });
     }
 
     [ObservableProperty]
-    private bool checkUpdateForBeta;
+    public partial bool CheckUpdateForBeta { get; set; }
+
     partial void OnCheckUpdateForBetaChanged(bool value)
     {
+        if (_isInitializing) return;
+
         _configManager.SetConfig(_configManager.GetConfig<ProgramConfig>() with { CheckUpdateForBeta = value });
     }
 
@@ -43,10 +55,11 @@ public partial class AboutViewModel : ObservableObject
         _configManager = configManager;
         _appConfig = appConfig;
         _updateChecker = updateChecker;
+        CheckUpdateOnStartUp = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
+        CheckUpdateForBeta = configManager.GetConfig<ProgramConfig>().CheckUpdateForBeta;
+        AutoDownloadUpdate = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
 
-        checkUpdateOnStartUp = configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp;
-        checkUpdateForBeta = configManager.GetConfig<ProgramConfig>().CheckUpdateForBeta;
-        autoDownloadUpdate = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
+        _isInitializing = false;
 
         configManager.ListenConfig<ProgramConfig>(config =>
         {
@@ -95,23 +108,32 @@ public partial class AboutViewModel : ObservableObject
     public partial class UpdateStatusViewModel : ObservableObject
     {
         [ObservableProperty]
-        private bool showPannel = false;
+        public partial bool ShowPannel { get; set; } = false;
+
         [ObservableProperty]
-        private Severity severity = Severity.Info;
+        public partial Severity Severity { get; set; } = Severity.Info;
+
         [ObservableProperty]
-        private string message = string.Empty;
+        public partial string Message { get; set; } = string.Empty;
+
         [ObservableProperty]
-        private string extraMessage = string.Empty;
+        public partial string ExtraMessage { get; set; } = string.Empty;
+
         [ObservableProperty]
-        private bool enableProgressbar = false;
+        public partial bool EnableProgressbar { get; set; } = false;
+
         [ObservableProperty]
-        private bool enableActionButton = false;
+        public partial bool EnableActionButton { get; set; } = false;
+
         [ObservableProperty]
-        private bool isIndeterminate = false;
+        public partial bool IsIndeterminate { get; set; } = false;
+
         [ObservableProperty]
-        private double progressValue = 0;
+        public partial double ProgressValue { get; set; } = 0;
+
         [ObservableProperty]
-        private string actionButtonText = string.Empty;
+        public partial string ActionButtonText { get; set; } = string.Empty;
+
         public Func<CancellationToken, Task>? Action;
         [RelayCommand]
         private void RunAction()

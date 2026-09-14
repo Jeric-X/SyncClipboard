@@ -9,5 +9,5 @@ public partial class FileTreeViewModel(string fullPath, string name, bool isFold
     public bool IsFolder { get; } = isFolder;
 
     [ObservableProperty]
-    public List<FileTreeViewModel>? children;
+    public partial List<FileTreeViewModel>? Children { get; set; }
 }

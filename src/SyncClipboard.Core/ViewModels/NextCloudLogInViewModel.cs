@@ -34,20 +34,20 @@ public partial class NextCloudLogInViewModel(IServiceProvider serviceProvider) :
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowTreeList))]
-    public List<FileTreeViewModel>? treeList;
+    public partial List<FileTreeViewModel>? TreeList { get; set; }
 
     public bool ShowTreeList => TreeList is not null;
 
     [ObservableProperty]
-    private string userInputUrl = "https://";
+    public partial string UserInputUrl { get; set; } = "https://";
 
     public bool CanCancel => CancelSource is not null && !CancelSource.IsCancellationRequested;
 
     [ObservableProperty]
-    private bool showProgressBar = false;
+    public partial bool ShowProgressBar { get; set; } = false;
 
     [ObservableProperty]
-    private bool showFolderProgressBar = false;
+    public partial bool ShowFolderProgressBar { get; set; } = false;
 
     private WebDav? _tempWebDav;
     private WebDavCredential? tempWebDavCredential;

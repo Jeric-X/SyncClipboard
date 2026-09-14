@@ -32,7 +32,7 @@ jobs:
       run: python -m pip install -r build/verification/requirements.txt
 
     - name: Verify Core test coverage
-      run: python build/verification/check_test_results.py TestResults/core --minimum 386
+      run: python build/verification/check_test_results.py TestResults/core --minimum 411
 
     - name: Upload test results
       if: always()

@@ -5,5 +5,5 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class LicenseViewModel : ObservableObject
 {
     [ObservableProperty]
-    private string license = "";
+    public partial string License { get; set; } = "";
 }
