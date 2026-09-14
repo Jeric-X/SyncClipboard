@@ -10,9 +10,9 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
 {
     private readonly ConfigManager _configManager = configManager;
 
-    public Task Execute(IJobExecutionContext context)
+    public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() => PlannedTask(_configManager));
+        return new ValueTask(Task.Run(() => PlannedTask(_configManager), cancellationToken));
     }
 
     private static void PlannedTask(ConfigManager configManager)

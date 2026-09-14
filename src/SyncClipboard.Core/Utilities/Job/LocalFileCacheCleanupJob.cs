@@ -9,8 +9,9 @@ public class LocalFileCacheCleanupJob(LocalFileCacheManager cacheManager, ILogge
     private readonly LocalFileCacheManager _cacheManager = cacheManager;
     private readonly ILogger _logger = logger;
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             await _logger.WriteAsync("Starting cache cleanup job...");

@@ -51,7 +51,6 @@
     <PackageReference Include="NativeNotification" />
     <PackageReference Include="SharpHook" />
     <PackageReference Include="Quartz" />
-    <PackageReference Include="Quartz.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />

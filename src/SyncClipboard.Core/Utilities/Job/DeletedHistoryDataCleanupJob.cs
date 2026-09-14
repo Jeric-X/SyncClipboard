@@ -7,8 +7,8 @@ public class DeletedHistoryDataCleanupJob(HistoryManager historyManager) : IJob
 {
     private readonly HistoryManager _historyManager = historyManager;
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
-        await _historyManager.ClearDeletedHistoryData(context.CancellationToken);
+        await _historyManager.ClearDeletedHistoryData(cancellationToken);
     }
 }

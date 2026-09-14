@@ -2,14 +2,14 @@
 
 执行计划：[分步升级计划](DotNet10-And-Dependencies-Upgrade-Plan.md)。本记录沿用计划中的非 UI 验证门槛；所有需要 UI 的检查均列为范围排除，不执行，也不作为进入下一步的前置条件。
 
-后续追加记录也必须遵守此范围，无论 macOS 是否锁屏：遇到需要 UI 的验证建议，记录为“UI 范围排除”，不新增 UI 测试或补测待办；相关代码兼容性问题仍通过源码分析、编译和可隔离的非 UI 检查处理。每一步仍须独立完成必要的非 UI 验证，涉及 CI 的内容仍须提交 PR 并监控、处理问题后，才能进入下一步。
+后续追加记录也必须遵守此范围，无论 macOS 是否锁屏：遇到需要 UI 的验证建议，记录为“范围排除：按用户要求不验证”，不新增 UI 测试或补测待办；相关代码兼容性问题仍通过源码分析、编译和可隔离的非 UI 检查处理。每一步仍须独立完成必要的非 UI 验证，涉及 CI 的内容仍须提交 PR 并监控、处理问题后，才能进入下一步。
 
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–13a（含全部子步骤和前置修复）已通过，当前执行步骤 13b：ObservableCollections 版本核定与升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 13a 验证通过提交为 `6c92d16692c24554cc15d4642347bdd1090f59c1`；步骤 13b 未通过前不进入 14。
-- 步骤 14–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–13b（含全部子步骤和前置修复）已通过，当前执行步骤 14：Quartz 与 DI 扩展升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 13b 验证通过提交为 `5f40344fb08b946859830fd29ef7ca706e2af6b3`；步骤 14 未通过前不进入 15。
+- 步骤 15–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -22,6 +22,7 @@
 | 隔离的业务逻辑、ViewModel、属性通知、命令、集合和 mock 测试 | 确认初始化、执行、清理全程不依赖 UI 后运行 |
 | 图片编解码、像素/透明通道及纯 Bitmap 数据转换 | 保留；不打开预览、不创建控件、不访问真实剪贴板 |
 | 桌面启动、窗口/控件、运行时 XAML、UI 框架或 UI 调度线程 | 范围排除；隐藏窗口、无头模式和虚拟显示器也不执行 |
+| Quartz 更新任务的真实 UI 调度、更新界面及交互回调 | 范围排除；替身只能记录回调交接，不执行回调，不把记录成功视为 UI 验证通过 |
 | 真实剪贴板、拖拽、托盘、热键、全局 hook、输入设备、模拟按键、权限提示 | 范围排除；仅保留不访问真实桌面的静态或 mock 检查 |
 | 真实 TaskDialog、UI Automation 客户端、通知服务、图形安装向导、Swagger UI | 范围排除；不以命令行入口作为非 UI 的判断依据 |
 | UI 截图、视觉比较、人工交互及解锁后补测 | 范围排除；不列入待办或通过条件 |
@@ -788,3 +789,67 @@ Codex 于 `2026-09-14T01:04:27.489345Z` 完成本 head 评审，无新增意见�
 最终 Core NonUI 427、Desktop NonUI 6 项通过，0 失败/跳过；仓库 TRX 校验器分别按最低 427/6 项核定。六份依赖图的 targets/libraries 与步骤开始时完全一致，报告 `/tmp/syncclipboard-stage13b-dependency-diff.json`。33 个既有测试文件逐一比较，改动仅为添加 NonUI 类级分类，没有修改断言或删除用例。
 
 WinUI3、macOS 和 WinUI3 测试项目还原完成；仓库格式检查退出 0（`/tmp/syncclipboard-stage13b-final-format3.log`，仅跨平台工作区加载警告），actionlint 和 diff 检查通过。CI Core 最低数提升至 427，五份 TRX 要求合计 503 项（427 + 3 × 6 + 58）。保留全部 55 个 artifact 和既有构建、打包、图片、S3、服务器与容器检查；产物审计新增 ObservableCollections 3.3.4 唯一程序集和官方 net8.0 资产核对，缺失、重复、损坏、旧版本及错误框架五种负例均被拒绝。当前仍须完成本次提交的完整 PR CI、产物及评审验证，步骤 13b 未通过，不进入 14。
+
+
+### 步骤 13b 当前提交验证进展
+
+当前提交 `5f40344fb08b946859830fd29ef7ca706e2af6b3`，对应 [PR run 34796991077](https://github.com/Jeric-X/SyncClipboard/actions/runs/34796991077)。五份 CI TRX 共 503 项通过（Core 427、三平台 Desktop 各 6、WinUI3 58），0 失败/跳过；Core 用例与本地 427 项逐项一致，新增 16 项集合回归全部实际执行。Windows NonUI 编译无新增警告，报告 `/tmp/syncclipboard-pr419-5f40-test-audit.json`、`/tmp/syncclipboard-pr419-5f40-inventory-audit.json`。
+
+七 RID 45 组图片和七组 S3 检查通过。服务器与双架构容器的当前 CI 日志均包含四轮 Production 启动及两轮 API 冒烟，下载服务器产物的本机复验也通过。macOS x64 DMG 已只读静态检查并卸载：19 个 dylib、签名、框架及全部既有依赖正确，ObservableCollections 使用官方 3.3.4 net8.0 资产。
+
+Codex 于 `2026-09-14T01:51:27.348465Z` 完成本提交评审；随后读取行内评论无新增或改动，八个线程全部解决。完整 CI、其余产物与最终状态尚待核对，不能据此标记 13b 通过，也不进入 14。监控任务 `pr419` 每 10 分钟检查当前阶段。
+
+
+### 步骤 13b 最终通过记录
+
+验证通过提交 `5f40344fb08b946859830fd29ef7ca706e2af6b3`：[PR run 34796991077](https://github.com/Jeric-X/SyncClipboard/actions/runs/34796991077)、[push run 34796989467](https://github.com/Jeric-X/SyncClipboard/actions/runs/34796989467)、[CodeQL 34796990798](https://github.com/Jeric-X/SyncClipboard/actions/runs/34796990798) 均完成成功，CodeFactor 成功；最终 119 SUCCESS、8 项预期发布 SKIPPED。合并测试提交 `237fe7a65215efb634588c28ac57dd4d49d093f8` 的父节点为 master 基线和当前 head。
+
+55 个 artifact 全部精确匹配当前 run/head 和既有名称清单。38 个 Windows/Linux 组合（24 Windows、14 Linux）通过全部累计检查，ObservableCollections 唯一程序集为官方 3.3.4 net8.0 资产，既有依赖报告与上一阶段逐项一致。报告 `/tmp/syncclipboard-pr419-5f40-package-audit.json`，SHA256 `c0bb5acd0dbc655bb1bf6b406d5f78d0d145bdef8dddbfa4b264ed2515b398e0`。两个 macOS DMG 只读检查并卸载，每包 19 个 dylib、严格签名与全部依赖正确；六份 Linux deb/rpm 元数据通过。
+
+五份 TRX 共 503 项通过，0 失败/跳过；Core 427 项与本地逐项一致，新增 16 项集合用例全部实际执行。七 RID 45 组图片、七组 S3，以及服务器/双架构容器各四轮启动和两轮 API 检查通过，下载服务器的本机复验同样通过。
+
+Codex 于 `2026-09-14T01:51:27.348465Z` 完成本 head 评审，最终再次核对无新增行内反馈，八个线程全部解决。完整本地记录 `docs/ai_design/.local/PR-419-Artifacts-5f40344f.md`。本阶段监控任务已删除；步骤 13b 非 UI 验证通过，允许进入 14，整体升级尚未完成。
+
+
+## 步骤 14：Quartz 4.1.0 迁移
+
+2026-09-14 读取官方 NuGet 实时索引及 nupkg，Quartz 与原 DI 包最高稳定版本均为 4.1.0；搜索缓存仍显示较早版本，以实际包为准。Quartz nupkg SHA256 `f31c8502bd15ca9a887e92014fcd3fc93c3c494bdb20da5016856a623a89a00e`，源码提交 `c4184eb558b6ec1856b66947fcc1e3fa4a40c2fc`，仅提供 net10.0 资产。DI 包元数据明确功能已并入 Quartz，本身为空迁移包，因此移除独立 PackageReference 和中央版本，主包升至 4.1.0。依据：[NuGet 实时索引](https://api.nuget.org/v3-flatcontainer/quartz/index.json)、[4.x 迁移指南](https://www.quartz-scheduler.net/documentation/quartz-4.x/migration-guide.html)。
+
+六份升级前依赖图保存在 `/private/tmp/syncclipboard-stage14/baseline-assets/`。实际注册六个任务：AppdataFileDelete/Update 每 24 小时，HistoryCleanup 每分钟，DeletedHistoryDataCleanup 每 5 分钟，OrphanedHistoryCleanup/LocalFileCacheCleanup 每 6 小时，均从启动时首次触发。需适配 ValueTask 任务接口、DI 与生命周期，并以隔离宿主和替身验证。UpdateJob 的真实 UI 调度和更新流程仍范围排除；测试不得操作真实应用数据目录。当前步骤未通过，不进入 15。
+
+
+### 步骤 14 首轮接口适配
+
+升级后的首次 Core 编译发现六个 IJob 的签名不兼容。已按精确包源码改为 `ValueTask Execute(IJobExecutionContext, CancellationToken)`，取消令牌传入原有历史清理调用及 Task.Run；更新和缓存任务在开始前检查取消。Quartz 4 的 AddQuartz 已注册默认 IScheduler，移除 AppCore 中旧的手工工厂注册，避免覆盖新版容器注册。原有六个任务的触发间隔尚未改变。
+
+适配后 `dotnet build src/SyncClipboard.Core -c Release --no-restore` 退出 0，0 警告、0 错误，日志 `/tmp/syncclipboard-stage14-adapted-build.log`。这仅证明编译；调度注册中未等待的异步调用、生命周期与取消行为仍需专项核对，尚未执行本阶段完整非 UI 测试、格式检查、其他平台还原、产物及 PR 验证，步骤 14 未通过。
+
+
+### 步骤 14 注册与生命周期回归
+
+现有调度注册丢弃异步返回值，可能在注册未完成时启动；改为逐项等待六个注册和 Start，失败传回调用者。为每个任务和触发器设置稳定标识，并以调度器实例级锁保护初始化；已存在任务不重新排期，部分注册失败后可继续，重复或并发初始化不产生重复任务。六个间隔和 StartNow 行为保留。AppCore 退出改为等待容器异步释放，兼容 Quartz 4 的 IAsyncDisposable；保留只实现 IDisposable 的容器后备路径。
+
+新增 11 项 NonUI 测试：生产注册元数据/时机、并发注册等待、失败恢复、初始化取消、等待锁期间取消、启动失败传播；真实隔离调度器验证 Core DI 默认代理、工厂实例、重复启动、作用域释放、失败后再次触发、Interrupt 令牌和优雅关闭等待。真实调度器只执行内存探针；六个生产任务不会在这组测试中实际执行。
+
+首轮 8 项中三项断言误把新版延迟代理当作工厂实例，或在代理关闭后读取状态导致其尝试重新解析。核对精确源码后，断言分别检查代理稳定性、实际调度器身份和实际关闭状态，没有删除失败用例或降低生命周期要求。最终专项 11 项全部通过，完整 Core 438、Desktop NonUI 6 项通过，0 失败/跳过，报告 `/tmp/syncclipboard-stage14-current-results/`。实际清理任务的临时目录验证、依赖图、格式与 PR 仍待完成，不进入 15。
+
+
+### 步骤 14 当前静态检查与覆盖证据
+
+Windows、macOS 和 WinUI3 测试项目还原通过。六份依赖图均移除 Quartz 3.14.0 / 独立 DI 3.14.0，新增 Quartz 4.1.0 及其五个 10.0.0 传递依赖：Diagnostics.Abstractions、Diagnostics.HealthChecks.Abstractions、Diagnostics.HealthChecks、FileProviders.Abstractions、Hosting.Abstractions；其余共有包的版本及完整元数据保持一致。报告 `/tmp/syncclipboard-stage14-current-dependency-diff.json`。
+
+格式检查首次要求简化集合初始化和显式传入测试取消令牌，已修正且未屏蔽诊断；清理阶段保留独立的 10 秒有界等待。复核格式退出 0（`/tmp/syncclipboard-stage14-format2.log`，仅跨平台工作区加载警告），actionlint 与 diff 检查通过。修正后的 11 项 Quartz 专项再次通过（`/tmp/syncclipboard-stage14-quartz-results4/`）。当前 Core 438 与上一阶段 427 项逐项对比，无遗漏且新增 11 项全部为 Quartz 回归；CI 最低数已调整为 438，五份 TRX 预期共 514 项。
+
+已准备 Quartz 4.1.0 net10.0 官方资产及旧 DI 程序集/依赖缺席的产物规则。官方 DLL SHA256 `c733959ad54e48c4d9e28e8ea2b4f3eeea53c94ff1fd858b89941a0e75ff1343` 与本地测试宿主实际文件一致；缺失、重复、大小写别名、损坏、旧版本、旧 DI 文件、旧 DI 依赖七种负例均被拒绝，报告 `/tmp/syncclipboard-stage14-auditor-check.json`。这些规则尚未替代本阶段真实 PR 产物检查。仍须补齐实际清理任务的独立临时目录验证后再提交当前步骤，不进入 15。
+
+### 步骤 14 实际任务隔离验证与取消修复
+
+新增 `build/verification/QuartzProbe` 及 `quartz_jobs_smoke.py`。包装脚本先将探针复制到新建的临时目录，写入 PortableAppDataFolder/PortableUserConfig，再启动独立进程；探针核对可执行目录和便携数据根后才创建服务。结束后删除临时目录，不运行桌面入口。两项负例分别关闭一个便携配置，均在初始化数据前拒绝执行，报告 `/tmp/syncclipboard-stage14-probe-isolation-negative.json`。
+
+10 组检查覆盖实际六个任务：旧临时文件/日志/dump/更新包清理，过期历史与关联目录清理及收藏/置顶/同步/近期记录保留，软删除记录与传输文件清理，过期孤立目录和缓存孤立记录清理，更新开关、正确回调交接、替身调度失败传播及恢复，以及重复清理的幂等性。更新回调不执行，通知、窗口和 HTTP 均为严格替身。六个任务的预取消均验证数据保留。目录年龄由临时目录的时间元数据设置并断言，不跳过年龄检查。
+
+首轮发现 HistoryCleanupJob 调用的 CleanupExpiredHistory 吞掉 OperationCanceledException。修复为入口检查取消，并将请求取消产生的异常重新抛给调度器；其他异常仍按原逻辑记录。增加确定性的等待中取消验证：探针仅通过反射取得实际托管数据库信号量，持锁后启动清理，确认任务等待，再取消并在 10 秒内观察异常，最后释放锁；历史数据保持不变，后续正常清理成功。报告 `/tmp/syncclipboard-stage14-production-jobs-final.json` 的 10 组检查、六项预取消和等待中取消均通过，Quartz 程序集版本 4.1.0.0，SHA256 与官方资产相同。这里未声称所有同步文件清理都能在执行中即时中断，也未执行真实 UI 更新流程。
+
+最终 Core NonUI 438、Desktop NonUI 6 项全部通过，0 失败/跳过；TRX 位于 `/tmp/syncclipboard-stage14-final-results/`，仓库报告校验器按 438/6 项验证通过。最终探针构建 0 警告/错误，探针格式检查退出 0，仓库格式检查退出 0（仅跨平台工作区加载警告），actionlint 与 diff 检查通过。
+
+三平台 Desktop CI 串行增加探针构建和相同包装命令，报告写入各自 `TestResults/desktop/quartz-job-result.json` 并随原 artifact 上传，仍保留 55 个 artifact 和五份合计 514 项的 TRX 门槛。当前仍待本阶段提交的完整 PR CI、三平台探针、所有产物及评审通过，步骤 14 未通过，不进入 15。

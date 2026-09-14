@@ -7,8 +7,8 @@ public class OrphanedHistoryCleanupJob(HistoryManager historyManager) : IJob
 {
     private readonly HistoryManager _historyManager = historyManager;
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
-        await Task.Run(() => _historyManager.CleanupOrphanedHistoryFolders());
+        await Task.Run(() => _historyManager.CleanupOrphanedHistoryFolders(), cancellationToken);
     }
 }

@@ -7,8 +7,8 @@ public class HistoryCleanupJob(HistoryManager historyManager) : IJob
 {
     private readonly HistoryManager _historyManager = historyManager;
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
-        await _historyManager.CleanupExpiredHistory(context.CancellationToken);
+        await _historyManager.CleanupExpiredHistory(cancellationToken);
     }
 }

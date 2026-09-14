@@ -181,7 +181,7 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
-            Job.SetUpSchedulerJobs(Services);
+            Job.SetUpSchedulerJobs(Services).GetAwaiter().GetResult();
         }
 
         private void RunStartUpCommands()
@@ -302,8 +302,19 @@ namespace SyncClipboard.Core
         {
             NotificationManager.RomoveAllNotifications();
             ServiceManager?.StopAllService();
-            var disposable = Services as IDisposable;
-            disposable?.Dispose();
+            DisposeServicesAsync(Services).GetAwaiter().GetResult();
+        }
+
+        internal static async Task DisposeServicesAsync(IServiceProvider services)
+        {
+            if (services is IAsyncDisposable asyncDisposable)
+            {
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            }
+            else if (services is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         public static void ConfigCommonService(IServiceCollection services)
@@ -345,7 +356,6 @@ namespace SyncClipboard.Core
             services.AddTransient<ForegroundWindowCapture>();
             services.AddTransient<GithubUpdater>();
             services.AddQuartz();
-            services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
             services.AddSingleton(sp => ManagerFactory.GetNotificationManager(
                 new NativeNotificationOption

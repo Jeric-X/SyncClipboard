@@ -58,7 +58,7 @@
 | Microsoft.Toolkit.Uwp.Notifications | 7.1.3 | 2026-09-14 核定已是最新稳定版，保留并独立验证通知载荷兼容性 | 12e |
 | CommunityToolkit.Mvvm | 8.4.0 | 8.4.2；核对 Roslyn 5.0 / C# 14 源生成器选择与兼容性 | 13a |
 | ObservableCollections | 3.3.4 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 13b |
-| Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | 相同的稳定兼容版本 | 14 |
+| Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | Quartz 4.1.0；DI 已并入主包，移除独立空包引用 | 14 |
 | Swashbuckle.AspNetCore | 8.1.1 | 核定 ASP.NET Core 10 兼容版本 | 15 |
 | Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | 保持 VSTest，逐组核定稳定兼容版本 | 16a–16c |
 | CodeCracker、Containers.Tools.Targets、PupNet | 1.1.0 / 1.22.1 / 1.8.0 | 逐项检查维护状态与工具运行时要求 | 17a–17c |
@@ -148,6 +148,7 @@ dotnet format --verify-no-changes --severity info --no-restore
 | 2、3、8、9、18 | 窗口、页面、主题、字体、面包屑、弹窗、托盘的显示与交互；运行时 XAML 加载 | C#/XAML 编译、API 与资源引用静态核对、依赖解析、包结构，以及隔离的导航逻辑测试 |
 | 8、11、12、18 | 真实剪贴板、拖拽、图片预览、热键、通知和桌面元素访问 | 数据转换、图像数据、参数解析、mock 测试及不初始化 UI 的原生库检查 |
 | 13、16、18 | 真实 UI 绑定更新、UI 线程调度、控件选择与滚动 | 源生成代码、属性通知、集合和命令逻辑；仅运行经审查的非 UI 用例 |
+| 14、18 | 更新任务调用真实 UI 调度器、显示更新界面或执行更新交互 | 隔离调度器的注册与生命周期、临时目录中的清理任务；UI 回调仅由替身记录，不执行回调 |
 | 15、17、18 | Swagger UI、IDE 图形操作、安装向导、安装后桌面启动 | HTTP/JSON 检查、命令行构建、服务器冒烟和安装包静态检查 |
 
 所有步骤中的“绑定验证”仅指编译绑定和可隔离的数据通知逻辑；“原生库加载”也须先确认不会初始化 UI 或访问真实桌面。无法满足时按 UI 范围排除处理，不以测试名称或命令行入口判断其是否属于非 UI。
@@ -276,7 +277,7 @@ dotnet format --verify-no-changes --severity info --no-restore
 
 **验证：** 全平台构建与 Desktop 非 UI 测试、R1/R2/R5；检查 XAML 编译、类型与资源引用、编译绑定、依赖图及打包资源。导航和选择逻辑只通过不初始化 UI 的 ViewModel/集合测试验证，不逐页操作，不运行桌面产物。
 
-**通过条件：** 依赖解析、C#/XAML 编译及范围内测试通过，打包资源完整；BreadcrumbBar 至少具备源码/API 核对及编译证据，不能只依据 NuGet 还原成功。XAML 运行时加载、视觉效果和交互行为标为“本计划不验证”，不宣称不存在运行时 UI 问题。[Avalonia 12 迁移说明](https://v11.docs.avaloniaui.net/docs/avalonia12-breaking-changes/)
+**通过条件：** 依赖解析、C#/XAML 编译及范围内测试通过，打包资源完整；BreadcrumbBar 至少具备源码/API 核对及编译证据，不能只依据 NuGet 还原成功。XAML 运行时加载、视觉效果和交互行为标为“范围排除：按用户要求不验证”，不宣称不存在运行时 UI 问题。[Avalonia 12 迁移说明](https://v11.docs.avaloniaui.net/docs/avalonia12-breaking-changes/)
 
 ### 步骤 9a–9d：依次升级 Windows UI 依赖
 
@@ -371,7 +372,7 @@ dotnet format --verify-no-changes --severity info --no-restore
 
 **验证：** 最终 head 上运行第 3 节全部非 UI 验证和 R1–R5；确认范围内 PR 检查、评审、行内线程与普通评论无未解决的可处理问题。下载最终产物，检查实际版本和所有约定架构。缺少必要非 UI 构建/测试覆盖时由对应 CI 补齐；不要求 UI 会话或界面实测，不缩减构建架构矩阵。
 
-**通过条件：** 记录最终 head、PR、CI runs、测试计数、产物和非 UI 验证证据；所有前置步骤已通过，没有“待确认”的目标版本或范围内必要验证。实际 UI 行为统一标注“本计划不验证”，不作为阻塞，不声称 UI 已验收。删除监控 heartbeat，交由用户决定合并及发布。
+**通过条件：** 记录最终 head、PR、CI runs、测试计数、产物和非 UI 验证证据；所有前置步骤已通过，没有“待确认”的目标版本或范围内必要验证。实际 UI 行为统一标注“范围排除：按用户要求不验证”，不作为阻塞，不声称 UI 已验收。删除监控 heartbeat，交由用户决定合并及发布。
 
 最终交付中的“无未解决问题”限定为约定的非 UI 检查与已处理的代码评审反馈，不表示已经验证界面行为。交付记录明确列出 UI 范围排除项即可，不附加人工 UI 验收或锁屏解除后的补测要求。
 

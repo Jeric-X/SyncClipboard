@@ -1,8 +1,8 @@
 # Core 非 UI 测试范围
 
-核对日期：2026-09-14，升级步骤 13b。适用项目：`src/SyncClipboard.Test`。
+核对日期：2026-09-14，升级步骤 14（延续步骤 13b 的范围核对）。适用项目：`src/SyncClipboard.Test`。
 
-本项目的 38 个测试类已核对测试入口、字段初始化、初始化/清理方法及使用的替身，均标为 `TestCategory("NonUI")`。本地与 CI 使用 `--filter TestCategory=NonUI` 正向筛选。分类后的 427 项全部通过，包含前一阶段全部 411 项和新增 16 项集合回归，没有因筛选漏掉已有用例。
+本项目的 39 个测试类已核对测试入口、字段初始化、初始化/清理方法及使用的替身，均标为 `TestCategory("NonUI")`。本地与 CI 使用 `--filter TestCategory=NonUI` 正向筛选。当前 438 项全部通过，包含步骤 13b 的全部 427 项和新增 11 项 Quartz 非 UI 回归，没有因筛选漏掉已有用例。
 
 项目没有 AssemblyInitialize/ClassInitialize、动态数据源或平台服务数据源的测试入口。SystemServiceProviderDataSource/PlatformServiceProviderDataSource 在本项目仅定义，未被测试方法使用；不能据此运行其他项目的混合 DI 测试。被测项目引用 Core，无桌面入口或 Avalonia/WinUI 控件初始化。测试涉及图片时只处理数据、文件和哈希。
 
@@ -38,6 +38,7 @@
 | [ProfileTryLocalizeTests](../../src/SyncClipboard.Test/ProfileTryLocalizeTests.cs) | 22 | Profile/DTO/传输数据、序列化与临时文件检查；不访问系统剪贴板或启动应用。 |
 | [ProfileWorkingDirectoryTests](../../src/SyncClipboard.Test/ProfileWorkingDirectoryTests.cs) | 3 | Profile/DTO/传输数据、序列化与临时文件检查；不访问系统剪贴板或启动应用。 |
 | [SetTransferDataInfoTests](../../src/SyncClipboard.Test/SetTransferDataInfoTests.cs) | 21 | Profile/DTO/传输数据、序列化与临时文件检查；不访问系统剪贴板或启动应用。 |
+| [QuartzCompatibilityTests](../../src/SyncClipboard.Test/QuartzCompatibilityTests.cs) | 11 | 生产任务仅构造调度元数据并交给严格 IScheduler mock；真实调度器仅运行内存探针，验证 DI、作用域、取消、失败恢复和关闭，不执行生产清理或更新任务。 |
 | [SharpHookKeyboardTests](../../src/SyncClipboard.Test/SharpHookKeyboardTests.cs) | 25 | 键码映射与注入的 backend/simulation/hook provider mock，构造和释放均不访问设备。 |
 | [SingletonTaskTest](../../src/SyncClipboard.Test/SingletonTaskTest.cs) | 2 | 隔离的任务互斥和取消逻辑。 |
 | [StorageBasedServerHelperTests](../../src/SyncClipboard.Test/StorageBasedServerHelperTests.cs) | 14 | TestStorageAdapter 复制临时文件，TestTrayIcon/TestLogger 为空操作。 |
@@ -50,3 +51,5 @@
 验证证据：`/tmp/syncclipboard-stage13b-final-results/core/` 的 TRX；与步骤 13a 用例逐项比较的结果为 `/tmp/syncclipboard-stage13b-core-nonui-inventory.json`，缺失项为 0。源码清单与核对时的 SHA256 记录于 `/tmp/syncclipboard-stage13b-core-nonui-sources.json`。
 
 `NonUI` 分类适用于测试的初始化、执行和清理全过程。修改上述类或加入用例时须重新核对边界；需要 UI 的用例应放入单独的类，不能放入已有类级 NonUI 分类中再依靠 RequiresUI 标签抵消。本次不执行 UI 用例，也不把 mock/编译结果视为实际界面验收。
+
+步骤 14 当前证据：`/tmp/syncclipboard-stage14-final-results/` 的 Core 438 与 Desktop 6 项 TRX 均通过，0 失败/跳过；11 项 Quartz 专项包含在 Core 报告中。独立的 [QuartzProbe](../../build/verification/QuartzProbe/Program.cs) 另行验证实际任务，不计入 TRX 数量；包装脚本在新建临时目录中复制探针并预先启用两项便携配置，退出后清理目录。生产清理任务仅处理临时文件及数据库，更新任务的严格调度替身仅记录回调，不执行更新流程；通知、窗口和 HTTP 替身均拒绝真实调用。10 组检查、六项预取消及历史清理等待数据库锁时的取消通过，报告 `/tmp/syncclipboard-stage14-production-jobs-final.json`。这不替代步骤 14 尚待完成的三平台 PR 探针、产物与评审门槛。

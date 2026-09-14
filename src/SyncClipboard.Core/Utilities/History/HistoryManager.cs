@@ -472,6 +472,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         try
         {
             if (!EnableCleanup)
@@ -502,6 +503,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             {
                 _logger.Write("HistoryManager", $"Cleaned up {deleted} expired history records");
             }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

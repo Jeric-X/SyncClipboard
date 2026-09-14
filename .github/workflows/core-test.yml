@@ -32,7 +32,7 @@ jobs:
       run: python -m pip install -r build/verification/requirements.txt
 
     - name: Verify Core test coverage
-      run: python build/verification/check_test_results.py TestResults/core --minimum 427
+      run: python build/verification/check_test_results.py TestResults/core --minimum 438
 
     - name: Upload test results
       if: always()
@@ -64,6 +64,13 @@ jobs:
       run: python -m pip install -r build/verification/requirements.txt
     - name: Verify non-UI test coverage
       run: python build/verification/check_test_results.py TestResults/desktop --minimum 6
+    - name: Build the isolated non-UI Quartz job probe
+      run: dotnet build build/verification/QuartzProbe/QuartzProbe.csproj -c Release
+    - name: Verify Quartz production jobs with temporary data
+      run: >-
+        python build/verification/quartz_jobs_smoke.py
+        --probe build/verification/QuartzProbe/bin/Release/net10.0/QuartzProbe.dll
+        --report TestResults/desktop/quartz-job-result.json
     - name: Compile the alternative Windows entry point
       if: runner.os == 'Windows'
       run: dotnet build src/SyncClipboard.Desktop.Default -c Release -f net10.0-windows10.0.17763.0
