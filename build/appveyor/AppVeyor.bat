@@ -1,3 +1,4 @@
+rem Legacy helper for appveyor.yml; current GitHub builds use build/PreRelease.bat instead.
 setlocal enabledelayedexpansion
 set newline=^<br^>
 For /f "tokens=1* delims=:" %%i in ('Type Changes.md^|Findstr /n ".*"') do (

@@ -265,8 +265,6 @@ sealed class S3ProtocolProbe : IDisposable
     {
         await File.WriteAllTextAsync(Path.Combine(root, "result.json"), JsonSerializer.Serialize(new
         {
-            s3Assembly = typeof(AmazonS3Client).Assembly.GetName().Version?.ToString(),
-            s3Sha256 = Hash(await File.ReadAllBytesAsync(typeof(AmazonS3Client).Assembly.Location, token)),
             maximumAttempts = client.Config.MaxErrorRetry + 1,
             persistentFailureCanceled,
             checks

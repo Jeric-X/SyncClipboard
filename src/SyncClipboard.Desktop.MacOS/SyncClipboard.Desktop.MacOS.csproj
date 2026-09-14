@@ -8,7 +8,7 @@
     <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
     <ApplicationVersion>$(VersionPrefix)</ApplicationVersion>
     <SelfContained>true</SelfContained>
-    <SupportedOSPlatformVersion>12.7</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>
     <Platforms>x64;ARM64;AnyCPU</Platforms>
     <CreatePackage>false</CreatePackage>
     <NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>

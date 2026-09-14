@@ -196,6 +196,11 @@ sudo systemctl enable --now syncclipboard.service
 </details>
 
 ### Windows
+
+最低系统版本为 Windows 10 2004（build 19041），运行环境还须位于 [.NET 10 支持列表](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)内。选择与系统架构匹配的 x64 或 arm64 包。
+
+文件名包含 `no-dotnet-runtime` 时，先安装同架构的 [ASP.NET Core 10 运行时](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)；包含 `no-win-app-sdk` 时，还需安装 [Windows App SDK 2.4 运行时](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads)。两个标记同时出现时，两种运行时都需要安装；没有这些标记的包已携带对应运行时。
+
 #### 安装板
 
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的exe安装包，双击运行安装程序后即可使用
@@ -205,10 +210,12 @@ sudo systemctl enable --now syncclipboard.service
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的zip文件，解压后运行`SyncClipboard.exe`
 
 #### 故障排除
-- 支持的最低系统版本为Windows10 2004
 - 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
 ### macOS
+
+需要 macOS 14 或更高版本；Apple Silicon 选择 arm64，Intel Mac 选择 x64，安装包已包含 .NET 运行时。当前 [.NET 10 支持 macOS 14、15、26](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)；[Avalonia 将 macOS 26 列为 Tier 1、14/15 列为 Tier 2](https://docs.avaloniaui.net/docs/supported-platforms)。
+
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 

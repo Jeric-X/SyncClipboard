@@ -3,7 +3,6 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Image;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 try
@@ -52,22 +51,9 @@ sealed class ImageDataProbe : IDisposable
             throw new PlatformNotSupportedException("The Windows image probe requires Windows 10 or later.");
         VerifySystemDrawing();
 #endif
-        var nativeFiles = Directory.GetFiles(AppContext.BaseDirectory, "Magick.Native*", SearchOption.AllDirectories);
-        Require(nativeFiles.Length == 1, "Expected exactly one native Magick library in the RID-specific publish output.");
         await File.WriteAllTextAsync(report, JsonSerializer.Serialize(new
         {
             runtimeIdentifier = actualRid,
-            magickVersion = MagickNET.Version,
-            imageMagickVersion = MagickNET.ImageMagickVersion,
-            managedAssembly = typeof(MagickImage).Assembly.GetName().Name,
-            managedSha256 = Hash(await File.ReadAllBytesAsync(typeof(MagickImage).Assembly.Location, Token)),
-            coreSha256 = Hash(await File.ReadAllBytesAsync(typeof(MagickFormat).Assembly.Location, Token)),
-#if WINDOWS
-            systemDrawingSha256 = Hash(await File.ReadAllBytesAsync(typeof(IMagickImageExtentions).Assembly.Location, Token)),
-            drawingCommonSha256 = Hash(await File.ReadAllBytesAsync(typeof(System.Drawing.Bitmap).Assembly.Location, Token)),
-#endif
-            nativeFile = Path.GetFileName(nativeFiles[0]),
-            nativeSha256 = Hash(await File.ReadAllBytesAsync(nativeFiles[0], Token)),
             checks
         }, ReportOptions), Token);
     }
@@ -251,7 +237,6 @@ sealed class ImageDataProbe : IDisposable
         Console.WriteLine("Image smoke pass: " + check);
     }
 
-    private static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
     private static void Require(bool condition, string message)
     {
         if (!condition) throw new InvalidOperationException(message);

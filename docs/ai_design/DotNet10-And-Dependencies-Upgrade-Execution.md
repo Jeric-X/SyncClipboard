@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–17b（含全部子步骤和评审修复）已通过，当前执行步骤 17c：PupNet 与打包工具运行时。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 17b 验证通过提交为 `cc2022c0aaa67b4e507d5467850995b67a97eaf9`；步骤 17c 未通过前不进入 18。
-- 步骤 18：待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–17c（含全部子步骤和评审修复）已通过，当前执行步骤 18：最终非 UI 集成验收与交接。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 17c 验证通过提交为 `ca15fb8452d89c25891bc168585dd3a6513167be`；步骤 18 须独立完成最终版本/文档核对、非 UI 验证与当前提交全套 CI/评审。
+- 步骤 18 的最终配置与本地验收见文末；本文件提交后的当前 head CI、完整评审和最终通过结论统一记录在 PR 描述中。提交本文件本身不代表尚未运行的 CI 已通过。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -1102,3 +1102,46 @@ PupNet 1.9 起不再附带 appimagetool。AppImage 任务安装官方稳定版 a
 Quartz实际生产任务探针仍10组、六项提前取消，加上孤儿历史/缓存两项查询开始后的取消：订阅EF数据库命令完成诊断，仅在真实SELECT执行后取消，确认异常传出且目录/数据库记录保留，之后正常清理和重复清理成功。报告 `/tmp/syncclipboard-stage17c-cancellation-quartz.json`，日志同前缀-cancellation-quartz.log，新增字段runningCleanupCancellationJobs=2由CI校验器强制核对；不依赖计时、UI或实际桌面。
 
 11份依赖图不变，仓库及探针格式、actionlint、diff通过；CI Core最低数提高至444，五份测试合计预期520项。问题已追加本地修复日志，线程PRRT_kwDOBXBc9s6iDINR待修复提交的全套CI/评审通过后解决，不发送评论。仍完全信任CI产物，不下载远程编译产物或做二进制审计。
+
+
+清理取消修复提交 `ca15fb8452d89c25891bc168585dd3a6513167be` 已推送。[PR run34827703085](https://github.com/Jeric-X/SyncClipboard/actions/runs/34827703085)、[push run34827699796](https://github.com/Jeric-X/SyncClipboard/actions/runs/34827699796)、CodeQL34827702628已启动。首次完整反馈无新增事项，清理P2线程PRRT_kwDOBXBc9s6iDINR仍待本提交验证，其余11线程已处理；首次评审摘要仍为旧提交，不能视为本head已评审。监控pr419已更新为当前修复和444/6/58、两项运行中查询取消门槛，每10分钟。17c未通过，不进入18。
+
+
+修复提交ca15fb84的Core444、三平台Desktop各6、WinUI58，共520项NonUI测试全部通过，0失败/跳过；五份产品覆盖率校验、三平台Quartz10组/六提前取消/两项真实查询开始后取消均通过。汇总 `/tmp/syncclipboard-stage17c-fixed-ci-tests.json`，日志 `/tmp/syncclipboard-pr419-ca15-{core,desktop-linux,desktop-macos,desktop-windows,winui}.log`。Core/WinUI首次日志读取遇TLS超时，顺序重取同一成功任务后取得完整证据，没有重跑CI。
+
+本head评审于2026-09-14T09:29:36.928148Z完成，无新增评审正文、行内或普通评论问题；清理P2线程PRRT_kwDOBXBc9s6iDINR根据修复源码与当前Windows/三平台实际回归标记已解决，12个线程均已处理，未发送评论。其余完整构建/打包仍待结束，17c尚未最终通过。
+
+
+### 步骤 17c 最终通过记录
+
+验证通过提交 `ca15fb8452d89c25891bc168585dd3a6513167be`：[PR run34827703085](https://github.com/Jeric-X/SyncClipboard/actions/runs/34827703085)58项全部成功，[push run34827699796](https://github.com/Jeric-X/SyncClipboard/actions/runs/34827699796)58项成功、8项发布任务预期跳过，CodeQL34827702628和CodeFactor成功。汇总119 SUCCESS、8 SKIPPED，PR CLEAN；当前评审2026-09-14T09:29:36.928148Z完成，无新增反馈，12个线程全部解决。
+
+520项NonUI测试、覆盖率与三平台Quartz10组/六提前取消/两项实际查询开始后取消全部通过；保留原平台构建及Linux10个安装包组合，所有实际打包任务成功。完全信任CI产物，未下载或审计远程编译产物，UI验证执行0。证据 `/tmp/syncclipboard-pr419-ca15-complete.json`、`-pr-complete.json`、`-push-complete.json`、`-latest-runs.json`、`-final-threads.json`、`-final-inline.json` 与 `/tmp/syncclipboard-stage17c-fixed-ci-tests.json`。旧只读watch进程因TLS超时结束，确认同一run仍运行后恢复观察，未重跑CI；最终watch退出0。监控pr419已删除，允许进入18；最终验收仍未完成。
+
+
+## 步骤 18：最终非 UI 集成验收与交接
+
+新增最终配置清单 DotNet10-And-Dependencies-Upgrade-Summary.md，按中央配置列出全部46项直接版本及关键传递依赖、工具链和活动CI入口。中英文README补齐Windows两类不携带运行时的文件名说明及macOS支持范围；AGENTS/CLAUDE同步macOS最低系统和从仓库根目录运行的准确命令。旧AppVeyor配置仍保留并明确标为遗留参考，当前GitHub工作流和本PR未使用它，不声称已核实仓库外账户。
+
+发现macOS仍声明SupportedOSPlatformVersion=12.7，Windows安装器MinVersion=10.0，与最终运行时/项目支持范围不一致。按.NET10官方支持列表将macOS最低声明改为14.0，Windows安装器与现有WinUI项目同步为10.0.19041。macOS arm64首次发布在还原阶段退出139、没有编译错误诊断；SDK信息正常，另一独立旧源码Server发布成功。停用构建服务器复用并单节点重试后发布退出0，本地生成的应用Info.plist中LSMinimumSystemVersion实际为14.0。未确定首次进程异常根因，不宣称是已修复的产品错误；新head仍须通过平台CI。日志 `/tmp/syncclipboard-stage18-macos-arm64.log`、`-macos-arm64-retry.log`，应用包位于项目bin/Release/net10.0-macos/osx-arm64目录，未启动UI。
+
+最终新旧协议验证从冻结基线cc7289d1的git源码导出到 `/private/tmp/syncclipboard-stage18-baseline-source/` 并本地发布net8服务器至 `/private/tmp/syncclipboard-stage18-baseline-server/`，退出0，日志 `/tmp/syncclipboard-stage18-baseline-server.log`。不下载或复用远程服务器产物。当前服务器及临时协议/数据库/重连宿主的独立验证仍在执行；旧数据基线保留，只对副本操作。此阶段未通过，不将整体升级标记完成。
+
+
+### 最终配置与本地验收
+
+新增[最终配置清单](DotNet10-And-Dependencies-Upgrade-Summary.md)：46 项中央包版本逐项与 XML 对照，关键传递版本与现有项目 assets 解析一致；记录所有入口 TFM、SDK/workload、系统下限、自包含/运行时安装说明、活动工作流与 AppVeyor 遗留配置。中英文 README 和 AGENTS/CLAUDE 同步，计划入口指向实际执行记录，保留历史事实。
+
+最终源码的四向协议矩阵全部通过：本地新编译的 net8/net10 客户端分别连接本地新编译的 net8/net10 服务器，验证 Official/WebDAV、认证、Profile/文件数据、历史、SignalR 双类推送、重新连接和取消。隔离代理观察到18条连接、无旁路或代理错误；两轮 TLSv1.2 验证证书链/主机名、拒绝未信任证书并保留历史数据，未改系统证书信任。内置服务器真实断开11秒后自动恢复连接与推送，使用临时配置和 UI 替身，不执行应用重启或真实桌面逻辑。
+
+旧数据只在副本上验证：服务器旧库两条记录、收藏/置顶/时间排序及文件数据，两次重启后保持不变并通过清理；另一个旧库65条记录的12种查询、50/15/0分页、相同时间排序和时区偏移过滤保持一致。客户端65条旧记录及32份数据文件完整保留；实际 HistoryManager 的旧数据、游标分页、收藏、807键批处理、删除、五种过期边界和清空通过。原冻结数据基线未修改，没有读取远程产品二进制。报告和日志为 `/tmp/syncclipboard-stage18-{protocol,proxy,https,persistence,paging,clientdb,historymanager,reconnect}.*`；服务器分页报告名为 `-server-paging.json`。
+
+本地 Core444、Desktop6 项 NonUI 测试全部通过，0失败/跳过，用例名称与17c完全一致；TRX与Cobertura在 `/private/tmp/syncclipboard-stage18-results/`。计数和实际产品覆盖率校验通过。独立Server两轮API/认证/历史/传输数据、四轮命令行/环境首次启动与重启、四种Swagger JSON组合全部通过；S3 MinIO七组（含故障与取消）、Quartz十组/六提前取消/两项真实查询开始后取消全部通过。报告 `/tmp/syncclipboard-stage18-s3.json`、`-quartz.json`，日志为同前缀 server-smoke、server-startup、swagger、s3、quartz。所有服务只用回环地址和临时数据；未访问Swagger UI。
+
+仓库格式（仅格式器保留既有CS0103排除）、actionlint和diff检查通过。临时脚本首次缺少验证模块导入路径、系统Python缺少defusedxml；分别补齐PYTHONPATH和使用已有验证venv后运行成功，没有更改产品实现或放宽断言。macOS arm64本地发布及最低版本14.0的具体检查见上文；其余平台、架构与安装器由本次提交的完整PR/push矩阵验证，不下载CI产物复核。
+
+图像/S3/Quartz探针报告移除与功能断言无关的程序集版本、程序集文件哈希和MinIO工具哈希，图像探针也移除发布目录中的原生库数量审计，不再例行读取这些二进制来生成审计字段；协议与数据内容哈希断言保留。修订后三个探针重新编译和格式检查通过；本地macOS图像六组、S3七组、Quartz十组全部通过，取消断言不变。最终报告 `/tmp/syncclipboard-stage18-final-{image,s3,quartz}.json` 不再包含这些审计字段。S3首次复跑因报告已存在被保护性拒绝，改用新路径后通过，未覆盖旧证据。
+
+### 最终提交的外部验收记录
+
+[PR #419 描述](https://github.com/Jeric-X/SyncClipboard/pull/419)集中记录最终 head SHA、PR/push/CodeQL链接、全部任务的终态、520项NonUI测试、覆盖率、评审完成时间和线程处理结果。只有该 head 的完整CI与评审全部满足门槛，才在PR描述标记步骤18及整体升级通过；不能用17c或旧head结果替代。提交后发现的修复须重复受影响验证并等待新head完整检查。交付时删除监控，保留本地问题日志，不自动合并或发布。

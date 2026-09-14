@@ -192,6 +192,11 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 </details>
 
 ### Windows
+
+Requires Windows 10 2004 (build 19041) or later and an OS edition/version on the [.NET 10 supported OS list](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md). Choose the x64 or arm64 package matching your system.
+
+Packages with `no-dotnet-runtime` in the filename require the [ASP.NET Core 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for the same architecture. Packages with `no-win-app-sdk` require the [Windows App SDK 2.4 Runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads). Both runtimes are required when both markers appear; packages without a marker bundle the corresponding runtime.
+
 #### Installer
 
 Download the exe installer starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click to run the installer and it will be ready to use.
@@ -201,10 +206,12 @@ Download the exe installer starting with `SyncClipboard_win_` from the [Release]
 Download the zip file starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Extract it and run `SyncClipboard.exe`.
 
 #### Troubleshooting
-- The minimum supported OS version is Windows 10 2004.
 - If the interface icons are displayed incorrectly on Windows 10, download and install the Microsoft [Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons) font.
 
 ### macOS
+
+Requires macOS 14 or later. Choose arm64 for Apple Silicon or x64 for Intel Macs; these packages include the .NET runtime. [.NET 10 currently supports macOS 14, 15 and 26](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md). [Avalonia lists macOS 26 as Tier 1 and 14/15 as Tier 2](https://docs.avaloniaui.net/docs/supported-platforms).
+
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
 

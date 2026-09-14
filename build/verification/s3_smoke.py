@@ -2,7 +2,6 @@
 
 import argparse
 from collections import Counter
-import hashlib
 import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -142,8 +141,7 @@ def verify_probe_result(args, result, output, attempts, access_key, secret_key):
     persistent = sum(n for key, n in attempts.items() if key.startswith("PUT ") and key.endswith("/always-fail.bin"))
     require(2 <= persistent <= report["maximumAttempts"], f"Unexpected persistent-error retry count: {persistent}")
     require(len(report["checks"]) == 7, "Incomplete S3 verification coverage")
-    report.update(minioSha256=hashlib.sha256(args.minio.read_bytes()).hexdigest(),
-                  retryAttempts={"upload": 3, "download": 3, "persistentFailure": persistent})
+    report.update(retryAttempts={"upload": 3, "download": 3, "persistentFailure": persistent})
     args.report.write_text(json.dumps(report, indent=2, ensure_ascii=False))
     print("S3 smoke complete: 7 groups passed; isolated bucket cleaned up.")
 

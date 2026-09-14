@@ -93,8 +93,6 @@ static class QuartzJobChecks
         await File.WriteAllTextAsync(reportPath, JsonSerializer.Serialize(new
         {
             passed = true,
-            quartzVersion = typeof(IJob).Assembly.GetName().Version?.ToString(),
-            quartzSha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(typeof(IJob).Assembly.Location))).ToLowerInvariant(),
             checks,
             canceledJobs = jobs.CanceledJobs,
             runningCleanupCancellationJobs = jobs.RunningCancellationJobs,

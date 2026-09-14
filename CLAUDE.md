@@ -38,13 +38,13 @@ dotnet build src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csp
 
 ### macOS (Avalonia)
 
-macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. CI runs from the project directory.
+macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. The application requires macOS 14 or later. Run the following commands from the repository root.
 
 ```bash
-# Restore (from src/SyncClipboard.Desktop.MacOS/)
+# Restore
 dotnet restore src/SyncClipboard.Desktop.MacOS
 
-# Publish (CI command, from src/SyncClipboard.Desktop.MacOS/)
+# Publish (same project and configuration as CI)
 dotnet publish src/SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj \
   -r osx-x64 -c Release
 ```
