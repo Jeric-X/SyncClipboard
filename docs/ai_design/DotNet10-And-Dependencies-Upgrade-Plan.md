@@ -62,7 +62,7 @@
 | CommunityToolkit.Mvvm | 8.4.0 | 8.4.2；核对 Roslyn 5.0 / C# 14 源生成器选择与兼容性 | 13a |
 | ObservableCollections | 3.3.4 | 2026-09-14 核定已是最新稳定版，保留并独立验证兼容性 | 13b |
 | Quartz、Quartz.Extensions.DependencyInjection | 3.14.0 | Quartz 4.1.0；DI 已并入主包，移除独立空包引用 | 14 |
-| Swashbuckle.AspNetCore | 8.1.1 | 核定 ASP.NET Core 10 兼容版本 | 15 |
+| Swashbuckle.AspNetCore / Microsoft.OpenApi | 8.1.1 / 1.6.23（传递） | 10.2.3 / 2.12.2，OpenAPI 固定为上游 v10 对应的 2.x 系列 | 15 |
 | Test SDK、MSTest、coverlet、Moq | 17.14.1 / 3.10.4 / 6.0.4 / 4.20.72 | 保持 VSTest，逐组核定稳定兼容版本 | 16a–16c |
 | CodeCracker、Containers.Tools.Targets、PupNet | 1.1.0 / 1.22.1 / 1.8.0 | 逐项检查维护状态与工具运行时要求 | 17a–17c |
 
@@ -345,6 +345,8 @@ dotnet format --verify-no-changes --severity info --no-restore
 ### 步骤 15：升级 Swagger / OpenAPI
 
 **改动：** 升级 Swashbuckle，按解析出的 OpenAPI.NET 主版本调整 `MultipartFormDataOperationFilter`、`QueryHistoryOperationFilter` 和 `Web.cs`。TFM 改到 .NET 10 本身不强制这一迁移，因此放在独立步骤。
+
+2026-09-14 核定 Swashbuckle 最新稳定版为 10.2.3，其 Swagger 包要求 Microsoft.OpenApi >= 2.7.5；按 [v10 迁移说明](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/blob/master/docs/migrating-to-v10.md) 使用 2.x API，固定最新 2.x 稳定版 2.12.2。Microsoft.OpenApi 全系列最新版本为 3.10.2，本步骤不混入第二次主版本迁移，也不将 2.12.2 称为全系列最新版。保留 OpenAPI 3.0 文档格式。精确版本与依赖依据为 [Swashbuckle 10.2.3](https://www.nuget.org/packages/Swashbuckle.AspNetCore/10.2.3) 和 [Microsoft.OpenApi 2.12.2](https://www.nuget.org/packages/Microsoft.OpenApi/2.12.2)。
 
 **验证：** 在无 UI 宿主中验证 Server 与内置服务器的诊断模式，通过 HTTP 获取并解析 Swagger JSON，检查 multipart 上传、历史查询参数、枚举和认证文档；真实 API 调用与 R4、Server PR 检查，不打开浏览器验证 Swagger UI。
 

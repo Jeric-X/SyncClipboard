@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import time
 from urllib.parse import urlsplit
+from openapi_contract import check_document
 
 
 def request(base_url, path, authorization, method="GET", body=None, content_type=None):
@@ -59,7 +60,7 @@ def exercise(base_url, authorization):
     json.loads(expect(base_url, "/api/time", authorization))
     expect(base_url, "/api/version", authorization)
     swagger = json.loads(expect(base_url, "/swagger/v1/swagger.json", None))
-    require("/api/history/query" in swagger["paths"], swagger.keys())
+    check_document(swagger)
     negotiation = json.loads(expect(
         base_url, "/SyncClipboardHub/negotiate?negotiateVersion=1", authorization,
         method="POST", body=b""))

@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace SyncClipboard.Server.Core.Swagger;
@@ -15,25 +15,45 @@ public class MultipartFormDataOperationFilter : IOperationFilter
             context.ApiDescription.HttpMethod?.ToUpper() != "POST")
             return;
 
-        // 确保有 RequestBody
-        operation.RequestBody ??= new OpenApiRequestBody
+        // 新版接口只读，复制为可修改模型并保留已有文档信息。
+        var requestBody = operation.RequestBody switch
         {
-            Required = true,
-            Content = new Dictionary<string, OpenApiMediaType>()
+            null => new OpenApiRequestBody(),
+            OpenApiRequestBody body => (OpenApiRequestBody)body.CreateShallowCopy(),
+            OpenApiRequestBodyReference { Target: { } target } reference =>
+                (OpenApiRequestBody)reference.CopyReferenceAsTargetElementWithOverrides(target),
+            _ => throw new InvalidOperationException("Cannot resolve the history upload request body.")
         };
+        requestBody.Required = true;
+        requestBody.Content ??= new Dictionary<string, OpenApiMediaType>();
+        operation.RequestBody = requestBody;
+
+        operation.Parameters ??= [];
+        if (!operation.Parameters.Any(parameter => parameter.In == ParameterLocation.Header
+            && parameter.Name == HistoryTransferDataHeaders.TransferDataHash))
+        {
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = HistoryTransferDataHeaders.TransferDataHash,
+                In = ParameterLocation.Header,
+                Required = false,
+                Description = "Optional SHA-256 of the data part. Only valid when transfer data is present.",
+                Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+            });
+        }
 
         // 确保有 multipart/form-data 内容
-        if (!operation.RequestBody.Content.TryGetValue("multipart/form-data", out OpenApiMediaType? value))
+        if (!requestBody.Content.TryGetValue("multipart/form-data", out OpenApiMediaType? value))
         {
             value = new OpenApiMediaType();
-            operation.RequestBody.Content.TryAdd("multipart/form-data", value);
+            requestBody.Content.TryAdd("multipart/form-data", value);
         }
 
         value.Schema = new OpenApiSchema
         {
-            Type = "object",
+            Type = JsonSchemaType.Object,
             Required = new HashSet<string> { "hash", "type" },
-            Properties = new Dictionary<string, OpenApiSchema>
+            Properties = new Dictionary<string, IOpenApiSchema>
             {
                 ["hash"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
                 ["type"] = context.SchemaGenerator.GenerateSchema(typeof(ProfileType), context.SchemaRepository),
@@ -46,9 +66,10 @@ public class MultipartFormDataOperationFilter : IOperationFilter
                 ["isDeleted"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["text"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
                 ["size"] = context.SchemaGenerator.GenerateSchema(typeof(long), context.SchemaRepository),
+                ["hasData"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["data"] = new OpenApiSchema
                 {
-                    Type = "string",
+                    Type = JsonSchemaType.String,
                     Format = "binary",
                     Description = "Transfer data stream. Must be the last part in the multipart/form-data.",
                 },

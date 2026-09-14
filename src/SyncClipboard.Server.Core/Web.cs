@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.OpenApi;
 using SyncClipboard.Server.Core.Controllers;
 using SyncClipboard.Server.Core.CredentialChecker;
 using SyncClipboard.Server.Core.Hubs;
@@ -46,6 +47,16 @@ public class Web
         {
             options.OperationFilter<MultipartFormDataOperationFilter>();
             options.OperationFilter<QueryHistoryOperationFilter>();
+            options.AddSecurityDefinition("BasicAuthentication", new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "basic",
+                Description = "HTTP Basic authentication using the configured SyncClipboard credentials."
+            });
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("BasicAuthentication", document)] = []
+            });
         });
 
         services.AddServerProfileEnvProvider();

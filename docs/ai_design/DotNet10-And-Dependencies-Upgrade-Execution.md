@@ -9,9 +9,9 @@
 ## 当前状态
 
 - 分支：`codex/upgrade-dotnet10-dependencies`，基线 `cc7289d1bc7528ef1a8a63af4ccc7f8f55a6fd6a`。
-- 步骤 1–13b（含全部子步骤和前置修复）已通过，当前执行步骤 14：Quartz 与 DI 扩展升级。
-- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 13b 验证通过提交为 `5f40344fb08b946859830fd29ef7ca706e2af6b3`；步骤 14 未通过前不进入 15。
-- 步骤 15–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
+- 步骤 1–14（含全部子步骤和前置修复）已通过，当前执行步骤 15：Swagger / OpenAPI 升级。
+- PR：[#419](https://github.com/Jeric-X/SyncClipboard/pull/419)。步骤 14 验证通过提交为 `356cf8e7f951cef3a1286158d275892740bbfcc9`；步骤 15 未通过前不进入 16a。
+- 步骤 16a–18（包括每个带字母的子步骤）：全部待执行；不得把本阶段 CI 通过解释为整体升级完成。
 - 不执行 UI 验证，不要求解锁后补测，不将 UI 排除项计作通过。
 
 ### 验证范围与阶段门槛
@@ -870,3 +870,31 @@ CodeFactor 报告新增探针顶层长方法复杂度 46。已按任务拆为命
 删除清理阶段多余的第二次 Interrupt；首次中断返回值、实际任务令牌取消、作用域释放和有界关闭等待的断言全部保留。独立清理取消源仍链接到任务，确保断言失败时也能退出。没有吞掉异常或重试掩盖问题。修复后 Core 438 项通过，Quartz 11 项专项连续 10 轮共 110 项通过，均无失败/跳过；TRX 校验器按 438/110 项核定，证据 `/tmp/syncclipboard-stage14-interrupt-fix-results/core/` 和 `/tmp/syncclipboard-stage14-interrupt-repeat/`。仓库格式检查退出 0（仅跨平台工作区加载警告），diff 检查通过。
 
 本次同步用户最新要求：取消远程编译产物下载及二进制审计，信任当前 head 的 CI 构建/打包结果；不再保留 55 份 artifact 下载、38 个组合和 macOS DMG 审计门槛。必要的额外二进制检查只针对本地编译的 macOS 版本。非 UI 功能测试、CI 结果和评审仍须独立通过，步骤 14 尚未完成，不进入 15。
+
+修复提交 `356cf8e7f951cef3a1286158d275892740bbfcc9` 的 [Windows Core CI 103849784068](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803186971/job/103849784068) 已成功；实际日志确认 438 项通过、0 失败/跳过，包含先前失败的中断回归，证据 `/tmp/syncclipboard-pr419-356c-core-success.log`。其他 CI 及新评审仍在进行，当前阶段尚未通过。没有下载编译产物或执行 UI 验证。
+
+### 步骤 14 PR 检查与评审证据
+
+同一提交的 [PR run 34803186971](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803186971) 已完成，58 个任务全部成功；[CodeQL 34803186474](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803186474) 成功。测试日志确认 Core 438、三平台 Desktop 各 6、WinUI3 58，合计 514 项通过，均无失败/跳过。三平台日志另确认各自 Quartz 10 组隔离任务检查、六项取消入口且无 UI 执行，汇总 `/tmp/syncclipboard-pr419-356c-desktop-evidence.json`。CI 构建和打包产物按用户要求直接信任，没有下载编译产物进行二进制验证。
+
+Codex 于 `2026-09-14T03:43:24.082263Z` 完成本提交评审，八个线程全部解决，行内反馈与本阶段开始时一致，无新增问题。推送工作流 [34803183949](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803183949) 仍在运行，当前阶段尚待它完成，不能提前进入步骤 15。
+
+### 步骤 14 最终通过记录
+
+验证通过提交 `356cf8e7f951cef3a1286158d275892740bbfcc9`：[PR run 34803186971](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803186971)、[push run 34803183949](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803183949)、[CodeQL 34803186474](https://github.com/Jeric-X/SyncClipboard/actions/runs/34803186474) 均已完成成功，CodeFactor 成功。最终 119 项 SUCCESS、8 项预期发布 SKIPPED；跳过的是 GitHub 草稿/正式发布、Server/macOS/Linux/Windows 发布及 Homebrew/winget 提交，不属于本次构建测试门槛。PR mergeStateStatus 为 CLEAN，八个线程全部解决，行内反馈无新增，当前 head 的 Codex 评审已完成。
+
+514 项非 UI 测试、三平台各 10 组 Quartz 临时数据检查及全部必要构建/打包 CI 已通过。按最新范围直接信任 CI 产物，没有下载编译产物进行二进制审计，也未执行 UI 验证。最终记录 `/tmp/syncclipboard-pr419-356c-complete.json`、`/tmp/syncclipboard-pr419-356c-push-complete.json` 及各测试日志。监控 `pr419` 已删除，步骤 14 通过，允许进入 15；整体升级尚未完成。
+
+## 步骤 15：Swagger / OpenAPI（进行中）
+
+Swashbuckle.AspNetCore 8.1.1 → 10.2.3，Microsoft.OpenApi 显式固定 2.12.2，版本集中写入 `src/Directory.Packages.props`。上游 Swagger 10.2.3 依赖 OpenAPI >= 2.7.5；使用 v10 迁移说明对应的 2.x API，未混入 Microsoft.OpenApi 3.10.2 主版本迁移。ApiDescription.Server 随 Swashbuckle 从 6.0.5 升为 10.0.0。元数据和升级前 11 份依赖图保存在 `/private/tmp/syncclipboard-stage15/`，不下载远程编译产物审计。
+
+适配 OpenAPI 新命名空间、只读模型接口、JsonSchemaType 和引用类型。两个过滤器使用公开的复制 API 保留原有文档信息；查询参数的 properties、required、encoding 同步采用不受当前文化影响的小驼峰名称。补全已有上传接口的 hasData、可选传输数据哈希头与 HTTP Basic 认证声明，不改变实际认证方式及接口行为。文档格式保持 OpenAPI 3.0。
+
+新增 Swagger JSON 契约检查接入现有服务器冒烟：核对 12 条路径及方法、上传字段、查询字段、枚举、引用及认证。另以仅引用 Server.Core 的内置服务器探针检查独立服务 Development/Production 与内置服务 Production 诊断开关；只访问 HTTP API 和 Swagger JSON，使用临时配置/数据库、回环端口及随机账号密码，不启动 UI，也不访问 Swagger UI。通过实际表单请求核对必填参数、查询筛选与传输数据回读。
+
+本地验证：Core NonUI 438、Desktop NonUI 6 项全部通过，0 失败/跳过，TRX 位于 `/private/tmp/syncclipboard-stage15-results/`；四种 Swagger HTTP 模式通过，记录 `/tmp/syncclipboard-stage15-diagnostic-smoke3.log`。现有同步/文件/重启冒烟两轮与 Production 首次启动配置四轮通过。服务器与探针构建均无警告/错误，平台依赖还原、仓库及探针格式检查退出 0（仓库仅有跨平台工作区加载警告），actionlint 和 Python 语法检查通过。
+
+11 个项目的依赖图比较确认：Shared 无变更，其余仅改变四个 Swashbuckle 包、Microsoft.OpenApi 及 ApiDescription.Server，报告 `/tmp/syncclipboard-stage15-dependency-diff.json`。检查探针初次运行暴露了测试配置遗漏和文本 size 使用字节数的问题，已改为预写临时配置及文本字符数，并完成上述四模式实测；没有为适应测试修改产品协议或放宽断言。
+
+当前步骤本地检查已通过，尚待提交后的 CI 与评审验证；不进入 16a。

@@ -39,6 +39,11 @@ jobs:
     - name: Verify first-start configuration without UI
       run: python3 build/verification/server_startup_smoke.py --server-dll server/publish/SyncClipboard.Server.dll
 
+    - name: Verify Swagger JSON and built-in diagnostic mode without UI
+      run: |
+        dotnet build build/verification/BuiltInServerProbe -c Release
+        python3 build/verification/swagger_smoke.py --server-dll server/publish/SyncClipboard.Server.dll --probe-dll build/verification/BuiltInServerProbe/bin/Release/net10.0/BuiltInServerProbe.dll
+
     - name: Upload build artifacts SyncClipboard.Server
       uses: actions/upload-artifact@v7
       with:

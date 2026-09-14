@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace SyncClipboard.Server.Core.Swagger;
@@ -15,29 +15,47 @@ public class QueryHistoryOperationFilter : IOperationFilter
             context.ApiDescription.HttpMethod?.ToUpper() != "POST")
             return;
 
-        if (operation.RequestBody?.Content.TryGetValue("multipart/form-data", out OpenApiMediaType? value) != true)
+        if (operation.RequestBody?.Content?.TryGetValue("multipart/form-data", out OpenApiMediaType? value) != true)
             return;
 
         // 将属性名改为小驼峰
-        if (value?.Schema?.Properties != null)
+        if (value?.Schema?.Properties is { } properties)
         {
-            var newProperties = new Dictionary<string, OpenApiSchema>();
-            foreach (var prop in value.Schema.Properties)
+            var schema = value.Schema switch
+            {
+                OpenApiSchema inline => (OpenApiSchema)inline.CreateShallowCopy(),
+                OpenApiSchemaReference { Target: { } target } reference =>
+                    (OpenApiSchema)reference.CopyReferenceAsTargetElementWithOverrides(target),
+                _ => throw new InvalidOperationException("Cannot resolve the history query schema.")
+            };
+            value.Schema = schema;
+            var newProperties = new Dictionary<string, IOpenApiSchema>();
+            foreach (var prop in properties)
             {
                 var newKey = ToCamelCase(prop.Key);
                 newProperties[newKey] = prop.Value;
             }
-            value.Schema.Properties = newProperties;
+            schema.Properties = newProperties;
 
             // 更新 Required 列表中的属性名
-            if (value.Schema.Required != null && value.Schema.Required.Count > 0)
+            if (schema.Required != null && schema.Required.Count > 0)
             {
                 var newRequired = new HashSet<string>();
-                foreach (var req in value.Schema.Required)
+                foreach (var req in schema.Required)
                 {
                     newRequired.Add(ToCamelCase(req));
                 }
-                value.Schema.Required = newRequired;
+                schema.Required = newRequired;
+            }
+
+            if (value.Encoding != null && value.Encoding.Count > 0)
+            {
+                var newEncoding = new Dictionary<string, OpenApiEncoding>();
+                foreach (var encoding in value.Encoding)
+                {
+                    newEncoding[ToCamelCase(encoding.Key)] = encoding.Value;
+                }
+                value.Encoding = newEncoding;
             }
         }
     }
@@ -47,6 +65,6 @@ public class QueryHistoryOperationFilter : IOperationFilter
         if (string.IsNullOrEmpty(str) || char.IsLower(str[0]))
             return str;
 
-        return char.ToLower(str[0]) + str[1..];
+        return char.ToLowerInvariant(str[0]) + str[1..];
     }
 }
