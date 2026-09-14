@@ -290,7 +290,6 @@ public class QuartzCompatibilityTests
         finally
         {
             cleanupCancellation.Cancel();
-            await scheduler.Interrupt(key, CancellationToken.None);
             await scheduler.Shutdown(waitForJobsToComplete: true, cancellationToken: CancellationToken.None).AsTask().WaitAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
         }
         Assert.AreEqual(1, state.DisposedScopes);

@@ -52,4 +52,4 @@
 
 `NonUI` 分类适用于测试的初始化、执行和清理全过程。修改上述类或加入用例时须重新核对边界；需要 UI 的用例应放入单独的类，不能放入已有类级 NonUI 分类中再依靠 RequiresUI 标签抵消。本次不执行 UI 用例，也不把 mock/编译结果视为实际界面验收。
 
-步骤 14 当前证据：`/tmp/syncclipboard-stage14-final-results/` 的 Core 438 与 Desktop 6 项 TRX 均通过，0 失败/跳过；11 项 Quartz 专项包含在 Core 报告中。独立的 [QuartzProbe](../../build/verification/QuartzProbe/Program.cs) 另行验证实际任务，不计入 TRX 数量；包装脚本在新建临时目录中复制探针并预先启用两项便携配置，退出后清理目录。生产清理任务仅处理临时文件及数据库，更新任务的严格调度替身仅记录回调，不执行更新流程；通知、窗口和 HTTP 替身均拒绝真实调用。10 组检查、六项预取消及历史清理等待数据库锁时的取消通过，报告 `/tmp/syncclipboard-stage14-production-jobs-final.json`。这不替代步骤 14 尚待完成的三平台 PR 探针、产物与评审门槛。
+步骤 14 当前证据：`/tmp/syncclipboard-stage14-final-results/` 的 Core 438 与 Desktop 6 项 TRX 均通过，0 失败/跳过；11 项 Quartz 专项包含在 Core 报告中。独立的 [QuartzProbe](../../build/verification/QuartzProbe/Program.cs) 另行验证实际任务，不计入 TRX 数量；包装脚本在新建临时目录中复制探针并预先启用两项便携配置，退出后清理目录。生产清理任务仅处理临时文件及数据库，更新任务的严格调度替身仅记录回调，不执行更新流程；通知、窗口和 HTTP 替身均拒绝真实调用。10 组检查、六项预取消及历史清理等待数据库锁时的取消通过，报告 `/tmp/syncclipboard-stage14-production-jobs-final.json`。这不替代步骤 14 尚待完成的三平台 PR 探针、构建/打包 CI 与评审门槛（远程二进制审计按最新要求取消）。
