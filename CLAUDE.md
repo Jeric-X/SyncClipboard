@@ -38,7 +38,7 @@ dotnet build src/SyncClipboard.Desktop.Default/SyncClipboard.Desktop.Default.csp
 
 ### macOS (Avalonia)
 
-macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. The application requires macOS 14 or later. Run the commands below from the repository root.
+macOS uses `SyncClipboard.Desktop.MacOS` (Avalonia, `net10.0-macos`). Requires the `macos` workload and only builds on macOS. Run the commands below from the repository root.
 
 ```bash
 # Restore

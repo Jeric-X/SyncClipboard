@@ -11,7 +11,7 @@ jobs:
     uses: ./.github/workflows/server-build.yml
 
   server-release:
-    # Automated development branches validate local images without publishing them.
+    # Do not publish Docker images from automated development branches.
     if: ${{ !startsWith(github.ref, 'refs/heads/codex/') }}
     needs: server-build
     runs-on: ubuntu-latest  # For a list of available runner types, refer to
