@@ -48,9 +48,12 @@ namespace SyncClipboard.Core
         public ConfigManager ConfigManager { get; }
 
         private ServiceManager? ServiceManager { get; set; }
+        private readonly Lazy<Task> _stopTask;
+        private IScheduler? _scheduler;
 
         public AppCore(IServiceProvider serviceProvider)
         {
+            _stopTask = new Lazy<Task>(StopCoreAsync);
             Services = serviceProvider;
             Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
             SyncClipboardConfigRegistry.EnsureInitialized();
@@ -181,6 +184,7 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
+            _scheduler = Services.GetRequiredService<IScheduler>();
             Job.SetUpSchedulerJobs(Services).GetAwaiter().GetResult();
         }
 
@@ -298,11 +302,21 @@ namespace SyncClipboard.Core
             }
         }
 
-        public void Stop()
+        public Task StopAsync() => _stopTask.Value;
+
+        private async Task StopCoreAsync()
         {
             NotificationManager.RomoveAllNotifications();
             ServiceManager?.StopAllService();
-            DisposeServicesAsync(Services).GetAwaiter().GetResult();
+            await StopSchedulerAndDisposeServicesAsync(Services, _scheduler);
+        }
+
+        internal static async Task StopSchedulerAndDisposeServicesAsync(IServiceProvider services, IScheduler? scheduler)
+        {
+            // Keep the calling context available, then dispose the remaining application services there.
+            if (scheduler is not null)
+                await scheduler.Shutdown(waitForJobsToComplete: true);
+            await DisposeServicesAsync(services);
         }
 
         internal static async Task DisposeServicesAsync(IServiceProvider services)

@@ -2,6 +2,10 @@
 
 核对日期：2026-09-14，升级步骤 14（延续步骤 13b 的范围核对）。适用项目：`src/SyncClipboard.Test`。
 
+步骤 15 的 CI 修复重新核对了 `HistoryTransferDataHashTests` 的三个压缩包恢复数据用例：仅在临时 ZIP 中设置固定旧时间戳，验证恢复后的文件名/内容、资料标识及传输包实际哈希。初始化、执行和清理仍只使用临时文件、SQLite 与内存替身，不访问 UI；用例总数保持 438 项。
+
+同阶段重新核对 `QuartzCompatibilityTests` 的优雅关闭用例：改为调用生产的 `StopSchedulerAndDisposeServicesAsync`，以内存任务的完成信号验证关闭任务先返回未完成状态、允许调用者继续释放任务，随后完成调度器与容器释放。测试不创建 UI 调度器或模拟交互桌面，不执行 UpdateJob 的真实回调；此证据不代表桌面退出交互已经验收。
+
 本项目的 39 个测试类已核对测试入口、字段初始化、初始化/清理方法及使用的替身，均标为 `TestCategory("NonUI")`。本地与 CI 使用 `--filter TestCategory=NonUI` 正向筛选。当前 438 项全部通过，包含步骤 13b 的全部 427 项和新增 11 项 Quartz 非 UI 回归，没有因筛选漏掉已有用例。
 
 项目没有 AssemblyInitialize/ClassInitialize、动态数据源或平台服务数据源的测试入口。SystemServiceProviderDataSource/PlatformServiceProviderDataSource 在本项目仅定义，未被测试方法使用；不能据此运行其他项目的混合 DI 测试。被测项目引用 Core，无桌面入口或 Avalonia/WinUI 控件初始化。测试涉及图片时只处理数据、文件和哈希。

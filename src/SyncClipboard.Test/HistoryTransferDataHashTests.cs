@@ -272,6 +272,12 @@ public class HistoryTransferDataHashTests
         var archivePath = (await sourceProfile.PrepareTransferData(
             Path.Combine(fixture.RootDirectory, "regenerate-client"), token))?.Path;
         Assert.IsNotNull(archivePath);
+        // ZIP metadata may change when the same files are packaged again.
+        using (var originalArchive = ZipFile.Open(archivePath, ZipArchiveMode.Update))
+        {
+            foreach (var entry in originalArchive.Entries)
+                entry.LastWriteTime = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        }
         var transferDataHash = await Utility.CalculateFileSHA256(archivePath, token);
         var dto = CreateGroupDto(await sourceProfile.GetHash(token));
         await using (var stream = File.OpenRead(archivePath))
@@ -300,8 +306,14 @@ public class HistoryTransferDataHashTests
         Assert.IsTrue(File.Exists(regenerated.Path));
         Assert.AreEqual(await Utility.CalculateFileSHA256(regenerated.Path, token), regenerated.Hash);
         Assert.AreEqual(regenerated.Hash, entity.TransferDataHash);
-        if (archiveState == "corrupted")
-            Assert.AreEqual(transferDataHash, regenerated.Hash);
+        Assert.AreNotEqual(transferDataHash, regenerated.Hash);
+        Assert.AreEqual(dto.Hash, entity.Hash);
+        using var regeneratedArchive = ZipFile.OpenRead(regenerated.Path);
+        Assert.HasCount(1, regeneratedArchive.Entries);
+        var regeneratedEntry = regeneratedArchive.Entries[0];
+        Assert.AreEqual(Path.GetFileName(sourceFile), regeneratedEntry.FullName);
+        using var reader = new StreamReader(regeneratedEntry.Open());
+        Assert.AreEqual("regenerate", await reader.ReadToEndAsync(token));
     }
 
     [TestMethod]

@@ -25,6 +25,7 @@ namespace SyncClipboard.WinUI3
         public ILogger Logger { get; private set; }
         public MainWindow MainWindow => (MainWindow)Services.GetRequiredService<IMainWindow>();
         public AppCore AppCore { get; private set; }
+        private bool _isExiting;
 
 #pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑添加 "required" 修饰符或声明为可为 null。
         public App()
@@ -38,12 +39,25 @@ namespace SyncClipboard.WinUI3
 #endif
         }
 
-        internal void ExitApp()
+        internal async void ExitApp()
         {
-            AppCore.Stop();
-            UnhandledException -= App_UnhandledException;
-            Console.WriteLine("Exited");
-            Exit();
+            if (_isExiting)
+                return;
+            _isExiting = true;
+            try
+            {
+                await AppCore.StopAsync();
+            }
+            catch (Exception exception)
+            {
+                Trace.WriteLine($"Shutdown failed: {exception}");
+            }
+            finally
+            {
+                UnhandledException -= App_UnhandledException;
+                Console.WriteLine("Exited");
+                Exit();
+            }
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

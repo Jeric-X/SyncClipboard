@@ -898,3 +898,19 @@ Swashbuckle.AspNetCore 8.1.1 → 10.2.3，Microsoft.OpenApi 显式固定 2.12.2�
 11 个项目的依赖图比较确认：Shared 无变更，其余仅改变四个 Swashbuckle 包、Microsoft.OpenApi 及 ApiDescription.Server，报告 `/tmp/syncclipboard-stage15-dependency-diff.json`。检查探针初次运行暴露了测试配置遗漏和文本 size 使用字节数的问题，已改为预写临时配置及文本字符数，并完成上述四模式实测；没有为适应测试修改产品协议或放宽断言。
 
 当前步骤本地检查已通过，尚待提交后的 CI 与评审验证；不进入 16a。
+
+### 步骤 15 PR 验证与 ZIP 恢复测试修复
+
+提交 `5564ef7601fb8e17aafb2e1219f108cb4ecd3816` 已推送。服务器 CI `103857250501` 实际执行四种 Swagger 模式及既有同步回归并成功，双架构容器也成功。但 [Windows Core CI](https://github.com/Jeric-X/SyncClipboard/actions/runs/34805772715/job/103857250458) 有 437 通过、1 失败：原有压缩包恢复用例错误地要求重新生成 ZIP 与原包字节哈希相同。ZIP 条目默认携带生成时间，因此相同资料内容并不保证压缩包字节相同。
+
+先将原包条目固定为 2000 年时间戳，保留原断言，在本地确定性复现相同失败，报告 `/private/tmp/syncclipboard-stage15-zip-repro/`。随后保留新包实际 SHA256、返回值和数据库记录一致的检查，并改为验证文件名/内容与资料标识保持不变、新包字节哈希正确更新；缺失、损坏、不可读三个场景均保留。不修改产品协议，不下载远程编译产物，后续仍须由修复提交完成 CI 和评审。
+
+当前提交的 [P1 评审](https://github.com/Jeric-X/SyncClipboard/pull/419#discussion_r4002220775) 指出正常退出同步等待 Quartz，而 UpdateJob 可能等待主线程继续更新，形成死锁。将 AppCore 退出改为缓存的一次性 StopAsync，两个桌面前端与实例关闭命令异步等待；调度器先完成关闭，再释放其余应用服务。桌面退出入口防止重复执行。事件循环已经异常结束的两个 Avalonia 程序入口仅做最多五秒的尽力清理，不保留无限同步等待。
+
+既有优雅关闭测试改为直接调用生产关闭/释放方法，使用纯内存任务的开始与完成信号验证等待不会阻塞调用者以及最终释放。真实桌面退出、更新 UI 回调仍按用户要求排除，不执行，也不宣称已验收。
+
+修复后的 Core 438 与 Desktop NonUI 6 项通过，0 失败/跳过，报告 `/private/tmp/syncclipboard-stage15-shutdown-final/`。macOS arm64 编译成功，仅有命令行 RID 覆盖项目 RID 的 SDK 提示；仓库格式检查通过，仅有跨平台工作区加载警告。源码核对全部正常退出调用均使用异步等待。
+
+Default 编译还暴露了升级前已存在的 NU1904：其 Windows TFM 经 Toolkit 通知包解析 System.Drawing.Common 4.7.0，冻结的步骤 15 基线已含同一警告。仅在该 Windows TFM 添加显式引用，沿用中央表已有的 10.0.0，与 WinUI3 和 Windows 图片探针对齐；Linux 引用不变，不屏蔽警告。[对应公告](https://github.com/advisories/GHSA-rxg9-xrhp-64gj) 的运行时影响限 macOS/Linux，此处处理的是遗留依赖及还原警告，不据此声称 Windows 运行时存在同一漏洞。
+
+修复后实际依赖图中 Windows 使用 System.Drawing.Common / Microsoft.Win32.SystemEvents 10.0.0，net10.0 图没有 System.Drawing.Common；NuGet 日志为空，Default 编译 0 警告/错误、格式检查通过，记录 `/tmp/syncclipboard-stage15-default-drawing-build.log`。所有修复尚待新提交的完整 CI 与评审验证，步骤 15 未通过。

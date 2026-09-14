@@ -29,6 +29,10 @@
     <ProjectReference Include="..\SyncClipboard.Desktop\SyncClipboard.Desktop.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <PackageReference Include="System.Drawing.Common" />
+  </ItemGroup>
+
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>

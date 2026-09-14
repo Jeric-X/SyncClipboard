@@ -204,7 +204,7 @@ public class QuartzCompatibilityTests
             await scheduler.Start(TestCancellation);
             await scheduler.Start(TestCancellation);
             await started.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellation);
-            var shutdown = scheduler.Shutdown(waitForJobsToComplete: true, cancellationToken: CancellationToken.None).AsTask();
+            var shutdown = AppCore.StopSchedulerAndDisposeServicesAsync(services, scheduler);
             Assert.IsFalse(shutdown.IsCompleted);
             release.TrySetResult();
             await shutdown.WaitAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
