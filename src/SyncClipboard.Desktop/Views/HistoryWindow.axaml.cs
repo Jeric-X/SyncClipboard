@@ -41,7 +41,7 @@ public partial class HistoryWindow : Window, IWindow
 
         this.ExtendClientAreaToDecorationsHint = true;
         if (!OperatingSystem.IsMacOS())
-            this.WindowDecorations = WindowDecorations.None;
+            this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
         InitializeScrollWatcher();

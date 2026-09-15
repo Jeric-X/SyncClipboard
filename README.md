@@ -361,7 +361,6 @@ PUT /SyncClipboard.json
 [WinUIEx](https://github.com/dotMorten/WinUIEx)  
 [moq](https://github.com/moq/moq)  
 [Avalonia](https://avaloniaui.net/)  
-[FluentAvalonia.BreadcrumbBar](https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar)  
 [FluentAvalonia](https://github.com/amwx/FluentAvalonia)  
 [AsyncImageLoader.Avalonia](https://github.com/AvaloniaUtils/AsyncImageLoader.Avalonia)  
 [Vanara](https://github.com/dahall/Vanara)  
