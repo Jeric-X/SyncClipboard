@@ -11,10 +11,10 @@
         <vm:DiagnoseDetailViewModel />
     </Design.DataContext>
     <UserControl.Styles>
-        <Style Selector="ui|SettingsExpander">
+        <Style Selector="ui|FASettingsExpander">
             <Setter Property="IconSource">
                 <Setter.Value>
-                    <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    <ui:FAFontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </Setter.Value>
             </Setter>
             <Setter Property="IsExpanded" Value="True" />
@@ -22,36 +22,36 @@
     </UserControl.Styles>
     <StackPanel Spacing="10">
         <StackPanel Spacing="10" IsVisible="{Binding IsString}">
-            <ui:SettingsExpander Header="C# String">
+            <ui:FASettingsExpander Header="C# String">
                 <TextBlock Text="{Binding CsharpString}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
+            </ui:FASettingsExpander>
         </StackPanel>
         <StackPanel Spacing="10" IsVisible="{Binding IsText}">
-            <ui:SettingsExpander Header="ANSI">
+            <ui:FASettingsExpander Header="ANSI">
                 <TextBlock Text="{Binding Ansi}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
-            <ui:SettingsExpander Header="UTF8">
+            </ui:FASettingsExpander>
+            <ui:FASettingsExpander Header="UTF8">
                 <TextBlock Text="{Binding Utf8}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
-            <ui:SettingsExpander Header="UTF16">
+            </ui:FASettingsExpander>
+            <ui:FASettingsExpander Header="UTF16">
                 <TextBlock Text="{Binding Utf16}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
-            <ui:SettingsExpander Header="UTF32">
+            </ui:FASettingsExpander>
+            <ui:FASettingsExpander Header="UTF32">
                 <TextBlock Text="{Binding Utf32}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
+            </ui:FASettingsExpander>
         </StackPanel>
         <StackPanel Spacing="10" IsVisible="{Binding IsNumber}">
-            <ui:SettingsExpander Header="INT32">
+            <ui:FASettingsExpander Header="INT32">
                 <TextBlock Text="{Binding Int_32}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
-            <ui:SettingsExpander Header="UINT32">
+            </ui:FASettingsExpander>
+            <ui:FASettingsExpander Header="UINT32">
                 <TextBlock Text="{Binding Uint_32}" TextWrapping="Wrap" />
-            </ui:SettingsExpander>
+            </ui:FASettingsExpander>
         </StackPanel>
         <StackPanel Spacing="10" IsVisible="{Binding IsImage}">
-            <ui:SettingsExpander Header="Image">
+            <ui:FASettingsExpander Header="Image">
                 <Image Source="{Binding Bitmap}" />
-            </ui:SettingsExpander>
+            </ui:FASettingsExpander>
         </StackPanel>
     </StackPanel>
 </UserControl>

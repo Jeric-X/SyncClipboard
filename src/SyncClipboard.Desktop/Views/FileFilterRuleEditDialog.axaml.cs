@@ -10,9 +10,9 @@ using System.ComponentModel;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class FileFilterRuleEditDialog : ContentDialog
+public partial class FileFilterRuleEditDialog : FAContentDialog
 {
-    protected override Type StyleKeyOverride => typeof(ContentDialog);
+    protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
     public FileFilterRuleEditor Editor { get; }
     public IReadOnlyList<LocaleString<FileFilterMatchMode>> MatchModes => FileSyncFilterSettingViewModel.MatchModes;
@@ -46,7 +46,7 @@ public partial class FileFilterRuleEditDialog : ContentDialog
         IsPrimaryButtonEnabled = string.IsNullOrEmpty(message);
     }
 
-    private void DialogClosed(ContentDialog sender, ContentDialogClosedEventArgs args)
+    private void DialogClosed(FAContentDialog sender, FAContentDialogClosedEventArgs args)
     {
         Editor.PropertyChanged -= EditorPropertyChanged;
         Closed -= DialogClosed;

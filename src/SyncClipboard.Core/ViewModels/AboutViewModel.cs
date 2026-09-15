@@ -70,7 +70,6 @@ public partial class AboutViewModel : ObservableObject
         new OpenSourceSoftware("moq", "https://github.com/moq/moq", "moq/License.txt"),
         new OpenSourceSoftware("Avalonia", "https://avaloniaui.net/", "Avalonia/licence.md"),
         new OpenSourceSoftware("FluentAvalonia", "https://github.com/amwx/FluentAvalonia/", "FluentAvalonia/LICENSE.txt"),
-        new OpenSourceSoftware("FluentAvalonia.BreadcrumbBar", "https://github.com/indigo-san/FluentAvalonia.BreadcrumbBar", "FluentAvalonia.BreadcrumbBar/LICENSE.txt"),
         new OpenSourceSoftware("AsyncImageLoader.Avalonia", "https://github.com/AvaloniaUtils/AsyncImageLoader.Avalonia", "AsyncImageLoader.Avalonia/LICENSE.txt"),
         new OpenSourceSoftware("Vanara", "https://github.com/dahall/Vanara", "Vanara/LICENSE.txt"),
         new OpenSourceSoftware("SharpHook", "https://github.com/TolikPylypchuk/SharpHook", "SharpHook/LICENSE.txt"),

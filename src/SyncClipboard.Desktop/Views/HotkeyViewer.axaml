@@ -1,5 +1,6 @@
 <UserControl x:Class="SyncClipboard.Desktop.Views.HotkeyViewer"
              xmlns="https://github.com/avaloniaui"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -41,11 +42,11 @@
             </OnPlatform>
         </Style>
     </UserControl.Styles>
-    <ItemsRepeater HorizontalAlignment="Center" ItemsSource="{Binding #_HotkeyViewer.Hotkey.Keys, Mode=OneWay}">
-        <ItemsRepeater.Layout>
-            <StackLayout Orientation="Horizontal" Spacing="4" />
-        </ItemsRepeater.Layout>
-        <ItemsRepeater.ItemTemplate>
+    <ui:FAItemsRepeater HorizontalAlignment="Center" ItemsSource="{Binding #_HotkeyViewer.Hotkey.Keys, Mode=OneWay}">
+        <ui:FAItemsRepeater.Layout>
+            <ui:FAStackLayout Orientation="Horizontal" Spacing="4" />
+        </ui:FAItemsRepeater.Layout>
+        <ui:FAItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="mk:Key">
                 <ToggleButton MinWidth="{Binding $self.Bounds.Height, Mode=OneWay}"
                               VerticalAlignment="Stretch"
@@ -54,6 +55,6 @@
                               IsHitTestVisible="False"
                               Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}" />
             </DataTemplate>
-        </ItemsRepeater.ItemTemplate>
-    </ItemsRepeater>
+        </ui:FAItemsRepeater.ItemTemplate>
+    </ui:FAItemsRepeater>
 </UserControl>

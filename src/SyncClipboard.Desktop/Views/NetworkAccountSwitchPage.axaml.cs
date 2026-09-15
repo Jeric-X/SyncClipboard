@@ -23,7 +23,7 @@ public partial class NetworkAccountSwitchPage : UserControl
     {
         var editor = _viewModel.CreateRuleEditor();
         var dialog = new NetworkRuleEditDialog(_viewModel, editor);
-        if (await dialog.ShowAsync(App.Current.MainWindow) == ContentDialogResult.Primary) _viewModel.AddRuleEditor(editor);
+        if (await dialog.ShowAsync(App.Current.MainWindow) == FAContentDialogResult.Primary) _viewModel.AddRuleEditor(editor);
     }
 
     private async void EditRuleClick(object? sender, RoutedEventArgs e)
@@ -31,7 +31,7 @@ public partial class NetworkAccountSwitchPage : UserControl
         if (sender is not Button { DataContext: NetworkRuleEditor rule }) return;
         var editor = NetworkAccountSwitchViewModel.CloneRuleEditor(rule);
         var dialog = new NetworkRuleEditDialog(_viewModel, editor);
-        if (await dialog.ShowAsync(App.Current.MainWindow) == ContentDialogResult.Primary) _viewModel.UpdateRuleEditor(rule, editor);
+        if (await dialog.ShowAsync(App.Current.MainWindow) == FAContentDialogResult.Primary) _viewModel.UpdateRuleEditor(rule, editor);
     }
 
     private void DeleteRuleClick(object? sender, RoutedEventArgs e)

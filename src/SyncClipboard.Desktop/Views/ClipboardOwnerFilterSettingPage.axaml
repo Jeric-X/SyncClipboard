@@ -20,14 +20,14 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:SettingsExpander Grid.Row="0" Description="{Binding Description}" Header="{x:Static i18n:Strings.FilterMode}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE71C;" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+        <ui:FASettingsExpander Grid.Row="0" Description="{Binding Description}" Header="{x:Static i18n:Strings.FilterMode}">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE71C;" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <ComboBox ItemTemplate="{StaticResource LocaleStringTemplate}" ItemsSource="{x:Static vm:ClipboardOwnerFilterSettingViewModel.Modes}" SelectedItem="{Binding FilterMode, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
+            </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
         <Grid Grid.Row="1" Margin="0,10,0,0" IsVisible="{Binding EnableText, Mode=OneWay}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />

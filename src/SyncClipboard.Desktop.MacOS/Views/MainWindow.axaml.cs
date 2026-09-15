@@ -1,7 +1,7 @@
 ﻿using AppKit;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Platform;
 using SyncClipboard.Desktop.MacOS.Utilities;
 using System;
 

@@ -24,10 +24,10 @@ public partial class HotkeyPage : UserControl
     {
         ViewModel.EditingHotkey = Hotkey.Nothing;
         ViewModel.EditingCmdId = (string)((Button)sender!).DataContext!;
-        var dialog = new ContentDialog
+        var dialog = new FAContentDialog
         {
-            [!ContentDialog.IsPrimaryButtonEnabledProperty] = ViewModelBinding("SetHotkeyCanExecute"),
-            [!ContentDialog.PrimaryButtonCommandProperty] = ViewModelBinding("SetHotkeyCommand"),
+            [!FAContentDialog.IsPrimaryButtonEnabledProperty] = ViewModelBinding("SetHotkeyCanExecute"),
+            [!FAContentDialog.PrimaryButtonCommandProperty] = ViewModelBinding("SetHotkeyCommand"),
             SecondaryButtonText = Strings.Clear,
             CloseButtonText = Strings.Cancel,
             PrimaryButtonText = Strings.Confirm,
@@ -46,10 +46,10 @@ public partial class HotkeyPage : UserControl
 
     private Binding ViewModelBinding(string path, BindingMode mode = BindingMode.Default)
     {
-        return new Binding(path, mode) { Source = ViewModel };
+        return new Binding(path) { Mode = mode, Source = ViewModel };
     }
 
-    private void ClearButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void ClearButtonClick(FAContentDialog sender, FAContentDialogButtonClickEventArgs args)
     {
         ViewModel.EditingHotkey = Hotkey.Nothing;
         (sender.Content as UserControl)?.Focus();
@@ -58,7 +58,7 @@ public partial class HotkeyPage : UserControl
 
     private void SettingsExpander_Loaded(object? sender, RoutedEventArgs _)
     {
-        if (sender is SettingsExpander settingsExpander)
+        if (sender is FASettingsExpander settingsExpander)
         {
             settingsExpander.IsExpanded = true;
         }

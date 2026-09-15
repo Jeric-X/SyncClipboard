@@ -16,11 +16,11 @@ public partial class AccountConfigEditPage : UserControl
         _viewModel = App.Current.Services.GetRequiredService<AccountConfigEditViewModel>();
         DataContext = _viewModel;
         InitializeComponent();
-        AddHandler(Frame.NavigatedToEvent, OnNavigatedTo, Avalonia.Interactivity.RoutingStrategies.Direct);
-        AddHandler(Frame.NavigatedFromEvent, OnNavigatedFrom, Avalonia.Interactivity.RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedToEvent, OnNavigatedTo, Avalonia.Interactivity.RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedFromEvent, OnNavigatedFrom, Avalonia.Interactivity.RoutingStrategies.Direct);
     }
 
-    private void OnNavigatedTo(object? sender, NavigationEventArgs e)
+    private void OnNavigatedTo(object? sender, FANavigationEventArgs e)
     {
         App.Current.MainWindow.DispableScrollViewer();
         if (e.Parameter is AccountConfig accountConfig)
@@ -29,7 +29,7 @@ public partial class AccountConfigEditPage : UserControl
         }
     }
 
-    private void OnNavigatedFrom(object? sender, NavigationEventArgs e)
+    private void OnNavigatedFrom(object? sender, FANavigationEventArgs e)
     {
         App.Current.MainWindow.EnableScrollViewer();
         _viewModel.CancelTestCommand.Execute(null);
