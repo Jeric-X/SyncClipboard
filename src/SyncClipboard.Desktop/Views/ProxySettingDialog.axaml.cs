@@ -9,10 +9,10 @@ using System;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class ProxySettingDialog : ContentDialog
+public partial class ProxySettingDialog : FAContentDialog
 {
     // workaround for https://github.com/amwx/FluentAvalonia/issues/24, https://github.com/amwx/FluentAvalonia/issues/674
-    protected override Type StyleKeyOverride => typeof(ContentDialog);
+    protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
     private readonly ProxySettingViewModel _viewModel;
     public ProxySettingDialog()

@@ -46,16 +46,16 @@ public partial class MainView : UserControl
 
     internal void NavigateTo(
         PageDefinition page,
-        SlideNavigationTransitionEffect effect = SlideNavigationTransitionEffect.FromBottom,
+        FASlideNavigationTransitionEffect effect = FASlideNavigationTransitionEffect.FromBottom,
         object? parameter = null)
     {
         string pageName = "SyncClipboard.Desktop.Views." + page.Name + "Page";
         Type? pageType = Type.GetType(pageName);
-        SettingContentFrame.Navigate(pageType, parameter, new SlideNavigationTransitionInfo { Effect = effect });
+        SettingContentFrame.Navigate(pageType, parameter, new FASlideNavigationTransitionInfo { Effect = effect });
         _ScrollViewer.ScrollToHome();
     }
 
-    private void BreadcrumbBar_ItemClicked(BreadcrumbBar _, BreadcrumbBarItemClickedEventArgs args)
+    private void BreadcrumbBar_ItemClicked(FABreadcrumbBar _, FABreadcrumbBarItemClickedEventArgs args)
     {
         _viewModel.BreadcrumbBarClicked(args.Index);
     }

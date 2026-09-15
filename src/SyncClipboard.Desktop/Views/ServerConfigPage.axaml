@@ -22,85 +22,85 @@
             <Setter Property="FontSize" Value="20" />
         </Style>
     </UserControl.Styles>
-    <ui:SettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
-        <ui:SettingsExpander.IconSource>
-            <ui:FontIconSource Glyph="&#xE753;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-        </ui:SettingsExpander.IconSource>
-        <ui:SettingsExpander.Footer>
+    <ui:FASettingsExpander Header="{x:Static i18n:Strings.Server}" Description="{x:Static i18n:Strings.ServerDescription}" IsExpanded="True">
+        <ui:FASettingsExpander.IconSource>
+            <ui:FAFontIconSource Glyph="&#xE753;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+        </ui:FASettingsExpander.IconSource>
+        <ui:FASettingsExpander.Footer>
             <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ServerEnable, Mode=TwoWay}" />
-        </ui:SettingsExpander.Footer>
-        <ui:SettingsExpander.Items>
-            <ui:SettingsExpanderItem Description="{Binding ServerConfigDescription}">
-                <ui:SettingsExpanderItem.Footer>
+        </ui:FASettingsExpander.Footer>
+        <ui:FASettingsExpander.Items>
+            <ui:FASettingsExpanderItem Description="{Binding ServerConfigDescription}">
+                <ui:FASettingsExpanderItem.Footer>
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <ToggleButton Width="32"
                                       Height="32"
                                       Classes="FontIcon"
                                       IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
-                            <ui:FontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FAFontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </ToggleButton>
                         <Button Click="SetServerConfig">
-                            <ui:FontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FAFontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                     </StackPanel>
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableCustomConfigurationFile}" Description="{x:Static i18n:Strings.CustomConfigFileDescription}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableCustomConfigurationFile}" Description="{x:Static i18n:Strings.CustomConfigFileDescription}">
+                <ui:FASettingsExpanderItem.Footer>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Command="{Binding OpenCustomConfigDescLinkCommand}">
-                            <ui:FontIcon Glyph="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                            <ui:FAFontIcon Glyph="&#xE9CE;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </Button>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableCustomConfigurationFile, Mode=TwoWay}" />
                     </StackPanel>
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CustomConfigurationFilePath}" Description="{Binding CustomConfigurationFilePath, Mode=OneWay}" IsVisible="{Binding EnableCustomConfigurationFile, Mode=OneWay}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.CustomConfigurationFilePath}" Description="{Binding CustomConfigurationFilePath, Mode=OneWay}" IsVisible="{Binding EnableCustomConfigurationFile, Mode=OneWay}">
+                <ui:FASettingsExpanderItem.Footer>
                     <Button Click="SetCustomConfigurationFilePath">
-                        <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        <ui:FAFontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </Button>
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableHttps}" IsVisible="{Binding ShowHttpsConfig}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableHttps}" IsVisible="{Binding ShowHttpsConfig}">
+                <ui:FASettingsExpanderItem.Footer>
                     <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHttps, Mode=TwoWay}" />
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemPath}" Description="{Binding CertificatePemPath, Mode=OneWay}" IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemPath}" Description="{Binding CertificatePemPath, Mode=OneWay}" IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
+                <ui:FASettingsExpanderItem.Footer>
                     <Button Click="SetCertificatePemPath">
-                        <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        <ui:FAFontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </Button>
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemKeyPath}" Description="{Binding CertificatePemKeyPath, Mode=OneWay}" IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.CertificatePemKeyPath}" Description="{Binding CertificatePemKeyPath, Mode=OneWay}" IsVisible="{Binding ShowHttpsCertConfig, Mode=OneWay}">
+                <ui:FASettingsExpanderItem.Footer>
                     <Button Click="SetCertificatePemKeyPath">
-                        <ui:FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        <ui:FAFontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </Button>
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxHistoryCount}" Description="{x:Static i18n:Strings.MaxHistoryCountDescription}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.MaxHistoryCount}" Description="{x:Static i18n:Strings.MaxHistoryCountDescription}">
+                <ui:FASettingsExpanderItem.Footer>
                     <NumericUpDown Value="{Binding MaxHistoryCount, Mode=TwoWay}"
                                    Minimum="0"
                                    Maximum="10000"
                                    Increment="100"
                                    ButtonSpinnerLocation="Right"
                                    FormatString="F0" />
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-            <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ServerHistoryRetentionMinutes}" Description="{x:Static i18n:Strings.ServerHistoryRetentionDescription}">
-                <ui:SettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ServerHistoryRetentionMinutes}" Description="{x:Static i18n:Strings.ServerHistoryRetentionDescription}">
+                <ui:FASettingsExpanderItem.Footer>
                     <NumericUpDown Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
                                    Minimum="0"
                                    Maximum="525600"
                                    Increment="1440"
                                    ButtonSpinnerLocation="Right"
                                    FormatString="F0" />
-                </ui:SettingsExpanderItem.Footer>
-            </ui:SettingsExpanderItem>
-        </ui:SettingsExpander.Items>
-    </ui:SettingsExpander>
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+        </ui:FASettingsExpander.Items>
+    </ui:FASettingsExpander>
 </UserControl>

@@ -25,24 +25,24 @@ public class AvaloniaDialog : IMainWindowDialog
 
     public async Task<bool> ShowConfirmationAsync(string title, string message)
     {
-        var dialog = new ContentDialog
+        var dialog = new FAContentDialog
         {
             Title = title,
             Content = message,
             PrimaryButtonText = Strings.Confirm,
             SecondaryButtonText = Strings.Cancel,
-            DefaultButton = ContentDialogButton.Secondary,
+            DefaultButton = FAContentDialogButton.Secondary,
         };
 
         var result = _window != null
             ? await dialog.ShowAsync(_window)
             : await dialog.ShowAsync();
-        return result == ContentDialogResult.Primary;
+        return result == FAContentDialogResult.Primary;
     }
 
     public async Task ShowMessageAsync(string title, string message)
     {
-        var dialog = new ContentDialog
+        var dialog = new FAContentDialog
         {
             Title = title,
             Content = new ScrollViewer
@@ -67,14 +67,14 @@ public class AvaloniaDialog : IMainWindowDialog
 
     public async Task<bool?> ShowThreeButtonConfirmationAsync(string title, string message, string primaryText, string secondaryText, string closeText)
     {
-        var dialog = new ContentDialog
+        var dialog = new FAContentDialog
         {
             Title = title,
             Content = message,
             PrimaryButtonText = primaryText,
             SecondaryButtonText = secondaryText,
             CloseButtonText = closeText,
-            DefaultButton = ContentDialogButton.Primary,
+            DefaultButton = FAContentDialogButton.Primary,
         };
 
         var result = _window != null
@@ -83,8 +83,8 @@ public class AvaloniaDialog : IMainWindowDialog
 
         return result switch
         {
-            ContentDialogResult.Primary => true,
-            ContentDialogResult.Secondary => false,
+            FAContentDialogResult.Primary => true,
+            FAContentDialogResult.Secondary => false,
             _ => null
         };
     }

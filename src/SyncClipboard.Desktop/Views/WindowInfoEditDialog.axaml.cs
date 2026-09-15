@@ -6,9 +6,9 @@ using System;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class WindowInfoEditDialog : ContentDialog
+public partial class WindowInfoEditDialog : FAContentDialog
 {
-    protected override Type StyleKeyOverride => typeof(ContentDialog);
+    protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
     public string ProcessName
     {

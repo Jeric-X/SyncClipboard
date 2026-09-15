@@ -13,13 +13,13 @@ public partial class LicensePage : UserControl
 
     public LicensePage()
     {
-        AddHandler(Frame.NavigatedToEvent, OnNavigatedTo, RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedToEvent, OnNavigatedTo, RoutingStrategies.Direct);
         _viewModel = new LicenseViewModel();
         DataContext = _viewModel;
         InitializeComponent();
     }
 
-    private void OnNavigatedTo(object? sender, NavigationEventArgs e)
+    private void OnNavigatedTo(object? sender, FANavigationEventArgs e)
     {
         var path = e.Parameter as string;
         var fullPath = Path.Combine(Core.Commons.Env.ProgramDirectory, $"LICENSES/{path}");

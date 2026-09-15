@@ -8,14 +8,14 @@
              x:DataType="vm:HotkeyBlacklistViewModel"
              mc:Ignorable="d">
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
-        <ui:SettingsExpander Header="全局快捷键例外程序" Description="{x:Static i18n:Strings.ClipboardOwnerFilterDescription}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE8A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+        <ui:FASettingsExpander Header="全局快捷键例外程序" Description="{x:Static i18n:Strings.ClipboardOwnerFilterDescription}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE8A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-        </ui:SettingsExpander>
+            </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
             <Button Click="AddItemClick" Content="添加程序" />
             <Button Click="CaptureClick" Content="使用快捷键捕获" IsVisible="{Binding !IsCapturing}" />

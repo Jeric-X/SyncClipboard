@@ -20,7 +20,7 @@ public partial class AboutPage : UserControl
 
     private void ThemeChanged(object? sender, System.EventArgs e)
     {
-        _AppInfo.IconSource = (ImageIconSource)App.Current.Resources["AppLogoSource"]!;
+        _AppInfo.IconSource = (FAImageIconSource)App.Current.Resources["AppLogoSource"]!;
     }
 
     private void HyperlinkButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -31,7 +31,7 @@ public partial class AboutPage : UserControl
 
     private void SettingsExpanderItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if ((sender as SettingsExpanderItem)?.Content is not OpenSourceSoftware software)
+        if ((sender as FASettingsExpanderItem)?.Content is not OpenSourceSoftware software)
         {
             return;
         }

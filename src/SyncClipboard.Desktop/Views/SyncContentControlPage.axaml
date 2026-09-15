@@ -16,63 +16,63 @@
         <vm:SyncSettingViewModel />
     </Design.DataContext>
     <UserControl.Resources>
-        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+        <ui:FASymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.SyncContentControl}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE8A4;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableDownload}">
-                    <ui:SettingsExpanderItem.Footer>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.SyncContentControl}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE8A4;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableDownload}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DownloadEnable, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUpload}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableUpload}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding UploadEnable, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadText}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadText}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding TextEnable, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadImage}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadImage}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ImageEnable, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadFile}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadFile}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SingleFileEnable, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadMultiFile}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableUploadMultiFile}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding MultiFileEnable, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem IsVisible="{OnPlatform Default=True, macOS=False}" Content="{x:Static i18n:Strings.DoNotUploadWhenCut}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem IsVisible="{OnPlatform Default=True, macOS=False}" Content="{x:Static i18n:Strings.DoNotUploadWhenCut}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DoNotUploadWhenCut, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.MaxFileSizeToUpload}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"
                                        Maximum="100000"
                                        Value="{Binding MaxFileSize, Mode=TwoWay}"
                                        Increment="1"
                                        ButtonSpinnerLocation="Right" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
                                          Command="{Binding SetFileSyncFilterCommand}"
                                          Content="{x:Static i18n:Strings.FileSyncFilter}" />
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
     </StackPanel>
 </UserControl>

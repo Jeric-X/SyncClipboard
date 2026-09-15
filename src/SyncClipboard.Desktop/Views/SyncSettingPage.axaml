@@ -32,14 +32,14 @@
     </UserControl.Styles>
     <UserControl.Resources>
         <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordFontIcon" />
-        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+        <ui:FASymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.SyncAccount}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE13D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.SyncAccount}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE13D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <StackPanel>
                     <ComboBox MinWidth="200"
                               ItemsSource="{Binding SavedAccounts}"
@@ -54,119 +54,119 @@
                     </ComboBox>
                     <TextBlock Text="{x:Static i18n:Strings.PleaseAddAccount}" IsVisible="{Binding !IsLoggedIn}" />
                 </StackPanel>
-            </ui:SettingsExpander.Footer>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AddAccount}"
+            </ui:FASettingsExpander.Footer>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AddAccount}"
                                          IsClickEnabled="True"
                                          Command="{Binding AddAccountCommand}"
                                          ActionIconSource="{StaticResource GoIcon}" />
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EditAccountConfig}"
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EditAccountConfig}"
                                          IsClickEnabled="True"
                                          Command="{Binding EditAccountCommand}"
                                          IsVisible="{Binding HasSelectedAccount}"
                                          ActionIconSource="{StaticResource GoIcon}">
-                    <ui:SettingsExpanderItem.Footer>
+                    <ui:FASettingsExpanderItem.Footer>
                         <Button MinWidth="60"
                                 Margin="0,0,10,0"
                                 Content="{x:Static i18n:Strings.DeleteAccount}"
                                 Command="{Binding RemoveAccountCommand}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AutoSwitchAccount}"
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AutoSwitchAccount}"
                                          Description="{Binding AccountAutoSwitchDescription}"
                                          IsClickEnabled="True"
                                          Command="{Binding OpenNetworkAccountSwitchCommand}"
                                          ActionIconSource="{StaticResource GoIcon}">
-                    <ui:SettingsExpanderItem.Footer>
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AccountAutoSwitchEnabled, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE117;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardSyncing}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE117;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding SyncEnable, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding ShowQueryInterval}">
-                    <ui:SettingsExpanderItem.Footer>
+            </ui:FASettingsExpander.Footer>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.QueryInterval}" IsVisible="{Binding ShowQueryInterval}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"
                                        Maximum="100000"
                                        Value="{Binding IntervalTime, Mode=TwoWay}"
                                        Increment="1"
                                        ButtonSpinnerLocation="Right" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.RetryTimes}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"
                                        Maximum="100000"
                                        Value="{Binding RetryTimes, Mode=TwoWay}"
                                        Increment="1" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.TimeoutPeriod}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"
                                        Maximum="100000"
                                        Value="{Binding TimeOut, Mode=TwoWay}"
                                        Increment="1"
                                        ButtonSpinnerLocation="Right" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterManuallyUpload}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterManuallyUpload}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnManualUpload, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.SendNotificationAfterUpdateLocalClipboard}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding NotifyOnDownloaded, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.IgnoreExcludeForSyncSuggestion}" Description="{x:Static i18n:Strings.IgnoreExcludeForSyncSuggestionDescription}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.IgnoreExcludeForSyncSuggestion}" Description="{x:Static i18n:Strings.IgnoreExcludeForSyncSuggestionDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding IgnoreExcludeForSyncSuggestion, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
                                          Command="{Binding OpenSyncContentControlPageCommand}"
                                          Content="{x:Static i18n:Strings.SyncContentControl}" />
-                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
                                          Command="{Binding SetClipboardOwnerFilterCommand}"
                                          Content="{x:Static i18n:Strings.ClipboardOwnerFilter}" />
-                <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                          IsClickEnabled="True"
                                          Command="{Binding OpenClipboardAcquisitionRulesPageCommand}"
                                          Content="{x:Static i18n:Strings.ClipboardAcquisitionRules}" />
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.LocalClipboardSource}" IsExpanded="True" IsVisible="{Binding IsLinux}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="Avalonia">
-                    <ui:SettingsExpanderItem.Footer>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.LocalClipboardSource}" IsExpanded="True" IsVisible="{Binding IsLinux}">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="Avalonia">
+                    <ui:FASettingsExpanderItem.Footer>
                         <CheckBox IsChecked="{Binding AvaloniaEnabled, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="xclip">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="xclip">
+                    <ui:FASettingsExpanderItem.Footer>
                         <CheckBox IsChecked="{Binding XClipEnabled, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="wl-clipboard">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="wl-clipboard">
+                    <ui:FASettingsExpanderItem.Footer>
                         <CheckBox IsChecked="{Binding WlClipboardEnabled, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
     </StackPanel>
 </UserControl>
