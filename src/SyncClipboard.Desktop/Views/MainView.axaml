@@ -63,6 +63,7 @@
                     <ui:FABreadcrumbBar.Resources>
                         <x:Double x:Key="BreadcrumbBarChevronFontSize">16</x:Double>
                         <x:Double x:Key="BreadcrumbBarItemThemeFontSize">30</x:Double>
+                        <x:Double x:Key="EllipsisItemPresenterLineHeight">NaN</x:Double>
                         <Thickness x:Key="BreadcrumbBarChevronPadding">0,0,0,-4</Thickness>
                     </ui:FABreadcrumbBar.Resources>
                     <ui:FABreadcrumbBar.ItemTemplate>
