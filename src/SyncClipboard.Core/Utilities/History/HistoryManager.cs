@@ -592,7 +592,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             var includedTypes = Enum.GetValues<ProfileType>()
                 .Where(t => (typeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
                 .ToArray();
-            query = query.Where(r => includedTypes.Contains(r.Type));
+            // Keep array membership in EF expression trees on LINQ rather than the C# 14 span overload.
+            query = query.Where(r => Enumerable.Contains(includedTypes, r.Type));
         }
 
         if (starred.HasValue)
@@ -685,7 +686,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             {
                 selectedCount += await query
                     .CountAsync(
-                        record => record.Type == type && hashBatch.Contains(record.Hash),
+                        record => record.Type == type && Enumerable.Contains(hashBatch, record.Hash),
                         token)
                     .ConfigureAwait(false);
             }
@@ -728,7 +729,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         foreach (var hashBatch in hashes.Chunk(HistoryKeyQueryBatchSize))
         {
             var candidates = await _dbContext.HistoryRecords
-                .Where(record => !record.IsDeleted && types.Contains(record.Type) && hashBatch.Contains(record.Hash))
+                .Where(record => !record.IsDeleted
+                    && Enumerable.Contains(types, record.Type) && Enumerable.Contains(hashBatch, record.Hash))
                 .ToListAsync(token)
                 .ConfigureAwait(false);
             records.AddRange(candidates.Where(record => lookup.Contains(HistoryRecordKey.From(record))));
