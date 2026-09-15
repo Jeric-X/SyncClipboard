@@ -50,7 +50,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="NativeNotification" />
     <PackageReference Include="SharpHook" />
-    <PackageReference Include="System.Net.Http.Json" />
     <PackageReference Include="Quartz" />
     <PackageReference Include="Quartz.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />

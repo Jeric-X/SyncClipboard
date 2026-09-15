@@ -31,6 +31,9 @@ dotnet_diagnostic.CsWinRT1028.severity = none
 # IDE0305: Add()/AddRange()/AsSpan()/ToList()/ToArray() https://learn.microsoft.com/zh-cn/dotnet/fundamentals/code-analysis/style-rules/ide0305
 dotnet_diagnostic.IDE0305.severity = none
 
+# MVVMTK0042: 保留 ObservableProperty 字段写法，partial 属性迁移不作为格式检查要求
+dotnet_diagnostic.MVVMTK0042.severity = silent
+
 # SYSLIB1096: 转换为“GeneratedComInterface”
 # SYSLIB1054: 使用 “LibraryImportAttribute” 而不是 “DllImportAttribute” 在编译时生成 P/Invoke 封送代码
 dotnet_diagnostic.SYSLIB1096.severity = none
