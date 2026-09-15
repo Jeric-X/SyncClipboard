@@ -30,8 +30,8 @@ public sealed class OfficialAdapter(
     private readonly ILogger _logger = logger;
     private readonly IAppConfig _appConfig = appConfig;
     private readonly WebDavAdapter _webDavAdapter = (WebDavAdapter)webDavAdapter;
-    private readonly object _hubLock = new object();
-    private readonly object _httpClientLock = new object();
+    private readonly Lock _hubLock = new();
+    private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
@@ -133,7 +133,7 @@ public sealed class OfficialAdapter(
 
     private void DisconnectSignalR()
     {
-        var old = null as HubConnection;
+        HubConnection? old;
         lock (_hubLock)
         {
             old = _hubConnection;

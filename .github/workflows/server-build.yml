@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
-          8.0.x
+          10.0.302
 
     - name: Install dependencies
       working-directory: ./src
@@ -29,7 +29,7 @@ jobs:
     - name: copy SyncClipboard.Server
       run: |
         mkdir server
-        cp -r src/SyncClipboard.Server/bin/Release/net8.0/publish/ server/
+        cp -r src/SyncClipboard.Server/bin/Release/net10.0/publish/ server/
 
     - name: Upload build artifacts SyncClipboard.Server
       uses: actions/upload-artifact@v7

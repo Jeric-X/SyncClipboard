@@ -75,7 +75,7 @@ v3.1.1及以上的客户端、服务器与之前的版本不兼容，同步网�
 
 ## 服务器
 ### 独立服务器
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 8.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/)支持跨平台运行，依赖[ASP.NET Core 10.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0)，安装`ASP.NET Core 运行时`后，通过以下命令运行
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```

@@ -15,7 +15,7 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
-          8.0.x
+          10.0.302
 
     - name: Restore dependencies
       run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj

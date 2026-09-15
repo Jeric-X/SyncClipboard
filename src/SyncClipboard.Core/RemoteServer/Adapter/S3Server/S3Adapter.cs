@@ -6,7 +6,6 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Net;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.S3Server;
@@ -18,7 +17,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
     private const int BufferSize = 1024 * 128;
 
     private readonly ILogger _logger;
-    private readonly object _clientLock = new();
+    private readonly Lock _clientLock = new();
 
     private S3Config _s3Config = new();
     private SyncConfig _syncConfig = new();

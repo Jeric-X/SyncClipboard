@@ -70,7 +70,7 @@ Clients and servers v3.1.1 and above are incompatible with previous versions. Al
 
 ## Server
 ### Standalone Server
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Run with:
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Run with:
 ```
 dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
 ```

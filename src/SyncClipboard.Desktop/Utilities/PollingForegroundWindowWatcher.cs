@@ -9,7 +9,7 @@ internal sealed class PollingForegroundWindowWatcher(INativeWindowController for
 {
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(1);
 
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
     private Timer? _timer;
     private NativeWindowInfo? _lastWindow;
     private bool _hasLastWindow;

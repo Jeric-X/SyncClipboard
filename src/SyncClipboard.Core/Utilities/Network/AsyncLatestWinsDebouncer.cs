@@ -2,7 +2,7 @@ namespace SyncClipboard.Core.Utilities.Network;
 
 public sealed class AsyncLatestWinsDebouncer : IDisposable
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private readonly SemaphoreSlim _serialLock = new(1, 1);
     private CancellationTokenSource? _latestCancellation;
     private bool _disposed;
