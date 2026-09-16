@@ -33,14 +33,7 @@
         </Grid.RowDefinitions>
         <OnPlatform>
             <OnPlatform.Default>
-                <StackPanel Height="36"
-                            Margin="20,0,0,0"
-                            IsHitTestVisible="False"
-                            Orientation="Horizontal"
-                            Spacing="8">
-                    <UserControl Width="18" Height="18" Content="{DynamicResource AppLogo}" />
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="SyncClipboard" />
-                </StackPanel>
+                <Border Height="36" IsHitTestVisible="False" />
             </OnPlatform.Default>
             <OnPlatform.macOS>
                 <Border Height="26" />

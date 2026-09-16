@@ -46,7 +46,8 @@
         <Style Selector="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
-        <Style Selector="Button">
+        <!-- Caption buttons use the symbol font supplied by the decoration theme. -->
+        <Style Selector="Button:not(.CaptionButton)">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
         <Style Selector="ui|FAContentDialog /template/ Button">
