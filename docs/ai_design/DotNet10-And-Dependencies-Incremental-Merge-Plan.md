@@ -45,3 +45,4 @@ README 的运行时说明与正式发布版本对应：在 .NET 10 源码迁移�
 - [#420](https://github.com/Jeric-X/SyncClipboard/pull/420)：.NET 10 工具链、目标框架、构建与容器。
 - [#421](https://github.com/Jeric-X/SyncClipboard/pull/421)：微软基础库、MVVM、WinUI 依赖及历史查询兼容修复。
 - [#422](https://github.com/Jeric-X/SyncClipboard/pull/422)：Avalonia 12、配套控件适配与 EF Core 补丁升级。
+- [#426](https://github.com/Jeric-X/SyncClipboard/pull/426)：测试与容器开发工具升级、服务器首次启动配置优先级修复，以及 README 与升级总结整理。
