@@ -40,7 +40,7 @@ public class PrepareTransferDataInfoTests
     [DataRow(ProfileType.Group)]
     public async Task PreparedAndReusedFileReturnMatchingPathAndHash(ProfileType type)
     {
-        var token = TestContext.CancellationToken;
+        var token = TestContext.CancellationTokenSource.Token;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-PreparedFile-");
         try
         {
@@ -78,7 +78,7 @@ public class PrepareTransferDataInfoTests
     [TestMethod]
     public async Task InlineTextReturnsNoFile()
     {
-        var token = TestContext.CancellationToken;
+        var token = TestContext.CancellationTokenSource.Token;
         var profile = new TextProfile("inline");
 
         Assert.IsNull(await profile.PrepareTransferData(Path.GetTempPath(), token));

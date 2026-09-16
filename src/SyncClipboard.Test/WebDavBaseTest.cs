@@ -16,7 +16,7 @@ public class WebDavBaseTest
         using var handler = new RecordingHandler();
         using var webDav = new TestWebDav(handler);
 
-        var text = await webDav.GetText("test", TestContext.CancellationToken);
+        var text = await webDav.GetText("test", TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual("ok", text);
         Assert.ThrowsExactly<ObjectDisposedException>(() => _ = handler.CapturedToken.WaitHandle);
@@ -28,10 +28,10 @@ public class WebDavBaseTest
         TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using var handler = new RecordingHandler(started);
         using var webDav = new TestWebDav(handler);
-        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationToken);
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
 
         var request = webDav.GetText("test", cancellationSource.Token);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
         cancellationSource.Cancel();
 
         await Assert.ThrowsExactlyAsync<TaskCanceledException>(() => request);
@@ -44,13 +44,13 @@ public class WebDavBaseTest
         TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using var handler = new RecordingHandler(started);
         using var webDav = new TestWebDav(handler);
-        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationToken);
+        using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
 
         var request = webDav.TestAlive(cancellationSource.Token);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
         cancellationSource.Cancel();
 
-        var result = await request.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
+        var result = await request.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
 
         Assert.IsFalse(result);
         Assert.ThrowsExactly<ObjectDisposedException>(() => _ = handler.CapturedToken.WaitHandle);
@@ -72,7 +72,7 @@ public class WebDavBaseTest
 
         var (payload, version) = await webDav.GetJsonWithVersion<TestPayload>(
             "test",
-            TestContext.CancellationToken);
+            TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual("ok", payload?.Value);
         Assert.AreEqual("\"version-1\"", version);
@@ -95,7 +95,7 @@ public class WebDavBaseTest
             "test",
             new TestPayload("new"),
             "\"version-1\"",
-            TestContext.CancellationToken);
+            TestContext.CancellationTokenSource.Token);
 
         Assert.IsFalse(updated);
         Assert.AreEqual("\"version-1\"", ifMatch);

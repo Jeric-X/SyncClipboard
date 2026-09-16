@@ -11,7 +11,7 @@
 | Windows UI | Windows App SDK 2.4.0、WinUI Toolkit 8.2.251219、WinUIEx 2.9.3、H.NotifyIcon.WinUI 2.4.1 |
 | Avalonia | 11.3.18 → 12.1.2；FluentAvaloniaUI 2.3.0 → 3.1.0；AsyncImageLoader.Avalonia 3.3.0 → 3.8.0 |
 | 数据库 | EF Core/Sqlite/Design 9.0.8 → 9.0.20；SQLitePCLRaw 传递依赖更新到 2.1.12，保留 EF Core 9 主版本 |
-| 测试工具 | MSTest.TestFramework/TestAdapter 3.10.4 → 4.4.0；Microsoft.NET.Test.Sdk 经 18.4.0 更新到 18.10.1；coverlet.collector 更新到 10.0.1 |
+| 测试工具 | Microsoft.NET.Test.Sdk 经 18.4.0 更新到 18.10.1；coverlet.collector 更新到 10.0.1 |
 | 容器开发工具 | Microsoft.VisualStudio.Azure.Containers.Tools.Targets 1.22.1 → 1.23.0 |
 
 ## 兼容性适配与问题修复
@@ -21,13 +21,14 @@
 - **图片与拖拽：** 图片读取显式使用 PNG 编码；历史列表和预览面板保留首次按下事件并传入拖拽 API，在拖拽结束或取消后清理状态。
 - **关于页进度动画：** 修复缓存页面离开后再次显示时，不确定进度动画不能恢复的问题，并在代码注释中关联上游 PR。
 - **服务器配置：** 首次生成 appsettings.json 后重新加载已有配置源，避免追加 JSON 配置源覆盖环境变量和命令行参数，保持命令行 > 环境变量 > 配置文件的优先级。
-- **测试兼容：** 修正阻塞 CI 的 ZIP 测试问题；既有测试改用 MSTest 4 的取消令牌和断言 API，保持测试范围及断言含义。
-- **生成代码与格式检查：** 资源访问类在编译时生成到 I18n/Strings.Designer.cs 并纳入版本控制；macOS 全局格式检查通过 --exclude-diagnostics CS0103 忽略缺少 WinUI 生成成员的诊断，Windows 在生成 XAML 代码后独立检查 WinUI 格式，不排除此诊断；实际编译仍检查 CS0103。
+- **测试兼容：** 修正阻塞 CI 的 ZIP 测试问题，保留既有测试框架和断言写法。
+- **资源生成：** 资源访问类在编译时生成到 I18n/Strings.Designer.cs 并纳入版本控制；编译时避免重复包含，清理构建产物时保留该源码。
 
 ## 保留的实现与依赖
 
 | 范围 | 取舍 |
 | --- | --- |
+| 测试框架 | 保留 MSTest.TestFramework/TestAdapter 3.10.4，避免引入 MSTest 4 分析器对跨平台格式检查的影响 |
 | 图片处理 | 保留 Magick.NET 14.9.1 和 Magick.NET.SystemDrawing 8.0.15 |
 | S3 | 保留 AWSSDK.S3 3.7.414，不迁移 v4；S3 签名、初始化与进度修复不包含在此次升级范围内 |
 | 全局输入与原生调用 | 保留 SharpHook 5.2.3、Vanara 4.0.1 |

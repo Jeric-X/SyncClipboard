@@ -95,11 +95,11 @@ Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI valid
 ### Code Style
 
 ```bash
-# Check formatting on macOS (from src/ directory)
-dotnet format --verify-no-changes --severity info --no-restore --exclude-diagnostics CS0103
+# Check formatting (from src/ directory)
+dotnet format --verify-no-changes --severity info --no-restore
 ```
 
-The global format command skips CS0103 because the macOS design-time workspace lacks generated WinUI members; `.editorconfig` cannot suppress this compiler error. Actual builds still check CS0103. WinUI formatting also runs separately on Windows after generating XAML code, without this diagnostic exclusion; see `.github/workflows/code-style.yml`. Rules are defined in `src/.editorconfig`.
+Rules are defined in `src/.editorconfig`.
 
 ## Architecture
 

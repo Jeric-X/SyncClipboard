@@ -58,8 +58,9 @@ public class FileSyncFilterSettingViewModelTests
         viewModel.UpdateItem(itemToUpdate, new FileFilterRule { Pattern = ".tmp" });
 
         Assert.AreEqual(".log", itemToUpdate.Pattern);
-        Assert.AreSequenceEqual(
-            ExpectedDistinctPatterns, _config.GetConfig<FileFilterConfig>().BlackList.Select(rule => rule.Pattern).ToArray());
+        CollectionAssert.AreEqual(
+            ExpectedDistinctPatterns,
+            _config.GetConfig<FileFilterConfig>().BlackList.Select(rule => rule.Pattern).ToArray());
     }
 
     [TestMethod]

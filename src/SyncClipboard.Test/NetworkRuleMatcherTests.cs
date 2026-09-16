@@ -179,7 +179,7 @@ public class NetworkRuleMatcherTests
             Rules = [Rule("home", AccountOne, ["Home"], [])],
         };
 
-        var snapshot = await provider.GetCurrentAsync(false, TestContext.CancellationToken);
+        var snapshot = await provider.GetCurrentAsync(false, TestContext.CancellationTokenSource.Token);
         var decision = NetworkAccountSwitchEvaluator.Evaluate(config, snapshot, account => account == AccountTwo);
         Assert.AreEqual(NetworkAccountSwitchDecisionKind.SwitchAccount, decision.Kind);
         Assert.AreEqual(AccountTwo, decision.TargetAccount);
@@ -237,7 +237,7 @@ public class NetworkRuleMatcherTests
         }, TimeSpan.Zero);
 
         await Task.WhenAll(first, second);
-        Assert.AreSequenceEqual(expected, values.ToArray());
+        CollectionAssert.AreEqual(expected, values.ToArray());
     }
 
     [TestMethod]
@@ -284,8 +284,8 @@ public class NetworkRuleMatcherTests
     {
         var server = EmptyRemoteClipboardServer.Instance;
 
-        Assert.IsFalse(await server.TestConnectionAsync(TestContext.CancellationToken));
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => server.GetProfileAsync(TestContext.CancellationToken));
+        Assert.IsFalse(await server.TestConnectionAsync(TestContext.CancellationTokenSource.Token));
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => server.GetProfileAsync(TestContext.CancellationTokenSource.Token));
     }
 
     private static NetworkAccountSwitchRule Rule(

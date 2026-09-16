@@ -15,14 +15,14 @@ public class UtilitySHA256Tests
         {
             Assert.ThrowsExactly<ArgumentException>(() => Utility.NormalizeSHA256(hash));
             await Assert.ThrowsExactlyAsync<InvalidDataException>(
-                () => Utility.VerifyFileSHA256(string.Empty, hash, TestContext.CancellationToken));
+                () => Utility.VerifyFileSHA256(string.Empty, hash, TestContext.CancellationTokenSource.Token));
         }
     }
 
     [TestMethod]
     public async Task MissingHashAndLowercaseHashRemainSupported()
     {
-        var token = TestContext.CancellationToken;
+        var token = TestContext.CancellationTokenSource.Token;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SHA256-");
         try
         {
@@ -44,7 +44,7 @@ public class UtilitySHA256Tests
     [TestMethod]
     public async Task VerifyFileSHA256_RejectsMismatchedHash()
     {
-        var token = TestContext.CancellationToken;
+        var token = TestContext.CancellationTokenSource.Token;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SHA256-");
         try
         {
@@ -64,7 +64,7 @@ public class UtilitySHA256Tests
     [TestMethod]
     public async Task FileMatchesSHA256ChecksContentAndHandlesUnavailableData()
     {
-        var token = TestContext.CancellationToken;
+        var token = TestContext.CancellationTokenSource.Token;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-ValidateSHA256-");
         try
         {

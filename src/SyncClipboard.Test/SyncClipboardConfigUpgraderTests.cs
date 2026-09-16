@@ -95,8 +95,9 @@ public class SyncClipboardConfigUpgraderTests
         var config = root["FileFilter"]!.Deserialize<FileFilterConfig>();
         Assert.IsNotNull(config);
         Assert.AreEqual(new FileFilterRule { Pattern = ".png", MatchMode = FileFilterMatchMode.Suffix }, config.WhiteList.Single());
-        Assert.AreSequenceEqual(
-            ExpectedLegacyBlackList, config.BlackList.Select(rule => rule.Pattern).ToArray());
+        CollectionAssert.AreEqual(
+            ExpectedLegacyBlackList,
+            config.BlackList.Select(rule => rule.Pattern).ToArray());
         Assert.IsTrue(config.BlackList.All(rule => rule.MatchMode == FileFilterMatchMode.Suffix));
 
         var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
@@ -344,8 +345,8 @@ public class SyncClipboardConfigUpgraderTests
         var backups = Directory
             .EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json")
             .ToArray();
-        Assert.HasCount(20, backups);
-        Assert.Contains(path => File.ReadAllText(path) == "{ \"Marker\": 24 }", backups);
+        Assert.AreEqual(20, backups.Length);
+        Assert.IsTrue(backups.Any(path => File.ReadAllText(path) == "{ \"Marker\": 24 }"));
     }
 
     [TestMethod]

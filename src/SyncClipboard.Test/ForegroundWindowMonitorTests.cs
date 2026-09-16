@@ -86,8 +86,8 @@ public class ForegroundWindowMonitorTests
         watcher.Raise(CreateNativeWindow(103, (nint)1003));
 
         Assert.IsNull(received);
-        Assert.Contains(message => message.Contains("Failed to read"), logger.Messages);
-        Assert.Contains(message => message.Contains("subscriber failed"), logger.Messages);
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("Failed to read")));
+        Assert.IsTrue(logger.Messages.Any(message => message.Contains("subscriber failed")));
     }
 
     private static ForegroundWindowMonitor CreateMonitor(FakeWatcher watcher, FakeProvider provider) =>
