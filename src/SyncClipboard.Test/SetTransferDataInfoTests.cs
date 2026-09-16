@@ -21,7 +21,7 @@ public class SetTransferDataInfoTests
     [DataRow(ProfileType.Group, true)]
     public async Task SetTransferData_BindsFileInfoAndPreservesVerification(ProfileType type, bool verify)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SetFileInfo-");
         try
         {
@@ -48,7 +48,7 @@ public class SetTransferDataInfoTests
     [DataRow(ProfileType.Group)]
     public async Task OverloadsPreserveHashAndVerificationSemantics(ProfileType type)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-PathOverloads-");
         try
         {
@@ -79,7 +79,7 @@ public class SetTransferDataInfoTests
     [DataRow(ProfileType.Group)]
     public async Task SetAndMoveTransferData_MovesFileInfoToPersistentDirectory(ProfileType type)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-MoveFileInfo-");
         try
         {
@@ -104,7 +104,7 @@ public class SetTransferDataInfoTests
     [TestMethod]
     public async Task SetTransferData_DoesNotVerifySuppliedFileHash()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-FileInfoHash-");
         try
         {
@@ -137,7 +137,7 @@ public class SetTransferDataInfoTests
     [DataRow(ProfileType.Group)]
     public async Task CopiedProfileRetainsHashAndRechecksCurrentFile(ProfileType type)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-CopyFileHash-");
         try
         {

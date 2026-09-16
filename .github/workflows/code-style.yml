@@ -36,4 +36,32 @@ jobs:
     - name: Check code style info
       working-directory: ./src
       run: |
-        dotnet format --verify-no-changes --severity info --no-restore
+        dotnet format --verify-no-changes --severity info --no-restore --exclude SyncClipboard.WinUI3/ SyncClipboard.Test.WinUI3/
+
+  check-windows:
+    runs-on: windows-2025-vs2026
+    env:
+      Configuration: Debug
+      Platform: x64
+      RuntimeIdentifier: win-x64
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.302
+
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v3
+      with:
+        msbuild-architecture: x64
+
+    - name: Generate WinUI XAML code
+      run: msbuild src\SyncClipboard.Test.WinUI3\SyncClipboard.Test.WinUI3.csproj /restore /v:m
+
+    - name: Check Windows code style info
+      working-directory: ./src
+      run: dotnet format --verify-no-changes --severity info --no-restore --include SyncClipboard.WinUI3/ SyncClipboard.Test.WinUI3/

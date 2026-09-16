@@ -95,11 +95,11 @@ Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI valid
 ### Code Style
 
 ```bash
-# Check formatting (from src/ directory)
-dotnet format --verify-no-changes --severity info --no-restore
+# Check formatting on macOS (from src/ directory)
+dotnet format --verify-no-changes --severity info --no-restore --exclude SyncClipboard.WinUI3/ SyncClipboard.Test.WinUI3/
 ```
 
-Rules are defined in `src/.editorconfig`.
+WinUI formatting runs separately on Windows after building the WinUI test project to generate XAML code; see `.github/workflows/code-style.yml`. Rules are defined in `src/.editorconfig`.
 
 ## Architecture
 

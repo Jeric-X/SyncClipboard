@@ -23,7 +23,7 @@ public class DelegateExtentionTests
         Assert.IsFalse(observedTask.IsCompleted);
         completion.SetException(new InvalidOperationException("asynchronous failure"));
 
-        await observedTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        await observedTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
         Assert.IsTrue(observedTask.IsCompletedSuccessfully);
     }
 
@@ -44,7 +44,7 @@ public class DelegateExtentionTests
             var observedTask = DelegateExtention.SafeFireAndForgetCoreAsync(
                 () => completion.Task, timeout: TimeSpan.FromMilliseconds(50));
 
-            await observedTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+            await observedTask.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
 
             Assert.IsTrue(observedTask.IsCompletedSuccessfully);
             Assert.IsFalse(completion.Task.IsCompleted);
@@ -85,6 +85,6 @@ public class DelegateExtentionTests
 
         Assert.IsFalse(finished.Task.IsCompleted);
         release.SetResult();
-        await finished.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationToken);
     }
 }

@@ -36,7 +36,7 @@ public class ProfileDtoTransferDataHashTests
 
             var profile = Profile.Create(dto);
             Assert.AreEqual(hash, profile.TransferDataHash);
-            var restoredDto = await profile.ToProfileDto(TestContext.CancellationTokenSource.Token);
+            var restoredDto = await profile.ToProfileDto(TestContext.CancellationToken);
             Assert.AreEqual(hash, restoredDto.TransferDataHash);
         }
     }
@@ -51,7 +51,7 @@ public class ProfileDtoTransferDataHashTests
             TransferDataHash = new string('A', 64)
         });
 
-        var dto = await profile.ToProfileDto(TestContext.CancellationTokenSource.Token);
+        var dto = await profile.ToProfileDto(TestContext.CancellationToken);
 
         Assert.IsFalse(dto.HasData);
         Assert.IsNull(dto.TransferDataHash);
@@ -79,7 +79,7 @@ public class ProfileDtoTransferDataHashTests
     [DataRow(ProfileType.Group)]
     public async Task ProfileDto_PreservesTransferDataHashWithoutLocalData(ProfileType type)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -112,7 +112,7 @@ public class ProfileDtoTransferDataHashTests
     [TestMethod]
     public async Task GroupProfile_SetTransferDataRejectsMismatchedProfileHashWhenVerificationEnabled()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -139,7 +139,7 @@ public class ProfileDtoTransferDataHashTests
     [TestMethod]
     public async Task GroupProfile_SetTransferDataAcceptsBindingWhenVerificationDisabled()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -170,7 +170,7 @@ public class ProfileDtoTransferDataHashTests
     [TestMethod]
     public async Task GroupProfile_PersistDoesNotValidateOrExtractTransferData()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -202,7 +202,7 @@ public class ProfileDtoTransferDataHashTests
     [TestMethod]
     public async Task RemoteHistoryMetadata_DoesNotPublishTransferDataHashBinding()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var dto = new ProfileDto
         {
             Type = ProfileType.Group,

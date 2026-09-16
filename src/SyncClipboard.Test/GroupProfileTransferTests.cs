@@ -14,7 +14,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_AllFilesMissing_DoesNotCreateArchive()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -36,7 +36,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_OneFileMissing_DoesNotCreatePartialArchive()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -60,7 +60,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_FileChangedAfterHash_DoesNotCreateArchive()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -85,7 +85,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_ArchiveHashDiffersFromProfile_DoesNotPublishArchive()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -113,7 +113,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_AllEntriesFiltered_DoesNotCreateEmptyArchive()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -138,7 +138,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_EmptyDirectory_CreatesDirectoryEntry()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -162,7 +162,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_ZeroLengthFile_CreatesFileEntry()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -188,7 +188,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task SetTransferData_EmptyArchiveWithEmptyHash_IsRejectedAndExtractionIsCleaned()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -216,7 +216,7 @@ public class GroupProfileTransferTests
     [DataRow("...zip")]
     public async Task SetTransferData_UnsafeArchiveStemIsRejectedBeforeDeletingParent(string archiveName)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -247,7 +247,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task SetTransferData_UnownedSiblingDirectoryIsNotDeleted()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -283,7 +283,7 @@ public class GroupProfileTransferTests
     [DataRow(true)]
     public async Task SetTransferData_AlwaysUsesUniqueExtractionDirectories(bool reuseInstance)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -322,7 +322,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_EmptyCachedArchiveIsNotReused()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -346,7 +346,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_NonEmptyCachedArchiveWithMismatchedHashThrows()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -371,7 +371,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_PersistentCachedArchiveWithMismatchedHashThrows()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -403,7 +403,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task IsLocalDataValid_NonEmptyCachedArchiveWithoutSourceFiles_ReturnsFalse()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -428,7 +428,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_VerifiedCachedArchiveIsReused()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -456,7 +456,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PersistedTransferDataHash_RestoresArchiveAfterProfileRecreation()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -487,7 +487,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task VerifiedArchive_IsExtractedOnlyWhenLocalized()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -514,7 +514,7 @@ public class GroupProfileTransferTests
 
             var extractedFile = localInfo.FilePaths.Single();
             Assert.AreEqual("source", await File.ReadAllTextAsync(extractedFile, token));
-            CollectionAssert.Contains(localInfo.FilePaths, extractedFile);
+            Assert.Contains(extractedFile, localInfo.FilePaths);
             Assert.IsTrue(await restoredProfile.IsLocalDataValid(false, token));
         }
         finally
@@ -526,7 +526,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task SetTransferData_FileInfoWithLegacyExtractionDirectory_DoesNotExtractArchive()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -555,7 +555,7 @@ public class GroupProfileTransferTests
                 new FileHashInfo(archivePath, sourceProfile.TransferDataHash!), false, token);
 
             Assert.AreEqual(archivePath, (await cachedProfile.PrepareTransferData(persistentDirectory, token))?.Path);
-            CollectionAssert.AreEqual(new[] { secondSourceFile }, cachedProfile.Files);
+            Assert.AreSequenceEqual([secondSourceFile], cachedProfile.Files);
             Assert.AreEqual("legacy", await File.ReadAllTextAsync(legacyFile, token));
             Assert.IsNotNull(cachedProfile.TransferDataHash);
             Assert.IsTrue(await Utility.FileMatchesSHA256(archivePath, cachedProfile.TransferDataHash, token));
@@ -571,7 +571,7 @@ public class GroupProfileTransferTests
     [DataRow(true)]
     public async Task ModifiedExtractedFile_IsRestoredOnlyByTryLocalize(bool tryLocalize)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -591,7 +591,7 @@ public class GroupProfileTransferTests
 
             Assert.IsTrue(await restoredProfile.IsDataComplete(false, token));
             Assert.AreEqual("modified", await File.ReadAllTextAsync(extractedFile, token));
-            CollectionAssert.Contains(restoredProfile.Files, extractedFile);
+            Assert.Contains(extractedFile, restoredProfile.Files);
 
             if (tryLocalize)
                 Assert.IsTrue(await restoredProfile.TryLocalize(persistentDirectory, false, token));
@@ -613,7 +613,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task ModifiedArchiveAndExtractedFile_AreRejectedOnRecheck()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -651,7 +651,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task Localize_RegeneratedArchiveForSameProfile_PreservesPreviousExtractionDirectory()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -696,7 +696,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_VerifiedCachedArchiveChangedAfterSetRegeneratesFromFiles()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -735,7 +735,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_VerifiedCachedArchiveReadFailureRegeneratesFromFiles()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -771,7 +771,7 @@ public class GroupProfileTransferTests
     [TestMethod]
     public async Task PrepareTransferData_MalformedCachedArchiveRegeneratesFromFiles()
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -804,7 +804,7 @@ public class GroupProfileTransferTests
             return;
         }
 
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         var workingDirectory = string.Empty;
         UnixFileMode originalMode = default;
@@ -819,18 +819,9 @@ public class GroupProfileTransferTests
             originalMode = File.GetUnixFileMode(workingDirectory);
             File.SetUnixFileMode(workingDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-            try
-            {
-                await profile.PrepareTransferData(persistentDirectory, token);
-                Assert.Fail("Expected archive output creation to fail.");
-            }
-            catch (LocalProfileDataUnavailableException ex)
-            {
-                Assert.Fail($"Output failure must remain retryable: {ex}");
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
+            var exception = await Assert.ThrowsAsync<Exception>(() => profile.PrepareTransferData(persistentDirectory, token));
+            Assert.IsNotInstanceOfType<LocalProfileDataUnavailableException>(exception, $"Output failure must remain retryable: {exception}");
+            Assert.IsTrue(exception is IOException or UnauthorizedAccessException);
         }
         finally
         {

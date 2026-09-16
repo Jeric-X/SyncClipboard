@@ -16,7 +16,7 @@ public class ProfileDataCompletenessTests
     [DataRow(ProfileType.Text)]
     public async Task FileAndTextChecksUseProfileSemanticsAndRefreshTransferHash(ProfileType type)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-SemanticCheck-");
         try
         {
@@ -85,7 +85,7 @@ public class ProfileDataCompletenessTests
     public async Task Group_AnyCompleteRepresentationIsEnough(
         string sourceState, string archiveState, bool hasTransferHash, bool expectedComplete)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -123,7 +123,7 @@ public class ProfileDataCompletenessTests
             if (expectedComplete)
                 Assert.IsTrue(await profile.IsLocalDataValid(false, token));
             else
-                CollectionAssert.AreEqual(new[] { sourceFile }, ((GroupProfile)profile).Files);
+                Assert.AreSequenceEqual([sourceFile], ((GroupProfile)profile).Files);
         }
         finally
         {
@@ -136,7 +136,7 @@ public class ProfileDataCompletenessTests
     [DataRow(true)]
     public async Task FileOrImage_RejectsChangedAndMissingFile(bool image)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -166,7 +166,7 @@ public class ProfileDataCompletenessTests
     [DataRow(10241)]
     public async Task Text_CompleteInMemoryDoesNotRequireTransferFile(int length)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -177,7 +177,7 @@ public class ProfileDataCompletenessTests
             Assert.IsTrue(await profile.TryLocalize(testDirectory, false, token));
             Assert.IsTrue(await profile.IsLocalDataValid(false, token));
             Assert.AreEqual(length > 10240 ? await profile.GetHash(token) : null, profile.TransferDataHash);
-            Assert.IsFalse(Directory.EnumerateFileSystemEntries(testDirectory).Any());
+            Assert.IsEmpty(Directory.EnumerateFileSystemEntries(testDirectory));
         }
         finally
         {
@@ -190,7 +190,7 @@ public class ProfileDataCompletenessTests
     [DataRow(true)]
     public async Task Text_QuickCheckOnlyRequiresTransferFileToExist(bool hasTransferHash)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var testDirectory = CreateTestDirectory();
         try
         {
@@ -226,8 +226,8 @@ public class ProfileDataCompletenessTests
     public async Task Unknown_HasNoCompleteData()
     {
         Profile profile = new UnknownProfile();
-        Assert.IsFalse(await profile.IsDataComplete(true, TestContext.CancellationTokenSource.Token));
-        Assert.IsFalse(await profile.IsDataComplete(false, TestContext.CancellationTokenSource.Token));
+        Assert.IsFalse(await profile.IsDataComplete(true, TestContext.CancellationToken));
+        Assert.IsFalse(await profile.IsDataComplete(false, TestContext.CancellationToken));
     }
 
     private static string CreateTestDirectory()

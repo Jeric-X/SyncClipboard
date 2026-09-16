@@ -52,7 +52,7 @@ public class ProfileActionBuilderTest
         var actions = await _builder.Build(profile, CancellationToken.None);
         var primaryAction = await _builder.GetPrimaryAction(profile, CancellationToken.None);
 
-        Assert.IsTrue(actions.Any(action => action.Text == Strings.OpenInBrowser));
+        Assert.Contains(action => action.Text == Strings.OpenInBrowser, actions);
         Assert.AreEqual(Strings.OpenInBrowser, primaryAction?.Text);
     }
 
@@ -61,7 +61,7 @@ public class ProfileActionBuilderTest
     [DataRow(true)]
     public async Task GroupActionsLocalizeTransferArchiveBeforeUsingPaths(bool primary)
     {
-        var token = TestContext.CancellationTokenSource.Token;
+        var token = TestContext.CancellationToken;
         var directory = Path.Combine(Path.GetTempPath(), $"SyncClipboard-Actions-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
         try
@@ -82,8 +82,8 @@ public class ProfileActionBuilderTest
             else
             {
                 var actions = await _builder.Build(profile, token);
-                Assert.IsTrue(actions.Any(action => action.Text == Strings.OpenFolder));
-                Assert.IsTrue(actions.Any(action => action.Text == Strings.Open));
+                Assert.Contains(action => action.Text == Strings.OpenFolder, actions);
+                Assert.Contains(action => action.Text == Strings.Open, actions);
             }
 
             var extractedPath = profile.Files.Single();
