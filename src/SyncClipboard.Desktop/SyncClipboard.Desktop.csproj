@@ -33,13 +33,9 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="AsyncImageLoader.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="FluentAvalonia.BreadcrumbBar" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="SharpHook" />
-
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
   </ItemGroup>
 
   <ItemGroup>

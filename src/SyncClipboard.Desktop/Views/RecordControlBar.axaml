@@ -18,19 +18,19 @@
                     <TextBlock Text="{Binding Record.ErrorMessage, ElementName=_RecordControlBar}" />
                 </Flyout>
             </Button.Flyout>
-            <ui:FontIcon Glyph="&#xE783;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            <ui:FAFontIcon Glyph="&#xE783;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Download / Upload cluster (sync buttons container) -->
         <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ViewModel.EnableSyncHistory, ElementName=_RecordControlBar}">
             <!-- Download button -->
             <Button Click="DownloadButtonClicked" IsVisible="{Binding Record.ShowDownloadButton, ElementName=_RecordControlBar}">
-                <ui:FontIcon Glyph="&#xE896;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                <ui:FAFontIcon Glyph="&#xE896;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
 
             <!-- Cancel download button with progress ring -->
             <Button Click="CancelDownloadButtonClicked" IsVisible="{Binding Record.ShowDownloadProgress, ElementName=_RecordControlBar}">
-                <ui:ProgressRing Width="16"
+                <ui:FAProgressRing Width="16"
                                  Height="16"
                                  IsIndeterminate="{Binding Record.IsDownloadPending, ElementName=_RecordControlBar}"
                                  Value="{Binding Record.DownloadProgress, ElementName=_RecordControlBar}" />
@@ -38,12 +38,12 @@
 
             <!-- Upload button -->
             <Button Click="UploadButtonClicked" IsVisible="{Binding Record.ShowUploadButton, ElementName=_RecordControlBar}">
-                <ui:FontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                <ui:FAFontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
 
             <!-- Cancel upload button with progress ring -->
             <Button Click="CancelUploadButtonClicked" IsVisible="{Binding Record.ShowUploadProgress, ElementName=_RecordControlBar}">
-                <ui:ProgressRing Width="16"
+                <ui:FAProgressRing Width="16"
                                  Height="16"
                                  IsIndeterminate="{Binding Record.IsUploadPending, ElementName=_RecordControlBar}"
                                  Value="{Binding Record.UploadProgress, ElementName=_RecordControlBar}" />
@@ -52,22 +52,22 @@
 
         <!-- Copy button -->
         <Button Click="CopyButtonClicked" IsVisible="{Binding Record.IsLocalFileReady, ElementName=_RecordControlBar}">
-            <ui:FontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            <ui:FAFontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Paste button -->
         <Button Click="PasteButtonClicked" IsVisible="{Binding Record.IsLocalFileReady, ElementName=_RecordControlBar}">
-            <ui:FontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            <ui:FAFontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Star button -->
         <Button Click="StarButtonClicked">
-            <ui:FontIcon Glyph="{Binding Record.Stared, ElementName=_RecordControlBar, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            <ui:FAFontIcon Glyph="{Binding Record.Stared, ElementName=_RecordControlBar, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Delete button -->
         <Button Click="DeleteButtonClicked">
-            <ui:FontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            <ui:FAFontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
     </StackPanel>
 </UserControl>

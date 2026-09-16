@@ -1,8 +1,7 @@
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using SyncClipboard.Core.Models;
 using System;
-using System.Runtime.Versioning;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 

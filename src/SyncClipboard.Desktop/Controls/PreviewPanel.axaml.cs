@@ -28,6 +28,7 @@ public sealed partial class PreviewPanel : UserControl
     private HistoryRecordVM? _pendingDragItem;
     private Control? _dragSource;
     private IPointer? _dragPointer;
+    private PointerPressedEventArgs? _dragStartEventArgs;
 
     /// <summary>
     /// ViewModel依赖属性
@@ -257,6 +258,7 @@ public sealed partial class PreviewPanel : UserControl
                 _pendingDragItem = clickedItem;
                 _dragSource = sender as Control;
                 _dragPointer = e.Pointer;
+                _dragStartEventArgs = e;
                 e.Pointer.Capture((IInputElement)sender!);
             }
         }
@@ -269,7 +271,7 @@ public sealed partial class PreviewPanel : UserControl
             return;
         }
 
-        if (!_isPendingDrag || _pendingDragItem == null || _dragSource == null || ViewModel == null)
+        if (!_isPendingDrag || _pendingDragItem == null || _dragSource == null || _dragStartEventArgs == null || ViewModel == null)
             return;
 
         var currentPoint = e.GetPosition(null);
@@ -282,6 +284,7 @@ public sealed partial class PreviewPanel : UserControl
         // 开始拖拽，此时阻止默认行为
         e.Handled = true;
         var item = _pendingDragItem;
+        var dragStartEventArgs = _dragStartEventArgs;
         ResetPendingDrag();
 
         try
@@ -292,7 +295,7 @@ public sealed partial class PreviewPanel : UserControl
             if (success)
             {
                 var result = await DragDrop.DoDragDropAsync(
-                    e,
+                    dragStartEventArgs,
                     dataTransfer,
                     AvaloniaDragDropEffects.Copy);
             }
@@ -317,6 +320,7 @@ public sealed partial class PreviewPanel : UserControl
     {
         _dragPointer?.Capture(null);
         _dragPointer = null;
+        _dragStartEventArgs = null;
         _isPendingDrag = false;
         _pendingDragItem = null;
         _dragSource = null;

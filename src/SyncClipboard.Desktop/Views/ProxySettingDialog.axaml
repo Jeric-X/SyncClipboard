@@ -1,4 +1,4 @@
-<ui:ContentDialog x:Class="SyncClipboard.Desktop.Views.ProxySettingDialog"
+<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.ProxySettingDialog"
                   xmlns="https://github.com/avaloniaui"
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -29,4 +29,4 @@
             <TextBox Text="{Binding Address, Mode=TwoWay}" IsEnabled="{Binding EnableCustomAddress, Mode=OneWay}" />
         </StackPanel>
     </ScrollViewer>
-</ui:ContentDialog>
+</ui:FAContentDialog>

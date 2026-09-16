@@ -89,14 +89,14 @@ public static class FuncConverter
     public static FuncValueConverter<HistoryRecordVM, string> GetRecordSize { get; } =
         new FuncValueConverter<HistoryRecordVM, string>(Converter.GetRecordSize);
 
-    public static FuncValueConverter<Severity?, InfoBarSeverity> ConvertSeverity { get; } =
-        new FuncValueConverter<Severity?, InfoBarSeverity>(severity => severity switch
+    public static FuncValueConverter<Severity?, FAInfoBarSeverity> ConvertSeverity { get; } =
+        new FuncValueConverter<Severity?, FAInfoBarSeverity>(severity => severity switch
         {
-            Severity.Info => InfoBarSeverity.Informational,
-            Severity.Success => InfoBarSeverity.Success,
-            Severity.Warning => InfoBarSeverity.Warning,
-            Severity.Error => InfoBarSeverity.Error,
-            _ => InfoBarSeverity.Informational,
+            Severity.Info => FAInfoBarSeverity.Informational,
+            Severity.Success => FAInfoBarSeverity.Success,
+            Severity.Warning => FAInfoBarSeverity.Warning,
+            Severity.Error => FAInfoBarSeverity.Error,
+            _ => FAInfoBarSeverity.Informational,
         });
 
     public static IMultiValueConverter LimitHistoryListText { get; } =

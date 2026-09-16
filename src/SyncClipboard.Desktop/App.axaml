@@ -14,22 +14,25 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
-                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
+                    <ui:FAImageIcon x:Key="AppLogo" Source="/Assets/icon.png" />
                     <Color x:Key="WindowBackgroudColor">White</Color>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <ui:ImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
+                    <ui:FAImageIcon x:Key="AppLogo" Source="/Assets/icon_white.png" />
                     <Color x:Key="WindowBackgroudColor">Black</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
-            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default</FontFamily>
-            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default</FontFamily>
+            <!-- Linux already configures bundled MiSans as $Default. Resolving foreign font names
+                 through fontconfig can repeatedly synthesize bold faces in Avalonia 12. -->
+            <OnPlatform x:Key="DefaultFont" x:TypeArguments="FontFamily"
+                        Linux="$Default" Default="Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default" />
+            <StaticResource x:Key="ProgramFont" ResourceKey="DefaultFont" />
             <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
             <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
             <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>
-            <ui:ImageIconSource x:Key="AppLogoSource" />
-            <ui:ImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
-            <ui:ImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
+            <ui:FAImageIconSource x:Key="AppLogoSource" />
+            <ui:FAImageIconSource x:Key="AppLogoSourceLight" Source="/Assets/icon.png" />
+            <ui:FAImageIconSource x:Key="AppLogoSourceDark" Source="/Assets/icon_white.png" />
             <DataTemplate x:Key="LocaleStringTemplate" x:DataType="{x:Type m:LocaleString, x:TypeArguments=x:String}">
                 <TextBlock Text="{Binding ShownString}" />
             </DataTemplate>
@@ -37,17 +40,17 @@
     </Application.Resources>
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
-        <StyleInclude Source="avares://FluentAvalonia.BreadcrumbBar/Styling/Styles.axaml" />
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
         <Style Selector="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
-        <Style Selector="Button">
+        <!-- Caption buttons use the symbol font supplied by the decoration theme. -->
+        <Style Selector="Button:not(.CaptionButton)">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
-        <Style Selector="ui|ContentDialog /template/ Button">
+        <Style Selector="ui|FAContentDialog /template/ Button">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
         <Style Selector="TextBox">

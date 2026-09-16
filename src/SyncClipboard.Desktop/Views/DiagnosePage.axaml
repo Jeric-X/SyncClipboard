@@ -15,27 +15,27 @@
         <vm:DiagnoseViewModel />
     </Design.DataContext>
     <UserControl.Resources>
-        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+        <ui:FASymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="Types" IsExpanded="True" ItemsSource="{Binding ClipboardTypes, Mode=OneWay}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+        <ui:FASettingsExpander Header="Types" IsExpanded="True" ItemsSource="{Binding ClipboardTypes, Mode=OneWay}">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <StackPanel Spacing="10" Orientation="Horizontal">
                     <ToggleButton Content="Auto Refresh" IsChecked="{Binding AutoRefresh}" />
                     <Button Content="Refresh" Command="{Binding RefreshCommand}" />
                 </StackPanel>
-            </ui:SettingsExpander.Footer>
-            <ui:SettingsExpander.ItemTemplate>
+            </ui:FASettingsExpander.Footer>
+            <ui:FASettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
-                    <ui:SettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                    <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                              IsClickEnabled="True"
                                              Click="SettingsExpanderItem_Click"
                                              Content="{Binding}" />
                 </DataTemplate>
-            </ui:SettingsExpander.ItemTemplate>
-        </ui:SettingsExpander>
+            </ui:FASettingsExpander.ItemTemplate>
+        </ui:FASettingsExpander>
     </StackPanel>
 </UserControl>

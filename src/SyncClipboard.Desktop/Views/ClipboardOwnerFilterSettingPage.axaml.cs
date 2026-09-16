@@ -17,18 +17,18 @@ public partial class ClipboardOwnerFilterSettingPage : UserControl
         _viewModel = App.Current.Services.GetRequiredService<ClipboardOwnerFilterSettingViewModel>();
         DataContext = _viewModel;
         InitializeComponent();
-        AddHandler(Frame.NavigatedToEvent, OnNavigatedTo, RoutingStrategies.Direct);
-        AddHandler(Frame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedToEvent, OnNavigatedTo, RoutingStrategies.Direct);
+        AddHandler(FAFrame.NavigatedFromEvent, OnNavigatedFrom, RoutingStrategies.Direct);
     }
 
-    private void OnNavigatedFrom(object? sender, NavigationEventArgs e)
+    private void OnNavigatedFrom(object? sender, FANavigationEventArgs e)
     {
         _viewModel.StopListening();
         _viewModel.OnClipboardOwnerCaptured -= OnClipboardOwnerCaptured;
         App.Current.MainWindow.EnableScrollViewer();
     }
 
-    private void OnNavigatedTo(object? sender, NavigationEventArgs e)
+    private void OnNavigatedTo(object? sender, FANavigationEventArgs e)
     {
         if (e.Parameter is not string configKey) throw new System.ArgumentException("Clipboard owner filter setting requires a config key.", nameof(e));
         _viewModel.UseConfig(configKey);
@@ -40,7 +40,7 @@ public partial class ClipboardOwnerFilterSettingPage : UserControl
     {
         var dialog = new WindowInfoEditDialog();
         var result = await dialog.ShowAsync(App.Current.MainWindow);
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             _viewModel.AddItem(dialog.GetWindowInfo());
         }
@@ -53,7 +53,7 @@ public partial class ClipboardOwnerFilterSettingPage : UserControl
             var dialog = new WindowInfoEditDialog();
             dialog.SetWindowInfo(item.ToWindowInfo());
             var result = await dialog.ShowAsync(App.Current.MainWindow);
-            if (result == ContentDialogResult.Primary)
+            if (result == FAContentDialogResult.Primary)
             {
                 _viewModel.UpdateItem(item, dialog.GetWindowInfo());
             }
@@ -82,7 +82,7 @@ public partial class ClipboardOwnerFilterSettingPage : UserControl
             var dialog = new WindowInfoEditDialog();
             dialog.SetWindowInfo(info);
             var result = await dialog.ShowAsync(App.Current.MainWindow);
-            if (result == ContentDialogResult.Primary)
+            if (result == FAContentDialogResult.Primary)
             {
                 _viewModel.AddItem(dialog.GetWindowInfo());
             }

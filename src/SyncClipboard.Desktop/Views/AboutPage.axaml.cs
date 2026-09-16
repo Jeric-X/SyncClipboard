@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,19 @@ public partial class AboutPage : UserControl
 
     private void ThemeChanged(object? sender, System.EventArgs e)
     {
-        _AppInfo.IconSource = (ImageIconSource)App.Current.Resources["AppLogoSource"]!;
+        _AppInfo.IconSource = (FAImageIconSource)App.Current.Resources["AppLogoSource"]!;
+    }
+
+    private void UpdateProgressBar_AttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is ProgressBar { IsIndeterminate: true } progressBar)
+        {
+            // Avalonia 12 stops animations on detach; cached pages need to restart the indeterminate style.
+            // Detach behavior introduced in https://github.com/AvaloniaUI/Avalonia/pull/20820.
+            // SetCurrentValue preserves the binding so download progress can still switch to determinate mode.
+            progressBar.SetCurrentValue(ProgressBar.IsIndeterminateProperty, false);
+            progressBar.SetCurrentValue(ProgressBar.IsIndeterminateProperty, true);
+        }
     }
 
     private void HyperlinkButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -31,7 +44,7 @@ public partial class AboutPage : UserControl
 
     private void SettingsExpanderItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if ((sender as SettingsExpanderItem)?.Content is not OpenSourceSoftware software)
+        if ((sender as FASettingsExpanderItem)?.Content is not OpenSourceSoftware software)
         {
             return;
         }

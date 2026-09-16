@@ -34,7 +34,7 @@
             </Grid.RowDefinitions>
 
             <!--  错误信息显示  -->
-            <ui:InfoBar Title="{x:Static i18n:Strings.Error}"
+            <ui:FAInfoBar Title="{x:Static i18n:Strings.Error}"
                         Grid.Row="0"
                         Margin="0,0,12,10"
                         IsVisible="{Binding HasError}"
@@ -46,11 +46,11 @@
             <!--  滚动内容区域  -->
             <ScrollViewer Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
                 <!--  动态属性输入  -->
-                <ItemsRepeater ItemsSource="{Binding Properties}">
-                    <ItemsRepeater.Layout>
-                        <StackLayout Spacing="10" />
-                    </ItemsRepeater.Layout>
-                    <ItemsRepeater.ItemTemplate>
+                <ui:FAItemsRepeater ItemsSource="{Binding Properties}">
+                    <ui:FAItemsRepeater.Layout>
+                        <ui:FAStackLayout Spacing="10" />
+                    </ui:FAItemsRepeater.Layout>
+                    <ui:FAItemsRepeater.ItemTemplate>
                         <DataTemplate DataType="vm:PropertyInputViewModel">
                             <Border Classes="Card">
                                 <StackPanel Spacing="10">
@@ -73,7 +73,7 @@
                                     <TextBox MinWidth="300"
                                              HorizontalAlignment="Left"
                                              Text="{Binding Value, Mode=TwoWay}"
-                                             Watermark="{Binding Watermark}"
+                                             PlaceholderText="{Binding Watermark}"
                                              IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
                                              IsVisible="{Binding IsText}" />
 
@@ -81,7 +81,7 @@
                                     <TextBox MinWidth="300"
                                              HorizontalAlignment="Left"
                                              Text="{Binding Value, Mode=TwoWay}"
-                                             Watermark="{Binding Watermark}"
+                                             PlaceholderText="{Binding Watermark}"
                                              PasswordChar="●"
                                              IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
                                              IsVisible="{Binding IsPassword}" />
@@ -90,7 +90,7 @@
                                     <NumericUpDown MinWidth="300"
                                                    HorizontalAlignment="Left"
                                                    Value="{Binding NumericValue, Mode=TwoWay}"
-                                                   Watermark="{Binding Watermark}"
+                                                   PlaceholderText="{Binding Watermark}"
                                                    Increment="1"
                                                    ParsingNumberStyle="Integer"
                                                    IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
@@ -100,7 +100,7 @@
                                     <NumericUpDown MinWidth="300"
                                                    HorizontalAlignment="Left"
                                                    Value="{Binding NumericValue, Mode=TwoWay}"
-                                                   Watermark="{Binding Watermark}"
+                                                   PlaceholderText="{Binding Watermark}"
                                                    Increment="0.1"
                                                    ParsingNumberStyle="Float"
                                                    IsEnabled="{Binding !$parent[UserControl].((vm:AccountConfigEditViewModel)DataContext).IsLoading}"
@@ -114,8 +114,8 @@
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                </ItemsRepeater>
+                    </ui:FAItemsRepeater.ItemTemplate>
+                </ui:FAItemsRepeater>
             </ScrollViewer>
         </Grid>
 

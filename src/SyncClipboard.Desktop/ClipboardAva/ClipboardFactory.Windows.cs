@@ -1,3 +1,4 @@
+using Avalonia.Media.Imaging;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using System.IO;
@@ -25,7 +26,7 @@ internal partial class ClipboardFactory
         {
             meta.OriginalType = ClipboardMetaInfomation.ImageType;
             using var stream = new MemoryStream();
-            bitmap.Save(stream);
+            bitmap.Save(stream, PngBitmapEncoderOptions.Default);
             meta.Image = ClipboardImage.TryCreateImage(stream.ToArray());
         }
 

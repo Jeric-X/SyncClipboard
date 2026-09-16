@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Desktop.Utilities;
 using System.Collections.Generic;
@@ -42,7 +41,7 @@ public partial class HotkeyInput : UserControl
         nameof(Hotkey), Hotkey.Nothing
     );
 
-    protected override void OnLostFocus(RoutedEventArgs e)
+    protected override void OnLostFocus(FocusChangedEventArgs e)
     {
         _pressingKeys.Clear();
         base.OnLostFocus(e);

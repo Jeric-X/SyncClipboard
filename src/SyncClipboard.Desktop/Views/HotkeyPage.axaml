@@ -16,7 +16,7 @@
         <vm:HotkeyViewModel />
     </Design.DataContext>
     <UserControl.Resources>
-        <ui:SymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+        <ui:FASymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <UserControl.Styles>
         <Style Selector="Button">
@@ -27,34 +27,34 @@
         </Style>
     </UserControl.Styles>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="全局快捷键例外程序"
+        <ui:FASettingsExpander Header="全局快捷键例外程序"
                              ActionIconSource="{StaticResource GoIcon}"
                              IsClickEnabled="True"
                              Command="{Binding OpenBlacklistCommand}">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE8A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-        </ui:SettingsExpander>
-        <ItemsRepeater ItemsSource="{Binding CommandCollections, Mode=OneWay}">
-            <ItemsRepeater.Layout>
-                <StackLayout Orientation="Vertical" Spacing="10" />
-            </ItemsRepeater.Layout>
-            <ItemsRepeater.ItemTemplate>
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE8A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+        </ui:FASettingsExpander>
+        <ui:FAItemsRepeater ItemsSource="{Binding CommandCollections, Mode=OneWay}">
+            <ui:FAItemsRepeater.Layout>
+                <ui:FAStackLayout Orientation="Vertical" Spacing="10" />
+            </ui:FAItemsRepeater.Layout>
+            <ui:FAItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:CommandCollectionViewModel">
-                    <ui:SettingsExpander Header="{Binding Name}"
+                    <ui:FASettingsExpander Header="{Binding Name}"
                                          IsExpanded="False"
                                          ItemsSource="{Binding Commands}"
                                          Loaded="SettingsExpander_Loaded">
-                        <ui:SettingsExpander.IconSource>
-                            <ui:FontIconSource Glyph="{Binding FontIcon, Mode=OneTime}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </ui:SettingsExpander.IconSource>
-                        <ui:SettingsExpander.ItemTemplate>
+                        <ui:FASettingsExpander.IconSource>
+                            <ui:FAFontIconSource Glyph="{Binding FontIcon, Mode=OneTime}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                        </ui:FASettingsExpander.IconSource>
+                        <ui:FASettingsExpander.ItemTemplate>
                             <DataTemplate x:DataType="vm:UniqueCommandViewModel">
-                                <ui:SettingsExpanderItem Content="{Binding Name}">
-                                    <ui:SettingsExpanderItem.Footer>
+                                <ui:FASettingsExpanderItem Content="{Binding Name}">
+                                    <ui:FASettingsExpanderItem.Footer>
                                         <StackPanel Orientation="Horizontal">
                                             <Button IsVisible="{Binding IsError}">
-                                                <ui:FontIcon Glyph="&#xE7BA;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                                <ui:FAFontIcon Glyph="&#xE7BA;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                                 <Button.Flyout>
                                                     <Flyout>
                                                         <TextBlock Text="Hotkey created failed." TextWrapping="Wrap" />
@@ -63,19 +63,19 @@
                                             </Button>
                                             <local:HotkeyViewer Margin="5,0,10,0" IsError="{Binding IsError}" Hotkey="{Binding Hotkey}" />
                                             <Button ToolTip.Tip="{x:Static i18n:Strings.Edit}" Click="EditButtonClick" DataContext="{Binding CmdId}">
-                                                <ui:FontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                                <ui:FAFontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                             </Button>
                                             <Button Command="{Binding #_HotkeyPage.ViewModel.SetToDefaultCommand}" CommandParameter="{Binding CmdId}" ToolTip.Tip="{x:Static i18n:Strings.ResetToDefault}">
-                                                <ui:FontIcon Glyph="&#xE7A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                                <ui:FAFontIcon Glyph="&#xE7A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                                             </Button>
                                         </StackPanel>
-                                    </ui:SettingsExpanderItem.Footer>
-                                </ui:SettingsExpanderItem>
+                                    </ui:FASettingsExpanderItem.Footer>
+                                </ui:FASettingsExpanderItem>
                             </DataTemplate>
-                        </ui:SettingsExpander.ItemTemplate>
-                    </ui:SettingsExpander>
+                        </ui:FASettingsExpander.ItemTemplate>
+                    </ui:FASettingsExpander>
                 </DataTemplate>
-            </ItemsRepeater.ItemTemplate>
-        </ItemsRepeater>
+            </ui:FAItemsRepeater.ItemTemplate>
+        </ui:FAItemsRepeater>
     </StackPanel>
 </UserControl>

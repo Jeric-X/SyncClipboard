@@ -14,57 +14,57 @@
         <vm:HistorySettingViewModel />
     </Design.DataContext>
     <StackPanel Spacing="10">
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.ClipboardHistory}" Description="{x:Static i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Footer>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardHistory}" Description="{x:Static i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE1D3;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
                 <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableHistory, Mode=TwoWay}" />
-            </ui:SettingsExpander.Footer>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.EnableSyncHistory}" Description="{x:Static i18n:Strings.EnableSyncHistoryDescription}" IsVisible="{Binding ServerSyncSupported}">
-                    <ui:SettingsExpanderItem.Footer>
+            </ui:FASettingsExpander.Footer>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableSyncHistory}" Description="{x:Static i18n:Strings.EnableSyncHistoryDescription}" IsVisible="{Binding ServerSyncSupported}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.AutoDeleteMissingLocalFiles}" Description="{x:Static i18n:Strings.AutoDeleteMissingLocalFilesDescription}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AutoDeleteMissingLocalFiles}" Description="{x:Static i18n:Strings.AutoDeleteMissingLocalFilesDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AutoDeleteMissingLocalFiles, Mode=TwoWay}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}" Description="{x:Static i18n:Strings.MaxItemCountDescription}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.MaxItemCount}" Description="{x:Static i18n:Strings.MaxItemCountDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"
                                        Maximum="10000"
                                        Value="{Binding MaxItemCount, Mode=TwoWay}"
                                        Increment="1"
                                        ButtonSpinnerLocation="Right" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HistoryRetentionMinutes}" Description="{x:Static i18n:Strings.HistoryRetentionDescription}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryRetentionMinutes}" Description="{x:Static i18n:Strings.HistoryRetentionDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="0"
                                        Maximum="525600"
                                        Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
                                        Increment="1"
                                        ButtonSpinnerLocation="Right" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}" Description="{x:Static i18n:Strings.ClearLocalHistoryDescription}">
-                    <ui:SettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}" Description="{x:Static i18n:Strings.ClearLocalHistoryDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
                         <Button Content="{x:Static i18n:Strings.ClearLocalHistory}" Command="{Binding ClearLocalHistoryCommand}" />
-                    </ui:SettingsExpanderItem.Footer>
-                </ui:SettingsExpanderItem>
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Static i18n:Strings.HistoryWindowOperations}" IsExpanded="True">
-            <ui:SettingsExpander.IconSource>
-                <ui:FontIconSource Glyph="&#xE946;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:SettingsExpander.IconSource>
-            <ui:SettingsExpander.Items>
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HistoryWindowKeyboardShortcuts}" Description="{x:Static i18n:Strings.HistoryWindowKeyboardList}" />
-                <ui:SettingsExpanderItem Content="{x:Static i18n:Strings.HistoryWindowMouseOperations}" Description="{x:Static i18n:Strings.HistoryWindowMouseList}" />
-            </ui:SettingsExpander.Items>
-        </ui:SettingsExpander>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryWindowOperations}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE946;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryWindowKeyboardShortcuts}" Description="{x:Static i18n:Strings.HistoryWindowKeyboardList}" />
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryWindowMouseOperations}" Description="{x:Static i18n:Strings.HistoryWindowMouseList}" />
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
     </StackPanel>
 </UserControl>

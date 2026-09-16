@@ -24,6 +24,23 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "ReleaseMacos",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/src/SyncClipboard.Desktop.MacOS/SyncClipboard.Desktop.MacOS.csproj",
+                "-c",
+                "Release",
+                "-r",
+                "osx-arm64",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "DebugLinux",
             "command": "dotnet",
             "type": "process",
