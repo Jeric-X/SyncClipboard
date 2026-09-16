@@ -25,7 +25,7 @@ class Program
 
         try
         {
-            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception e)
         {
@@ -35,8 +35,6 @@ class Program
             App.Current?.AppCore?.Stop();
             return (int)ReturnCode.UnhandledException;
         }
-
-        return (int)ReturnCode.Success;
     }
 
     private static string Font(string name)

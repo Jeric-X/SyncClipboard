@@ -22,8 +22,11 @@
                     <Color x:Key="WindowBackgroudColor">Black</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
-            <FontFamily x:Key="DefaultFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default</FontFamily>
-            <FontFamily x:Key="ProgramFont">Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default</FontFamily>
+            <!-- Linux already configures bundled MiSans as $Default. Resolving foreign font names
+                 through fontconfig can repeatedly synthesize bold faces in Avalonia 12. -->
+            <OnPlatform x:Key="DefaultFont" x:TypeArguments="FontFamily"
+                        Linux="$Default" Default="Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default" />
+            <StaticResource x:Key="ProgramFont" ResourceKey="DefaultFont" />
             <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
             <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
             <Thickness x:Key="ToggleSwitchTopHeaderMargin">0,0,0,0</Thickness>

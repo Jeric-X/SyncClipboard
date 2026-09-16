@@ -154,6 +154,7 @@
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
         <Grid RowDefinitions="Auto, Auto, *">
+            <Border Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
             <TabStrip x:Name="_FilterSelectorBar"
                       HorizontalAlignment="Center"
                       ItemsSource="{Binding FilterOptions}"
@@ -205,19 +206,13 @@
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
-                <OnPlatform>
-                    <OnPlatform.Windows>
-                        <Button Width="24"
-                                Height="24"
-                                VerticalAlignment="Center"
-                                Command="{Binding CloseCommand}">
-                            <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </Button>
-                    </OnPlatform.Windows>
-                    <OnPlatform.Default>
-                        <Border Width="0" Height="0" />
-                    </OnPlatform.Default>
-                </OnPlatform>
+                <Button Width="24"
+                        Height="24"
+                        VerticalAlignment="Center"
+                        IsVisible="{OnPlatform Default=False, Windows=True, Linux=True}"
+                        Command="{Binding CloseCommand}">
+                    <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </Button>
             </StackPanel>
             <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
                 <TextBox x:Name="_SearchTextBox"
