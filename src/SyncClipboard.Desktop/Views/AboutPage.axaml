@@ -70,6 +70,7 @@
             </ui:FAInfoBar.ActionButton>
             <ui:FAInfoBar.Content>
                 <ProgressBar Margin="0,0,16,0"
+                             AttachedToVisualTree="UpdateProgressBar_AttachedToVisualTree"
                              IsIndeterminate="{Binding UpdateStatus.IsIndeterminate, Mode=OneWay}"
                              IsVisible="{Binding UpdateStatus.EnableProgressbar, Mode=OneWay}"
                              Value="{Binding UpdateStatus.ProgressValue, Mode=OneWay}" />
