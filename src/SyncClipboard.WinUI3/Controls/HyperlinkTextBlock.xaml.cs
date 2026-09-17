@@ -113,7 +113,7 @@ public sealed partial class HyperlinkTextBlock : UserControl
             var linkText = match.Value;
             var hyperlink = new Hyperlink();
             hyperlink.Inlines.Add(new Run { Text = linkText });
-            // 避免 NavigateUri 在渲染时拒绝包含 %d 等占位符的地址，点击时交给默认浏览器处理。
+            // 避免 NavigateUri 在渲染时拒绝包含 %d 等占位符的地址，点击时再规范化并打开。
             hyperlink.Click += (_, _) => OpenLink(linkText);
             paragraph.Inlines.Add(hyperlink);
 
@@ -134,7 +134,9 @@ public sealed partial class HyperlinkTextBlock : UserControl
     {
         try
         {
-            using var process = Sys.OpenWithDefaultApp(url);
+            // AbsoluteUri 自动转义非法百分号，同时保留已有的合法编码。
+            var uri = new Uri(url, UriKind.Absolute);
+            using var process = Sys.OpenWithDefaultApp(uri.AbsoluteUri);
         }
         catch (Exception ex)
         {
