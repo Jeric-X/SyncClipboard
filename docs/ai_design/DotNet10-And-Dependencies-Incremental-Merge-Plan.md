@@ -1,69 +1,50 @@
-# .NET 10 与主要依赖升级计划
+# .NET 10 与主要依赖升级总结
 
-更新：2026-09-16。每批独立验证、由用户验收并合入后，再开始下一批；提交新 PR 需用户明确授权。
+升级围绕 .NET 10、桌面 UI 框架和开发工具展开，按技术主题拆分改动，保留业务行为与配置格式。本文记录版本变化、兼容性适配和升级范围的取舍。
 
-## 当前状态
+## 版本变化
 
-| 内容 | 状态 | 说明 |
-| --- | --- | --- |
-| .NET 10 工具链、目标框架、构建与容器 | **已合入 [#420](https://github.com/Jeric-X/SyncClipboard/pull/420)** | 合入提交 `7cfc2a52`；包含必要兼容和 ZIP 测试修正 |
-| 微软基础库、MVVM、WinUI 依赖、Coverlet/Test SDK | **已合入 [#421](https://github.com/Jeric-X/SyncClipboard/pull/421)** | 合入提交 `8438c2b0`；包含 .NET 10 下历史分类/选择查询的 Contains 兼容修复 |
-| EF Core / SQLite | **补丁升级，本次提交，待合入** | EF Core/Sqlite/Design 9.0.8 → 9.0.20；SQLitePCLRaw 传递依赖更新到 2.1.12；不做 EF Core 大版本升级 |
-| MVVM 批量 partial 属性迁移 | **不执行** | 保留字段写法和 MVVMTK0042 silent；MVVM 包 8.4.2 已合入 |
-| Avalonia 12 与配套组件 | **本次提交，待合入** | 见下文 |
+| 范围 | 升级内容 |
+| --- | --- |
+| .NET | 从 .NET 8 迁移到 .NET 10；SDK 使用 10.0.302 和 latestPatch，macOS workload 固定版本；同步调整目标框架、CI 与容器构建 |
+| 微软基础库与 MVVM | Microsoft.Extensions 和 SignalR 客户端更新到 10.0.12；CommunityToolkit.Mvvm 更新到 8.4.2 |
+| Windows UI | Windows App SDK 2.4.0、WinUI Toolkit 8.2.251219、WinUIEx 2.9.3、H.NotifyIcon.WinUI 2.4.1 |
+| Avalonia | 11.3.18 → 12.1.2；FluentAvaloniaUI 2.3.0 → 3.1.0；AsyncImageLoader.Avalonia 3.3.0 → 3.8.0 |
+| 数据库 | EF Core/Sqlite/Design 9.0.8 → 9.0.20；SQLitePCLRaw 传递依赖更新到 2.1.12，保留 EF Core 9 主版本 |
+| 测试工具 | Microsoft.NET.Test.Sdk 经 18.4.0 更新到 18.10.1；coverlet.collector 更新到 10.0.1 |
+| 容器开发工具 | Microsoft.VisualStudio.Azure.Containers.Tools.Targets 1.22.1 → 1.23.0 |
 
-#420、#421 合入后的 master Build 与 CodeQL 均已成功。合入记录不代表所有平台 UI 已逐项验证。
+## 兼容性适配与问题修复
 
-## 当前批次：Avalonia 12
+- **历史查询：** 显式使用适合表达式树的 LINQ Contains 调用，避免 .NET 10 下重载选择引入 ReadOnlySpan，导致 EF Core 在切换历史分类或统计选择项时抛出异常。
+- **Avalonia 控件与 API：** 迁移 FluentAvalonia 的 FA 前缀控件和事件类型，以内置 FABreadcrumbBar 替换独立 BreadcrumbBar 包；适配布局、样式、绑定、焦点、窗口装饰和已移除的 API。
+- **图片与拖拽：** 图片读取显式使用 PNG 编码；历史列表和预览面板保留首次按下事件并传入拖拽 API，在拖拽结束或取消后清理状态。
+- **关于页进度动画：** 修复缓存页面离开后再次显示时，不确定进度动画不能恢复的问题，并在代码注释中关联上游 PR。
+- **服务器配置：** 首次生成 appsettings.json 后重新加载已有配置源，避免追加 JSON 配置源覆盖环境变量和命令行参数，保持命令行 > 环境变量 > 配置文件的优先级。
+- **测试兼容：** 修正阻塞 CI 的 ZIP 测试问题，保留既有测试框架和断言写法。
+- **资源生成：** 资源访问类在编译时生成到 I18n/Strings.Designer.cs 并纳入版本控制；编译时避免重复包含，清理构建产物时保留该源码。
 
-基于 `8438c2b0`，分支 `codex/upgrade-avalonia12`。
+## 保留的实现与依赖
 
-**版本与改动：**
+| 范围 | 取舍 |
+| --- | --- |
+| 测试框架 | 保留 MSTest.TestFramework/TestAdapter 3.10.4，避免引入 MSTest 4 分析器对跨平台格式检查的影响 |
+| 图片处理 | 保留 Magick.NET 14.9.1 和 Magick.NET.SystemDrawing 8.0.15 |
+| S3 | 保留 AWSSDK.S3 3.7.414，不迁移 v4；S3 签名、初始化与进度修复不包含在此次升级范围内 |
+| 全局输入与原生调用 | 保留 SharpHook 5.2.3、Vanara 4.0.1 |
+| 后台调度 | 保留 Quartz 3.14.0，不引入 Quartz 4 的生命周期改造；额外的任务取消和调度初始化修复不包含在升级范围内 |
+| API 文档 | 保留 Swashbuckle.AspNetCore 8.1.1 |
+| Linux 打包 | 保留 PupNet 1.8.0 和既有 RPM/DEB 依赖声明，ARM64 RPM 打包问题不在升级范围内 |
+| MVVM 属性 | 保留字段生成属性的写法和 MVVMTK0042 silent，避免批量 partial 属性迁移扩大改动 |
 
-- Avalonia 配套包 11.3.18 → 12.1.2；FluentAvaloniaUI 2.3.0 → 3.1.0；AsyncImageLoader.Avalonia 3.3.0 → 3.8.0。
-- 使用 FluentAvalonia 3 的 FA 前缀控件及事件类型；独立 BreadcrumbBar 包替换为内置 FABreadcrumbBar，配套迁移列表布局、菜单、对话框与样式引用。
-- 适配绑定、占位文字、焦点、窗口装饰、PNG 编码和拖拽 API；拖拽保留首次按下事件，取消或结束后清理状态。
-- 移除 Avalonia 12 已删除的旧 Diagnostics 包和绑定验证插件配置，更新关于页依赖列表。
+系统最低版本声明未作调整；依赖升级带来的实际系统兼容性由目标系统测试确认。升级验证采用本地编译、非 UI 测试及各平台 PR CI，UI 由人工验收，不下载 CI 产物进行额外二进制审计。
 
-**依次验证：**
+README 的运行时说明与正式发布版本对应：在 .NET 10 源码迁移与正式发布之间，服务器说明使用 ASP.NET Core 8.0，避免用户按开发分支信息安装错误的运行时；不新增 no-dotnet-runtime 使用说明。
 
-1. 已通过依赖还原与桌面 Debug/Release XAML 编译。
-2. 已通过核心及导航测试 357 项、本地 macOS ARM64 Release 发布、通用桌面入口编译与格式检查；保留现有依赖警告。
-3. 用户要求提交后创建 PR，监控最新提交的各平台 CI、评审线程和评论，修复后重验受影响部分。
-4. 用户按下列清单验收；合入后记录结果，再安排剩余批次。
+## 关联 PR
 
-**用户验收（macOS/Linux；使用 Windows Avalonia 备用入口时另测）：**
-
-- [ ] 主窗口、历史窗口、托盘打开/恢复、退出/重启正常；Windows/Linux 历史窗口边缘和角落可调整大小。
-- [ ] 浏览设置、账号、规则、关于与诊断页；深浅主题、中英文、高 DPI 下文字和按钮完整。
-- [ ] 多级面包屑点击、返回、窄窗口溢出导航正确；对话框确认/取消、Tab/Enter/Esc 和焦点恢复正常。
-- [ ] 设置开关、数字和文本输入、校验提示、保存后重开保持原有行为。
-- [ ] 历史分类/搜索、多选/收藏、滚动与图片预览正常；在原本支持拖出的平台检查单项/多项拖出及取消后再次拖拽。
-- [ ] 文本、HTML、透明图片、单文件和多文件复制/粘贴与同步正常；托盘菜单和通知可用。
-
-## 剩余候选批次
-
-版本在实际执行时重新核定；当前顺序可由用户调整，不自动连续提交。
-
-| 主题 | 状态 | 最小范围 | 用户重点验收 |
-| --- | --- | --- | --- |
-| 图片处理 | 待安排 | Magick.NET 与 Drawing 配套升级 | 透明图片、HEIC、预览、复制粘贴 |
-| AWS SDK v4 | 待安排 | 可空返回模型等必要适配；已有 S3 签名/进度问题先单独确认 | 实际端点、上传下载、重试和取消 |
-| SharpHook 8 | 待安排 | API/释放适配，保留旧热键配置和 Linux 后端语义 | 热键、模拟输入、黑名单与权限 |
-| Vanara 5 | 待安排 | 原生调用的必要类型与参数适配 | 窗口定位、选区、原生对话框 |
-| Quartz 4 | 待安排 | 调度 API 与完整退出/取消生命周期 | 退出、重启、更新、历史清理 |
-| Swagger / OpenAPI | 待安排 | 文档模型与过滤器适配 | 文档页面、认证、实际请求 |
-| MSTest 4 / 更高 Test SDK | 待决定 | 当前 MSTest 3.10.4、Test SDK 18.4.0 可用 | 测试约束和运行结果 |
-| 容器构建工具 | 待决定 | 当前 Containers.Tools.Targets 1.22.1 | 有 IDE 容器调试需求时再安排 |
-| Linux 打包工具 | 待安排 | PupNet 与必要打包工具；当前 PupNet 1.8.0 | 安装、启动、升级与卸载 |
-
-## 执行约束
-
-- 最小修改，不混入无关业务修复。EF Core 仅升级到 9.0.20 补丁，不做大版本升级；系统下限、RPM/DEB 依赖保持现状，兼容性风险在 PR 描述与对话中说明，由用户给出结论。
-- 我负责源码、编译、非 UI 测试和 PR 问题处理；UI 由用户验证，未覆盖的设备/场景明确记录。
-- 信任 CI 产物，不下载做二进制、包结构、签名或哈希审计。额外二进制验证仅限有具体需要时的本地 macOS 构建。
-- PR 描述只写修改内容、行为变化，并独立列出不兼容风险；总体步骤、验证结果和验收清单单独在对话提供。
-- README 优先原位修改，不新增 no-dotnet-runtime 说明；不擅自变更 SDK latestPatch 或固定 workload 策略。
-- PR 不自动合入。CI 和可处理评审清理后停止监控，等待用户验收；全部升级结束后再做一次日常完整流程检查。
-
-历史参考：[未合入的大 PR #419](https://github.com/Jeric-X/SyncClipboard/pull/419)。只按主题参考最终修复，不移植其整套测试/CI 或执行日志。
+- [#419](https://github.com/Jeric-X/SyncClipboard/pull/419)：集中升级探索，为拆分范围和兼容修复提供参考。
+- [#420](https://github.com/Jeric-X/SyncClipboard/pull/420)：.NET 10 工具链、目标框架、构建与容器。
+- [#421](https://github.com/Jeric-X/SyncClipboard/pull/421)：微软基础库、MVVM、WinUI 依赖及历史查询兼容修复。
+- [#422](https://github.com/Jeric-X/SyncClipboard/pull/422)：Avalonia 12、配套控件适配与 EF Core 补丁升级。
+- [#426](https://github.com/Jeric-X/SyncClipboard/pull/426)：测试与容器开发工具升级、服务器首次启动配置优先级修复，以及 README 与升级总结整理。

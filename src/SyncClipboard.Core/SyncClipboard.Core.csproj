@@ -76,10 +76,19 @@
       <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
       <StronglyTypedNamespace>SyncClipboard.Core.I18n</StronglyTypedNamespace>
       <StronglyTypedClassName>Strings</StronglyTypedClassName>
-      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.Designer.cs</StronglyTypedFileName>
+      <StronglyTypedFileName>I18n\Strings.Designer.cs</StronglyTypedFileName>
       <PublicClass>true</PublicClass>
     </EmbeddedResource>
   </ItemGroup>
+
+  <Target Name="IncludeGeneratedResourceSource" AfterTargets="CoreResGen">
+    <ItemGroup>
+      <!-- GenerateResource also adds this file to Compile; keep one copy and preserve the tracked source on clean. -->
+      <Compile Remove="I18n\Strings.Designer.cs" />
+      <Compile Include="I18n\Strings.Designer.cs" />
+      <FileWrites Remove="I18n\Strings.Designer.cs" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\EmbeddedIcons\*.svg" />
