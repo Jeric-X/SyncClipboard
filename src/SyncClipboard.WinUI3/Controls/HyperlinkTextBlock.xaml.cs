@@ -111,11 +111,7 @@ public sealed partial class HyperlinkTextBlock : UserControl
 
             // 添加链接文本
             var linkText = match.Value;
-            var hyperlink = new Hyperlink();
-            hyperlink.Inlines.Add(new Run { Text = linkText });
-            // 避免 NavigateUri 在渲染时拒绝包含 %d 等占位符的地址，点击时再规范化并打开。
-            hyperlink.Click += (_, _) => OpenLink(linkText);
-            paragraph.Inlines.Add(hyperlink);
+            paragraph.Inlines.Add(CreateLinkInline(linkText));
 
             currentIndex += linkText.Length;
         }
@@ -130,17 +126,20 @@ public sealed partial class HyperlinkTextBlock : UserControl
         _TextBlock.Blocks.Add(paragraph);
     }
 
-    private static void OpenLink(string url)
+    private static Inline CreateLinkInline(string linkText)
     {
         try
         {
-            // AbsoluteUri 自动转义非法百分号，同时保留已有的合法编码。
-            var uri = new Uri(url, UriKind.Absolute);
-            using var process = Sys.OpenWithDefaultApp(uri.AbsoluteUri);
+            var uri = new Uri(linkText, UriKind.Absolute);
+            // WinRT 使用 OriginalString，需用已转义的 AbsoluteUri 重新构造 Uri。
+            var hyperlink = new Hyperlink { NavigateUri = new Uri(uri.AbsoluteUri, UriKind.Absolute) };
+            hyperlink.Inlines.Add(new Run { Text = linkText });
+            return hyperlink;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is UriFormatException or ArgumentException)
         {
-            AppCore.TryGetCurrent()?.Logger.Write(nameof(HyperlinkTextBlock), $"Failed to open URL: {ex.Message}");
+            AppCore.TryGetCurrent()?.Logger.Write(nameof(HyperlinkTextBlock), $"Failed to create hyperlink: {ex.Message}");
+            return new Run { Text = linkText };
         }
     }
 }
