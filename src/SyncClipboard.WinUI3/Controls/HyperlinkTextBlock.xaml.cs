@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Text.RegularExpressions;
@@ -110,10 +111,7 @@ public sealed partial class HyperlinkTextBlock : UserControl
 
             // 添加链接文本
             var linkText = match.Value;
-            var hyperlink = new Hyperlink();
-            hyperlink.Inlines.Add(new Run { Text = linkText });
-            hyperlink.NavigateUri = new Uri(linkText);
-            paragraph.Inlines.Add(hyperlink);
+            paragraph.Inlines.Add(CreateLinkInline(linkText));
 
             currentIndex += linkText.Length;
         }
@@ -126,5 +124,22 @@ public sealed partial class HyperlinkTextBlock : UserControl
         }
 
         _TextBlock.Blocks.Add(paragraph);
+    }
+
+    private static Inline CreateLinkInline(string linkText)
+    {
+        try
+        {
+            var uri = new Uri(linkText, UriKind.Absolute);
+            // WinRT 使用 OriginalString，需用已转义的 AbsoluteUri 重新构造 Uri。
+            var hyperlink = new Hyperlink { NavigateUri = new Uri(uri.AbsoluteUri, UriKind.Absolute) };
+            hyperlink.Inlines.Add(new Run { Text = linkText });
+            return hyperlink;
+        }
+        catch (Exception ex) when (ex is UriFormatException or ArgumentException)
+        {
+            AppCore.TryGetCurrent()?.Logger.Write(nameof(HyperlinkTextBlock), $"Failed to create hyperlink: {ex.Message}");
+            return new Run { Text = linkText };
+        }
     }
 }
