@@ -219,9 +219,16 @@ public sealed partial class PreviewPanel : UserControl
             if (!File.Exists(imagePath))
                 return null;
 
-            using var stream = File.OpenRead(imagePath);
-            using var bitmap = new Bitmap(stream);
-            return ((uint)bitmap.PixelSize.Width, (uint)bitmap.PixelSize.Height);
+            try
+            {
+                using var stream = File.OpenRead(imagePath);
+                using var bitmap = new Bitmap(stream);
+                return ((uint)bitmap.PixelSize.Width, (uint)bitmap.PixelSize.Height);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                return null;
+            }
         });
     }
 

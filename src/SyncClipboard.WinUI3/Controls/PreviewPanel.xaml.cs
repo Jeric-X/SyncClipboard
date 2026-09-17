@@ -186,6 +186,13 @@ public sealed partial class PreviewPanel : UserControl
         catch (Exception ex)
         {
             AppCore.TryGetCurrent()?.Logger.Write(nameof(PreviewPanel), $"Failed to get image dimensions: {ex.Message}");
+
+            if (SelectedItem != record)
+                return;
+
+            _currentPreviewImageSize = (0, 0);
+            _PreviewImage.Stretch = Stretch.Uniform;
+            _PreviewImage.Source = ConvertMethod.CreateBitmap(record.PreviewImage);
         }
     }
 
@@ -224,9 +231,16 @@ public sealed partial class PreviewPanel : UserControl
         if (!File.Exists(imagePath))
             return null;
 
-        using var stream = File.OpenRead(imagePath);
-        var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
-        return (decoder.PixelWidth, decoder.PixelHeight);
+        try
+        {
+            using var stream = File.OpenRead(imagePath);
+            var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
+            return (decoder.PixelWidth, decoder.PixelHeight);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
     }
 
     internal void PreviewImage_DoubleTapped(object _, DoubleTappedRoutedEventArgs _1)

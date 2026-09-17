@@ -4,12 +4,14 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
+using AsyncImageLoader;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Desktop.Views;
+using SyncClipboard.Desktop.Utilities;
 using System;
 
 namespace SyncClipboard.Desktop;
@@ -44,6 +46,8 @@ public partial class App : Application
 
     public override void Initialize()
     {
+        ImageLoader.AsyncImageLoader.Dispose();
+        ImageLoader.AsyncImageLoader = new LocalImageLoader();
         AvaloniaXamlLoader.Load(this);
     }
 

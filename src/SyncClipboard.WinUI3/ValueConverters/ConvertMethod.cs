@@ -9,7 +9,6 @@ using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
 using System;
-using System.IO;
 using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
@@ -145,7 +144,7 @@ internal static class ConvertMethod
 
     public static BitmapImage? CreateBitmap(string? uri)
     {
-        if (string.IsNullOrEmpty(uri) || !File.Exists(uri))
+        if (string.IsNullOrEmpty(uri))
         {
             return null;
         }

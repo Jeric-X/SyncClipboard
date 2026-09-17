@@ -10,7 +10,6 @@ using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace SyncClipboard.Desktop.ValueConverters;
 
@@ -24,10 +23,6 @@ public static class FuncConverter
 
     public static FuncValueConverter<object, bool> NullToVisible { get; } =
         new FuncValueConverter<object, bool>(value => value == null);
-
-    // Missing local files must not fall through to AsyncImageLoader's HTTP loader.
-    public static FuncValueConverter<string?, string?> ExistingFilePath { get; } =
-        new FuncValueConverter<string?, string?>(path => File.Exists(path) ? path : null);
 
     public static FuncValueConverter<HistoryRecordVM, bool> ShowImagePreview { get; } =
         new FuncValueConverter<HistoryRecordVM, bool>(record =>
