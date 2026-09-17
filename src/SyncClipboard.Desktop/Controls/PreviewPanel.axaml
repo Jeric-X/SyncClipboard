@@ -13,6 +13,8 @@
              xmlns:controls="using:SyncClipboard.Desktop.Controls">
 
     <Grid MinWidth="300"
+          DataContext="{Binding #_PreviewPanel.SelectedItem}"
+          x:DataType="vms:HistoryRecordVM"
           Background="Transparent"
           SizeChanged="PreviewPanel_SizeChanged"
           RowDefinitions="Auto, *">
@@ -23,7 +25,7 @@
             <Grid ColumnDefinitions="Auto, Auto, Auto, Auto, *">
                 <TextBlock Grid.Column="0"
                            VerticalAlignment="Center"
-                           Text="{Binding #_PreviewPanel.SelectedItem.Type, Converter={x:Static vc:FuncConverter.ProfileTypeToString}}"
+                           Text="{Binding Type, Converter={x:Static vc:FuncConverter.ProfileTypeToString}}"
                            FontSize="12"
                            Opacity="0.7"
                            Margin="0,0,8,0" />
@@ -35,11 +37,11 @@
                            Margin="0,0,8,0" />
                 <TextBlock Grid.Column="2"
                            VerticalAlignment="Center"
-                           Text="{Binding #_PreviewPanel.SelectedItem.RelativeTime}"
+                           Text="{Binding RelativeTime}"
                            FontSize="12"
                            Opacity="0.6"
                            Margin="0,0,8,0"
-                           ToolTip.Tip="{Binding #_PreviewPanel.SelectedItem.FullDateTime}" />
+                           ToolTip.Tip="{Binding FullDateTime}" />
                 <TextBlock Grid.Column="3"
                            x:Name="_StatusText"
                            VerticalAlignment="Center"
@@ -64,12 +66,11 @@
                 <ScrollViewer.IsVisible>
                     <MultiBinding Converter="{x:Static vc:FuncConverter.ShowTextPreviewMulti}">
                         <Binding Path="#_PreviewPanel.SelectedItem" />
-                        <Binding Path="#_PreviewPanel.SelectedItem.PreviewImage" />
+                        <Binding Path="PreviewImage" />
                     </MultiBinding>
                 </ScrollViewer.IsVisible>
                 <controls:HyperlinkTextBlock x:Name="_PreviewTextBlock"
                                              TextWrapping="Wrap"
-                                             DataContext="{Binding #_PreviewPanel.SelectedItem}"
                                              LinkText="{Binding Text, x:DataType=vms:HistoryRecordVM}" />
             </ScrollViewer>
             <Image x:Name="_PreviewImage"
@@ -83,7 +84,7 @@
                 <Image.IsVisible>
                     <MultiBinding Converter="{x:Static vc:FuncConverter.ShowImagePreviewMulti}">
                         <Binding Path="#_PreviewPanel.SelectedItem" />
-                        <Binding Path="#_PreviewPanel.SelectedItem.PreviewImage" />
+                        <Binding Path="PreviewImage" />
                     </MultiBinding>
                 </Image.IsVisible>
             </Image>

@@ -1325,6 +1325,13 @@ public partial class HistoryViewModel : ObservableObject
             token => BuildActionsCoreAsync(record, token),
             []);
 
+    public Task MarkLocalFileMissingAsync(HistoryRecordVM record) =>
+        RunWithOperationTimeoutAsync("mark local history file missing", token =>
+        {
+            record.IsLocalFileReady = false;
+            return historyManager.HandleLocalFileUnavailableAsync(record.Type, record.Hash, token);
+        });
+
     private async Task<List<MenuItem>> BuildActionsCoreAsync(HistoryRecordVM record, CancellationToken token)
     {
         var actions = new List<MenuItem>();

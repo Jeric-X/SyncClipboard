@@ -10,59 +10,62 @@
              x:Class="SyncClipboard.Desktop.Views.RecordControlBar"
              x:Name="_RecordControlBar">
 
-    <StackPanel Orientation="Horizontal" Spacing="4">
+    <StackPanel Orientation="Horizontal" Spacing="4"
+                DataContext="{Binding Record, ElementName=_RecordControlBar}"
+                x:DataType="vms:HistoryRecordVM"
+                IsVisible="{Binding ., Converter={x:Static vc:FuncConverter.NotNullToVisible}}">
         <!-- Error button -->
-        <Button IsVisible="{Binding Record.HasError, ElementName=_RecordControlBar}">
+        <Button IsVisible="{Binding HasError}">
             <Button.Flyout>
                 <Flyout>
-                    <TextBlock Text="{Binding Record.ErrorMessage, ElementName=_RecordControlBar}" />
+                    <TextBlock Text="{Binding ErrorMessage}" />
                 </Flyout>
             </Button.Flyout>
             <ui:FAFontIcon Glyph="&#xE783;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Download / Upload cluster (sync buttons container) -->
-        <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ViewModel.EnableSyncHistory, ElementName=_RecordControlBar}">
+        <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ViewModel.EnableSyncHistory, ElementName=_RecordControlBar, FallbackValue=False}">
             <!-- Download button -->
-            <Button Click="DownloadButtonClicked" IsVisible="{Binding Record.ShowDownloadButton, ElementName=_RecordControlBar}">
+            <Button Click="DownloadButtonClicked" IsVisible="{Binding ShowDownloadButton}">
                 <ui:FAFontIcon Glyph="&#xE896;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
 
             <!-- Cancel download button with progress ring -->
-            <Button Click="CancelDownloadButtonClicked" IsVisible="{Binding Record.ShowDownloadProgress, ElementName=_RecordControlBar}">
+            <Button Click="CancelDownloadButtonClicked" IsVisible="{Binding ShowDownloadProgress}">
                 <ui:FAProgressRing Width="16"
                                  Height="16"
-                                 IsIndeterminate="{Binding Record.IsDownloadPending, ElementName=_RecordControlBar}"
-                                 Value="{Binding Record.DownloadProgress, ElementName=_RecordControlBar}" />
+                                 IsIndeterminate="{Binding IsDownloadPending}"
+                                 Value="{Binding DownloadProgress}" />
             </Button>
 
             <!-- Upload button -->
-            <Button Click="UploadButtonClicked" IsVisible="{Binding Record.ShowUploadButton, ElementName=_RecordControlBar}">
+            <Button Click="UploadButtonClicked" IsVisible="{Binding ShowUploadButton}">
                 <ui:FAFontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
 
             <!-- Cancel upload button with progress ring -->
-            <Button Click="CancelUploadButtonClicked" IsVisible="{Binding Record.ShowUploadProgress, ElementName=_RecordControlBar}">
+            <Button Click="CancelUploadButtonClicked" IsVisible="{Binding ShowUploadProgress}">
                 <ui:FAProgressRing Width="16"
                                  Height="16"
-                                 IsIndeterminate="{Binding Record.IsUploadPending, ElementName=_RecordControlBar}"
-                                 Value="{Binding Record.UploadProgress, ElementName=_RecordControlBar}" />
+                                 IsIndeterminate="{Binding IsUploadPending}"
+                                 Value="{Binding UploadProgress}" />
             </Button>
         </StackPanel>
 
         <!-- Copy button -->
-        <Button Click="CopyButtonClicked" IsVisible="{Binding Record.IsLocalFileReady, ElementName=_RecordControlBar}">
+        <Button Click="CopyButtonClicked" IsVisible="{Binding IsLocalFileReady}">
             <ui:FAFontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Paste button -->
-        <Button Click="PasteButtonClicked" IsVisible="{Binding Record.IsLocalFileReady, ElementName=_RecordControlBar}">
+        <Button Click="PasteButtonClicked" IsVisible="{Binding IsLocalFileReady}">
             <ui:FAFontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Star button -->
         <Button Click="StarButtonClicked">
-            <ui:FAFontIcon Glyph="{Binding Record.Stared, ElementName=_RecordControlBar, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            <ui:FAFontIcon Glyph="{Binding Stared, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
         <!-- Delete button -->

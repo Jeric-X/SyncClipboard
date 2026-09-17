@@ -163,14 +163,19 @@ public sealed partial class PreviewPanel : UserControl
 
         try
         {
-            var (width, height) = await GetImageDimensions(record.PreviewImage);
+            var dimensions = await GetImageDimensions(record.PreviewImage);
+            if (dimensions is null)
+            {
+                await ViewModel.MarkLocalFileMissingAsync(record);
+                return;
+            }
 
             // 检查当前选中项是否还是同一个记录
             if (SelectedItem != record)
                 return;
 
             // 保存图片尺寸，用于面板大小变化时重新计算
-            _currentPreviewImageSize = (width, height);
+            _currentPreviewImageSize = dimensions.Value;
 
             // 计算并设置 Stretch
             UpdatePreviewImageStretch();
@@ -182,7 +187,6 @@ public sealed partial class PreviewPanel : UserControl
         {
             AppCore.TryGetCurrent()?.Logger.Write(nameof(PreviewPanel), $"Failed to get image dimensions: {ex.Message}");
 
-            // 检查当前选中项是否还是同一个记录
             if (SelectedItem != record)
                 return;
 
@@ -222,11 +226,18 @@ public sealed partial class PreviewPanel : UserControl
         }
     }
 
-    private static async Task<(uint width, uint height)> GetImageDimensions(string imagePath)
+    private static async Task<(uint width, uint height)?> GetImageDimensions(string imagePath)
     {
-        using var stream = File.OpenRead(imagePath);
-        var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
-        return (decoder.PixelWidth, decoder.PixelHeight);
+        try
+        {
+            using var stream = File.OpenRead(imagePath);
+            var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
+            return (decoder.PixelWidth, decoder.PixelHeight);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
     }
 
     internal void PreviewImage_DoubleTapped(object _, DoubleTappedRoutedEventArgs _1)

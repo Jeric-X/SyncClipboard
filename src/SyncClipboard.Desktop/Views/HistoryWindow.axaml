@@ -294,7 +294,7 @@
                                           Height="14"
                                           VerticalAlignment="Center"
                                           Stretch="Uniform"
-                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                          Stroke="{Binding (TextElement.Foreground), RelativeSource={RelativeSource Self}}"
                                           StrokeLineCap="Round"
                                           StrokeJoin="Round"
                                           StrokeThickness="1">
@@ -334,8 +334,8 @@
                                         ToolTip.Tip="{Binding SyncState, Converter={x:Static vc:FuncConverter.SyncStateToText}}">
                                     <Border.IsVisible>
                                         <MultiBinding Converter="{x:Static vc:FuncConverter.ShowSyncStatusIndicator}">
-                                            <Binding Path="ViewModel.ShowSyncState" RelativeSource="{RelativeSource AncestorType=views:HistoryWindow}" />
-                                            <Binding Path="ViewModel.ShowPreviewPanel" RelativeSource="{RelativeSource AncestorType=views:HistoryWindow}" />
+                                            <Binding Path="#_HistoryWindow.ViewModel.ShowSyncState" />
+                                            <Binding Path="#_HistoryWindow.ViewModel.ShowPreviewPanel" />
                                         </MultiBinding>
                                     </Border.IsVisible>
                                 </Border>
