@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Text.RegularExpressions;
@@ -112,7 +113,8 @@ public sealed partial class HyperlinkTextBlock : UserControl
             var linkText = match.Value;
             var hyperlink = new Hyperlink();
             hyperlink.Inlines.Add(new Run { Text = linkText });
-            hyperlink.NavigateUri = new Uri(linkText);
+            // 避免 NavigateUri 在渲染时拒绝包含 %d 等占位符的地址，点击时交给默认浏览器处理。
+            hyperlink.Click += (_, _) => OpenLink(linkText);
             paragraph.Inlines.Add(hyperlink);
 
             currentIndex += linkText.Length;
@@ -126,5 +128,17 @@ public sealed partial class HyperlinkTextBlock : UserControl
         }
 
         _TextBlock.Blocks.Add(paragraph);
+    }
+
+    private static void OpenLink(string url)
+    {
+        try
+        {
+            using var process = Sys.OpenWithDefaultApp(url);
+        }
+        catch (Exception ex)
+        {
+            AppCore.TryGetCurrent()?.Logger.Write(nameof(HyperlinkTextBlock), $"Failed to open URL: {ex.Message}");
+        }
     }
 }
