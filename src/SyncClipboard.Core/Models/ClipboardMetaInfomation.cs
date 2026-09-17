@@ -77,7 +77,11 @@ public record class ClipboardMetaInfomation
     public override string ToString()
     {
         string? displayText = Text is { Length: > 100 } ? Text[..100] + "..." : Text;
-        return $"Text={displayText} Html={Html} Files='{string.Join(',', Files ?? [])}' DragDropEffects={Effects} OriginalType={OriginalType}";
+        string ownerInfo = Owner is { } owner
+            ? $"ProcessName='{owner.ProcessName}' ExecutableName='{owner.ExecutableName}' WindowTitle='{owner.WindowTitle}'"
+            : "Unknown";
+        return $"Text={displayText} Html={Html} Files='{string.Join(',', Files ?? [])}' " +
+            $"DragDropEffects={Effects} OriginalType={OriginalType} Owner=[{ownerInfo}]";
     }
 
     public bool Empty()

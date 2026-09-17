@@ -149,14 +149,19 @@ public sealed partial class PreviewPanel : UserControl
 
         try
         {
-            var (width, height) = await GetImageDimensions(record.PreviewImage);
+            var dimensions = await GetImageDimensions(record.PreviewImage);
+            if (dimensions is null)
+            {
+                await ViewModel.MarkLocalFileMissingAsync(record);
+                return;
+            }
 
             // 检查当前选中项是否还是同一个记录
             if (SelectedItem != record)
                 return;
 
             // 保存图片尺寸，用于面板大小变化时重新计算
-            _currentPreviewImageSize = (width, height);
+            _currentPreviewImageSize = dimensions.Value;
 
             // 计算并设置 Stretch
             UpdatePreviewImageStretch();
@@ -167,14 +172,6 @@ public sealed partial class PreviewPanel : UserControl
         catch (Exception ex)
         {
             AppCore.TryGetCurrent()?.Logger.Write("PreviewPanel", $"Failed to get image dimensions: {ex.Message}");
-
-            // 检查当前选中项是否还是同一个记录
-            if (SelectedItem != record)
-                return;
-
-            _currentPreviewImageSize = (0, 0);
-            _PreviewImage.Stretch = Stretch.Uniform;
-            _PreviewImage.Source = new Bitmap(record.PreviewImage);
         }
     }
 
@@ -215,10 +212,13 @@ public sealed partial class PreviewPanel : UserControl
         _StatusText.IsVisible = isLocalFileMissing || isSynced;
     }
 
-    private static Task<(uint width, uint height)> GetImageDimensions(string imagePath)
+    private static Task<(uint width, uint height)?> GetImageDimensions(string imagePath)
     {
-        return Task.Run(() =>
+        return Task.Run<(uint width, uint height)?>(() =>
         {
+            if (!File.Exists(imagePath))
+                return null;
+
             using var stream = File.OpenRead(imagePath);
             using var bitmap = new Bitmap(stream);
             return ((uint)bitmap.PixelSize.Width, (uint)bitmap.PixelSize.Height);
