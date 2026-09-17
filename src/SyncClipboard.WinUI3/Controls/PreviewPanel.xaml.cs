@@ -228,9 +228,6 @@ public sealed partial class PreviewPanel : UserControl
 
     private static async Task<(uint width, uint height)?> GetImageDimensions(string imagePath)
     {
-        if (!File.Exists(imagePath))
-            return null;
-
         try
         {
             using var stream = File.OpenRead(imagePath);

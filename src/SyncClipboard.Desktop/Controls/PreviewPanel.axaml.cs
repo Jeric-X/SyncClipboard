@@ -172,6 +172,14 @@ public sealed partial class PreviewPanel : UserControl
         catch (Exception ex)
         {
             AppCore.TryGetCurrent()?.Logger.Write("PreviewPanel", $"Failed to get image dimensions: {ex.Message}");
+
+            // 检查当前选中项是否还是同一个记录
+            if (SelectedItem != record)
+                return;
+
+            _currentPreviewImageSize = (0, 0);
+            _PreviewImage.Stretch = Stretch.Uniform;
+            _PreviewImage.Source = new Bitmap(record.PreviewImage);
         }
     }
 
@@ -216,9 +224,6 @@ public sealed partial class PreviewPanel : UserControl
     {
         return Task.Run<(uint width, uint height)?>(() =>
         {
-            if (!File.Exists(imagePath))
-                return null;
-
             try
             {
                 using var stream = File.OpenRead(imagePath);
