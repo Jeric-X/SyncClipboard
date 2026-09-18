@@ -260,7 +260,8 @@ public class HistorySyncer
                 types: types,
                 searchText: searchText,
                 starred: starred,
-                sortByLastAccessed: sortByLastAccessed);
+                sortByLastAccessed: sortByLastAccessed,
+                token: token);
 
             if (!pageRecords.Any())
             {

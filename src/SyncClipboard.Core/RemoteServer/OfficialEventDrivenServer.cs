@@ -221,13 +221,17 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.GetHistoryByProfileIdAsync(profileId, cancellationToken);
     }
 
-    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
+    public Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(
+        int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null,
+        ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null,
+        bool sortByLastAccessed = false, CancellationToken token = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {
             throw new NotSupportedException("The current server adapter does not support history sync.");
         }
-        return syncServer.GetHistoryAsync(page, before, after, modifiedAfter, types, searchText, starred, sortByLastAccessed);
+        return syncServer.GetHistoryAsync(
+            page, before, after, modifiedAfter, types, searchText, starred, sortByLastAccessed, token);
     }
 
     public Task<string?> DownloadHistoryDataAsync(

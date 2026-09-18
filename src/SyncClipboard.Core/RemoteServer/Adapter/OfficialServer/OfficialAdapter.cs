@@ -252,7 +252,10 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
+    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(
+        int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null,
+        ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null,
+        bool sortByLastAccessed = false, CancellationToken token = default)
     {
         try
         {
@@ -270,11 +273,12 @@ public sealed class OfficialAdapter(
                 { new StringContent(sortByLastAccessed.ToString()), nameof(HistoryQueryDto.SortByLastAccessed) }
             };
 
-            var response = await _httpClient.PostAsync(url, content);
+            using var response = await _httpClient.PostAsync(url, content, token);
             response.EnsureSuccessStatusCode();
 
-            var stream = await response.Content.ReadAsStreamAsync();
-            var records = await JsonSerializer.DeserializeAsync<List<HistoryRecordDto>>(stream, JsonSerializerOptions.Web);
+            using var stream = await response.Content.ReadAsStreamAsync(token);
+            var records = await JsonSerializer.DeserializeAsync<List<HistoryRecordDto>>(
+                stream, JsonSerializerOptions.Web, token);
 
             return records ?? [];
         }

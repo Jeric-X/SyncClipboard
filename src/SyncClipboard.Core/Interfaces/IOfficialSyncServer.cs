@@ -30,8 +30,12 @@ public interface IOfficialSyncServer
     /// <param name="modifiedAfter">DateTime (UTC). Only records with LastModified &gt;= modifiedAfter will be returned.</param>
     /// <param name="types">Profile types filter (flags). Default All.</param>
     /// <param name="searchText">Optional search text to match text content.</param>
+    /// <param name="token">Cancels the request and response processing.</param>
     /// <returns>A collection of history records matching the filter criteria.</returns>
-    Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false);
+    Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(
+        int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null,
+        ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null,
+        bool sortByLastAccessed = false, CancellationToken token = default);
 
     /// <summary>
     /// Download transfer data file for a history record specified by profileId (Type-Hash) to localPath.

@@ -13,10 +13,15 @@ namespace SyncClipboard.WinUI3;
 
 public class AppServices
 {
-    public static ServiceCollection ConfigureServices()
+    public static ServiceCollection ConfigureServices(DispatcherQueue dispatcherQueue)
     {
-        var dispatcherQueue = DispatcherQueue.GetForCurrentThread()
-            ?? throw new InvalidOperationException("ConfigureServices must run on the UI thread.");
+        ArgumentNullException.ThrowIfNull(dispatcherQueue);
+        return ConfigureServices(new ThreadDispatcher(dispatcherQueue));
+    }
+
+    public static ServiceCollection ConfigureServices(IThreadDispatcher dispatcher)
+    {
+        ArgumentNullException.ThrowIfNull(dispatcher);
         var services = new ServiceCollection();
 
         AppCore.ConfigCommonService(services);
@@ -51,7 +56,7 @@ public class AppServices
         services.AddTransient<ICurrentSelectedContentProvider, CurrentSelectedContentProvider>();
         services.AddSingleton<IWifiNetworkInfoProvider, WinUIWifiNetworkInfoProvider>();
 
-        services.AddSingleton<IThreadDispatcher>(new ThreadDispatcher(dispatcherQueue));
+        services.AddSingleton(dispatcher);
 
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();

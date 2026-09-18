@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Dispatching;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.WinUI3.Views;
@@ -75,7 +76,7 @@ namespace SyncClipboard.WinUI3
         /// <param name="args">Details about the launch request and process.</param>
         protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
-            Services = AppServices.ConfigureServices().BuildServiceProvider();
+            Services = AppServices.ConfigureServices(DispatcherQueue.GetForCurrentThread()).BuildServiceProvider();
             Logger = Services.GetRequiredService<ILogger>();
             var appCore = await AppCore.CreateAsync(Services);
             if (appCore is null)
