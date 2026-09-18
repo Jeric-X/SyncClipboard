@@ -36,4 +36,5 @@ jobs:
     - name: Check code style info
       working-directory: ./src
       run: |
+        dotnet build SyncClipboard.Core/SyncClipboard.Core.csproj --no-restore
         dotnet format --verify-no-changes --severity info --no-restore

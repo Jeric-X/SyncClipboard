@@ -81,12 +81,17 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <Target Name="IncludeGeneratedResourceSource" AfterTargets="CoreResGen">
+  <ItemGroup>
+    <!-- Keep the generated source in the project tree so IDE language services can load it. -->
+    <Compile Remove="I18n\Strings.Designer.cs" />
+    <Compile Include="I18n\Strings.Designer.cs" AutoGen="true" DesignTime="true" DependentUpon="Strings.resx" />
+  </ItemGroup>
+
+  <Target Name="DeduplicateGeneratedResourceSource" AfterTargets="CoreResGen">
     <ItemGroup>
-      <!-- GenerateResource also adds this file to Compile; keep one copy and preserve the tracked source on clean. -->
+      <!-- CoreResGen adds the same file dynamically; retain exactly one Compile item. -->
       <Compile Remove="I18n\Strings.Designer.cs" />
-      <Compile Include="I18n\Strings.Designer.cs" />
-      <FileWrites Remove="I18n\Strings.Designer.cs" />
+      <Compile Include="I18n\Strings.Designer.cs" AutoGen="true" DesignTime="true" DependentUpon="Strings.resx" />
     </ItemGroup>
   </Target>
 
