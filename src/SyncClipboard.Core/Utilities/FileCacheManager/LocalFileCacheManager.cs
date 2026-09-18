@@ -266,18 +266,19 @@ public sealed class LocalFileCacheManager : IDisposable
         }
     }
 
-    public async Task<int> CleanupOrphanRecordsAsync()
+    public async Task<int> CleanupOrphanRecordsAsync(CancellationToken token = default)
     {
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync(token);
         try
         {
             using var dbContext = CreateDbContext();
-            var allEntries = await dbContext.CacheEntries.ToListAsync();
+            var allEntries = await dbContext.CacheEntries.ToListAsync(token);
             var orphanEntries = new List<LocalFileCacheEntry>();
 
             // 检查每个数据库记录对应的文件是否存在
             foreach (var entry in allEntries)
             {
+                token.ThrowIfCancellationRequested();
                 if (!File.Exists(entry.FilePath))
                 {
                     orphanEntries.Add(entry);
@@ -288,12 +289,12 @@ public sealed class LocalFileCacheManager : IDisposable
             if (orphanEntries.Count > 0)
             {
                 dbContext.CacheEntries.RemoveRange(orphanEntries);
-                await dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync(token);
             }
 
             return orphanEntries.Count;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!token.IsCancellationRequested)
         {
             _logger.Write($"Failed to cleanup orphan records: {ex.Message}");
             return 0;

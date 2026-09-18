@@ -48,10 +48,14 @@ namespace SyncClipboard.Core
         public ConfigManager ConfigManager { get; }
 
         private ServiceManager? ServiceManager { get; set; }
+        private readonly Lock _exitLock = new();
+        private readonly IPlatformApplication _platformApplication;
+        private Task? _exitTask;
 
         public AppCore(IServiceProvider serviceProvider)
         {
             Services = serviceProvider;
+            _platformApplication = serviceProvider.GetRequiredService<IPlatformApplication>();
             Logger = serviceProvider.GetRequiredService<Interfaces.ILogger>();
             SyncClipboardConfigRegistry.EnsureInitialized();
             AccountConfigRegistry.EnsureInitialized();
@@ -99,7 +103,7 @@ namespace SyncClipboard.Core
                             exception);
                     if (!restored)
                     {
-                        Services.GetRequiredService<IMainWindow>().ExitApp();
+                        await ExitAsync();
                         return;
                     }
                 }
@@ -178,7 +182,9 @@ namespace SyncClipboard.Core
 
             InitTrayIcon(historyViewModel);
             Services.GetRequiredService<AppInstance>().WaitForOtherInstanceToActiveAsync();
-            contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, mainWindow.ExitApp)]);
+            contextMenu.AddMenuItemGroup([new(Strings.RestartApp, RestartApp), new(Strings.Exit, ExitApp)
+            ]);
+            _platformApplication.SetFont(configManager.GetConfig<ProgramConfig>().Font);
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
             Job.SetUpSchedulerJobs(Services);
@@ -260,7 +266,7 @@ namespace SyncClipboard.Core
                     new UniqueCommand(
                         Strings.CompletelyExit,
                         "2F30872E-B412-F580-7C20-F0D063A85BE0",
-                        mainWindow.ExitApp
+                        ExitApp
                     ),
                     new UniqueCommand(
                         Strings.OpenHistoryPanel,
@@ -291,19 +297,57 @@ namespace SyncClipboard.Core
         {
             var config = configManager.GetConfig<ProgramConfig>();
 
-            mainWindow.SetFont(config.Font);
             if (config.HideWindowOnStartup is false)
             {
                 mainWindow.Show();
             }
         }
 
-        public void Stop()
+        public Task ExitAsync()
         {
-            NotificationManager.RomoveAllNotifications();
-            ServiceManager?.StopAllService();
-            var disposable = Services as IDisposable;
-            disposable?.Dispose();
+            lock (_exitLock)
+            {
+                return _exitTask ??= ExitCoreAsync();
+            }
+        }
+
+        public void ExitApp()
+        {
+            DelegateExtention.SafeFireAndForget(ExitAsync, LOG_TAG);
+        }
+
+        private async Task ExitCoreAsync()
+        {
+            try
+            {
+                var threadDispatcher = Services.GetRequiredService<IThreadDispatcher>();
+                var scheduler = Services.GetService<IScheduler>();
+                if (scheduler is not null && !scheduler.IsShutdown)
+                {
+                    await scheduler.Shutdown(waitForJobsToComplete: true);
+                }
+
+                NotificationManager.RomoveAllNotifications();
+                if (ServiceManager is not null)
+                {
+                    await ServiceManager.StopAllServiceAsync();
+                }
+                await threadDispatcher.RunOnMainThreadAsync(() => (Services as IDisposable)?.Dispose());
+                await threadDispatcher.RunOnMainThreadAsync(_platformApplication.Exit);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    Logger.Write(LOG_TAG, $"Failed to exit gracefully: {ex}");
+                    Logger.Flush();
+                }
+                catch
+                {
+                }
+
+                Environment.Exit((int)ReturnCode.UnhandledException);
+            }
         }
 
         public static void ConfigCommonService(IServiceCollection services)
@@ -343,7 +387,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IForegroundWindowMonitor>(sp => sp.GetRequiredService<ForegroundWindowMonitor>());
             services.AddTransient<ForegroundWindowCapture>();
             services.AddTransient<GithubUpdater>();
-            services.AddQuartz();
+            services.AddQuartz(options => options.InterruptJobsOnShutdownWithWait = true);
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
             services.AddSingleton(sp => ManagerFactory.GetNotificationManager(

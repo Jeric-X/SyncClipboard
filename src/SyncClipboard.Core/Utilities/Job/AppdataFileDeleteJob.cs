@@ -12,14 +12,16 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
 
     public Task Execute(IJobExecutionContext context)
     {
-        return Task.Run(() => PlannedTask(_configManager));
+        return Task.Run(
+            () => PlannedTask(_configManager, context.CancellationToken),
+            context.CancellationToken);
     }
 
-    private static void PlannedTask(ConfigManager configManager)
+    private static void PlannedTask(ConfigManager configManager, CancellationToken token)
     {
         try
         {
-            DeleteUpdatePackageFiles();
+            DeleteUpdatePackageFiles(token);
 
             var config = configManager.GetConfig<ProgramConfig>();
             if (config.TempFileRemainDays != 0)
@@ -27,6 +29,7 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
                 var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
                 foreach (var dirs in tempFolders)
                 {
+                    token.ThrowIfCancellationRequested();
                     var isTime = DateTime.TryParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var createTime);
                     if (isTime && ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays)))
                     {
@@ -40,17 +43,26 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
             {
                 var logFiles = logFolder.EnumerateFiles("????????.txt");
                 var dumpFiles = logFolder.EnumerateFiles("????-??-?? ??-??-??.dmp");
-                DeleteOutDateFile(logFiles, "yyyyMMdd", TimeSpan.FromDays(config.LogRemainDays));
-                DeleteOutDateFile(dumpFiles, "yyyy-MM-dd HH-mm-ss", TimeSpan.FromDays(config.LogRemainDays));
+                DeleteOutDateFile(logFiles, "yyyyMMdd", TimeSpan.FromDays(config.LogRemainDays), token);
+                DeleteOutDateFile(dumpFiles, "yyyy-MM-dd HH-mm-ss", TimeSpan.FromDays(config.LogRemainDays), token);
             }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
         }
         catch { }
     }
 
-    private static void DeleteOutDateFile(IEnumerable<FileSystemInfo> files, string format, TimeSpan time)
+    private static void DeleteOutDateFile(
+        IEnumerable<FileSystemInfo> files,
+        string format,
+        TimeSpan time,
+        CancellationToken token)
     {
         foreach (var file in files)
         {
+            token.ThrowIfCancellationRequested();
             var createTime = DateTime.ParseExact(
                 Path.GetFileNameWithoutExtension(file.Name),
                 format,
@@ -63,18 +75,23 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
         }
     }
 
-    private static void DeleteUpdatePackageFiles()
+    private static void DeleteUpdatePackageFiles(CancellationToken token)
     {
         var updateFolder = new DirectoryInfo(Env.UpdateFolder);
         if (!updateFolder.Exists)
         {
             return;
         }
-        updateFolder.EnumerateFiles().ForEach(file => file.Delete());
+        updateFolder.EnumerateFiles().ForEach(file =>
+        {
+            token.ThrowIfCancellationRequested();
+            file.Delete();
+        });
 
         List<KeyValuePair<DirectoryInfo, AppVersion>> updateDirs = [];
         updateFolder.EnumerateDirectories().ForEach(dir =>
         {
+            token.ThrowIfCancellationRequested();
             if (AppVersion.TryParse(dir.Name, out var appVersion))
             {
                 updateDirs.Add(new KeyValuePair<DirectoryInfo, AppVersion>(dir, appVersion));
@@ -84,6 +101,10 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
                 dir.Delete(true);
             }
         });
-        updateDirs.OrderByDescending(x => x.Value).Skip(2).ForEach(x => x.Key.Delete(true));
+        updateDirs.OrderByDescending(x => x.Value).Skip(2).ForEach(x =>
+        {
+            token.ThrowIfCancellationRequested();
+            x.Key.Delete(true);
+        });
     }
 }

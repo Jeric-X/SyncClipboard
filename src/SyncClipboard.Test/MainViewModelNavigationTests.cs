@@ -64,7 +64,5 @@ public class MainViewModelNavigationTests
         public void OpenPage(PageDefinition page, object? para = null) => throw new NotSupportedException();
         public void NavigateToLastLevel() => throw new NotSupportedException();
         public void NavigateToNextLevel(PageDefinition page, object? para) => throw new NotSupportedException();
-        public void SetFont(string font) => throw new NotSupportedException();
-        public void ExitApp() => throw new NotSupportedException();
     }
 }

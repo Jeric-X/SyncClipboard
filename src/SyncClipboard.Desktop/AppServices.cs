@@ -25,6 +25,7 @@ public class AppServices
         AppCore.ConfigurateUserService(services);
 
         services.AddTransient<IAppConfig, AppConfig>();
+        services.AddSingleton<IPlatformApplication, PlatformApplication>();
 
         services.AddSingleton<IGlobalDialog, Services.AvaloniaGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.AvaloniaDialog>();

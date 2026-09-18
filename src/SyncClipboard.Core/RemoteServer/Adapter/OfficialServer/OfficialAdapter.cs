@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -22,14 +21,13 @@ namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
 public sealed class OfficialAdapter(
     ILogger logger,
-    IAppConfig appConfig,
-    [FromKeyedServices(WebDavConfig.ConfigTypeName)] IServerAdapter webDavAdapter)
+    IAppConfig appConfig)
     : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
     private const int DownloadBufferSize = 102400;
     private readonly ILogger _logger = logger;
     private readonly IAppConfig _appConfig = appConfig;
-    private readonly WebDavAdapter _webDavAdapter = (WebDavAdapter)webDavAdapter;
+    private readonly WebDavAdapter _webDavAdapter = new(logger, appConfig);
     private readonly Lock _hubLock = new();
     private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;
@@ -254,7 +252,10 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null, ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null, bool sortByLastAccessed = false)
+    public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(
+        int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null,
+        ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null,
+        bool sortByLastAccessed = false, CancellationToken token = default)
     {
         try
         {
@@ -272,11 +273,12 @@ public sealed class OfficialAdapter(
                 { new StringContent(sortByLastAccessed.ToString()), nameof(HistoryQueryDto.SortByLastAccessed) }
             };
 
-            var response = await _httpClient.PostAsync(url, content);
+            using var response = await _httpClient.PostAsync(url, content, token);
             response.EnsureSuccessStatusCode();
 
-            var stream = await response.Content.ReadAsStreamAsync();
-            var records = await JsonSerializer.DeserializeAsync<List<HistoryRecordDto>>(stream, JsonSerializerOptions.Web);
+            using var stream = await response.Content.ReadAsStreamAsync(token);
+            var records = await JsonSerializer.DeserializeAsync<List<HistoryRecordDto>>(
+                stream, JsonSerializerOptions.Web, token);
 
             return records ?? [];
         }

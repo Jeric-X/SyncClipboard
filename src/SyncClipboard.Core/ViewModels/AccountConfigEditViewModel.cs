@@ -335,7 +335,9 @@ public partial class AccountConfigEditViewModel(
 
         try
         {
-            var adapter = _serverFactory.GetAdapter(AccountType) ?? throw new InvalidOperationException(Strings.NoAdapterFound);
+            var adapter = _serverFactory.CreateAdapter(AccountType)
+                ?? throw new InvalidOperationException(Strings.NoAdapterFound);
+            using var disposableAdapter = adapter as IDisposable;
             var configInstance = CreateConfigInstance() ?? throw new InvalidOperationException(Strings.CannotCreateConfigInstance);
             var syncConfig = _configManager.GetConfig<SyncConfig>();
             adapter.SetConfig(configInstance, syncConfig);

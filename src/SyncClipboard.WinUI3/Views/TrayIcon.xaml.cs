@@ -1,11 +1,5 @@
-using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
-using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media.Imaging;
-using SyncClipboard.Core.AbstractClasses;
-using SyncClipboard.Core.Interfaces;
-using System;
 using System.Diagnostics;
 using Windows.Foundation;
 
@@ -36,13 +30,6 @@ namespace SyncClipboard.WinUI3.Views
         public TrayIcon()
         {
             this.InitializeComponent();
-        }
-
-        private void MenuFlyoutItem_Click(object _, RoutedEventArgs _1)
-        {
-            App.Current.ExitApp();
-            Environment.Exit(0);
-            this.Dispose();
         }
     }
 }

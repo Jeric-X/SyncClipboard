@@ -33,12 +33,9 @@ namespace SyncClipboard.Core.Commons
             }
         }
 
-        public void StopAllService()
+        public async Task StopAllServiceAsync()
         {
-            foreach (IService service in _services)
-            {
-                service.Stop();
-            }
+            await Task.WhenAll(_services.Select(service => service.StopAsync()));
         }
     }
 }

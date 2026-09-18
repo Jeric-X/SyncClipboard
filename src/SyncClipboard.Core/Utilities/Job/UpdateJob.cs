@@ -16,7 +16,7 @@ public class UpdateJob(ConfigManager configManager, UpdateChecker updateChecker,
     {
         if (configManager.GetConfig<ProgramConfig>().CheckUpdateOnStartUp)
         {
-            return dispatcher.RunOnMainThreadAsync(updateChecker.RunAutoUpdateFlow);
+            return dispatcher.RunOnMainThreadAsync(() => updateChecker.RunAutoUpdateFlow(context.CancellationToken));
         }
         return Task.CompletedTask;
     }

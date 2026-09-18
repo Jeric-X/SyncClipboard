@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Dispatching;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
@@ -6,14 +7,21 @@ using SyncClipboard.WinUI3.ClipboardWinUI;
 using SyncClipboard.WinUI3.Views;
 using SyncClipboard.WinUI3.Win32;
 using SyncClipboard.WinUI3.Utilities;
-using SyncClipboard.Core.Utilities.Network;
+using System;
 
 namespace SyncClipboard.WinUI3;
 
 public class AppServices
 {
-    public static ServiceCollection ConfigureServices()
+    public static ServiceCollection ConfigureServices(DispatcherQueue dispatcherQueue)
     {
+        ArgumentNullException.ThrowIfNull(dispatcherQueue);
+        return ConfigureServices(new ThreadDispatcher(dispatcherQueue));
+    }
+
+    public static ServiceCollection ConfigureServices(IThreadDispatcher dispatcher)
+    {
+        ArgumentNullException.ThrowIfNull(dispatcher);
         var services = new ServiceCollection();
 
         AppCore.ConfigCommonService(services);
@@ -21,6 +29,7 @@ public class AppServices
         AppCore.ConfigurateUserService(services);
 
         services.AddTransient<IAppConfig, AppConfig>();
+        services.AddSingleton<IPlatformApplication, PlatformApplication>();
 
         services.AddSingleton<IGlobalDialog, Services.WinUIGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.WinUIDialog>();
@@ -47,7 +56,7 @@ public class AppServices
         services.AddTransient<ICurrentSelectedContentProvider, CurrentSelectedContentProvider>();
         services.AddSingleton<IWifiNetworkInfoProvider, WinUIWifiNetworkInfoProvider>();
 
-        services.AddTransient<IThreadDispatcher>(sp => new ThreadDispatcher(((MainWindow)sp.GetRequiredService<IMainWindow>()).DispatcherQueue));
+        services.AddSingleton(dispatcher);
 
         services.AddTransient<IClipboardSetter<TextProfile>, TextClipboardSetter>();
         services.AddTransient<IClipboardSetter<FileProfile>, FileClipboardSetter>();
