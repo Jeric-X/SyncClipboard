@@ -110,7 +110,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
     "UserName": "your_username",
     "Password": "your_password",
     "MaxSavedHistoryCount": 1000,
-    "HistoryRetentionMinutes": 0
+    "HistoryRetentionMinutes": 0 // History retention in minutes; 0 means no time limit
   }
 }
 ```
