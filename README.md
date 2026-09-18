@@ -111,8 +111,8 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
   "AppSettings": {
     "UserName": "your_username",
     "Password": "your_password",
-    "MaxSavedHistoryCount": 1000,
-    "HistoryRetentionMinutes": 10080
+    "MaxSavedHistoryCount": 1000, // 历史记录数量上限，0 表示不限数量；保留时长限制仍生效
+    "HistoryRetentionMinutes": 0 // 历史记录保留时长（分钟），0 表示不限时长；数量限制仍生效
   }
 }
 ```
