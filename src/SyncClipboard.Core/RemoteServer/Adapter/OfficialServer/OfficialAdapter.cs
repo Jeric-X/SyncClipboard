@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -22,14 +21,13 @@ namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
 public sealed class OfficialAdapter(
     ILogger logger,
-    IAppConfig appConfig,
-    [FromKeyedServices(WebDavConfig.ConfigTypeName)] IServerAdapter webDavAdapter)
+    IAppConfig appConfig)
     : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
     private const int DownloadBufferSize = 102400;
     private readonly ILogger _logger = logger;
     private readonly IAppConfig _appConfig = appConfig;
-    private readonly WebDavAdapter _webDavAdapter = (WebDavAdapter)webDavAdapter;
+    private readonly WebDavAdapter _webDavAdapter = new(logger, appConfig);
     private readonly Lock _hubLock = new();
     private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;

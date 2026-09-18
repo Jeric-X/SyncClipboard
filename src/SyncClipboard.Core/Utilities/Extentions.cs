@@ -37,7 +37,9 @@ public static class Extentions
         where TAdapter : class, IServerAdapter<TConfig>
     {
         var key = AccountConfigRegistry.GetRegistration(typeof(TConfig)).TypeName;
-        services.AddKeyedTransient<IServerAdapter, TAdapter>(key);
+        services.AddKeyedSingleton<ServerAdapterFactory>(
+            key,
+            (_, _) => serviceProvider => ActivatorUtilities.CreateInstance<TAdapter>(serviceProvider));
     }
 
     public static void AddLogInHelper<TConfig, THelper>(this IServiceCollection services)

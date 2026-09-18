@@ -17,7 +17,5 @@ namespace SyncClipboard.Core.Interfaces
         public void OpenPage(PageDefinition page, object? para = null);
         public void NavigateToLastLevel();
         public void NavigateToNextLevel(PageDefinition page, object? para);
-        public void SetFont(string font);
-        public void ExitApp();
     }
 }

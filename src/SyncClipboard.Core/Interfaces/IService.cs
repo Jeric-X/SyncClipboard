@@ -5,7 +5,7 @@
         bool Enabled { get; }
 
         void Start();
-        void Stop();
+        Task StopAsync();
         void Load();
         void RegistEvent();
         void UnRegistEvent();
@@ -18,7 +18,12 @@
         public bool Enabled { get; set; } = false;
 
         protected abstract void StartService();
-        protected abstract void StopSerivce();
+        protected virtual void StopSerivce() { }
+        protected virtual Task StopSerivceAsync()
+        {
+            StopSerivce();
+            return Task.CompletedTask;
+        }
         public virtual void Load() { }
         public virtual void RegistEvent() { }
         public virtual void UnRegistEvent() { }
@@ -35,15 +40,20 @@
             }
         }
 
-        public void Stop()
+        public async Task StopAsync()
         {
             if (Enabled)
             {
                 Enabled = false;
                 this.UnRegistEventHandler();
                 this.UnRegistEvent();
-                this.StopSerivce();
+                await this.StopSerivceAsync().ConfigureAwait(false);
             }
+        }
+
+        public void Stop()
+        {
+            StopAsync().GetAwaiter().GetResult();
         }
     }
 }

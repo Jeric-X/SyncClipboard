@@ -31,7 +31,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         _disposed = true;
     }
 
-    private void ParseCommand(string? command)
+    private async Task ParseCommand(string? command)
     {
         if (string.IsNullOrWhiteSpace(command))
         {
@@ -45,8 +45,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         }
         else if (command is ShutdownCommand)
         {
-            AppCore.Current?.Stop();
-            Environment.Exit(0);
+            await AppCore.Current.ExitAsync();
         }
         else if (command.StartsWith(StartArguments.CommandPrefix))
         {
@@ -76,7 +75,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
                 using var reader = new StreamReader(pipeServer);
                 var command = await reader.ReadLineAsync(cancellationToken);
 
-                ParseCommand(command);
+                await ParseCommand(command);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

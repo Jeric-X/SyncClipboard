@@ -43,7 +43,7 @@ using XamlWindowSizeChangedEventArgs = Microsoft.UI.Xaml.WindowSizeChangedEventA
 
 namespace SyncClipboard.WinUI3.Views;
 
-public sealed partial class HistoryWindow : Window, IWindow
+public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 {
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
@@ -61,6 +61,7 @@ public sealed partial class HistoryWindow : Window, IWindow
     private readonly PointerEventHandler _listViewItemPointerExitedHandler;
     private readonly TypedEventHandler<UIElement, ContextRequestedEventArgs> _listViewItemContextRequestedHandler;
     private bool _isActive;
+    private bool _disposed;
 
     public HistoryWindow(ConfigManager configManager, HistoryViewModel viewModel, ICaretPositionProvider caretPositionProvider, ILogger logger)
     {
@@ -285,12 +286,35 @@ public sealed partial class HistoryWindow : Window, IWindow
         args.Handled = true;
     }
 
-    bool IWindow.IsVisible => Visible;
+    private void Destroy()
+    {
+        Closed -= OnHistoryWindowClosed;
+        Close();
+    }
 
-    bool IWindow.IsActive => _isActive;
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        Destroy();
+        GC.SuppressFinalize(this);
+    }
+
+    bool IWindow.IsVisible => !_disposed && Visible;
+
+    bool IWindow.IsActive => !_disposed && _isActive;
 
     public void Show(bool activate)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         if (!_windowLoaded)
         {
             SetWindowMinSize();
@@ -314,17 +338,32 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public void Hide()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         ResetPointerInteractionState();
         AppWindow.Hide();
     }
 
     public void CenterOnScreen(int width, int height)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         this.CenterOnScreenDip(width, height);
     }
 
     public void FocusSearch()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _SearchTextBox.Focus(FocusState.Programmatic);
         _SearchTextBox.SelectAll();
     }
@@ -453,6 +492,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public void ScrollToSelectedItem()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         if (_ListView.SelectedItem != null)
         {
             _ListView.ScrollIntoView(_ListView.SelectedItem);
@@ -744,6 +788,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public void ScrollToTop()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _scrollViewer?.ScrollToVerticalOffset(0);
     }
 
@@ -860,6 +909,10 @@ public sealed partial class HistoryWindow : Window, IWindow
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
         offsetY = 0; viewportHeight = 0; extentHeight = 0;
+        if (_disposed)
+        {
+            return false;
+        }
 
         if (_scrollViewer != null)
         {
@@ -978,11 +1031,21 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public void SetTopmost(bool topmost)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         this.SetIsAlwaysOnTop(topmost);
     }
 
     public NativeWindowInfo? GetNativeWindowInfo()
     {
+        if (_disposed)
+        {
+            return null;
+        }
+
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         _ = User32Interop.GetWindowThreadProcessId(hWnd, out var processId);
         return hWnd == IntPtr.Zero || processId == 0
@@ -996,6 +1059,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public bool SetNearCaretPosition(ScreenPosition caretPosition)
     {
+        if (_disposed)
+        {
+            return false;
+        }
+
         var displayArea = DisplayArea.GetFromPoint(new PointInt32(caretPosition.X, caretPosition.Y), DisplayAreaFallback.Primary);
         if (displayArea == null)
         {
@@ -1015,6 +1083,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public bool SetNearMousePosition(ScreenPosition mousePosition)
     {
+        if (_disposed)
+        {
+            return false;
+        }
+
         var displayArea = DisplayArea.GetFromPoint(new PointInt32(mousePosition.X, mousePosition.Y), DisplayAreaFallback.Primary);
         if (displayArea == null)
         {
@@ -1034,6 +1107,11 @@ public sealed partial class HistoryWindow : Window, IWindow
 
     public bool SetPositionOnScreen(int screenX, int screenY)
     {
+        if (_disposed)
+        {
+            return false;
+        }
+
         var targetDisplayArea = DisplayArea.GetFromPoint(new PointInt32(screenX, screenY), DisplayAreaFallback.Primary);
         if (targetDisplayArea == null)
         {

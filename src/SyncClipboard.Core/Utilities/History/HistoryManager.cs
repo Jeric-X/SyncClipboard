@@ -509,7 +509,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
-    public void CleanupOrphanedHistoryFolders()
+    public void CleanupOrphanedHistoryFolders(CancellationToken token = default)
     {
         try
         {
@@ -531,6 +531,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
             foreach (var dirInfo in directories)
             {
+                token.ThrowIfCancellationRequested();
                 try
                 {
                     if (existingDirectoryNames.Contains(dirInfo.Name))
@@ -556,7 +557,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!token.IsCancellationRequested)
         {
             _logger.Write("HistoryManager", $"Error during orphaned folder cleanup: {ex.Message}");
         }

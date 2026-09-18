@@ -25,6 +25,8 @@ public class HistoryService : ClipboardHander
     private readonly ITrayIcon trayIcon;
     private readonly HistoryTransferQueue historyTransferQueue;
     private HistoryConfig _historyConfig;
+    private readonly Lock _syncStateLock = new();
+    private bool _stopping;
     protected override bool EnableToggleMenuItem => false;
 
     public HistoryService(
@@ -59,17 +61,27 @@ public class HistoryService : ClipboardHander
 
     protected override void StartService()
     {
+        lock (_syncStateLock)
+        {
+            _stopping = false;
+        }
         base.StartService();
         remoteServerFactory.CurrentServerChanged += OnServerChanged;
         OnServerChanged(null, EventArgs.Empty);
     }
 
-    protected override void StopSerivce()
+    protected override async Task StopSerivceAsync()
     {
-        _syncingTask.Cancel();
-        base.StopSerivce();
+        Task syncingStopped;
+        lock (_syncStateLock)
+        {
+            _stopping = true;
+            syncingStopped = _syncingTask.CancelAndWaitAsync();
+        }
+        await base.StopSerivceAsync().ConfigureAwait(false);
         remoteServerFactory.CurrentServerChanged -= OnServerChanged;
         UnsubscribeFromServer();
+        await syncingStopped.ConfigureAwait(false);
     }
 
     private void UnsubscribeFromServer()
@@ -132,9 +144,20 @@ public class HistoryService : ClipboardHander
 
     private async void TriggerSyncTask()
     {
+        Task syncingTask;
+        lock (_syncStateLock)
+        {
+            if (_stopping)
+            {
+                return;
+            }
+
+            syncingTask = _syncingTask.Run();
+        }
+
         try
         {
-            await _syncingTask.Run();
+            await syncingTask;
         }
         catch (Exception ex)
         {

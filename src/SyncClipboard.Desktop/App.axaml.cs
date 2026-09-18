@@ -102,10 +102,4 @@ public partial class App : Application
             _ => ThemeVariant.Default,
         };
     }
-
-    public void ExitApp()
-    {
-        AppCore.Stop();
-        _appLife.Shutdown();
-    }
 }

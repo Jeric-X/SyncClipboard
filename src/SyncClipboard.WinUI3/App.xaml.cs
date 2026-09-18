@@ -38,11 +38,9 @@ namespace SyncClipboard.WinUI3
 #endif
         }
 
-        internal void ExitApp()
+        internal void ExitApplication()
         {
-            AppCore.Stop();
             UnhandledException -= App_UnhandledException;
-            Console.WriteLine("Exited");
             Exit();
         }
 

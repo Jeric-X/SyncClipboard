@@ -27,11 +27,12 @@ namespace SyncClipboard.WinUI3.Views
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainWindow : Window, IMainWindow
+    public sealed partial class MainWindow : Window, IMainWindow, IDisposable
     {
         public TrayIcon TrayIcon => _TrayIcon;
         private readonly MainViewModel _viewModel;
         private bool _mainWindowLoaded = false;
+        private bool _disposed;
 
         public MainWindow()
         {
@@ -146,6 +147,24 @@ namespace SyncClipboard.WinUI3.Views
             args.Handled = true;
         }
 
+        private void Destroy()
+        {
+            Closed -= SettingWindow_Closed;
+            Close();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            Destroy();
+            GC.SuppressFinalize(this);
+        }
+
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs _)
         {
             var selectedItem = ((ListView)sender).SelectedItem;
@@ -252,15 +271,6 @@ namespace SyncClipboard.WinUI3.Views
                 _mainWindowLoaded = true;
                 OnWindowLoaded();
             }
-        }
-
-        public void SetFont(string font)
-        {
-        }
-
-        public void ExitApp()
-        {
-            App.Current.ExitApp();
         }
 
         private void EscPressed(KeyboardAccelerator _0, KeyboardAcceleratorInvokedEventArgs _1)

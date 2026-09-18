@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SyncClipboard.Core.RemoteServer;
 
-public class RemoteClipboardServerFactory
+public class RemoteClipboardServerFactory : IDisposable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ConfigManager _configManager;
@@ -19,6 +19,7 @@ public class RemoteClipboardServerFactory
     private IServerAdapter? _currentAdapter;
     private SyncConfig _syncConfig;
     private object? _configDetail;
+    private int _disposeState;
 
     public event EventHandler? CurrentServerChanged;
 
@@ -38,12 +39,22 @@ public class RemoteClipboardServerFactory
 
     private void OnProxyChanged()
     {
+        if (IsDisposed)
+        {
+            return;
+        }
+
         // 不调 SetProxy+ApplyConfig 的轻量重建，直接走 ResetCurrentServer 与账号切换语义一致。
         ResetCurrentServer();
     }
 
     private void OnAccountChanged(AccountConfig accountConfig, object? config)
     {
+        if (IsDisposed)
+        {
+            return;
+        }
+
         if (accountConfig.IsEmpty() || config is null)
         {
             SetEmptyServer(accountConfig);
@@ -67,6 +78,11 @@ public class RemoteClipboardServerFactory
 
     private void OnSyncConfigChanged(SyncConfig syncConfig)
     {
+        if (IsDisposed)
+        {
+            return;
+        }
+
         _syncConfig = syncConfig;
         if (_currentAdapter is not null && _configDetail is not null)
         {
@@ -82,6 +98,8 @@ public class RemoteClipboardServerFactory
     {
         get
         {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
             if (_current is null)
             {
                 ResetCurrentServer();
@@ -94,6 +112,8 @@ public class RemoteClipboardServerFactory
     [MemberNotNull(nameof(_current))]
     public void ResetCurrentServer(AccountConfig? newConfig = null, object? configDetail = null)
     {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+
         var account = newConfig ?? _configManager.GetConfig<AccountConfig>();
         var detail = configDetail ?? _accountManager.GetConfig(account.AccountType, account.AccountId);
         if (account.IsEmpty() || detail is null)
@@ -102,35 +122,54 @@ public class RemoteClipboardServerFactory
             return;
         }
 
-        var adapter = GetAdapter(account.AccountType);
+        var adapter = CreateAdapter(account.AccountType);
         if (adapter is null)
         {
             SetEmptyServer(account);
             return;
         }
 
-        adapter.SetConfig(detail, _syncConfig);
-        adapter.SetProxy(ProxyManager.CurrentProxy);
         IRemoteClipboardServer server;
-        if (adapter is IOfficialServerAdapter eventServerAdapter)
+        try
         {
-            server = new OfficialEventDrivenServer(_serviceProvider, eventServerAdapter);
+            adapter.SetConfig(detail, _syncConfig);
+            adapter.SetProxy(ProxyManager.CurrentProxy);
+            if (adapter is IOfficialServerAdapter eventServerAdapter)
+            {
+                server = new OfficialEventDrivenServer(_serviceProvider, eventServerAdapter);
+            }
+            else if (adapter is IStorageBasedServerAdapter pollingServerAdapter)
+            {
+                server = new PollingDrivenServer(_serviceProvider, pollingServerAdapter);
+            }
+            else
+            {
+                throw new NotSupportedException("unsupported server type");
+            }
         }
-        else if (adapter is IStorageBasedServerAdapter pollingServerAdapter)
+        catch
         {
-            server = new PollingDrivenServer(_serviceProvider, pollingServerAdapter);
-        }
-        else
-        {
-            throw new NotSupportedException("unsupported server type");
+            (adapter as IDisposable)?.Dispose();
+            throw;
         }
 
-        server.OnSyncConfigChanged(_syncConfig);
-        ReplaceCurrentServer(server, account, adapter, detail);
+        try
+        {
+            server.OnSyncConfigChanged(_syncConfig);
+            ReplaceCurrentServer(server, account, adapter, detail);
+        }
+        catch
+        {
+            server.Dispose();
+            throw;
+        }
     }
 
-    public IServerAdapter? GetAdapter(string type) =>
-        _serviceProvider.GetKeyedService<IServerAdapter>(type);
+    public IServerAdapter? CreateAdapter(string type)
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        return _serviceProvider.GetKeyedService<ServerAdapterFactory>(type)?.Invoke(_serviceProvider);
+    }
 
     [MemberNotNull(nameof(_current))]
     private void SetEmptyServer(AccountConfig account)
@@ -201,5 +240,28 @@ public class RemoteClipboardServerFactory
                     $"CurrentServerChanged subscriber {subscriber}.{handler.Method.Name} failed: {ex}");
             }
         }
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposeState, 1) != 0)
+        {
+            return;
+        }
+
+        _accountManager.CurrentAccountChanged -= OnAccountChanged;
+        ProxyManager.GlobalProxyChanged -= OnProxyChanged;
+
+        var current = _current;
+        _current = null;
+        _currentAdapter = null;
+        _currentAccount = null;
+        _configDetail = null;
+        CurrentServerChanged = null;
+
+        current?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

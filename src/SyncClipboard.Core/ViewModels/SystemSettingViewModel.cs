@@ -35,7 +35,7 @@ public partial class SystemSettingViewModel : ObservableObject
     partial void OnFontChanged(string value)
     {
         ProgramConfig = ProgramConfig with { Font = value };
-        _services.GetRequiredService<IMainWindow>().SetFont(value);
+        _services.GetRequiredService<IPlatformApplication>().SetFont(value);
     }
 
     public List<string> FontList

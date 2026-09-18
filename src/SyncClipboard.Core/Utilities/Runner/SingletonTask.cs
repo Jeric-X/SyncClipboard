@@ -9,6 +9,7 @@ public class SingletonTask
     private CancellationTokenSource _cts = new CancellationTokenSource();
     private readonly Lock _ctsLock = new();
     private readonly SemaphoreSlim _taskSemaphore = new SemaphoreSlim(1, 1);
+    private readonly HashSet<TaskCompletionSource> _runningTasks = [];
 
     public SingletonTask(CancelableTask task)
     {
@@ -34,6 +35,7 @@ public class SingletonTask
     {
         CancellationToken methodLevelToken;
         CancellationTokenSource linkedCts;
+        var completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         lock (_ctsLock)
         {
@@ -50,17 +52,29 @@ public class SingletonTask
             methodLevelToken = _cts.Token;
             _task = task;
             linkedCts = CancellationTokenSource.CreateLinkedTokenSource(methodLevelToken, token ?? CancellationToken.None);
+            _runningTasks.Add(completionSource);
         }
 
-        using (linkedCts)
+        try
         {
-            try
+            using (linkedCts)
             {
-                await _taskSemaphore.WaitAsync(linkedCts.Token);
-                using var scopeGuard = new ScopeGuard(() => _taskSemaphore.Release());
-                await task(linkedCts.Token);
+                try
+                {
+                    await _taskSemaphore.WaitAsync(linkedCts.Token);
+                    using var scopeGuard = new ScopeGuard(() => _taskSemaphore.Release());
+                    await task(linkedCts.Token);
+                }
+                catch when (methodLevelToken.IsCancellationRequested) { }
             }
-            catch when (methodLevelToken.IsCancellationRequested) { }
+        }
+        finally
+        {
+            completionSource.SetResult();
+            lock (_ctsLock)
+            {
+                _runningTasks.Remove(completionSource);
+            }
         }
     }
 
@@ -71,6 +85,17 @@ public class SingletonTask
             _cts.Cancel();
             _cts.Dispose();
             _cts = new CancellationTokenSource();
+        }
+    }
+
+    public Task CancelAndWaitAsync()
+    {
+        lock (_ctsLock)
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = new CancellationTokenSource();
+            return Task.WhenAll(_runningTasks.Select(task => task.Task));
         }
     }
 

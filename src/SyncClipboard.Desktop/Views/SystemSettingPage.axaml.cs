@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Utilities;
@@ -26,7 +27,7 @@ public partial class SystemSettingPage : UserControl
     private static List<KeyValuePair<string, Action>> GetOperations()
     {
         List<KeyValuePair<string, Action>> operations = [
-            new (Strings.CompletelyExit, App.Current.ExitApp),
+            new (Strings.CompletelyExit, AppCore.Current.ExitApp),
             new (Strings.CopyAppDataFolderPath, CopyAppDataFolderPath),
             new (Strings.OpenDataFolderInNautilus, OpenDataFolderInNautilus),
         ];

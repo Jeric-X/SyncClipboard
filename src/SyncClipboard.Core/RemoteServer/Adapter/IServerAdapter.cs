@@ -4,6 +4,8 @@ using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter;
 
+public delegate IServerAdapter ServerAdapterFactory(IServiceProvider serviceProvider);
+
 public interface IServerAdapter
 {
     Task InitializeAsync(CancellationToken cancellationToken = default);
