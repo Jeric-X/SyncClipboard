@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
@@ -44,6 +45,9 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
+        if (OperatingSystem.IsLinux())
+            WindowDecorationsTheme = (ControlTheme)this.FindResource("LinuxHistoryWindowDecorationsTheme")!;
+
         InitializeScrollWatcher();
         SetWindowMinSize();
         ((INotifyCollectionChanged)_viewModel.VisibleSelectedItems).CollectionChanged += OnVisibleSelectedItemsCollectionChanged;

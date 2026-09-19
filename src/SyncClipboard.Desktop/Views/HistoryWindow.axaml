@@ -36,6 +36,14 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
+            <ControlTheme x:Key="LinuxHistoryWindowDecorationsTheme"
+                          TargetType="WindowDrawnDecorations"
+                          BasedOn="{StaticResource {x:Type WindowDrawnDecorations}}">
+                <Setter Property="DefaultShadowThickness" Value="0" />
+                <Style Selector="^:has-shadow /template/ Border#PART_WindowBorder">
+                    <Setter Property="BoxShadow" Value="none" />
+                </Style>
+            </ControlTheme>
             <ControlTheme x:Key="MultiSelectCommandBarButtonTheme" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderBrush" Value="Transparent" />

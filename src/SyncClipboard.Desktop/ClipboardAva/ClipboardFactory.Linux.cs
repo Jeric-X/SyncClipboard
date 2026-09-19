@@ -1,5 +1,3 @@
-using FluentAvalonia.Core;
-using ImageMagick;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using System;
@@ -133,7 +131,10 @@ internal partial class ClipboardFactory
             return;
         }
 
-        var data = await Clipboard.GetDataAsync(format, token);
+        // Avalonia's universal Text format is distinct from a platform format with the same identifier.
+        var data = format == Format.Text
+            ? await Clipboard.GetTextAsync(token)
+            : await Clipboard.GetDataAsync(format, token);
         if (data is string text)
         {
             meta.Text = text;
