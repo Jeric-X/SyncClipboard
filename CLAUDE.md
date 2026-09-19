@@ -149,6 +149,11 @@ Compile-time constants (`WINDOWS`, `MACOS`, `LINUX`) are defined via `RuntimeIde
 
 Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.Designer.cs`). Supports Chinese and English. Language is set via `I18nHelper.SetProgramLanguage()` from the `ProgramConfig.Language` setting.
 
+## Git Workflow
+
+- Never push to remote `master`, including normal and force pushes.
+- Treat “提交到 master” (submit to master) as merging commits into the local `master` branch only. It does not authorize a remote push.
+
 ## Documentation
 
 - AI-generated or AI-maintained design documents must be stored in `docs/ai_design/`.
