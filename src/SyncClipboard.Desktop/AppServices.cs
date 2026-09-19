@@ -62,7 +62,7 @@ public class AppServices
         services.AddTransient<IClipboardSetter<ImageProfile>, ImageClipboardSetter>();
         services.AddTransient<IClipboardSetter<GroupProfile>, FileClipboardSetter>();
 
-        services.AddSingleton<IGlobalHook>((sp) => new SimpleGlobalHook(true));
+        services.AddSingleton<IGlobalHook>(_ => new SimpleGlobalHook());
 
         services.AddTransient<IFontManager, FontManager>();
         services.AddTransient<IThreadDispatcher, ThreadDispatcher>();

@@ -1343,4 +1343,19 @@ Shift + 左键：选中连续范围</value>
   <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi 名称权限被拒绝</value></data>
   <data name="WifiUnsupported" xml:space="preserve"><value>当前环境无法检测 Wi-Fi 名称，IP 规则仍可使用</value></data>
   <data name="RuleAccountMissing" xml:space="preserve"><value>规则“{0}”已匹配，但其目标账号不存在，已移除同步账号</value></data>
+  <data name="PermissionManagement" xml:space="preserve"><value>权限管理</value></data>
+  <data name="AccessibilityPermission" xml:space="preserve"><value>辅助功能</value></data>
+  <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>用于模拟复制、粘贴以及读取其他窗口的信息。</value></data>
+  <data name="KeyboardMonitoringPermission" xml:space="preserve"><value>输入设备访问</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Wayland 全局快捷键需要此权限。部分设备可访问时，某些键盘可能无法触发快捷键。</value></data>
+  <data name="InputSimulationPermission" xml:space="preserve"><value>模拟键盘输入</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>用于 Wayland 下模拟复制和粘贴快捷键。</value></data>
+  <data name="InputPermissionsDescription" xml:space="preserve"><value>仅检查现有权限。更改系统权限后可刷新；设备可访问不代表快捷键一定可用。</value></data>
+  <data name="InputPermissionAvailable" xml:space="preserve"><value>已允许访问</value></data>
+  <data name="InputPermissionDenied" xml:space="preserve"><value>未允许访问</value></data>
+  <data name="InputPermissionUnavailable" xml:space="preserve"><value>设备不可用</value></data>
+  <data name="InputPermissionPartial" xml:space="preserve"><value>部分设备可访问</value></data>
+  <data name="InputPermissionNotRequired" xml:space="preserve"><value>无需额外权限</value></data>
+  <data name="InputPermissionUnknown" xml:space="preserve"><value>无法确认</value></data>
+  <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>无法模拟键盘输入，请在系统设置中检查输入权限。</value></data>
 </root>

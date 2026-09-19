@@ -1,8 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
-using SharpHook;
-using SharpHook.Native;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -75,7 +73,7 @@ public class UploadService : ClipboardHander
     private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
-    private readonly IEventSimulator _keyEventSimulator;
+    private readonly VirtualKeyboard _keyboard;
     private readonly HotkeyManager _hotkeyManager;
     private readonly Lazy<ICurrentSelectedContentProvider?> _currentSelectedContentProvider;
     private SyncConfig _syncConfig;
@@ -84,7 +82,7 @@ public class UploadService : ClipboardHander
     public UploadService(
         IServiceProvider serviceProvider,
         IMessenger messenger,
-        IEventSimulator keyEventSimulator,
+        VirtualKeyboard keyboard,
         HotkeyManager hotkeyManager,
         RemoteClipboardServerFactory remoteClipboardServerFactory)
     {
@@ -98,7 +96,7 @@ public class UploadService : ClipboardHander
         _messenger = messenger;
         _syncConfig = _configManager.GetConfig<SyncConfig>();
         _serverConfig = _configManager.GetConfig<ServerConfig>();
-        _keyEventSimulator = keyEventSimulator;
+        _keyboard = keyboard;
         _hotkeyManager = hotkeyManager;
         _currentSelectedContentProvider = new(
             () => _serviceProvider.GetService<ICurrentSelectedContentProvider>());
@@ -438,7 +436,7 @@ public class UploadService : ClipboardHander
                 await Task.Run(() =>
                 {
                     ReleaseHotkeyKeys(cmdId);
-                    SimulateCopyShortcut();
+                    _keyboard.Copy();
                 }, token).WaitAsync(token);
             }
 
@@ -475,19 +473,8 @@ public class UploadService : ClipboardHander
     {
         if (_hotkeyManager.HotkeyStatusMap.TryGetValue(cmdId, out var status))
         {
-            status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
+            if (status.Hotkey is not null) _keyboard.ReleaseKeys(status.Hotkey);
         }
-    }
-
-    private void SimulateCopyShortcut()
-    {
-        KeyCode modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
-
-        _keyEventSimulator.SimulateKeyPress(modifier);
-        _keyEventSimulator.SimulateKeyPress(KeyCode.VcC);
-
-        _keyEventSimulator.SimulateKeyRelease(KeyCode.VcC);
-        _keyEventSimulator.SimulateKeyRelease(modifier);
     }
 
     private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true, CopyAndQuickUploadGuid);

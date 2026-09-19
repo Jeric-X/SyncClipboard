@@ -1343,4 +1343,19 @@ Choose whether to use the default location or select another folder.</value>
   <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi access was denied</value></data>
   <data name="WifiUnsupported" xml:space="preserve"><value>Wi-Fi name detection is unavailable; IP rules still work</value></data>
   <data name="RuleAccountMissing" xml:space="preserve"><value>Rule “{0}” matched but its target account no longer exists; sync account removed</value></data>
+  <data name="PermissionManagement" xml:space="preserve"><value>Permission management</value></data>
+  <data name="AccessibilityPermission" xml:space="preserve"><value>Accessibility</value></data>
+  <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>Allows simulated copy/paste and access to information about other windows.</value></data>
+  <data name="KeyboardMonitoringPermission" xml:space="preserve"><value>Input device access</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Required for global shortcuts on Wayland. Partial access may leave some keyboards unavailable.</value></data>
+  <data name="InputSimulationPermission" xml:space="preserve"><value>Simulated keyboard input</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Required for simulated copy/paste on Wayland.</value></data>
+  <data name="InputPermissionsDescription" xml:space="preserve"><value>Checks existing access only. Refresh after changing system permissions. Device access alone does not guarantee that shortcuts will work.</value></data>
+  <data name="InputPermissionAvailable" xml:space="preserve"><value>Access allowed</value></data>
+  <data name="InputPermissionDenied" xml:space="preserve"><value>Access denied</value></data>
+  <data name="InputPermissionUnavailable" xml:space="preserve"><value>Device unavailable</value></data>
+  <data name="InputPermissionPartial" xml:space="preserve"><value>Some devices accessible</value></data>
+  <data name="InputPermissionNotRequired" xml:space="preserve"><value>No extra permission needed</value></data>
+  <data name="InputPermissionUnknown" xml:space="preserve"><value>Unable to determine</value></data>
+  <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>Keyboard input cannot be simulated. Check input permissions in System settings.</value></data>
 </root>

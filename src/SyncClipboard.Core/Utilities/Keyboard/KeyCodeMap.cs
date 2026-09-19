@@ -1,4 +1,4 @@
-﻿using SharpHook.Native;
+﻿using SharpHook.Data;
 using SyncClipboard.Core.Models.Keyboard;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
@@ -84,7 +84,7 @@ public static class KeyCodeMap
         [KeyCode.VcPeriod] = Key.Period,
         [KeyCode.VcSlash] = Key.Slash,
         [KeyCode.VcSpace] = Key.Space,
-        [KeyCode.Vc102] = Key.OEM_102,
+        [KeyCode.VcSection] = Key.OEM_102,
         [KeyCode.VcMisc] = Key.OEM_8,
         [KeyCode.VcPrintScreen] = Key.PrintScreen,
         [KeyCode.VcScrollLock] = Key.Scroll,
@@ -161,8 +161,6 @@ public static class KeyCodeMap
         [KeyCode.VcKatakana] = Key.Katakana,
         [KeyCode.VcHiragana] = Key.Hiragana,
         [KeyCode.VcKana] = Key.Kana,
-        [KeyCode.VcKanji] = Key.Kanji,
-        [KeyCode.VcHangul] = Key.Hangul,
         [KeyCode.VcJunja] = Key.Junja,
         [KeyCode.VcFinal] = Key.Final,
         [KeyCode.VcHanja] = Key.Hanja,
@@ -180,6 +178,13 @@ public static class KeyCodeMap
     };
 
     public static readonly Dictionary<Key, KeyCode> MapReverse = Reverse(Map);
+
+    static KeyCodeMap()
+    {
+        // Preserve aliases stored in existing shortcut configurations.
+        MapReverse[Key.Kanji] = KeyCode.VcHanja;
+        MapReverse[Key.Hangul] = KeyCode.VcKana;
+    }
 
     private static Dictionary<TV, TK> Reverse<TK, TV>(Dictionary<TK, TV> oldDict) where TV : notnull where TK : notnull
     {

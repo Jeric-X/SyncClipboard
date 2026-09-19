@@ -1,40 +1,32 @@
 ﻿using Avalonia.Threading;
 using SharpHook;
-using SharpHook.Native;
+using SharpHook.Data;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Utilities.Keyboard;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Utilities;
 
 internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposable
 {
     private readonly IGlobalHook _globalHook;
+    private readonly ILogger _logger;
     private readonly Dictionary<KeyCode, DateTime> _pressingKeys = [];
     private readonly Dictionary<Hotkey, Action> _registedHotkeys = [];
     private static readonly TimeSpan KeyPressTimeout = TimeSpan.FromSeconds(30);
 
     private readonly AutoResetEvent _globalHookRunEvent = new(false);
 
-    [SupportedOSPlatform("macos")]
-    [LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool AXIsProcessTrusted();
-    private bool _newPermissionApplied = false;
-
     public bool SupressHotkey { get; set; } = false;
 
-    public SharpHookHotkeyRegistry(IGlobalHook globalHook)
+    public SharpHookHotkeyRegistry(IGlobalHook globalHook, ILogger logger)
     {
         _globalHook = globalHook;
+        _logger = logger;
         _globalHook.KeyPressed += KeyPressed;
         _globalHook.KeyReleased += KeyReleased;
         _globalHook.HookEnabled += HookEnabled;
@@ -109,25 +101,6 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
         _registedHotkeys.Remove(hotkey);
     }
 
-    private void CheckForMacPermission()
-    {
-        if (OperatingSystem.IsMacOS() && AXIsProcessTrusted() is false)
-        {
-            if (_newPermissionApplied)
-                return;
-
-            _newPermissionApplied = true;
-            try
-            {
-                Process.Start("tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard").WaitForExit(1000);
-            }
-            catch (Exception ex)
-            {
-                App.Current.Logger.Write(ex.Message);
-            }
-        }
-    }
-
     public void CheckGlobalHook()
     {
         if (_globalHook.IsRunning)
@@ -138,11 +111,15 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
             if (_globalHook.IsRunning)
                 return;
 
-            CheckForMacPermission();
-            Task.Run(_globalHook.Run).ContinueWith(task =>
+            _globalHookRunEvent.Reset();
+            _globalHook.RunAsync(GlobalHookType.Keyboard, useBackgroundThread: true).ContinueWith(task =>
             {
+                if (task.Exception is not null)
+                {
+                    _logger.Write(nameof(SharpHookHotkeyRegistry), task.Exception.GetBaseException().ToString());
+                }
                 _globalHookRunEvent.Set();
-            }, TaskContinuationOptions.NotOnRanToCompletion);
+            });
 
             _globalHookRunEvent.WaitOne(TimeSpan.FromSeconds(1));
         }
@@ -154,6 +131,7 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
     {
         _globalHook.KeyPressed -= KeyPressed;
         _globalHook.KeyReleased -= KeyReleased;
+        _globalHook.HookEnabled -= HookEnabled;
         GC.SuppressFinalize(this);
     }
 }
