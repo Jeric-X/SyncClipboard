@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using NativeNotification;
 using NativeNotification.Interface;
 using Quartz;
-using SharpHook;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
@@ -370,8 +369,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<LoggerOption>();
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
-            services.AddSingleton<IEventSimulator, EventSimulator>();
-            services.AddTransient<VirtualKeyboard>();
+            services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
+            services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();

@@ -34,7 +34,7 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.2" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.2" />
     <PackageVersion Include="FluentAvaloniaUI" Version="3.1.0" />
-    <PackageVersion Include="SharpHook" Version="5.2.3" />
+    <PackageVersion Include="SharpHook" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

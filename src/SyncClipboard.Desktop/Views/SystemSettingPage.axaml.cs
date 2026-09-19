@@ -16,11 +16,28 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class SystemSettingPage : UserControl
 {
+    private Window? _permissionStatusWindow;
+
     public SystemSettingPage()
     {
         InitializeComponent();
         DataContext = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
+        Loaded += (_, _) =>
+        {
+            RefreshInputPermissions();
+            _permissionStatusWindow = TopLevel.GetTopLevel(this) as Window;
+            if (_permissionStatusWindow is not null) _permissionStatusWindow.Activated += OnPermissionStatusWindowActivated;
+        };
+        Unloaded += (_, _) =>
+        {
+            if (_permissionStatusWindow is not null) _permissionStatusWindow.Activated -= OnPermissionStatusWindowActivated;
+            _permissionStatusWindow = null;
+        };
     }
+
+    private void OnPermissionStatusWindowActivated(object? sender, EventArgs e) => RefreshInputPermissions();
+
+    private void RefreshInputPermissions() => (DataContext as SystemSettingViewModel)?.RefreshInputPermissions();
 
     public static List<KeyValuePair<string, Action>> Operations { get; } = GetOperations();
 

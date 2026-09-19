@@ -1,8 +1,6 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
-using SharpHook;
-using SharpHook.Native;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Exceptions;
@@ -44,7 +42,7 @@ public class DownloadService : Service
     private readonly IClipboardMoniter _clipboardMoniter;
     private readonly ITrayIcon _trayIcon;
     private readonly IMessenger _messenger;
-    private readonly IEventSimulator _keyEventSimulator;
+    private readonly VirtualKeyboard _keyboard;
     private readonly HotkeyManager _hotkeyManager;
     private readonly UploadService _uploadService;
     private readonly RemoteClipboardServerFactory _remoteClipboardServerFactory;
@@ -112,7 +110,7 @@ public class DownloadService : Service
     IServiceProvider serviceProvider,
         IMessenger messenger,
         UploadService uploadService,
-        IEventSimulator keyEventSimulator,
+        VirtualKeyboard keyboard,
         IClipboardMoniter clipboardMoniter,
         IClipboardChangingListener clipboardChangingListener,
         HotkeyManager hotkeyManager,
@@ -132,7 +130,7 @@ public class DownloadService : Service
         _trayIcon = _serviceProvider.GetRequiredService<ITrayIcon>();
         _messenger = messenger;
         _uploadService = uploadService;
-        _keyEventSimulator = keyEventSimulator;
+        _keyboard = keyboard;
         _hotkeyManager = hotkeyManager;
         _clipboardMoniter = clipboardMoniter;
         _clipboardListener = clipboardChangingListener;
@@ -545,15 +543,7 @@ public class DownloadService : Service
 
     private void QuickDownload() => QuickDownload(false);
 
-    private void QuickDownloadAndPaste()
-    {
-        if (_hotkeyManager.HotkeyStatusMap.TryGetValue(QuickDownloadAndPasteGuid, out var status))
-        {
-            status.Hotkey?.Keys.ForEach(key => _keyEventSimulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]));
-        }
-
-        QuickDownload(true);
-    }
+    private void QuickDownloadAndPaste() => QuickDownload(true);
 
     private async void QuickDownload(bool paste)
     {
@@ -569,6 +559,12 @@ public class DownloadService : Service
 
         try
         {
+            if (paste && _hotkeyManager.HotkeyStatusMap.TryGetValue(QuickDownloadAndPasteGuid, out var status) &&
+                status.Hotkey is not null)
+            {
+                _keyboard.ReleaseKeys(status.Hotkey);
+            }
+
             var remoteServer = _remoteClipboardServerFactory.Current;
             if (remoteServer != null)
             {
@@ -593,13 +589,7 @@ public class DownloadService : Service
     {
         if (_isQuickDownloadAndPaste)
         {
-            KeyCode modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
-
-            _keyEventSimulator.SimulateKeyPress(modifier);
-            _keyEventSimulator.SimulateKeyPress(KeyCode.VcV);
-
-            _keyEventSimulator.SimulateKeyRelease(KeyCode.VcV);
-            _keyEventSimulator.SimulateKeyRelease(modifier);
+            _keyboard.Paste();
         }
         _isQuickDownload = false;
         _isQuickDownloadAndPaste = false;
