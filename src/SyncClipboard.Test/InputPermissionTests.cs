@@ -190,6 +190,38 @@ public class InputPermissionTests
     }
 
     [TestMethod]
+    public void ReadOnlyInputDevice_IsDeniedUntilWriteAccessIsGranted()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        {
+            Assert.Inconclusive("Requires Unix file permissions without root privileges.");
+            return;
+        }
+
+        var directory = Directory.CreateTempSubdirectory();
+        var input = Path.Combine(directory.FullName, "event0");
+        try
+        {
+            var output = Path.Combine(directory.FullName, "uinput");
+            File.WriteAllText(input, "input unchanged");
+            File.WriteAllText(output, "output unchanged");
+            File.SetUnixFileMode(input, UnixFileMode.UserRead);
+            var denied = InputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
+            Assert.AreEqual(InputPermissionState.Denied, denied.KeyboardMonitoring);
+            Assert.AreEqual(InputPermissionState.Available, denied.InputSimulation);
+
+            File.SetUnixFileMode(input, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            var allowed = InputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
+            Assert.AreEqual(InputPermissionState.Available, allowed.KeyboardMonitoring);
+            Assert.AreEqual("input unchanged", File.ReadAllText(input));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
     public void PermissionLabels_DistinguishMissingDeniedAndUnknown()
     {
         Assert.AreEqual(Strings.InputPermissionDenied,

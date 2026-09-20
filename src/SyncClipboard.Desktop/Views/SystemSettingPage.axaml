@@ -93,6 +93,20 @@
                         </ComboBox>
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.GlobalHotkeyEngine}"
+                                           Description="{Binding LinuxInputModeDescription}"
+                                           IsVisible="{Binding ShowGlobalHotkeyEngine}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding LinuxInputMode, Mode=TwoWay}"
+                                  ItemsSource="{x:Static vm:SystemSettingViewModel.LinuxInputModes}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=hook:LinuxMode}">
+                                    <TextBlock Text="{Binding ShownString}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.Proxy}">
                     <ui:FASettingsExpanderItem.Footer>
                         <Button Click="ShowProxySettingDialog" Content="{x:Static i18n:Strings.Config}" />
@@ -109,20 +123,6 @@
                         ToolTip.Tip="{x:Static i18n:Strings.InputPermissionsDescription}" />
             </ui:FASettingsExpander.Footer>
             <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.LinuxInputBackend}"
-                                           Description="{x:Static i18n:Strings.LinuxInputBackendDescription}"
-                                           IsVisible="{Binding ShowInputDevicePermissions}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <ComboBox SelectedItem="{Binding LinuxInputMode, Mode=TwoWay}"
-                                  ItemsSource="{x:Static vm:SystemSettingViewModel.LinuxInputModes}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=hook:LinuxMode}">
-                                    <TextBlock Text="{Binding ShownString}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AccessibilityPermission}"
                                            Description="{x:Static i18n:Strings.AccessibilityPermissionDescription}"
                                            IsVisible="{Binding ShowAccessibilityPermission}">
@@ -135,14 +135,14 @@
                         </StackPanel>
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.KeyboardMonitoringPermission}"
+                <ui:FASettingsExpanderItem Content="/dev/input/event*"
                                            Description="{x:Static i18n:Strings.KeyboardMonitoringPermissionDescription}"
                                            IsVisible="{Binding ShowInputDevicePermissions}">
                     <ui:FASettingsExpanderItem.Footer>
                         <TextBlock Text="{Binding KeyboardMonitoringPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.InputSimulationPermission}"
+                <ui:FASettingsExpanderItem Content="/dev/uinput"
                                            Description="{x:Static i18n:Strings.InputSimulationPermissionDescription}"
                                            IsVisible="{Binding ShowInputDevicePermissions}">
                     <ui:FASettingsExpanderItem.Footer>

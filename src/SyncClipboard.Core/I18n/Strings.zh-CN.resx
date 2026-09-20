@@ -1346,10 +1346,8 @@ Shift + 左键：选中连续范围</value>
   <data name="PermissionManagement" xml:space="preserve"><value>权限管理</value></data>
   <data name="AccessibilityPermission" xml:space="preserve"><value>辅助功能</value></data>
   <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>用于模拟复制、粘贴以及读取其他窗口的信息。</value></data>
-  <data name="KeyboardMonitoringPermission" xml:space="preserve"><value>输入设备访问</value></data>
-  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Wayland 或底层 X11 后端的全局快捷键需要此权限。部分设备可访问时，某些键盘可能无法触发快捷键。</value></data>
-  <data name="InputSimulationPermission" xml:space="preserve"><value>模拟键盘输入</value></data>
-  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>用于 Wayland 或底层 X11 后端模拟复制和粘贴快捷键。</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>需要读写权限，用于监听全局快捷键</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>需要写权限，用于模拟按键实现复制、粘贴等功能</value></data>
   <data name="InputPermissionsDescription" xml:space="preserve"><value>仅检查现有权限。更改系统权限后可刷新；设备可访问不代表快捷键一定可用。</value></data>
   <data name="InputPermissionAvailable" xml:space="preserve"><value>已允许访问</value></data>
   <data name="InputPermissionDenied" xml:space="preserve"><value>未允许访问</value></data>
@@ -1358,6 +1356,8 @@ Shift + 左键：选中连续范围</value>
   <data name="InputPermissionNotRequired" xml:space="preserve"><value>无需额外权限</value></data>
   <data name="InputPermissionUnknown" xml:space="preserve"><value>无法确认</value></data>
   <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>无法模拟键盘输入，请在系统设置中检查输入权限。</value></data>
-  <data name="LinuxInputBackend" xml:space="preserve"><value>输入后端</value></data>
-  <data name="LinuxInputBackendDescription" xml:space="preserve"><value>重启后生效。自动：X11 使用 XRecord，Wayland 使用 libinput/uinput。libinput/uinput：根据会话选择后端，需要输入设备权限。XRecord/XTest：需要 X11 或 XWayland，在 Wayland 下监听范围有限。</value></data>
+  <data name="GlobalHotkeyEngine" xml:space="preserve"><value>全局快捷键引擎（更改后重启生效）</value></data>
+  <data name="GlobalHotkeyEngineAutomaticDescription" xml:space="preserve"><value>X11 下使用 XRecord，Wayland 下使用 libinput/uinput。</value></data>
+  <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Wayland 下依赖 XWayland，即使支持XWayland也可能不生效</value></data>
+  <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>通过 libinput 监听、uinput 模拟输入，需要输入设备权限</value></data>
 </root>

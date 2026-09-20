@@ -88,7 +88,7 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
         try
         {
             var devices = Directory.EnumerateFiles(inputDirectory, "event*")
-                .Select(path => CheckDeviceAccess(path, FileAccess.Read)).ToArray();
+                .Select(path => CheckDeviceAccess(path, FileAccess.ReadWrite)).ToArray();
             monitoring = devices.Length == 0 ? InputPermissionState.Unavailable
                 : devices.All(state => state == InputPermissionState.Available) ? InputPermissionState.Available
                 : devices.Any(state => state == InputPermissionState.Available) ? InputPermissionState.Partial

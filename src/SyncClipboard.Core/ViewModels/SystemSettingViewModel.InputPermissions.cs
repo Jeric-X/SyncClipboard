@@ -12,23 +12,36 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel
 {
-    public bool ShowInputPermissions { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
+    public bool ShowInputPermissions => ShowAccessibilityPermission || (ShowInputDevicePermissions &&
+        (InputPermissions.KeyboardMonitoring != InputPermissionState.NotRequired ||
+         InputPermissions.InputSimulation != InputPermissionState.NotRequired));
     public bool ShowAccessibilityPermission { get; } = OperatingSystem.IsMacOS();
     public bool ShowInputDevicePermissions { get; } = OperatingSystem.IsLinux();
 
     public static readonly LocaleString<LinuxMode>[] LinuxInputModes =
     [
         new(LinuxMode.AutoXRecord, Strings.AutomaticInterface),
-        new(LinuxMode.AutoLowLevel, "libinput/uinput"),
-        new(LinuxMode.XRecord, "XRecord/XTest")
+        new(LinuxMode.XRecord, "x11"),
+        new(LinuxMode.AutoLowLevel, "libinput/uinput")
     ];
 
+    public bool ShowGlobalHotkeyEngine { get; } = OperatingSystem.IsLinux();
+
+    public string LinuxInputModeDescription => LinuxInputMode.Key switch
+    {
+        LinuxMode.XRecord => Strings.GlobalHotkeyEngineX11Description,
+        LinuxMode.AutoLowLevel => Strings.GlobalHotkeyEngineLibinputDescription,
+        _ => Strings.GlobalHotkeyEngineAutomaticDescription
+    };
+
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LinuxInputModeDescription))]
     private LocaleString<LinuxMode> linuxInputMode;
     partial void OnLinuxInputModeChanged(LocaleString<LinuxMode> value) =>
         ProgramConfig = ProgramConfig with { LinuxInputMode = value.Key };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowInputPermissions))]
     [NotifyPropertyChangedFor(nameof(AccessibilityPermissionText))]
     [NotifyPropertyChangedFor(nameof(KeyboardMonitoringPermissionText))]
     [NotifyPropertyChangedFor(nameof(InputSimulationPermissionText))]

@@ -1346,10 +1346,8 @@ Choose whether to use the default location or select another folder.</value>
   <data name="PermissionManagement" xml:space="preserve"><value>Permission management</value></data>
   <data name="AccessibilityPermission" xml:space="preserve"><value>Accessibility</value></data>
   <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>Allows simulated copy/paste and access to information about other windows.</value></data>
-  <data name="KeyboardMonitoringPermission" xml:space="preserve"><value>Input device access</value></data>
-  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Required for global shortcuts with the Wayland or low-level X11 backend. Partial access may leave some keyboards unavailable.</value></data>
-  <data name="InputSimulationPermission" xml:space="preserve"><value>Simulated keyboard input</value></data>
-  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Required for simulated copy/paste with the Wayland or low-level X11 backend.</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Requires read/write access to monitor global hotkeys.</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Requires write access to simulate key presses for copying, pasting, and other operations.</value></data>
   <data name="InputPermissionsDescription" xml:space="preserve"><value>Checks existing access only. Refresh after changing system permissions. Device access alone does not guarantee that shortcuts will work.</value></data>
   <data name="InputPermissionAvailable" xml:space="preserve"><value>Access allowed</value></data>
   <data name="InputPermissionDenied" xml:space="preserve"><value>Access denied</value></data>
@@ -1358,6 +1356,8 @@ Choose whether to use the default location or select another folder.</value>
   <data name="InputPermissionNotRequired" xml:space="preserve"><value>No extra permission needed</value></data>
   <data name="InputPermissionUnknown" xml:space="preserve"><value>Unable to determine</value></data>
   <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>Keyboard input cannot be simulated. Check input permissions in System settings.</value></data>
-  <data name="LinuxInputBackend" xml:space="preserve"><value>Input backend</value></data>
-  <data name="LinuxInputBackendDescription" xml:space="preserve"><value>Takes effect after restart. Automatic uses XRecord on X11 and libinput/uinput on Wayland. libinput/uinput adapts to the session and requires input device access. XRecord/XTest requires X11 or XWayland; its coverage is limited on Wayland.</value></data>
+  <data name="GlobalHotkeyEngine" xml:space="preserve"><value>Global hotkey engine (restart required after changes)</value></data>
+  <data name="GlobalHotkeyEngineAutomaticDescription" xml:space="preserve"><value>Uses XRecord on X11 and libinput/uinput on Wayland.</value></data>
+  <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Requires XWayland on Wayland and may not work even when XWayland is supported.</value></data>
+  <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>Uses libinput to monitor input and uinput to simulate it. Requires input device permissions.</value></data>
 </root>
