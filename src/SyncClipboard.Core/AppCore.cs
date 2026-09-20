@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using NativeNotification;
 using NativeNotification.Interface;
 using Quartz;
+using SharpHook.Providers;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
@@ -165,6 +166,20 @@ namespace SyncClipboard.Core
             InitAppImageEntry();
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
+            if (OperatingSystem.IsLinux())
+            {
+                // Select before any permission query, global hook or input simulator loads the backend.
+                try
+                {
+                    var mode = configManager.GetConfig<ProgramConfig>().LinuxInputMode;
+                    var result = UioHookProvider.Instance.SetLinuxMode(mode);
+                    Logger.Write(LOG_TAG, $"Linux input mode: {mode}, initialization result: {result}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Write(LOG_TAG, $"Failed to select Linux input backend: {ex}");
+                }
+            }
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             var mainWindow = Services.GetRequiredService<IMainWindow>();

@@ -1358,4 +1358,6 @@ Choose whether to use the default location or select another folder.</value>
   <data name="InputPermissionNotRequired" xml:space="preserve"><value>No extra permission needed</value></data>
   <data name="InputPermissionUnknown" xml:space="preserve"><value>Unable to determine</value></data>
   <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>Keyboard input cannot be simulated. Check input permissions in System settings.</value></data>
+  <data name="LinuxInputBackend" xml:space="preserve"><value>Input backend</value></data>
+  <data name="LinuxInputBackendDescription" xml:space="preserve"><value>Takes effect after restart. Automatic uses XRecord on X11 and libinput/uinput on Wayland. libinput/uinput adapts to the session and requires input device access. XRecord/XTest requires X11 or XWayland; its coverage is limited on Wayland.</value></data>
 </root>

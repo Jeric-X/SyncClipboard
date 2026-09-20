@@ -28,10 +28,12 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
             try
             {
                 var backend = UioHookProvider.Instance.GetLoadedLinuxBackend();
-                // XRecord is the default X11 backend; the separate X11 backend uses libinput/uinput like Wayland.
-                var needsDeviceAccess = backend is LinuxBackend.Wayland or LinuxBackend.X11 ||
-                    (backend == LinuxBackend.None && IsWaylandSession());
-                if (needsDeviceAccess)
+                // Use the active backend, not a saved selection that will take effect after restart.
+                if (backend == LinuxBackend.None)
+                {
+                    return new(InputPermissionState.NotRequired, InputPermissionState.Unknown, InputPermissionState.Unknown);
+                }
+                if (backend is LinuxBackend.Wayland or LinuxBackend.X11)
                 {
                     return GetLinuxDeviceStatus("/dev/input", "/dev/uinput");
                 }
@@ -44,10 +46,6 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
 
         return new(InputPermissionState.NotRequired, InputPermissionState.NotRequired, InputPermissionState.NotRequired);
     }
-
-    private static bool IsWaylandSession() =>
-        string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase) ||
-        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
 
     internal static InputPermissionStatus GetAccessibilityStatus(Func<bool> isTrusted)
     {

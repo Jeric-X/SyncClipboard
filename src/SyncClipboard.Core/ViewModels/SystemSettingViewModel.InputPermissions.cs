@@ -1,8 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using SharpHook.Data;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using System.Diagnostics;
 
@@ -13,6 +15,18 @@ public partial class SystemSettingViewModel
     public bool ShowInputPermissions { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
     public bool ShowAccessibilityPermission { get; } = OperatingSystem.IsMacOS();
     public bool ShowInputDevicePermissions { get; } = OperatingSystem.IsLinux();
+
+    public static readonly LocaleString<LinuxMode>[] LinuxInputModes =
+    [
+        new(LinuxMode.AutoXRecord, Strings.AutomaticInterface),
+        new(LinuxMode.AutoLowLevel, "libinput/uinput"),
+        new(LinuxMode.XRecord, "XRecord/XTest")
+    ];
+
+    [ObservableProperty]
+    private LocaleString<LinuxMode> linuxInputMode;
+    partial void OnLinuxInputModeChanged(LocaleString<LinuxMode> value) =>
+        ProgramConfig = ProgramConfig with { LinuxInputMode = value.Key };
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AccessibilityPermissionText))]

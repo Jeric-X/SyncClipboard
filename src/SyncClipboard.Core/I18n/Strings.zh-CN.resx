@@ -1358,4 +1358,6 @@ Shift + 左键：选中连续范围</value>
   <data name="InputPermissionNotRequired" xml:space="preserve"><value>无需额外权限</value></data>
   <data name="InputPermissionUnknown" xml:space="preserve"><value>无法确认</value></data>
   <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>无法模拟键盘输入，请在系统设置中检查输入权限。</value></data>
+  <data name="LinuxInputBackend" xml:space="preserve"><value>输入后端</value></data>
+  <data name="LinuxInputBackendDescription" xml:space="preserve"><value>重启后生效。自动：X11 使用 XRecord，Wayland 使用 libinput/uinput。libinput/uinput：根据会话选择后端，需要输入设备权限。XRecord/XTest：需要 X11 或 XWayland，在 Wayland 下监听范围有限。</value></data>
 </root>
