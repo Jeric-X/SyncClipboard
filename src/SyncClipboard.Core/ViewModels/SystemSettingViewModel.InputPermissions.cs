@@ -18,12 +18,16 @@ public partial class SystemSettingViewModel
     [NotifyPropertyChangedFor(nameof(AccessibilityPermissionText))]
     [NotifyPropertyChangedFor(nameof(KeyboardMonitoringPermissionText))]
     [NotifyPropertyChangedFor(nameof(InputSimulationPermissionText))]
+    [NotifyPropertyChangedFor(nameof(CanRequestAccessibilityPermission))]
+    [NotifyCanExecuteChangedFor(nameof(RequestAccessibilityPermissionCommand))]
     private InputPermissionStatus inputPermissions = new(
         InputPermissionState.Unknown, InputPermissionState.Unknown, InputPermissionState.Unknown);
 
     public string AccessibilityPermissionText => GetPermissionText(InputPermissions.Accessibility);
     public string KeyboardMonitoringPermissionText => GetPermissionText(InputPermissions.KeyboardMonitoring);
     public string InputSimulationPermissionText => GetPermissionText(InputPermissions.InputSimulation);
+    public bool CanRequestAccessibilityPermission => ShowAccessibilityPermission &&
+        InputPermissions.Accessibility is not (InputPermissionState.Available or InputPermissionState.NotRequired);
 
     [RelayCommand]
     public void RefreshInputPermissions()
@@ -31,23 +35,29 @@ public partial class SystemSettingViewModel
         InputPermissions = _services.GetRequiredService<IInputPermissionProvider>().GetStatus();
     }
 
-    [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]
-    private async Task OpenAccessibilitySettings()
+    [RelayCommand(CanExecute = nameof(CanRequestAccessibilityPermission))]
+    private async Task RequestAccessibilityPermission()
     {
-        if (!ShowAccessibilityPermission) return;
+        if (!CanRequestAccessibilityPermission) return;
 
         try
         {
-            using var process = Process.Start(new ProcessStartInfo(
-                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            _services.GetRequiredService<IInputPermissionProvider>().RequestAccessibilityPermission();
+            RefreshInputPermissions();
+            if (InputPermissions.Accessibility == InputPermissionState.Denied)
             {
-                UseShellExecute = true
-            });
+                // macOS may suppress repeated prompts; keep the authorization controls reachable.
+                using var process = Process.Start(new ProcessStartInfo(
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                {
+                    UseShellExecute = true
+                });
+            }
         }
         catch (Exception ex)
         {
             _logger.Write(nameof(SystemSettingViewModel), ex.Message);
-            await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(Strings.OpenSystemSettings, ex.Message);
+            await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(Strings.RequestPermission, ex.Message);
         }
     }
 

@@ -5,9 +5,17 @@ using SyncClipboard.Core.Models.Keyboard;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
-/// <summary>Checks existing access without requesting authorization or changing device permissions.</summary>
+/// <summary>Checks existing access and requests macOS authorization only on explicit user action.</summary>
 public sealed class InputPermissionProvider : IInputPermissionProvider
 {
+    public void RequestAccessibilityPermission()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: true);
+        }
+    }
+
     public InputPermissionStatus GetStatus()
     {
         if (OperatingSystem.IsMacOS())

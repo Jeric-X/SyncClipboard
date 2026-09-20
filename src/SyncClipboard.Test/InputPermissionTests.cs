@@ -1,4 +1,10 @@
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
+using NativeNotification.Interface;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.ViewModels;
@@ -8,6 +14,59 @@ namespace SyncClipboard.Test;
 [TestClass]
 public class InputPermissionTests
 {
+    [TestMethod]
+    public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var permissions = new Mock<IInputPermissionProvider>();
+            var state = InputPermissionState.Denied;
+            permissions.Setup(x => x.GetStatus()).Returns(() => new InputPermissionStatus(state, state, state));
+            permissions.Setup(x => x.RequestAccessibilityPermission()).Callback(() => state = InputPermissionState.Available);
+            using var services = new ServiceCollection()
+                .AddSingleton(permissions.Object)
+                .AddSingleton(Mock.Of<ILogger>())
+                .BuildServiceProvider();
+            var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), new SyncClipboardConfigUpgrader());
+            var viewModel = new SystemSettingViewModel(config, new StaticConfig(Mock.Of<INotificationManager>()), services);
+            var propertyChanges = new List<string?>();
+            var commandChanges = 0;
+            viewModel.PropertyChanged += (_, e) => propertyChanges.Add(e.PropertyName);
+            viewModel.RequestAccessibilityPermissionCommand.CanExecuteChanged += (_, _) => commandChanges++;
+
+            viewModel.RefreshInputPermissions();
+            Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.CanRequestAccessibilityPermission);
+            permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Never);
+
+            if (OperatingSystem.IsMacOS())
+            {
+                await viewModel.RequestAccessibilityPermissionCommand.ExecuteAsync(null);
+                permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Once);
+            }
+            else
+            {
+                state = InputPermissionState.Available;
+                viewModel.RefreshInputPermissions();
+            }
+
+            Assert.AreEqual(InputPermissionState.Available, viewModel.InputPermissions.Accessibility);
+            Assert.IsFalse(viewModel.CanRequestAccessibilityPermission);
+            Assert.IsFalse(viewModel.RequestAccessibilityPermissionCommand.CanExecute(null));
+            Assert.Contains(nameof(SystemSettingViewModel.CanRequestAccessibilityPermission), propertyChanges);
+            Assert.IsGreaterThan(0, commandChanges);
+
+            state = InputPermissionState.Denied;
+            viewModel.RefreshInputPermissions();
+            Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.CanRequestAccessibilityPermission);
+            Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.RequestAccessibilityPermissionCommand.CanExecute(null));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
     [TestMethod]
     public void AccessibilityCheck_ReflectsGrantAndRevocation()
     {
