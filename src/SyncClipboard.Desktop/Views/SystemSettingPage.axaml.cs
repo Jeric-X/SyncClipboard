@@ -26,11 +26,11 @@ public partial class SystemSettingPage : UserControl
         {
             RefreshInputPermissions();
             _permissionStatusWindow = TopLevel.GetTopLevel(this) as Window;
-            if (_permissionStatusWindow is not null) _permissionStatusWindow.Activated += OnPermissionStatusWindowActivated;
+            _permissionStatusWindow?.Activated += OnPermissionStatusWindowActivated;
         };
         Unloaded += (_, _) =>
         {
-            if (_permissionStatusWindow is not null) _permissionStatusWindow.Activated -= OnPermissionStatusWindowActivated;
+            _permissionStatusWindow?.Activated -= OnPermissionStatusWindowActivated;
             _permissionStatusWindow = null;
         };
     }

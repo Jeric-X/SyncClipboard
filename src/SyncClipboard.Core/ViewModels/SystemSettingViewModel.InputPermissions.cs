@@ -10,9 +10,9 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel
 {
-    public bool ShowInputPermissions => OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
-    public bool ShowAccessibilityPermission => OperatingSystem.IsMacOS();
-    public bool ShowInputDevicePermissions => OperatingSystem.IsLinux();
+    public bool ShowInputPermissions { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
+    public bool ShowAccessibilityPermission { get; } = OperatingSystem.IsMacOS();
+    public bool ShowInputDevicePermissions { get; } = OperatingSystem.IsLinux();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AccessibilityPermissionText))]

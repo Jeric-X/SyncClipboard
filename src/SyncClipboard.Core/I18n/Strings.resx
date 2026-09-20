@@ -1347,9 +1347,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="AccessibilityPermission" xml:space="preserve"><value>Accessibility</value></data>
   <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>Allows simulated copy/paste and access to information about other windows.</value></data>
   <data name="KeyboardMonitoringPermission" xml:space="preserve"><value>Input device access</value></data>
-  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Required for global shortcuts on Wayland. Partial access may leave some keyboards unavailable.</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Required for global shortcuts with the Wayland or low-level X11 backend. Partial access may leave some keyboards unavailable.</value></data>
   <data name="InputSimulationPermission" xml:space="preserve"><value>Simulated keyboard input</value></data>
-  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Required for simulated copy/paste on Wayland.</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Required for simulated copy/paste with the Wayland or low-level X11 backend.</value></data>
   <data name="InputPermissionsDescription" xml:space="preserve"><value>Checks existing access only. Refresh after changing system permissions. Device access alone does not guarantee that shortcuts will work.</value></data>
   <data name="InputPermissionAvailable" xml:space="preserve"><value>Access allowed</value></data>
   <data name="InputPermissionDenied" xml:space="preserve"><value>Access denied</value></data>

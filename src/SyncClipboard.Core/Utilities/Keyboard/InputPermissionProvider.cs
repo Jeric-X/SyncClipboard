@@ -20,6 +20,7 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
             try
             {
                 var backend = UioHookProvider.Instance.GetLoadedLinuxBackend();
+                // XRecord is the default X11 backend; the separate X11 backend uses libinput/uinput like Wayland.
                 var needsDeviceAccess = backend is LinuxBackend.Wayland or LinuxBackend.X11 ||
                     (backend == LinuxBackend.None && IsWaylandSession());
                 if (needsDeviceAccess)
