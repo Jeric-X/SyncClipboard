@@ -25,26 +25,47 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
 
         if (OperatingSystem.IsLinux())
         {
-            try
-            {
-                var backend = UioHookProvider.Instance.GetLoadedLinuxBackend();
-                // Use the active backend, not a saved selection that will take effect after restart.
-                if (backend == LinuxBackend.None)
-                {
-                    return new(InputPermissionState.NotRequired, InputPermissionState.Unknown, InputPermissionState.Unknown);
-                }
-                if (backend is LinuxBackend.Wayland or LinuxBackend.X11)
-                {
-                    return GetLinuxDeviceStatus("/dev/input", "/dev/uinput");
-                }
-            }
-            catch
-            {
-                return new(InputPermissionState.NotRequired, InputPermissionState.Unknown, InputPermissionState.Unknown);
-            }
+            var isWayland = string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland",
+                StringComparison.OrdinalIgnoreCase) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+            return GetLinuxStatus(UioHookProvider.Instance, isWayland,
+                () => GetLinuxDeviceStatus("/dev/input", "/dev/uinput"));
         }
 
         return new(InputPermissionState.NotRequired, InputPermissionState.NotRequired, InputPermissionState.NotRequired);
+    }
+
+    internal static InputPermissionStatus GetLinuxStatus(
+        ILinuxBackendProvider provider, bool isWayland, Func<InputPermissionStatus> getDeviceStatus)
+    {
+        try
+        {
+            var backend = provider.GetLoadedLinuxBackend();
+            if (backend == LinuxBackend.None)
+            {
+                // No hook or simulator may have loaded the backend yet. Use the current process mode,
+                // not a saved setting that takes effect after restart, to allow the first simulation.
+                backend = provider.GetLinuxMode() switch
+                {
+                    LinuxMode.XRecord => LinuxBackend.XRecord,
+                    LinuxMode.X11 => LinuxBackend.X11,
+                    LinuxMode.Wayland => LinuxBackend.Wayland,
+                    LinuxMode.AutoXRecord => isWayland ? LinuxBackend.Wayland : LinuxBackend.XRecord,
+                    LinuxMode.AutoLowLevel => isWayland ? LinuxBackend.Wayland : LinuxBackend.X11,
+                    _ => LinuxBackend.None
+                };
+            }
+
+            return backend switch
+            {
+                LinuxBackend.X11 or LinuxBackend.Wayland => getDeviceStatus(),
+                LinuxBackend.XRecord => new(InputPermissionState.NotRequired, InputPermissionState.NotRequired, InputPermissionState.NotRequired),
+                _ => new(InputPermissionState.NotRequired, InputPermissionState.Unknown, InputPermissionState.Unknown)
+            };
+        }
+        catch
+        {
+            return new(InputPermissionState.NotRequired, InputPermissionState.Unknown, InputPermissionState.Unknown);
+        }
     }
 
     internal static InputPermissionStatus GetAccessibilityStatus(Func<bool> isTrusted)

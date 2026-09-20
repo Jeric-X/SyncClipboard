@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NativeNotification.Interface;
+using SharpHook.Data;
+using SharpHook.Providers;
+using SharpHook.Simulation;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.I18n;
@@ -14,6 +17,63 @@ namespace SyncClipboard.Test;
 [TestClass]
 public class InputPermissionTests
 {
+    [TestMethod]
+    [DataRow(LinuxMode.AutoXRecord, false, LinuxBackend.XRecord)]
+    [DataRow(LinuxMode.AutoXRecord, true, LinuxBackend.Wayland)]
+    [DataRow(LinuxMode.AutoLowLevel, false, LinuxBackend.X11)]
+    [DataRow(LinuxMode.AutoLowLevel, true, LinuxBackend.Wayland)]
+    [DataRow(LinuxMode.XRecord, false, LinuxBackend.XRecord)]
+    [DataRow(LinuxMode.XRecord, true, LinuxBackend.XRecord)]
+    public void FirstLinuxPaste_CanInitializeBackend_WithoutRegisteredHotkeys(
+        LinuxMode mode, bool isWayland, LinuxBackend expectedBackend)
+    {
+        var backend = LinuxBackend.None;
+        var provider = new Mock<ILinuxBackendProvider>();
+        provider.Setup(x => x.GetLoadedLinuxBackend()).Returns(() => backend);
+        provider.Setup(x => x.GetLinuxMode()).Returns(mode);
+        var deviceChecks = 0;
+        var permissions = new Mock<IInputPermissionProvider>();
+        permissions.Setup(x => x.GetStatus()).Returns(() => InputPermissionProvider.GetLinuxStatus(
+            provider.Object, isWayland, () =>
+            {
+                deviceChecks++;
+                return new(InputPermissionState.NotRequired, InputPermissionState.Available, InputPermissionState.Available);
+            }));
+        var simulator = new Mock<IEventSimulator>();
+        var created = 0;
+        using var keyboard = new VirtualKeyboard(permissions.Object, () =>
+        {
+            created++;
+            backend = expectedBackend;
+            return simulator.Object;
+        });
+
+        keyboard.Paste();
+        keyboard.Paste();
+
+        Assert.AreEqual(1, created);
+        Assert.AreEqual(expectedBackend == LinuxBackend.XRecord ? 0 : 2, deviceChecks);
+        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Exactly(2));
+        // Once loaded, the actual backend takes precedence over mode/session inference.
+        provider.Verify(x => x.GetLinuxMode(), Times.Once);
+    }
+
+    [TestMethod]
+    [DataRow(LinuxMode.AutoXRecord, true)]
+    [DataRow(LinuxMode.AutoLowLevel, false)]
+    [DataRow(LinuxMode.AutoLowLevel, true)]
+    public void UnloadedLowLevelBackend_StillRequiresDevicePermission(LinuxMode mode, bool isWayland)
+    {
+        var provider = new Mock<ILinuxBackendProvider>();
+        provider.Setup(x => x.GetLoadedLinuxBackend()).Returns(LinuxBackend.None);
+        provider.Setup(x => x.GetLinuxMode()).Returns(mode);
+        var denied = new InputPermissionStatus(
+            InputPermissionState.NotRequired, InputPermissionState.Denied, InputPermissionState.Denied);
+        var status = InputPermissionProvider.GetLinuxStatus(provider.Object, isWayland, () => denied);
+        Assert.AreEqual(denied, status);
+        Assert.IsFalse(status.CanSimulateInput);
+    }
+
     [TestMethod]
     public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation()
     {
