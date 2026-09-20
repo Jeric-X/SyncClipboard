@@ -146,7 +146,7 @@ public class KeyboardSimulationTests
     }
 
     [TestMethod]
-    public void ReleaseKeys_PreservesLegacyAliases_AndEmptyHotkeyDoesNotInitialize()
+    public void ReleaseKeys_UsesMappedKeys_AndEmptyHotkeyDoesNotInitialize()
     {
         var simulator = new Mock<IEventSimulator>();
         var created = 0;
@@ -157,7 +157,7 @@ public class KeyboardSimulationTests
         });
         keyboard.ReleaseKeys(Hotkey.Nothing);
         Assert.AreEqual(0, created);
-        keyboard.ReleaseKeys(new Hotkey(Key.Kanji, Key.Hangul, Key.OEM_102));
+        keyboard.ReleaseKeys(new Hotkey(Key.Hanja, Key.Kana, Key.OEM_102));
         simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcHanja), Times.Once);
         simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcKana), Times.Once);
         simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcSection), Times.Once);

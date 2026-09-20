@@ -93,20 +93,13 @@ internal partial class SharpHookHotkeyRegistry : INativeHotkeyRegistry, IDisposa
     public bool RegisterForSystemHotkey(Hotkey hotkey, Action action)
     {
         CheckGlobalHook();
-        return _globalHook.IsRunning && _registedHotkeys.TryAdd(NormalizeHotkey(hotkey), action);
+        return _globalHook.IsRunning && _registedHotkeys.TryAdd(hotkey, action);
     }
 
     public void UnRegisterForSystemHotkey(Hotkey hotkey)
     {
-        _registedHotkeys.Remove(NormalizeHotkey(hotkey));
+        _registedHotkeys.Remove(hotkey);
     }
-
-    private static Hotkey NormalizeHotkey(Hotkey hotkey) => new(hotkey.Keys.Select(key => key switch
-    {
-        Key.Kanji => Key.Hanja,
-        Key.Hangul => Key.Kana,
-        _ => key
-    }));
 
     public void CheckGlobalHook()
     {

@@ -179,13 +179,6 @@ public static class KeyCodeMap
 
     public static readonly Dictionary<Key, KeyCode> MapReverse = Reverse(Map);
 
-    static KeyCodeMap()
-    {
-        // Preserve aliases stored in existing shortcut configurations.
-        MapReverse[Key.Kanji] = KeyCode.VcHanja;
-        MapReverse[Key.Hangul] = KeyCode.VcKana;
-    }
-
     private static Dictionary<TV, TK> Reverse<TK, TV>(Dictionary<TK, TV> oldDict) where TV : notnull where TK : notnull
     {
         var newDict = new Dictionary<TV, TK>();

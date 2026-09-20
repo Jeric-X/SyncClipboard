@@ -26,23 +26,4 @@ public class HotkeyInitializationTests
         logger.Verify(x => x.Write("SharpHookHotkeyRegistry",
             It.Is<string>(message => message.Contains("Input device access denied"))), Times.Once);
     }
-
-    [TestMethod]
-    [DataRow(Key.Kanji, Key.Hanja)]
-    [DataRow(Key.Hangul, Key.Kana)]
-    public void LegacyAliases_ShareRegistrationAndRemovalWithCanonicalKeys(Key legacy, Key canonical)
-    {
-        var hook = new Mock<IGlobalHook>();
-        hook.SetupGet(x => x.IsRunning).Returns(true);
-        using var registry = new SharpHookHotkeyRegistry(hook.Object, Mock.Of<ILogger>());
-        var savedHotkey = new Hotkey(Key.Ctrl, legacy);
-        var reportedHotkey = new Hotkey(Key.Ctrl, canonical);
-
-        Assert.IsTrue(registry.RegisterForSystemHotkey(savedHotkey, () => { }));
-        Assert.IsFalse(registry.RegisterForSystemHotkey(reportedHotkey, () => { }));
-        registry.UnRegisterForSystemHotkey(reportedHotkey);
-        Assert.IsTrue(registry.RegisterForSystemHotkey(reportedHotkey, () => { }));
-        registry.UnRegisterForSystemHotkey(savedHotkey);
-        Assert.IsTrue(registry.RegisterForSystemHotkey(savedHotkey, () => { }));
-    }
 }
