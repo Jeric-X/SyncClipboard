@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -93,12 +93,9 @@
                         </ComboBox>
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.GlobalHotkeyEngine}"
-                                           Description="{Binding LinuxInputModeDescription}"
-                                           IsVisible="{Binding ShowGlobalHotkeyEngine}">
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.GlobalHotkeyEngine}" Description="{Binding LinuxInputModeDescription}" IsVisible="{Binding ShowGlobalHotkeyEngine}">
                     <ui:FASettingsExpanderItem.Footer>
-                        <ComboBox SelectedItem="{Binding LinuxInputMode, Mode=TwoWay}"
-                                  ItemsSource="{x:Static vm:SystemSettingViewModel.LinuxInputModes}">
+                        <ComboBox SelectedItem="{Binding LinuxInputMode, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.LinuxInputModes}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=hook:LinuxMode}">
                                     <TextBlock Text="{Binding ShownString}" />
@@ -122,28 +119,20 @@
                 <Button Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshInputPermissionsCommand}" />
             </ui:FASettingsExpander.Footer>
             <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AccessibilityPermission}"
-                                           Description="{x:Static i18n:Strings.AccessibilityPermissionDescription}"
-                                           IsVisible="{Binding ShowAccessibilityPermission}">
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AccessibilityPermission}" Description="{x:Static i18n:Strings.AccessibilityPermissionDescription}" IsVisible="{Binding ShowAccessibilityPermission}">
                     <ui:FASettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="{Binding AccessibilityPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <Button Content="{x:Static i18n:Strings.RequestPermission}"
-                                    Command="{Binding RequestAccessibilityPermissionCommand}"
-                                    IsVisible="{Binding CanRequestAccessibilityPermission}" />
+                            <Button Content="{x:Static i18n:Strings.RequestPermission}" Command="{Binding RequestAccessibilityPermissionCommand}" IsVisible="{Binding CanRequestAccessibilityPermission}" />
                         </StackPanel>
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="/dev/input/event*"
-                                           Description="{x:Static i18n:Strings.KeyboardMonitoringPermissionDescription}"
-                                           IsVisible="{Binding ShowInputDevicePermissions}">
+                <ui:FASettingsExpanderItem Content="/dev/input/event*" Description="{x:Static i18n:Strings.KeyboardMonitoringPermissionDescription}" IsVisible="{Binding ShowInputDevicePermissions}">
                     <ui:FASettingsExpanderItem.Footer>
                         <TextBlock Text="{Binding KeyboardMonitoringPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="/dev/uinput"
-                                           Description="{x:Static i18n:Strings.InputSimulationPermissionDescription}"
-                                           IsVisible="{Binding ShowInputDevicePermissions}">
+                <ui:FASettingsExpanderItem Content="/dev/uinput" Description="{x:Static i18n:Strings.InputSimulationPermissionDescription}" IsVisible="{Binding ShowInputDevicePermissions}">
                     <ui:FASettingsExpanderItem.Footer>
                         <TextBlock Text="{Binding InputSimulationPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </ui:FASettingsExpanderItem.Footer>
