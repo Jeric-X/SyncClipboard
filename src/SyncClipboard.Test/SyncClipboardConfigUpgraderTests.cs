@@ -1,5 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Shared.Models;
 using System.Text.Json;
@@ -30,6 +33,46 @@ public class SyncClipboardConfigUpgraderTests
         {
             Directory.Delete(_directory, recursive: true);
         }
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow(0)]
+    [DataRow(1)]
+    public void StartupServices_UpgradeExistingConfiguration(int? version)
+    {
+        var legacy = JsonNode.Parse("""
+            {
+              "Program": { "Language": "en-US" },
+              "ClipboardFactory": { "ProhibitSources": ["Avalonia", "xclip"] }
+            }
+            """)!.AsObject();
+        if (version is not null)
+            legacy[SyncClipboardConfigUpgrader.VersionPropertyName] = version.Value;
+        var original = legacy.ToJsonString();
+        File.WriteAllText(_configPath, original);
+
+        // Linux and macOS both use this startup registration. Resolve through DI so the
+        // injected migration collection is exercised instead of the parameterless constructor.
+        var services = new ServiceCollection();
+        AppCore.ConfigCommonService(services);
+        using var provider = services.BuildServiceProvider();
+        var upgrader = provider.GetRequiredService<SyncClipboardConfigUpgrader>();
+        var manager = new ConfigManager(_configPath, upgrader);
+
+        var root = ReadRoot();
+        Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
+        Assert.AreEqual("en-US", manager.GetConfig<ProgramConfig>().Language);
+        Assert.AreEqual(ClipboardReadMethod.WlClipboard, manager.GetConfig<ClipboardFactoryConfig>().ReadMethod);
+        Assert.AreEqual(ClipboardWriteMethod.Avalonia, manager.GetConfig<ClipboardFactoryConfig>().WriteMethod);
+        Assert.IsFalse(root[ClipboardFactoryConfig.ConfigKey]!.AsObject().ContainsKey("ProhibitSources"));
+
+        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
+        Assert.AreEqual(original, File.ReadAllText(backup));
+        var upgraded = File.ReadAllText(_configPath);
+        manager.Reload();
+        Assert.AreEqual(upgraded, File.ReadAllText(_configPath));
+        Assert.HasCount(1, Directory.GetFiles(Path.Combine(_directory, "config_backup"), "*.json"));
     }
 
     [TestMethod]
