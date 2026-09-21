@@ -233,10 +233,12 @@ paru -Sy syncclipboard-desktop
 安装后从菜单中启动即可。如果在命令行中使用命令`syncclipboard-desktop`启动报错，请将环境变量`LANG`设置为`en_US.UTF-8`，以`LANG=en_US.UTF-8 syncclipboard-desktop`来启动。
 
 #### 故障排除
+
+- 要求系统使用 **glibc 2.38 或更高版本**，可运行 `ldd --version` 查看当前版本。
 - 剪贴板同步不及时、无法同步、上传乱码：建议在系统内安装`xclip`（X11）或`wl-clipboard`（Wayland），SyncClipboard会使用这些工具辅助获取剪贴板以增强稳定性。使用`xclip -version`或`wl-paste -version`命令确认是否已安装
 - 使用`deb`、`rpm`安装包时，升级安装失败时，请先删除旧版再安装新版
 - 使用`AppImage`包时，请确认AppImage文件具有可执行权限
-- 快捷键在Wayland可能无法使用
+- Wayland 下快捷键或使用SyncClipboard间接触发的复制、粘贴无法使用时，请先检查[输入设备权限](docs/Linux-Input-Permissions.md)。
 
 > [!NOTE]  
 > 需要彻底删除SyncClipboard时请手动删除配置文件和临时文件目录：  

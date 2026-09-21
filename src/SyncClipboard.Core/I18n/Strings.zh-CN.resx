@@ -1343,4 +1343,21 @@ Shift + 左键：选中连续范围</value>
   <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi 名称权限被拒绝</value></data>
   <data name="WifiUnsupported" xml:space="preserve"><value>当前环境无法检测 Wi-Fi 名称，IP 规则仍可使用</value></data>
   <data name="RuleAccountMissing" xml:space="preserve"><value>规则“{0}”已匹配，但其目标账号不存在，已移除同步账号</value></data>
+  <data name="PermissionManagement" xml:space="preserve"><value>权限管理</value></data>
+  <data name="AccessibilityPermission" xml:space="preserve"><value>辅助功能</value></data>
+  <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>用于模拟复制、粘贴以及读取其他窗口的信息。</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>需要读写权限，用于监听全局快捷键</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>需要写权限，用于模拟按键实现复制、粘贴等功能</value></data>
+  <data name="InputPermissionAvailable" xml:space="preserve"><value>已允许访问</value></data>
+  <data name="InputPermissionDenied" xml:space="preserve"><value>未允许访问</value></data>
+  <data name="InputPermissionUnavailable" xml:space="preserve"><value>设备不可用</value></data>
+  <data name="InputPermissionPartial" xml:space="preserve"><value>部分设备可访问</value></data>
+  <data name="InputPermissionNotRequired" xml:space="preserve"><value>无需额外权限</value></data>
+  <data name="InputPermissionUnknown" xml:space="preserve"><value>无法确认</value></data>
+  <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>无法模拟键盘输入，请在系统设置中检查输入权限。</value></data>
+  <data name="GlobalHotkeyEngine" xml:space="preserve"><value>全局快捷键后端（更改后重启生效）</value></data>
+  <data name="GlobalHotkeyEngineAutomaticDescription" xml:space="preserve"><value>X11 下使用 XRecord，Wayland 下使用 libinput/uinput。</value></data>
+  <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Wayland 下依赖 XWayland，即使支持XWayland也可能不生效</value></data>
+  <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>通过 libinput 监听、uinput 模拟输入，需要输入设备权限</value></data>
+  <data name="LinuxInputSimulationPermissionRequired" xml:space="preserve"><value>模拟按键需要 /dev/uinput 的写权限，请确认设备存在，并为当前用户授予写权限。可在应用的「系统设置」中查看权限状态。</value></data>
 </root>
