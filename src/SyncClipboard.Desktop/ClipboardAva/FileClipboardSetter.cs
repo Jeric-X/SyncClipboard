@@ -7,12 +7,17 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class FileClipboardSetter : ClipboardSetterBase<FileProfile>, IClipboardSetter<GroupProfile>
 {
+    protected override Task WriteWithWlClipboardAsync(
+        WlClipboardWriter writer, ClipboardMetaInfomation metaInfomation, CancellationToken token) =>
+        writer.WriteFilesAsync(metaInfomation.Files ?? [], token);
+
     public override async Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
         if (metaInfomation.Files is null || metaInfomation.Files.Length == 0)

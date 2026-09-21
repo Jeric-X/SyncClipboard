@@ -13,10 +13,10 @@ namespace SyncClipboard.Desktop.ClipboardAva.Fingerprint;
 /// </summary>
 [SupportedOSPlatform("linux")]
 internal class LinuxClipboardFingerprintProvider(
-    MultiSourceClipboardReader clipboardReader,
+    ClipboardReaderSelector clipboardReader,
     ILogger logger) : IClipboardFingerprintProvider
 {
-    private readonly MultiSourceClipboardReader _clipboardReader = clipboardReader;
+    private readonly ClipboardReaderSelector _clipboardReader = clipboardReader;
     private readonly ILogger _logger = logger;
 
     public async Task<int?> GetClipboardFingerprint(CancellationToken ctk)

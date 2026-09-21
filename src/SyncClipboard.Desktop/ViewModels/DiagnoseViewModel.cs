@@ -27,7 +27,7 @@ internal partial class DiagnoseViewModel : ObservableObject
     private readonly IClipboardChangingListener _clipboardListener;
     private readonly ConfigManager _configManager;
     private readonly SingletonTask refreshTask;
-    private readonly MultiSourceClipboardReader Clipboard;
+    private readonly ClipboardReaderSelector Clipboard;
 
     public DiagnoseViewModel()
     {
@@ -35,7 +35,7 @@ internal partial class DiagnoseViewModel : ObservableObject
 
         _clipboardListener = App.Current.Services.GetRequiredService<IClipboardChangingListener>();
         _configManager = App.Current.Services.GetRequiredService<ConfigManager>();
-        Clipboard = App.Current.Services.GetRequiredService<MultiSourceClipboardReader>();
+        Clipboard = App.Current.Services.GetRequiredService<ClipboardReaderSelector>();
         _configManager.ListenConfig<ProgramConfig>(AotuRefreshChanged);
         _config = _configManager.GetConfig<ProgramConfig>();
 

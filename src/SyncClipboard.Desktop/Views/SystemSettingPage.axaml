@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
+<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -107,6 +107,35 @@
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.Proxy}">
                     <ui:FASettingsExpanderItem.Footer>
                         <Button Click="ShowProxySettingDialog" Content="{x:Static i18n:Strings.Config}" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardAccess}" IsExpanded="True" IsVisible="{Binding ShowClipboardSettings}">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ClipboardReadMethod}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding ClipboardReadingMethod, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.ClipboardReadMethods}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=m:ClipboardReadMethod}">
+                                    <TextBlock Text="{Binding ShownString}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ClipboardWriteMethod}" Description="{x:Static i18n:Strings.ClipboardWriteMethodDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ComboBox SelectedItem="{Binding ClipboardWritingMethod, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.ClipboardWriteMethods}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="{x:Type m:LocaleString, x:TypeArguments=m:ClipboardWriteMethod}">
+                                    <TextBlock Text="{Binding ShownString}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>

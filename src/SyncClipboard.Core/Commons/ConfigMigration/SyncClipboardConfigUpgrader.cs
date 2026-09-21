@@ -18,7 +18,7 @@ public sealed class SyncClipboardConfigUpgrader
     private readonly Dictionary<int, ISyncClipboardConfigMigration> _migrations;
 
     public SyncClipboardConfigUpgrader()
-        : this([new SyncClipboardConfigMigrationV0ToV1()])
+        : this([new SyncClipboardConfigMigrationV0ToV1(), new SyncClipboardConfigMigrationV1ToV2()])
     {
     }
 

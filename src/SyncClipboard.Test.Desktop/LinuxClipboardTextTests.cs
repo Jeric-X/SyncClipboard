@@ -67,11 +67,12 @@ public class LinuxClipboardTextTests
 
     private async Task<Profile> ReadLinuxTextProfile(IClipboardReader reader, string[] formats)
     {
+        Mock.Get(reader).SetupGet(r => r.SourceName).Returns("Avalonia");
         Directory.CreateDirectory(_configDirectory);
         var config = (ConfigManager)Activator.CreateInstance(typeof(ConfigManager),
             BindingFlags.Instance | BindingFlags.NonPublic, null,
             [Path.Combine(_configDirectory, "config.json"), new SyncClipboardConfigUpgrader()], null)!;
-        var clipboard = new MultiSourceClipboardReader([reader], config);
+        var clipboard = new ClipboardReaderSelector([reader], config);
         using var services = new ServiceCollection()
             .AddSingleton(Mock.Of<ILogger>())
             .AddSingleton(clipboard)

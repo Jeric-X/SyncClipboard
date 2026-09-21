@@ -1360,4 +1360,16 @@ Shift + 左键：选中连续范围</value>
   <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Wayland 下依赖 XWayland，即使支持XWayland也可能不生效</value></data>
   <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>通过 libinput 监听、uinput 模拟输入，需要输入设备权限</value></data>
   <data name="LinuxInputSimulationPermissionRequired" xml:space="preserve"><value>模拟按键需要 /dev/uinput 的写权限，请确认设备存在，并为当前用户授予写权限。可在应用的「系统设置」中查看权限状态。</value></data>
+  <data name="ClipboardWriteMethod" xml:space="preserve">
+    <value>剪贴板写入方式</value>
+  </data>
+  <data name="ClipboardWriteMethodDescription" xml:space="preserve">
+    <value>wl-clipboard 需要安装 wl-copy 并运行在 Wayland 会话中，以单一格式写入文本、PNG 图片或文件列表。</value>
+  </data>
+  <data name="ClipboardAccess" xml:space="preserve">
+    <value>剪贴板读写</value>
+  </data>
+  <data name="ClipboardReadMethod" xml:space="preserve">
+    <value>剪贴板读取方式</value>
+  </data>
 </root>

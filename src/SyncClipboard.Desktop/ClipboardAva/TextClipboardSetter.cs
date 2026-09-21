@@ -9,6 +9,10 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
 {
+    protected override Task WriteWithWlClipboardAsync(
+        WlClipboardWriter writer, ClipboardMetaInfomation metaInfomation, CancellationToken token) =>
+        writer.WriteTextAsync(metaInfomation.Text ?? "", token);
+
     public override Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
         if (package is not DataTransfer dataTransfer)

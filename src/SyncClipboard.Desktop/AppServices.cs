@@ -35,7 +35,8 @@ public class AppServices
             return new Services.AvaloniaDialog(historyWindow!);
         });
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
-        services.AddSingleton<MultiSourceClipboardReader>();
+        services.AddSingleton<ClipboardReaderSelector>();
+        services.AddSingleton<WlClipboardWriter>();
         services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();
 
         // 注册剪贴板指纹提供者

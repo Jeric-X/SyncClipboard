@@ -1,7 +1,9 @@
 using Avalonia.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using System;
 using System.Runtime.Versioning;
 using System.Text;
@@ -13,6 +15,9 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<ProfileType> where ProfileType : Profile
 {
     public abstract Task FillPackage(object package, ClipboardMetaInfomation metaInfomation);
+
+    protected abstract Task WriteWithWlClipboardAsync(
+        WlClipboardWriter writer, ClipboardMetaInfomation metaInfomation, CancellationToken token);
 
     private static async Task SetPackageToClipboard(DataTransfer transfer, CancellationToken ctk)
     {
@@ -45,6 +50,24 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
 
     public virtual async Task SetLocalClipboard(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
+        if (OperatingSystem.IsLinux() && App.Current.Services.GetRequiredService<ConfigManager>()
+            .GetConfig<ClipboardFactoryConfig>().WriteMethod == ClipboardWriteMethod.WlClipboard)
+        {
+            await NativeClipboardAccess.Semaphore.WaitAsync(ctk);
+            try
+            {
+                await WriteWithWlClipboardAsync(
+                    App.Current.Services.GetRequiredService<WlClipboardWriter>(), metaInfomation, ctk);
+            }
+            finally
+            {
+                NativeClipboardAccess.Semaphore.Release();
+            }
+
+            App.Current.Services.GetRequiredService<ClipboardListener>().TriggerClipboardChangedEvent();
+            return;
+        }
+
         var dataTransfer = new DataTransfer();
         await FillPackage(dataTransfer, metaInfomation);
         await ClipboardSetterBase<ProfileType>.SetPackageToClipboard(dataTransfer, ctk);

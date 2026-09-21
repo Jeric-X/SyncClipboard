@@ -90,7 +90,7 @@ public class SyncClipboardConfigUpgraderTests
         new SyncClipboardConfigUpgrader().Upgrade(_configPath);
 
         var root = ReadRoot();
-        Assert.AreEqual(1, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
+        Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
 
         var config = root["FileFilter"]!.Deserialize<FileFilterConfig>();
         Assert.IsNotNull(config);
@@ -107,9 +107,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_DoesNotBackUpOrRewriteCurrentConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": {
                 "Language": "en-US"
               }
@@ -150,9 +150,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsMalformedKnownConfigurationSection()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": "bad",
               "History": {
                 "EnableHistory": true
@@ -173,9 +173,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsNullHotkeyCollection()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Hotkey": {
                 "Hotkeys": null
               }
@@ -194,9 +194,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsNullStringInRegisteredConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": {
                 "Language": null
               }
@@ -214,9 +214,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsNullNestedCollectionItem()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "NetworkAccountSwitch": {
                 "Rules": [null]
               }
@@ -234,9 +234,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsUndefinedEnumValue()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "NetworkAccountSwitch": {
                 "NoMatchAction": 99
               }
@@ -254,9 +254,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_AcceptsEmptyHotkeyCollection()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Hotkey": {
                 "Hotkeys": {}
               }
@@ -273,9 +273,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Reload_InvalidSectionPreservesAndRestoresActiveConfiguration()
     {
-        const string validJson = """
+        var validJson = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": {
                 "Language": "en-US"
               },
@@ -287,9 +287,9 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, validJson);
         var manager = new ConfigManager(_configPath, new SyncClipboardConfigUpgrader());
 
-        const string invalidJson = """
+        var invalidJson = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": "bad",
               "History": {
                 "EnableHistory": true
@@ -313,9 +313,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsMalformedSavedAccountConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "SavedAccounts": {
                 "WebDAV": {
                   "1": "bad"
@@ -352,9 +352,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsInvalidRegexInCurrentConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "FileFilter": {
                 "FileFilterMode": "BlackList",
                 "WhiteList": [],

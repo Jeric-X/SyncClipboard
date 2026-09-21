@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva;
@@ -16,6 +17,14 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
 {
     private readonly ILogger _logger = logger;
     private const string LOG_TAG = nameof(ImageClipboardSetter);
+
+    protected override Task WriteWithWlClipboardAsync(
+        WlClipboardWriter writer, ClipboardMetaInfomation metaInfomation, CancellationToken token)
+    {
+        if (metaInfomation.Files is not { Length: > 0 } files)
+            throw new ArgumentException("No image to copy.", nameof(metaInfomation));
+        return writer.WriteImageAsync(files[0], token);
+    }
 
     public override async Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
