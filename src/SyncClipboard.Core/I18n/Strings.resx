@@ -1343,4 +1343,21 @@ Choose whether to use the default location or select another folder.</value>
   <data name="WifiDenied" xml:space="preserve"><value>Wi-Fi access was denied</value></data>
   <data name="WifiUnsupported" xml:space="preserve"><value>Wi-Fi name detection is unavailable; IP rules still work</value></data>
   <data name="RuleAccountMissing" xml:space="preserve"><value>Rule “{0}” matched but its target account no longer exists; sync account removed</value></data>
+  <data name="PermissionManagement" xml:space="preserve"><value>Permission management</value></data>
+  <data name="AccessibilityPermission" xml:space="preserve"><value>Accessibility</value></data>
+  <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>Allows simulated copy/paste and access to information about other windows.</value></data>
+  <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Requires read/write access to monitor global hotkeys.</value></data>
+  <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Requires write access to simulate key presses for copying, pasting, and other operations.</value></data>
+  <data name="InputPermissionAvailable" xml:space="preserve"><value>Access allowed</value></data>
+  <data name="InputPermissionDenied" xml:space="preserve"><value>Access denied</value></data>
+  <data name="InputPermissionUnavailable" xml:space="preserve"><value>Device unavailable</value></data>
+  <data name="InputPermissionPartial" xml:space="preserve"><value>Some devices accessible</value></data>
+  <data name="InputPermissionNotRequired" xml:space="preserve"><value>No extra permission needed</value></data>
+  <data name="InputPermissionUnknown" xml:space="preserve"><value>Unable to determine</value></data>
+  <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>Keyboard input cannot be simulated. Check input permissions in System settings.</value></data>
+  <data name="GlobalHotkeyEngine" xml:space="preserve"><value>Global hotkey backend (restart required after changes)</value></data>
+  <data name="GlobalHotkeyEngineAutomaticDescription" xml:space="preserve"><value>Uses XRecord on X11 and libinput/uinput on Wayland.</value></data>
+  <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Requires XWayland on Wayland and may not work even when XWayland is supported.</value></data>
+  <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>Uses libinput to monitor input and uinput to simulate it. Requires input device permissions.</value></data>
+  <data name="LinuxInputSimulationPermissionRequired" xml:space="preserve"><value>Simulating key presses requires write access to /dev/uinput. Make sure the device exists and grant the current user write access. You can check access in the app's System settings.</value></data>
 </root>

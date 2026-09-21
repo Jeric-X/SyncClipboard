@@ -40,6 +40,7 @@ public partial class HotkeyPage : UserControl
                 [!HotkeyInput.HotkeyProperty] = ViewModelBinding("EditingHotkey", BindingMode.TwoWay)
             }
         };
+        dialog.Opened += (sender, _) => (sender.Content as HotkeyInput)?.Focus();
         dialog.SecondaryButtonClick += ClearButtonClick;
         await dialog.ShowAsync(App.Current.MainWindow);
     }

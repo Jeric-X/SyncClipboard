@@ -57,6 +57,7 @@ public partial class SystemSettingViewModel : ObservableObject
     private ProgramConfig programConfig;
     partial void OnProgramConfigChanged(ProgramConfig value)
     {
+        LinuxInputMode = LocaleString<SharpHook.Data.LinuxMode>.Match(LinuxInputModes, value.LinuxInputMode);
         HideWindowOnStartUp = value.HideWindowOnStartup;
         var isSynchronizingStartUpSettings = _isSynchronizingStartUpSettings;
         _isSynchronizingStartUpSettings = true;
@@ -182,6 +183,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
         _configManager.ListenConfig<ProgramConfig>(config => ProgramConfig = config);
         language = Languages.FirstOrDefault(x => x.LocaleTag == programConfig.Language) ?? Languages[0];
+        linuxInputMode = LocaleString<SharpHook.Data.LinuxMode>.Match(LinuxInputModes, programConfig.LinuxInputMode);
         font = programConfig.Font;
         theme = Themes.FirstOrDefault(x => x.Key == programConfig.Theme) ?? Themes[0];
         hideWindowOnStartUp = programConfig.HideWindowOnStartup;

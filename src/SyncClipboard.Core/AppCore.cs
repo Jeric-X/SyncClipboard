@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using NativeNotification;
 using NativeNotification.Interface;
 using Quartz;
-using SharpHook;
+using SharpHook.Providers;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
@@ -160,12 +160,31 @@ namespace SyncClipboard.Core
             }
         }
 
+        private void InitLinuxInputMode(ConfigManager configManager)
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                // Select before any permission query, global hook or input simulator loads the backend.
+                try
+                {
+                    var mode = configManager.GetConfig<ProgramConfig>().LinuxInputMode;
+                    var result = UioHookProvider.Instance.SetLinuxMode(mode);
+                    Logger.Write(LOG_TAG, $"Linux input mode: {mode}, initialization result: {result}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Write(LOG_TAG, $"Failed to select Linux input backend: {ex}");
+                }
+            }
+        }
+
         public void Run()
         {
             LogEnvInfo();
             InitAppImageEntry();
             var configManager = Services.GetRequiredService<ConfigManager>();
             InitLanguage(configManager);
+            InitLinuxInputMode(configManager);
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             var mainWindow = Services.GetRequiredService<IMainWindow>();
@@ -370,8 +389,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<LoggerOption>();
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
-            services.AddSingleton<IEventSimulator, EventSimulator>();
-            services.AddTransient<VirtualKeyboard>();
+            services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
+            services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();

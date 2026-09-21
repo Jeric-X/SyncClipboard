@@ -1,4 +1,5 @@
-﻿using SyncClipboard.Shared.Attributes;
+﻿using SharpHook.Data;
+using SyncClipboard.Shared.Attributes;
 
 namespace SyncClipboard.Core.Models.UserConfigs;
 
@@ -19,5 +20,6 @@ public record ProgramConfig
     public bool StartUpAsAdministrator { get; set; } = false;
     public bool DiagnoseMode { get; set; } = false;
     public bool DiagnosePageAutoRefresh { get; set; } = false;
+    public LinuxMode LinuxInputMode { get; set; } = LinuxMode.AutoXRecord;
     public string Theme { get; set; } = "";
 }
