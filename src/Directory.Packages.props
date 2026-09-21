@@ -24,9 +24,9 @@
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.1" />
     <PackageVersion Include="CodeCracker.CSharp" Version="1.1.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.20" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia" Version="12.1.2" />

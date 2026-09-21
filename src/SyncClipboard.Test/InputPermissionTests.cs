@@ -33,7 +33,7 @@ public class InputPermissionTests
         provider.Setup(x => x.GetLinuxMode()).Returns(mode);
         var deviceChecks = 0;
         var permissions = new Mock<IInputPermissionProvider>();
-        permissions.Setup(x => x.GetStatus()).Returns(() => InputPermissionProvider.GetLinuxStatus(
+        permissions.Setup(x => x.GetSimulationStatus()).Returns(() => InputPermissionProvider.GetLinuxStatus(
             provider.Object, isWayland, () =>
             {
                 deviceChecks++;
@@ -214,6 +214,41 @@ public class InputPermissionTests
             var allowed = InputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
             Assert.AreEqual(InputPermissionState.Available, allowed.KeyboardMonitoring);
             Assert.AreEqual("input unchanged", File.ReadAllText(input));
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
+    public void SimulationPermission_RequiresOnlyWriteAccessToUinput()
+    {
+        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        {
+            Assert.Inconclusive("Requires Unix file permissions without root privileges.");
+            return;
+        }
+
+        var directory = Directory.CreateTempSubdirectory();
+        var output = Path.Combine(directory.FullName, "uinput");
+        try
+        {
+            File.WriteAllText(output, "output unchanged");
+            File.SetUnixFileMode(output, UnixFileMode.UserWrite);
+            var status = InputPermissionProvider.GetLinuxSimulationStatus(output);
+            Assert.IsTrue(status.CanSimulateInput);
+            Assert.AreEqual(InputPermissionState.Unknown, status.KeyboardMonitoring);
+
+            File.SetUnixFileMode(output, UnixFileMode.UserRead);
+            status = InputPermissionProvider.GetLinuxSimulationStatus(output);
+            Assert.AreEqual(InputPermissionState.Denied, status.InputSimulation);
+            Assert.IsFalse(status.CanSimulateInput);
+            Assert.AreEqual("output unchanged", File.ReadAllText(output));
+
+            File.Delete(output);
+            Assert.AreEqual(InputPermissionState.Unavailable,
+                InputPermissionProvider.GetLinuxSimulationStatus(output).InputSimulation);
         }
         finally
         {

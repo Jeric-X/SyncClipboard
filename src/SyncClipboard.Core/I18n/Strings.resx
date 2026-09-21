@@ -1348,7 +1348,6 @@ Choose whether to use the default location or select another folder.</value>
   <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>Allows simulated copy/paste and access to information about other windows.</value></data>
   <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Requires read/write access to monitor global hotkeys.</value></data>
   <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Requires write access to simulate key presses for copying, pasting, and other operations.</value></data>
-  <data name="InputPermissionsDescription" xml:space="preserve"><value>Checks existing access only. Refresh after changing system permissions. Device access alone does not guarantee that shortcuts will work.</value></data>
   <data name="InputPermissionAvailable" xml:space="preserve"><value>Access allowed</value></data>
   <data name="InputPermissionDenied" xml:space="preserve"><value>Access denied</value></data>
   <data name="InputPermissionUnavailable" xml:space="preserve"><value>Device unavailable</value></data>
@@ -1360,4 +1359,5 @@ Choose whether to use the default location or select another folder.</value>
   <data name="GlobalHotkeyEngineAutomaticDescription" xml:space="preserve"><value>Uses XRecord on X11 and libinput/uinput on Wayland.</value></data>
   <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Requires XWayland on Wayland and may not work even when XWayland is supported.</value></data>
   <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>Uses libinput to monitor input and uinput to simulate it. Requires input device permissions.</value></data>
+  <data name="LinuxInputSimulationPermissionRequired" xml:space="preserve"><value>Simulating key presses requires write access to /dev/uinput. Make sure the device exists and grant the current user write access. You can check access in the app's System settings.</value></data>
 </root>

@@ -7,7 +7,7 @@
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
              xmlns:m="using:SyncClipboard.Core.Models"
-             xmlns:hook="clr-namespace:SharpHook.Data;assembly=SharpHook"
+             xmlns:hook="using:SharpHook.Data"
              xmlns:v="using:SyncClipboard.Desktop.Views"
              xmlns:Sys="using:System"
              xmlns:SysGeneric="using:System.Collections.Generic"
@@ -119,8 +119,7 @@
                 <ui:FAFontIconSource Glyph="&#xE72E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Footer>
-                <Button Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshInputPermissionsCommand}"
-                        ToolTip.Tip="{x:Static i18n:Strings.InputPermissionsDescription}" />
+                <Button Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshInputPermissionsCommand}" />
             </ui:FASettingsExpander.Footer>
             <ui:FASettingsExpander.Items>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AccessibilityPermission}"

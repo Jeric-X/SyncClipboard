@@ -160,12 +160,8 @@ namespace SyncClipboard.Core
             }
         }
 
-        public void Run()
+        private void InitLinuxInputMode(ConfigManager configManager)
         {
-            LogEnvInfo();
-            InitAppImageEntry();
-            var configManager = Services.GetRequiredService<ConfigManager>();
-            InitLanguage(configManager);
             if (OperatingSystem.IsLinux())
             {
                 // Select before any permission query, global hook or input simulator loads the backend.
@@ -180,6 +176,15 @@ namespace SyncClipboard.Core
                     Logger.Write(LOG_TAG, $"Failed to select Linux input backend: {ex}");
                 }
             }
+        }
+
+        public void Run()
+        {
+            LogEnvInfo();
+            InitAppImageEntry();
+            var configManager = Services.GetRequiredService<ConfigManager>();
+            InitLanguage(configManager);
+            InitLinuxInputMode(configManager);
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             var mainWindow = Services.GetRequiredService<IMainWindow>();

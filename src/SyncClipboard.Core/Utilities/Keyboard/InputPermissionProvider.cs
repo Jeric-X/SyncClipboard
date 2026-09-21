@@ -5,7 +5,7 @@ using SyncClipboard.Core.Models.Keyboard;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
-/// <summary>Checks existing access and requests macOS authorization only on explicit user action.</summary>
+/// <summary>Checks existing access and provides an explicit macOS authorization request.</summary>
 public sealed class InputPermissionProvider : IInputPermissionProvider
 {
     public void RequestAccessibilityPermission()
@@ -16,7 +16,11 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
         }
     }
 
-    public InputPermissionStatus GetStatus()
+    public InputPermissionStatus GetStatus() => GetStatus(checkKeyboardMonitoring: true);
+
+    public InputPermissionStatus GetSimulationStatus() => GetStatus(checkKeyboardMonitoring: false);
+
+    private static InputPermissionStatus GetStatus(bool checkKeyboardMonitoring)
     {
         if (OperatingSystem.IsMacOS())
         {
@@ -28,7 +32,9 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
             var isWayland = string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland",
                 StringComparison.OrdinalIgnoreCase) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
             return GetLinuxStatus(UioHookProvider.Instance, isWayland,
-                () => GetLinuxDeviceStatus("/dev/input", "/dev/uinput"));
+                () => checkKeyboardMonitoring
+                    ? GetLinuxDeviceStatus("/dev/input", "/dev/uinput")
+                    : GetLinuxSimulationStatus("/dev/uinput"));
         }
 
         return new(InputPermissionState.NotRequired, InputPermissionState.NotRequired, InputPermissionState.NotRequired);
@@ -109,8 +115,11 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
             monitoring = InputPermissionState.Unknown;
         }
 
-        return new(InputPermissionState.NotRequired, monitoring, CheckDeviceAccess(uinputPath, FileAccess.Write));
+        return GetLinuxSimulationStatus(uinputPath) with { KeyboardMonitoring = monitoring };
     }
+
+    internal static InputPermissionStatus GetLinuxSimulationStatus(string uinputPath) => new(
+        InputPermissionState.NotRequired, InputPermissionState.Unknown, CheckDeviceAccess(uinputPath, FileAccess.Write));
 
     private static InputPermissionState CheckDeviceAccess(string path, FileAccess access)
     {

@@ -6,6 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using System.Runtime.ExceptionServices;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
@@ -13,16 +14,25 @@ public sealed class VirtualKeyboard : IDisposable
 {
     private readonly IInputPermissionProvider _permissions;
     private readonly Func<IEventSimulator> _createSimulator;
+    private readonly Action? _showPermissionNotice;
     private readonly Lock _lock = new();
     private IEventSimulator? _simulator;
     private bool _disposed;
+    private bool _permissionPrompted;
 
-    public VirtualKeyboard(IInputPermissionProvider permissions) : this(permissions, CreateSimulator) { }
+    public VirtualKeyboard(IInputPermissionProvider permissions, IThreadDispatcher dispatcher, IGlobalDialog dialog)
+        : this(permissions, CreateSimulator, () => DelegateExtention.SafeFireAndForget(
+            () => dispatcher.RunOnMainThreadAsync(() => dialog.ShowMessageAsync(
+                Strings.PermissionManagement, Strings.LinuxInputSimulationPermissionRequired, Strings.Confirm)),
+            nameof(VirtualKeyboard)))
+    { }
 
-    internal VirtualKeyboard(IInputPermissionProvider permissions, Func<IEventSimulator> createSimulator)
+    internal VirtualKeyboard(IInputPermissionProvider permissions, Func<IEventSimulator> createSimulator,
+        Action? showPermissionNotice = null)
     {
         _permissions = permissions;
         _createSimulator = createSimulator;
+        _showPermissionNotice = showPermissionNotice;
     }
 
     private static IEventSimulator CreateSimulator()
@@ -34,9 +44,17 @@ public sealed class VirtualKeyboard : IDisposable
         return EventSimulator.Create(Env.SoftName);
     }
 
-    public void Copy() => SendShortcut(KeyCode.VcC);
+    public void Copy()
+    {
+        var modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
+        SendShortcut(modifier, KeyCode.VcC);
+    }
 
-    public void Paste() => SendShortcut(KeyCode.VcV);
+    public void Paste()
+    {
+        var modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
+        SendShortcut(modifier, KeyCode.VcV);
+    }
 
     public void ReleaseKeys(Hotkey hotkey)
     {
@@ -54,32 +72,44 @@ public sealed class VirtualKeyboard : IDisposable
         });
     }
 
-    private void SendShortcut(KeyCode key)
+    public void SendShortcut(params KeyCode[] keys)
     {
+        ArgumentNullException.ThrowIfNull(keys);
+        if (keys.Length == 0) return;
+
         Execute(simulator =>
         {
-            var modifier = OperatingSystem.IsMacOS() ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
-            var result = UioHookResult.Success;
+            Exception? error = null;
+            var attempted = 0;
             try
             {
-                result = simulator.SimulateKeyPress(modifier);
-                if (result == UioHookResult.Success) result = simulator.SimulateKeyPress(key);
+                foreach (var key in keys)
+                {
+                    // Also release a key whose press failed: it may have partially reached the OS.
+                    attempted++;
+                    EnsureSuccess(simulator.SimulateKeyPress(key));
+                }
+            }
+            catch (Exception ex)
+            {
+                error = ex;
             }
             finally
             {
-                // Release both keys even when part of the shortcut failed.
-                try
+                for (var i = attempted - 1; i >= 0; i--)
                 {
-                    var keyResult = simulator.SimulateKeyRelease(key);
-                    if (result == UioHookResult.Success) result = keyResult;
-                }
-                finally
-                {
-                    var modifierResult = simulator.SimulateKeyRelease(modifier);
-                    if (result == UioHookResult.Success) result = modifierResult;
+                    try
+                    {
+                        EnsureSuccess(simulator.SimulateKeyRelease(keys[i]));
+                    }
+                    catch (Exception ex)
+                    {
+                        // Keep releasing the remaining keys and preserve the first failure.
+                        error ??= ex;
+                    }
                 }
             }
-            EnsureSuccess(result);
+            if (error is not null) ExceptionDispatchInfo.Throw(error);
         });
     }
 
@@ -90,7 +120,22 @@ public sealed class VirtualKeyboard : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             try
             {
-                if (!_permissions.GetStatus().CanSimulateInput)
+                var status = _permissions.GetSimulationStatus();
+                if (!status.CanSimulateInput && !_permissionPrompted)
+                {
+                    // This service is a singleton. A failed request must not prompt again on the next input.
+                    _permissionPrompted = true;
+                    if (status.Accessibility != InputPermissionState.NotRequired)
+                    {
+                        _permissions.RequestAccessibilityPermission();
+                        status = _permissions.GetSimulationStatus();
+                    }
+                    else
+                    {
+                        _showPermissionNotice?.Invoke();
+                    }
+                }
+                if (!status.CanSimulateInput)
                 {
                     throw new InvalidOperationException(Strings.InputSimulationPermissionRequired);
                 }
