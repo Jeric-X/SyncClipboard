@@ -23,6 +23,7 @@ public class ClipboardSettingsTests
     [DataRow("[\"Avalonia\",\"xclip\",\"wl-clipboard\"]", ClipboardReadMethod.Avalonia)]
     public void LegacySourcesMigrateToFirstEnabledReader(string prohibited, ClipboardReadMethod expected)
     {
+        using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
         try
         {
@@ -33,7 +34,7 @@ public class ClipboardSettingsTests
                 ["ClipboardFactory"] = new JsonObject { ["ProhibitSources"] = JsonNode.Parse(prohibited) }
             };
             File.WriteAllText(path, legacy.ToJsonString());
-            var config = new ConfigManager(path, new SyncClipboardConfigUpgrader()).GetConfig<ClipboardFactoryConfig>();
+            var config = new ConfigManager(path, migrationServices.Upgrader).GetConfig<ClipboardFactoryConfig>();
             Assert.AreEqual(expected, config.ReadMethod);
             Assert.AreEqual(ClipboardWriteMethod.Avalonia, config.WriteMethod);
             Assert.IsFalse(JsonNode.Parse(File.ReadAllText(path))!["ClipboardFactory"]!.AsObject().ContainsKey("ProhibitSources"));
@@ -59,11 +60,12 @@ public class ClipboardSettingsTests
     [TestMethod]
     public void SystemSettingsPersistIndependentReadAndWriteSelections()
     {
+        using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
         try
         {
             var path = Path.Combine(directory.FullName, "config.json");
-            var config = new ConfigManager(path, new SyncClipboardConfigUpgrader());
+            var config = new ConfigManager(path, migrationServices.Upgrader);
             Assert.AreEqual(ClipboardReadMethod.Avalonia, config.GetConfig<ClipboardFactoryConfig>().ReadMethod);
             config.SetConfig(new ClipboardFactoryConfig { ReadMethod = ClipboardReadMethod.WlClipboard });
             using var services = new ServiceCollection().AddSingleton(Mock.Of<ILogger>()).BuildServiceProvider();
@@ -74,7 +76,7 @@ public class ClipboardSettingsTests
             Assert.AreEqual(ClipboardReadMethod.WlClipboard, config.GetConfig<ClipboardFactoryConfig>().ReadMethod);
 
             vm.ClipboardReadingMethod = SystemSettingViewModel.ClipboardReadMethods[1];
-            var saved = new ConfigManager(path, new SyncClipboardConfigUpgrader()).GetConfig<ClipboardFactoryConfig>();
+            var saved = new ConfigManager(path, migrationServices.Upgrader).GetConfig<ClipboardFactoryConfig>();
             Assert.AreEqual(ClipboardReadMethod.XClip, saved.ReadMethod);
             Assert.AreEqual(ClipboardWriteMethod.WlClipboard, saved.WriteMethod);
 

@@ -1,6 +1,5 @@
 using Moq;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
@@ -12,20 +11,26 @@ namespace SyncClipboard.Test.Desktop;
 public class ClipboardReaderSelectorTests
 {
     private static readonly string[] SourceNames = ["Avalonia", "xclip", "wl-clipboard"];
+    private ConfigurationTestServices _migrationServices = null!;
     private DirectoryInfo _directory = null!;
     private ConfigManager _config = null!;
 
     [TestInitialize]
     public void Initialize()
     {
+        _migrationServices = new ConfigurationTestServices();
         _directory = Directory.CreateTempSubdirectory("SyncClipboard-reader-");
         _config = (ConfigManager)Activator.CreateInstance(typeof(ConfigManager),
             BindingFlags.Instance | BindingFlags.NonPublic, null,
-            [Path.Combine(_directory.FullName, "config.json"), new SyncClipboardConfigUpgrader()], null)!;
+            [Path.Combine(_directory.FullName, "config.json"), _migrationServices.Upgrader], null)!;
     }
 
     [TestCleanup]
-    public void Cleanup() => _directory.Delete(true);
+    public void Cleanup()
+    {
+        _migrationServices.Dispose();
+        _directory.Delete(true);
+    }
 
     [TestMethod]
     [DataRow(ClipboardReadMethod.Avalonia, "Avalonia")]

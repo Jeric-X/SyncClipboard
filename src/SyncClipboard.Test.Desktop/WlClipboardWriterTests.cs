@@ -1,5 +1,8 @@
+using Avalonia.Input;
 using ImageMagick;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Desktop.ClipboardAva;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 using System.Diagnostics;
 using System.Text;
 
@@ -47,7 +50,7 @@ public class WlClipboardWriterTests
     public async Task TextUsesUtf8StdinWithoutShellExpansionOrNewlineChanges(string text)
     {
         var writer = CreateWriter();
-        await writer.WriteTextAsync(text, CancellationToken.None);
+        await writer.SetTextAsync(text, CancellationToken.None);
         CollectionAssert.AreEqual(TextArguments, ReadArguments());
         CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(text), File.ReadAllBytes(DataPath));
     }
@@ -57,7 +60,9 @@ public class WlClipboardWriterTests
     {
         var files = new[] { Path.Combine(_directory.FullName, "中文 空格#%.pdf"), Path.Combine(_directory.FullName, "b.pdf") };
         var writer = CreateWriter();
-        await writer.WriteFilesAsync(files, CancellationToken.None);
+        var uris = string.Join("\n", files.Select(file => new Uri(file).AbsoluteUri));
+        using var package = CreatePackage("text/uri-list", Encoding.UTF8.GetBytes(uris));
+        await writer.SetDataAsync(package, CancellationToken.None);
         CollectionAssert.AreEqual(FileArguments, ReadArguments());
         var text = File.ReadAllText(DataPath);
         var lines = text.Split("\r\n");
@@ -71,12 +76,21 @@ public class WlClipboardWriterTests
     }
 
     [TestMethod]
-    public async Task ImageIsConvertedToPng()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ImagePackagePrefersPngOverFileAndTextRepresentations(bool sameItem)
     {
-        var path = Path.Combine(_directory.FullName, "image.bmp");
-        using (var original = new MagickImage(MagickColors.Red, 2, 3))
-            original.Write(path);
-        await CreateWriter().WriteImageAsync(path, CancellationToken.None);
+        using var original = new MagickImage(MagickColors.Red, 2, 3);
+        using var package = new DataTransfer();
+        var other = new DataTransferItem();
+        other.SetText("image");
+        other.Set(DataFormat.CreateBytesPlatformFormat("text/uri-list"), Encoding.UTF8.GetBytes("file:///tmp/image.png"));
+        package.Add(other);
+        var image = sameItem ? other : new DataTransferItem();
+        image.Set(DataFormat.CreateBytesPlatformFormat("image/png"), original.ToByteArray(MagickFormat.Png));
+        if (!sameItem) package.Add(image);
+
+        await CreateWriter().SetDataAsync(package, CancellationToken.None);
         CollectionAssert.AreEqual(ImageArguments, ReadArguments());
         using var actual = new MagickImage(File.ReadAllBytes(DataPath));
         Assert.AreEqual(MagickFormat.Png, actual.Format);
@@ -85,11 +99,84 @@ public class WlClipboardWriterTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task FileListTakesPriorityOverEarlierText(bool sameItem)
+    {
+        using var package = new DataTransfer();
+        var text = new DataTransferItem();
+        text.SetText("file name");
+        package.Add(text);
+        var files = sameItem ? text : new DataTransferItem();
+        files.Set(DataFormat.CreateBytesPlatformFormat("text/uri-list"), Encoding.UTF8.GetBytes("file:///tmp/a.pdf"));
+        if (!sameItem) package.Add(files);
+
+        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+
+        CollectionAssert.AreEqual(FileArguments, ReadArguments());
+        Assert.AreEqual("file:///tmp/a.pdf\r\n", File.ReadAllText(DataPath));
+    }
+
+    [TestMethod]
+    public async Task UnsupportedFormatDoesNotPreventWritingText()
+    {
+        using var package = CreatePackage("text/html", Encoding.UTF8.GetBytes("<b>hello</b>"));
+        var text = new DataTransferItem();
+        text.SetText("hello");
+        package.Add(text);
+
+        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+
+        CollectionAssert.AreEqual(TextArguments, ReadArguments());
+        Assert.AreEqual("hello", File.ReadAllText(DataPath));
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("中文\ntext")]
+    public async Task TextSetterPackageIsWrittenWithoutTimestamp(string text)
+    {
+        using var package = new DataTransfer();
+        await new TextClipboardSetter().FillPackage(package, new ClipboardMetaInfomation { Text = text });
+        var timestamp = new DataTransferItem();
+        timestamp.Set(DataFormat.CreateBytesPlatformFormat("TIMESTAMP"), Encoding.UTF8.GetBytes("123"));
+        package.Add(timestamp);
+
+        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+
+        CollectionAssert.AreEqual(TextArguments, ReadArguments());
+        Assert.AreEqual(text, File.ReadAllText(DataPath));
+    }
+
+    [TestMethod]
+    [DataRow("TIMESTAMP")]
+    [DataRow("text/html")]
+    [DataRow("image/jpeg")]
+    public async Task UnsupportedPackageDoesNotStartCommand(string format)
+    {
+        using var package = CreatePackage(format, Encoding.UTF8.GetBytes("123"));
+        var writer = CreateWriter();
+        await Assert.ThrowsAsync<NotSupportedException>(() => writer.SetDataAsync(package, CancellationToken.None));
+        Assert.IsFalse(File.Exists(DataPath));
+    }
+
+    [TestMethod]
+    public async Task CancelledPackageDoesNotStartCommand()
+    {
+        using var package = CreatePackage("image/png", [1, 2]);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var writer = CreateWriter();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => writer.SetDataAsync(package, cancellation.Token));
+        Assert.IsFalse(File.Exists(DataPath));
+    }
+
+    [TestMethod]
     public async Task FailedCommandReportsExitCodeAndStderr()
     {
         var writer = CreateWriter("echo 'Wayland connection failed' >&2\nexit 7", captureInput: false);
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            writer.WriteTextAsync(new string('x', 1024 * 1024), CancellationToken.None));
+            writer.SetTextAsync(new string('x', 1024 * 1024), CancellationToken.None));
         Assert.Contains("7", error.Message);
         Assert.Contains("Wayland connection failed", error.Message);
     }
@@ -98,7 +185,7 @@ public class WlClipboardWriterTests
     public async Task SuccessDoesNotWaitForBackgroundClipboardOwnerToCloseStderr()
     {
         var writer = CreateWriter("sleep 30 >&2 &\necho $! > \"$dir/child-pid\"\nexit 0");
-        await writer.WriteTextAsync("test", TestContext.CancellationTokenSource.Token)
+        await writer.SetTextAsync("test", TestContext.CancellationTokenSource.Token)
             .WaitAsync(TimeSpan.FromSeconds(3), TestContext.CancellationTokenSource.Token);
         Assert.AreEqual("test", File.ReadAllText(DataPath));
     }
@@ -109,8 +196,17 @@ public class WlClipboardWriterTests
         var writer = CreateWriter("echo $$ > \"$dir/child-pid\"\nexec sleep 30", captureInput: false);
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
-            writer.WriteTextAsync(new string('x', 1024 * 1024), cancellation.Token)
+            writer.SetTextAsync(new string('x', 1024 * 1024), cancellation.Token)
                 .WaitAsync(TimeSpan.FromSeconds(3), TestContext.CancellationTokenSource.Token));
+    }
+
+    private static DataTransfer CreatePackage(string format, byte[] data)
+    {
+        var package = new DataTransfer();
+        var item = new DataTransferItem();
+        item.Set(DataFormat.CreateBytesPlatformFormat(format), data);
+        package.Add(item);
+        return package;
     }
 
     private string DataPath => Path.Combine(_directory.FullName, "data");

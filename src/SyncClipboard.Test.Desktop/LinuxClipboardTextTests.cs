@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Desktop;
@@ -67,11 +66,12 @@ public class LinuxClipboardTextTests
 
     private async Task<Profile> ReadLinuxTextProfile(IClipboardReader reader, string[] formats)
     {
+        using var migrationServices = new ConfigurationTestServices();
         Mock.Get(reader).SetupGet(r => r.SourceName).Returns("Avalonia");
         Directory.CreateDirectory(_configDirectory);
         var config = (ConfigManager)Activator.CreateInstance(typeof(ConfigManager),
             BindingFlags.Instance | BindingFlags.NonPublic, null,
-            [Path.Combine(_configDirectory, "config.json"), new SyncClipboardConfigUpgrader()], null)!;
+            [Path.Combine(_configDirectory, "config.json"), migrationServices.Upgrader], null)!;
         var clipboard = new ClipboardReaderSelector([reader], config);
         using var services = new ServiceCollection()
             .AddSingleton(Mock.Of<ILogger>())

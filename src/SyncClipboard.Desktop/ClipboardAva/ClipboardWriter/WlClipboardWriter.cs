@@ -1,4 +1,4 @@
-using ImageMagick;
+using Avalonia.Input;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SyncClipboard.Desktop.ClipboardAva;
+namespace SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 
-internal sealed class WlClipboardWriter
+internal sealed class WlClipboardWriter : IClipboardWriter
 {
     private readonly string _executable;
 
@@ -17,28 +17,46 @@ internal sealed class WlClipboardWriter
 
     internal WlClipboardWriter(string executable) => _executable = executable;
 
-    public async Task WriteTextAsync(string text, CancellationToken token)
+    public string SourceName => "wl-clipboard";
+
+    public async Task SetTextAsync(string text, CancellationToken token)
     {
         using var data = new MemoryStream(Encoding.UTF8.GetBytes(text));
         await CopyAsync(data, "text/plain;charset=utf-8", token);
     }
 
-    public async Task WriteFilesAsync(string[] files, CancellationToken token)
-    {
-        if (files.Length == 0) throw new ArgumentException("No files to copy.", nameof(files));
-        var uris = files.Select(file => new Uri(Path.GetFullPath(file)).AbsoluteUri);
-        using var data = new MemoryStream(Encoding.UTF8.GetBytes(string.Join("\r\n", uris) + "\r\n"));
-        await CopyAsync(data, "text/uri-list", token);
-    }
-
-    public async Task WriteImageAsync(string path, CancellationToken token)
+    public async Task SetDataAsync(DataTransfer transfer, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        using var image = new MagickImage(path);
-        using var data = new MemoryStream();
-        await image.WriteAsync(data, MagickFormat.Png, token);
-        data.Position = 0;
-        await CopyAsync(data, "image/png", token);
+        // Image packages also contain file/URI representations. Prefer the actual image.
+        var pngFormat = DataFormat.CreateBytesPlatformFormat("image/png");
+        var png = transfer.Items.Select(item => item.TryGetRaw(pngFormat)).OfType<byte[]>().FirstOrDefault();
+        if (png is not null)
+        {
+            using var data = new MemoryStream(png);
+            await CopyAsync(data, "image/png", token);
+            return;
+        }
+
+        var uriFormat = DataFormat.CreateBytesPlatformFormat("text/uri-list");
+        var uris = transfer.Items.Select(item => item.TryGetRaw(uriFormat)).OfType<byte[]>().FirstOrDefault();
+        if (uris is not null)
+        {
+            var lines = Encoding.UTF8.GetString(uris).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length == 0) throw new ArgumentException("No files to copy.", nameof(transfer));
+            using var data = new MemoryStream(Encoding.UTF8.GetBytes(string.Join("\r\n", lines) + "\r\n"));
+            await CopyAsync(data, "text/uri-list", token);
+            return;
+        }
+
+        var text = transfer.Items.Select(item => item.TryGetRaw(DataFormat.Text)).OfType<string>().FirstOrDefault();
+        if (text is not null)
+        {
+            await SetTextAsync(text, token);
+            return;
+        }
+
+        throw new NotSupportedException("The clipboard package contains no supported text, PNG image, or file list.");
     }
 
     private async Task CopyAsync(Stream data, string mimeType, CancellationToken token)

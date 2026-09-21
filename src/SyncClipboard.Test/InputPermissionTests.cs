@@ -5,7 +5,6 @@ using SharpHook.Data;
 using SharpHook.Providers;
 using SharpHook.Simulation;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
@@ -77,6 +76,7 @@ public class InputPermissionTests
     [TestMethod]
     public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation()
     {
+        using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
         try
         {
@@ -88,7 +88,7 @@ public class InputPermissionTests
                 .AddSingleton(permissions.Object)
                 .AddSingleton(Mock.Of<ILogger>())
                 .BuildServiceProvider();
-            var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), new SyncClipboardConfigUpgrader());
+            var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
             var viewModel = new SystemSettingViewModel(config, new StaticConfig(Mock.Of<INotificationManager>()), services);
             var propertyChanges = new List<string?>();
             var commandChanges = 0;

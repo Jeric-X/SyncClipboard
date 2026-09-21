@@ -116,7 +116,7 @@
                 <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ClipboardReadMethod}">
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ClipboardReadMethod}" Description="{x:Static i18n:Strings.ClipboardReadMethodDescription}">
                     <ui:FASettingsExpanderItem.Footer>
                         <ComboBox SelectedItem="{Binding ClipboardReadingMethod, Mode=TwoWay}" ItemsSource="{x:Static vm:SystemSettingViewModel.ClipboardReadMethods}">
                             <ComboBox.ItemTemplate>

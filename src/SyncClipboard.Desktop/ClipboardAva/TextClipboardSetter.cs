@@ -1,5 +1,6 @@
 using Avalonia.Input;
-using Avalonia.Input.Platform;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 using SyncClipboard.Core.Models;
 using System;
 using System.Threading;
@@ -9,10 +10,6 @@ namespace SyncClipboard.Desktop.ClipboardAva;
 
 internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
 {
-    protected override Task WriteWithWlClipboardAsync(
-        WlClipboardWriter writer, ClipboardMetaInfomation metaInfomation, CancellationToken token) =>
-        writer.WriteTextAsync(metaInfomation.Text ?? "", token);
-
     public override Task FillPackage(object package, ClipboardMetaInfomation metaInfomation)
     {
         if (package is not DataTransfer dataTransfer)
@@ -35,6 +32,6 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
         {
             return base.SetLocalClipboard(metaInfomation, ctk);
         }
-        return App.Current.Clipboard.SetTextAsync(metaInfomation?.Text ?? "").WaitAsync(ctk);
+        return App.Current.Services.GetRequiredService<ClipboardWriterSelector>().SetTextAsync(metaInfomation?.Text ?? "", ctk);
     }
 }
