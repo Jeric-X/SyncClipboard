@@ -42,7 +42,10 @@ sudo udevadm trigger
 sudo udevadm settle
 ```
 
-用 `getfacl /dev/uinput` 和 `getfacl /dev/input/event0` 查看 ACL，应包含当前用户的 `rw-` 条目。`uaccess` 授予的读写权限覆盖上述需求。重启 SyncClipboard，并在「系统设置」中查看权限状态。ACL 授权作用于该用户的程序，并非只授权 SyncClipboard。
+用 `getfacl /dev/uinput` 和 `getfacl /dev/input/event0` 查看 ACL，应包含当前用户的 `rw-` 条目。`uaccess` 授予的读写权限覆盖上述需求。重启 SyncClipboard，并在「系统设置」中查看权限状态。
+
+> [!WARNING]
+> ACL 授权作用于当前用户，并非只授权 SyncClipboard。
 
 临时测试也可直接使用 [setfacl](https://man7.org/linux/man-pages/man1/setfacl.1.html)，不依赖 udev。在运行 SyncClipboard 的普通用户终端执行；只需要模拟按键时仅执行第二条：
 
@@ -52,3 +55,32 @@ sudo setfacl -m "u:$(id -un):w" /dev/uinput
 ```
 
 设备重建或会话切换后，手动设置的 ACL 可能丢失。若缺少 `getfacl`、`setfacl`，请安装发行版的 `acl` 包（Ubuntu/Debian：`sudo apt install acl`）。
+
+## 取消授权
+
+先完全退出 SyncClipboard，然后在运行它的普通用户终端执行以下操作。
+
+如果配置过上述 udev 规则，先删除规则并重新加载；如果只使用过手动 `setfacl` 授权，跳过这一步：
+
+```shell
+sudo rm /etc/udev/rules.d/70-syncclipboard.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+sudo udevadm settle
+```
+
+删除现有设备上属于当前用户的 ACL 条目，仅对之前授权过的设备执行：
+
+```shell
+sudo setfacl -x "u:$(id -un)" /dev/input/event*
+sudo setfacl -x "u:$(id -un)" /dev/uinput
+```
+
+`-x` 删除指定用户的条目，不会清空其他用户的 ACL 条目。检查结果：
+
+```shell
+getfacl /dev/uinput
+getfacl /dev/input/event0
+```
+
+对应的 `user:你的用户名:...` 条目应已消失。如果仍通过用户组或其他系统规则获得权限，删除这份 ACL 不会取消那些权限。

@@ -42,7 +42,10 @@ sudo udevadm trigger
 sudo udevadm settle
 ```
 
-Check `getfacl /dev/uinput` and `getfacl /dev/input/event0` for a named user entry with `rw-` access. Restart SyncClipboard and refresh its permission status in System settings. Access applies to programs running as that user, not exclusively to SyncClipboard.
+Check `getfacl /dev/uinput` and `getfacl /dev/input/event0` for a named user entry with `rw-` access. Restart SyncClipboard and refresh its permission status in System settings.
+
+> [!WARNING]
+> ACL permissions apply to the current user, not exclusively to SyncClipboard.
 
 For temporary testing, use [setfacl](https://man7.org/linux/man-pages/man1/setfacl.1.html) without udev. Run these from the regular user's terminal; only the second command is needed for simulated input:
 
@@ -52,3 +55,32 @@ sudo setfacl -m "u:$(id -un):w" /dev/uinput
 ```
 
 Manual ACLs may be lost when devices are recreated or sessions change. If `getfacl` or `setfacl` is missing, install your distribution's `acl` package (`sudo apt install acl` on Ubuntu/Debian).
+
+## Revoke access
+
+Fully exit SyncClipboard first, then run the following from the regular user's terminal used to run the app.
+
+If you configured the udev rule above, remove it and reload the rules. Skip this step if you only granted access manually with `setfacl`:
+
+```shell
+sudo rm /etc/udev/rules.d/70-syncclipboard.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+sudo udevadm settle
+```
+
+Remove the current user's ACL entries from existing devices. Only run the commands for devices you previously granted access to:
+
+```shell
+sudo setfacl -x "u:$(id -un)" /dev/input/event*
+sudo setfacl -x "u:$(id -un)" /dev/uinput
+```
+
+`-x` removes the specified user's entries without clearing other users' ACL entries. Check the result:
+
+```shell
+getfacl /dev/uinput
+getfacl /dev/input/event0
+```
+
+The corresponding `user:your-username:...` entries should be gone. Access granted through groups or other system rules is not revoked by removing these ACL entries.
