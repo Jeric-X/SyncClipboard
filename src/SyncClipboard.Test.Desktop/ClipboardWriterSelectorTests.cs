@@ -6,6 +6,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Desktop;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
@@ -136,11 +137,51 @@ public class ClipboardWriterSelectorTests
         var writer = provider.GetRequiredService<ClipboardWriterSelector>();
         Assert.AreEqual(OperatingSystem.IsLinux() ? "wl-clipboard" : "Avalonia", writer.SourceName);
         Assert.HasCount(OperatingSystem.IsLinux() ? 2 : 1, provider.GetServices<IClipboardWriter>().ToArray());
+        Assert.AreSame(writer, provider.GetRequiredService<IClipboardWriteCapabilities>());
+        Assert.AreEqual(!OperatingSystem.IsLinux(), provider.GetRequiredService<IClipboardWriteCapabilities>().SupportsMultipleFormats);
 
         using var package = new DataTransfer();
         await provider.GetRequiredService<IClipboardSetter<TextProfile>>()
             .FillPackage(package, new ClipboardMetaInfomation { Text = "drag text" });
         Assert.AreEqual("drag text", package.Items.Single().TryGetRaw(DataFormat.Text));
+    }
+
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public void EasyCopyImageDescriptionTracksWriterWithoutChangingSwitch(bool isLinux)
+    {
+        IClipboardWriter[] sources = [new AvaloniaClipboardWriter(), new WlClipboardWriter()];
+        var writer = new ClipboardWriterSelector(sources, _config, isLinux);
+        using var vm = new CliboardAssistantViewModel(_config, null!, writer);
+        var descriptionChanged = false;
+        vm.PropertyChanged += (_, args) => descriptionChanged |= args.PropertyName == nameof(vm.EasyCopyImageDescription);
+        vm.EasyCopyImageSwitchOn = true;
+
+        // Reading through wl-clipboard must not disable a multi-format writer.
+        _config.SetConfig(new ClipboardFactoryConfig { ReadMethod = ClipboardReadMethod.WlClipboard });
+        Assert.IsTrue(vm.EasyCopyImageSwitchOn);
+        Assert.AreEqual(Core.I18n.Strings.ImageAssistantDescription, vm.EasyCopyImageDescription);
+
+        descriptionChanged = false;
+        _config.SetConfig(new ClipboardFactoryConfig { WriteMethod = ClipboardWriteMethod.WlClipboard });
+        Assert.AreEqual(!isLinux, writer.SupportsMultipleFormats);
+        Assert.IsTrue(descriptionChanged);
+        Assert.AreEqual(isLinux
+            ? string.Format(Core.I18n.Strings.EasyCopyImageUnsupportedWriter, "wl-clipboard")
+            : Core.I18n.Strings.ImageAssistantDescription, vm.EasyCopyImageDescription);
+        Assert.IsTrue(vm.EasyCopyImageSwitchOn);
+        Assert.IsTrue(_config.GetConfig<ClipboardAssistConfig>().EasyCopyImageSwitchOn);
+
+        vm.EasyCopyImageSwitchOn = false;
+        Assert.IsFalse(_config.GetConfig<ClipboardAssistConfig>().EasyCopyImageSwitchOn);
+        vm.EasyCopyImageSwitchOn = true;
+        Assert.IsTrue(_config.GetConfig<ClipboardAssistConfig>().EasyCopyImageSwitchOn);
+
+        _config.SetConfig(new ClipboardFactoryConfig { WriteMethod = ClipboardWriteMethod.Avalonia });
+        Assert.IsTrue(writer.SupportsMultipleFormats);
+        Assert.AreEqual(Core.I18n.Strings.ImageAssistantDescription, vm.EasyCopyImageDescription);
+        Assert.IsTrue(vm.EasyCopyImageSwitchOn);
     }
 
     private static Mock<IClipboardWriter>[] CreateSources() =>

@@ -425,6 +425,7 @@ namespace SyncClipboard.Core
             services.AddServerAdapter<S3Config, S3Adapter>();
             services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
             services.AddSingleton<LocalClipboardSetter>();
+            services.AddSingleton<IClipboardWriteCapabilities, DefaultClipboardWriteCapabilities>();
             services.AddSingleton<ProfileActionBuilder>();
             services.AddSingleton<IProfileEnv, ClientProfileEnvProvider>();
         }

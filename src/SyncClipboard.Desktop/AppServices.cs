@@ -38,6 +38,7 @@ public class AppServices
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
         services.AddSingleton<ClipboardReaderSelector>();
         services.AddSingleton<ClipboardWriterSelector>();
+        services.AddSingleton<IClipboardWriteCapabilities>(sp => sp.GetRequiredService<ClipboardWriterSelector>());
         services.AddSingleton<IClipboardWriter, AvaloniaClipboardWriter>();
         services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();
 

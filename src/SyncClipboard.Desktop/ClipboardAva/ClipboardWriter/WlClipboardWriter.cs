@@ -18,6 +18,7 @@ internal sealed class WlClipboardWriter : IClipboardWriter
     internal WlClipboardWriter(string executable) => _executable = executable;
 
     public string SourceName => "wl-clipboard";
+    public bool SupportsMultipleFormats => false;
 
     public async Task SetTextAsync(string text, CancellationToken token)
     {

@@ -15,6 +15,8 @@ public class ClipboardWriterSelector : IClipboardWriter
     private readonly Dictionary<string, IClipboardWriter> _sources;
     private ClipboardWriteMethod _writeMethod;
 
+    public bool SupportsMultipleFormats => GetWriter().SupportsMultipleFormats;
+
     public string SourceName => _writeMethod switch
     {
         ClipboardWriteMethod.Avalonia => "Avalonia",

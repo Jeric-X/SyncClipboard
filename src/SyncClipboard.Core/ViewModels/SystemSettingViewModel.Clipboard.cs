@@ -10,14 +10,14 @@ public partial class SystemSettingViewModel
 
     public static readonly LocaleString<ClipboardReadMethod>[] ClipboardReadMethods =
     [
-        new(ClipboardReadMethod.Avalonia, "Avalonia"),
+        new(ClipboardReadMethod.Avalonia, I18n.Strings.BuiltIn),
         new(ClipboardReadMethod.XClip, "xclip"),
         new(ClipboardReadMethod.WlClipboard, "wl-clipboard")
     ];
 
     public static readonly LocaleString<ClipboardWriteMethod>[] ClipboardWriteMethods =
     [
-        new(ClipboardWriteMethod.Avalonia, "Avalonia"),
+        new(ClipboardWriteMethod.Avalonia, I18n.Strings.BuiltIn),
         new(ClipboardWriteMethod.WlClipboard, "wl-clipboard")
     ];
 

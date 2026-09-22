@@ -8,6 +8,7 @@ namespace SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 internal sealed class AvaloniaClipboardWriter : IClipboardWriter
 {
     public string SourceName => "Avalonia";
+    public bool SupportsMultipleFormats => true;
 
     public Task SetTextAsync(string text, CancellationToken token) =>
         App.Current.Clipboard.SetTextAsync(text).WaitAsync(token);
