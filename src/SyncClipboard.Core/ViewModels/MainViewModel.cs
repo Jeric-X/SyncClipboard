@@ -60,7 +60,6 @@ namespace SyncClipboard.Core.ViewModels
             NavigateTo(BreadcrumbList[index], NavigationTransitionEffect.FromLeft);
         }
 
-
         public int Width
         {
             get => runtimeConfig.GetConfig<MainWindowConfig>().Width;
