@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -94,14 +95,40 @@ public partial class HistorySettingViewModel
     }
 
     [RelayCommand]
-    private void ResetHistoryShortcuts() => _configManager.SetConfig(new HistoryShortcutConfig());
+    private void ResetHistoryShortcuts() =>
+        _configManager.SetConfig(_configManager.GetConfig<HistoryShortcutConfig>() with { Shortcuts = [] });
+
+    [RelayCommand]
+    private async Task ResetShortcutAsync(HistoryShortcutSetting setting)
+    {
+        var config = _configManager.GetConfig<HistoryShortcutConfig>();
+        var defaultHotkey = HistoryShortcutConfig.GetDefault(setting.Action);
+        if (config.GetShortcut(setting.Action) == defaultHotkey)
+            return;
+
+        if (!config.CanAssign(setting.Action, defaultHotkey))
+        {
+            var conflictingSetting = ShortcutSettings.First(other =>
+                other.Action != setting.Action && config.GetShortcut(other.Action) == defaultHotkey);
+            var keys = string.Join("+", defaultHotkey.Keys.Select(key => key.ToEnumMemberValue()));
+            await _dialog.ShowMessageAsync(Strings.ResetToDefault,
+                string.Format(Strings.HistoryShortcutResetConflict, keys, conflictingSetting.Name));
+            return;
+        }
+
+        var shortcuts = new Dictionary<HistoryShortcutAction, Hotkey>(config.Shortcuts);
+        shortcuts.Remove(setting.Action);
+        _configManager.SetConfig(config with { Shortcuts = shortcuts });
+    }
 }
 
 public partial class HistoryShortcutSetting(HistoryShortcutAction action, string name) : ObservableObject
 {
     public HistoryShortcutAction Action { get; } = action;
     public string Name { get; } = name;
+    public bool IsModified => Hotkey != HistoryShortcutConfig.GetDefault(Action);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsModified))]
     private Hotkey hotkey = Hotkey.Nothing;
 }

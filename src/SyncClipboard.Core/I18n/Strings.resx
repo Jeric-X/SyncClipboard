@@ -1419,4 +1419,10 @@ Choose whether to use the default location or select another folder.</value>
     <value>Cannot run the recommended action because the local file is unavailable.</value>
   </data>
   <data name="HistoryWindowOperationFormat" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="ResetAllHistoryKeyboardShortcuts" xml:space="preserve">
+    <value>Reset All Keyboard Shortcuts</value>
+  </data>
+  <data name="HistoryShortcutResetConflict" xml:space="preserve">
+    <value>Cannot reset: {0} is already assigned to “{1}”. Change that action’s shortcut first.</value>
+  </data>
 </root>

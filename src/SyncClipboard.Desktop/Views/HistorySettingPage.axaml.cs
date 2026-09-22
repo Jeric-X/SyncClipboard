@@ -68,4 +68,10 @@ public partial class HistorySettingPage : UserControl
 
     private Binding ViewModelBinding(string path, BindingMode mode = BindingMode.Default) =>
         new(path) { Source = _viewModel, Mode = mode };
+
+    private async void ResetShortcutClick(object? sender, RoutedEventArgs _)
+    {
+        if (sender is Button { DataContext: HistoryShortcutSetting setting })
+            await _viewModel.ResetShortcutCommand.ExecuteAsync(setting);
+    }
 }

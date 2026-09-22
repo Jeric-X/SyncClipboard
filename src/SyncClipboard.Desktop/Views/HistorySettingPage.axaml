@@ -14,6 +14,14 @@
     <Design.DataContext>
         <vm:HistorySettingViewModel />
     </Design.DataContext>
+    <UserControl.Styles>
+        <Style Selector="Button.HistoryShortcutAction">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="FontSize" Value="18" />
+        </Style>
+    </UserControl.Styles>
     <StackPanel Spacing="10">
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardHistory}" Description="{x:Static i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
             <ui:FASettingsExpander.IconSource>
@@ -63,15 +71,23 @@
                 <ui:FAFontIconSource Glyph="&#xE765;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Footer>
-                <Button Content="{x:Static i18n:Strings.ResetToDefault}" Command="{Binding ResetHistoryShortcutsCommand}" />
+                <Button Content="{x:Static i18n:Strings.ResetAllHistoryKeyboardShortcuts}" Command="{Binding ResetHistoryShortcutsCommand}" />
             </ui:FASettingsExpander.Footer>
             <ui:FASettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="vm:HistoryShortcutSetting">
                     <ui:FASettingsExpanderItem Content="{Binding Name}">
                         <ui:FASettingsExpanderItem.Footer>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <local:HotkeyViewer Hotkey="{Binding Hotkey}" />
-                                <Button Content="{x:Static i18n:Strings.Edit}" Click="EditShortcutClick" />
+                            <StackPanel Orientation="Horizontal">
+                                <local:HotkeyViewer Margin="5,0,10,0" Hotkey="{Binding Hotkey}" />
+                                <Button Classes="HistoryShortcutAction" ToolTip.Tip="{x:Static i18n:Strings.Edit}" Click="EditShortcutClick">
+                                    <ui:FAFontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                                <Button Classes="HistoryShortcutAction"
+                                        ToolTip.Tip="{x:Static i18n:Strings.ResetToDefault}"
+                                        Click="ResetShortcutClick"
+                                        IsEnabled="{Binding IsModified}">
+                                    <ui:FAFontIcon Glyph="&#xE7A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
                             </StackPanel>
                         </ui:FASettingsExpanderItem.Footer>
                     </ui:FASettingsExpanderItem>

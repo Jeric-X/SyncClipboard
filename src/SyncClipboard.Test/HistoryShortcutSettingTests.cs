@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
@@ -18,6 +19,7 @@ public class HistoryShortcutSettingTests
     private ServiceProvider services = null!;
     private RemoteClipboardServerFactory factory = null!;
     private HistorySettingViewModel viewModel = null!;
+    private Mock<IMainWindowDialog> dialog = null!;
 
     [TestInitialize]
     public void Initialize()
@@ -33,7 +35,8 @@ public class HistoryShortcutSettingTests
             .BuildServiceProvider();
         factory = new RemoteClipboardServerFactory(services);
         // Clearing history is outside these settings tests, so no history database is required.
-        viewModel = new HistorySettingViewModel(config, null!, Mock.Of<IMainWindowDialog>(), factory);
+        dialog = new Mock<IMainWindowDialog>();
+        viewModel = new HistorySettingViewModel(config, null!, dialog.Object, factory);
     }
 
     [TestCleanup]
@@ -93,12 +96,12 @@ public class HistoryShortcutSettingTests
 
         viewModel.ResetHistoryShortcutsCommand.Execute(null);
         Assert.AreEqual(Hotkey.Nothing, setting.Hotkey);
-        Assert.AreEqual(HistoryMouseAction.Copy, viewModel.DoubleClickAction.Key);
-        Assert.AreEqual(HistoryMouseAction.CopyAndPaste, viewModel.MiddleClickAction.Key);
+        Assert.AreEqual(HistoryMouseAction.ExecuteRecommendedAction, viewModel.DoubleClickAction.Key);
+        Assert.AreEqual(HistoryMouseAction.ExecuteRecommendedAction, viewModel.MiddleClickAction.Key);
     }
 
     [TestMethod]
-    public void MouseActions_SaveIndependentlyAndResetWithKeyboardBindings()
+    public void ResetAllKeyboardShortcuts_PreservesIndependentMouseActions()
     {
         CollectionAssert.AreEqual(
             new[] { HistoryMouseAction.Copy, HistoryMouseAction.CopyAndPaste, HistoryMouseAction.ExecuteRecommendedAction },
@@ -117,8 +120,69 @@ public class HistoryShortcutSettingTests
 
         viewModel.ResetHistoryShortcutsCommand.Execute(null);
         Assert.AreEqual(new Hotkey(Key.Alt, Key.Enter), setting.Hotkey);
-        Assert.AreEqual(HistoryMouseAction.Copy, viewModel.DoubleClickAction.Key);
-        Assert.AreEqual(HistoryMouseAction.CopyAndPaste, viewModel.MiddleClickAction.Key);
-        Assert.AreEqual(new HistoryShortcutConfig(), config.GetConfig<HistoryShortcutConfig>());
+        Assert.AreEqual(HistoryMouseAction.CopyAndPaste, viewModel.DoubleClickAction.Key);
+        Assert.AreEqual(HistoryMouseAction.Copy, viewModel.MiddleClickAction.Key);
+        Assert.IsEmpty(config.GetConfig<HistoryShortcutConfig>().Shortcuts);
+        Assert.IsTrue(viewModel.ShortcutSettings.All(row => !row.IsModified));
+    }
+
+    [TestMethod]
+    public async Task ResetShortcut_RejectsConflictAndSucceedsAfterOtherBindingChanges()
+    {
+        var search = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search);
+        var copy = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Copy);
+        config.SetConfig(new HistoryShortcutConfig
+        {
+            Shortcuts = new()
+            {
+                [search.Action] = new Hotkey(Key.F2),
+                [copy.Action] = new Hotkey(Key.Ctrl, Key.F)
+            }
+        });
+        var before = config.GetConfig<HistoryShortcutConfig>();
+        Assert.IsTrue(search.IsModified);
+
+        await viewModel.ResetShortcutCommand.ExecuteAsync(search);
+
+        Assert.AreEqual(before, config.GetConfig<HistoryShortcutConfig>());
+        Assert.AreEqual(new Hotkey(Key.F2), search.Hotkey);
+        Assert.IsTrue(search.IsModified);
+        dialog.Verify(service => service.ShowMessageAsync(Strings.ResetToDefault,
+            string.Format(Strings.HistoryShortcutResetConflict, "Ctrl+F", copy.Name)), Times.Once);
+
+        viewModel.BeginEditShortcut(copy);
+        viewModel.EditingShortcut = new Hotkey(Key.F4);
+        viewModel.SaveShortcutCommand.Execute(null);
+        await viewModel.ResetShortcutCommand.ExecuteAsync(search);
+
+        Assert.AreEqual(new Hotkey(Key.Ctrl, Key.F), search.Hotkey);
+        Assert.IsFalse(search.IsModified);
+        Assert.AreEqual(new Hotkey(Key.F4), copy.Hotkey);
+        Assert.IsTrue(copy.IsModified);
+        Assert.IsFalse(config.GetConfig<HistoryShortcutConfig>().Shortcuts.ContainsKey(search.Action));
+    }
+
+    [TestMethod]
+    public async Task ResetShortcut_UnboundDefaultClearsOnlyThatAction()
+    {
+        var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.ExecuteRecommendedAction);
+        config.SetConfig(new HistoryShortcutConfig
+        {
+            Shortcuts = new()
+            {
+                [setting.Action] = new Hotkey(Key.F3),
+                [HistoryShortcutAction.Copy] = Hotkey.Nothing
+            },
+            DoubleClickAction = HistoryMouseAction.ExecuteRecommendedAction
+        });
+        Assert.IsTrue(setting.IsModified);
+
+        await viewModel.ResetShortcutCommand.ExecuteAsync(setting);
+
+        Assert.AreEqual(Hotkey.Nothing, setting.Hotkey);
+        Assert.IsFalse(setting.IsModified);
+        Assert.AreEqual(Hotkey.Nothing, config.GetConfig<HistoryShortcutConfig>().GetShortcut(HistoryShortcutAction.Copy));
+        Assert.AreEqual(HistoryMouseAction.ExecuteRecommendedAction, viewModel.DoubleClickAction.Key);
+        dialog.VerifyNoOtherCalls();
     }
 }

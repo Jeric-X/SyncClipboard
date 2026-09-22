@@ -10,6 +10,14 @@
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
+    <Page.Resources>
+        <Style x:Key="HistoryShortcutActionStyle" TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
+        </Style>
+    </Page.Resources>
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardHistory}" Description="{x:Bind i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
@@ -46,13 +54,21 @@
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE765;" />
             </ui:SettingsExpander.HeaderIcon>
-            <Button Content="{x:Bind i18n:Strings.ResetToDefault}" Command="{x:Bind _viewModel.ResetHistoryShortcutsCommand}" />
+            <Button Content="{x:Bind i18n:Strings.ResetAllHistoryKeyboardShortcuts}" Command="{x:Bind _viewModel.ResetHistoryShortcutsCommand}" />
             <ui:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="vm:HistoryShortcutSetting">
                     <ui:SettingsCard Header="{x:Bind Name}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <local:HotkeyViewer Hotkey="{x:Bind Hotkey, Mode=OneWay}" />
-                            <Button Content="{x:Bind i18n:Strings.Edit}" Click="EditShortcutClick" />
+                        <StackPanel Orientation="Horizontal">
+                            <local:HotkeyViewer Margin="5,0,10,0" Hotkey="{x:Bind Hotkey, Mode=OneWay}" />
+                            <Button Style="{StaticResource HistoryShortcutActionStyle}"
+                                    Content="&#xE70F;"
+                                    ToolTipService.ToolTip="{x:Bind i18n:Strings.Edit}"
+                                    Click="EditShortcutClick" />
+                            <Button Style="{StaticResource HistoryShortcutActionStyle}"
+                                    Content="&#xE7A7;"
+                                    ToolTipService.ToolTip="{x:Bind i18n:Strings.ResetToDefault}"
+                                    Click="ResetShortcutClick"
+                                    IsEnabled="{x:Bind IsModified, Mode=OneWay}" />
                         </StackPanel>
                     </ui:SettingsCard>
                 </DataTemplate>
