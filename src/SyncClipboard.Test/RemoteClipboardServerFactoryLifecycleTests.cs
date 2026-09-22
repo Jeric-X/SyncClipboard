@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
@@ -178,6 +177,7 @@ public class RemoteClipboardServerFactoryLifecycleTests
 
     private sealed class Fixture : IDisposable
     {
+        private readonly ConfigurationTestServices _migrationServices = new();
         private readonly string _directory = Path.Combine(Path.GetTempPath(), $"RemoteFactoryTests-{Guid.NewGuid():N}");
         private readonly Microsoft.Extensions.DependencyInjection.ServiceProvider _services;
         public ConfigManager Config { get; }
@@ -189,7 +189,7 @@ public class RemoteClipboardServerFactoryLifecycleTests
             Directory.CreateDirectory(_directory);
             var path = Path.Combine(_directory, "SyncClipboard.json");
             File.WriteAllText(path, """{"ConfigVersion":1}""");
-            Config = new ConfigManager(path, new SyncClipboardConfigUpgrader());
+            Config = new ConfigManager(path, _migrationServices.Upgrader);
             _services = new ServiceCollection()
                 .AddSingleton(Config)
                 .AddSingleton<AccountManager>()
@@ -208,6 +208,7 @@ public class RemoteClipboardServerFactoryLifecycleTests
         {
             Factory.Dispose();
             _services.Dispose();
+            _migrationServices.Dispose();
             Directory.Delete(_directory, recursive: true);
         }
     }

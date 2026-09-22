@@ -13,18 +13,23 @@ namespace SyncClipboard.Desktop.ClipboardAva.Fingerprint;
 /// </summary>
 [SupportedOSPlatform("linux")]
 internal class LinuxClipboardFingerprintProvider(
-    MultiSourceClipboardReader clipboardReader,
+    ClipboardReaderSelector clipboardReader,
     ILogger logger) : IClipboardFingerprintProvider
 {
-    private readonly MultiSourceClipboardReader _clipboardReader = clipboardReader;
+    private readonly ClipboardReaderSelector _clipboardReader = clipboardReader;
     private readonly ILogger _logger = logger;
 
     public async Task<int?> GetClipboardFingerprint(CancellationToken ctk)
     {
+        // Skip X11 timestamps for the entire Wayland session, including XWayland clients.
+        if (string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase)
+            || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+        {
+            return null;
+        }
+
         try
         {
-            // On Wayland, retrieving the timestamp from a native Wayland clipboard owner can time out.
-            // https://github.com/Jeric-X/SyncClipboard/issues/391
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ctk);
             timeout.CancelAfter(TimeSpan.FromMilliseconds(100));
 

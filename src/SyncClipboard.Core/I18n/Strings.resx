@@ -1360,4 +1360,11 @@ Choose whether to use the default location or select another folder.</value>
   <data name="GlobalHotkeyEngineX11Description" xml:space="preserve"><value>Requires XWayland on Wayland and may not work even when XWayland is supported.</value></data>
   <data name="GlobalHotkeyEngineLibinputDescription" xml:space="preserve"><value>Uses libinput to monitor input and uinput to simulate it. Requires input device permissions.</value></data>
   <data name="LinuxInputSimulationPermissionRequired" xml:space="preserve"><value>Simulating key presses requires write access to /dev/uinput. Make sure the device exists and grant the current user write access. You can check access in the app's System settings.</value></data>
+  <data name="ClipboardWriteMethod" xml:space="preserve"><value>Clipboard writing method</value></data>
+  <data name="ClipboardWriteMethodDescription" xml:space="preserve"><value>When selecting a non-built-in method, make sure the command is available on the system.</value></data>
+  <data name="ClipboardAccess" xml:space="preserve"><value>Clipboard access</value></data>
+  <data name="ClipboardReadMethod" xml:space="preserve"><value>Clipboard reading method</value></data>
+  <data name="ClipboardReadMethodDescription" xml:space="preserve"><value>When selecting a non-built-in method, make sure the command is available on the system.</value></data>
+  <data name="EasyCopyImageUnsupportedWriter" xml:space="preserve"><value>The current clipboard writing method ({0}) does not support this feature.</value></data>
+  <data name="BuiltIn" xml:space="preserve"><value>Built-in</value></data>
 </root>

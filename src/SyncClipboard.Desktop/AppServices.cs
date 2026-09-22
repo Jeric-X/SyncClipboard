@@ -6,6 +6,7 @@ using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.ClipboardAva;
 using SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 using SyncClipboard.Desktop.ClipboardAva.Fingerprint;
 using SyncClipboard.Desktop.Utilities;
 using SyncClipboard.Desktop.Utilities.CaretPositionProvider;
@@ -35,7 +36,10 @@ public class AppServices
             return new Services.AvaloniaDialog(historyWindow!);
         });
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
-        services.AddSingleton<MultiSourceClipboardReader>();
+        services.AddSingleton<ClipboardReaderSelector>();
+        services.AddSingleton<ClipboardWriterSelector>();
+        services.AddSingleton<IClipboardWriteCapabilities>(sp => sp.GetRequiredService<ClipboardWriterSelector>());
+        services.AddSingleton<IClipboardWriter, AvaloniaClipboardWriter>();
         services.AddSingleton<IClipboardReader, AvaloniaClipboardReader>();
 
         // 注册剪贴板指纹提供者
@@ -71,6 +75,7 @@ public class AppServices
         {
             services.AddSingleton<IClipboardReader, XClipReader>();
             services.AddSingleton<IClipboardReader, WlClipboardReader>();
+            services.AddSingleton<IClipboardWriter, WlClipboardWriter>();
             services.AddSingleton<ICaretPositionProvider, CaretPositionProvider>();
             services.AddSingleton<INativeWindowController, LinuxNativeWindowController>();
             services.AddSingleton<INativeForegroundWindowWatcher, PollingForegroundWindowWatcher>();

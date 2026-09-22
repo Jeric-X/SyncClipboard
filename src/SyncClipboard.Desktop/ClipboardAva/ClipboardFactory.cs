@@ -19,14 +19,14 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     protected override ILogger Logger { get; set; }
     protected override IServiceProvider ServiceProvider { get; set; }
 
-    private readonly MultiSourceClipboardReader Clipboard;
+    private readonly ClipboardReaderSelector Clipboard;
 
     private const string LOG_TAG = nameof(ClipboardFactory);
     public ClipboardFactory(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
         Logger = ServiceProvider.GetRequiredService<ILogger>();
-        Clipboard = ServiceProvider.GetRequiredService<MultiSourceClipboardReader>();
+        Clipboard = ServiceProvider.GetRequiredService<ClipboardReaderSelector>();
     }
 
     public override Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)

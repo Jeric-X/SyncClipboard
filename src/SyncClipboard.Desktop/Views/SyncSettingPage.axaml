@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.SyncSettingPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.SyncSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -57,14 +57,14 @@
             </ui:FASettingsExpander.Footer>
             <ui:FASettingsExpander.Items>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AddAccount}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding AddAccountCommand}"
-                                         ActionIconSource="{StaticResource GoIcon}" />
+                                           IsClickEnabled="True"
+                                           Command="{Binding AddAccountCommand}"
+                                           ActionIconSource="{StaticResource GoIcon}" />
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EditAccountConfig}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding EditAccountCommand}"
-                                         IsVisible="{Binding HasSelectedAccount}"
-                                         ActionIconSource="{StaticResource GoIcon}">
+                                           IsClickEnabled="True"
+                                           Command="{Binding EditAccountCommand}"
+                                           IsVisible="{Binding HasSelectedAccount}"
+                                           ActionIconSource="{StaticResource GoIcon}">
                     <ui:FASettingsExpanderItem.Footer>
                         <Button MinWidth="60"
                                 Margin="0,0,10,0"
@@ -73,10 +73,10 @@
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AutoSwitchAccount}"
-                                         Description="{Binding AccountAutoSwitchDescription}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding OpenNetworkAccountSwitchCommand}"
-                                         ActionIconSource="{StaticResource GoIcon}">
+                                           Description="{Binding AccountAutoSwitchDescription}"
+                                           IsClickEnabled="True"
+                                           Command="{Binding OpenNetworkAccountSwitchCommand}"
+                                           ActionIconSource="{StaticResource GoIcon}">
                     <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding AccountAutoSwitchEnabled, Mode=TwoWay}" />
                     </ui:FASettingsExpanderItem.Footer>
@@ -133,39 +133,17 @@
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding OpenSyncContentControlPageCommand}"
-                                         Content="{x:Static i18n:Strings.SyncContentControl}" />
+                                           IsClickEnabled="True"
+                                           Command="{Binding OpenSyncContentControlPageCommand}"
+                                           Content="{x:Static i18n:Strings.SyncContentControl}" />
                 <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding SetClipboardOwnerFilterCommand}"
-                                         Content="{x:Static i18n:Strings.ClipboardOwnerFilter}" />
+                                           IsClickEnabled="True"
+                                           Command="{Binding SetClipboardOwnerFilterCommand}"
+                                           Content="{x:Static i18n:Strings.ClipboardOwnerFilter}" />
                 <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding OpenClipboardAcquisitionRulesPageCommand}"
-                                         Content="{x:Static i18n:Strings.ClipboardAcquisitionRules}" />
-            </ui:FASettingsExpander.Items>
-        </ui:FASettingsExpander>
-        <ui:FASettingsExpander Header="{x:Static i18n:Strings.LocalClipboardSource}" IsExpanded="True" IsVisible="{Binding IsLinux}">
-            <ui:FASettingsExpander.IconSource>
-                <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:FASettingsExpander.IconSource>
-            <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="Avalonia">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <CheckBox IsChecked="{Binding AvaloniaEnabled, Mode=TwoWay}" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="xclip">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <CheckBox IsChecked="{Binding XClipEnabled, Mode=TwoWay}" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="wl-clipboard">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <CheckBox IsChecked="{Binding WlClipboardEnabled, Mode=TwoWay}" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
+                                           IsClickEnabled="True"
+                                           Command="{Binding OpenClipboardAcquisitionRulesPageCommand}"
+                                           Content="{x:Static i18n:Strings.ClipboardAcquisitionRules}" />
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
     </StackPanel>

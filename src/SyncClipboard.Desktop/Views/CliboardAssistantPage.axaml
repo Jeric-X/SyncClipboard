@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.CliboardAssistantPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.CliboardAssistantPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -22,15 +22,15 @@
                 <ui:FAFontIconSource Glyph="&#xF8082;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EasyCopyImage}" Description="{x:Static i18n:Strings.ImageAssistantDescription}">
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EasyCopyImage}" Description="{Binding EasyCopyImageDescription}">
                     <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EasyCopyImageSwitchOn, Mode=TwoWay}" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding SetEasyCopyImageFilterCommand}"
-                                         Content="{x:Static i18n:Strings.EasyCopyImageFilter}" />
+                                           IsClickEnabled="True"
+                                           Command="{Binding SetEasyCopyImageFilterCommand}"
+                                           Content="{x:Static i18n:Strings.EasyCopyImageFilter}" />
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.DownloadWebImage}" Description="{x:Static i18n:Strings.DownloadWebImageDescription}">
                     <ui:FASettingsExpanderItem.Footer>
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding DownloadWebImage, Mode=TwoWay}" />

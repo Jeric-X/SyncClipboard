@@ -25,7 +25,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
 
     protected override bool SwitchOn
     {
-        get => _clipboardAssistConfig.EasyCopyImageSwitchOn || _clipboardAssistConfig.DownloadWebImage;
+        get => EasyCopyImageEnabled || _clipboardAssistConfig.DownloadWebImage;
         set
         {
             _clipboardAssistConfig.EasyCopyImageSwitchOn = value;
@@ -36,6 +36,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     protected override bool ToggleMenuSwitchOn { get => _clipboardAssistConfig.EasyCopyImageSwitchOn; set => SwitchOn = value; }
 
     private bool DownloadWebImageEnabled => _clipboardAssistConfig.DownloadWebImage;
+    private bool EasyCopyImageEnabled => _clipboardAssistConfig.EasyCopyImageSwitchOn && _writeCapabilities.SupportsMultipleFormats;
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken cancelToken)
     {
@@ -93,6 +94,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     private readonly ConfigManager _configManager;
     private readonly IServiceProvider _serviceProvider;
     private readonly LocalClipboardSetter _localClipboardSetter;
+    private readonly IClipboardWriteCapabilities _writeCapabilities;
     private ClipboardAssistConfig _clipboardAssistConfig;
     private ClipboardOwnerFilterConfig _easyCopyImageFilterConfig = new();
     private IHttp Http => _serviceProvider.GetRequiredService<IHttp>();
@@ -107,6 +109,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         _clipboardAssistConfig = _configManager.GetConfig<ClipboardAssistConfig>();
         _easyCopyImageFilterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>(ClipboardOwnerFilterConfig.EasyCopyImageFilterConfigKey) ?? new();
         _localClipboardSetter = localClipboardSetter;
+        _writeCapabilities = serviceProvider.GetRequiredService<IClipboardWriteCapabilities>();
 
         serviceProvider.GetService<HotkeyManager>()?.RegisterCommands(CommandCollection);
     }
@@ -137,7 +140,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         }
 
         var shouldFilter = ClipboardOwnerFilterHelper.ShouldFilter(_easyCopyImageFilterConfig, metaInfo.Owner);
-        shouldAjust = shouldAjust || (_clipboardAssistConfig.EasyCopyImageSwitchOn && !shouldFilter);
+        shouldAjust = shouldAjust || (EasyCopyImageEnabled && !shouldFilter);
         if (shouldAjust)
         {
             await AdjustClipboard(profile, cancellationToken);
