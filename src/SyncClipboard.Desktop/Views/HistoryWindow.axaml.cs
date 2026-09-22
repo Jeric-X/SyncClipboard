@@ -45,6 +45,8 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
+        // Handle configured keys before the search box, without intercepting modal dialog input.
+        _HistoryContent.AddHandler(KeyDownEvent, HistoryWindow_KeyDown, RoutingStrategies.Tunnel);
         if (OperatingSystem.IsLinux())
             WindowDecorationsTheme = (ControlTheme)this.FindResource("LinuxHistoryWindowDecorationsTheme")!;
 
@@ -118,23 +120,8 @@ public partial class HistoryWindow : Window, IWindow
         MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height;
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    private void HistoryWindow_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && _viewModel.IsMultiSelecting)
-        {
-            _viewModel.ExitMultiSelect();
-            e.Handled = true;
-            return;
-        }
-
-        if (e.Key == Key.F && e.KeyModifiers.HasFlag(KeyModifiers.Control))
-        {
-            _SearchTextBox.Focus();
-            _SearchTextBox.SelectAll();
-            e.Handled = true;
-            return;
-        }
-
         var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         var isCtrlPressed = e.KeyModifiers.HasFlag(KeyModifiers.Control);
@@ -148,15 +135,7 @@ public partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
-
-        if (handled)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        base.OnKeyDown(e);
+        e.Handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

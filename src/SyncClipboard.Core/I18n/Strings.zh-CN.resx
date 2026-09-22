@@ -550,9 +550,9 @@ Ctrl+Shift+S：切换仅显示收藏
 Ctrl+Shift+T：切换窗口置顶
 Ctrl+D：删除项目
 Ctrl+P：切换预览面板
-Tab/Shift+Tab：切换筛选器
+Tab/Shift+Tab：切换分类
 Enter：复制并粘贴
-Alt+Enter：仅复制
+Alt+Enter：复制
 Esc：关闭面板</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
@@ -1367,4 +1367,67 @@ Shift + 左键：选中连续范围</value>
   <data name="ClipboardReadMethodDescription" xml:space="preserve"><value>选择非内置时需保证命令在系统中可用</value></data>
   <data name="EasyCopyImageUnsupportedWriter" xml:space="preserve"><value>当前剪贴板写入方式 {0} 不支持此功能。</value></data>
   <data name="BuiltIn" xml:space="preserve"><value>内置</value></data>
+  <data name="HistoryShortcutSettings" xml:space="preserve">
+    <value>历史记录面板快捷键</value>
+  </data>
+  <data name="HistoryShortcutInvalid" xml:space="preserve">
+    <value>请使用单个按键或修饰键组合；不能使用固定关闭快捷键或与其他动作重复的快捷键。</value>
+  </data>
+  <data name="HistoryDoubleClick" xml:space="preserve">
+    <value>双击记录</value>
+  </data>
+  <data name="HistoryMiddleClick" xml:space="preserve">
+    <value>鼠标中键单击记录</value>
+  </data>
+  <data name="HistoryShortcutSearch" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="HistoryShortcutPreviousItem" xml:space="preserve">
+    <value>上一条记录</value>
+  </data>
+  <data name="HistoryShortcutNextItem" xml:space="preserve">
+    <value>下一条记录</value>
+  </data>
+  <data name="HistoryShortcutFirstItem" xml:space="preserve">
+    <value>滚动到顶部</value>
+  </data>
+  <data name="HistoryShortcutLastItem" xml:space="preserve">
+    <value>滚动到底部</value>
+  </data>
+  <data name="HistoryShortcutToggleStar" xml:space="preserve">
+    <value>切换收藏</value>
+  </data>
+  <data name="HistoryShortcutToggleStarredFilter" xml:space="preserve">
+    <value>切换仅显示收藏</value>
+  </data>
+  <data name="HistoryShortcutToggleTopmost" xml:space="preserve">
+    <value>切换窗口置顶</value>
+  </data>
+  <data name="HistoryShortcutDelete" xml:space="preserve">
+    <value>删除记录</value>
+  </data>
+  <data name="HistoryShortcutTogglePreview" xml:space="preserve">
+    <value>切换预览面板</value>
+  </data>
+  <data name="HistoryShortcutNextFilter" xml:space="preserve">
+    <value>下一个分类</value>
+  </data>
+  <data name="HistoryShortcutPreviousFilter" xml:space="preserve">
+    <value>上一个分类</value>
+  </data>
+  <data name="HistoryShortcutCopyAndPaste" xml:space="preserve">
+    <value>复制并粘贴</value>
+  </data>
+  <data name="HistoryShortcutCopy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="ExecuteRecommendedAction" xml:space="preserve">
+    <value>执行推荐动作</value>
+  </data>
+  <data name="NoRecommendedAction" xml:space="preserve">
+    <value>此记录没有推荐动作。</value>
+  </data>
+  <data name="RecommendedActionFileUnavailable" xml:space="preserve">
+    <value>本地文件不可用，无法执行推荐动作。</value>
+  </data>
 </root>

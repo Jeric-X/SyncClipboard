@@ -520,18 +520,6 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void CtrlHome()
-    {
-        ScrollToTop();
-    }
-
-    [RelayCommand]
-    public void CtrlEnd()
-    {
-        ScrollToBottom();
-    }
-
-    [RelayCommand]
     public void TogglePreviewPanel()
     {
         ShowPreviewPanel = !ShowPreviewPanel;
@@ -833,90 +821,50 @@ public partial class HistoryViewModel : ObservableObject
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
     {
-        if (IsCloseShortcut(key, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed))
+        if (key == Key.Esc)
+        {
+            if (IsMultiSelecting)
+                ExitMultiSelect();
+            else
+                window?.Hide();
+            return true;
+        }
+
+        var keys = new List<Key> { key };
+        if (isShiftPressed) keys.Add(Key.Shift);
+        if (isAltPressed) keys.Add(Key.Alt);
+        if (isCtrlPressed) keys.Add(Key.Ctrl);
+        if (isMetaPressed) keys.Add(Key.Meta);
+        var hotkey = new Hotkey(keys);
+        if (HistoryShortcutConfig.IsReserved(hotkey))
         {
             Close();
             return true;
         }
 
-        if (isCtrlPressed && isShiftPressed && !isAltPressed)
+        switch (_configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey))
         {
-            switch (key)
-            {
-                case Key.S:
-                    OnlyShowStarred = !OnlyShowStarred;
-                    return true;
-                case Key.T:
-                    IsTopmost = !IsTopmost;
-                    return true;
-            }
+            case HistoryShortcutAction.Search: window?.FocusSearch(); break;
+            case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
+            case HistoryShortcutAction.NextItem: NavigateDown(); break;
+            case HistoryShortcutAction.FirstItem: ScrollToTop(); break;
+            case HistoryShortcutAction.LastItem: ScrollToBottom(); break;
+            case HistoryShortcutAction.ToggleStar: HandleToggleStarShortcut(); break;
+            case HistoryShortcutAction.ToggleStarredFilter: OnlyShowStarred = !OnlyShowStarred; break;
+            case HistoryShortcutAction.ToggleTopmost: IsTopmost = !IsTopmost; break;
+            case HistoryShortcutAction.Delete: HandleDeleteShortcut(); break;
+            case HistoryShortcutAction.TogglePreview: ShowPreviewPanel = !ShowPreviewPanel; break;
+            case HistoryShortcutAction.NextFilter: NavigateToNextFilter(); break;
+            case HistoryShortcutAction.PreviousFilter: NavigateToPreviousFilter(); break;
+            case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
+            case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
+            case HistoryShortcutAction.ExecuteRecommendedAction:
+                if (SelectedItem is { } selectedItem)
+                    _ = HandleRecommendedActionAsync(selectedItem);
+                break;
+            default: return false;
         }
-
-        if (isCtrlPressed)
-        {
-            switch (key)
-            {
-                case Key.Home:
-                    ScrollToTop();
-                    return true;
-                case Key.End:
-                    ScrollToBottom();
-                    return true;
-                case Key.S:
-                    HandleToggleStarShortcut();
-                    return true;
-                case Key.D:
-                    HandleDeleteShortcut();
-                    return true;
-                case Key.P:
-                    ShowPreviewPanel = !ShowPreviewPanel;
-                    return true;
-            }
-        }
-
-        switch (key)
-        {
-            case Key.Tab:
-                if (isShiftPressed)
-                    NavigateToPreviousFilter();
-                else
-                    NavigateToNextFilter();
-                return true;
-
-            case Key.Down:
-                NavigateDown();
-                return true;
-
-            case Key.Up:
-                NavigateUp();
-                return true;
-
-            case Key.Enter:
-                HandleEnterKey(isAltPressed);
-                return true;
-
-            case Key.Esc:
-                window?.Hide();
-                return true;
-
-            default:
-                return false;
-        }
-    }
-
-    private static bool IsCloseShortcut(
-        Key key,
-        bool isShiftPressed,
-        bool isAltPressed,
-        bool isCtrlPressed,
-        bool isMetaPressed)
-    {
-        if (key != Key.W || isShiftPressed || isAltPressed)
-            return false;
-
-        return OperatingSystem.IsMacOS()
-            ? isMetaPressed && !isCtrlPressed
-            : isCtrlPressed && !isMetaPressed;
+        return true;
     }
 
     private async void HandleToggleStarShortcut()
@@ -1319,6 +1267,47 @@ public partial class HistoryViewModel : ObservableObject
         });
     }
 
+    public async Task HandleRecommendedActionAsync(HistoryRecordVM record)
+    {
+        try
+        {
+            await RunWithOperationTimeoutAsync("execute recommended history action", async token =>
+            {
+                if (!record.IsLocalFileReady)
+                {
+                    ShowWindowToastInfo(I18n.Strings.RecommendedActionFileUnavailable);
+                    return;
+                }
+
+                var historyRecord = record.ToHistoryRecord();
+                var profile = historyRecord.ToProfile();
+                if (!await profile.IsDataComplete(true, token))
+                {
+                    record.IsLocalFileReady = false;
+                    historyRecord.IsLocalFileReady = false;
+                    await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
+                    ShowWindowToastInfo(I18n.Strings.RecommendedActionFileUnavailable);
+                    return;
+                }
+
+                var action = await profileActionBuilder.GetPrimaryAction(profile, token);
+                token.ThrowIfCancellationRequested();
+                if (action?.Action is not { } execute)
+                {
+                    ShowWindowToastInfo(I18n.Strings.NoRecommendedAction);
+                    return;
+                }
+
+                execute();
+            });
+        }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync("Failed to execute recommended history action:", ex.Message);
+            ShowWindowToastInfo(string.Format(I18n.Strings.OperationFailedRetryMessage, ex.Message));
+        }
+    }
+
     public Task<List<MenuItem>> BuildActionsAsync(HistoryRecordVM record) =>
         RunWithOperationTimeoutAsync(
             "build history record actions",
@@ -1513,7 +1502,7 @@ public partial class HistoryViewModel : ObservableObject
         SelectSingleRecord(record);
 
         if (middleButtonPressed)
-            _ = HandleCopyButtonAsync(record, true);
+            ExecuteMouseAction(record, _configManager.GetConfig<HistoryShortcutConfig>().MiddleClickAction);
 
         return middleButtonPressed
             || (primaryButtonPressed
@@ -1531,12 +1520,22 @@ public partial class HistoryViewModel : ObservableObject
         if (IsMultiSelecting)
             return;
 
-        _ = HandleCopyButtonAsync(record, false);
+        ExecuteMouseAction(record, _configManager.GetConfig<HistoryShortcutConfig>().DoubleClickAction);
     }
 
     public void HandleImageDoubleClick(HistoryRecordVM record)
     {
         ViewImage(record);
+    }
+
+    private void ExecuteMouseAction(HistoryRecordVM record, HistoryMouseAction action)
+    {
+        switch (action)
+        {
+            case HistoryMouseAction.Copy: _ = HandleCopyButtonAsync(record, false); break;
+            case HistoryMouseAction.CopyAndPaste: _ = HandleCopyButtonAsync(record, true); break;
+            case HistoryMouseAction.ExecuteRecommendedAction: _ = HandleRecommendedActionAsync(record); break;
+        }
     }
 
     public Task<bool> FillDragPackage(object package, HistoryRecordVM record) =>

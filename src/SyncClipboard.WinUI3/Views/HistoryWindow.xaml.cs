@@ -12,7 +12,6 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Runner;
@@ -458,22 +457,9 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         if (e.Key == VirtualKey.None)
             return;
 
-        if (e.Key == VirtualKey.Escape && _viewModel.IsMultiSelecting)
-        {
-            _viewModel.ExitMultiSelect();
-            e.Handled = true;
-            return;
-        }
-
         var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
-        if (e.Key == VirtualKey.F && isCtrlPressed)
-        {
-            _SearchTextBox.Focus(FocusState.Programmatic);
-            _SearchTextBox.SelectAll();
-            e.Handled = true;
-            return;
-        }
-
+        var isMetaPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.LeftWindows).HasFlag(CoreVirtualKeyStates.Down)
+            || InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.RightWindows).HasFlag(CoreVirtualKeyStates.Down);
         var isShiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
         var isAltPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down);
 
@@ -485,7 +471,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             return;
         }
 
-        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed);
+        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
 
         e.Handled = handled;
     }
@@ -1015,18 +1001,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             _Width: (int)Math.Round(bounds.Width * scale),
             _Height: (int)Math.Round(bounds.Height * scale)
         );
-    }
-
-    private void CtrlHome_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        _viewModel.HandleKeyPress(Key.Home, false, false, true);
-        args.Handled = true;
-    }
-
-    private void CtrlEnd_Invoked(KeyboardAccelerator _, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        _viewModel.HandleKeyPress(Key.End, false, false, true);
-        args.Handled = true;
     }
 
     public void SetTopmost(bool topmost)
