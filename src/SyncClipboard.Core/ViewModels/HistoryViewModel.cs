@@ -1405,8 +1405,7 @@ public partial class HistoryViewModel : ObservableObject
     private Task ShowOperationInstructionsAsync()
     {
         var dialog = _serviceProvider.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
-        var message = $"{I18n.Strings.HistoryWindowKeyboardShortcuts}\n{I18n.Strings.HistoryWindowKeyboardList}\n\n" +
-            $"{I18n.Strings.HistoryWindowMouseOperations}\n{I18n.Strings.HistoryWindowMouseList}";
+        var message = HistoryShortcutDescriptions.BuildInstructions(_configManager.GetConfig<HistoryShortcutConfig>());
         return dialog.ShowMessageAsync(I18n.Strings.HistoryWindowOperations, message);
     }
 

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using SyncClipboard.Core.I18n;
@@ -17,7 +18,7 @@ public sealed partial class HistorySettingPage : Page
         _viewModel = App.Current.Services.GetRequiredService<HistorySettingViewModel>();
     }
 
-    private async void EditShortcutClick(object sender, RoutedEventArgs e)
+    private async void EditShortcutClick(object sender, RoutedEventArgs _)
     {
         if (sender is not Button { DataContext: HistoryShortcutSetting setting })
             return;

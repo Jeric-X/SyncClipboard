@@ -540,26 +540,14 @@
   <data name="HistoryWindowMouseOperations" xml:space="preserve">
     <value>鼠标操作</value>
   </data>
-  <data name="HistoryWindowKeyboardList" xml:space="preserve">
-    <value>Ctrl+F：搜索
-↑/↓：导航项目
-Ctrl+Home：滚动到顶部
-Ctrl+End：滚动到底部
-Ctrl+S：切换收藏
-Ctrl+Shift+S：切换仅显示收藏
-Ctrl+Shift+T：切换窗口置顶
-Ctrl+D：删除项目
-Ctrl+P：切换预览面板
-Tab/Shift+Tab：切换分类
-Enter：复制并粘贴
-Alt+Enter：复制
-Esc：关闭面板</value>
+  <data name="HistoryWindowCloseShortcutDescription" xml:space="preserve">
+    <value>关闭面板（多选时 Esc 先退出多选）</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>单击：选择项目
-双击项目：复制到剪贴板
+双击项目：{0}
 双击图片：查看完整图片
-单击中键：复制并粘贴
+单击中键：{1}
 长按：进入多选
 Ctrl + 左键：多选
 Shift + 左键：选中连续范围</value>
@@ -1430,4 +1418,5 @@ Shift + 左键：选中连续范围</value>
   <data name="RecommendedActionFileUnavailable" xml:space="preserve">
     <value>本地文件不可用，无法执行推荐动作。</value>
   </data>
+  <data name="HistoryWindowOperationFormat" xml:space="preserve"><value>{0}：{1}</value></data>
 </root>

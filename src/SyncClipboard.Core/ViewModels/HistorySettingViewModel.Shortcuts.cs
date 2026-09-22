@@ -1,39 +1,20 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.ViewModels;
 
 public partial class HistorySettingViewModel
 {
-    public IReadOnlyList<HistoryShortcutSetting> ShortcutSettings { get; } =
-    [
-        new(HistoryShortcutAction.Search, Strings.HistoryShortcutSearch),
-        new(HistoryShortcutAction.PreviousItem, Strings.HistoryShortcutPreviousItem),
-        new(HistoryShortcutAction.NextItem, Strings.HistoryShortcutNextItem),
-        new(HistoryShortcutAction.FirstItem, Strings.HistoryShortcutFirstItem),
-        new(HistoryShortcutAction.LastItem, Strings.HistoryShortcutLastItem),
-        new(HistoryShortcutAction.ToggleStar, Strings.HistoryShortcutToggleStar),
-        new(HistoryShortcutAction.ToggleStarredFilter, Strings.HistoryShortcutToggleStarredFilter),
-        new(HistoryShortcutAction.ToggleTopmost, Strings.HistoryShortcutToggleTopmost),
-        new(HistoryShortcutAction.Delete, Strings.HistoryShortcutDelete),
-        new(HistoryShortcutAction.TogglePreview, Strings.HistoryShortcutTogglePreview),
-        new(HistoryShortcutAction.NextFilter, Strings.HistoryShortcutNextFilter),
-        new(HistoryShortcutAction.PreviousFilter, Strings.HistoryShortcutPreviousFilter),
-        new(HistoryShortcutAction.CopyAndPaste, Strings.HistoryShortcutCopyAndPaste),
-        new(HistoryShortcutAction.Copy, Strings.HistoryShortcutCopy),
-        new(HistoryShortcutAction.ExecuteRecommendedAction, Strings.ExecuteRecommendedAction),
-    ];
+    public IReadOnlyList<HistoryShortcutSetting> ShortcutSettings { get; } = Enum.GetValues<HistoryShortcutAction>()
+        .Select(action => new HistoryShortcutSetting(action, HistoryShortcutDescriptions.GetActionName(action))).ToArray();
 
-    public IReadOnlyList<LocaleString<HistoryMouseAction>> MouseActions { get; } =
-    [
-        new(HistoryMouseAction.Copy, Strings.HistoryShortcutCopy),
-        new(HistoryMouseAction.CopyAndPaste, Strings.HistoryShortcutCopyAndPaste),
-        new(HistoryMouseAction.ExecuteRecommendedAction, Strings.ExecuteRecommendedAction)
-    ];
+    public IReadOnlyList<LocaleString<HistoryMouseAction>> MouseActions { get; } = Enum.GetValues<HistoryMouseAction>()
+        .Select(action => new LocaleString<HistoryMouseAction>(action, HistoryShortcutDescriptions.GetMouseActionName(action)))
+        .ToArray();
 
     private bool updatingShortcuts;
     private HistoryShortcutAction editingAction;

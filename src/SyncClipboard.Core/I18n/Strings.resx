@@ -540,26 +540,14 @@
   <data name="HistoryWindowMouseOperations" xml:space="preserve">
     <value>Mouse Operations</value>
   </data>
-  <data name="HistoryWindowKeyboardList" xml:space="preserve">
-    <value>Ctrl+F: Focus search box
-Ctrl+Home: Scroll to top
-Ctrl+End: Scroll to bottom
-Ctrl+S: Toggle star
-Ctrl+Shift+S: Toggle starred only
-Ctrl+Shift+T: Toggle always on top
-Ctrl+D: Delete item
-Ctrl+P: Toggle preview panel
-↑/↓: Navigate items
-Tab/Shift+Tab: Switch filters
-Enter: Copy and paste
-Alt+Enter: Copy
-Esc: Close panel</value>
+  <data name="HistoryWindowCloseShortcutDescription" xml:space="preserve">
+    <value>Close panel (Esc exits multi-select first)</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>Single click: Select item
-Double click item: Copy to clipboard
+Double click item: {0}
 Double click image: View full image
-Middle click: Copy and paste
+Middle click: {1}
 Long press: Enter multi-select
 Ctrl + left click: Multi-select
 Shift + left click: Select a continuous range</value>
@@ -1430,4 +1418,5 @@ Choose whether to use the default location or select another folder.</value>
   <data name="RecommendedActionFileUnavailable" xml:space="preserve">
     <value>Cannot run the recommended action because the local file is unavailable.</value>
   </data>
+  <data name="HistoryWindowOperationFormat" xml:space="preserve"><value>{0}: {1}</value></data>
 </root>
