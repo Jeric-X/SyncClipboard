@@ -192,6 +192,8 @@ public partial class SystemSettingViewModel : ObservableObject
         tempFileRemainDays = programConfig.TempFileRemainDays;
         diagnoseMode = programConfig.DiagnoseMode;
 
+        _configManager.GetAndListenConfig<ClipboardFactoryConfig>(LoadClipboardFactoryConfig);
+
         _staticConfig.ListenConfig<EnvConfig>(OnEnvConfigChanged);
         var envConfig = _staticConfig.GetConfig<EnvConfig>();
         userConfigPosition = LocaleString<bool>.Match(UserConfigPositions, envConfig.PortableUserConfig);

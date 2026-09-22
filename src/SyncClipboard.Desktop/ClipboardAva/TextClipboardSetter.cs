@@ -1,5 +1,6 @@
 using Avalonia.Input;
-using Avalonia.Input.Platform;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 using SyncClipboard.Core.Models;
 using System;
 using System.Threading;
@@ -31,6 +32,6 @@ internal class TextClipboardSetter : ClipboardSetterBase<TextProfile>
         {
             return base.SetLocalClipboard(metaInfomation, ctk);
         }
-        return App.Current.Clipboard.SetTextAsync(metaInfomation?.Text ?? "").WaitAsync(ctk);
+        return App.Current.Services.GetRequiredService<ClipboardWriterSelector>().SetTextAsync(metaInfomation?.Text ?? "", ctk);
     }
 }

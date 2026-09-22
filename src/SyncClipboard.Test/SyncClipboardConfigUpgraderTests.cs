@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Commons.ConfigMigration;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Shared.Models;
 using System.Text.Json;
@@ -12,12 +13,14 @@ public class SyncClipboardConfigUpgraderTests
 {
     private static readonly string[] ExpectedLegacyBlackList = [".tmp", ".log"];
 
+    private ConfigurationTestServices _services = null!;
     private string _directory = null!;
     private string _configPath = null!;
 
     [TestInitialize]
     public void Initialize()
     {
+        _services = new ConfigurationTestServices();
         _directory = Path.Combine(Path.GetTempPath(), $"SyncClipboardConfigUpgraderTests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_directory);
         _configPath = Path.Combine(_directory, "SyncClipboard.json");
@@ -26,6 +29,7 @@ public class SyncClipboardConfigUpgraderTests
     [TestCleanup]
     public void Cleanup()
     {
+        _services.Dispose();
         if (Directory.Exists(_directory))
         {
             Directory.Delete(_directory, recursive: true);
@@ -33,9 +37,43 @@ public class SyncClipboardConfigUpgraderTests
     }
 
     [TestMethod]
+    [DataRow(null)]
+    [DataRow(0)]
+    [DataRow(1)]
+    public void StartupServices_UpgradeExistingConfiguration(int? version)
+    {
+        var legacy = JsonNode.Parse("""
+            {
+              "Program": { "Language": "en-US" },
+              "ClipboardFactory": { "ProhibitSources": ["Avalonia", "xclip"] }
+            }
+            """)!.AsObject();
+        if (version is not null)
+            legacy[SyncClipboardConfigUpgrader.VersionPropertyName] = version.Value;
+        var original = legacy.ToJsonString();
+        File.WriteAllText(_configPath, original);
+
+        var manager = new ConfigManager(_configPath, _services.Upgrader);
+
+        var root = ReadRoot();
+        Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
+        Assert.AreEqual("en-US", manager.GetConfig<ProgramConfig>().Language);
+        Assert.AreEqual(ClipboardReadMethod.WlClipboard, manager.GetConfig<ClipboardFactoryConfig>().ReadMethod);
+        Assert.AreEqual(ClipboardWriteMethod.Avalonia, manager.GetConfig<ClipboardFactoryConfig>().WriteMethod);
+        Assert.IsFalse(root[ClipboardFactoryConfig.ConfigKey]!.AsObject().ContainsKey("ProhibitSources"));
+
+        var backup = Directory.EnumerateFiles(Path.Combine(_directory, "config_backup"), "*.json").Single();
+        Assert.AreEqual(original, File.ReadAllText(backup));
+        var upgraded = File.ReadAllText(_configPath);
+        manager.Reload();
+        Assert.AreEqual(upgraded, File.ReadAllText(_configPath));
+        Assert.HasCount(1, Directory.GetFiles(Path.Combine(_directory, "config_backup"), "*.json"));
+    }
+
+    [TestMethod]
     public void Upgrade_CreatesVersionedConfigOnFirstRun()
     {
-        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+        _services.Upgrader.Upgrade(_configPath);
 
         var root = ReadRoot();
         Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
@@ -44,7 +82,7 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_UsesDotPrefixedLockFile()
     {
-        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+        _services.Upgrader.Upgrade(_configPath);
 
         Assert.IsTrue(File.Exists(Path.Combine(_directory, ".SyncClipboard.json.upgrade.lock")));
         Assert.IsFalse(File.Exists(_configPath + ".upgrade.lock"));
@@ -61,7 +99,7 @@ public class SyncClipboardConfigUpgraderTests
 
         try
         {
-            new SyncClipboardConfigUpgrader().Upgrade(fileName);
+            _services.Upgrader.Upgrade(fileName);
 
             Assert.IsTrue(File.Exists(fullPath));
             Assert.IsTrue(File.Exists(lockPath));
@@ -87,10 +125,10 @@ public class SyncClipboardConfigUpgraderTests
             """;
         File.WriteAllText(_configPath, json);
 
-        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+        _services.Upgrader.Upgrade(_configPath);
 
         var root = ReadRoot();
-        Assert.AreEqual(1, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
+        Assert.AreEqual(Env.SyncClipboardConfigVersion, root[SyncClipboardConfigUpgrader.VersionPropertyName]!.GetValue<int>());
 
         var config = root["FileFilter"]!.Deserialize<FileFilterConfig>();
         Assert.IsNotNull(config);
@@ -107,9 +145,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_DoesNotBackUpOrRewriteCurrentConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": {
                 "Language": "en-US"
               }
@@ -117,7 +155,7 @@ public class SyncClipboardConfigUpgraderTests
             """;
         File.WriteAllText(_configPath, json);
 
-        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+        _services.Upgrader.Upgrade(_configPath);
 
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
@@ -130,7 +168,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
@@ -142,7 +180,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }
@@ -150,9 +188,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsMalformedKnownConfigurationSection()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": "bad",
               "History": {
                 "EnableHistory": true
@@ -162,7 +200,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
 
         Assert.Contains("Program", exception.Message);
         Assert.AreEqual(ProgramConfig.ConfigKey, exception.RecoverableSectionKey);
@@ -173,9 +211,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsNullHotkeyCollection()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Hotkey": {
                 "Hotkeys": null
               }
@@ -184,7 +222,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
 
         Assert.Contains(HotkeyConfig.ConfigKey, exception.Message);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
@@ -194,9 +232,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsNullStringInRegisteredConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": {
                 "Language": null
               }
@@ -205,7 +243,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
 
         Assert.Contains(ProgramConfig.ConfigKey, exception.Message);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
@@ -214,9 +252,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsNullNestedCollectionItem()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "NetworkAccountSwitch": {
                 "Rules": [null]
               }
@@ -225,7 +263,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
 
         Assert.Contains(NetworkAccountSwitchConfig.ConfigKey, exception.Message);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
@@ -234,9 +272,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsUndefinedEnumValue()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "NetworkAccountSwitch": {
                 "NoMatchAction": 99
               }
@@ -245,7 +283,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
 
         Assert.AreEqual(NetworkAccountSwitchConfig.ConfigKey, exception.RecoverableSectionKey);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
@@ -254,9 +292,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_AcceptsEmptyHotkeyCollection()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Hotkey": {
                 "Hotkeys": {}
               }
@@ -264,7 +302,7 @@ public class SyncClipboardConfigUpgraderTests
             """;
         File.WriteAllText(_configPath, json);
 
-        new SyncClipboardConfigUpgrader().Upgrade(_configPath);
+        _services.Upgrader.Upgrade(_configPath);
 
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
@@ -273,9 +311,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Reload_InvalidSectionPreservesAndRestoresActiveConfiguration()
     {
-        const string validJson = """
+        var validJson = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": {
                 "Language": "en-US"
               },
@@ -285,11 +323,11 @@ public class SyncClipboardConfigUpgraderTests
             }
             """;
         File.WriteAllText(_configPath, validJson);
-        var manager = new ConfigManager(_configPath, new SyncClipboardConfigUpgrader());
+        var manager = new ConfigManager(_configPath, _services.Upgrader);
 
-        const string invalidJson = """
+        var invalidJson = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "Program": "bad",
               "History": {
                 "EnableHistory": true
@@ -313,9 +351,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsMalformedSavedAccountConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "SavedAccounts": {
                 "WebDAV": {
                   "1": "bad"
@@ -326,7 +364,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         var exception = Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
 
         Assert.Contains("SavedAccounts.WebDAV.1", exception.Message);
         Assert.AreEqual(json, File.ReadAllText(_configPath));
@@ -335,7 +373,7 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_PrunesMigrationBackups()
     {
-        var upgrader = new SyncClipboardConfigUpgrader();
+        var upgrader = _services.Upgrader;
         for (var index = 0; index < 25; index++)
         {
             File.WriteAllText(_configPath, $"{{ \"Marker\": {index} }}");
@@ -352,9 +390,9 @@ public class SyncClipboardConfigUpgraderTests
     [TestMethod]
     public void Upgrade_RejectsInvalidRegexInCurrentConfiguration()
     {
-        const string json = """
+        var json = $$"""
             {
-              "ConfigVersion": 1,
+              "ConfigVersion": {{Env.SyncClipboardConfigVersion}},
               "FileFilter": {
                 "FileFilterMode": "BlackList",
                 "WhiteList": [],
@@ -370,7 +408,7 @@ public class SyncClipboardConfigUpgraderTests
         File.WriteAllText(_configPath, json);
 
         Assert.ThrowsExactly<SyncClipboardConfigUpgradeException>(
-            () => new SyncClipboardConfigUpgrader().Upgrade(_configPath));
+            () => _services.Upgrader.Upgrade(_configPath));
         Assert.AreEqual(json, File.ReadAllText(_configPath));
         Assert.IsFalse(Directory.Exists(Path.Combine(_directory, "config_backup")));
     }

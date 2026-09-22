@@ -379,6 +379,7 @@ namespace SyncClipboard.Core
             services.AddSingleton((serviceProvider) => serviceProvider);
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV0ToV1>();
+            services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV1ToV2>();
             services.AddSingleton<SyncClipboardConfigUpgrader>();
             services.AddSingleton<ConfigRecoveryService>();
             services.AddSingleton<AccountManager>();
@@ -424,6 +425,7 @@ namespace SyncClipboard.Core
             services.AddServerAdapter<S3Config, S3Adapter>();
             services.AddLogInHelper<WebDavConfig, NextCloudLoginHelper>();
             services.AddSingleton<LocalClipboardSetter>();
+            services.AddSingleton<IClipboardWriteCapabilities, DefaultClipboardWriteCapabilities>();
             services.AddSingleton<ProfileActionBuilder>();
             services.AddSingleton<IProfileEnv, ClientProfileEnvProvider>();
         }

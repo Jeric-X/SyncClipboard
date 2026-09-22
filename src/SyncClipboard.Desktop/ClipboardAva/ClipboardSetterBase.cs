@@ -2,6 +2,7 @@ using Avalonia.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 using System;
 using System.Runtime.Versioning;
 using System.Text;
@@ -24,9 +25,8 @@ internal abstract class ClipboardSetterBase<ProfileType> : IClipboardSetter<Prof
         await NativeClipboardAccess.Semaphore.WaitAsync(ctk);
         try
         {
-            await App.Current.Clipboard.SetDataAsync(transfer).WaitAsync(ctk);
+            await App.Current.Services.GetRequiredService<ClipboardWriterSelector>().SetDataAsync(transfer, ctk);
         }
-        catch { }
         finally
         {
             NativeClipboardAccess.Semaphore.Release();

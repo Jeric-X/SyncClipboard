@@ -3,7 +3,6 @@ using Moq;
 using NativeNotification.Interface;
 using SharpHook.Data;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Commons.ConfigMigration;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
@@ -19,6 +18,7 @@ public class LinuxInputBackendTests
     [DataRow(LinuxMode.XRecord)]
     public void Selection_PersistsAcrossRestart_AndPreservesOtherSettings(LinuxMode mode)
     {
+        using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
         try
         {
@@ -27,7 +27,7 @@ public class LinuxInputBackendTests
                 .AddSingleton(Mock.Of<ILogger>())
                 .BuildServiceProvider();
             var staticConfig = new StaticConfig(Mock.Of<INotificationManager>());
-            var config = new ConfigManager(path, new SyncClipboardConfigUpgrader());
+            var config = new ConfigManager(path, migrationServices.Upgrader);
             config.SetConfig(new ProgramConfig { LogRemainDays = 17 });
             var viewModel = new SystemSettingViewModel(config, staticConfig, services);
             Assert.AreEqual(LinuxMode.AutoXRecord, viewModel.LinuxInputMode.Key);
@@ -36,7 +36,7 @@ public class LinuxInputBackendTests
             // A subsequent change must not overwrite the selected backend.
             viewModel.HideWindowOnStartUp = true;
 
-            var reloaded = new ConfigManager(path, new SyncClipboardConfigUpgrader());
+            var reloaded = new ConfigManager(path, migrationServices.Upgrader);
             var reopened = new SystemSettingViewModel(reloaded, staticConfig, services);
             Assert.AreEqual(mode, reopened.LinuxInputMode.Key);
             Assert.AreEqual(mode, reloaded.GetConfig<ProgramConfig>().LinuxInputMode);

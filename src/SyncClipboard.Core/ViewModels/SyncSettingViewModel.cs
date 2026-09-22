@@ -318,42 +318,6 @@ public partial class SyncSettingViewModel : ObservableObject
 
     #endregion
 
-    #region clipboard source (Linux only)
-
-    public bool IsLinux { get; } = OperatingSystem.IsLinux();
-
-    [ObservableProperty]
-    private bool wlClipboardEnabled;
-    partial void OnWlClipboardEnabledChanged(bool value) => UpdateProhibitSource("wl-clipboard", value);
-
-    [ObservableProperty]
-    private bool xClipEnabled;
-    partial void OnXClipEnabledChanged(bool value) => UpdateProhibitSource("xclip", value);
-
-    [ObservableProperty]
-    private bool avaloniaEnabled;
-    partial void OnAvaloniaEnabledChanged(bool value) => UpdateProhibitSource("Avalonia", value);
-
-    private void UpdateProhibitSource(string sourceName, bool enabled)
-    {
-        var config = _configManager.GetConfig<ClipboardFactoryConfig>();
-        var list = new List<string>(config.ProhibitSources);
-        if (enabled)
-            list.Remove(sourceName);
-        else if (!list.Contains(sourceName))
-            list.Add(sourceName);
-        _configManager.SetConfig(new ClipboardFactoryConfig { ProhibitSources = list });
-    }
-
-    private void LoadClipboardFactoryConfig(ClipboardFactoryConfig config)
-    {
-        WlClipboardEnabled = !config.ProhibitSources.Contains("wl-clipboard");
-        XClipEnabled = !config.ProhibitSources.Contains("xclip");
-        AvaloniaEnabled = !config.ProhibitSources.Contains("Avalonia");
-    }
-
-    #endregion
-
     private readonly ConfigManager _configManager;
     private readonly MainViewModel _mainVM;
     private readonly AccountManager _accountManager;
@@ -393,7 +357,6 @@ public partial class SyncSettingViewModel : ObservableObject
         _networkAccountSwitchService = networkAccountSwitchService;
 
         _configManager.ListenConfig<SyncConfig>(config => ClientConfig = config);
-        _configManager.ListenConfig<ClipboardFactoryConfig>(LoadClipboardFactoryConfig);
         _configManager.ListenConfig<NetworkAccountSwitchConfig>(OnNetworkAccountSwitchConfigChanged);
         _accountManager.SavedAccountsChanged += OnSavedAccountsChanged;
         _accountManager.CurrentAccountChanged += OnCurrentAccountChanged;
@@ -417,8 +380,6 @@ public partial class SyncSettingViewModel : ObservableObject
         imageEnable = clientConfig.EnableUploadImage;
         singleFileEnable = clientConfig.EnableUploadSingleFile;
         multiFileEnable = clientConfig.EnableUploadMultiFile;
-
-        LoadClipboardFactoryConfig(_configManager.GetConfig<ClipboardFactoryConfig>());
 
         LoadSavedAccounts();
     }

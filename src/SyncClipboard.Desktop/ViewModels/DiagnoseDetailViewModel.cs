@@ -14,7 +14,7 @@ namespace SyncClipboard.Desktop.ViewModels;
 
 internal partial class DiagnoseDetailViewModel : ObservableObject
 {
-    private readonly MultiSourceClipboardReader Clipboard = App.Current.Services.GetRequiredService<MultiSourceClipboardReader>();
+    private readonly ClipboardReaderSelector Clipboard = App.Current.Services.GetRequiredService<ClipboardReaderSelector>();
 
     [ObservableProperty]
     private bool isImage;
