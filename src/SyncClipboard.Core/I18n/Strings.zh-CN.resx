@@ -1359,7 +1359,7 @@ Shift + 左键：选中连续范围</value>
     <value>历史记录面板快捷键</value>
   </data>
   <data name="HistoryShortcutInvalid" xml:space="preserve">
-    <value>请使用单个按键或修饰键组合；不能使用固定关闭快捷键或与其他动作重复的快捷键。</value>
+    <value>请使用单个按键或修饰键组合；字母、数字和符号不能单独使用；不能使用固定关闭快捷键或与其他动作重复的快捷键。</value>
   </data>
   <data name="HistoryDoubleClick" xml:space="preserve">
     <value>双击记录</value>

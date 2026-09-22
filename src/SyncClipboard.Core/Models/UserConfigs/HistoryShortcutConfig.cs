@@ -64,13 +64,25 @@ public record HistoryShortcutConfig
         || (OperatingSystem.IsMacOS() && hotkey == new Hotkey(Key.Meta, Key.W));
 
     public bool CanAssign(HistoryShortcutAction action, Hotkey hotkey) =>
-        hotkey == Hotkey.Nothing || (!IsReserved(hotkey)
+        hotkey == Hotkey.Nothing || (!IsReserved(hotkey) && !IsSingleVisibleCharacter(hotkey)
             && hotkey.Keys.Count(key => key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta)) == 1
             && Enum.GetValues<HistoryShortcutAction>().All(other => other == action || GetShortcut(other) != hotkey));
 
+    private static bool IsSingleVisibleCharacter(Hotkey hotkey)
+    {
+        if (hotkey.Keys.Length != 1)
+            return false;
+
+        var key = hotkey.Keys[0];
+        return (key >= Key._0 && key <= Key.Z)
+            || (key >= Key.NumPad0 && key <= Key.NumPadEqual)
+            || (key >= Key.Semicolon && key <= Key.Quote)
+            || key is Key.OEM_8 or Key.OEM_102 or Key.Underscore or Key.Yen or Key.JpComma;
+    }
+
     public HistoryShortcutAction? Match(Hotkey hotkey)
     {
-        if (hotkey == Hotkey.Nothing || IsReserved(hotkey))
+        if (hotkey == Hotkey.Nothing || IsReserved(hotkey) || IsSingleVisibleCharacter(hotkey))
             return null;
         foreach (var action in Enum.GetValues<HistoryShortcutAction>())
         {

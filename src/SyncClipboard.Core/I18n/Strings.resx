@@ -1359,7 +1359,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>History panel shortcuts</value>
   </data>
   <data name="HistoryShortcutInvalid" xml:space="preserve">
-    <value>Use one key with optional modifiers. Close shortcuts and shortcuts assigned to another action cannot be used.</value>
+    <value>Use one key with optional modifiers. A letter, digit, or symbol cannot be used alone. Fixed close shortcuts and shortcuts assigned to another action cannot be used.</value>
   </data>
   <data name="HistoryDoubleClick" xml:space="preserve">
     <value>Double-click a record</value>

@@ -77,6 +77,27 @@ public class HistoryShortcutSettingTests
     }
 
     [TestMethod]
+    public void SaveShortcut_RejectsSingleVisibleCharacterAndAcceptsModifiedCharacter()
+    {
+        var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search);
+        viewModel.BeginEditShortcut(setting);
+        foreach (var key in new[] { Key.A, Key._1, Key.Semicolon, Key.NumPad5 })
+        {
+            viewModel.EditingShortcut = new Hotkey(key);
+            Assert.IsTrue(viewModel.ShortcutHasError);
+            Assert.IsFalse(viewModel.SaveShortcutCommand.CanExecute(null));
+            viewModel.SaveShortcutCommand.Execute(null);
+            Assert.AreEqual(new Hotkey(Key.Ctrl, Key.F), setting.Hotkey);
+        }
+
+        viewModel.EditingShortcut = new Hotkey(Key.Ctrl, Key.A);
+        Assert.IsFalse(viewModel.ShortcutHasError);
+        Assert.IsTrue(viewModel.SaveShortcutCommand.CanExecute(null));
+        viewModel.SaveShortcutCommand.Execute(null);
+        Assert.AreEqual(new Hotkey(Key.Ctrl, Key.A), setting.Hotkey);
+    }
+
+    [TestMethod]
     public void RecommendedAction_CanBeAssignedToKeyboardAndBothMouseGestures()
     {
         var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.ExecuteRecommendedAction);

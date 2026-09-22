@@ -78,6 +78,93 @@ public class HistoryShortcutConfigTests
     }
 
     [TestMethod]
+    [DataRow(Key.A)]
+    [DataRow(Key.Z)]
+    [DataRow(Key._0)]
+    [DataRow(Key._9)]
+    [DataRow(Key.NumPad0)]
+    [DataRow(Key.NumPad9)]
+    [DataRow(Key.Multiply)]
+    [DataRow(Key.Add)]
+    [DataRow(Key.Separator)]
+    [DataRow(Key.Subtract)]
+    [DataRow(Key.Decimal)]
+    [DataRow(Key.Divide)]
+    [DataRow(Key.NumPadEqual)]
+    [DataRow(Key.Semicolon)]
+    [DataRow(Key.Equal)]
+    [DataRow(Key.Comma)]
+    [DataRow(Key.Minus)]
+    [DataRow(Key.Period)]
+    [DataRow(Key.Slash)]
+    [DataRow(Key.BackQuote)]
+    [DataRow(Key.OpenBracket)]
+    [DataRow(Key.BackSlash)]
+    [DataRow(Key.CloshBracket)]
+    [DataRow(Key.Quote)]
+    [DataRow(Key.OEM_8)]
+    [DataRow(Key.OEM_102)]
+    [DataRow(Key.Underscore)]
+    [DataRow(Key.Yen)]
+    [DataRow(Key.JpComma)]
+    public void SingleVisibleCharacter_CannotBeAssignedOrTriggeredFromExistingConfiguration(Key key)
+    {
+        var hotkey = new Hotkey(key);
+        var config = new HistoryShortcutConfig
+        {
+            Shortcuts = { [HistoryShortcutAction.Copy] = hotkey }
+        };
+
+        Assert.IsFalse(config.CanAssign(HistoryShortcutAction.Copy, hotkey));
+        Assert.IsNull(config.Match(hotkey));
+    }
+
+    [TestMethod]
+    [DataRow(Key.Enter)]
+    [DataRow(Key.NumPadReturn)]
+    [DataRow(Key.Tab)]
+    [DataRow(Key.Up)]
+    [DataRow(Key.Down)]
+    [DataRow(Key.Left)]
+    [DataRow(Key.Right)]
+    [DataRow(Key.Home)]
+    [DataRow(Key.End)]
+    [DataRow(Key.PgUp)]
+    [DataRow(Key.PgDn)]
+    [DataRow(Key.Backspace)]
+    [DataRow(Key.Delete)]
+    [DataRow(Key.Space)]
+    [DataRow(Key.F1)]
+    [DataRow(Key.F24)]
+    public void NonVisibleSingleKey_CanBeAssignedAndTriggered(Key key)
+    {
+        var config = new HistoryShortcutConfig
+        {
+            Shortcuts = Enum.GetValues<HistoryShortcutAction>().ToDictionary(action => action, _ => Hotkey.Nothing)
+        };
+        var hotkey = new Hotkey(key);
+
+        Assert.IsTrue(config.CanAssign(HistoryShortcutAction.Copy, hotkey));
+        config.Shortcuts[HistoryShortcutAction.Copy] = hotkey;
+        Assert.AreEqual(HistoryShortcutAction.Copy, config.Match(hotkey));
+    }
+
+    [TestMethod]
+    [DataRow(Key.Ctrl)]
+    [DataRow(Key.Alt)]
+    [DataRow(Key.Shift)]
+    [DataRow(Key.Meta)]
+    public void VisibleCharacterWithModifier_RemainsAssignableAndTakesPriority(Key modifier)
+    {
+        var config = new HistoryShortcutConfig();
+        var hotkey = new Hotkey(modifier, Key.A);
+
+        Assert.IsTrue(config.CanAssign(HistoryShortcutAction.Copy, hotkey));
+        config.Shortcuts[HistoryShortcutAction.Copy] = hotkey;
+        Assert.AreEqual(HistoryShortcutAction.Copy, config.Match(hotkey));
+    }
+
+    [TestMethod]
     public void PartialConfiguration_KeepsDefaultsForUnspecifiedActions()
     {
         var config = JsonSerializer.Deserialize<HistoryShortcutConfig>("""
