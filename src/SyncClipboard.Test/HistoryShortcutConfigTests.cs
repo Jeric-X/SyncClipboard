@@ -107,7 +107,7 @@ public class HistoryShortcutConfigTests
     [DataRow(Key.Underscore)]
     [DataRow(Key.Yen)]
     [DataRow(Key.JpComma)]
-    public void SingleVisibleCharacter_CannotBeAssignedOrTriggeredFromExistingConfiguration(Key key)
+    public void SingleInputCharacter_CannotBeAssignedOrTriggeredFromExistingConfiguration(Key key)
     {
         var hotkey = new Hotkey(key);
         var config = new HistoryShortcutConfig
@@ -136,7 +136,7 @@ public class HistoryShortcutConfigTests
     [DataRow(Key.Space)]
     [DataRow(Key.F1)]
     [DataRow(Key.F24)]
-    public void NonVisibleSingleKey_CanBeAssignedAndTriggered(Key key)
+    public void OtherSingleKey_CanBeAssignedAndTriggered(Key key)
     {
         var config = new HistoryShortcutConfig
         {
@@ -154,7 +154,7 @@ public class HistoryShortcutConfigTests
     [DataRow(Key.Alt)]
     [DataRow(Key.Shift)]
     [DataRow(Key.Meta)]
-    public void VisibleCharacterWithModifier_RemainsAssignableAndTakesPriority(Key modifier)
+    public void InputCharacterWithModifier_RemainsAssignableAndTakesPriority(Key modifier)
     {
         var config = new HistoryShortcutConfig();
         var hotkey = new Hotkey(modifier, Key.A);

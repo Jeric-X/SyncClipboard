@@ -77,7 +77,7 @@ public class HistoryShortcutSettingTests
     }
 
     [TestMethod]
-    public void SaveShortcut_RejectsSingleVisibleCharacterAndAcceptsModifiedCharacter()
+    public void SaveShortcut_RejectsSingleInputCharacterAndAcceptsModifiedCharacter()
     {
         var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search);
         viewModel.BeginEditShortcut(setting);
