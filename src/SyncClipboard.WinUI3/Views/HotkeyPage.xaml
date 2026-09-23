@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.HotkeyPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -65,19 +65,10 @@
                 </DataTemplate>
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
-        <ContentDialog x:Name="_HotkeyInputDialog"
-                       IsPrimaryButtonEnabled="{x:Bind _viewModel.SetHotkeyCanExecute, Mode=OneWay}"
-                       PrimaryButtonCommand="{x:Bind _viewModel.SetHotkeyCommand}"
-                       SecondaryButtonClick="ClearButtonClick"
-                       SecondaryButtonText="{x:Bind i18n:Strings.Clear}"
-                       CloseButtonText="{x:Bind i18n:Strings.Cancel}"
-                       PrimaryButtonText="{x:Bind i18n:Strings.Confirm}">
-            <local:HotkeyInput x:Name="_HotkeyInput"
-                               Width="500"
-                               Height="60"
-                               IsError="{x:Bind _viewModel.IsEditingHasError, Mode=OneWay}"
-                               FontSize="20"
-                               Hotkey="{x:Bind _viewModel.EditingHotkey, Mode=TwoWay}" />
-        </ContentDialog>
+        <local:HotkeyEditDialog x:Name="HotkeyEditor"
+                                Hotkey="{x:Bind _viewModel.EditingHotkey, Mode=TwoWay}"
+                                IsError="{x:Bind _viewModel.IsEditingHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{x:Bind _viewModel.SetHotkeyCanExecute, Mode=OneWay}"
+                                SaveCommand="{x:Bind _viewModel.SetHotkeyCommand}" />
     </Grid>
 </Page>

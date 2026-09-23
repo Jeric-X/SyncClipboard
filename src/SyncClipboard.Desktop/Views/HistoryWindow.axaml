@@ -1,4 +1,4 @@
-<Window x:Class="SyncClipboard.Desktop.Views.HistoryWindow"
+﻿<Window x:Class="SyncClipboard.Desktop.Views.HistoryWindow"
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -36,9 +36,7 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
-            <ControlTheme x:Key="LinuxHistoryWindowDecorationsTheme"
-                          TargetType="WindowDrawnDecorations"
-                          BasedOn="{StaticResource {x:Type WindowDrawnDecorations}}">
+            <ControlTheme x:Key="LinuxHistoryWindowDecorationsTheme" TargetType="WindowDrawnDecorations" BasedOn="{StaticResource {x:Type WindowDrawnDecorations}}">
                 <Setter Property="DefaultShadowThickness" Value="0" />
                 <Style Selector="^:has-shadow /template/ Border#PART_WindowBorder">
                     <Setter Property="BoxShadow" Value="none" />
@@ -92,10 +90,6 @@
             </Flyout>
         </ResourceDictionary>
     </Window.Resources>
-    <Window.KeyBindings>
-        <KeyBinding Gesture="Ctrl+Home" Command="{Binding CtrlHomeCommand}" />
-        <KeyBinding Gesture="Ctrl+End" Command="{Binding CtrlEndCommand}" />
-    </Window.KeyBindings>
     <Window.DataTemplates>
         <local:ClipboardViewerTemplateSelector>
             <DataTemplate x:Key="Normal" DataType="vms:HistoryRecordVM">
@@ -130,7 +124,7 @@
             </DataTemplate>
         </local:ClipboardViewerTemplateSelector>
     </Window.DataTemplates>
-    <Panel>
+    <Panel x:Name="_HistoryContent">
         <Panel.Styles>
             <Style Selector="Button:not(.MultiSelectAction)">
                 <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
@@ -217,7 +211,9 @@
                 <Button Width="24"
                         Height="24"
                         VerticalAlignment="Center"
-                        IsVisible="{OnPlatform Default=False, Windows=True, Linux=True}"
+                        IsVisible="{OnPlatform Default=False,
+                                               Windows=True,
+                                               Linux=True}"
                         Command="{Binding CloseCommand}">
                     <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </Button>
@@ -236,11 +232,11 @@
                         <Grid>
                             <ui:FAFontIcon Glyph="&#xE72C;" FontFamily="{StaticResource SymbolThemeFontFamily}" IsVisible="{Binding !IsLoading}" />
                             <ui:FAProgressRing Width="16"
-                                             Height="16"
-                                             HorizontalAlignment="Center"
-                                             VerticalAlignment="Center"
-                                             IsActive="{Binding IsLoading}"
-                                             IsVisible="{Binding IsLoading}" />
+                                               Height="16"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               IsActive="{Binding IsLoading}"
+                                               IsVisible="{Binding IsLoading}" />
                         </Grid>
                     </Button>
                     <Button Width="32"
@@ -395,9 +391,9 @@
                             <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <ui:FAFontIcon x:Name="_SelectAllIcon"
-                                                 Glyph="&#xE739;"
-                                                 FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                                 FontSize="16" />
+                                                   Glyph="&#xE739;"
+                                                   FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                                   FontSize="16" />
                                     <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectAll}" />
                                 </StackPanel>
                             </Button>
@@ -424,15 +420,15 @@
                 </Border>
             </Grid>
             <ui:FAInfoBar x:Name="_InfoBar"
-                        Grid.Row="2"
-                        Width="400"
-                        Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Bottom"
-                        IsOpen="{Binding ShowInfoBar}"
-                        Message="{Binding InfoBarMessage}"
-                        Severity="Warning"
-                        IsClosable="True" />
+                          Grid.Row="2"
+                          Width="400"
+                          Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Bottom"
+                          IsOpen="{Binding ShowInfoBar}"
+                          Message="{Binding InfoBarMessage}"
+                          Severity="Warning"
+                          IsClosable="True" />
         </Grid>
     </Panel>
 </Window>

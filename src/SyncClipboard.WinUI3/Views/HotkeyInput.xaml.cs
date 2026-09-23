@@ -26,9 +26,14 @@ public sealed partial class HotkeyInput : UserControl
 
     public bool IsError
     {
-        get { return (bool)_HotkeyViewer.GetValue(HotkeyViewer.IsErrorProperty); }
-        set { _HotkeyViewer.SetValue(HotkeyViewer.IsErrorProperty, value); }
+        get { return (bool)GetValue(IsErrorProperty); }
+        set { SetValue(IsErrorProperty, value); }
     }
+
+    public static readonly DependencyProperty IsErrorProperty = DependencyProperty.Register(
+        nameof(IsError), typeof(bool), typeof(HotkeyInput),
+        new PropertyMetadata(false, (sender, args) =>
+            ((HotkeyInput)sender)._HotkeyViewer.IsError = (bool)args.NewValue));
 
     public Hotkey Hotkey
     {

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Window x:Class="SyncClipboard.WinUI3.Views.HistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -19,7 +19,7 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
     <Grid x:Name="_HistoryWindowGrid"
-          KeyDown="Grid_KeyDown"
+          PreviewKeyDown="Grid_KeyDown"
           KeyboardAcceleratorPlacementMode="Hidden"
           RowDefinitions="Auto, Auto, *">
         <Grid.Resources>
@@ -94,16 +94,13 @@
                         HorizontalAlignment="Right"
                         Orientation="Horizontal"
                         Spacing="4">
-                <ToggleButton ToolTipService.ToolTip="{x:Bind i18n:Strings.WindowTopmost}"
-                              IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
+                <ToggleButton ToolTipService.ToolTip="{x:Bind i18n:Strings.WindowTopmost}" IsChecked="{x:Bind _viewModel.IsTopmost, Mode=TwoWay}">
                     <FontIcon Glyph="&#xE840;" />
                 </ToggleButton>
-                <ToggleButton ToolTipService.ToolTip="{x:Bind i18n:Strings.OnlyShowStarred}"
-                              IsChecked="{x:Bind _viewModel.OnlyShowStarred, Mode=TwoWay}">
+                <ToggleButton ToolTipService.ToolTip="{x:Bind i18n:Strings.OnlyShowStarred}" IsChecked="{x:Bind _viewModel.OnlyShowStarred, Mode=TwoWay}">
                     <FontIcon Glyph="&#xE734;" />
                 </ToggleButton>
-                <ToggleButton ToolTipService.ToolTip="{x:Bind i18n:Strings.PreviewPanel}"
-                              IsChecked="{x:Bind _viewModel.ShowPreviewPanel, Mode=TwoWay}">
+                <ToggleButton ToolTipService.ToolTip="{x:Bind i18n:Strings.PreviewPanel}" IsChecked="{x:Bind _viewModel.ShowPreviewPanel, Mode=TwoWay}">
                     <FontIcon Glyph="&#xE90C;" />
                 </ToggleButton>
                 <Button x:Name="_MenuButton"
@@ -146,12 +143,7 @@
                      Text="{x:Bind _viewModel.SearchText, Mode=TwoWay}"
                      PlaceholderText="{x:Bind i18n:Strings.HistorySearchPlaceholder}"
                      KeyboardAcceleratorPlacementMode="Hidden"
-                     TextChanged="SearchTextBox_TextChanged">
-                <TextBox.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="Home" Modifiers="Control" Invoked="CtrlHome_Invoked" />
-                    <KeyboardAccelerator Key="End" Modifiers="Control" Invoked="CtrlEnd_Invoked" />
-                </TextBox.KeyboardAccelerators>
-            </TextBox>
+                     TextChanged="SearchTextBox_TextChanged" />
             <StackPanel Grid.Column="1" VerticalAlignment="Top" Orientation="Horizontal">
                 <Button Width="32"
                         Height="32"
@@ -288,9 +280,7 @@
                                 IsDynamicOverflowEnabled="False"
                                 OverflowButtonVisibility="Collapsed"
                                 Background="Transparent">
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}"
-                                      LabelPosition="Default"
-                                      Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
                             <AppBarButton.Icon>
                                 <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
                             </AppBarButton.Icon>
@@ -299,9 +289,7 @@
                                       LabelPosition="Default"
                                       Icon="Delete"
                                       Command="{x:Bind _viewModel.ConfirmDeleteSelectedCommand}" />
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}"
-                                      LabelPosition="Default"
-                                      Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}" LabelPosition="Default" Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
                             <AppBarButton.Icon>
                                 <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
                             </AppBarButton.Icon>

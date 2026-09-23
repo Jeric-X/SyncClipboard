@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.HotkeyPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.HotkeyPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -16,6 +16,11 @@
         <vm:HotkeyViewModel />
     </Design.DataContext>
     <UserControl.Resources>
+        <local:HotkeyEditDialog x:Key="HotkeyEditor"
+                                Hotkey="{Binding EditingHotkey, Mode=TwoWay}"
+                                IsError="{Binding IsEditingHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{Binding SetHotkeyCanExecute, Mode=OneWay}"
+                                SaveCommand="{Binding SetHotkeyCommand, Mode=OneWay}" />
         <ui:FASymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
     </UserControl.Resources>
     <UserControl.Styles>
@@ -28,9 +33,9 @@
     </UserControl.Styles>
     <StackPanel Spacing="10">
         <ui:FASettingsExpander Header="全局快捷键例外程序"
-                             ActionIconSource="{StaticResource GoIcon}"
-                             IsClickEnabled="True"
-                             Command="{Binding OpenBlacklistCommand}">
+                               ActionIconSource="{StaticResource GoIcon}"
+                               IsClickEnabled="True"
+                               Command="{Binding OpenBlacklistCommand}">
             <ui:FASettingsExpander.IconSource>
                 <ui:FAFontIconSource Glyph="&#xE8A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
@@ -42,9 +47,9 @@
             <ui:FAItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:CommandCollectionViewModel">
                     <ui:FASettingsExpander Header="{Binding Name}"
-                                         IsExpanded="False"
-                                         ItemsSource="{Binding Commands}"
-                                         Loaded="SettingsExpander_Loaded">
+                                           IsExpanded="False"
+                                           ItemsSource="{Binding Commands}"
+                                           Loaded="SettingsExpander_Loaded">
                         <ui:FASettingsExpander.IconSource>
                             <ui:FAFontIconSource Glyph="{Binding FontIcon, Mode=OneTime}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                         </ui:FASettingsExpander.IconSource>

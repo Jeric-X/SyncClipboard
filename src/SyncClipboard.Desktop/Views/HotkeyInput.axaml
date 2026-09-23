@@ -6,6 +6,7 @@
              xmlns:local="using:SyncClipboard.Desktop.Views"
              x:Name="_HotkeyInput"
              Focusable="True"
+             Background="Transparent"
              mc:Ignorable="d">
     <local:HotkeyViewer x:Name="_HotkeyViewer" IsError="{Binding #_HotkeyInput.IsError, Mode=OneWay}" Hotkey="{Binding #_HotkeyInput.Hotkey, Mode=OneWay}" />
 </UserControl>

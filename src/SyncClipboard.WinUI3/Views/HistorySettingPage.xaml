@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.HistorySettingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,6 +10,14 @@
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
+    <Page.Resources>
+        <Style x:Key="HistoryShortcutActionStyle" TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
+        </Style>
+    </Page.Resources>
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ClipboardHistory}" Description="{x:Bind i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
@@ -41,14 +50,56 @@
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryWindowOperations}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryShortcutSettings}" IsExpanded="True" ItemsSource="{x:Bind _viewModel.ShortcutSettings}">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE946;" />
+                <FontIcon Glyph="&#xE765;" />
+            </ui:SettingsExpander.HeaderIcon>
+            <Button Content="{x:Bind i18n:Strings.ResetAllHistoryKeyboardShortcuts}" Command="{x:Bind _viewModel.ResetHistoryShortcutsCommand}" />
+            <ui:SettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="vm:HistoryShortcutSetting">
+                    <ui:SettingsCard Header="{x:Bind Name}">
+                        <StackPanel Orientation="Horizontal">
+                            <local:HotkeyViewer Margin="5,0,10,0" Hotkey="{x:Bind Hotkey, Mode=OneWay}" />
+                            <Button Style="{StaticResource HistoryShortcutActionStyle}"
+                                    Content="&#xE70F;"
+                                    ToolTipService.ToolTip="{x:Bind i18n:Strings.Edit}"
+                                    DataContext="{x:Bind}"
+                                    Click="EditShortcutClick" />
+                            <Button Style="{StaticResource HistoryShortcutActionStyle}"
+                                    Content="&#xE7A7;"
+                                    ToolTipService.ToolTip="{x:Bind i18n:Strings.ResetToDefault}"
+                                    DataContext="{x:Bind}"
+                                    Click="ResetShortcutClick"
+                                    IsEnabled="{x:Bind IsModified, Mode=OneWay}" />
+                        </StackPanel>
+                    </ui:SettingsCard>
+                </DataTemplate>
+            </ui:SettingsExpander.ItemTemplate>
+        </ui:SettingsExpander>
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryWindowMouseOperations}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
+                <PathIcon Data="M10 1 C5.58 1 2 4.58 2 9 V15 C2 19.42 5.58 23 10 23 C14.42 23 18 19.42 18 15 V9 C18 4.58 14.42 1 10 1 Z M10 2.5 C13.59 2.5 16.5 5.41 16.5 9 V15 C16.5 18.59 13.59 21.5 10 21.5 C6.41 21.5 3.5 18.59 3.5 15 V9 C3.5 5.41 6.41 2.5 10 2.5 Z M10 5 C9.59 5 9.25 5.34 9.25 5.75 V9.25 C9.25 9.66 9.59 10 10 10 C10.41 10 10.75 9.66 10.75 9.25 V5.75 C10.75 5.34 10.41 5 10 5 Z" />
             </ui:SettingsExpander.HeaderIcon>
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryWindowKeyboardShortcuts}" Description="{x:Bind i18n:Strings.HistoryWindowKeyboardList}" />
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryWindowMouseOperations}" Description="{x:Bind i18n:Strings.HistoryWindowMouseList}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryDoubleClick}">
+                    <ComboBox ItemsSource="{x:Bind _viewModel.MouseActions}"
+                              SelectedItem="{x:Bind _viewModel.DoubleClickAction, Mode=TwoWay}"
+                              DisplayMemberPath="ShownString"
+                              MinWidth="180" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryMiddleClick}">
+                    <ComboBox ItemsSource="{x:Bind _viewModel.MouseActions}"
+                              SelectedItem="{x:Bind _viewModel.MiddleClickAction, Mode=TwoWay}"
+                              DisplayMemberPath="ShownString"
+                              MinWidth="180" />
+                </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <local:HotkeyEditDialog x:Name="HotkeyEditor"
+                                Hotkey="{x:Bind _viewModel.EditingShortcut, Mode=TwoWay}"
+                                IsError="{x:Bind _viewModel.ShortcutHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{x:Bind _viewModel.CanSaveShortcut, Mode=OneWay}"
+                                SaveCommand="{x:Bind _viewModel.SaveShortcutCommand}"
+                                ErrorMessage="{x:Bind _viewModel.ShortcutErrorMessage, Mode=OneWay}" />
     </StackPanel>
 </Page>

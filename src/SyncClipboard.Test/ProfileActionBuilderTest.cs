@@ -36,6 +36,15 @@ public class ProfileActionBuilderTest
     }
 
     [TestMethod]
+    public async Task ImageContentActionOpensImage()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "recommended-action-test.png");
+        var action = await _builder.GetPrimaryAction(new ImageProfile(path), CancellationToken.None);
+
+        Assert.AreEqual(Strings.Open, action?.Text);
+    }
+
+    [TestMethod]
     public async Task FolderContentActionOpensContainingFolder()
     {
         var path = Path.Combine(Path.GetTempPath(), "notification-test-folder");

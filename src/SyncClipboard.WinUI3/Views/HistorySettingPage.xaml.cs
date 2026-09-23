@@ -1,3 +1,5 @@
+using System;
+using Microsoft.UI.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.ViewModels;
@@ -11,5 +13,21 @@ public sealed partial class HistorySettingPage : Page
     {
         InitializeComponent();
         _viewModel = App.Current.Services.GetRequiredService<HistorySettingViewModel>();
+    }
+
+    private async void EditShortcutClick(object sender, RoutedEventArgs _)
+    {
+        if (sender is not Button { DataContext: HistoryShortcutSetting setting })
+            return;
+        _viewModel.BeginEditShortcut(setting);
+        HotkeyEditor.Title = setting.Name;
+        HotkeyEditor.XamlRoot = XamlRoot;
+        await HotkeyEditor.ShowAsync();
+    }
+
+    private async void ResetShortcutClick(object sender, RoutedEventArgs _)
+    {
+        if (sender is Button { DataContext: HistoryShortcutSetting setting })
+            await _viewModel.ResetShortcutCommand.ExecuteAsync(setting);
     }
 }
