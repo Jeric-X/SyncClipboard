@@ -541,7 +541,7 @@
     <value>Mouse Operations</value>
   </data>
   <data name="HistoryWindowCloseShortcutDescription" xml:space="preserve">
-    <value>Close panel (Esc exits multi-select first)</value>
+    <value>Close panel</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>Single click: Select item

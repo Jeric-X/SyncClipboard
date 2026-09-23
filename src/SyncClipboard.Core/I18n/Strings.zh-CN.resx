@@ -541,7 +541,7 @@
     <value>鼠标操作</value>
   </data>
   <data name="HistoryWindowCloseShortcutDescription" xml:space="preserve">
-    <value>关闭面板（多选时 Esc 先退出多选）</value>
+    <value>关闭面板</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>单击：选择项目
