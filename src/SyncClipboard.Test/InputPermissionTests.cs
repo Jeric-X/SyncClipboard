@@ -74,7 +74,9 @@ public class InputPermissionTests
     }
 
     [TestMethod]
-    public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation(bool resetFails)
     {
         using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
@@ -82,6 +84,8 @@ public class InputPermissionTests
         {
             var permissions = new Mock<IInputPermissionProvider>();
             var state = InputPermissionState.Denied;
+            var resetCompletion = new TaskCompletionSource();
+            permissions.Setup(x => x.ResetAccessibilityPermissionAsync()).Returns(resetCompletion.Task);
             permissions.Setup(x => x.GetStatus()).Returns(() => new InputPermissionStatus(state, state, state));
             permissions.Setup(x => x.RequestAccessibilityPermission()).Callback(() => state = InputPermissionState.Available);
             using var services = new ServiceCollection()
@@ -97,11 +101,23 @@ public class InputPermissionTests
 
             viewModel.RefreshInputPermissions();
             Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.CanRequestAccessibilityPermission);
+            permissions.Verify(x => x.ResetAccessibilityPermissionAsync(), Times.Never);
             permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Never);
 
             if (OperatingSystem.IsMacOS())
             {
-                await viewModel.RequestAccessibilityPermissionCommand.ExecuteAsync(null);
+                var request = viewModel.RequestAccessibilityPermissionCommand.ExecuteAsync(null);
+                permissions.Verify(x => x.ResetAccessibilityPermissionAsync(), Times.Once);
+                permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Never);
+                if (resetFails)
+                {
+                    resetCompletion.SetException(new InvalidOperationException("Reset failed"));
+                }
+                else
+                {
+                    resetCompletion.SetResult();
+                }
+                await request;
                 permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Once);
             }
             else

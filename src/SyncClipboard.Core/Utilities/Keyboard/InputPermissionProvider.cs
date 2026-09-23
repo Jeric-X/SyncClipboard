@@ -2,12 +2,46 @@ using SharpHook.Data;
 using SharpHook.Providers;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using System.Diagnostics;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
 /// <summary>Checks existing access and provides an explicit macOS authorization request.</summary>
 public sealed class InputPermissionProvider : IInputPermissionProvider
 {
+    public async Task ResetAccessibilityPermissionAsync()
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+
+        using var process = Process.Start(new ProcessStartInfo(
+            "/usr/bin/tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard")
+        {
+            UseShellExecute = false
+        }) ?? throw new InvalidOperationException("Unable to start tccutil.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"tccutil exited with code {process.ExitCode}.");
+            }
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            // Do not leave a delayed reset running while the next permission request starts.
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                // The process already exited.
+            }
+            throw new TimeoutException("Resetting accessibility permission timed out after 1 second.");
+        }
+    }
+
     public void RequestAccessibilityPermission()
     {
         if (OperatingSystem.IsMacOS())
