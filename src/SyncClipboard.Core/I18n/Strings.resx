@@ -1358,8 +1358,20 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryShortcutSettings" xml:space="preserve">
     <value>History panel shortcuts</value>
   </data>
-  <data name="HistoryShortcutInvalid" xml:space="preserve">
-    <value>Use one key with optional modifiers. Character input keys (letters, digits, and symbols) cannot be used alone. Fixed close shortcuts and shortcuts assigned to another action cannot be used.</value>
+  <data name="HistoryShortcutReserved" xml:space="preserve">
+    <value>The close shortcut {0} cannot be changed.</value>
+  </data>
+  <data name="HistoryShortcutModifierOnly" xml:space="preserve">
+    <value>Press a key in addition to the modifier keys.</value>
+  </data>
+  <data name="HistoryShortcutMultipleMainKeys" xml:space="preserve">
+    <value>Use only one non-modifier key.</value>
+  </data>
+  <data name="HistoryShortcutInputCharacter" xml:space="preserve">
+    <value>{0} is a character input key and cannot be used alone.</value>
+  </data>
+  <data name="HistoryShortcutConflict" xml:space="preserve">
+    <value>{0} is already assigned to “{1}”.</value>
   </data>
   <data name="HistoryDoubleClick" xml:space="preserve">
     <value>Double-click a record</value>

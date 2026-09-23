@@ -98,6 +98,67 @@ public class HistoryShortcutSettingTests
     }
 
     [TestMethod]
+    public void ValidationMessage_ShowsOnlyCurrentErrorAndClearsForValidInput()
+    {
+        var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search);
+        viewModel.BeginEditShortcut(setting);
+        var messages = new List<string>();
+        viewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(viewModel.ShortcutErrorMessage))
+                messages.Add(viewModel.ShortcutErrorMessage);
+        };
+        var invalidInputs = new (Hotkey Hotkey, string Message)[]
+        {
+            (new(Key.Ctrl, Key.W), string.Format(Strings.HistoryShortcutReserved, "Ctrl+W")),
+            (new(Key.A), string.Format(Strings.HistoryShortcutInputCharacter, "A")),
+            (new(Key.Ctrl), Strings.HistoryShortcutModifierOnly),
+            (new(Key.Ctrl, Key.C, Key.V), Strings.HistoryShortcutMultipleMainKeys),
+            (new(Key.Enter), string.Format(Strings.HistoryShortcutConflict, "Enter", Strings.HistoryShortcutCopyAndPaste))
+        };
+        foreach (var (hotkey, message) in invalidInputs)
+        {
+            viewModel.EditingShortcut = hotkey;
+            Assert.AreEqual(message, viewModel.ShortcutErrorMessage);
+            Assert.IsTrue(viewModel.ShortcutHasError);
+            Assert.IsFalse(viewModel.SaveShortcutCommand.CanExecute(null));
+        }
+        CollectionAssert.AreEqual(invalidInputs.Select(input => input.Message).ToArray(), messages);
+
+        viewModel.EditingShortcut = new Hotkey(Key.Ctrl, Key.A);
+        Assert.AreEqual(string.Empty, viewModel.ShortcutErrorMessage);
+        Assert.IsFalse(viewModel.ShortcutHasError);
+        Assert.IsTrue(viewModel.SaveShortcutCommand.CanExecute(null));
+
+        viewModel.EditingShortcut = new Hotkey(Key.A);
+        viewModel.EditingShortcut = Hotkey.Nothing;
+        Assert.AreEqual(string.Empty, viewModel.ShortcutErrorMessage);
+        Assert.IsTrue(viewModel.SaveShortcutCommand.CanExecute(null));
+    }
+
+    [TestMethod]
+    public void ValidationMessage_RefreshesConflictingActionWhenConfigurationChanges()
+    {
+        viewModel.BeginEditShortcut(viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search));
+        viewModel.EditingShortcut = new Hotkey(Key.Enter);
+        Assert.AreEqual(string.Format(Strings.HistoryShortcutConflict, "Enter", Strings.HistoryShortcutCopyAndPaste),
+            viewModel.ShortcutErrorMessage);
+
+        config.SetConfig(new HistoryShortcutConfig
+        {
+            Shortcuts =
+            {
+                [HistoryShortcutAction.CopyAndPaste] = Hotkey.Nothing,
+                [HistoryShortcutAction.Copy] = new Hotkey(Key.Enter)
+            }
+        });
+
+        Assert.AreEqual(string.Format(Strings.HistoryShortcutConflict, "Enter", Strings.HistoryShortcutCopy),
+            viewModel.ShortcutErrorMessage);
+        Assert.IsTrue(viewModel.ShortcutHasError);
+    }
+
+    [TestMethod]
     public void RecommendedAction_CanBeAssignedToKeyboardAndBothMouseGestures()
     {
         var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.ExecuteRecommendedAction);

@@ -16,6 +16,11 @@ public enum HistoryMouseAction
     ExecuteRecommendedAction = 6
 }
 
+public enum HistoryShortcutError
+{
+    None, Reserved, ModifierOnly, MultipleMainKeys, SingleInputCharacter, Conflict
+}
+
 [ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record HistoryShortcutConfig
 {
@@ -64,9 +69,31 @@ public record HistoryShortcutConfig
         || (OperatingSystem.IsMacOS() && hotkey == new Hotkey(Key.Meta, Key.W));
 
     public bool CanAssign(HistoryShortcutAction action, Hotkey hotkey) =>
-        hotkey == Hotkey.Nothing || (!IsReserved(hotkey) && !IsSingleInputCharacter(hotkey)
-            && hotkey.Keys.Count(key => key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta)) == 1
-            && Enum.GetValues<HistoryShortcutAction>().All(other => other == action || GetShortcut(other) != hotkey));
+        Validate(action, hotkey).Error == HistoryShortcutError.None;
+
+    public (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) Validate(
+        HistoryShortcutAction action, Hotkey hotkey)
+    {
+        if (hotkey == Hotkey.Nothing)
+            return (HistoryShortcutError.None, null);
+        if (IsReserved(hotkey))
+            return (HistoryShortcutError.Reserved, null);
+
+        var mainKeyCount = hotkey.Keys.Count(key => key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta));
+        if (mainKeyCount == 0)
+            return (HistoryShortcutError.ModifierOnly, null);
+        if (mainKeyCount > 1)
+            return (HistoryShortcutError.MultipleMainKeys, null);
+        if (IsSingleInputCharacter(hotkey))
+            return (HistoryShortcutError.SingleInputCharacter, null);
+
+        foreach (var other in Enum.GetValues<HistoryShortcutAction>())
+        {
+            if (other != action && GetShortcut(other) == hotkey)
+                return (HistoryShortcutError.Conflict, other);
+        }
+        return (HistoryShortcutError.None, null);
+    }
 
     private static bool IsSingleInputCharacter(Hotkey hotkey)
     {

@@ -48,7 +48,7 @@ public partial class HistorySettingPage : UserControl
                     input,
                     new TextBlock
                     {
-                        Text = Strings.HistoryShortcutInvalid,
+                        [!TextBlock.TextProperty] = ViewModelBinding(nameof(_viewModel.ShortcutErrorMessage)),
                         MaxWidth = 420,
                         TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                         [!IsVisibleProperty] = ViewModelBinding(nameof(_viewModel.ShortcutHasError))

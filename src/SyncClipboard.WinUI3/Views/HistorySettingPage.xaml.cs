@@ -27,10 +27,10 @@ public sealed partial class HistorySettingPage : Page
         input.SetBinding(HotkeyInput.HotkeyProperty, ViewModelBinding(nameof(_viewModel.EditingShortcut), BindingMode.TwoWay));
         var error = new TextBlock
         {
-            Text = Strings.HistoryShortcutInvalid,
             MaxWidth = 420,
             TextWrapping = TextWrapping.Wrap
         };
+        error.SetBinding(TextBlock.TextProperty, ViewModelBinding(nameof(_viewModel.ShortcutErrorMessage)));
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,

@@ -42,9 +42,11 @@ public partial class HistorySettingViewModel
     partial void OnEditingShortcutChanged(Hotkey value) => ValidateEditingShortcut();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShortcutHasError))]
     [NotifyPropertyChangedFor(nameof(CanSaveShortcut))]
     [NotifyCanExecuteChangedFor(nameof(SaveShortcutCommand))]
-    private bool shortcutHasError;
+    private string shortcutErrorMessage = string.Empty;
+    public bool ShortcutHasError => !string.IsNullOrEmpty(ShortcutErrorMessage);
     public bool CanSaveShortcut => !ShortcutHasError;
 
     private void InitializeShortcuts()
@@ -77,8 +79,22 @@ public partial class HistorySettingViewModel
         ValidateEditingShortcut();
     }
 
-    private void ValidateEditingShortcut() => ShortcutHasError =
-        !_configManager.GetConfig<HistoryShortcutConfig>().CanAssign(editingAction, EditingShortcut);
+    private void ValidateEditingShortcut()
+    {
+        var (error, conflictingAction) = _configManager.GetConfig<HistoryShortcutConfig>().Validate(editingAction, EditingShortcut);
+        var keys = string.Join("+", EditingShortcut.Keys.Select(key => key.ToEnumMemberValue()));
+        ShortcutErrorMessage = error switch
+        {
+            HistoryShortcutError.None => string.Empty,
+            HistoryShortcutError.Reserved => string.Format(Strings.HistoryShortcutReserved, keys),
+            HistoryShortcutError.ModifierOnly => Strings.HistoryShortcutModifierOnly,
+            HistoryShortcutError.MultipleMainKeys => Strings.HistoryShortcutMultipleMainKeys,
+            HistoryShortcutError.SingleInputCharacter => string.Format(Strings.HistoryShortcutInputCharacter, keys),
+            HistoryShortcutError.Conflict => string.Format(Strings.HistoryShortcutConflict,
+                keys, HistoryShortcutDescriptions.GetActionName(conflictingAction!.Value)),
+            _ => throw new ArgumentOutOfRangeException(nameof(error))
+        };
+    }
 
     [RelayCommand(CanExecute = nameof(CanSaveShortcut))]
     private void SaveShortcut()
