@@ -9,11 +9,13 @@ namespace SyncClipboard.Core.Utilities.Keyboard;
 /// <summary>Checks existing access and provides an explicit macOS authorization request.</summary>
 public sealed class InputPermissionProvider : IInputPermissionProvider
 {
-    public async Task ResetAccessibilityPermissionAsync()
-    {
-        if (!OperatingSystem.IsMacOS()) return;
+    public Task ResetAccessibilityPermissionAsync() => OperatingSystem.IsMacOS()
+        ? ResetAccessibilityPermissionAsync(Process.Start)
+        : Task.CompletedTask;
 
-        using var process = Process.Start(new ProcessStartInfo(
+    internal static async Task ResetAccessibilityPermissionAsync(Func<ProcessStartInfo, Process?> startProcess)
+    {
+        using var process = startProcess(new ProcessStartInfo(
             "/usr/bin/tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard")
         {
             UseShellExecute = false

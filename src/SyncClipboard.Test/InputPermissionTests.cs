@@ -10,12 +10,96 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.ViewModels;
+using System.Diagnostics;
 
 namespace SyncClipboard.Test;
 
 [TestClass]
 public class InputPermissionTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(7)]
+    public async Task AccessibilityReset_UsesScopedCommand_AndChecksExitCode(int exitCode)
+    {
+        var reset = InputPermissionProvider.ResetAccessibilityPermissionAsync(startInfo =>
+        {
+            Assert.AreEqual("/usr/bin/tccutil", startInfo.FileName);
+            Assert.AreEqual("reset Accessibility xyz.jericx.desktop.syncclipboard", startInfo.Arguments);
+            Assert.IsFalse(startInfo.UseShellExecute);
+            // Run a harmless process instead of changing real macOS permissions.
+            return Process.Start(new ProcessStartInfo(
+                OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh",
+                OperatingSystem.IsWindows() ? $"/c exit {exitCode}" : $"-c \"exit {exitCode}\"")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+        });
+
+        if (exitCode == 0)
+        {
+            await reset;
+        }
+        else
+        {
+            var error = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => reset);
+            Assert.AreEqual($"tccutil exited with code {exitCode}.", error.Message);
+        }
+    }
+
+    [TestMethod]
+    public async Task AccessibilityReset_PropagatesProcessStartFailure()
+    {
+        var failure = new System.ComponentModel.Win32Exception("Start failed");
+        var error = await Assert.ThrowsExactlyAsync<System.ComponentModel.Win32Exception>(
+            () => InputPermissionProvider.ResetAccessibilityPermissionAsync(_ => throw failure));
+        Assert.AreSame(failure, error);
+
+        var noProcess = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => InputPermissionProvider.ResetAccessibilityPermissionAsync(_ => null));
+        Assert.AreEqual("Unable to start tccutil.", noProcess.Message);
+    }
+
+    [TestMethod]
+    public async Task AccessibilityReset_TimesOut_AndTerminatesProcess()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        Process? observer = null;
+        try
+        {
+            var reset = InputPermissionProvider.ResetAccessibilityPermissionAsync(_ =>
+            {
+                var process = Process.Start(new ProcessStartInfo(
+                    OperatingSystem.IsWindows() ? "ping.exe" : "/bin/sleep",
+                    OperatingSystem.IsWindows() ? "-n 30 127.0.0.1" : "30")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                })!;
+                observer = Process.GetProcessById(process.Id);
+                return process;
+            });
+
+            var error = await Assert.ThrowsExactlyAsync<TimeoutException>(
+                () => reset.WaitAsync(TimeSpan.FromSeconds(5), token));
+            Assert.AreEqual("Resetting accessibility permission timed out after 1 second.", error.Message);
+            Assert.IsNotNull(observer);
+            await observer.WaitForExitAsync(token).WaitAsync(TimeSpan.FromSeconds(5), token);
+            Assert.IsTrue(observer.HasExited);
+        }
+        finally
+        {
+            if (observer is not null)
+            {
+                if (!observer.HasExited) observer.Kill();
+                observer.Dispose();
+            }
+        }
+    }
+
     [TestMethod]
     [DataRow(LinuxMode.AutoXRecord, false, LinuxBackend.XRecord)]
     [DataRow(LinuxMode.AutoXRecord, true, LinuxBackend.Wayland)]
