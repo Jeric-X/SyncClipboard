@@ -48,16 +48,16 @@ public partial class HotkeyEditDialog : FAContentDialog
 
     public HotkeyEditDialog() => InitializeComponent();
 
-    private void DialogOpened(FAContentDialog sender, EventArgs args) => _Input.Focus();
+    private void DialogOpened(FAContentDialog _, EventArgs _1) => _Input.Focus();
 
-    private void ClearClick(FAContentDialog sender, FAContentDialogButtonClickEventArgs args)
+    private void ClearClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
     {
         SetCurrentValue(HotkeyProperty, Hotkey.Nothing);
         _Input.Focus();
         args.Cancel = true;
     }
 
-    private void ConfirmClick(FAContentDialog sender, FAContentDialogButtonClickEventArgs args)
+    private void ConfirmClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
     {
         if (SaveCommand?.CanExecute(null) != true)
         {

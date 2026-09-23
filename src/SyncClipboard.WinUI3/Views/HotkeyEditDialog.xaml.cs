@@ -45,17 +45,17 @@ public sealed partial class HotkeyEditDialog : ContentDialog
 
     public HotkeyEditDialog() => InitializeComponent();
 
-    private void DialogOpened(ContentDialog sender, ContentDialogOpenedEventArgs args) =>
+    private void DialogOpened(ContentDialog _, ContentDialogOpenedEventArgs _1) =>
         _Input.Focus(FocusState.Programmatic);
 
-    private void ClearClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void ClearClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
     {
         Hotkey = Hotkey.Nothing;
         _Input.Focus(FocusState.Programmatic);
         args.Cancel = true;
     }
 
-    private void ConfirmClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void ConfirmClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
     {
         if (SaveCommand?.CanExecute(null) != true)
         {
