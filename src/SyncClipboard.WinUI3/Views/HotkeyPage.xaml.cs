@@ -27,14 +27,10 @@ namespace SyncClipboard.WinUI3.Views
         {
             _viewModel.EditingHotkey = Hotkey.Nothing;
             _viewModel.EditingCmdId = (string)((Button)sender).DataContext;
-            await _HotkeyInputDialog.ShowAsync();
-        }
-
-        private void ClearButtonClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
-        {
-            _viewModel.EditingHotkey = Hotkey.Nothing;
-            _HotkeyInput.Focus(FocusState.Programmatic);
-            args.Cancel = true;
+            var dialog = (HotkeyEditDialog)Resources["HotkeyEditor"]!;
+            dialog.DataContext = _viewModel;
+            dialog.XamlRoot = XamlRoot;
+            await dialog.ShowAsync();
         }
 
         private void SetToDefaultButtonClick(object sender, RoutedEventArgs _)

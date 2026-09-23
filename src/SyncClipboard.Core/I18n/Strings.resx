@@ -1359,7 +1359,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>History panel shortcuts</value>
   </data>
   <data name="HistoryShortcutReserved" xml:space="preserve">
-    <value>The close shortcut {0} cannot be changed.</value>
+    <value>{0} is already used to close the window.</value>
   </data>
   <data name="HistoryShortcutModifierOnly" xml:space="preserve">
     <value>Press a key in addition to the modifier keys.</value>
@@ -1433,6 +1433,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryWindowOperationFormat" xml:space="preserve"><value>{0}: {1}</value></data>
   <data name="ResetAllHistoryKeyboardShortcuts" xml:space="preserve">
     <value>Reset All Keyboard Shortcuts</value>
+  </data>
+  <data name="ResetAllHistoryKeyboardShortcutsConfirmMessage" xml:space="preserve">
+    <value>Reset all history panel keyboard shortcuts to their defaults?</value>
   </data>
   <data name="HistoryShortcutResetConflict" xml:space="preserve">
     <value>Cannot reset: {0} is already assigned to “{1}”. Change that action’s shortcut first.</value>

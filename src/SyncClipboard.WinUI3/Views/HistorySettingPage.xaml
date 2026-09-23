@@ -11,6 +11,12 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
     <Page.Resources>
+        <local:HotkeyEditDialog x:Key="HotkeyEditor"
+                                Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
+                                IsError="{Binding ShortcutHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{Binding CanSaveShortcut, Mode=OneWay}"
+                                SaveCommand="{Binding SaveShortcutCommand, Mode=OneWay}"
+                                ErrorMessage="{Binding ShortcutErrorMessage, Mode=OneWay}" />
         <Style x:Key="HistoryShortcutActionStyle" TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />

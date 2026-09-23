@@ -111,8 +111,14 @@ public partial class HistorySettingViewModel
     }
 
     [RelayCommand]
-    private void ResetHistoryShortcuts() =>
+    private async Task ResetHistoryShortcutsAsync()
+    {
+        if (!await _dialog.ShowConfirmationAsync(Strings.ResetAllHistoryKeyboardShortcuts,
+            Strings.ResetAllHistoryKeyboardShortcutsConfirmMessage))
+            return;
+
         _configManager.SetConfig(_configManager.GetConfig<HistoryShortcutConfig>() with { Shortcuts = [] });
+    }
 
     [RelayCommand]
     private async Task ResetShortcutAsync(HistoryShortcutSetting setting)

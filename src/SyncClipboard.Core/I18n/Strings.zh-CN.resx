@@ -1359,7 +1359,7 @@ Shift + 左键：选中连续范围</value>
     <value>历史记录面板快捷键</value>
   </data>
   <data name="HistoryShortcutReserved" xml:space="preserve">
-    <value>关闭快捷键 {0} 不允许修改。</value>
+    <value>{0} 已用于关闭窗口。</value>
   </data>
   <data name="HistoryShortcutModifierOnly" xml:space="preserve">
     <value>请在修饰键之外再按一个按键。</value>
@@ -1433,6 +1433,9 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryWindowOperationFormat" xml:space="preserve"><value>{0}：{1}</value></data>
   <data name="ResetAllHistoryKeyboardShortcuts" xml:space="preserve">
     <value>恢复全部键盘快捷键</value>
+  </data>
+  <data name="ResetAllHistoryKeyboardShortcutsConfirmMessage" xml:space="preserve">
+    <value>确定将历史记录面板的全部键盘快捷键恢复为默认设置吗？</value>
   </data>
   <data name="HistoryShortcutResetConflict" xml:space="preserve">
     <value>无法恢复：{0} 已用于“{1}”。请先调整该动作的快捷键。</value>
