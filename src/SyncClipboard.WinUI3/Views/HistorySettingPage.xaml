@@ -11,12 +11,6 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
     <Page.Resources>
-        <local:HotkeyEditDialog x:Key="HotkeyEditor"
-                                Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
-                                IsError="{Binding ShortcutHasError, Mode=OneWay}"
-                                IsPrimaryButtonEnabled="{Binding CanSaveShortcut, Mode=OneWay}"
-                                SaveCommand="{Binding SaveShortcutCommand, Mode=OneWay}"
-                                ErrorMessage="{Binding ShortcutErrorMessage, Mode=OneWay}" />
         <Style x:Key="HistoryShortcutActionStyle" TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />
@@ -69,10 +63,12 @@
                             <Button Style="{StaticResource HistoryShortcutActionStyle}"
                                     Content="&#xE70F;"
                                     ToolTipService.ToolTip="{x:Bind i18n:Strings.Edit}"
+                                    DataContext="{x:Bind}"
                                     Click="EditShortcutClick" />
                             <Button Style="{StaticResource HistoryShortcutActionStyle}"
                                     Content="&#xE7A7;"
                                     ToolTipService.ToolTip="{x:Bind i18n:Strings.ResetToDefault}"
+                                    DataContext="{x:Bind}"
                                     Click="ResetShortcutClick"
                                     IsEnabled="{x:Bind IsModified, Mode=OneWay}" />
                         </StackPanel>
@@ -99,5 +95,11 @@
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
+        <local:HotkeyEditDialog x:Name="HotkeyEditor"
+                                Hotkey="{x:Bind _viewModel.EditingShortcut, Mode=TwoWay}"
+                                IsError="{x:Bind _viewModel.ShortcutHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{x:Bind _viewModel.CanSaveShortcut, Mode=OneWay}"
+                                SaveCommand="{x:Bind _viewModel.SaveShortcutCommand}"
+                                ErrorMessage="{x:Bind _viewModel.ShortcutErrorMessage, Mode=OneWay}" />
     </StackPanel>
 </Page>

@@ -11,11 +11,6 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       mc:Ignorable="d">
     <Page.Resources>
-        <local:HotkeyEditDialog x:Key="HotkeyEditor"
-                                Hotkey="{Binding EditingHotkey, Mode=TwoWay}"
-                                IsError="{Binding IsEditingHasError, Mode=OneWay}"
-                                IsPrimaryButtonEnabled="{Binding SetHotkeyCanExecute, Mode=OneWay}"
-                                SaveCommand="{Binding SetHotkeyCommand, Mode=OneWay}" />
         <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Width" Value="32" />
@@ -70,5 +65,10 @@
                 </DataTemplate>
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
+        <local:HotkeyEditDialog x:Name="HotkeyEditor"
+                                Hotkey="{x:Bind _viewModel.EditingHotkey, Mode=TwoWay}"
+                                IsError="{x:Bind _viewModel.IsEditingHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{x:Bind _viewModel.SetHotkeyCanExecute, Mode=OneWay}"
+                                SaveCommand="{x:Bind _viewModel.SetHotkeyCommand}" />
     </Grid>
 </Page>

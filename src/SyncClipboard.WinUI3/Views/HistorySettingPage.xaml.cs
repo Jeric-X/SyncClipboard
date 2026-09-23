@@ -20,11 +20,9 @@ public sealed partial class HistorySettingPage : Page
         if (sender is not Button { DataContext: HistoryShortcutSetting setting })
             return;
         _viewModel.BeginEditShortcut(setting);
-        var dialog = (HotkeyEditDialog)Resources["HotkeyEditor"]!;
-        dialog.DataContext = _viewModel;
-        dialog.Title = setting.Name;
-        dialog.XamlRoot = XamlRoot;
-        await dialog.ShowAsync();
+        HotkeyEditor.Title = setting.Name;
+        HotkeyEditor.XamlRoot = XamlRoot;
+        await HotkeyEditor.ShowAsync();
     }
 
     private async void ResetShortcutClick(object sender, RoutedEventArgs _)
