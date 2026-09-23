@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Core.Models.Keyboard;
 using System;
@@ -8,6 +10,8 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HotkeyEditDialog : FAContentDialog
 {
+    private Control? _layoutRoot;
+
     protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
     public static readonly StyledProperty<Hotkey> HotkeyProperty =
@@ -48,7 +52,26 @@ public partial class HotkeyEditDialog : FAContentDialog
 
     public HotkeyEditDialog() => InitializeComponent();
 
-    private void DialogOpened(FAContentDialog _, EventArgs _1) => _Input.Focus();
+    protected override void OnOpening()
+    {
+        // FluentAvalonia disables hit testing on close but does not restore it when reusing a dialog.
+        SetCurrentValue(IsHitTestVisibleProperty, true);
+        base.OnOpening();
+    }
+
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        _layoutRoot = e.NameScope.Find<Control>("LayoutRoot");
+    }
+
+    private void DialogOpened(FAContentDialog _, EventArgs _1)
+    {
+        // The closing animation leaves a local IsVisible=false on LayoutRoot. Reset it so that
+        // completing the next opening animation cannot briefly hide the content and clear focus.
+        _layoutRoot?.SetValue(IsVisibleProperty, true);
+        _Input.Focus();
+    }
 
     private void ClearClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
     {
