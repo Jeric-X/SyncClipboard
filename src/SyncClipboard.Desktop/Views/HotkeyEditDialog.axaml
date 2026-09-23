@@ -1,0 +1,27 @@
+<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.HotkeyEditDialog"
+                    xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls"
+                    xmlns:local="using:SyncClipboard.Desktop.Views"
+                    xmlns:i18n="using:SyncClipboard.Core.I18n"
+                    x:Name="_Dialog"
+                    PrimaryButtonText="{x:Static i18n:Strings.Confirm}"
+                    SecondaryButtonText="{x:Static i18n:Strings.Clear}"
+                    CloseButtonText="{x:Static i18n:Strings.Cancel}"
+                    Opened="DialogOpened"
+                    PrimaryButtonClick="ConfirmClick"
+                    SecondaryButtonClick="ClearClick">
+    <StackPanel Spacing="10">
+        <local:HotkeyInput x:Name="_Input"
+                           MinWidth="360"
+                           Height="60"
+                           FontSize="20"
+                           Hotkey="{Binding #_Dialog.Hotkey, Mode=TwoWay}"
+                           IsError="{Binding #_Dialog.IsError}" />
+        <TextBlock x:Name="_ErrorMessage"
+                   MaxWidth="420"
+                   TextWrapping="Wrap"
+                   Text="{Binding #_Dialog.ErrorMessage}"
+                   IsVisible="{Binding #_Dialog.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+</ui:FAContentDialog>

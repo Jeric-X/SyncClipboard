@@ -1,9 +1,10 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.HistorySettingPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.HistorySettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:SyncClipboard.Desktop.Views"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              d:DesignWidth="800"
@@ -13,6 +14,25 @@
     <Design.DataContext>
         <vm:HistorySettingViewModel />
     </Design.DataContext>
+    <UserControl.Resources>
+        <local:HotkeyEditDialog x:Key="HotkeyEditor"
+                                Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
+                                IsError="{Binding ShortcutHasError, Mode=OneWay}"
+                                IsPrimaryButtonEnabled="{Binding CanSaveShortcut, Mode=OneWay}"
+                                SaveCommand="{Binding SaveShortcutCommand, Mode=OneWay}"
+                                ErrorMessage="{Binding ShortcutErrorMessage, Mode=OneWay}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="Button.HistoryShortcutAction">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="FontSize" Value="18" />
+        </Style>
+        <Style Selector="Button.HistoryShortcutAction:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+    </UserControl.Styles>
     <StackPanel Spacing="10">
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardHistory}" Description="{x:Static i18n:Strings.HistoryPanelHotkeyDescription}" IsExpanded="True">
             <ui:FASettingsExpander.IconSource>
@@ -57,13 +77,55 @@
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
-        <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryWindowOperations}" IsExpanded="True">
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryShortcutSettings}" IsExpanded="True" ItemsSource="{Binding ShortcutSettings}">
             <ui:FASettingsExpander.IconSource>
-                <ui:FAFontIconSource Glyph="&#xE946;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                <ui:FAFontIconSource Glyph="&#xE765;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
+                <Button Content="{x:Static i18n:Strings.ResetAllHistoryKeyboardShortcuts}" Command="{Binding ResetHistoryShortcutsCommand}" />
+            </ui:FASettingsExpander.Footer>
+            <ui:FASettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="vm:HistoryShortcutSetting">
+                    <ui:FASettingsExpanderItem Content="{Binding Name}">
+                        <ui:FASettingsExpanderItem.Footer>
+                            <StackPanel Orientation="Horizontal">
+                                <local:HotkeyViewer Margin="5,0,10,0" Hotkey="{Binding Hotkey}" />
+                                <Button Classes="HistoryShortcutAction" ToolTip.Tip="{x:Static i18n:Strings.Edit}" Click="EditShortcutClick">
+                                    <ui:FAFontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                                <Button Classes="HistoryShortcutAction"
+                                        ToolTip.Tip="{x:Static i18n:Strings.ResetToDefault}"
+                                        Click="ResetShortcutClick"
+                                        IsEnabled="{Binding IsModified}">
+                                    <ui:FAFontIcon Glyph="&#xE7A7;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                                </Button>
+                            </StackPanel>
+                        </ui:FASettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem>
+                </DataTemplate>
+            </ui:FASettingsExpander.ItemTemplate>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryWindowMouseOperations}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAPathIconSource Data="M10 1 C5.58 1 2 4.58 2 9 V15 C2 19.42 5.58 23 10 23 C14.42 23 18 19.42 18 15 V9 C18 4.58 14.42 1 10 1 Z M10 2.5 C13.59 2.5 16.5 5.41 16.5 9 V15 C16.5 18.59 13.59 21.5 10 21.5 C6.41 21.5 3.5 18.59 3.5 15 V9 C3.5 5.41 6.41 2.5 10 2.5 Z M10 5 C9.59 5 9.25 5.34 9.25 5.75 V9.25 C9.25 9.66 9.59 10 10 10 C10.41 10 10.75 9.66 10.75 9.25 V5.75 C10.75 5.34 10.41 5 10 5 Z" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryWindowKeyboardShortcuts}" Description="{x:Static i18n:Strings.HistoryWindowKeyboardList}" />
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryWindowMouseOperations}" Description="{x:Static i18n:Strings.HistoryWindowMouseList}" />
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryDoubleClick}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ComboBox ItemsSource="{Binding MouseActions}"
+                                  SelectedItem="{Binding DoubleClickAction, Mode=TwoWay}"
+                                  DisplayMemberBinding="{Binding ShownString}"
+                                  MinWidth="180" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryMiddleClick}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ComboBox ItemsSource="{Binding MouseActions}"
+                                  SelectedItem="{Binding MiddleClickAction, Mode=TwoWay}"
+                                  DisplayMemberBinding="{Binding ShownString}"
+                                  MinWidth="180" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
     </StackPanel>

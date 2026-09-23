@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentDialog x:Class="SyncClipboard.WinUI3.Views.HotkeyEditDialog"
+               xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:local="using:SyncClipboard.WinUI3.Views"
+               xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+               xmlns:i18n="using:SyncClipboard.Core.I18n"
+               PrimaryButtonText="{x:Bind i18n:Strings.Confirm}"
+               SecondaryButtonText="{x:Bind i18n:Strings.Clear}"
+               CloseButtonText="{x:Bind i18n:Strings.Cancel}"
+               Opened="DialogOpened"
+               PrimaryButtonClick="ConfirmClick"
+               SecondaryButtonClick="ClearClick">
+    <ContentDialog.Resources>
+        <Style TargetType="local:HotkeyEditDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
+        <vc:StringToVisibilityConverter x:Key="StringToVisibility" />
+    </ContentDialog.Resources>
+    <StackPanel Spacing="10">
+        <local:HotkeyInput x:Name="_Input"
+                           MinWidth="360"
+                           Height="60"
+                           FontSize="20"
+                           Hotkey="{x:Bind Hotkey, Mode=TwoWay}"
+                           IsError="{x:Bind IsError, Mode=OneWay}" />
+        <TextBlock MaxWidth="420"
+                   TextWrapping="Wrap"
+                   Text="{x:Bind ErrorMessage, Mode=OneWay}"
+                   Visibility="{x:Bind ErrorMessage, Mode=OneWay, Converter={StaticResource StringToVisibility}}" />
+    </StackPanel>
+</ContentDialog>

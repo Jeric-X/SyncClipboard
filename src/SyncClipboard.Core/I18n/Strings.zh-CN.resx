@@ -540,26 +540,14 @@
   <data name="HistoryWindowMouseOperations" xml:space="preserve">
     <value>鼠标操作</value>
   </data>
-  <data name="HistoryWindowKeyboardList" xml:space="preserve">
-    <value>Ctrl+F：搜索
-↑/↓：导航项目
-Ctrl+Home：滚动到顶部
-Ctrl+End：滚动到底部
-Ctrl+S：切换收藏
-Ctrl+Shift+S：切换仅显示收藏
-Ctrl+Shift+T：切换窗口置顶
-Ctrl+D：删除项目
-Ctrl+P：切换预览面板
-Tab/Shift+Tab：切换筛选器
-Enter：复制并粘贴
-Alt+Enter：仅复制
-Esc：关闭面板</value>
+  <data name="HistoryWindowCloseShortcutDescription" xml:space="preserve">
+    <value>关闭面板</value>
   </data>
   <data name="HistoryWindowMouseList" xml:space="preserve">
     <value>单击：选择项目
-双击项目：复制到剪贴板
+双击项目：{0}
 双击图片：查看完整图片
-单击中键：复制并粘贴
+单击中键：{1}
 长按：进入多选
 Ctrl + 左键：多选
 Shift + 左键：选中连续范围</value>
@@ -1367,4 +1355,89 @@ Shift + 左键：选中连续范围</value>
   <data name="ClipboardReadMethodDescription" xml:space="preserve"><value>选择非内置时需保证命令在系统中可用</value></data>
   <data name="EasyCopyImageUnsupportedWriter" xml:space="preserve"><value>当前剪贴板写入方式 {0} 不支持此功能。</value></data>
   <data name="BuiltIn" xml:space="preserve"><value>内置</value></data>
+  <data name="HistoryShortcutSettings" xml:space="preserve">
+    <value>历史记录面板快捷键</value>
+  </data>
+  <data name="HistoryShortcutReserved" xml:space="preserve">
+    <value>{0} 已用于关闭窗口。</value>
+  </data>
+  <data name="HistoryShortcutModifierOnly" xml:space="preserve">
+    <value>请在修饰键之外再按一个按键。</value>
+  </data>
+  <data name="HistoryShortcutMultipleMainKeys" xml:space="preserve">
+    <value>只能包含一个非修饰键。</value>
+  </data>
+  <data name="HistoryShortcutInputCharacter" xml:space="preserve">
+    <value>{0} 是可输入字符键，不能单独使用。</value>
+  </data>
+  <data name="HistoryShortcutConflict" xml:space="preserve">
+    <value>{0} 已用于“{1}”。</value>
+  </data>
+  <data name="HistoryDoubleClick" xml:space="preserve">
+    <value>双击记录</value>
+  </data>
+  <data name="HistoryMiddleClick" xml:space="preserve">
+    <value>鼠标中键单击记录</value>
+  </data>
+  <data name="HistoryShortcutSearch" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="HistoryShortcutPreviousItem" xml:space="preserve">
+    <value>上一条记录</value>
+  </data>
+  <data name="HistoryShortcutNextItem" xml:space="preserve">
+    <value>下一条记录</value>
+  </data>
+  <data name="HistoryShortcutFirstItem" xml:space="preserve">
+    <value>滚动到顶部</value>
+  </data>
+  <data name="HistoryShortcutLastItem" xml:space="preserve">
+    <value>滚动到底部</value>
+  </data>
+  <data name="HistoryShortcutToggleStar" xml:space="preserve">
+    <value>切换收藏</value>
+  </data>
+  <data name="HistoryShortcutToggleStarredFilter" xml:space="preserve">
+    <value>切换仅显示收藏</value>
+  </data>
+  <data name="HistoryShortcutToggleTopmost" xml:space="preserve">
+    <value>切换窗口置顶</value>
+  </data>
+  <data name="HistoryShortcutDelete" xml:space="preserve">
+    <value>删除记录</value>
+  </data>
+  <data name="HistoryShortcutTogglePreview" xml:space="preserve">
+    <value>切换预览面板</value>
+  </data>
+  <data name="HistoryShortcutNextFilter" xml:space="preserve">
+    <value>下一个分类</value>
+  </data>
+  <data name="HistoryShortcutPreviousFilter" xml:space="preserve">
+    <value>上一个分类</value>
+  </data>
+  <data name="HistoryShortcutCopyAndPaste" xml:space="preserve">
+    <value>复制并粘贴</value>
+  </data>
+  <data name="HistoryShortcutCopy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="ExecuteRecommendedAction" xml:space="preserve">
+    <value>执行推荐动作</value>
+  </data>
+  <data name="NoRecommendedAction" xml:space="preserve">
+    <value>此记录没有推荐动作。</value>
+  </data>
+  <data name="RecommendedActionFileUnavailable" xml:space="preserve">
+    <value>本地文件不可用，无法执行推荐动作。</value>
+  </data>
+  <data name="HistoryWindowOperationFormat" xml:space="preserve"><value>{0}：{1}</value></data>
+  <data name="ResetAllHistoryKeyboardShortcuts" xml:space="preserve">
+    <value>恢复全部键盘快捷键</value>
+  </data>
+  <data name="ResetAllHistoryKeyboardShortcutsConfirmMessage" xml:space="preserve">
+    <value>确定将历史记录面板的全部键盘快捷键恢复为默认设置吗？</value>
+  </data>
+  <data name="HistoryShortcutResetConflict" xml:space="preserve">
+    <value>无法恢复：{0} 已用于“{1}”。请先调整该动作的快捷键。</value>
+  </data>
 </root>

@@ -29,6 +29,7 @@ public partial class HistorySettingViewModel : ObservableObject
         maxItemCount = config.MaxItemCount;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
 
+        InitializeShortcuts();
         UpdateServerSyncSupported();
 
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
