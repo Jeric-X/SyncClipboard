@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using FluentAvalonia.UI.Controls;
@@ -45,16 +44,10 @@ public class AvaloniaDialog : IMainWindowDialog
         var dialog = new FAContentDialog
         {
             Title = title,
-            Content = new ScrollViewer
+            Content = new TextBlock
             {
-                MaxHeight = 480,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                Content = new TextBlock
-                {
-                    Text = message,
-                    TextWrapping = TextWrapping.Wrap
-                }
+                Text = message,
+                TextWrapping = TextWrapping.Wrap
             },
             PrimaryButtonText = Strings.Confirm,
         };

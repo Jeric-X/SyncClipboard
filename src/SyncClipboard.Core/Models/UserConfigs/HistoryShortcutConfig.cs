@@ -104,7 +104,7 @@ public record HistoryShortcutConfig
         return (key >= Key._0 && key <= Key.Z)
             || (key >= Key.NumPad0 && key <= Key.NumPadEqual)
             || (key >= Key.Semicolon && key <= Key.Quote)
-            || key is Key.OEM_8 or Key.OEM_102 or Key.Underscore or Key.Yen or Key.JpComma;
+            || key is Key.Space or Key.OEM_8 or Key.OEM_102 or Key.Underscore or Key.Yen or Key.JpComma;
     }
 
     public HistoryShortcutAction? Match(Hotkey hotkey)

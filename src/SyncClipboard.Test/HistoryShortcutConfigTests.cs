@@ -107,6 +107,7 @@ public class HistoryShortcutConfigTests
     [DataRow(Key.Underscore)]
     [DataRow(Key.Yen)]
     [DataRow(Key.JpComma)]
+    [DataRow(Key.Space)]
     public void SingleInputCharacter_CannotBeAssignedOrTriggeredFromExistingConfiguration(Key key)
     {
         var hotkey = new Hotkey(key);
@@ -133,7 +134,6 @@ public class HistoryShortcutConfigTests
     [DataRow(Key.PgDn)]
     [DataRow(Key.Backspace)]
     [DataRow(Key.Delete)]
-    [DataRow(Key.Space)]
     [DataRow(Key.F1)]
     [DataRow(Key.F24)]
     public void OtherSingleKey_CanBeAssignedAndTriggered(Key key)
@@ -150,14 +150,18 @@ public class HistoryShortcutConfigTests
     }
 
     [TestMethod]
-    [DataRow(Key.Ctrl)]
-    [DataRow(Key.Alt)]
-    [DataRow(Key.Shift)]
-    [DataRow(Key.Meta)]
-    public void InputCharacterWithModifier_RemainsAssignableAndTakesPriority(Key modifier)
+    [DataRow(Key.Ctrl, Key.A)]
+    [DataRow(Key.Alt, Key.A)]
+    [DataRow(Key.Shift, Key.A)]
+    [DataRow(Key.Meta, Key.A)]
+    [DataRow(Key.Ctrl, Key.Space)]
+    [DataRow(Key.Alt, Key.Space)]
+    [DataRow(Key.Shift, Key.Space)]
+    [DataRow(Key.Meta, Key.Space)]
+    public void InputCharacterWithModifier_RemainsAssignableAndTakesPriority(Key modifier, Key key)
     {
         var config = new HistoryShortcutConfig();
-        var hotkey = new Hotkey(modifier, Key.A);
+        var hotkey = new Hotkey(modifier, key);
 
         Assert.IsTrue(config.CanAssign(HistoryShortcutAction.Copy, hotkey));
         config.Shortcuts[HistoryShortcutAction.Copy] = hotkey;
