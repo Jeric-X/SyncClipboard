@@ -9,9 +9,24 @@ namespace SyncClipboard.Core.Utilities.Keyboard;
 /// <summary>Checks existing access and provides an explicit macOS authorization request.</summary>
 public sealed class InputPermissionProvider : IInputPermissionProvider
 {
-    public Task ResetAccessibilityPermissionAsync() => OperatingSystem.IsMacOS()
-        ? ResetAccessibilityPermissionAsync(Process.Start)
-        : Task.CompletedTask;
+    private readonly ILogger _logger;
+    private readonly Func<Task> _resetAccessibilityPermission;
+    private readonly Action _requestAccessibilityPermission;
+    private readonly bool _isMacOS;
+
+    public InputPermissionProvider(ILogger logger)
+        : this(logger, () => ResetAccessibilityPermissionAsync(Process.Start),
+            () => UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: true), OperatingSystem.IsMacOS())
+    { }
+
+    internal InputPermissionProvider(ILogger logger, Func<Task> resetAccessibilityPermission,
+        Action requestAccessibilityPermission, bool isMacOS = true)
+    {
+        _logger = logger;
+        _resetAccessibilityPermission = resetAccessibilityPermission;
+        _requestAccessibilityPermission = requestAccessibilityPermission;
+        _isMacOS = isMacOS;
+    }
 
     internal static async Task ResetAccessibilityPermissionAsync(Func<ProcessStartInfo, Process?> startProcess)
     {
@@ -23,7 +38,7 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
         try
         {
-            await process.WaitForExitAsync(timeout.Token);
+            await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             if (process.ExitCode != 0)
             {
                 throw new InvalidOperationException($"tccutil exited with code {process.ExitCode}.");
@@ -44,12 +59,19 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
         }
     }
 
-    public void RequestAccessibilityPermission()
+    public async Task RequestAccessibilityPermissionAsync()
     {
-        if (OperatingSystem.IsMacOS())
+        if (!_isMacOS) return;
+
+        try
         {
-            UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: true);
+            await _resetAccessibilityPermission().ConfigureAwait(false);
         }
+        catch (Exception ex)
+        {
+            _logger.Write(nameof(InputPermissionProvider), $"Failed to reset accessibility permission: {ex.Message}");
+        }
+        _requestAccessibilityPermission();
     }
 
     public InputPermissionStatus GetStatus() => GetStatus(checkKeyboardMonitoring: true);

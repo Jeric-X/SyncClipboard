@@ -21,6 +21,55 @@ public class InputPermissionTests
 
     [TestMethod]
     [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(2)]
+    public async Task AccessibilityRequest_WaitsForReset_AndContinuesAfterFailure(int resetResult)
+    {
+        var resetCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var requests = 0;
+        var logger = new Mock<ILogger>();
+        var provider = new InputPermissionProvider(logger.Object, () => resetCompletion.Task, () => requests++);
+
+        var request = provider.RequestAccessibilityPermissionAsync();
+        Assert.AreEqual(0, requests);
+        Assert.IsFalse(request.IsCompleted);
+        if (resetResult == 0)
+        {
+            resetCompletion.SetResult();
+        }
+        else
+        {
+            resetCompletion.SetException(resetResult == 1
+                ? new InvalidOperationException("Reset failed")
+                : new TimeoutException("Reset timed out"));
+        }
+
+        await request;
+
+        Assert.AreEqual(1, requests);
+        logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.IsAny<string>()),
+            resetResult == 0 ? Times.Never() : Times.Once());
+    }
+
+    [TestMethod]
+    public async Task AccessibilityRequest_OnOtherPlatforms_DoesNotResetOrRequest()
+    {
+        var resets = 0;
+        var requests = 0;
+        var provider = new InputPermissionProvider(Mock.Of<ILogger>(), () =>
+        {
+            resets++;
+            return Task.CompletedTask;
+        }, () => requests++, isMacOS: false);
+
+        await provider.RequestAccessibilityPermissionAsync();
+
+        Assert.AreEqual(0, resets);
+        Assert.AreEqual(0, requests);
+    }
+
+    [TestMethod]
+    [DataRow(0)]
     [DataRow(7)]
     public async Task AccessibilityReset_UsesScopedCommand_AndChecksExitCode(int exitCode)
     {
@@ -169,9 +218,19 @@ public class InputPermissionTests
             var permissions = new Mock<IInputPermissionProvider>();
             var state = InputPermissionState.Denied;
             var resetCompletion = new TaskCompletionSource();
-            permissions.Setup(x => x.ResetAccessibilityPermissionAsync()).Returns(resetCompletion.Task);
+            var resetStarted = false;
+            var requests = 0;
+            var provider = new InputPermissionProvider(Mock.Of<ILogger>(), () =>
+            {
+                resetStarted = true;
+                return resetCompletion.Task;
+            }, () =>
+            {
+                requests++;
+                state = InputPermissionState.Available;
+            });
             permissions.Setup(x => x.GetStatus()).Returns(() => new InputPermissionStatus(state, state, state));
-            permissions.Setup(x => x.RequestAccessibilityPermission()).Callback(() => state = InputPermissionState.Available);
+            permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Returns(provider.RequestAccessibilityPermissionAsync);
             using var services = new ServiceCollection()
                 .AddSingleton(permissions.Object)
                 .AddSingleton(Mock.Of<ILogger>())
@@ -185,14 +244,15 @@ public class InputPermissionTests
 
             viewModel.RefreshInputPermissions();
             Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.CanRequestAccessibilityPermission);
-            permissions.Verify(x => x.ResetAccessibilityPermissionAsync(), Times.Never);
-            permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Never);
+            Assert.IsFalse(resetStarted);
 
             if (OperatingSystem.IsMacOS())
             {
                 var request = viewModel.RequestAccessibilityPermissionCommand.ExecuteAsync(null);
-                permissions.Verify(x => x.ResetAccessibilityPermissionAsync(), Times.Once);
-                permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Never);
+                permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
+                Assert.IsTrue(resetStarted);
+                Assert.AreEqual(0, requests);
                 if (resetFails)
                 {
                     resetCompletion.SetException(new InvalidOperationException("Reset failed"));
@@ -202,7 +262,7 @@ public class InputPermissionTests
                     resetCompletion.SetResult();
                 }
                 await request;
-                permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Once);
+                Assert.AreEqual(1, requests);
             }
             else
             {

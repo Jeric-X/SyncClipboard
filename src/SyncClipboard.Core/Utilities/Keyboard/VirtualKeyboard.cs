@@ -127,7 +127,8 @@ public sealed class VirtualKeyboard : IDisposable
                     _permissionPrompted = true;
                     if (status.Accessibility != InputPermissionState.NotRequired)
                     {
-                        _permissions.RequestAccessibilityPermission();
+                        // Input simulation is synchronous; the provider does not capture the caller's context.
+                        _permissions.RequestAccessibilityPermissionAsync().GetAwaiter().GetResult();
                         status = _permissions.GetSimulationStatus();
                     }
                     else

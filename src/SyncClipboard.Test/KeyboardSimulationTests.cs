@@ -19,6 +19,41 @@ public class KeyboardSimulationTests
     private static readonly InputPermissionStatus Denied = Allowed with { InputSimulation = InputPermissionState.Denied };
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void AutomaticAccessibilityRequest_ResetsBeforeRequesting_AndContinuesAfterResetFailure(bool resetFails)
+    {
+        var events = new List<string>();
+        var status = Denied with { Accessibility = InputPermissionState.Denied };
+        var provider = new InputPermissionProvider(Mock.Of<ILogger>(), () =>
+        {
+            events.Add("reset");
+            return resetFails ? Task.FromException(new InvalidOperationException("Reset failed")) : Task.CompletedTask;
+        }, () =>
+        {
+            events.Add("request");
+            status = Allowed;
+        });
+        var permissions = new Mock<IInputPermissionProvider>();
+        permissions.Setup(x => x.GetSimulationStatus()).Returns(() => status);
+        permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Returns(provider.RequestAccessibilityPermissionAsync);
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(permissions.Object, () =>
+        {
+            events.Add("create simulator");
+            return simulator.Object;
+        });
+
+        keyboard.Paste();
+        keyboard.Paste();
+
+        string[] expected = ["reset", "request", "create simulator"];
+        CollectionAssert.AreEqual(expected, events);
+        permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
+        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Exactly(2));
+    }
+
+    [TestMethod]
     public void ServiceContainer_ExposesOnlyWrapper_AndDoesNotCheckPermissionsDuringResolution()
     {
         var services = new ServiceCollection();
@@ -82,7 +117,7 @@ public class KeyboardSimulationTests
         Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
         Assert.ThrowsExactly<InvalidOperationException>(() => keyboard.ReleaseKeys(new Hotkey(Key.Hanja)));
         Assert.AreEqual(0, created);
-        permissions.Verify(x => x.RequestAccessibilityPermission(),
+        permissions.Verify(x => x.RequestAccessibilityPermissionAsync(),
             accessibility == InputPermissionState.NotRequired ? Times.Never() : Times.Once());
         Assert.AreEqual(accessibility == InputPermissionState.NotRequired ? 1 : 0, notices);
 
@@ -92,7 +127,7 @@ public class KeyboardSimulationTests
 
         status = Denied with { Accessibility = accessibility };
         Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
-        permissions.Verify(x => x.RequestAccessibilityPermission(),
+        permissions.Verify(x => x.RequestAccessibilityPermissionAsync(),
             accessibility == InputPermissionState.NotRequired ? Times.Never() : Times.Once());
         Assert.AreEqual(accessibility == InputPermissionState.NotRequired ? 1 : 0, notices);
     }
@@ -103,7 +138,7 @@ public class KeyboardSimulationTests
         var permissions = new Mock<IInputPermissionProvider>();
         var status = Denied with { Accessibility = InputPermissionState.Denied };
         permissions.Setup(x => x.GetSimulationStatus()).Returns(() => status);
-        permissions.Setup(x => x.RequestAccessibilityPermission()).Callback(() => status = Allowed);
+        permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Callback(() => status = Allowed).Returns(Task.CompletedTask);
         var simulator = new Mock<IEventSimulator>();
         using (var keyboard = new VirtualKeyboard(permissions.Object, () => simulator.Object))
         {
@@ -113,11 +148,11 @@ public class KeyboardSimulationTests
 
         status = Denied with { Accessibility = InputPermissionState.Denied };
         permissions.Invocations.Clear();
-        permissions.Setup(x => x.RequestAccessibilityPermission()).Throws(new InvalidOperationException("Request failed"));
+        permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Throws(new InvalidOperationException("Request failed"));
         using var restartedKeyboard = new VirtualKeyboard(permissions.Object, () => simulator.Object);
         Assert.ThrowsExactly<InvalidOperationException>(restartedKeyboard.Copy);
         Assert.ThrowsExactly<InvalidOperationException>(restartedKeyboard.Copy);
-        permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Once);
+        permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
     }
 
     [TestMethod]
@@ -139,7 +174,7 @@ public class KeyboardSimulationTests
         dispatcher.Verify(x => x.RunOnMainThreadAsync(It.IsAny<Func<Task>>()), Times.Once);
         dialog.Verify(x => x.ShowMessageAsync(Strings.PermissionManagement,
             Strings.LinuxInputSimulationPermissionRequired, Strings.Confirm), Times.Once);
-        permissions.Verify(x => x.RequestAccessibilityPermission(), Times.Never);
+        permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Never);
         permissions.Verify(x => x.GetStatus(), Times.Never);
         Assert.Contains("/dev/uinput", Strings.LinuxInputSimulationPermissionRequired);
         Assert.DoesNotContain("/dev/input", Strings.LinuxInputSimulationPermissionRequired);

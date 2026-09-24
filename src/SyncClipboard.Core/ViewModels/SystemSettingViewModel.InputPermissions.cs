@@ -69,17 +69,7 @@ public partial class SystemSettingViewModel
 
         try
         {
-            var permissions = _services.GetRequiredService<IInputPermissionProvider>();
-            // Remove stale authorization left by a previous app version before requesting access again.
-            try
-            {
-                await permissions.ResetAccessibilityPermissionAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.Write(nameof(SystemSettingViewModel), $"Failed to reset accessibility permission: {ex.Message}");
-            }
-            permissions.RequestAccessibilityPermission();
+            await _services.GetRequiredService<IInputPermissionProvider>().RequestAccessibilityPermissionAsync();
             RefreshInputPermissions();
             if (InputPermissions.Accessibility == InputPermissionState.Denied)
             {

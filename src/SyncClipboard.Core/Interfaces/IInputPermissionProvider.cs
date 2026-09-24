@@ -6,6 +6,5 @@ public interface IInputPermissionProvider
 {
     InputPermissionStatus GetStatus();
     InputPermissionStatus GetSimulationStatus();
-    Task ResetAccessibilityPermissionAsync();
-    void RequestAccessibilityPermission();
+    Task RequestAccessibilityPermissionAsync();
 }
