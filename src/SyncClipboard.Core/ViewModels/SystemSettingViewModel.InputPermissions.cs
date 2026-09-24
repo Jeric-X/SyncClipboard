@@ -62,20 +62,12 @@ public partial class SystemSettingViewModel
     }
 
     [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]
-    private async Task RequestAccessibilityPermission()
+    private void RequestAccessibilityPermission()
     {
         if (!ShowAccessibilityPermission) return;
 
-        try
-        {
-            await InputPermissionProvider.RequestAccessibilityPermissionAsync();
-            RefreshInputPermissions();
-        }
-        catch (Exception ex)
-        {
-            _logger.Write(nameof(SystemSettingViewModel), ex.Message);
-            await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(Strings.RequestPermission, ex.Message);
-        }
+        InputPermissionProvider.CheckAndRequestAccessibilityPermission();
+        RefreshInputPermissions();
     }
 
     [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]

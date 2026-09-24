@@ -26,6 +26,7 @@ public class InputPermissionTests
     public async Task AccessibilityRequest_WaitsForReset_AndContinuesAfterFailure(bool resetFails)
     {
         var resetCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var requestCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var requests = 0;
         var logger = new Mock<ILogger>();
         var resets = 0;
@@ -33,7 +34,11 @@ public class InputPermissionTests
         {
             resets++;
             return resetCompletion.Task;
-        }, () => requests++, isAccessibilityEnabled: () => false);
+        }, () =>
+        {
+            requests++;
+            requestCompletion.SetResult();
+        }, isAccessibilityEnabled: () => false);
         var requestStateChanges = 0;
         provider.PropertyChanged += (_, e) =>
         {
@@ -41,12 +46,12 @@ public class InputPermissionTests
         };
 
         Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
-        var request = provider.RequestAccessibilityPermissionAsync();
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
         Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
         Assert.AreEqual(1, requestStateChanges);
         Assert.AreEqual(0, requests);
-        Assert.IsFalse(request.IsCompleted);
-        Assert.IsFalse(provider.CheckAccessibilityPermission());
+        Assert.IsFalse(requestCompletion.Task.IsCompleted);
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
         Assert.AreEqual(1, resets);
         if (resetFails)
         {
@@ -57,13 +62,13 @@ public class InputPermissionTests
             resetCompletion.SetResult();
         }
 
-        await request;
+        await requestCompletion.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual(1, requests);
         Assert.AreEqual(1, requestStateChanges);
         logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.IsAny<string>()),
             resetFails ? Times.Once() : Times.Never());
-        Assert.IsFalse(provider.CheckAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
         Assert.AreEqual(1, resets);
         Assert.AreEqual(1, requests);
     }
@@ -80,25 +85,25 @@ public class InputPermissionTests
             return Task.CompletedTask;
         }, () => Interlocked.Increment(ref requests), isAccessibilityEnabled: () => granted);
 
-        Assert.IsTrue(provider.CheckAccessibilityPermission());
+        Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
         Assert.AreEqual(0, resets);
         granted = false;
         Assert.AreEqual(InputPermissionState.Denied, provider.GetStatus().Accessibility);
         Assert.AreEqual(0, resets);
-        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAccessibilityPermission()));
+        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
         Assert.AreEqual(1, resets);
         Assert.AreEqual(1, requests);
 
         granted = true;
-        Assert.IsTrue(provider.CheckAccessibilityPermission());
+        Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
         granted = false;
-        Assert.IsFalse(provider.CheckAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
         Assert.AreEqual(1, resets);
         Assert.AreEqual(1, requests);
     }
 
     [TestMethod]
-    public async Task AccessibilityRequest_OnOtherPlatforms_DoesNotResetOrRequest()
+    public void AccessibilityRequest_OnOtherPlatforms_DoesNotResetOrRequest()
     {
         var resets = 0;
         var requests = 0;
@@ -108,8 +113,7 @@ public class InputPermissionTests
             return Task.CompletedTask;
         }, () => requests++, isMacOS: false);
 
-        await provider.RequestAccessibilityPermissionAsync();
-        Assert.IsTrue(provider.CheckAccessibilityPermission());
+        Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
         Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
 
         Assert.AreEqual(0, resets);
@@ -269,14 +273,14 @@ public class InputPermissionTests
             var viewModel = new ClipboardOwnerFilterSettingViewModel(config, Mock.Of<IClipboardChangingListener>(), permissions.Object);
             viewModel.UseConfig(configKey);
             config.SetConfig(configKey, new ClipboardOwnerFilterConfig { FilterMode = "WhiteList" });
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
 
             viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[0];
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
             viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[1];
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Once);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Once);
             viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[2];
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Once);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Once);
         }
         finally
         {
@@ -300,13 +304,13 @@ public class InputPermissionTests
                 new HotkeyManager(registry, config), permissions.Object);
             config.SetConfig(new HotkeyBlacklistConfig { Enabled = false });
             config.SetConfig(new HotkeyBlacklistConfig { Enabled = true });
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
 
             viewModel.IsEnabled = false;
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
             viewModel.IsEnabled = true;
             viewModel.IsEnabled = true;
-            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Once);
+            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Once);
         }
         finally
         {

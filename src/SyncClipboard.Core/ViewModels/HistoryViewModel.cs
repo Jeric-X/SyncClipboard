@@ -396,7 +396,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             if (value == FollowCaretPosition) return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
-            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAccessibilityPermission();
+            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
         }
     }
 
@@ -407,7 +407,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             if (value == FollowForegroundWindowScreen) return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
-            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAccessibilityPermission();
+            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
         }
     }
 

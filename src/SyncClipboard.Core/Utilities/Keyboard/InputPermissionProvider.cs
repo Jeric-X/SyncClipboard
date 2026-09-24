@@ -67,7 +67,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     }
 
     /// <summary>Returns current access; requests missing access without waiting or changing this check's result.</summary>
-    public bool CheckAccessibilityPermission()
+    public bool CheckAndRequestAccessibilityPermission()
     {
         if (!_isMacOS) return true;
         if (GetAccessibilityStatus(_isAccessibilityEnabled).Accessibility == InputPermissionState.Available) return true;
@@ -76,7 +76,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         return false;
     }
 
-    public async Task RequestAccessibilityPermissionAsync()
+    private async Task RequestAccessibilityPermissionAsync()
     {
         if (!_isMacOS || Interlocked.Exchange(ref _accessibilityRequested, 1) != 0) return;
         OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));

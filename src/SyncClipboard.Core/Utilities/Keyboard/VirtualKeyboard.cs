@@ -150,8 +150,7 @@ public sealed class VirtualKeyboard : IDisposable
         {
             if (status.Accessibility != InputPermissionState.NotRequired)
             {
-                DelegateExtention.SafeFireAndForget(
-                    _permissions.RequestAccessibilityPermissionAsync, nameof(VirtualKeyboard));
+                _permissions.CheckAndRequestAccessibilityPermission();
             }
             else
             {

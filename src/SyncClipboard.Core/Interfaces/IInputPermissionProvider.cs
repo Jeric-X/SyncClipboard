@@ -8,6 +8,5 @@ public interface IInputPermissionProvider : INotifyPropertyChanged
     bool HasRequestedAccessibilityPermission { get; }
     InputPermissionStatus GetStatus();
     InputPermissionStatus GetSimulationStatus();
-    bool CheckAccessibilityPermission();
-    Task RequestAccessibilityPermissionAsync();
+    bool CheckAndRequestAccessibilityPermission();
 }

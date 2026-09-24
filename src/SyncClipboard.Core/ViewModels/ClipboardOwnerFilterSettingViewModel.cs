@@ -29,7 +29,7 @@ public partial class ClipboardOwnerFilterSettingViewModel(
         var enabling = FilterConfig.FilterMode == "" && value.Key != "";
         UpdateFilterList();
         FilterConfig = FilterConfig with { FilterMode = value.Key };
-        if (enabling) permissions.CheckAccessibilityPermission();
+        if (enabling) permissions.CheckAndRequestAccessibilityPermission();
     }
 
     [ObservableProperty]
