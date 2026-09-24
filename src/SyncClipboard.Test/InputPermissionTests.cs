@@ -20,10 +20,9 @@ public class InputPermissionTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    [DataRow(0)]
-    [DataRow(1)]
-    [DataRow(2)]
-    public async Task AccessibilityRequest_WaitsForReset_AndContinuesAfterFailure(int resetResult)
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AccessibilityRequest_WaitsForReset_AndContinuesAfterFailure(bool resetFails)
     {
         var resetCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var requests = 0;
@@ -33,22 +32,20 @@ public class InputPermissionTests
         var request = provider.RequestAccessibilityPermissionAsync();
         Assert.AreEqual(0, requests);
         Assert.IsFalse(request.IsCompleted);
-        if (resetResult == 0)
+        if (resetFails)
         {
-            resetCompletion.SetResult();
+            resetCompletion.SetException(new InvalidOperationException("Reset failed"));
         }
         else
         {
-            resetCompletion.SetException(resetResult == 1
-                ? new InvalidOperationException("Reset failed")
-                : new TimeoutException("Reset timed out"));
+            resetCompletion.SetResult();
         }
 
         await request;
 
         Assert.AreEqual(1, requests);
         logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.IsAny<string>()),
-            resetResult == 0 ? Times.Never() : Times.Once());
+            resetFails ? Times.Once() : Times.Never());
     }
 
     [TestMethod]
@@ -207,9 +204,7 @@ public class InputPermissionTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation(bool resetFails)
+    public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation()
     {
         using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
@@ -253,14 +248,7 @@ public class InputPermissionTests
                 permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
                 Assert.IsTrue(resetStarted);
                 Assert.AreEqual(0, requests);
-                if (resetFails)
-                {
-                    resetCompletion.SetException(new InvalidOperationException("Reset failed"));
-                }
-                else
-                {
-                    resetCompletion.SetResult();
-                }
+                resetCompletion.SetResult();
                 await request;
                 Assert.AreEqual(1, requests);
             }

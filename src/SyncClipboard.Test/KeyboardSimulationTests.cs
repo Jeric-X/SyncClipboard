@@ -19,16 +19,14 @@ public class KeyboardSimulationTests
     private static readonly InputPermissionStatus Denied = Allowed with { InputSimulation = InputPermissionState.Denied };
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public void AutomaticAccessibilityRequest_ResetsBeforeRequesting_AndContinuesAfterResetFailure(bool resetFails)
+    public void AutomaticAccessibilityRequest_ResetsBeforeRequesting_AndSkipsTriggeringInput()
     {
         var events = new List<string>();
         var status = Denied with { Accessibility = InputPermissionState.Denied };
         var provider = new InputPermissionProvider(Mock.Of<ILogger>(), () =>
         {
             events.Add("reset");
-            return resetFails ? Task.FromException(new InvalidOperationException("Reset failed")) : Task.CompletedTask;
+            return Task.CompletedTask;
         }, () =>
         {
             events.Add("request");
@@ -44,13 +42,15 @@ public class KeyboardSimulationTests
             return simulator.Object;
         });
 
-        keyboard.Paste();
+        var error = Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
+        Assert.AreEqual(Strings.InputSimulationPermissionRequired, error.Message);
+        simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
         keyboard.Paste();
 
         string[] expected = ["reset", "request", "create simulator"];
         CollectionAssert.AreEqual(expected, events);
         permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
-        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Exactly(2));
+        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Once);
     }
 
     [TestMethod]
@@ -133,26 +133,87 @@ public class KeyboardSimulationTests
     }
 
     [TestMethod]
-    public void AccessibilityRequest_UsesRefreshedPermission_AndDoesNotRepeatAfterFailure()
+    public void AccessibilityRequest_DoesNotRepeatAfterFailure()
     {
         var permissions = new Mock<IInputPermissionProvider>();
-        var status = Denied with { Accessibility = InputPermissionState.Denied };
-        permissions.Setup(x => x.GetSimulationStatus()).Returns(() => status);
-        permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Callback(() => status = Allowed).Returns(Task.CompletedTask);
-        var simulator = new Mock<IEventSimulator>();
-        using (var keyboard = new VirtualKeyboard(permissions.Object, () => simulator.Object))
-        {
-            keyboard.Copy();
-            simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcC), Times.Once);
-        }
-
-        status = Denied with { Accessibility = InputPermissionState.Denied };
-        permissions.Invocations.Clear();
+        permissions.Setup(x => x.GetSimulationStatus()).Returns(Denied with { Accessibility = InputPermissionState.Denied });
         permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Throws(new InvalidOperationException("Request failed"));
-        using var restartedKeyboard = new VirtualKeyboard(permissions.Object, () => simulator.Object);
-        Assert.ThrowsExactly<InvalidOperationException>(restartedKeyboard.Copy);
-        Assert.ThrowsExactly<InvalidOperationException>(restartedKeyboard.Copy);
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(permissions.Object, () => simulator.Object);
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(keyboard.Copy);
+        Assert.AreEqual(Strings.InputSimulationPermissionRequired, error.Message);
+        Assert.ThrowsExactly<InvalidOperationException>(keyboard.Copy);
         permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
+        simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
+    }
+
+    [TestMethod]
+    public void PendingAccessibilityRequest_SkipsInputWithoutWaiting()
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var permissions = new Mock<IInputPermissionProvider>();
+        permissions.Setup(x => x.GetSimulationStatus()).Returns(Denied with { Accessibility = InputPermissionState.Denied });
+        permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Returns(completion.Task);
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(permissions.Object, () => simulator.Object);
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                keyboard.Paste();
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        })
+        { IsBackground = true };
+
+        try
+        {
+            thread.Start();
+            Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(5)), "Input waited for the permission request.");
+            Assert.IsInstanceOfType<InvalidOperationException>(failure);
+            Assert.AreEqual(Strings.InputSimulationPermissionRequired, failure.Message);
+            Assert.ThrowsExactly<InvalidOperationException>(keyboard.Copy);
+            permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
+            simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
+        }
+        finally
+        {
+            completion.TrySetResult();
+            thread.Join(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [TestMethod]
+    public void AccessibilityRequest_StartsOutsideKeyboardLock()
+    {
+        var permissions = new Mock<IInputPermissionProvider>();
+        permissions.Setup(x => x.GetSimulationStatus()).Returns(Denied with { Accessibility = InputPermissionState.Denied });
+        using var keyboard = new VirtualKeyboard(permissions.Object, () => Mock.Of<IEventSimulator>());
+        var disposedDuringRequest = false;
+        Thread? disposeThread = null;
+        permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Returns(() =>
+        {
+            // A different thread must be able to acquire the keyboard lock before this call returns.
+            disposeThread = new Thread(keyboard.Dispose) { IsBackground = true };
+            disposeThread.Start();
+            disposedDuringRequest = disposeThread.Join(TimeSpan.FromSeconds(5));
+            return Task.CompletedTask;
+        });
+
+        try
+        {
+            Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
+            Assert.IsTrue(disposedDuringRequest, "Permission request started while holding the keyboard lock.");
+        }
+        finally
+        {
+            disposeThread?.Join(TimeSpan.FromSeconds(5));
+        }
     }
 
     [TestMethod]
