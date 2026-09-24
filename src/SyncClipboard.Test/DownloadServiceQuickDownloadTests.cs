@@ -3,10 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NativeNotification.Interface;
+using SharpHook.Data;
+using SharpHook.Simulation;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter;
@@ -162,6 +165,53 @@ public class DownloadServiceQuickDownloadTests
         }
     }
 
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task QuickDownload_WhenSuperseded_ShouldOnlyPasteForTheWinningCommand(bool firstPaste, bool secondPaste)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await Fixture.CreateAsync(token);
+        var firstRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var requests = 0;
+        fixture.Adapter.Setup(adapter => adapter.GetProfileAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(async cancellationToken =>
+            {
+                var first = Interlocked.Increment(ref requests) == 1;
+                (first ? firstRequested : secondRequested).TrySetResult();
+                await resume.Task.WaitAsync(cancellationToken);
+                return await new TextProfile(first ? "remote superseded" : "remote latest").ToProfileDto(cancellationToken);
+            });
+
+        var firstDownload = fixture.DownloadAsync(token, firstPaste);
+        Task secondDownload = Task.CompletedTask;
+        try
+        {
+            await firstRequested.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
+            secondDownload = fixture.DownloadAsync(token, secondPaste);
+            await secondRequested.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
+            await firstDownload;
+
+            Assert.IsEmpty(fixture.PastedTexts, "A canceled command must not paste while the winning request is pending.");
+            resume.TrySetResult();
+            await secondDownload;
+
+            string[] expected = secondPaste ? ["remote latest"] : [];
+            CollectionAssert.AreEqual(expected, fixture.PastedTexts);
+            Assert.AreEqual("remote latest", fixture.LocalText);
+            Assert.AreEqual(1, fixture.ClipboardWrites);
+        }
+        finally
+        {
+            resume.TrySetResult();
+            await Task.WhenAll(firstDownload, secondDownload);
+        }
+    }
+
     private sealed class MemoryHistoryDbContext : HistoryDbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder options)
@@ -171,6 +221,7 @@ public class DownloadServiceQuickDownloadTests
     private sealed class Fixture : IAsyncDisposable
     {
         private const string DownloadCommandId = "95396FFF-E5FE-45D3-9D70-4A43FA34FF31";
+        private const string DownloadAndPasteCommandId = "8a4a033e-31da-1b87-76ea-548885866b66";
         private readonly ConfigurationTestServices _configurationServices = new();
         private readonly string _directory = Path.Combine(Path.GetTempPath(), $"QuickDownloadTests-{Guid.NewGuid():N}");
         private readonly MemoryHistoryDbContext _db = new();
@@ -188,6 +239,7 @@ public class DownloadServiceQuickDownloadTests
         public string LocalText { get; private set; } = "local initial";
         public int ClipboardWrites { get; private set; }
         public Action? BeforeClipboardWrite { get; set; }
+        public List<string> PastedTexts { get; } = [];
 
         private Fixture()
         {
@@ -213,6 +265,11 @@ public class DownloadServiceQuickDownloadTests
                 .Returns<Func<Task>>(action => action());
             var profileEnv = new Mock<IProfileEnv>();
             profileEnv.Setup(env => env.GetPersistentDir()).Returns(_directory);
+            var permissions = new Mock<IInputPermissionProvider>();
+            permissions.Setup(p => p.GetSimulationStatus()).Returns(new InputPermissionStatus(
+                InputPermissionState.NotRequired, InputPermissionState.NotRequired, InputPermissionState.Available));
+            var simulator = new Mock<IEventSimulator>();
+            simulator.Setup(s => s.SimulateKeyPress(KeyCode.VcV)).Callback(() => PastedTexts.Add(LocalText));
             Adapter.Setup(adapter => adapter.GetProfileAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(async token => await new TextProfile(RemoteText).ToProfileDto(token));
 
@@ -235,8 +292,7 @@ public class DownloadServiceQuickDownloadTests
                 .AddSingleton(dispatcher.Object)
                 .AddSingleton(history)
                 .AddSingleton<LocalClipboardSetter>()
-                .AddSingleton(_ => new VirtualKeyboard(Mock.Of<IInputPermissionProvider>(),
-                    () => throw new AssertFailedException("Download-only must not simulate keyboard input.")))
+                .AddSingleton(_ => new VirtualKeyboard(permissions.Object, () => simulator.Object))
                 .AddKeyedSingleton<ServerAdapterFactory>("test", (_, _) => _ => Adapter.Object)
                 .BuildServiceProvider();
             _remoteFactory = new RemoteClipboardServerFactory(_services);
@@ -274,15 +330,16 @@ public class DownloadServiceQuickDownloadTests
                 new ClipboardMetaInfomation { Text = text }, new TextProfile(text));
         }
 
-        public async Task DownloadAsync(CancellationToken token)
+        public async Task DownloadAsync(CancellationToken token, bool paste = false)
         {
-            Assert.IsTrue(_hotkeys.HotkeyStatusMap.ContainsKey(DownloadCommandId));
+            var commandId = paste ? DownloadAndPasteCommandId : DownloadCommandId;
+            Assert.IsTrue(_hotkeys.HotkeyStatusMap.ContainsKey(commandId));
             var context = new CommandCompletionContext();
             var previousContext = SynchronizationContext.Current;
             try
             {
                 SynchronizationContext.SetSynchronizationContext(context);
-                _hotkeys.RunCommand(DownloadCommandId);
+                _hotkeys.RunCommand(commandId);
             }
             finally
             {

@@ -22,7 +22,6 @@ public class DownloadService : Service
     private const string LOG_TAG = "PULL";
     private bool _isEventDrivenModeActive = false;
     private bool _isQuickDownload = false;
-    private bool _isQuickDownloadAndPaste = false;
     private readonly Lock _serviceStateLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
@@ -554,10 +553,6 @@ public class DownloadService : Service
             return;
         }
 
-        _remoteProfileCache = null;
-        _isQuickDownload = true;
-        _isQuickDownloadAndPaste = paste;
-
         try
         {
             if (paste && _hotkeyManager.HotkeyStatusMap.TryGetValue(QuickDownloadAndPasteGuid, out var status) &&
@@ -571,11 +566,24 @@ public class DownloadService : Service
             {
                 await _singleDownloadTask.Run(async token =>
                 {
-                    _localProfileCache = await _clipboardFactory.CreateProfileFromLocal(token);
-                    var remoteProfile = await remoteServer.GetProfileAsync(token);
-                    await HandleRemoteProfileChange(remoteProfile, token);
+                    _remoteProfileCache = null;
+                    _isQuickDownload = true;
+                    try
+                    {
+                        _localProfileCache = await _clipboardFactory.CreateProfileFromLocal(token);
+                        var remoteProfile = await remoteServer.GetProfileAsync(token);
+                        await HandleRemoteProfileChange(remoteProfile, token);
+                        token.ThrowIfCancellationRequested();
+                        if (paste)
+                        {
+                            _keyboard.Paste();
+                        }
+                    }
+                    finally
+                    {
+                        _isQuickDownload = false;
+                    }
                 });
-                OnDownloadCompleted();
             }
         }
         catch (Exception ex)
@@ -583,20 +591,5 @@ public class DownloadService : Service
             await _logger.WriteAsync(LOG_TAG, $"Quick download failed: {ex.Message}");
             _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
-        finally
-        {
-            _isQuickDownload = false;
-            _isQuickDownloadAndPaste = false;
-        }
-    }
-
-    private void OnDownloadCompleted()
-    {
-        if (_isQuickDownloadAndPaste)
-        {
-            _keyboard.Paste();
-        }
-        _isQuickDownload = false;
-        _isQuickDownloadAndPaste = false;
     }
 }
