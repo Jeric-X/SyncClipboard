@@ -115,34 +115,32 @@ public sealed class VirtualKeyboard : IDisposable
 
     private void Execute(Action<IEventSimulator> action)
     {
+        var requestPermission = false;
+        InputPermissionStatus status;
         lock (_lock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             try
             {
-                var status = _permissions.GetSimulationStatus();
-                if (!status.CanSimulateInput && !_permissionPrompted)
+                status = _permissions.GetSimulationStatus();
+                if (status.CanSimulateInput)
                 {
-                    // This service is a singleton. A failed request must not prompt again on the next input.
-                    _permissionPrompted = true;
-                    if (status.Accessibility != InputPermissionState.NotRequired)
-                    {
-                        _permissions.RequestAccessibilityPermission();
-                        status = _permissions.GetSimulationStatus();
-                    }
-                    else
-                    {
-                        _showPermissionNotice?.Invoke();
-                    }
-                }
-                if (!status.CanSimulateInput)
-                {
-                    throw new InvalidOperationException(Strings.InputSimulationPermissionRequired);
+                    // Failed initialization is not cached, so a later attempt can use newly granted access.
+                    _simulator ??= _createSimulator();
+                    action(_simulator);
+                    return;
                 }
 
-                // Failed initialization is not cached, so a later attempt can use newly granted access.
-                _simulator ??= _createSimulator();
-                action(_simulator);
+                if (status.Accessibility != InputPermissionState.NotRequired)
+                {
+                    requestPermission = !_permissions.HasRequestedAccessibilityPermission;
+                }
+                else if (!_permissionPrompted)
+                {
+                    _permissionPrompted = true;
+                    requestPermission = true;
+                }
+                DisposeSimulator();
             }
             catch
             {
@@ -150,6 +148,20 @@ public sealed class VirtualKeyboard : IDisposable
                 throw;
             }
         }
+
+        if (requestPermission)
+        {
+            if (status.Accessibility != InputPermissionState.NotRequired)
+            {
+                _permissions.CheckAndRequestAccessibilityPermission();
+            }
+            else
+            {
+                _showPermissionNotice?.Invoke();
+            }
+        }
+        // Request access for a future attempt; never replay the input that triggered the request.
+        throw new InvalidOperationException(Strings.InputSimulationPermissionRequired);
     }
 
     private static void EnsureSuccess(UioHookResult result)
