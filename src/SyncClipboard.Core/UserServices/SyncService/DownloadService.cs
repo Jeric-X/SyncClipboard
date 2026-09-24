@@ -284,11 +284,11 @@ public class DownloadService : Service
         }
     }
 
-    private async Task HandleRemoteProfileChange(Profile remoteProfile, CancellationToken token)
+    private async Task<bool> HandleRemoteProfileChange(Profile remoteProfile, CancellationToken token)
     {
         if (!await NeedUpdate(remoteProfile, token))
         {
-            return;
+            return false;
         }
 
         await SyncService.remoteProfilemutex.WaitAsync(token);
@@ -297,7 +297,7 @@ public class DownloadService : Service
         await LocalClipboard.Semaphore.WaitAsync(token);
         using var localClipboardGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
 
-        await DownloadRemoteProfile(remoteProfile, token);
+        return await DownloadRemoteProfile(remoteProfile, token);
     }
 
     private void ClipboardProfileChanged(ClipboardMetaInfomation _, Profile profile)
@@ -391,12 +391,13 @@ public class DownloadService : Service
         return null;
     }
 
-    private async Task DownloadRemoteProfile(Profile profile, CancellationToken token)
+    private async Task<bool> DownloadRemoteProfile(Profile profile, CancellationToken token)
     {
         _trayIcon.SetStatusString(SERVICE_NAME, "Downloading");
         _trayIcon.ShowDownloadAnimation();
         try
         {
+            var applied = true;
             var currentLocalProfile = await _clipboardFactory.CreateProfileFromLocal(token);
             if (await Profile.Same(currentLocalProfile, profile, token))
             {
@@ -404,11 +405,12 @@ public class DownloadService : Service
             }
             else
             {
-                await DownloadAndSetRemoteProfileToLocal(profile, token);
+                applied = await DownloadAndSetRemoteProfileToLocal(profile, token);
                 _remoteProfileCache = profile;
                 _nonServerErrorTimes = 0;
             }
             _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
+            return applied;
         }
         catch when (token.IsCancellationRequested)
         {
@@ -440,9 +442,10 @@ public class DownloadService : Service
             _downServiceChangingLocal = false;
             _messenger.Send(profile, SyncService.PULL_STOP_ENENT_NAME);
         }
+        return false;
     }
 
-    private async Task DownloadAndSetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
+    private async Task<bool> DownloadAndSetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
         if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
         {
@@ -489,11 +492,13 @@ public class DownloadService : Service
             {
                 _clipboardNotificationHelper.Notify(remoteProfile, cancelToken);
             }
+            return true;
         }
         else
         {
             await _logger.WriteAsync(LOG_TAG, "Skipped setting remote profile because the local clipboard changed");
         }
+        return false;
     }
 
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
@@ -572,9 +577,9 @@ public class DownloadService : Service
                     {
                         _localProfileCache = await _clipboardFactory.CreateProfileFromLocal(token);
                         var remoteProfile = await remoteServer.GetProfileAsync(token);
-                        await HandleRemoteProfileChange(remoteProfile, token);
+                        var applied = await HandleRemoteProfileChange(remoteProfile, token);
                         token.ThrowIfCancellationRequested();
-                        if (paste)
+                        if (paste && applied)
                         {
                             _keyboard.Paste();
                         }

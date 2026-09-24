@@ -65,12 +65,16 @@ public class DownloadServiceQuickDownloadTests
     }
 
     [TestMethod]
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
+    [DataRow(false, false, false)]
+    [DataRow(false, true, false)]
+    [DataRow(true, false, false)]
+    [DataRow(true, true, false)]
+    [DataRow(false, false, true)]
+    [DataRow(false, true, true)]
+    [DataRow(true, false, true)]
+    [DataRow(true, true, true)]
     public async Task QuickDownload_WhenLocalClipboardChangesDuringDownload_ShouldPreserveItAndAllowRetry(
-        bool hasPreviousDownload, bool copyJustBeforeWrite)
+        bool hasPreviousDownload, bool copyJustBeforeWrite, bool paste)
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var fixture = await Fixture.CreateAsync(token);
@@ -91,7 +95,7 @@ public class DownloadServiceQuickDownloadTests
                 await resume.Task.WaitAsync(cancellationToken);
                 return await new TextProfile(fixture.RemoteText).ToProfileDto(cancellationToken);
             });
-        var download = fixture.DownloadAsync(token);
+        var download = fixture.DownloadAsync(token, paste);
         try
         {
             await requested.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
@@ -115,11 +119,46 @@ public class DownloadServiceQuickDownloadTests
         Assert.AreEqual(writesBeforeDownload, fixture.ClipboardWrites,
             "A download must not overwrite content copied after the command started.");
         fixture.VerifySkippedWrite();
+        Assert.IsEmpty(fixture.PastedTexts, "A skipped download must not paste the newly copied local content.");
 
         // A skipped write must not leave a stale baseline that blocks the user's next explicit download.
-        await fixture.DownloadAsync(token);
+        await fixture.DownloadAsync(token, paste);
         Assert.AreEqual("remote pending", fixture.LocalText);
         Assert.AreEqual(writesBeforeDownload + 1, fixture.ClipboardWrites);
+        string[] expected = paste ? ["remote pending"] : [];
+        CollectionAssert.AreEqual(expected, fixture.PastedTexts);
+    }
+
+    [TestMethod]
+    public async Task QuickDownloadAndPaste_WhenLocalAlreadyMatchesRemote_ShouldPasteWithoutWriting()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await Fixture.CreateAsync(token);
+        fixture.CopyLocally(fixture.RemoteText);
+
+        await fixture.DownloadAsync(token, paste: true);
+
+        Assert.AreEqual(0, fixture.ClipboardWrites);
+        CollectionAssert.AreEqual(new[] { fixture.RemoteText }, fixture.PastedTexts);
+    }
+
+    [TestMethod]
+    public async Task QuickDownloadAndPaste_WhenClipboardWriteFails_ShouldNotPasteAndAllowRetry()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await Fixture.CreateAsync(token);
+        fixture.ClipboardWriteException = new InvalidOperationException("Clipboard write error");
+
+        await fixture.DownloadAsync(token, paste: true);
+
+        Assert.IsEmpty(fixture.PastedTexts);
+        Assert.AreEqual(0, fixture.ClipboardWrites);
+        Assert.AreEqual("local initial", fixture.LocalText);
+
+        fixture.ClipboardWriteException = null;
+        await fixture.DownloadAsync(token, paste: true);
+        Assert.AreEqual(1, fixture.ClipboardWrites);
+        CollectionAssert.AreEqual(new[] { fixture.RemoteText }, fixture.PastedTexts);
     }
 
     [TestMethod]
@@ -240,6 +279,7 @@ public class DownloadServiceQuickDownloadTests
         public int ClipboardWrites { get; private set; }
         public Action? BeforeClipboardWrite { get; set; }
         public List<string> PastedTexts { get; } = [];
+        public Exception? ClipboardWriteException { get; set; }
 
         private Fixture()
         {
@@ -257,6 +297,10 @@ public class DownloadServiceQuickDownloadTests
             setter.Setup(s => s.SetLocalClipboard(It.IsAny<ClipboardMetaInfomation>(), It.IsAny<CancellationToken>()))
                 .Callback<ClipboardMetaInfomation, CancellationToken>((meta, _) =>
                 {
+                    if (ClipboardWriteException is { } exception)
+                    {
+                        throw exception;
+                    }
                     LocalText = meta.Text!;
                     ClipboardWrites++;
                 }).Returns(Task.CompletedTask);
