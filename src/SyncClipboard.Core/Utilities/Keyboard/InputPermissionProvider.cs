@@ -1,76 +1,97 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SharpHook.Data;
 using SharpHook.Providers;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
 /// <summary>Checks input access and requests missing macOS authorization once per instance.</summary>
 public sealed class InputPermissionProvider : ObservableObject, IInputPermissionProvider
 {
+    private const string ApplicationServicesLibrary = "/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices";
+
     private readonly ILogger _logger;
-    private readonly Func<Task> _resetAccessibilityPermission;
+    private readonly IThreadDispatcher _dispatcher;
+    private readonly IGlobalDialog _dialog;
+    private readonly Action _openAccessibilitySettings;
     private readonly Action _requestAccessibilityPermission;
     private readonly bool _isMacOS;
     private readonly Func<bool> _isAccessibilityEnabled;
     private int _accessibilityRequested;
+    private int _requestInProgress;
 
     public bool HasRequestedAccessibilityPermission => Volatile.Read(ref _accessibilityRequested) != 0;
 
-    public InputPermissionProvider(ILogger logger)
-        : this(logger, () => ResetAccessibilityPermissionAsync(Process.Start),
-            () => UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: true), OperatingSystem.IsMacOS())
+    public InputPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog)
+        : this(logger, dispatcher, dialog, () =>
+        {
+            using var process = Process.Start(new ProcessStartInfo(
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            {
+                UseShellExecute = true
+            });
+        }, RequestNativeAccessibilityPermission, OperatingSystem.IsMacOS())
     { }
 
-    internal InputPermissionProvider(ILogger logger, Func<Task> resetAccessibilityPermission,
-        Action requestAccessibilityPermission, bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null)
+    internal InputPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog,
+        Action openAccessibilitySettings, Action requestAccessibilityPermission,
+        bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null)
     {
         _logger = logger;
-        _resetAccessibilityPermission = resetAccessibilityPermission;
+        _dispatcher = dispatcher;
+        _dialog = dialog;
+        _openAccessibilitySettings = openAccessibilitySettings;
         _requestAccessibilityPermission = requestAccessibilityPermission;
         _isMacOS = isMacOS;
-        _isAccessibilityEnabled = isAccessibilityEnabled
-            ?? (() => UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: false));
+        _isAccessibilityEnabled = isAccessibilityEnabled ?? AXIsProcessTrusted;
     }
 
-    internal static async Task ResetAccessibilityPermissionAsync(Func<ProcessStartInfo, Process?> startProcess)
+    [DllImport(ApplicationServicesLibrary)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool AXIsProcessTrusted();
+
+    [DllImport(ApplicationServicesLibrary)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool AXIsProcessTrustedWithOptions(nint options);
+
+    [DllImport(ApplicationServicesLibrary)]
+    private static extern nint CFDictionaryCreate(nint allocator, ref nint keys, ref nint values,
+        nint count, nint keyCallbacks, nint valueCallbacks);
+
+    [DllImport(ApplicationServicesLibrary)]
+    private static extern void CFRelease(nint value);
+
+    private static void RequestNativeAccessibilityPermission()
     {
-        using var process = startProcess(new ProcessStartInfo(
-            "/usr/bin/tccutil", "reset Accessibility xyz.jericx.desktop.syncclipboard")
-        {
-            UseShellExecute = false
-        }) ?? throw new InvalidOperationException("Unable to start tccutil.");
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var library = NativeLibrary.Load(ApplicationServicesLibrary);
+        nint options = 0;
         try
         {
-            await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException($"tccutil exited with code {process.ExitCode}.");
-            }
+            var promptKey = Marshal.ReadIntPtr(NativeLibrary.GetExport(library, "kAXTrustedCheckOptionPrompt"));
+            var trueValue = Marshal.ReadIntPtr(NativeLibrary.GetExport(library, "kCFBooleanTrue"));
+            var keyCallbacks = NativeLibrary.GetExport(library, "kCFTypeDictionaryKeyCallBacks");
+            var valueCallbacks = NativeLibrary.GetExport(library, "kCFTypeDictionaryValueCallBacks");
+            options = CFDictionaryCreate(0, ref promptKey, ref trueValue, 1, keyCallbacks, valueCallbacks);
+            if (options == 0) throw new OutOfMemoryException();
+            AXIsProcessTrustedWithOptions(options);
         }
-        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        finally
         {
-            // Do not leave a delayed reset running while the next permission request starts.
-            try
-            {
-                process.Kill();
-            }
-            catch (InvalidOperationException)
-            {
-                // The process already exited.
-            }
-            throw new TimeoutException("Resetting accessibility permission timed out after 1 second.");
+            if (options != 0) CFRelease(options);
+            NativeLibrary.Free(library);
         }
     }
 
-    /// <summary>Returns current access; requests missing access without waiting or changing this check's result.</summary>
+    /// <summary>Returns current access and offers to request missing authorization without waiting for the dialog.</summary>
     public bool CheckAndRequestAccessibilityPermission()
     {
         if (!_isMacOS) return true;
-        if (GetAccessibilityStatus(_isAccessibilityEnabled).Accessibility == InputPermissionState.Available) return true;
+        if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available) return true;
+        if (HasRequestedAccessibilityPermission || Interlocked.CompareExchange(ref _requestInProgress, 1, 0) != 0) return false;
 
         DelegateExtention.SafeFireAndForget(RequestAccessibilityPermissionAsync, nameof(InputPermissionProvider));
         return false;
@@ -78,18 +99,35 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
 
     private async Task RequestAccessibilityPermissionAsync()
     {
-        if (!_isMacOS || Interlocked.Exchange(ref _accessibilityRequested, 1) != 0) return;
-        OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
-
         try
         {
-            await _resetAccessibilityPermission().ConfigureAwait(false);
+            await _dispatcher.RunOnMainThreadAsync(async () =>
+            {
+                if (HasRequestedAccessibilityPermission) return;
+                if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
+                    Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel)) return;
+
+                _openAccessibilitySettings();
+                try
+                {
+                    _requestAccessibilityPermission();
+                }
+                finally
+                {
+                    // A native request attempt counts even if it fails; canceling the dialog does not.
+                    Volatile.Write(ref _accessibilityRequested, 1);
+                    OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
+                }
+            });
         }
         catch (Exception ex)
         {
-            _logger.Write(nameof(InputPermissionProvider), $"Failed to reset accessibility permission: {ex.Message}");
+            _logger.Write(nameof(InputPermissionProvider), $"Failed to request accessibility permission: {ex.Message}");
         }
-        _requestAccessibilityPermission();
+        finally
+        {
+            Volatile.Write(ref _requestInProgress, 0);
+        }
     }
 
     public InputPermissionStatus GetStatus() => GetStatus(checkKeyboardMonitoring: true);
@@ -100,7 +138,8 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     {
         if (_isMacOS)
         {
-            return GetAccessibilityStatus(_isAccessibilityEnabled);
+            var accessibility = GetPermissionState(_isAccessibilityEnabled);
+            return new(accessibility, accessibility, accessibility);
         }
 
         if (OperatingSystem.IsLinux())
@@ -150,18 +189,16 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         }
     }
 
-    internal static InputPermissionStatus GetAccessibilityStatus(Func<bool> isTrusted)
+    private static InputPermissionState GetPermissionState(Func<bool> isAllowed)
     {
-        InputPermissionState state;
         try
         {
-            state = isTrusted() ? InputPermissionState.Available : InputPermissionState.Denied;
+            return isAllowed() ? InputPermissionState.Available : InputPermissionState.Denied;
         }
         catch
         {
-            state = InputPermissionState.Unknown;
+            return InputPermissionState.Unknown;
         }
-        return new(state, state, state);
     }
 
     internal static InputPermissionStatus GetLinuxDeviceStatus(string inputDirectory, string uinputPath)

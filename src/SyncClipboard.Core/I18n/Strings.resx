@@ -1333,6 +1333,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="RuleAccountMissing" xml:space="preserve"><value>Rule “{0}” matched but its target account no longer exists; sync account removed</value></data>
   <data name="PermissionManagement" xml:space="preserve"><value>Permission management</value></data>
   <data name="AccessibilityPermission" xml:space="preserve"><value>Accessibility</value></data>
+  <data name="AccessibilityPermissionRequestMessage" xml:space="preserve"><value>Accessibility access is required for this feature. Click “Request access” to open System Settings and request permission, then enable SyncClipboard in the Accessibility list.</value></data>
   <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>Allows simulated copy/paste and access to information about other windows.</value></data>
   <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>Requires read/write access to monitor global hotkeys.</value></data>
   <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>Requires write access to simulate key presses for copying, pasting, and other operations.</value></data>

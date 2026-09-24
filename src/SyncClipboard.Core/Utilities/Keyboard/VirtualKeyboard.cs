@@ -131,9 +131,12 @@ public sealed class VirtualKeyboard : IDisposable
                     return;
                 }
 
-                if (!_permissionPrompted)
+                if (status.Accessibility != InputPermissionState.NotRequired)
                 {
-                    // This service is a singleton. A failed request must not prompt again on the next input.
+                    requestPermission = !_permissions.HasRequestedAccessibilityPermission;
+                }
+                else if (!_permissionPrompted)
+                {
                     _permissionPrompted = true;
                     requestPermission = true;
                 }
