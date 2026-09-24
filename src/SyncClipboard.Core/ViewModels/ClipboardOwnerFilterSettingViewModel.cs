@@ -10,7 +10,9 @@ using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configManager, IClipboardChangingListener clipboardChangingListener) : ObservableObject
+public partial class ClipboardOwnerFilterSettingViewModel(
+    ConfigManager configManager, IClipboardChangingListener clipboardChangingListener,
+    IInputPermissionProvider permissions) : ObservableObject
 {
     public static readonly LocaleString<string>[] Modes =
     [
@@ -23,8 +25,11 @@ public partial class ClipboardOwnerFilterSettingViewModel(ConfigManager configMa
     private LocaleString<string> filterMode = Modes[0];
     partial void OnFilterModeChanged(LocaleString<string> value)
     {
+        // Config loading already updates FilterConfig before assigning FilterMode.
+        var enabling = FilterConfig.FilterMode == "" && value.Key != "";
         UpdateFilterList();
         FilterConfig = FilterConfig with { FilterMode = value.Key };
+        if (enabling) permissions.CheckAccessibilityPermission();
     }
 
     [ObservableProperty]

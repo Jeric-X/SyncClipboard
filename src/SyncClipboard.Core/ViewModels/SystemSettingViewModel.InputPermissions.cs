@@ -43,48 +43,58 @@ public partial class SystemSettingViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowInputPermissions))]
     [NotifyPropertyChangedFor(nameof(AccessibilityPermissionText))]
+    [NotifyPropertyChangedFor(nameof(IsAccessibilityPermissionAvailable))]
     [NotifyPropertyChangedFor(nameof(KeyboardMonitoringPermissionText))]
     [NotifyPropertyChangedFor(nameof(InputSimulationPermissionText))]
-    [NotifyPropertyChangedFor(nameof(CanRequestAccessibilityPermission))]
-    [NotifyCanExecuteChangedFor(nameof(RequestAccessibilityPermissionCommand))]
     private InputPermissionStatus inputPermissions = new(
         InputPermissionState.Unknown, InputPermissionState.Unknown, InputPermissionState.Unknown);
 
     public string AccessibilityPermissionText => GetPermissionText(InputPermissions.Accessibility);
+    public bool IsAccessibilityPermissionAvailable => InputPermissions.Accessibility == InputPermissionState.Available;
     public string KeyboardMonitoringPermissionText => GetPermissionText(InputPermissions.KeyboardMonitoring);
     public string InputSimulationPermissionText => GetPermissionText(InputPermissions.InputSimulation);
-    public bool CanRequestAccessibilityPermission => ShowAccessibilityPermission &&
-        InputPermissions.Accessibility is not (InputPermissionState.Available or InputPermissionState.NotRequired);
+    public IInputPermissionProvider InputPermissionProvider => _services.GetRequiredService<IInputPermissionProvider>();
 
     [RelayCommand]
     public void RefreshInputPermissions()
     {
-        InputPermissions = _services.GetRequiredService<IInputPermissionProvider>().GetStatus();
+        InputPermissions = InputPermissionProvider.GetStatus();
     }
 
-    [RelayCommand(CanExecute = nameof(CanRequestAccessibilityPermission))]
+    [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]
     private async Task RequestAccessibilityPermission()
     {
-        if (!CanRequestAccessibilityPermission) return;
+        if (!ShowAccessibilityPermission) return;
 
         try
         {
-            await _services.GetRequiredService<IInputPermissionProvider>().RequestAccessibilityPermissionAsync();
+            await InputPermissionProvider.RequestAccessibilityPermissionAsync();
             RefreshInputPermissions();
-            if (InputPermissions.Accessibility == InputPermissionState.Denied)
-            {
-                // macOS may suppress repeated prompts; keep the authorization controls reachable.
-                using var process = Process.Start(new ProcessStartInfo(
-                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-                {
-                    UseShellExecute = true
-                });
-            }
         }
         catch (Exception ex)
         {
             _logger.Write(nameof(SystemSettingViewModel), ex.Message);
             await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(Strings.RequestPermission, ex.Message);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]
+    private async Task OpenAccessibilitySettings()
+    {
+        if (!ShowAccessibilityPermission) return;
+
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.Write(nameof(SystemSettingViewModel), ex.Message);
+            await _services.GetRequiredService<IMainWindowDialog>().ShowMessageAsync(Strings.OpenSystemSettings, ex.Message);
         }
     }
 

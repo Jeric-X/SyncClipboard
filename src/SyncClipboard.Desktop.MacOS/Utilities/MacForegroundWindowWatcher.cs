@@ -2,6 +2,7 @@ using AppKit;
 using Foundation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using System;
 using System.Threading;
 
@@ -9,7 +10,8 @@ namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 internal sealed class MacForegroundWindowWatcher(
     IThreadDispatcher threadDispatcher,
-    INativeWindowController foregroundWindowInfoProvider) : INativeForegroundWindowWatcher
+    INativeWindowController foregroundWindowInfoProvider,
+    IInputPermissionProvider permissions) : INativeForegroundWindowWatcher
 {
     private readonly IThreadDispatcher _threadDispatcher = threadDispatcher;
     private NSObject? _observer;
@@ -35,7 +37,7 @@ internal sealed class MacForegroundWindowWatcher(
             });
         }).GetAwaiter().GetResult();
 
-        if (MacInterop.AXIsProcessTrusted())
+        if (permissions.GetStatus().Accessibility == InputPermissionState.Available)
         {
             _lastPolledWindow = ReadCurrentWindow();
             _pollingTimer = new Timer(PollForegroundWindow, null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));

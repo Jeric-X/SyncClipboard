@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using SharpHook.Data;
 using SharpHook.Providers;
 using SyncClipboard.Core.Interfaces;
@@ -6,13 +7,17 @@ using System.Diagnostics;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
-/// <summary>Checks existing access and provides an explicit macOS authorization request.</summary>
-public sealed class InputPermissionProvider : IInputPermissionProvider
+/// <summary>Checks input access and requests missing macOS authorization once per instance.</summary>
+public sealed class InputPermissionProvider : ObservableObject, IInputPermissionProvider
 {
     private readonly ILogger _logger;
     private readonly Func<Task> _resetAccessibilityPermission;
     private readonly Action _requestAccessibilityPermission;
     private readonly bool _isMacOS;
+    private readonly Func<bool> _isAccessibilityEnabled;
+    private int _accessibilityRequested;
+
+    public bool HasRequestedAccessibilityPermission => Volatile.Read(ref _accessibilityRequested) != 0;
 
     public InputPermissionProvider(ILogger logger)
         : this(logger, () => ResetAccessibilityPermissionAsync(Process.Start),
@@ -20,12 +25,14 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
     { }
 
     internal InputPermissionProvider(ILogger logger, Func<Task> resetAccessibilityPermission,
-        Action requestAccessibilityPermission, bool isMacOS = true)
+        Action requestAccessibilityPermission, bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null)
     {
         _logger = logger;
         _resetAccessibilityPermission = resetAccessibilityPermission;
         _requestAccessibilityPermission = requestAccessibilityPermission;
         _isMacOS = isMacOS;
+        _isAccessibilityEnabled = isAccessibilityEnabled
+            ?? (() => UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: false));
     }
 
     internal static async Task ResetAccessibilityPermissionAsync(Func<ProcessStartInfo, Process?> startProcess)
@@ -59,9 +66,20 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
         }
     }
 
+    /// <summary>Returns current access; requests missing access without waiting or changing this check's result.</summary>
+    public bool CheckAccessibilityPermission()
+    {
+        if (!_isMacOS) return true;
+        if (GetAccessibilityStatus(_isAccessibilityEnabled).Accessibility == InputPermissionState.Available) return true;
+
+        DelegateExtention.SafeFireAndForget(RequestAccessibilityPermissionAsync, nameof(InputPermissionProvider));
+        return false;
+    }
+
     public async Task RequestAccessibilityPermissionAsync()
     {
-        if (!_isMacOS) return;
+        if (!_isMacOS || Interlocked.Exchange(ref _accessibilityRequested, 1) != 0) return;
+        OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
 
         try
         {
@@ -78,11 +96,11 @@ public sealed class InputPermissionProvider : IInputPermissionProvider
 
     public InputPermissionStatus GetSimulationStatus() => GetStatus(checkKeyboardMonitoring: false);
 
-    private static InputPermissionStatus GetStatus(bool checkKeyboardMonitoring)
+    private InputPermissionStatus GetStatus(bool checkKeyboardMonitoring)
     {
-        if (OperatingSystem.IsMacOS())
+        if (_isMacOS)
         {
-            return GetAccessibilityStatus(() => UioHookProvider.Instance.IsAxApiEnabled(promptUserIfDisabled: false));
+            return GetAccessibilityStatus(_isAccessibilityEnabled);
         }
 
         if (OperatingSystem.IsLinux())

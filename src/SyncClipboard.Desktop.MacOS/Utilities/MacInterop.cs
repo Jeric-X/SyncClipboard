@@ -106,14 +106,6 @@ internal static class MacInterop
 
     #endregion
 
-    #region Accessibility Permission
-
-    [DllImport(ApplicationServicesLib)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool AXIsProcessTrusted();
-
-    #endregion
-
     #region CoreFoundation
 
     [DllImport(ApplicationServicesLib)]

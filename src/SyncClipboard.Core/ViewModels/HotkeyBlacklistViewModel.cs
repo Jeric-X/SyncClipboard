@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -13,6 +14,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
     private readonly ConfigManager _configManager;
     private readonly ForegroundWindowCapture _captureService;
     private readonly HotkeyManager _hotkeyManager;
+    private readonly IInputPermissionProvider _permissions;
     private HotkeyBlacklistConfig _config = new();
     private bool _isLoading;
 
@@ -23,6 +25,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
         if (!_isLoading)
         {
             SaveConfig();
+            if (value) _permissions.CheckAccessibilityPermission();
         }
     }
 
@@ -42,11 +45,13 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
     public HotkeyBlacklistViewModel(
         ConfigManager configManager,
         ForegroundWindowCapture captureService,
-        HotkeyManager hotkeyManager)
+        HotkeyManager hotkeyManager,
+        IInputPermissionProvider permissions)
     {
         _configManager = configManager;
         _captureService = captureService;
         _hotkeyManager = hotkeyManager;
+        _permissions = permissions;
 
         _captureService.WindowCaptured += OnWindowCaptured;
         _hotkeyManager.HotkeyStatusChanged += UpdateSuspendedStatus;

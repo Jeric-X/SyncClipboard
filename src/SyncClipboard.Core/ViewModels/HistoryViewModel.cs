@@ -392,13 +392,23 @@ public partial class HistoryViewModel : ObservableObject
     public bool FollowCaretPosition
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowCaretPosition;
-        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
+        set
+        {
+            if (value == FollowCaretPosition) return;
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
+            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAccessibilityPermission();
+        }
     }
 
     public bool FollowForegroundWindowScreen
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowForegroundWindowScreen;
-        set => runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
+        set
+        {
+            if (value == FollowForegroundWindowScreen) return;
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
+            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAccessibilityPermission();
+        }
     }
 
     public bool FollowMousePosition

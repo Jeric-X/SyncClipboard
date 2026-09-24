@@ -8,6 +8,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.ViewModels;
 using System.Diagnostics;
@@ -27,11 +28,26 @@ public class InputPermissionTests
         var resetCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var requests = 0;
         var logger = new Mock<ILogger>();
-        var provider = new InputPermissionProvider(logger.Object, () => resetCompletion.Task, () => requests++);
+        var resets = 0;
+        var provider = new InputPermissionProvider(logger.Object, () =>
+        {
+            resets++;
+            return resetCompletion.Task;
+        }, () => requests++, isAccessibilityEnabled: () => false);
+        var requestStateChanges = 0;
+        provider.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) requestStateChanges++;
+        };
 
+        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
         var request = provider.RequestAccessibilityPermissionAsync();
+        Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
+        Assert.AreEqual(1, requestStateChanges);
         Assert.AreEqual(0, requests);
         Assert.IsFalse(request.IsCompleted);
+        Assert.IsFalse(provider.CheckAccessibilityPermission());
+        Assert.AreEqual(1, resets);
         if (resetFails)
         {
             resetCompletion.SetException(new InvalidOperationException("Reset failed"));
@@ -44,8 +60,41 @@ public class InputPermissionTests
         await request;
 
         Assert.AreEqual(1, requests);
+        Assert.AreEqual(1, requestStateChanges);
         logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.IsAny<string>()),
             resetFails ? Times.Once() : Times.Never());
+        Assert.IsFalse(provider.CheckAccessibilityPermission());
+        Assert.AreEqual(1, resets);
+        Assert.AreEqual(1, requests);
+    }
+
+    [TestMethod]
+    public void AccessibilityCheck_RequestsOnceAcrossCallers_AndRechecksCurrentAccess()
+    {
+        var granted = true;
+        var resets = 0;
+        var requests = 0;
+        var provider = new InputPermissionProvider(Mock.Of<ILogger>(), () =>
+        {
+            Interlocked.Increment(ref resets);
+            return Task.CompletedTask;
+        }, () => Interlocked.Increment(ref requests), isAccessibilityEnabled: () => granted);
+
+        Assert.IsTrue(provider.CheckAccessibilityPermission());
+        Assert.AreEqual(0, resets);
+        granted = false;
+        Assert.AreEqual(InputPermissionState.Denied, provider.GetStatus().Accessibility);
+        Assert.AreEqual(0, resets);
+        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAccessibilityPermission()));
+        Assert.AreEqual(1, resets);
+        Assert.AreEqual(1, requests);
+
+        granted = true;
+        Assert.IsTrue(provider.CheckAccessibilityPermission());
+        granted = false;
+        Assert.IsFalse(provider.CheckAccessibilityPermission());
+        Assert.AreEqual(1, resets);
+        Assert.AreEqual(1, requests);
     }
 
     [TestMethod]
@@ -60,6 +109,8 @@ public class InputPermissionTests
         }, () => requests++, isMacOS: false);
 
         await provider.RequestAccessibilityPermissionAsync();
+        Assert.IsTrue(provider.CheckAccessibilityPermission());
+        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
 
         Assert.AreEqual(0, resets);
         Assert.AreEqual(0, requests);
@@ -204,70 +255,91 @@ public class InputPermissionTests
     }
 
     [TestMethod]
-    public async Task AccessibilityRequest_RefreshesStatus_AndButtonTracksGrantAndRevocation()
+    [DataRow(ClipboardOwnerFilterConfig.ConfigKey)]
+    [DataRow(ClipboardOwnerFilterConfig.EasyCopyImageFilterConfigKey)]
+    public void ClipboardFilter_RequestsOnlyWhenUserEnables(string configKey)
     {
         using var migrationServices = new ConfigurationTestServices();
         var directory = Directory.CreateTempSubdirectory();
         try
         {
+            var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
+            config.SetConfig(configKey, new ClipboardOwnerFilterConfig { FilterMode = "BlackList" });
             var permissions = new Mock<IInputPermissionProvider>();
+            var viewModel = new ClipboardOwnerFilterSettingViewModel(config, Mock.Of<IClipboardChangingListener>(), permissions.Object);
+            viewModel.UseConfig(configKey);
+            config.SetConfig(configKey, new ClipboardOwnerFilterConfig { FilterMode = "WhiteList" });
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+
+            viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[0];
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+            viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[1];
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Once);
+            viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[2];
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Once);
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
+    public void HotkeyFilter_RequestsOnlyWhenUserEnables()
+    {
+        using var migrationServices = new ConfigurationTestServices();
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
+            config.SetConfig(new HotkeyBlacklistConfig { Enabled = true });
+            var registry = Mock.Of<INativeHotkeyRegistry>();
+            var permissions = new Mock<IInputPermissionProvider>();
+            var viewModel = new HotkeyBlacklistViewModel(config,
+                new ForegroundWindowCapture(registry, Mock.Of<INativeWindowController>()),
+                new HotkeyManager(registry, config), permissions.Object);
+            config.SetConfig(new HotkeyBlacklistConfig { Enabled = false });
+            config.SetConfig(new HotkeyBlacklistConfig { Enabled = true });
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+
+            viewModel.IsEnabled = false;
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Never);
+            viewModel.IsEnabled = true;
+            viewModel.IsEnabled = true;
+            permissions.Verify(x => x.CheckAccessibilityPermission(), Times.Once);
+        }
+        finally
+        {
+            directory.Delete(true);
+        }
+    }
+
+    [TestMethod]
+    public void PermissionStatus_RefreshesWithoutRequesting_AndSettingsRemainAccessible()
+    {
+        using var migrationServices = new ConfigurationTestServices();
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var permissions = new Mock<IInputPermissionProvider>(MockBehavior.Strict);
             var state = InputPermissionState.Denied;
-            var resetCompletion = new TaskCompletionSource();
-            var resetStarted = false;
-            var requests = 0;
-            var provider = new InputPermissionProvider(Mock.Of<ILogger>(), () =>
-            {
-                resetStarted = true;
-                return resetCompletion.Task;
-            }, () =>
-            {
-                requests++;
-                state = InputPermissionState.Available;
-            });
             permissions.Setup(x => x.GetStatus()).Returns(() => new InputPermissionStatus(state, state, state));
-            permissions.Setup(x => x.RequestAccessibilityPermissionAsync()).Returns(provider.RequestAccessibilityPermissionAsync);
             using var services = new ServiceCollection()
                 .AddSingleton(permissions.Object)
                 .AddSingleton(Mock.Of<ILogger>())
                 .BuildServiceProvider();
             var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
             var viewModel = new SystemSettingViewModel(config, new StaticConfig(Mock.Of<INotificationManager>()), services);
-            var propertyChanges = new List<string?>();
-            var commandChanges = 0;
-            viewModel.PropertyChanged += (_, e) => propertyChanges.Add(e.PropertyName);
-            viewModel.RequestAccessibilityPermissionCommand.CanExecuteChanged += (_, _) => commandChanges++;
 
-            viewModel.RefreshInputPermissions();
-            Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.CanRequestAccessibilityPermission);
-            permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Never);
-            Assert.IsFalse(resetStarted);
-
-            if (OperatingSystem.IsMacOS())
+            foreach (var permission in new[] { InputPermissionState.Denied, InputPermissionState.Available, InputPermissionState.Denied })
             {
-                var request = viewModel.RequestAccessibilityPermissionCommand.ExecuteAsync(null);
-                permissions.Verify(x => x.RequestAccessibilityPermissionAsync(), Times.Once);
-                Assert.IsTrue(resetStarted);
-                Assert.AreEqual(0, requests);
-                resetCompletion.SetResult();
-                await request;
-                Assert.AreEqual(1, requests);
-            }
-            else
-            {
-                state = InputPermissionState.Available;
+                state = permission;
                 viewModel.RefreshInputPermissions();
+                Assert.AreEqual(state, viewModel.InputPermissions.Accessibility);
+                Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.OpenAccessibilitySettingsCommand.CanExecute(null));
             }
-
-            Assert.AreEqual(InputPermissionState.Available, viewModel.InputPermissions.Accessibility);
-            Assert.IsFalse(viewModel.CanRequestAccessibilityPermission);
-            Assert.IsFalse(viewModel.RequestAccessibilityPermissionCommand.CanExecute(null));
-            Assert.Contains(nameof(SystemSettingViewModel.CanRequestAccessibilityPermission), propertyChanges);
-            Assert.IsGreaterThan(0, commandChanges);
-
-            state = InputPermissionState.Denied;
-            viewModel.RefreshInputPermissions();
-            Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.CanRequestAccessibilityPermission);
-            Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.RequestAccessibilityPermissionCommand.CanExecute(null));
+            permissions.Verify(x => x.GetStatus(), Times.Exactly(3));
+            permissions.VerifyNoOtherCalls();
         }
         finally
         {
