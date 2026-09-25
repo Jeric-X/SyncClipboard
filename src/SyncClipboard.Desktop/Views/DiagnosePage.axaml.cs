@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Desktop.ViewModels;
 
@@ -9,7 +10,9 @@ public partial class DiagnosePage : UserControl
 {
     public DiagnosePage()
     {
-        DataContext = new DiagnoseViewModel();
+        var viewModel = App.Current.Services.GetRequiredService<DiagnoseViewModel>();
+        DataContext = viewModel;
+        viewModel.RefreshCommand.Execute(null);
         InitializeComponent();
     }
 

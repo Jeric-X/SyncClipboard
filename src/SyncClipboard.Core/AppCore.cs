@@ -432,26 +432,26 @@ namespace SyncClipboard.Core
 
         public static void ConfigurateViewModels(IServiceCollection services)
         {
-            services.AddTransient<SyncSettingViewModel>();
-            services.AddTransient<ServerConfigViewModel>();
-            services.AddTransient<SystemSettingViewModel>();
-            services.AddTransient<AboutViewModel>();
-            services.AddTransient<CliboardAssistantViewModel>();
+            services.AddSingleton<SyncSettingViewModel>();
+            services.AddSingleton<ServerConfigViewModel>();
+            services.AddSingleton<SystemSettingViewModel>();
+            services.AddSingleton<AboutViewModel>();
+            services.AddSingleton<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();
             services.AddTransient<AddAccountViewModel>();
             services.AddTransient<AccountConfigEditViewModel>();
             services.AddTransient<NetworkAccountSwitchViewModel>();
             services.AddTransient<CurrentNetworkStatusViewModel>();
-            services.AddTransient<FileSyncFilterSettingViewModel>();
+            services.AddSingleton<FileSyncFilterSettingViewModel>();
             services.AddSingleton<ClipboardOwnerFilterSettingViewModel>();
-            services.AddTransient<ClipboardAcquisitionRulesViewModel>();
+            services.AddSingleton<ClipboardAcquisitionRulesViewModel>();
             services.AddTransient<ProxySettingViewModel>();
             services.AddSingleton<ServiceStatusViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<HotkeyViewModel>();
             services.AddSingleton<HotkeyBlacklistViewModel>();
             services.AddSingleton<HistoryViewModel>();
-            services.AddTransient<HistorySettingViewModel>();
+            services.AddSingleton<HistorySettingViewModel>();
         }
 
         public static void ConfigurateUserService(IServiceCollection services)
