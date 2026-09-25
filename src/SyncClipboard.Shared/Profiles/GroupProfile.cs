@@ -21,6 +21,11 @@ public class GroupProfile : Profile
     private string[]? _files;
     public string[] Files => _files ?? [];
 
+    /// <summary>Whether the selected local paths include a filesystem root; does not enumerate directory contents.</summary>
+    public bool ContainsRootDirectory => _files?.Any(IsRootDirectory) ?? false;
+
+    private static bool IsRootDirectory(string path) => Path.GetDirectoryName(Path.GetFullPath(path)) is null;
+
     public override ProfileType Type => ProfileType.Group;
     private string[] _fileNames = [];
     public override string DisplayText => GetDisplayText();
@@ -623,7 +628,9 @@ public class GroupProfile : Profile
     private static string[] GetFileNames(IEnumerable<string> files)
     {
         return files
-            .Select(file => Path.GetFileName(file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
+            .Select(file => IsRootDirectory(file)
+                ? Path.GetFullPath(file)
+                : Path.GetFileName(file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
             .Where(fileName => !string.IsNullOrEmpty(fileName))
             .ToArray();
     }
