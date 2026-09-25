@@ -21,6 +21,11 @@ public class GroupProfile : Profile
     private string[]? _files;
     public string[] Files => _files ?? [];
 
+    /// <summary>Whether the selected local paths include a filesystem root; does not enumerate directory contents.</summary>
+    public bool ContainsRootDirectory => _files?.Any(IsRootDirectory) ?? false;
+
+    private static bool IsRootDirectory(string path) => Path.GetDirectoryName(Path.GetFullPath(path)) is null;
+
     public override ProfileType Type => ProfileType.Group;
     private string[] _fileNames = [];
     public override string DisplayText => GetDisplayText();
@@ -44,7 +49,7 @@ public class GroupProfile : Profile
     public GroupProfile(
         IEnumerable<string> files, string hash, string? dataPath = null, string? transferDataHash = null)
     {
-        _files = [.. files];
+        _files = files.Select(path => TrimEndingDirectorySeparators(Path.GetFullPath(path))).ToArray();
         _fileNames = GetFileNames(_files);
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
@@ -59,6 +64,7 @@ public class GroupProfile : Profile
     {
         _fileFilterConfig = filterConfig ?? new();
         _files = files
+            .Select(path => TrimEndingDirectorySeparators(Path.GetFullPath(path)))
             .Where(file =>
             {
                 // 目录不参与过滤，始终保留
@@ -180,11 +186,18 @@ public class GroupProfile : Profile
         }
     }
 
+    private static string TrimEndingDirectorySeparators(string path)
+    {
+        var root = Path.GetPathRoot(path);
+        var trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return root is not null && trimmed.Length < root.Length ? root : trimmed;
+    }
+
     private static string ResolveRootPath(string firstPath)
     {
         if (!string.IsNullOrEmpty(firstPath))
         {
-            var basePath = Directory.Exists(firstPath) ? Path.TrimEndingDirectorySeparator(firstPath) : firstPath;
+            var basePath = Directory.Exists(firstPath) ? TrimEndingDirectorySeparators(firstPath) : firstPath;
             var parent = Path.GetDirectoryName(basePath);
             // 当处于文件系统根（如 Linux 的 "/"）时，父目录可能为 null，退回到路径根
             return parent ?? Path.GetPathRoot(basePath) ?? "/";
@@ -492,7 +505,7 @@ public class GroupProfile : Profile
             throw new LocalProfileDataUnavailableException($"Failed to read local Group directory: {path}", ex);
         }
 
-        var dirName = Path.GetFileName(path);
+        var dirName = Path.GetFileName(TrimEndingDirectorySeparators(path));
         var rootEntryName = dirName + "/";
         archive.CreateEntry(rootEntryName);
         entries.Add(new GroupEntry(rootEntryName, isDirectory: true, length: 0, hashTask: null));
@@ -623,7 +636,9 @@ public class GroupProfile : Profile
     private static string[] GetFileNames(IEnumerable<string> files)
     {
         return files
-            .Select(file => Path.GetFileName(file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
+            .Select(file => IsRootDirectory(file)
+                ? Path.GetFullPath(file)
+                : Path.GetFileName(file.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
             .Where(fileName => !string.IsNullOrEmpty(fileName))
             .ToArray();
     }

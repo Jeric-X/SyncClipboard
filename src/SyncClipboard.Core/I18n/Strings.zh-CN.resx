@@ -1441,4 +1441,10 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryShortcutResetConflict" xml:space="preserve">
     <value>无法恢复：{0} 已用于“{1}”。请先调整该动作的快捷键。</value>
   </data>
+  <data name="RootDirectoryNotSupported" xml:space="preserve">
+    <value>不支持同步文件系统根目录，请选择其中的文件或文件夹。</value>
+  </data>
+  <data name="ManualUploadFailed" xml:space="preserve">
+    <value>手动上传失败</value>
+  </data>
 </root>

@@ -213,6 +213,10 @@ public class UploadService : ClipboardHander
         try
         {
             var latest = await _clipboardFactory.CreateProfileFromLocal(token);
+            if (latest is GroupProfile { ContainsRootDirectory: true })
+            {
+                return true;
+            }
             if (await Profile.Same(profile, latest, token))
             {
                 return false;
@@ -225,88 +229,106 @@ public class UploadService : ClipboardHander
         }
     }
 
-    private async Task<bool> ValidateContentControlAsync(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
+    private async Task<string?> GetContentControlSkipReasonAsync(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
         if (DoNotUploadWhenCut && (meta.Effects & DragDropEffects.Move) == DragDropEffects.Move)
         {
-            await _logger.WriteAsync(LOG_TAG, "Cut won't Push.");
-            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Cutting operation detected.", false);
-            return false;
+            return "Skipped: Cutting operation detected.";
         }
 
         if (!_syncConfig.IgnoreExcludeForSyncSuggestion && (meta.ExcludeForSync ?? false))
         {
-            await _logger.WriteAsync(LOG_TAG, "Stop Push for meta exclude for sync.");
-            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Sensitive content marked by system.", false);
-            return false;
+            return "Skipped: Sensitive content marked by system.";
         }
 
-        var skipReason = await ContentControlHelper.IsContentValid(profile, token);
-        if (skipReason != null)
-        {
-            await _logger.WriteAsync(LOG_TAG, "Stop Push: " + skipReason);
-            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, skipReason, false);
-            return false;
-        }
-
-        return true;
+        return await ContentControlHelper.IsContentValid(profile, token);
     }
 
-    protected override Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
+    protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)
     {
         var filterConfig = _configManager.GetConfig<ClipboardOwnerFilterConfig>();
         if (ClipboardOwnerFilterHelper.ShouldFilter(filterConfig, meta.Owner))
         {
             _logger.Write(LOG_TAG, "Stop Push: Filtered by clipboard owner.");
             _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Skipped: Filtered by clipboard owner.", false);
-            return Task.CompletedTask;
+            return;
         }
-        return CheckAndUpload(meta, profile, true, token);
+        var result = await CheckAndUpload(meta, profile, true, token, notifyFailure: true);
+        if (!result.Success && profile is GroupProfile { ContainsRootDirectory: true })
+        {
+            _notificationManager.SharedQuickMessage(SERVICE_NAME_SIMPLE, result.Reason ?? string.Empty);
+        }
     }
 
-    protected async Task CheckAndUpload(ClipboardMetaInfomation meta, Profile profile, bool contentControl, CancellationToken token)
+    private async Task<UploadResult> SkipUpload(string reason)
+    {
+        await _logger.WriteAsync(LOG_TAG, reason);
+        _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, reason, false);
+        return new(false, reason);
+    }
+
+    protected async Task<UploadResult> CheckAndUpload(
+        ClipboardMetaInfomation meta, Profile profile, bool contentControl, CancellationToken token, bool notifyFailure = false)
     {
         await _logger.WriteAsync(LOG_TAG, "New Push started, meta: " + meta);
+        UploadResult result;
 
         try
         {
+            token.ThrowIfCancellationRequested();
+            if (profile is GroupProfile { ContainsRootDirectory: true })
+            {
+                return await SkipUpload(I18n.Strings.RootDirectoryNotSupported);
+            }
+
             if (await IsDownloadServiceWorking(profile, token))
             {
-                await _logger.WriteAsync(LOG_TAG, "Stop Push: Download service is working or profile is same as last downloaded.");
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
-                return;
+                return await SkipUpload("Skipped: Download service is working or clipboard matches the last downloaded content.");
             }
             if (await IsObsoleteProfile(profile, token))
             {
-                await _logger.WriteAsync(LOG_TAG, "Stop Push: Clipboard profile is obsolete.");
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
-                return;
+                return await SkipUpload("Skipped: Clipboard content has changed.");
             }
-            if (contentControl && !await ValidateContentControlAsync(meta, profile, token))
+            if (contentControl)
             {
-                return;
+                var reason = await GetContentControlSkipReasonAsync(meta, profile, token);
+                if (reason is not null)
+                {
+                    return await SkipUpload(reason);
+                }
             }
 
             if (profile.Type == ProfileType.Unknown)
             {
-                await _logger.WriteAsync("Local profile type is Unkown, stop upload.");
-                _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Local profile type is unkown, stopped.", false);
-                return;
+                return await SkipUpload("Skipped: Clipboard content type is not supported.");
             }
 
-            await UploadClipboard(profile, token);
+            result = await UploadClipboard(profile, token);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
             await _logger.WriteAsync("Upload", "Upload Canceled");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            await _logger.WriteAsync(LOG_TAG, $"Upload failed: {ex.Message}\n{ex.StackTrace}");
+            _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, I18n.Strings.FailedToUpload + ex.Message, true);
+            result = new(false, ex.Message);
         }
         finally
         {
             await _logger.WriteAsync(LOG_TAG, "Push End");
         }
+
+        if (notifyFailure && !result.Success)
+        {
+            _notificationManager.ShowText(I18n.Strings.FailedToUpload + profile.ShortDisplayText, result.Reason ?? string.Empty);
+        }
+        return result;
     }
 
-    private async Task UploadClipboard(Profile currentProfile, CancellationToken token)
+    private async Task<UploadResult> UploadClipboard(Profile currentProfile, CancellationToken token)
     {
         PushStarted?.Invoke();
         using var eventGuard = new ScopeGuard(() => PushStopped?.Invoke());
@@ -317,12 +339,16 @@ public class UploadService : ClipboardHander
         await SyncService.remoteProfilemutex.WaitAsync(token);
         using var mutexGuard = new ScopeGuard(() => SyncService.remoteProfilemutex.Release());
 
-        await UploadLoop(currentProfile, token);
-        DownloadService.SetRemoteCache(currentProfile);
-        _profileCache = currentProfile;
+        var result = await UploadLoop(currentProfile, token);
+        if (result.Success)
+        {
+            DownloadService.SetRemoteCache(currentProfile);
+            _profileCache = currentProfile;
+        }
+        return result;
     }
 
-    private async Task UploadLoop(Profile profile, CancellationToken cancelToken)
+    private async Task<UploadResult> UploadLoop(Profile profile, CancellationToken cancelToken)
     {
         string errMessage = "";
         string? stackTrace = null;
@@ -331,6 +357,7 @@ public class UploadService : ClipboardHander
             ProgressToastReporter? toastReporter = null;
             try
             {
+                cancelToken.ThrowIfCancellationRequested();
                 var remoteServer = _remoteClipboardServerFactory.Current;
                 var remoteProfile = await remoteServer.GetProfileAsync(cancelToken) ?? new UnknownProfile();
 
@@ -352,8 +379,13 @@ public class UploadService : ClipboardHander
                 {
                     await _logger.WriteAsync(LOG_TAG, "Remote is same as local, won't push.");
                 }
+                cancelToken.ThrowIfCancellationRequested();
                 _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, "Running.", false);
-                return;
+                return new(true);
+            }
+            catch (OperationCanceledException) when (cancelToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (TaskCanceledException)
             {
@@ -372,12 +404,15 @@ public class UploadService : ClipboardHander
                 toastReporter?.CancelSicent();
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
+            if (i < _syncConfig.RetryTimes)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(_syncConfig.IntervalTime), cancelToken);
+            }
         }
         var status = profile.ShortDisplayText;
-        _notificationManager.ShowText(I18n.Strings.FailedToUpload + status, errMessage);
         _trayIcon.SetStatusString(SERVICE_NAME_SIMPLE, $"{I18n.Strings.FailedToUpload}{status[..Math.Min(status.Length, 200)]}\n{errMessage}", true);
         await _logger.WriteAsync(LOG_TAG, $"Upload failed after {_syncConfig.RetryTimes + 1} times, last error: {errMessage}\n{stackTrace}");
+        return new(false, errMessage);
     }
 
     private async void QuickUpload(bool contentControl) => await QuickUploadAsync(contentControl, null, null);
@@ -395,14 +430,13 @@ public class UploadService : ClipboardHander
         {
             meta ??= await _clipboardFactory.GetMetaInfomation(token);
             profile ??= await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
-            await CheckAndUpload(meta, profile, contentControl, token);
-            if (NotifyOnManualUpload)
-            {
-                var notification = _notificationManager.Shared;
-                notification.Title = I18n.Strings.Uploaded;
-                notification.Message = profile.ShortDisplayText;
-                notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
-            }
+            _profileCache = null;
+            var result = await CheckAndUpload(meta, profile, contentControl, token);
+            ShowManualUploadResult(result, profile.ShortDisplayText);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            return;
         }
         catch (Exception ex)
         {
@@ -457,6 +491,9 @@ public class UploadService : ClipboardHander
     }
 
     private void ShowManualUploadFailure(Exception ex)
+        => ShowManualUploadResult(new(false, ex.Message));
+
+    private void ShowManualUploadResult(UploadResult result, string displayText = "")
     {
         if (!NotifyOnManualUpload)
         {
@@ -464,8 +501,8 @@ public class UploadService : ClipboardHander
         }
 
         var notification = _notificationManager.Shared;
-        notification.Title = "Failed to upload manually";
-        notification.Message = ex.Message;
+        notification.Title = result.Success ? I18n.Strings.Uploaded : I18n.Strings.ManualUploadFailed;
+        notification.Message = result.Success ? displayText : result.Reason ?? string.Empty;
         notification.Show(new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(2) });
     }
 
