@@ -136,7 +136,11 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    public async Task PrepareTransferData_EmptyDirectory_CreatesDirectoryEntry()
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
+    public async Task PrepareTransferData_EmptyDirectory_CreatesDirectoryEntry(int trailingSeparatorCount)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -144,7 +148,8 @@ public class GroupProfileTransferTests
         {
             var persistentDirectory = Path.Combine(testDirectory, "persistent");
             var emptyDirectory = Directory.CreateDirectory(Path.Combine(testDirectory, "empty"));
-            var profile = new GroupProfile([emptyDirectory.FullName]);
+            var directoryPath = emptyDirectory.FullName + new string(Path.DirectorySeparatorChar, trailingSeparatorCount);
+            var profile = new GroupProfile([directoryPath]);
 
             var archivePath = (await profile.PrepareTransferData(persistentDirectory, token))?.Path;
 
@@ -152,6 +157,62 @@ public class GroupProfileTransferTests
             using var archive = ZipFile.OpenRead(archivePath);
             Assert.HasCount(1, archive.Entries);
             Assert.AreEqual("empty/", archive.Entries[0].FullName);
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    [DataRow("", false)]
+    [DataRow("/", false)]
+    [DataRow("//", false)]
+    [DataRow("///", false)]
+    [DataRow("/.", false)]
+    [DataRow("/./", false)]
+    [DataRow("/nested/..", false)]
+    [DataRow("/.", true)]
+    [DataRow("/nested/../", true)]
+    public async Task PrepareTransferData_NonEmptyDirectory_PreservesPathsAndRoundTrips(string pathSuffix, bool useHashConstructor)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var testDirectory = CreateTestDirectory();
+        try
+        {
+            var directory = Directory.CreateDirectory(Path.Combine(testDirectory, "folder"));
+            var nestedDirectory = Directory.CreateDirectory(Path.Combine(directory.FullName, "nested"));
+            Directory.CreateDirectory(Path.Combine(directory.FullName, "empty"));
+            await File.WriteAllTextAsync(Path.Combine(directory.FullName, "root.txt"), "root content", token);
+            await File.WriteAllTextAsync(Path.Combine(nestedDirectory.FullName, "child.txt"), "nested content", token);
+            var directoryPath = directory.FullName + pathSuffix.Replace('/', Path.DirectorySeparatorChar);
+            var profile = useHashConstructor ? new GroupProfile([directoryPath], string.Empty) : new GroupProfile([directoryPath]);
+            var expectedHash = await new GroupProfile([directory.FullName]).GetHash(token);
+
+            Assert.AreEqual(directory.FullName, profile.Files.Single());
+            Assert.AreEqual("folder", profile.DisplayText);
+            Assert.AreEqual("folder", (await profile.ToProfileDto(token)).Text);
+            Assert.AreEqual(directory.FullName, (await profile.Localize(testDirectory, token)).Text);
+            Assert.AreEqual(expectedHash, await profile.GetHash(token));
+            var archivePath = (await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token))?.Path;
+
+            Assert.IsNotNull(archivePath);
+            using (var archive = ZipFile.OpenRead(archivePath))
+            {
+                string[] expectedEntries =
+                    ["folder/", "folder/empty/", "folder/nested/", "folder/root.txt", "folder/nested/child.txt"];
+                CollectionAssert.AreEquivalent(expectedEntries, archive.Entries.Select(entry => entry.FullName).ToArray());
+            }
+
+            var receivedProfile = new GroupProfile([], expectedHash);
+            await receivedProfile.SetTransferData(archivePath, verify: true, token);
+            var extractedDirectory = receivedProfile.Files.Single();
+            Assert.AreEqual("folder", Path.GetFileName(extractedDirectory));
+            Assert.IsTrue(Directory.Exists(Path.Combine(extractedDirectory, "empty")));
+            Assert.AreEqual("root content",
+                await File.ReadAllTextAsync(Path.Combine(extractedDirectory, "root.txt"), token));
+            Assert.AreEqual("nested content",
+                await File.ReadAllTextAsync(Path.Combine(extractedDirectory, "nested", "child.txt"), token));
         }
         finally
         {

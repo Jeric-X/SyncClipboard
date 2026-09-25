@@ -57,6 +57,23 @@ public class ClipboardChangingListenerBaseTest
         Assert.AreEqual(3, changedCount);
     }
 
+    [TestMethod]
+    public async Task RootDirectoryProfile_IsDeliveredUnchangedToSubscribers()
+    {
+        var root = Path.GetPathRoot(Path.GetTempPath())!;
+        var profile = new GroupProfile([root]);
+        var factory = new TestClipboardFactory { ProfileToReturn = profile };
+        using var listener = new TestClipboardListener(factory);
+        var changed = new TaskCompletionSource<Profile>(TaskCreationOptions.RunContinuationsAsynchronously);
+        listener.Changed += (_, received) => changed.TrySetResult(received);
+
+        listener.Trigger();
+
+        var received = await changed.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.CancellationTokenSource.Token);
+        Assert.AreSame(profile, received);
+        Assert.IsTrue(((GroupProfile)received).ContainsRootDirectory);
+    }
+
     private sealed class TestClipboardListener(IClipboardFactory clipboardFactory) : ClipboardChangingListenerBase
     {
         private MetaChanged? _action;
@@ -75,6 +92,7 @@ public class ClipboardChangingListenerBaseTest
         private int _getMetaInfomationCallCount;
 
         public int GetMetaInfomationCallCount => Volatile.Read(ref _getMetaInfomationCallCount);
+        public Profile? ProfileToReturn { get; init; }
 
         public Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
         {
@@ -86,7 +104,7 @@ public class ClipboardChangingListenerBaseTest
         public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
         {
             ctk.ThrowIfCancellationRequested();
-            return Task.FromResult<Profile>(new TextProfile(metaInfomation.Text ?? string.Empty));
+            return Task.FromResult(ProfileToReturn ?? new TextProfile(metaInfomation.Text ?? string.Empty));
         }
 
         public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, bool contentControl, CancellationToken ctk)

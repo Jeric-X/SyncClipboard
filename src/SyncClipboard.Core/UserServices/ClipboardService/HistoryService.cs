@@ -270,7 +270,7 @@ public class HistoryService : ClipboardHander
             return;
         }
 
-        if (profile.Type == ProfileType.Unknown)
+        if (profile.Type == ProfileType.Unknown || profile is GroupProfile { ContainsRootDirectory: true })
         {
             return;
         }

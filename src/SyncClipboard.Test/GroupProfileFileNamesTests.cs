@@ -23,9 +23,14 @@ public class GroupProfileFileNamesTests
             var folderPath = Path.Combine(directory, "folder");
             await File.WriteAllTextAsync(filePath, "content", token);
             Directory.CreateDirectory(folderPath);
-            string[] paths = [filePath, folderPath + Path.DirectorySeparatorChar];
+            string[] paths =
+            [
+                Path.GetRelativePath(Directory.GetCurrentDirectory(), filePath),
+                Path.Combine(folderPath, ".") + Path.DirectorySeparatorChar
+            ];
             var profile = knownHash ? new GroupProfile(paths, new string('A', 64)) : new GroupProfile(paths);
 
+            CollectionAssert.AreEqual(new[] { filePath, folderPath }, profile.Files);
             var info = await profile.Persist(directory, token);
 
             Assert.AreEqual("file.txt\nfolder", info.Text);
