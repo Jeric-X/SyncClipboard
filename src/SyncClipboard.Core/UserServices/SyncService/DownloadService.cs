@@ -22,7 +22,6 @@ public class DownloadService : Service
     private const string LOG_TAG = "PULL";
     private bool _isEventDrivenModeActive = false;
     private bool _isQuickDownload = false;
-    private bool _isQuickDownloadAndPaste = false;
     private readonly Lock _serviceStateLocker = new();
     private ProgressToastReporter? _toastReporter;
     private Profile? _remoteProfileCache;
@@ -277,7 +276,7 @@ public class DownloadService : Service
 
         try
         {
-            await HandleRemoteProfileChange(remoteProfile);
+            await _singleDownloadTask.Run(token => HandleRemoteProfileChange(remoteProfile, token));
         }
         catch (Exception ex)
         {
@@ -285,23 +284,20 @@ public class DownloadService : Service
         }
     }
 
-    private async Task HandleRemoteProfileChange(Profile remoteProfile)
+    private async Task<bool> HandleRemoteProfileChange(Profile remoteProfile, CancellationToken token)
     {
-        await _singleDownloadTask.Run(async (token) =>
+        if (!await NeedUpdate(remoteProfile, token))
         {
-            if (!await NeedUpdate(remoteProfile, token))
-            {
-                return;
-            }
+            return false;
+        }
 
-            await SyncService.remoteProfilemutex.WaitAsync(token);
-            using var remoteProfileMutexGuard = new ScopeGuard(() => SyncService.remoteProfilemutex.Release());
+        await SyncService.remoteProfilemutex.WaitAsync(token);
+        using var remoteProfileMutexGuard = new ScopeGuard(() => SyncService.remoteProfilemutex.Release());
 
-            await LocalClipboard.Semaphore.WaitAsync(token);
-            using var localClipboardGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
+        await LocalClipboard.Semaphore.WaitAsync(token);
+        using var localClipboardGuard = new ScopeGuard(() => LocalClipboard.Semaphore.Release());
 
-            await DownloadRemoteProfile(remoteProfile, token);
-        });
+        return await DownloadRemoteProfile(remoteProfile, token);
     }
 
     private void ClipboardProfileChanged(ClipboardMetaInfomation _, Profile profile)
@@ -395,12 +391,13 @@ public class DownloadService : Service
         return null;
     }
 
-    private async Task DownloadRemoteProfile(Profile profile, CancellationToken token)
+    private async Task<bool> DownloadRemoteProfile(Profile profile, CancellationToken token)
     {
         _trayIcon.SetStatusString(SERVICE_NAME, "Downloading");
         _trayIcon.ShowDownloadAnimation();
         try
         {
+            var applied = true;
             var currentLocalProfile = await _clipboardFactory.CreateProfileFromLocal(token);
             if (await Profile.Same(currentLocalProfile, profile, token))
             {
@@ -408,11 +405,12 @@ public class DownloadService : Service
             }
             else
             {
-                await DownloadAndSetRemoteProfileToLocal(profile, token);
+                applied = await DownloadAndSetRemoteProfileToLocal(profile, token);
                 _remoteProfileCache = profile;
                 _nonServerErrorTimes = 0;
             }
             _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
+            return applied;
         }
         catch when (token.IsCancellationRequested)
         {
@@ -444,9 +442,10 @@ public class DownloadService : Service
             _downServiceChangingLocal = false;
             _messenger.Send(profile, SyncService.PULL_STOP_ENENT_NAME);
         }
+        return false;
     }
 
-    private async Task DownloadAndSetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
+    private async Task<bool> DownloadAndSetRemoteProfileToLocal(Profile remoteProfile, CancellationToken cancelToken)
     {
         if (await Profile.Same(remoteProfile, _remoteProfileCache, cancelToken))
         {
@@ -493,7 +492,13 @@ public class DownloadService : Service
             {
                 _clipboardNotificationHelper.Notify(remoteProfile, cancelToken);
             }
+            return true;
         }
+        else
+        {
+            await _logger.WriteAsync(LOG_TAG, "Skipped setting remote profile because the local clipboard changed");
+        }
+        return false;
     }
 
     private async Task DownloadFileProfileData(Profile profile, CancellationToken cancelToken)
@@ -553,10 +558,6 @@ public class DownloadService : Service
             return;
         }
 
-        _remoteProfileCache = null;
-        _isQuickDownload = true;
-        _isQuickDownloadAndPaste = paste;
-
         try
         {
             if (paste && _hotkeyManager.HotkeyStatusMap.TryGetValue(QuickDownloadAndPasteGuid, out var status) &&
@@ -568,9 +569,26 @@ public class DownloadService : Service
             var remoteServer = _remoteClipboardServerFactory.Current;
             if (remoteServer != null)
             {
-                var remoteProfile = await remoteServer.GetProfileAsync();
-                await HandleRemoteProfileChange(remoteProfile);
-                OnDownloadCompleted();
+                await _singleDownloadTask.Run(async token =>
+                {
+                    _remoteProfileCache = null;
+                    _isQuickDownload = true;
+                    try
+                    {
+                        _localProfileCache = await _clipboardFactory.CreateProfileFromLocal(token);
+                        var remoteProfile = await remoteServer.GetProfileAsync(token);
+                        var applied = await HandleRemoteProfileChange(remoteProfile, token);
+                        token.ThrowIfCancellationRequested();
+                        if (paste && applied)
+                        {
+                            _keyboard.Paste();
+                        }
+                    }
+                    finally
+                    {
+                        _isQuickDownload = false;
+                    }
+                });
             }
         }
         catch (Exception ex)
@@ -578,20 +596,5 @@ public class DownloadService : Service
             await _logger.WriteAsync(LOG_TAG, $"Quick download failed: {ex.Message}");
             _notificationManager.ShowText(I18n.Strings.FailedToDownloadClipboard, ex.Message);
         }
-        finally
-        {
-            _isQuickDownload = false;
-            _isQuickDownloadAndPaste = false;
-        }
-    }
-
-    private void OnDownloadCompleted()
-    {
-        if (_isQuickDownloadAndPaste)
-        {
-            _keyboard.Paste();
-        }
-        _isQuickDownload = false;
-        _isQuickDownloadAndPaste = false;
     }
 }
