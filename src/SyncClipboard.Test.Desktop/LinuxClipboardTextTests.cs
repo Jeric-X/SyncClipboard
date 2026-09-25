@@ -32,7 +32,7 @@ public class LinuxClipboardTextTests
     {
         var item = new DataTransferItem();
         item.SetText(text);
-        var reader = new Mock<IClipboardReader>();
+        var reader = new Mock<IClipboardReader> { CallBase = true };
         reader.Setup(r => r.GetTextAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => item.TryGetRaw(DataFormat.Text) as string);
         reader.Setup(r => r.GetDataAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -54,7 +54,7 @@ public class LinuxClipboardTextTests
     public async Task NativeTextStillCreatesTextProfileWhenUniversalTextIsUnavailable(string format)
     {
         const string text = "其他应用复制的文本";
-        var reader = new Mock<IClipboardReader>();
+        var reader = new Mock<IClipboardReader> { CallBase = true };
         reader.Setup(r => r.GetDataAsync(format, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Encoding.UTF8.GetBytes(text));
 
@@ -64,7 +64,40 @@ public class LinuxClipboardTextTests
         Assert.AreEqual(text, profile.DisplayText);
     }
 
-    private async Task<Profile> ReadLinuxTextProfile(IClipboardReader reader, string[] formats)
+    [TestMethod]
+    [DataRow("HandleMacHtml", "public.html", false)]
+    [DataRow("HandleMacHtml", "public.html", true)]
+    [DataRow("HandleLinuxHtml", "text/html", false)]
+    [DataRow("HandleLinuxHtml", "text/html", true)]
+    public async Task HtmlHandlersAcceptStringAndUtf8Bytes(string handler, string format, bool useBytes)
+    {
+        const string html = "<p>中文 HTML 🌍</p>";
+        var reader = new Mock<IClipboardReader> { CallBase = true };
+        reader.Setup(r => r.GetDataAsync(format, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(useBytes ? Encoding.UTF8.GetBytes(html) : html);
+
+        var meta = await WithFactoryAsync(reader.Object, async factory =>
+        {
+            var result = new ClipboardMetaInfomation();
+            var read = factory.GetType().GetMethod(handler, BindingFlags.Instance | BindingFlags.NonPublic)!;
+            await (Task)read.Invoke(factory, [result, CancellationToken.None])!;
+            return result;
+        });
+
+        Assert.AreEqual(html, meta.Html);
+    }
+
+    private Task<Profile> ReadLinuxTextProfile(IClipboardReader reader, string[] formats) =>
+        WithFactoryAsync(reader, async factory =>
+        {
+            // Exercise Linux parsing on every test host without accessing its native clipboard.
+            var read = factory.GetType().GetMethod("HandleLinuxClipboard", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var meta = await (Task<ClipboardMetaInfomation>)read.Invoke(factory,
+                [formats, true, null, CancellationToken.None])!;
+            return await factory.CreateProfileFromMeta(meta, CancellationToken.None);
+        });
+
+    private async Task<T> WithFactoryAsync<T>(IClipboardReader reader, Func<ClipboardFactoryBase, Task<T>> action)
     {
         using var migrationServices = new ConfigurationTestServices();
         Mock.Get(reader).SetupGet(r => r.SourceName).Returns("Avalonia");
@@ -80,10 +113,6 @@ public class LinuxClipboardTextTests
         var factoryType = typeof(AppServices).Assembly.GetType("SyncClipboard.Desktop.ClipboardAva.ClipboardFactory", true)!;
         var factory = (ClipboardFactoryBase)Activator.CreateInstance(factoryType, services)!;
 
-        // Exercise Linux parsing on every test host without accessing its native clipboard.
-        var read = factoryType.GetMethod("HandleLinuxClipboard", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var meta = await (Task<ClipboardMetaInfomation>)read.Invoke(factory,
-            [formats, true, null, CancellationToken.None])!;
-        return await factory.CreateProfileFromMeta(meta, CancellationToken.None);
+        return await action(factory);
     }
 }

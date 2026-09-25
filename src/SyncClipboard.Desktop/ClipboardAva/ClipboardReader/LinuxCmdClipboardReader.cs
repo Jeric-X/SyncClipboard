@@ -53,9 +53,9 @@ public class LinuxCmdClipboardReader : IClipboardReader
         return formatsStr.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
     }
 
-    public virtual async Task<string?> GetTextAsync(CancellationToken token)
+    public virtual Task<string?> GetTextAsync(CancellationToken token)
     {
-        return await GetDataAsync(Format.TEXT, token) as string;
+        return ((IClipboardReader)this).GetStringAsync(Format.TEXT, token);
     }
 
     // Linux 命令行读取器不支持 Bitmap 和 Files，返回 null
