@@ -13,6 +13,7 @@ using SyncClipboard.Desktop.Utilities.CaretPositionProvider;
 using SyncClipboard.Desktop.Utilities.NativeWindowController;
 using SyncClipboard.Desktop.Utilities.MousePositionProvider;
 using SyncClipboard.Desktop.Views;
+using SyncClipboard.Desktop.ViewModels;
 using SyncClipboard.Core.Utilities.Network;
 
 namespace SyncClipboard.Desktop;
@@ -23,6 +24,7 @@ public class AppServices
     {
         AppCore.ConfigCommonService(services);
         AppCore.ConfigurateViewModels(services);
+        services.AddSingleton<DiagnoseViewModel>();
         AppCore.ConfigurateUserService(services);
 
         services.AddTransient<IAppConfig, AppConfig>();
