@@ -165,11 +165,16 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    [DataRow(0)]
-    [DataRow(1)]
-    [DataRow(2)]
-    [DataRow(3)]
-    public async Task PrepareTransferData_NonEmptyDirectory_PreservesPathsAndRoundTrips(int trailingSeparatorCount)
+    [DataRow("", false)]
+    [DataRow("/", false)]
+    [DataRow("//", false)]
+    [DataRow("///", false)]
+    [DataRow("/.", false)]
+    [DataRow("/./", false)]
+    [DataRow("/nested/..", false)]
+    [DataRow("/.", true)]
+    [DataRow("/nested/../", true)]
+    public async Task PrepareTransferData_NonEmptyDirectory_PreservesPathsAndRoundTrips(string pathSuffix, bool useHashConstructor)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -180,10 +185,14 @@ public class GroupProfileTransferTests
             Directory.CreateDirectory(Path.Combine(directory.FullName, "empty"));
             await File.WriteAllTextAsync(Path.Combine(directory.FullName, "root.txt"), "root content", token);
             await File.WriteAllTextAsync(Path.Combine(nestedDirectory.FullName, "child.txt"), "nested content", token);
-            var directoryPath = directory.FullName + new string(Path.DirectorySeparatorChar, trailingSeparatorCount);
-            var profile = new GroupProfile([directoryPath]);
+            var directoryPath = directory.FullName + pathSuffix.Replace('/', Path.DirectorySeparatorChar);
+            var profile = useHashConstructor ? new GroupProfile([directoryPath], string.Empty) : new GroupProfile([directoryPath]);
             var expectedHash = await new GroupProfile([directory.FullName]).GetHash(token);
 
+            Assert.AreEqual(directory.FullName, profile.Files.Single());
+            Assert.AreEqual("folder", profile.DisplayText);
+            Assert.AreEqual("folder", (await profile.ToProfileDto(token)).Text);
+            Assert.AreEqual(directory.FullName, (await profile.Localize(testDirectory, token)).Text);
             Assert.AreEqual(expectedHash, await profile.GetHash(token));
             var archivePath = (await profile.PrepareTransferData(Path.Combine(testDirectory, "persistent"), token))?.Path;
 

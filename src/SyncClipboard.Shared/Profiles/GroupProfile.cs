@@ -49,7 +49,7 @@ public class GroupProfile : Profile
     public GroupProfile(
         IEnumerable<string> files, string hash, string? dataPath = null, string? transferDataHash = null)
     {
-        _files = [.. files];
+        _files = files.Select(path => TrimEndingDirectorySeparators(Path.GetFullPath(path))).ToArray();
         _fileNames = GetFileNames(_files);
         Hash = string.IsNullOrEmpty(hash) ? null : hash;
         _transferDataPath = dataPath;
@@ -64,6 +64,7 @@ public class GroupProfile : Profile
     {
         _fileFilterConfig = filterConfig ?? new();
         _files = files
+            .Select(path => TrimEndingDirectorySeparators(Path.GetFullPath(path)))
             .Where(file =>
             {
                 // 目录不参与过滤，始终保留
