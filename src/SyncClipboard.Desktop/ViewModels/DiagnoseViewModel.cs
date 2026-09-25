@@ -1,7 +1,6 @@
 ﻿using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
@@ -29,29 +28,34 @@ internal partial class DiagnoseViewModel : ObservableObject
     private readonly SingletonTask refreshTask;
     private readonly ClipboardReaderSelector Clipboard;
 
-    public DiagnoseViewModel()
+    private bool _isListening;
+
+    public DiagnoseViewModel(
+        IClipboardChangingListener clipboardListener, ConfigManager configManager, ClipboardReaderSelector clipboard)
     {
         refreshTask = new(RefreshClipboardType);
 
-        _clipboardListener = App.Current.Services.GetRequiredService<IClipboardChangingListener>();
-        _configManager = App.Current.Services.GetRequiredService<ConfigManager>();
-        Clipboard = App.Current.Services.GetRequiredService<ClipboardReaderSelector>();
-        _configManager.ListenConfig<ProgramConfig>(AotuRefreshChanged);
+        _clipboardListener = clipboardListener;
+        _configManager = configManager;
+        Clipboard = clipboard;
+        _configManager.ListenConfig<ProgramConfig>(OnProgramConfigChanged);
         _config = _configManager.GetConfig<ProgramConfig>();
 
-        RefreshCommand.Execute(null);
-        AotuRefreshChanged(_config);
+        OnProgramConfigChanged(_config);
     }
 
-    private void AotuRefreshChanged(ProgramConfig config)
+    private void OnProgramConfigChanged(ProgramConfig config)
     {
         _config = config;
         AutoRefresh = _config.DiagnosePageAutoRefresh;
-        _clipboardListener.Changed += ClipboardChangedHandler;
-        if ((config.DiagnoseMode && config.DiagnosePageAutoRefresh) is false)
-        {
+        var shouldListen = config.DiagnoseMode && config.DiagnosePageAutoRefresh;
+        if (_isListening == shouldListen) return;
+
+        _isListening = shouldListen;
+        if (shouldListen)
+            _clipboardListener.Changed += ClipboardChangedHandler;
+        else
             _clipboardListener.Changed -= ClipboardChangedHandler;
-        }
     }
 
     private async void ClipboardChangedHandler(ClipboardMetaInfomation _1, Profile _2)
