@@ -136,9 +136,11 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task PrepareTransferData_EmptyDirectory_CreatesDirectoryEntry(bool trailingSeparator)
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
+    public async Task PrepareTransferData_EmptyDirectory_CreatesDirectoryEntry(int trailingSeparatorCount)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -146,7 +148,7 @@ public class GroupProfileTransferTests
         {
             var persistentDirectory = Path.Combine(testDirectory, "persistent");
             var emptyDirectory = Directory.CreateDirectory(Path.Combine(testDirectory, "empty"));
-            var directoryPath = emptyDirectory.FullName + (trailingSeparator ? Path.DirectorySeparatorChar.ToString() : "");
+            var directoryPath = emptyDirectory.FullName + new string(Path.DirectorySeparatorChar, trailingSeparatorCount);
             var profile = new GroupProfile([directoryPath]);
 
             var archivePath = (await profile.PrepareTransferData(persistentDirectory, token))?.Path;
@@ -163,9 +165,11 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task PrepareTransferData_NonEmptyDirectory_PreservesPathsAndRoundTrips(bool trailingSeparator)
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
+    public async Task PrepareTransferData_NonEmptyDirectory_PreservesPathsAndRoundTrips(int trailingSeparatorCount)
     {
         var token = TestContext.CancellationTokenSource.Token;
         var testDirectory = CreateTestDirectory();
@@ -176,7 +180,7 @@ public class GroupProfileTransferTests
             Directory.CreateDirectory(Path.Combine(directory.FullName, "empty"));
             await File.WriteAllTextAsync(Path.Combine(directory.FullName, "root.txt"), "root content", token);
             await File.WriteAllTextAsync(Path.Combine(nestedDirectory.FullName, "child.txt"), "nested content", token);
-            var directoryPath = directory.FullName + (trailingSeparator ? Path.DirectorySeparatorChar.ToString() : "");
+            var directoryPath = directory.FullName + new string(Path.DirectorySeparatorChar, trailingSeparatorCount);
             var profile = new GroupProfile([directoryPath]);
             var expectedHash = await new GroupProfile([directory.FullName]).GetHash(token);
 

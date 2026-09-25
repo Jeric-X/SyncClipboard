@@ -185,11 +185,18 @@ public class GroupProfile : Profile
         }
     }
 
+    private static string TrimEndingDirectorySeparators(string path)
+    {
+        var root = Path.GetPathRoot(path);
+        var trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return root is not null && trimmed.Length < root.Length ? root : trimmed;
+    }
+
     private static string ResolveRootPath(string firstPath)
     {
         if (!string.IsNullOrEmpty(firstPath))
         {
-            var basePath = Directory.Exists(firstPath) ? Path.TrimEndingDirectorySeparator(firstPath) : firstPath;
+            var basePath = Directory.Exists(firstPath) ? TrimEndingDirectorySeparators(firstPath) : firstPath;
             var parent = Path.GetDirectoryName(basePath);
             // 当处于文件系统根（如 Linux 的 "/"）时，父目录可能为 null，退回到路径根
             return parent ?? Path.GetPathRoot(basePath) ?? "/";
@@ -497,7 +504,7 @@ public class GroupProfile : Profile
             throw new LocalProfileDataUnavailableException($"Failed to read local Group directory: {path}", ex);
         }
 
-        var dirName = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+        var dirName = Path.GetFileName(TrimEndingDirectorySeparators(path));
         var rootEntryName = dirName + "/";
         archive.CreateEntry(rootEntryName);
         entries.Add(new GroupEntry(rootEntryName, isDirectory: true, length: 0, hashTask: null));
