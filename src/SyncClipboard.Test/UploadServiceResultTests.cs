@@ -175,9 +175,33 @@ public class UploadServiceResultTests
     }
 
     [TestMethod]
-    public async Task ManualUpload_CancellationDoesNotNotifyOrUpdateCaches()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task RepeatedManualUpload_RechecksRemoteAndReportsSuccess(bool remoteChanged)
     {
         var fixture = new Fixture();
+        await fixture.RunManualAsync();
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.Uploaded, fixture.Notification.Object.Title);
+
+        fixture.Server.Setup(server => server.GetProfileAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(remoteChanged ? new TextProfile("changed remote clipboard") : fixture.Profile);
+
+        await fixture.RunManualAsync();
+
+        fixture.Server.Verify(server => server.GetProfileAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        fixture.VerifyWrites(remoteChanged ? 2 : 1);
+        fixture.Notification.Verify(notification => notification.Show(It.IsAny<NotificationDeliverOption>()), Times.Exactly(2));
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.Uploaded, fixture.Notification.Object.Title);
+        Assert.AreEqual(fixture.Profile.ShortDisplayText, fixture.Notification.Object.Message);
+        Assert.AreSame(fixture.Profile, fixture.UploadCache);
+        Assert.AreSame(fixture.Profile, fixture.DownloadCache);
+    }
+
+    [TestMethod]
+    public async Task ManualUpload_CancellationDoesNotNotifyOrCacheProfile()
+    {
+        var fixture = new Fixture();
+        var previousDownloadCache = fixture.DownloadCache;
         fixture.Server.Setup(server => server.SetProfileAsync(
             It.IsAny<Profile>(), It.IsAny<IProgress<HttpDownloadProgress>?>(), It.IsAny<CancellationToken>()))
             .Returns(() =>
@@ -190,7 +214,8 @@ public class UploadServiceResultTests
 
         fixture.Notification.Verify(notification => notification.Show(It.IsAny<NotificationDeliverOption>()), Times.Never);
         Assert.IsFalse(fixture.Notifications.Invocations.Any(invocation => invocation.Method.Name == "Show"));
-        fixture.AssertCachesUnchanged();
+        Assert.IsNull(fixture.UploadCache);
+        Assert.AreSame(previousDownloadCache, fixture.DownloadCache);
         fixture.VerifyWrites(1);
     }
 

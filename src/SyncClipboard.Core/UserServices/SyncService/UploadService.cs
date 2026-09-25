@@ -430,6 +430,7 @@ public class UploadService : ClipboardHander
         {
             meta ??= await _clipboardFactory.GetMetaInfomation(token);
             profile ??= await _clipboardFactory.CreateProfileFromMeta(meta, contentControl, token);
+            _profileCache = null;
             var result = await CheckAndUpload(meta, profile, contentControl, token);
             ShowManualUploadResult(result, profile.ShortDisplayText);
         }
