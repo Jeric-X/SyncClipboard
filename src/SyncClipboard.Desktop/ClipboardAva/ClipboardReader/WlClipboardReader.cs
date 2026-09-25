@@ -18,8 +18,8 @@ public class WlClipboardReader(ILogger logger) : LinuxCmdClipboardReader(logger,
         return formatsStr.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
     }
 
-    public override async Task<string?> GetTextAsync(CancellationToken token)
+    public override Task<string?> GetTextAsync(CancellationToken token)
     {
-        return await GetDataAsync(Format.TextUtf8, token) as string;
+        return ((IClipboardReader)this).GetStringAsync(Format.TextUtf8, token);
     }
 }

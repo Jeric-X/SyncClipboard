@@ -1,12 +1,9 @@
-﻿using Avalonia.Input;
-using FluentAvalonia.Core;
-using SyncClipboard.Core.Models;
+﻿using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HandlerMapping = System.Collections.Generic.KeyValuePair<
@@ -84,9 +81,9 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("macos")]
     private async Task HandleMacHtml(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var htmlBytes = await Clipboard.GetDataAsync(Format.PublicHtml, token) as byte[];
-        ArgumentNullException.ThrowIfNull(htmlBytes);
-        meta.Html = Encoding.UTF8.GetString(htmlBytes);
+        var html = await Clipboard.GetStringAsync(Format.PublicHtml, token);
+        ArgumentNullException.ThrowIfNull(html);
+        meta.Html = html;
     }
 
     [SupportedOSPlatform("macos")]

@@ -59,6 +59,11 @@ public class ClipboardReaderSelector : IClipboardReader
         return GetReader().GetTextAsync(token);
     }
 
+    public Task<string?> GetStringAsync(string format, CancellationToken token)
+    {
+        return GetReader().GetStringAsync(format, token);
+    }
+
     public Task<Bitmap?> GetBitmapAsync(CancellationToken token)
     {
         return GetReader().GetBitmapAsync(token);

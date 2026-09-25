@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HandlerMapping = System.Collections.Generic.KeyValuePair<
@@ -117,9 +116,8 @@ internal partial class ClipboardFactory
     {
         if (meta.Files is not null) return;
 
-        var uriListbytes = await Clipboard.GetDataAsync(Format.UriList, token) as byte[];
-        ArgumentNullException.ThrowIfNull(uriListbytes, nameof(HandleLinuxUriList));
-        var uriListStr = Encoding.UTF8.GetString(uriListbytes);
+        var uriListStr = await Clipboard.GetStringAsync(Format.UriList, token);
+        ArgumentNullException.ThrowIfNull(uriListStr, nameof(HandleLinuxUriList));
         meta.Files = GetValidPathFromList(uriListStr.Split(["\r\n", "\r", "\n"], StringSplitOptions.None));
     }
 
@@ -132,25 +130,17 @@ internal partial class ClipboardFactory
         }
 
         // Avalonia's universal Text format is distinct from a platform format with the same identifier.
-        var data = format == Format.Text
+        meta.Text = format == Format.Text
             ? await Clipboard.GetTextAsync(token)
-            : await Clipboard.GetDataAsync(format, token);
-        if (data is string text)
-        {
-            meta.Text = text;
-        }
-        else if (data is byte[] textBytes)
-        {
-            meta.Text = Encoding.UTF8.GetString(textBytes);
-        }
+            : await Clipboard.GetStringAsync(format, token);
     }
 
     [SupportedOSPlatform("linux")]
     private async Task HandleLinuxHtml(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var htmlBytes = await Clipboard.GetDataAsync(Format.TextHtml, token) as byte[];
-        ArgumentNullException.ThrowIfNull(htmlBytes, nameof(HandleLinuxHtml));
-        meta.Html = Encoding.UTF8.GetString(htmlBytes);
+        var html = await Clipboard.GetStringAsync(Format.TextHtml, token);
+        ArgumentNullException.ThrowIfNull(html, nameof(HandleLinuxHtml));
+        meta.Html = html;
     }
 
     [SupportedOSPlatform("linux")]
@@ -232,9 +222,8 @@ internal partial class ClipboardFactory
     {
         if (meta.Files is not null) return;
 
-        var bytes = await Clipboard.GetDataAsync(Format.GnomeFiles, token) as byte[];
-        ArgumentNullException.ThrowIfNull(bytes, nameof(HandleGnomeFile));
-        var str = Encoding.UTF8.GetString(bytes!);
+        var str = await Clipboard.GetStringAsync(Format.GnomeFiles, token);
+        ArgumentNullException.ThrowIfNull(str, nameof(HandleGnomeFile));
         var pathList = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
         if (pathList.Length < 2) return;
@@ -249,9 +238,8 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleCompoundText(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await Clipboard.GetDataAsync(Format.CompoundText, token) as byte[];
-        ArgumentNullException.ThrowIfNull(bytes, nameof(HandleCompoundText));
-        var str = Encoding.UTF8.GetString(bytes!);
+        var str = await Clipboard.GetStringAsync(Format.CompoundText, token);
+        ArgumentNullException.ThrowIfNull(str, nameof(HandleCompoundText));
         string[] lines = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
         if (lines.Length >= 3 && lines[1] == "cut")
         {
@@ -263,9 +251,8 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleKdeCutSelection(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        var bytes = await Clipboard.GetDataAsync(Format.KdeCutSelection, token) as byte[];
-        ArgumentNullException.ThrowIfNull(bytes, nameof(HandleKdeCutSelection));
-        var str = Encoding.UTF8.GetString(bytes!);
+        var str = await Clipboard.GetStringAsync(Format.KdeCutSelection, token);
+        ArgumentNullException.ThrowIfNull(str, nameof(HandleKdeCutSelection));
         if (str == "1")
         {
             meta.Effects = DragDropEffects.Move;

@@ -99,6 +99,12 @@ internal partial class DiagnoseDetailViewModel : ObservableObject
 
     private async Task ProcessImageBytes(object? clipboard)
     {
+        if (clipboard is Bitmap bitmap)
+        {
+            IsImage = true;
+            Bitmap = bitmap;
+        }
+
         if (clipboard is byte[] bytes)
         {
             try

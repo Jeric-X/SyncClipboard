@@ -73,16 +73,12 @@ public class AvaloniaClipboardReader(IMainWindow mainWindow) : IClipboardReader
             if (dataTransfer is null)
                 return null;
 
-            // 尝试使用平台格式获取数据
-            var platformFormat = DataFormat.CreateBytesPlatformFormat(format);
-            var bytes = await dataTransfer.TryGetValueAsync(platformFormat).WaitAsync(token);
-            if (bytes is not null)
-                return bytes;
+            var dataFormat = dataTransfer.Formats.FirstOrDefault(candidate => candidate.Identifier == format);
+            if (dataFormat is null)
+                return null;
 
-            // 尝试使用字符串平台格式
-            var stringFormat = DataFormat.CreateStringPlatformFormat(format);
-            var str = await dataTransfer.TryGetValueAsync(stringFormat).WaitAsync(token);
-            return str;
+            var item = dataTransfer.GetItems(dataFormat).FirstOrDefault();
+            return item is null ? null : await item.TryGetRawAsync(dataFormat).WaitAsync(token);
         }, DispatcherPriority.Normal);
     }
 
