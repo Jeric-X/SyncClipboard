@@ -492,7 +492,7 @@ public class GroupProfile : Profile
             throw new LocalProfileDataUnavailableException($"Failed to read local Group directory: {path}", ex);
         }
 
-        var dirName = Path.GetFileName(path);
+        var dirName = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
         var rootEntryName = dirName + "/";
         archive.CreateEntry(rootEntryName);
         entries.Add(new GroupEntry(rootEntryName, isDirectory: true, length: 0, hashTask: null));
