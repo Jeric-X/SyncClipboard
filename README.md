@@ -25,6 +25,7 @@
       - [故障排除](#故障排除)
     - [macOS](#macos)
       - [手动安装](#手动安装)
+      - [Homebrew](#homebrew)
       - [故障排除](#故障排除-1)
     - [Linux](#linux)
       - [手动安装](#手动安装-1)
@@ -209,14 +210,21 @@ sudo systemctl enable --now syncclipboard.service
 - 在Windows 10中运行SyncClipboard时界面图标大范围出错，请下载安装微软[Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons)图标字体
 
 ### macOS
+
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
+
+#### Homebrew
+
+```shell
+brew install --cask Jeric-X/tap/syncclipboard
+```
 
 #### 故障排除
 - 系统提示`由于开发者无法验证，“SyncClipboard”无法打开`： 
 在macOS的`设置`->`隐私与安全性`页面，点击`仍要打开`
 - 系统提示`“SyncClipboard”已损坏，无法打开`：在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- 部分功能需要模拟键盘输入实现复制或粘贴，依赖辅助功能权限，软件在需要时会弹窗提示授权
+- 部分功能依赖辅助功能权限，软件在需要时会弹窗提示授权。在系统设置中已授权但SyncClipboard仍显示未授权时，先在授权列表中删除SyncClipboard，然后重启SyncClipboard重新申请
 
 ### Linux
 #### 手动安装

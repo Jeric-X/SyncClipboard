@@ -24,6 +24,7 @@
       - [Troubleshooting](#troubleshooting)
     - [macOS](#macos)
       - [Manual Installation](#manual-installation)
+      - [Homebrew](#homebrew)
       - [Troubleshooting](#troubleshooting-1)
     - [Linux](#linux)
       - [Manual Installation](#manual-installation-1)
@@ -205,13 +206,20 @@ Download the zip file starting with `SyncClipboard_win_` from the [Release](http
 - If the interface icons are displayed incorrectly on Windows 10, download and install the Microsoft [Segoe Fluent Icons](https://aka.ms/SegoeFluentIcons) font.
 
 ### macOS
+
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
+
+#### Homebrew
+
+```shell
+brew install --cask Jeric-X/tap/syncclipboard
+```
 
 #### Troubleshooting
 - System prompts `“SyncClipboard” cannot be opened because the developer cannot be verified`: Go to `Settings` -> `Privacy & Security` on macOS, and click `Open Anyway`.
 - System prompts `"SyncClipboard" is damaged, can't be opened`: Run the following command in the terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
-- Some features require simulating keyboard input to perform copy or paste operations, which depend on Accessibility permissions. SyncClipboard will prompt for authorization when needed.
+- Some features require Accessibility permissions. SyncClipboard will prompt for authorization when needed. If permission has been granted in System Settings but SyncClipboard still reports it as missing, remove SyncClipboard from the Accessibility permissions list, then restart SyncClipboard to request permission again.
 
 ### Linux
 #### Manual Installation
