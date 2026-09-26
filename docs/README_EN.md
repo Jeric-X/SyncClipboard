@@ -9,14 +9,6 @@
   - [Features](#features)
   - [Breaking Changes](#breaking-changes)
     - [v3.1.1](#v311)
-  - [Server](#server)
-    - [Standalone Server](#standalone-server)
-      - [Server Configuration](#server-configuration)
-      - [Docker](#docker)
-      - [Arch Linux](#arch-linux)
-    - [Desktop Client Built-in Server](#desktop-client-built-in-server)
-    - [WebDAV Server](#webdav-server)
-    - [S3 Server](#s3-server)
   - [Client](#client)
     - [Windows](#windows)
       - [Installer](#installer)
@@ -29,7 +21,7 @@
       - [Troubleshooting](#troubleshooting-1)
     - [Linux](#linux)
       - [Manual Installation](#manual-installation-1)
-      - [Arch Linux](#arch-linux-1)
+      - [Arch Linux](#arch-linux)
       - [Troubleshooting](#troubleshooting-2)
     - [Desktop Client Command Line Arguments](#desktop-client-command-line-arguments)
       - [--shutdown-previous](#--shutdown-previous)
@@ -41,6 +33,14 @@
     - [HarmonyOS Next](#harmonyos-next)
       - [Use ClipLink](#use-cliplink)
     - [Notes for Clients](#notes-for-clients)
+  - [Server](#server)
+    - [Standalone Server](#standalone-server)
+      - [Server Configuration](#server-configuration)
+      - [Docker](#docker)
+      - [Arch Linux](#arch-linux-1)
+    - [Desktop Client Built-in Server](#desktop-client-built-in-server)
+    - [WebDAV Server](#webdav-server)
+    - [S3 Server](#s3-server)
   - [API](#api)
     - [Get Clipboard](#get-clipboard)
     - [Upload Clipboard](#upload-clipboard)
@@ -53,9 +53,9 @@
 
 ## Features
 
-- Cross-platform (Windows/macOS/Linux) real-time clipboard syncing, clipboard history management, and history syncing.
+- Cross-platform (Windows/macOS/Linux/mobile) real-time clipboard syncing, clipboard history management, and history syncing.
 - Supports desktop client built-in server, Docker-deployed server, or storage services compatible with WebDAV/S3 APIs.
-- Mobile clipboard syncing based on third-party tools.
+- Community-developed clients and tools built on the SyncClipboard API.
 - Optimize image type clipboard:
   - Paste image to a textbox directly after copying a image file from file system, and vice versa.
   - Download the original file and copy it after copying a image in web browser. This is helpful for copying an animated image in browser. Web sites always prevent downloads from non-browser, so this feature isn't always usable.
@@ -69,118 +69,6 @@
 ## Breaking Changes
 ### [v3.1.1](https://github.com/Jeric-X/SyncClipboard/issues/286)
 Clients and servers v3.1.1 and above are incompatible with previous versions. All clients, servers, and third-party clients in the sync network need to be upgraded together.
-
-## Server
-### Standalone Server
-[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Run with:
-```
-dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
-```
-Content root folder is `SyncClipboard.Server.dll`'s parent folder. Writing permission is needed. Choosing a different content root folder is possible. Copy a new `appsettings.json` to the folder and run with:
-```
-dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
-```
-
-#### Server Configuration
-`appsettings.json` is the config file.
-```jsonc
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*",
-  "Kestrel": {
-    "Endpoints": {
-      "http": {
-        "Url": "http://*:5033"
-      },
-      //"https": {
-      //  "Url": "https://*:5033"
-      //}
-    },
-    //"Certificates": {
-    //  "Default": {
-    //    "Path": "/path/to/pem",
-    //    "KeyPath": "/path/to/pem_key"
-    //  }
-    //}
-  },
-  "AppSettings": {
-    "UserName": "your_username",
-    "Password": "your_password",
-    "MaxSavedHistoryCount": 1000, // Maximum history count; 0 means no count limit. The retention time limit still applies.
-    "HistoryRetentionMinutes": 0 // Retention in minutes; 0 means no time limit. The history count limit still applies.
-  }
-}
-```
-For more information, please refer to the [official Microsoft documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-10.0#configure-https-in-appsettingsjson).
-
-Username and password can be set by environment variables. When the environment variables `SYNCCLIPBOARD_USERNAME` and `SYNCCLIPBOARD_PASSWORD` are both set, they will be used as the username and password.  
-
-`ASPNETCORE_hostBuilder__reloadConfigOnChange` is used to configure whether to automatically detect changes in `appsettings.json` and reload the configuration. The default value is false. Changing it to any value other than false will enable this feature.
-
-> [!WARNING]  
-> HTTP transmits data in plaintext. When deploying the server on a public network, please enable HTTPS or configure HTTPS using a reverse proxy tool. If obtaining a certificate from a certificate authority is not possible, it is recommended to use the open-source tool [mkcert](https://github.com/FiloSottile/mkcert) or other methods to generate a self-signed certificate.
-
-#### Docker
-
-```shell
-# docker
-docker run -d \
-  --name=syncclipboard-server \
-  -p 5033:5033 \
-  -e SYNCCLIPBOARD_USERNAME=your_username \
-  -e SYNCCLIPBOARD_PASSWORD=your_password \
-  -v /data/syncclipboard-server:/app/data \
-  --restart unless-stopped \
-  jericx/syncclipboard-server:latest
-
-# docker compose
-curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml >> docker-compose.yml
-docker compose up -d
-```
-
-After the container starts for the first time, a default `appsettings.json` will be automatically created in the container directory `/app/data` (which corresponds to the host directory `/data/syncclipboard-server`).  
-When modifying `appsettings.json`, pay attention to the file path mapping between the container and the host.
-
-#### Arch Linux
-
-You can install it directly from [AUR](https://aur.archlinux.org/packages/syncclipboard-server) (maintained by [@devome](https://github.com/devome)):
-
-```shell
-paru -Sy syncclipboard-server
-```
-
-The configuration file path is `/etc/syncclipboard/appsettings.json`. After modifying the configuration, you can start the service using `systemctl` command:
-
-```shell
-sudo systemctl enable --now syncclipboard.service
-```
-
-### Desktop Client Built-in Server
-Desktop client (Windows/Linux/macOS) has a built-in server, can be configured with GUI.
-
-### WebDAV Server
-  
-Tested server：   
-- [x] [Nextcloud](https://nextcloud.com/)
-- [x] [AList](https://alist.nn.ci/)
-- [x] [InfiniCLOUD](https://infini-cloud.net/en/)
-- [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
-
-### S3 Server
-The desktop client supports AWS S3 via the official AWS SDK, and also supports OSS providers that expose an S3-compatible API.  
-When adding an account, choose `S3` and configure:
-
-- `Server Address`: Optional. Leave empty for AWS; set your endpoint for S3-compatible providers.
-- `Region`: Signing region, for example `us-east-1`.
-- `Bucket Name`: Bucket used to store `SyncClipboard.json` and `file/` objects.
-- `Object Prefix`: Optional. Recommended to isolate data with a dedicated prefix (for example `syncclipboard`).
-- `Force Path-Style Addressing`: Recommended for many S3-compatible providers.
-- `Access Key ID` / `Secret Access Key`: Access credentials.
 
 ## Client
 
@@ -297,6 +185,118 @@ There are three necessery config(maybe different words, same uses).
 - username
 - password
 - url, format is `http://ip(or domain name):port`. When using a WebDav server, url needs to be pointed to a specific existing folder as the working folder, like `https://domain.com/dav/folder1/working%20folder`. File name is the best not to contain any special characters or spaces, or you'll have to URL encode it. And do not use this folder to do anything else. If not using a desktop client(Windows/Linux/macOS), create a folder named `file` in the working folder to sync files. Desktop clients create this folder automatically. Make sure no slash(/) at the end of url.
+
+## Server
+### Standalone Server
+[SyncClipboard.Server](https://github.com/Jeric-X/SyncClipboard/releases/) is cross-platform, depends on [ASP.NET Core 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Run with:
+```
+dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
+```
+Content root folder is `SyncClipboard.Server.dll`'s parent folder. Writing permission is needed. Choosing a different content root folder is possible. Copy a new `appsettings.json` to the folder and run with:
+```
+dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
+```
+
+#### Server Configuration
+`appsettings.json` is the config file.
+```jsonc
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "Kestrel": {
+    "Endpoints": {
+      "http": {
+        "Url": "http://*:5033"
+      },
+      //"https": {
+      //  "Url": "https://*:5033"
+      //}
+    },
+    //"Certificates": {
+    //  "Default": {
+    //    "Path": "/path/to/pem",
+    //    "KeyPath": "/path/to/pem_key"
+    //  }
+    //}
+  },
+  "AppSettings": {
+    "UserName": "your_username",
+    "Password": "your_password",
+    "MaxSavedHistoryCount": 1000, // Maximum history count; 0 means no count limit. The retention time limit still applies.
+    "HistoryRetentionMinutes": 0 // Retention in minutes; 0 means no time limit. The history count limit still applies.
+  }
+}
+```
+For more information, please refer to the [official Microsoft documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-10.0#configure-https-in-appsettingsjson).
+
+Username and password can be set by environment variables. When the environment variables `SYNCCLIPBOARD_USERNAME` and `SYNCCLIPBOARD_PASSWORD` are both set, they will be used as the username and password.  
+
+`ASPNETCORE_hostBuilder__reloadConfigOnChange` is used to configure whether to automatically detect changes in `appsettings.json` and reload the configuration. The default value is false. Changing it to any value other than false will enable this feature.
+
+> [!WARNING]  
+> HTTP transmits data in plaintext. When deploying the server on a public network, please enable HTTPS or configure HTTPS using a reverse proxy tool. If obtaining a certificate from a certificate authority is not possible, it is recommended to use the open-source tool [mkcert](https://github.com/FiloSottile/mkcert) or other methods to generate a self-signed certificate.
+
+#### Docker
+
+```shell
+# docker
+docker run -d \
+  --name=syncclipboard-server \
+  -p 5033:5033 \
+  -e SYNCCLIPBOARD_USERNAME=your_username \
+  -e SYNCCLIPBOARD_PASSWORD=your_password \
+  -v /data/syncclipboard-server:/app/data \
+  --restart unless-stopped \
+  jericx/syncclipboard-server:latest
+
+# docker compose
+curl -sL https://github.com/Jeric-X/SyncClipboard/raw/master/src/SyncClipboard.Server/docker-compose.yml >> docker-compose.yml
+docker compose up -d
+```
+
+After the container starts for the first time, a default `appsettings.json` will be automatically created in the container directory `/app/data` (which corresponds to the host directory `/data/syncclipboard-server`).  
+When modifying `appsettings.json`, pay attention to the file path mapping between the container and the host.
+
+#### Arch Linux
+
+You can install it directly from [AUR](https://aur.archlinux.org/packages/syncclipboard-server) (maintained by [@devome](https://github.com/devome)):
+
+```shell
+paru -Sy syncclipboard-server
+```
+
+The configuration file path is `/etc/syncclipboard/appsettings.json`. After modifying the configuration, you can start the service using `systemctl` command:
+
+```shell
+sudo systemctl enable --now syncclipboard.service
+```
+
+### Desktop Client Built-in Server
+Desktop client (Windows/Linux/macOS) has a built-in server, can be configured with GUI.
+
+### WebDAV Server
+  
+Tested server：   
+- [x] [Nextcloud](https://nextcloud.com/)
+- [x] [AList](https://alist.nn.ci/)
+- [x] [InfiniCLOUD](https://infini-cloud.net/en/)
+- [x] [aliyundrive-webdav](https://github.com/messense/aliyundrive-webdav)
+
+### S3 Server
+The desktop client supports AWS S3 via the official AWS SDK, and also supports OSS providers that expose an S3-compatible API.  
+When adding an account, choose `S3` and configure:
+
+- `Server Address`: Optional. Leave empty for AWS; set your endpoint for S3-compatible providers.
+- `Region`: Signing region, for example `us-east-1`.
+- `Bucket Name`: Bucket used to store `SyncClipboard.json` and `file/` objects.
+- `Object Prefix`: Optional. Recommended to isolate data with a dedicated prefix (for example `syncclipboard`).
+- `Force Path-Style Addressing`: Recommended for many S3-compatible providers.
+- `Access Key ID` / `Secret Access Key`: Access credentials.
 
 ## API
 
