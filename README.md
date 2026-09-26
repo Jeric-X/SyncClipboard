@@ -22,6 +22,7 @@
     - [Windows](#windows)
       - [安装板](#安装板)
       - [便携版](#便携版)
+      - [WinGet](#winget)
       - [故障排除](#故障排除)
     - [macOS](#macos)
       - [手动安装](#手动安装)
@@ -204,6 +205,12 @@ sudo systemctl enable --now syncclipboard.service
 #### 便携版
 
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_win_`开头的zip文件，解压后运行`SyncClipboard.exe`
+
+#### WinGet
+
+```powershell
+winget install --id JericX.SyncClipboard --exact --source winget
+```
 
 #### 故障排除
 - 支持的最低系统版本为Windows10 2004

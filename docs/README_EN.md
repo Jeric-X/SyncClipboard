@@ -21,6 +21,7 @@
     - [Windows](#windows)
       - [Installer](#installer)
       - [Portable Version](#portable-version)
+      - [WinGet](#winget)
       - [Troubleshooting](#troubleshooting)
     - [macOS](#macos)
       - [Manual Installation](#manual-installation)
@@ -200,6 +201,12 @@ Download the exe installer starting with `SyncClipboard_win_` from the [Release]
 #### Portable Version
 
 Download the zip file starting with `SyncClipboard_win_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Extract it and run `SyncClipboard.exe`.
+
+#### WinGet
+
+```powershell
+winget install --id JericX.SyncClipboard --exact --source winget
+```
 
 #### Troubleshooting
 - The minimum supported OS version is Windows 10 2004.
