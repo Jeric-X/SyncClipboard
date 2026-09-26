@@ -71,12 +71,15 @@ internal class ClipboardListener(
             }
 
             var meta = await ((ClipboardFactory)ClipboardFactory).GetMetaInfomation(currentFingerprint, _cts.Token);
+            if (!meta.Empty())
+            {
+                _lastFingerprint = currentFingerprint;
+            }
             if (meta == _meta)
             {
                 return;
             }
 
-            _lastFingerprint = currentFingerprint;
             _meta = meta;
             if (_meta is not null)
             {

@@ -3,8 +3,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Input.Platform;
-using Avalonia.Controls;
-using SyncClipboard.Core.Interfaces;
 using System.Runtime.Versioning;
 using System.Text;
 using Avalonia.Input;
@@ -14,62 +12,62 @@ using Avalonia.Platform.Storage;
 
 namespace SyncClipboard.Desktop.ClipboardAva.ClipboardReader;
 
-public class AvaloniaClipboardReader(IMainWindow mainWindow) : IClipboardReader
+public class AvaloniaClipboardReader(IClipboard clipboard) : IClipboardReader
 {
-    private readonly IClipboard _clipboard = (mainWindow as Window)?.Clipboard ?? throw new ArgumentNullException(nameof(mainWindow));
+    private readonly IClipboard _clipboard = clipboard;
 
     public string SourceName => "Avalonia";
 
-    public async Task<string[]?> GetFormatsAsync(CancellationToken token)
+    private async Task<T> ReadAsync<T>(Func<IAsyncDataTransfer?, Task<T>> read, CancellationToken token)
     {
-        return await Dispatcher.UIThread.InvokeAsync<string[]?>(async () =>
+        return await Dispatcher.UIThread.InvokeAsync<T>(async () =>
         {
-            var formats = await _clipboard.GetDataFormatsAsync().WaitAsync(token);
-            return formats?.Select(f => f.Identifier).ToArray();
+            var dataTransfer = await _clipboard.TryGetDataAsync().WaitAsync(token);
+            // X11 读取自身剪贴板会返回仍由平台持有的原包，此时仅借用，不能在读取后释放。
+            using var ownedTransfer = dataTransfer is AutoDisposeDataTransfer ? null : dataTransfer;
+            return await read(dataTransfer);
         }, DispatcherPriority.Normal);
     }
 
-    public async Task<string?> GetTextAsync(CancellationToken token)
+    public Task<string[]?> GetFormatsAsync(CancellationToken token) =>
+        ReadAsync(data => Task.FromResult(data?.Formats.Select(f => f.Identifier).ToArray()), token);
+
+    public Task<string?> GetTextAsync(CancellationToken token) =>
+        ReadAsync(data => data is null ? Task.FromResult<string?>(null) : data.TryGetTextAsync().WaitAsync(token), token);
+
+    public Task<Bitmap?> GetBitmapAsync(CancellationToken token)
     {
-        return await Dispatcher.UIThread.InvokeAsync<string?>(async () =>
+        return ReadAsync(async data =>
         {
-            return await _clipboard.TryGetTextAsync().WaitAsync(token);
-        }, DispatcherPriority.Normal);
+            if (data is null) return null;
+            var bitmap = await data.TryGetBitmapAsync().WaitAsync(token);
+            return CopyBorrowedBitmap(data, bitmap);
+        }, token);
     }
 
-    public async Task<Bitmap?> GetBitmapAsync(CancellationToken token)
-    {
-        return await Dispatcher.UIThread.InvokeAsync<Bitmap?>(async () =>
-        {
-            return await _clipboard.TryGetBitmapAsync().WaitAsync(token);
-        }, DispatcherPriority.Normal);
-    }
+    // 调用者会释放读取结果，因此不能把借用包中的原 Bitmap 直接交出去。
+    private static Bitmap? CopyBorrowedBitmap(IAsyncDataTransfer data, Bitmap? bitmap) =>
+        data is AutoDisposeDataTransfer && bitmap is not null ? bitmap.CreateScaledBitmap(bitmap.PixelSize) : bitmap;
 
-    public async Task<IStorageItem[]?> GetFilesAsync(CancellationToken token)
-    {
-        return await Dispatcher.UIThread.InvokeAsync<IStorageItem[]?>(async () =>
-        {
-            return await _clipboard.TryGetFilesAsync().WaitAsync(token);
-        }, DispatcherPriority.Normal);
-    }
+    public Task<IStorageItem[]?> GetFilesAsync(CancellationToken token) =>
+        ReadAsync(data => data is null ? Task.FromResult<IStorageItem[]?>(null) : data.TryGetFilesAsync().WaitAsync(token), token);
 
     public async Task<object?> GetDataAsync(string format, CancellationToken token)
     {
-        return await Dispatcher.UIThread.InvokeAsync<object?>(async () =>
+        if (OperatingSystem.IsLinux())
         {
-            if (OperatingSystem.IsLinux())
+            if (format == Format.Targets)
             {
-                if (format == Format.Targets)
-                {
-                    return await GetFormatsAsync(token);
-                }
-                else if (format == Format.TimeStamp)
-                {
-                    return await GetTimeStamp(token);
-                }
+                return await GetFormatsAsync(token);
             }
+            else if (format == Format.TimeStamp)
+            {
+                return await GetTimeStamp(token);
+            }
+        }
 
-            using var dataTransfer = await _clipboard.TryGetDataAsync().WaitAsync(token);
+        return await ReadAsync(async dataTransfer =>
+        {
             if (dataTransfer is null)
                 return null;
 
@@ -78,16 +76,16 @@ public class AvaloniaClipboardReader(IMainWindow mainWindow) : IClipboardReader
                 return null;
 
             var item = dataTransfer.GetItems(dataFormat).FirstOrDefault();
-            return item is null ? null : await item.TryGetRawAsync(dataFormat).WaitAsync(token);
-        }, DispatcherPriority.Normal);
+            var value = item is null ? null : await item.TryGetRawAsync(dataFormat).WaitAsync(token);
+            return value is Bitmap bitmap ? CopyBorrowedBitmap(dataTransfer, bitmap) : value;
+        }, token);
     }
 
     [SupportedOSPlatform("linux")]
-    public async Task<int?> GetTimeStamp(CancellationToken token)
+    public Task<int?> GetTimeStamp(CancellationToken token)
     {
-        return await Dispatcher.UIThread.InvokeAsync<int?>(async () =>
+        return ReadAsync<int?>(async dataTransfer =>
         {
-            using var dataTransfer = await _clipboard.TryGetDataAsync().WaitAsync(token);
             if (dataTransfer is null)
                 return null;
 
@@ -99,6 +97,6 @@ public class AvaloniaClipboardReader(IMainWindow mainWindow) : IClipboardReader
             var str = Encoding.UTF8.GetString(bytes);
             bool canParse = int.TryParse(str, out var result);
             return canParse ? result : BitConverter.ToInt32(bytes);
-        }, DispatcherPriority.Normal);
+        }, token);
     }
 }

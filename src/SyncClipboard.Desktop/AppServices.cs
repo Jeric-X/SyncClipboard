@@ -1,4 +1,6 @@
 using System;
+using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using SharpHook;
 using SyncClipboard.Core;
@@ -38,6 +40,9 @@ public class AppServices
             return new Services.AvaloniaDialog(historyWindow!);
         });
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
+        services.AddSingleton<IClipboard>(sp =>
+            ((Window)sp.GetRequiredService<IMainWindow>()).Clipboard
+            ?? throw new InvalidOperationException("Main window clipboard is unavailable."));
         services.AddSingleton<ClipboardReaderSelector>();
         services.AddSingleton<ClipboardWriterSelector>();
         services.AddSingleton<IClipboardWriteCapabilities>(sp => sp.GetRequiredService<ClipboardWriterSelector>());
