@@ -30,7 +30,7 @@ public class AvaloniaClipboardReader(IClipboard clipboard) : IClipboardReader
     }
 
     public Task<string[]?> GetFormatsAsync(CancellationToken token) =>
-        ReadAsync(data => Task.FromResult<string[]?>(data?.Formats.Select(f => f.Identifier).ToArray() ?? []), token);
+        ReadAsync(data => Task.FromResult(data?.Formats.Select(f => f.Identifier).ToArray()), token);
 
     public Task<string?> GetTextAsync(CancellationToken token) =>
         ReadAsync(data => data is null ? Task.FromResult<string?>(null) : data.TryGetTextAsync().WaitAsync(token), token);
