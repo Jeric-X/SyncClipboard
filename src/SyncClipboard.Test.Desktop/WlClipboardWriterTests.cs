@@ -202,6 +202,32 @@ public class WlClipboardWriterTests
                 .WaitAsync(TimeSpan.FromSeconds(3), TestContext.CancellationTokenSource.Token));
     }
 
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public async Task ImageBitmapIsDisposedAfterCommandSuccessFailureOrCancellation(bool fail, bool cancel)
+    {
+        using var bitmap = new ClipboardBitmapLifetimeTests.TestBitmap();
+        using var package = ClipboardBitmapLifetimeTests.CreatePackage(bitmap);
+        package.Data.Items[0].Set(DataFormat.CreateBytesPlatformFormat("image/png"), [1, 2, 3]);
+        using var cancellation = new CancellationTokenSource();
+        if (cancel) cancellation.Cancel();
+        var writer = CreateWriter(fail ? "exit 7" : "exit 0");
+
+        if (cancel)
+            await Assert.ThrowsAsync<OperationCanceledException>(() => writer.SetDataAsync(package, cancellation.Token));
+        else if (fail)
+            await Assert.ThrowsAsync<InvalidOperationException>(() => writer.SetDataAsync(package, cancellation.Token));
+        else
+        {
+            await writer.SetDataAsync(package, cancellation.Token);
+            CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, File.ReadAllBytes(DataPath));
+        }
+
+        Assert.AreEqual(1, bitmap.DisposeCount);
+    }
+
     private static DataTransfer CreatePackage(string format, byte[] data)
     {
         var package = new DataTransfer();

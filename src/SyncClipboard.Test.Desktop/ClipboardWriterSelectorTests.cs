@@ -107,6 +107,10 @@ public class ClipboardWriterSelectorTests
         source.Invocations.Clear();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => writer.SetTextAsync("text", CancellationToken.None));
+        using var bitmap = new ClipboardBitmapLifetimeTests.TestBitmap();
+        using var package = ClipboardBitmapLifetimeTests.CreatePackage(bitmap);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => writer.SetDataAsync(package, CancellationToken.None));
+        Assert.AreEqual(1, bitmap.DisposeCount);
         source.VerifyNoOtherCalls();
     }
 
