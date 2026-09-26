@@ -62,7 +62,7 @@ public class WlClipboardWriterTests
         var writer = CreateWriter();
         var uris = string.Join("\n", files.Select(file => new Uri(file).AbsoluteUri));
         using var package = CreatePackage("text/uri-list", Encoding.UTF8.GetBytes(uris));
-        await writer.SetDataAsync(package, CancellationToken.None);
+        await writer.SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
         CollectionAssert.AreEqual(FileArguments, ReadArguments());
         var text = File.ReadAllText(DataPath);
         var lines = text.Split("\r\n");
@@ -90,7 +90,7 @@ public class WlClipboardWriterTests
         image.Set(DataFormat.CreateBytesPlatformFormat("image/png"), original.ToByteArray(MagickFormat.Png));
         if (!sameItem) package.Add(image);
 
-        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+        await CreateWriter().SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
         CollectionAssert.AreEqual(ImageArguments, ReadArguments());
         using var actual = new MagickImage(File.ReadAllBytes(DataPath));
         Assert.AreEqual(MagickFormat.Png, actual.Format);
@@ -111,7 +111,7 @@ public class WlClipboardWriterTests
         files.Set(DataFormat.CreateBytesPlatformFormat("text/uri-list"), Encoding.UTF8.GetBytes("file:///tmp/a.pdf"));
         if (!sameItem) package.Add(files);
 
-        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+        await CreateWriter().SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
 
         CollectionAssert.AreEqual(FileArguments, ReadArguments());
         Assert.AreEqual("file:///tmp/a.pdf\r\n", File.ReadAllText(DataPath));
@@ -125,7 +125,7 @@ public class WlClipboardWriterTests
         text.SetText("hello");
         package.Add(text);
 
-        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+        await CreateWriter().SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
 
         CollectionAssert.AreEqual(TextArguments, ReadArguments());
         Assert.AreEqual("hello", File.ReadAllText(DataPath));
@@ -142,7 +142,7 @@ public class WlClipboardWriterTests
         timestamp.Set(DataFormat.CreateBytesPlatformFormat("TIMESTAMP"), Encoding.UTF8.GetBytes("123"));
         package.Add(timestamp);
 
-        await CreateWriter().SetDataAsync(package, CancellationToken.None);
+        await CreateWriter().SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
 
         CollectionAssert.AreEqual(TextArguments, ReadArguments());
         Assert.AreEqual(text, File.ReadAllText(DataPath));
@@ -156,7 +156,8 @@ public class WlClipboardWriterTests
     {
         using var package = CreatePackage(format, Encoding.UTF8.GetBytes("123"));
         var writer = CreateWriter();
-        await Assert.ThrowsAsync<NotSupportedException>(() => writer.SetDataAsync(package, CancellationToken.None));
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            writer.SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None));
         Assert.IsFalse(File.Exists(DataPath));
     }
 
@@ -167,7 +168,8 @@ public class WlClipboardWriterTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var writer = CreateWriter();
-        await Assert.ThrowsAsync<OperationCanceledException>(() => writer.SetDataAsync(package, cancellation.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            writer.SetDataAsync(new AutoDisposeDataTransfer(package), cancellation.Token));
         Assert.IsFalse(File.Exists(DataPath));
     }
 

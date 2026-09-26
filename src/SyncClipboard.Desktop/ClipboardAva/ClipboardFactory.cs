@@ -106,7 +106,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             return;
         }
 
-        var bitmap = await Clipboard.GetBitmapAsync(token);
+        using var bitmap = await Clipboard.GetBitmapAsync(token);
         if (bitmap is not null)
         {
             using var stream = new MemoryStream();

@@ -26,8 +26,10 @@ internal sealed class WlClipboardWriter : IClipboardWriter
         await CopyAsync(data, "text/plain;charset=utf-8", token);
     }
 
-    public async Task SetDataAsync(DataTransfer transfer, CancellationToken token)
+    public async Task SetDataAsync(AutoDisposeDataTransfer transfer, CancellationToken token)
     {
+        // wl-copy 接收输入后会持有独立的字节副本，因此命令结束后即可释放数据包。
+        using var ownedTransfer = transfer;
         token.ThrowIfCancellationRequested();
         // Image packages also contain file/URI representations. Prefer the actual image.
         var pngFormat = DataFormat.CreateBytesPlatformFormat("image/png");

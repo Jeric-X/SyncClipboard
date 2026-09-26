@@ -1,25 +1,17 @@
-using Avalonia.Input;
 using Avalonia.Input.Platform;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.ClipboardAva.ClipboardWriter;
 
-internal sealed class AvaloniaClipboardWriter : IClipboardWriter
+internal sealed class AvaloniaClipboardWriter(IClipboard clipboard) : IClipboardWriter
 {
     public string SourceName => "Avalonia";
     public bool SupportsMultipleFormats => true;
 
     public Task SetTextAsync(string text, CancellationToken token) =>
-        App.Current.Clipboard.SetTextAsync(text).WaitAsync(token);
+        clipboard.SetTextAsync(text).WaitAsync(token);
 
-    public async Task SetDataAsync(DataTransfer transfer, CancellationToken token)
-    {
-        // Preserve the existing Avalonia data-write error handling.
-        try
-        {
-            await App.Current.Clipboard.SetDataAsync(transfer).WaitAsync(token);
-        }
-        catch { }
-    }
+    public Task SetDataAsync(AutoDisposeDataTransfer transfer, CancellationToken token) =>
+        clipboard.SetDataAsync(transfer).WaitAsync(token);
 }
