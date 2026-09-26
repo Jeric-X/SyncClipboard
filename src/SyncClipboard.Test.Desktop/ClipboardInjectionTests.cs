@@ -32,6 +32,7 @@ public class ClipboardInjectionTests
                 IServiceCollection services = new ServiceCollection();
                 services.Add(registrations.Single(value => value.ServiceType == typeof(IClipboard)));
                 services.Add(registrations.Single(value => value.ImplementationType == typeof(AvaloniaClipboardWriter)));
+                services.Add(registrations.Single(value => value.ImplementationType == typeof(AvaloniaClipboardReader)));
                 services.AddSingleton<IMainWindow>(window);
                 using var provider = services.BuildServiceProvider();
 
@@ -39,7 +40,7 @@ public class ClipboardInjectionTests
                 Assert.AreSame(provider.GetRequiredService<IClipboard>(), provider.GetRequiredService<IClipboard>());
                 var writer = provider.GetRequiredService<IClipboardWriter>();
                 await writer.SetTextAsync("注入剪贴板", CancellationToken.None);
-                IClipboardReader reader = new AvaloniaClipboardReader(window);
+                var reader = provider.GetRequiredService<IClipboardReader>();
                 Assert.AreEqual("注入剪贴板", await reader.GetStringAsync(DataFormat.Text.Identifier, CancellationToken.None));
                 await window.Clipboard!.ClearAsync();
             }
