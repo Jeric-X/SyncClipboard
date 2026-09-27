@@ -1,4 +1,3 @@
-using Avalonia.Input;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -45,5 +44,18 @@ public class ClipboardWriterSelector : IClipboardWriter
 
     public Task SetTextAsync(string text, CancellationToken token) => GetWriter().SetTextAsync(text, token);
 
-    public Task SetDataAsync(DataTransfer transfer, CancellationToken token) => GetWriter().SetDataAsync(transfer, token);
+    public Task SetDataAsync(AutoDisposeDataTransfer transfer, CancellationToken token)
+    {
+        IClipboardWriter writer;
+        try
+        {
+            writer = GetWriter();
+        }
+        catch
+        {
+            transfer.Dispose();
+            throw;
+        }
+        return writer.SetDataAsync(transfer, token);
+    }
 }

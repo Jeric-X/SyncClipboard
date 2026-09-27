@@ -32,19 +32,17 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
         string imagePath = metaInfomation.Files[0];
         var item = new DataTransferItem();
 
-        await FillFileItem(item, imagePath);
-
-        // 添加图片特定格式
-        FillItemImageFormats(item, imagePath);
-
+        // 先将条目交给数据包管理；后续填入的资源归数据包所有，填充失败时由数据包统一释放。
         dataTransfer.Add(item);
+        await FillFileItem(item, imagePath);
+        FillItemImageFormats(item, imagePath);
     }
 
     private void FillItemImageFormats(DataTransferItem item, string imagePath)
     {
         try
         {
-            // 不能dispose bitmap，图片仍关联着程序
+            // 此 Bitmap 的所有权归数据包，不再使用时由数据包释放。
             var bitmap = new Bitmap(imagePath);
             item.Set(DataFormat.Bitmap, bitmap);
         }

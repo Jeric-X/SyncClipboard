@@ -1,4 +1,5 @@
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SyncClipboard.Core.Clipboard;
@@ -49,7 +50,7 @@ public class ClipboardWriterSelectorTests
         var sources = CreateSources();
         var writer = new ClipboardWriterSelector(sources.Select(source => source.Object), _config, true);
         var selected = sources.Single(source => source.Object.SourceName == name);
-        using var package = new DataTransfer();
+        using var package = new AutoDisposeDataTransfer(new DataTransfer());
         using var cancellation = new CancellationTokenSource();
         foreach (var source in sources) source.Invocations.Clear();
 
@@ -86,7 +87,7 @@ public class ClipboardWriterSelectorTests
         var sources = CreateSources();
         var writer = new ClipboardWriterSelector(sources.Select(source => source.Object), _config, true);
         foreach (var source in sources) source.Invocations.Clear();
-        using var package = new DataTransfer();
+        using var package = new AutoDisposeDataTransfer(new DataTransfer());
         sources[1].Setup(source => source.SetDataAsync(package, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("Wayland connection failed"));
         await Assert.ThrowsAsync<IOException>(() => writer.SetDataAsync(package, CancellationToken.None));
@@ -106,6 +107,10 @@ public class ClipboardWriterSelectorTests
         source.Invocations.Clear();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => writer.SetTextAsync("text", CancellationToken.None));
+        using var bitmap = new ClipboardBitmapLifetimeTests.TestBitmap();
+        using var package = ClipboardBitmapLifetimeTests.CreatePackage(bitmap);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => writer.SetDataAsync(package, CancellationToken.None));
+        Assert.AreEqual(1, bitmap.DisposeCount);
         source.VerifyNoOtherCalls();
     }
 
@@ -128,6 +133,7 @@ public class ClipboardWriterSelectorTests
         var services = AppServices.ConfigureServices();
         services.AddSingleton(_config);
         services.AddSingleton(Mock.Of<ILogger>());
+        services.AddSingleton(Mock.Of<IClipboard>());
         using var provider = services.BuildServiceProvider();
 
         Assert.IsInstanceOfType<TextClipboardSetter>(provider.GetRequiredService<IClipboardSetter<TextProfile>>());
@@ -151,7 +157,7 @@ public class ClipboardWriterSelectorTests
     [DataRow(false)]
     public void EasyCopyImageDescriptionTracksWriterWithoutChangingSwitch(bool isLinux)
     {
-        IClipboardWriter[] sources = [new AvaloniaClipboardWriter(), new WlClipboardWriter()];
+        IClipboardWriter[] sources = [new AvaloniaClipboardWriter(Mock.Of<IClipboard>()), new WlClipboardWriter()];
         var writer = new ClipboardWriterSelector(sources, _config, isLinux);
         using var vm = new CliboardAssistantViewModel(_config, null!, writer);
         var descriptionChanged = false;

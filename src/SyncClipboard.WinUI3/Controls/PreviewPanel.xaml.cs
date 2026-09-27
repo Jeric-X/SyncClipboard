@@ -256,6 +256,7 @@ public sealed partial class PreviewPanel : UserControl
             return;
         }
 
+        var deferral = e.GetDeferral();
         try
         {
             e.Data.RequestedOperation = DataPackageOperation.Copy;
@@ -271,6 +272,10 @@ public sealed partial class PreviewPanel : UserControl
         {
             AppCore.TryGetCurrent()?.Logger.Write(nameof(PreviewPanel), $"Drag operation failed: {ex.Message}");
             e.Cancel = true;
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 }

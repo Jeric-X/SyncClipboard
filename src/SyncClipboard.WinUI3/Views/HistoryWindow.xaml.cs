@@ -649,6 +649,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             return;
         }
 
+        var deferral = e.GetDeferral();
         try
         {
             e.Data.RequestedOperation = DataPackageOperation.Copy;
@@ -664,6 +665,10 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         {
             AppCore.Current.Logger.Write($"Drag operation failed: {ex.Message}");
             e.Cancel = true;
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 

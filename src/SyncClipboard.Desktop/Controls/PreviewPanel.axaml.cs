@@ -8,11 +8,11 @@ using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
+using SyncClipboard.Desktop.Utilities;
 using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
-using AvaloniaDragDropEffects = Avalonia.Input.DragDropEffects;
 
 namespace SyncClipboard.Desktop.Controls;
 
@@ -299,23 +299,7 @@ public sealed partial class PreviewPanel : UserControl
         var dragStartEventArgs = _dragStartEventArgs;
         ResetPendingDrag();
 
-        try
-        {
-            // Avalonia 11.3+: 使用 DataTransfer API
-            var dataTransfer = new DataTransfer();
-            var success = await ViewModel.FillDragPackage(dataTransfer, item);
-            if (success)
-            {
-                var result = await DragDrop.DoDragDropAsync(
-                    dragStartEventArgs,
-                    dataTransfer,
-                    AvaloniaDragDropEffects.Copy);
-            }
-        }
-        catch
-        {
-            // 拖拽失败，忽略
-        }
+        await AvaloniaDragDropHelper.DoDragDropAsync(dragStartEventArgs, data => ViewModel.FillDragPackage(data, item));
     }
 
     private void PreviewImage_PointerReleased(object? sender, PointerReleasedEventArgs e)

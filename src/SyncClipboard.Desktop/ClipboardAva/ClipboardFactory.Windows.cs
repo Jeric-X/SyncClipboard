@@ -21,7 +21,7 @@ internal partial class ClipboardFactory
         };
 
         // 图片：只读取 Bitmap
-        var bitmap = await Clipboard.GetBitmapAsync(token);
+        using var bitmap = await Clipboard.GetBitmapAsync(token);
         if (bitmap is not null)
         {
             meta.OriginalType = ClipboardMetaInfomation.ImageType;
