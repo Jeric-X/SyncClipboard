@@ -78,7 +78,7 @@ public class ClipboardBitmapLifetimeTests
     }
 
     [TestMethod]
-    public void SynchronousPlatformFailureDoesNotDisposeDataAfterSubmission()
+    public async Task SynchronousPlatformFailureDoesNotDisposeDataAfterSubmission()
     {
         using var bitmap = new TestBitmap();
         using var package = CreatePackage(bitmap);
@@ -87,7 +87,7 @@ public class ClipboardBitmapLifetimeTests
         clipboard.Setup(value => value.SetDataAsync(package)).Throws(failure);
 
         var writer = new AvaloniaClipboardWriter(clipboard.Object);
-        var actual = Assert.Throws<InvalidOperationException>(() => writer.SetDataAsync(package, CancellationToken.None));
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => writer.SetDataAsync(package, CancellationToken.None));
 
         Assert.AreSame(failure, actual);
         Assert.AreEqual(0, bitmap.DisposeCount);
