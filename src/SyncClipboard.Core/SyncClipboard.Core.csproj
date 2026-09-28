@@ -97,6 +97,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\EmbeddedIcons\*.svg" />
+    <EmbeddedResource Include="Utilities\Updater\Scripts\*" />
   </ItemGroup>
 
 </Project>

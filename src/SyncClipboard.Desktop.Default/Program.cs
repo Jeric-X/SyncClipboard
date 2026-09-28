@@ -2,6 +2,7 @@
 using Avalonia.Media;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Desktop.Utilities.Updater;
 
 namespace SyncClipboard.Desktop.Default;
 
@@ -13,6 +14,8 @@ class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--install-update") return UpdateHelperApplication.Run(args);
+
         if (StartUpHelper.TryUpdateWindowsStartupTaskFromArguments(args, out var returnCode))
         {
             return returnCode;
