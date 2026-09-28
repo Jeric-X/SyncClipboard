@@ -32,7 +32,7 @@ ZIP、DMG、AppImage 在安装期间阻止其他检查、下载和安装请求�
 ## 界面和各平台行为
 
 - Windows ZIP：打开 PowerShell 窗口显示按文件数量计算的备份、安装和恢复进度。需要提升权限时使用 UAC，原用户的监督进程负责重新启动应用。只覆盖发布包包含的文件，保留配置、历史、自定义数据和其他文件；先备份，再通过逐文件记录恢复。拒绝通过链接写出安装目录。
-- macOS DMG：通过 Terminal 打开内嵌的 `install.command`。监督脚本显示当前阶段及依据已复制磁盘占用估算的百分比；需要时通过系统授权运行替换进程，完成后由原用户启动应用。使用 `ditto` 复制 bundle 并验证签名，不在目标旁边重命名暂存。只读镜像运行、App Translocation、bundle 内存放用户数据或有链接的安装位置退回手动安装。终端是否自动关闭取决于用户的 Terminal 设置。
+- macOS DMG：生成专用的 `install.terminal` 会话配置，通过 Terminal 执行内嵌的 `install.command`。会话设置 `shellExitAction=1`，使用 `exec` 保留安装脚本的退出码：成功后自动关闭本次安装窗口，失败时保留窗口和错误信息，不修改 Terminal 的默认配置。监督脚本显示当前阶段及依据已复制磁盘占用估算的百分比；需要时通过系统授权运行替换进程，完成后由原用户启动应用。使用 `ditto` 复制 bundle 并验证签名，不在目标旁边重命名暂存。只读镜像运行、App Translocation、bundle 内存放用户数据或有链接的安装位置退回手动安装。
 - Linux AppImage：优先使用 `APPIMAGE` 定位原文件，兼容 `ARGV0` 与 `OWD`。把当前完整 AppImage 复制到任务目录，传入 `--install-update <任务文件>` 启动。`Desktop.Default.Program` 在单实例检查之前进入 `UpdateHelperApplication`，只加载独立的 Avalonia 更新窗口，不构建 AppCore、启动同步服务或加载历史数据库。`AppImageUpdateRunner` 校验新文件、等待主程序退出、备份并复制到原路径，报告真实字节进度，保留执行权限，然后启动新版。启动副本和新版时清除旧 AppImage 的挂载与加载器环境变量。普通关闭窗口会请求取消并尝试恢复；强制结束进程时只保留已写出的记录。目标不可写时退回手动安装。
 
 AppImage 复用现有程序集和图形依赖，没有单独的 NativeAOT 或 GUI 发布包。临时磁盘需要同时容纳下载包、新版暂存、当前 AppImage 的辅助副本及旧版备份。

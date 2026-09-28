@@ -1,6 +1,7 @@
 using SyncClipboard.Core.Commons;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
@@ -31,6 +32,7 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
             UpdateInstallFiles.CheckSpace(work, UpdateInstallFiles.GetSize(target));
             var stage = Path.Combine(work, "payload.app");
             await PrepareMacBundleAsync(snapshot, stage, work, token);
+            await File.WriteAllTextAsync(Path.Combine(work, "install.terminal"), CreateTerminalProfile(work), token);
             return new PreparedUpdate
             {
                 Directory = work,
@@ -46,6 +48,19 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
         }, token);
 
     public Task StartAsync(PreparedUpdate update, CancellationToken token) => UpdateInstallHelper.StartAsync(update, token);
+
+    internal static string CreateTerminalProfile(string directory)
+    {
+        // exec preserves the installer's exit status instead of returning to an interactive shell.
+        var command = "exec /bin/sh '" + Path.Combine(directory, "install.command").Replace("'", "'\"'\"'") + "'";
+        return new XDocument(new XElement("plist", new XAttribute("version", "1.0"), new XElement("dict",
+            new XElement("key", "name"), new XElement("string", "SyncClipboard Update"),
+            new XElement("key", "type"), new XElement("string", "Window Settings"),
+            new XElement("key", "CommandString"), new XElement("string", command),
+            new XElement("key", "RunCommandAsShell"), new XElement("false"),
+            // Terminal: close only when the command exits successfully; leave failures visible.
+            new XElement("key", "shellExitAction"), new XElement("integer", 1)))).ToString();
+    }
 
     private static string? FindBundle(string path)
     {
@@ -79,7 +94,7 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
             var executableName = await RunAsync("/usr/libexec/PlistBuddy", token, "-c", "Print :CFBundleExecutable", plist);
             if (executableName != "SyncClipboard.Desktop.MacOS") throw new InvalidDataException("Unexpected bundle executable.");
             var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x86_64";
-            await RunAsync("/usr/bin/lipo", token, "-verify_arch", arch, Path.Combine(bundle, "Contents", "MacOS", executableName));
+            await RunAsync("/usr/bin/lipo", token, Path.Combine(bundle, "Contents", "MacOS", executableName), "-verify_arch", arch);
             UpdateInstallFiles.ValidatePackageInfo(Path.Combine(bundle, "Contents", "MonoBundle", Env.UpdateInfoFile), Path.GetFileName(request.PackagePath));
             await RunAsync("/usr/bin/codesign", token, "--verify", "--deep", "--strict", bundle);
             await RunAsync("/usr/bin/ditto", token, bundle, stage);

@@ -1460,7 +1460,7 @@ Shift + 左键：选中连续范围</value>
     <value>更新安装失败</value>
   </data>
   <data name="UpdateReadyToInstall" xml:space="preserve">
-    <value>更新已下载。安装时将退出并自动重启 SyncClipboard。</value>
+    <value>新版本已下载</value>
   </data>
   <data name="UpdateLocationUnsupported" xml:space="preserve">
     <value>当前安装位置无法自动更新，请手动安装已下载的安装包。</value>

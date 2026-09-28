@@ -118,12 +118,13 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
         if (update.Kind == nameof(UpdatePackageKind.MacBundle))
         {
             var start = new ProcessStartInfo("/usr/bin/open") { UseShellExecute = false };
-            foreach (var argument in new[] { "-a", "Terminal", Path.Combine(update.Directory, "install.command") })
+            foreach (var argument in new[] { "-a", "Terminal", Path.Combine(update.Directory, "install.terminal") })
                 start.ArgumentList.Add(argument);
             return start;
         }
         var windows = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
-            "WindowsPowerShell", "v1.0", "powershell.exe")) { UseShellExecute = true, WorkingDirectory = update.Directory };
+            "WindowsPowerShell", "v1.0", "powershell.exe"))
+        { UseShellExecute = true, WorkingDirectory = update.Directory };
         foreach (var argument in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
             Path.Combine(update.Directory, "install.ps1"), "-Work", update.Directory }) windows.ArgumentList.Add(argument);
         return windows;

@@ -83,7 +83,7 @@ if [ "$mode" = supervisor ]; then
     fi
     if [ -f "$work/failed" ]; then
         cat "$work/failed"
-        printf '\nLog / 日志: %s/install.log\nPress Enter to close / 按回车关闭\n' "$work"
+        printf '\nLog / 日志: %s/install.log\nPress Enter to finish / 按回车结束安装进程\n' "$work"
         if [ -t 0 ]; then read -r answer || true; fi
         exit 1
     fi

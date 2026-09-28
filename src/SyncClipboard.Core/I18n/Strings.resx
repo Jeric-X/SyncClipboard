@@ -1460,7 +1460,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Update installation failed</value>
   </data>
   <data name="UpdateReadyToInstall" xml:space="preserve">
-    <value>Update downloaded. Installing will close and restart SyncClipboard.</value>
+    <value>New version downloaded</value>
   </data>
   <data name="UpdateLocationUnsupported" xml:space="preserve">
     <value>This installation location cannot be updated automatically. Install the downloaded package manually.</value>

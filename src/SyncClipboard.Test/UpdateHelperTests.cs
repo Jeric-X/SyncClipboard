@@ -1,6 +1,7 @@
 using SyncClipboard.Core.Utilities.Updater;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace SyncClipboard.Test;
 
@@ -24,6 +25,40 @@ public class UpdateHelperTests
             process.Dispose();
         }
         Directory.Delete(work, true);
+    }
+
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    public async Task MacTerminalCommand_PreservesExitStatusAndQuotesTaskPath(int exitCode)
+    {
+        RequireUnix();
+        var originalWork = work;
+        work += " $(touch injected) & \"test\"";
+        Directory.Move(originalWork, work);
+        var task = CreateUnixTask(mac: true);
+        CopyResource("install.command");
+        File.WriteAllText(Path.Combine(work, "install.sh"),
+            "printf '%s' \"$1\" > \"$1/received-path\"\nexit " + exitCode + "\n");
+
+        var elements = XDocument.Parse(MacDmgInstaller.CreateTerminalProfile(work)).Root!.Element("dict")!.Elements().ToArray();
+        var settings = Enumerable.Range(0, elements.Length / 2)
+            .ToDictionary(index => elements[index * 2].Value, index => elements[index * 2 + 1]);
+        Assert.AreEqual("1", settings["shellExitAction"].Value);
+        Assert.AreEqual("false", settings["RunCommandAsShell"].Name.LocalName);
+        var terminalStart = UpdateInstallHelper.CreateStartInfo(task);
+        CollectionAssert.AreEqual(new[] { "-a", "Terminal", Path.Combine(work, "install.terminal") }, terminalStart.ArgumentList.ToArray());
+
+        var start = new ProcessStartInfo("/bin/sh") { UseShellExecute = false, WorkingDirectory = work };
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add(settings["CommandString"].Value);
+        using var process = Process.Start(start)!;
+        processes.Add(Process.GetProcessById(process.Id));
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(exitCode, process.ExitCode);
+        Assert.AreEqual(work, File.ReadAllText(Path.Combine(work, "received-path")));
+        Assert.IsFalse(File.Exists(Path.Combine(work, "injected")));
     }
 
     [TestMethod]
