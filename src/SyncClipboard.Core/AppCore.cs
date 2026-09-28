@@ -410,13 +410,13 @@ namespace SyncClipboard.Core
             services.AddQuartz(options => options.InterruptJobsOnShutdownWithWait = true);
             services.AddSingleton<IScheduler>(sp => sp.GetRequiredService<ISchedulerFactory>().GetScheduler().GetAwaiter().GetResult());
             services.AddTransient<AppInstance>();
-            services.AddSingleton(sp => ManagerFactory.GetNotificationManager(
-                new NativeNotificationOption
+            services.AddSingleton(sp => NotificationManagerFactory.Create(
+                () => ManagerFactory.GetNotificationManager(new NativeNotificationOption
                 {
                     AppName = Env.SoftName,
                     AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
-                }
-            ));
+                }),
+                sp.GetRequiredService<Interfaces.ILogger>()));
             services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
             services.AddSingleton<ProfileNotificationHelper>();
 

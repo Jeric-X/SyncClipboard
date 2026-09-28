@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BIN_DIR=$SCRIPT_DIR/build_bin
@@ -66,7 +66,7 @@ read -r version < $CHANGES_MD
 
 beta_version='10000'
 if [[ $version == *"-beta"* ]]; then
-    beta_version=$(echo $version | grep -oP '(?<=-beta)\d+')
+    beta_version=$(echo "$version" | sed -nE 's/.*-beta([0-9]+).*/\1/p')
     base_version=$(echo $version | sed -E 's/^v|(-beta[0-9]+)//g')
 else
     base_version=$(echo $version | sed -E 's/^v//g')
@@ -77,4 +77,20 @@ echo "beta_version : $beta_version"
 echo "base_version : $base_version"
 echo "version : $version"
 
-pupnet $CONF_PATH --app-version $version --kind $package_kind -r $rid -y
+if [[ "$package_kind" == "AppImage" || "$package_kind" == "appimage" ]]; then
+    # Render beside the source configuration so relative paths keep working.
+    runtime_conf=$(mktemp "$SCRIPT_DIR/.appimage.XXXXXX.pupnet.conf")
+    trap 'rm -f "$runtime_conf"' EXIT
+    if [[ "${APPIMAGE_UPDATES:-false}" == "true" ]]; then
+        sed "s#@UPDATE_ARCH@#${rid#linux-}#g" "$CONF_PATH" > "$runtime_conf"
+        if [[ -n "${GITHUB_ENV:-}" ]]; then
+            update_info=$(sed -n 's/^AppImageArgs = -u "\(.*\)"$/\1/p' "$runtime_conf")
+            echo "APPIMAGE_UPDATE_INFORMATION=$update_info" >> "$GITHUB_ENV"
+        fi
+    else
+        sed 's/^AppImageArgs = .*/AppImageArgs =/' "$CONF_PATH" > "$runtime_conf"
+    fi
+    CONF_PATH=$runtime_conf
+fi
+
+pupnet "$CONF_PATH" --app-version "$version" --kind "$package_kind" -r "$rid" -y

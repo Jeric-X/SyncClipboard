@@ -65,13 +65,10 @@ jobs:
           repository: ${{ inputs.checkout-repo }}
           ref: ${{ inputs.checkout-ref }}
 
-      # PupNet 1.8.0 still runs on .NET 8; product projects use .NET 10.
       - name: Install .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.302
+          dotnet-version: 10.0.302
 
       - name: Show selected SDK
         run: dotnet --info
@@ -92,12 +89,31 @@ jobs:
         with:
           name: feature
 
-      - name: Install pupnet and denpendencies
+      - name: Install PupNet
+        run: dotnet tool install -g KuiperZone.PupNet --version 1.10.0
+
+      - name: Install appimagetool
+        if: matrix.package-type == 'AppImage'
         run: |
-          dotnet tool install -g KuiperZone.PupNet --version 1.8.0
-          sudo apt install libfuse2
+          # The packaging host is x64, including when packaging the arm64 payload.
+          tool_dir="$RUNNER_TEMP/appimagetool"
+          mkdir -p "$tool_dir"
+          curl --fail --location --retry 3 \
+            https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage \
+            --output "$tool_dir/appimagetool-x86_64.AppImage"
+          echo "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  $tool_dir/appimagetool-x86_64.AppImage" | sha256sum --check
+          chmod +x "$tool_dir/appimagetool-x86_64.AppImage"
+          echo "$tool_dir" >> "$GITHUB_PATH"
+
+      - name: Install zsync
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y zsync
 
       - name: Package
+        env:
+          APPIMAGE_UPDATES: ${{ matrix.type == 'self-contained' }}
         run: >
           chmod +x package.sh &&
           ./package.sh
@@ -112,8 +128,31 @@ jobs:
           SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
         working-directory: ./build/linux/output
 
+      - name: Generate and verify AppImage update metadata
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        env:
+          APPIMAGE_NAME: SyncClipboard_linux_${{ matrix.cpu }}.AppImage
+        run: |
+          # Generate after renaming so both Filename and URL match the release asset.
+          zsyncmake -u "$APPIMAGE_NAME" "$APPIMAGE_NAME"
+          test -s "$APPIMAGE_NAME.zsync"
+          readelf --string-dump=.upd_info "$APPIMAGE_NAME" | grep -F -- "$APPIMAGE_UPDATE_INFORMATION"
+          grep -aFx "Filename: $APPIMAGE_NAME" "$APPIMAGE_NAME.zsync"
+          grep -aFx "URL: $APPIMAGE_NAME" "$APPIMAGE_NAME.zsync"
+          checksum=$(sha1sum "$APPIMAGE_NAME" | cut -d ' ' -f 1)
+          grep -aFx "SHA-1: $checksum" "$APPIMAGE_NAME.zsync"
+        working-directory: ./build/linux/output
+
       - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
         uses: actions/upload-artifact@v7
         with:
           name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
           path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+
+      - name: Upload AppImage update artifact
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        uses: actions/upload-artifact@v7
+        with:
+          name: SyncClipboard_linux_${{ matrix.cpu }}.AppImage.zsync
+          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}.AppImage.zsync
+          if-no-files-found: error

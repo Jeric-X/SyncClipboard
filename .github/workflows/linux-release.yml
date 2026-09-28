@@ -73,11 +73,18 @@ jobs:
         with:
           name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
 
+      - name: Download AppImage update artifact
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        uses: actions/download-artifact@v8
+        with:
+          name: SyncClipboard_linux_${{ matrix.cpu }}.AppImage.zsync
+
       - name: Release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           draft: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-          artifacts: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+          artifacts: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}*
+          artifactErrorsFailBuild: true
           bodyFile: feature.txt
