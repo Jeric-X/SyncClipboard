@@ -409,6 +409,7 @@ public class UpdateHelperTests
         CopyResource("InstallWindowsZip.ps1");
         var restricted = new FileInfo(Path.Combine(target, "Z-library.dll"));
         var originalAcl = restricted.GetAccessControl();
+        var originalDescriptor = originalAcl.GetSecurityDescriptorBinaryForm();
         var deniedAcl = restricted.GetAccessControl();
         using var identity = WindowsIdentity.GetCurrent();
         deniedAcl.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.WriteData, AccessControlType.Deny));
@@ -424,6 +425,8 @@ public class UpdateHelperTests
             if (alreadyRetried) return;
 
             // Simulate the granted permission, then run the retry worker without an interactive UAC prompt.
+            // FileSecurity read from disk has no dirty access section; explicitly mark the saved DACL for persistence.
+            originalAcl.SetSecurityDescriptorBinaryForm(originalDescriptor, AccessControlSections.Access);
             restricted.SetAccessControl(originalAcl);
             File.Delete(Path.Combine(work, "needs-elevation"));
             File.Delete(Path.Combine(work, "restored"));
@@ -434,7 +437,11 @@ public class UpdateHelperTests
             Assert.AreEqual("new Z-library.dll", File.ReadAllText(restricted.FullName));
             Assert.AreEqual("old SyncClipboard.exe", File.ReadAllText(Path.Combine(task.Backup, "SyncClipboard.exe")));
         }
-        finally { restricted.SetAccessControl(originalAcl); }
+        finally
+        {
+            originalAcl.SetSecurityDescriptorBinaryForm(originalDescriptor, AccessControlSections.Access);
+            restricted.SetAccessControl(originalAcl);
+        }
     }
 
     [TestMethod]
@@ -443,7 +450,9 @@ public class UpdateHelperTests
         if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
         File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(new
         {
-            Executable = Path.Combine(work, "SyncClipboard.exe"), Elevate = false, Language = "en"
+            Executable = Path.Combine(work, "SyncClipboard.exe"),
+            Elevate = false,
+            Language = "en"
         }));
         CopyResource("InstallWindowsZip.ps1");
         var harness = Path.Combine(work, "cancel-authorization.ps1");
@@ -497,6 +506,8 @@ public class UpdateHelperTests
         processes.Add(Process.GetProcessById(process.Id));
         await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
             .WaitAsync(TimeSpan.FromSeconds(20), TestContext.CancellationTokenSource.Token);
+        var failure = Path.Combine(work, "failed");
+        if (process.ExitCode != 0 && File.Exists(failure)) TestContext.WriteLine(File.ReadAllText(failure));
         return process.ExitCode;
     }
 
