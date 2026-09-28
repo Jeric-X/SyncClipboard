@@ -297,11 +297,14 @@ public class UpdateInstallationTests
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(
             await File.ReadAllBytesAsync(package, TestContext.CancellationTokenSource.Token)));
         var installer = new WindowsExeInstaller();
-        var request = new UpdateInstallRequest(package, digest, "v9.0.0",
+        var version = FileVersionInfo.GetVersionInfo(package).ProductVersion!.Split('+')[0];
+        var request = new UpdateInstallRequest(package, digest, version,
             new UpdateInstallCapability(UpdatePackageKind.WindowsInstaller, directory));
 
         await Assert.ThrowsAsync<InvalidDataException>(() => installer.PrepareAsync(
             request with { Digest = "sha256:incorrect" }, TestContext.CancellationTokenSource.Token));
+        await Assert.ThrowsAsync<InvalidDataException>(() => installer.PrepareAsync(
+            request with { Version = "v0.0.0" }, TestContext.CancellationTokenSource.Token));
         var prepared = await installer.PrepareAsync(request, TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual(package, prepared.Executable);

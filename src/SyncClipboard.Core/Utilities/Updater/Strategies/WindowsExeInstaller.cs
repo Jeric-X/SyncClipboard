@@ -19,6 +19,7 @@ internal sealed class WindowsExeInstaller : IUpdateInstaller
             token.ThrowIfCancellationRequested();
             await UpdatePackageVerifier.VerifyHashAsync(request.PackagePath, request.Digest, token);
             ValidateExecutable(request.PackagePath);
+            UpdatePackageVerifier.ValidateVersion(FileVersionInfo.GetVersionInfo(request.PackagePath).ProductVersion, request.Version);
             return new UpdateInstallTask
             {
                 Directory = Path.GetDirectoryName(request.PackagePath)!,
