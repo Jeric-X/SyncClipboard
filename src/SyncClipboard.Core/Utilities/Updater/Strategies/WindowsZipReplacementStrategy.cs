@@ -74,13 +74,7 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in archive.Entries)
         {
-            // Validate Windows paths even when these tests run on Unix.
-            var name = entry.FullName.Replace('\\', '/');
-            if (name.StartsWith('/') || name.Contains(':') || name.Split('/').Any(p => p is ".." or "."
-                || p.EndsWith(' ') || p.EndsWith('.')) || ((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
-            {
-                throw new InvalidDataException("Unsafe update archive entry: " + entry.FullName);
-            }
+            var name = GetSafeEntryName(entry);
             var output = Path.GetFullPath(Path.Combine(destination, name));
             if (!output.StartsWith(destinationPrefix, pathComparison) || !seen.Add(output))
             {
@@ -105,6 +99,18 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
         {
             throw new InvalidDataException("The update archive does not contain SyncClipboard.exe.");
         }
+    }
+
+    private static string GetSafeEntryName(ZipArchiveEntry entry)
+    {
+        // Validate Windows paths even when these tests run on Unix.
+        var name = entry.FullName.Replace('\\', '/');
+        if (name.StartsWith('/') || name.Contains(':') || name.Split('/').Any(p => p is ".." or "."
+            || p.EndsWith(' ') || p.EndsWith('.')) || ((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
+        {
+            throw new InvalidDataException("Unsafe update archive entry: " + entry.FullName);
+        }
+        return name;
     }
 
     private static void ValidateExecutable(string path)

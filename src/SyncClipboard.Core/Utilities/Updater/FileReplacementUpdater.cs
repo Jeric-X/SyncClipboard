@@ -84,20 +84,26 @@ internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, 
         timeout.CancelAfter(readyTimeout ?? TimeSpan.FromMinutes(5)); // Includes time for system authorization and staging.
         while (!File.Exists(Path.Combine(update.Directory, "ready")))
         {
-            if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
-            var error = ReadFailure(update.Directory);
-            if (error is not null) throw new IOException(error);
-            var helperExited = await HasHelperExitedAsync(update.Directory, token);
-            if (helperExited || (process.HasExited && (!launcherMayExit || process.ExitCode != 0)))
-            {
-                if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
-                throw new IOException(ReadFailure(update.Directory) ?? "The update helper exited before it was ready.");
-            }
+            await ThrowIfHelperFailedAsync(update.Directory, process, launcherMayExit, token);
             try { await Task.Delay(100, timeout.Token); }
             catch (OperationCanceledException ex) when (!token.IsCancellationRequested && timeout.IsCancellationRequested)
             {
                 throw new IOException("Timed out waiting for the update helper. Close its update or authorization window before retrying.", ex);
             }
+        }
+    }
+
+    private static async Task ThrowIfHelperFailedAsync(string directory, Process process, bool launcherMayExit,
+        CancellationToken token)
+    {
+        if (File.Exists(Path.Combine(directory, "canceled"))) throw new OperationCanceledException();
+        var error = ReadFailure(directory);
+        if (error is not null) throw new IOException(error);
+        var helperExited = await HasHelperExitedAsync(directory, token);
+        if (helperExited || (process.HasExited && (!launcherMayExit || process.ExitCode != 0)))
+        {
+            if (File.Exists(Path.Combine(directory, "canceled"))) throw new OperationCanceledException();
+            throw new IOException(ReadFailure(directory) ?? "The update helper exited before it was ready.");
         }
     }
 

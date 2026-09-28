@@ -10,6 +10,7 @@ function Progress([string]$Phase, [int]$Percent) {
         Move-Item -LiteralPath (Join-Path $Work 'progress.tmp') -Destination (Join-Path $Work 'progress') -Force
     } catch {
         # Progress is optional; reporting failures must never interrupt replacement or rollback.
+        Write-Verbose -Message $_.Exception.Message -ErrorAction SilentlyContinue
     }
 }
 function Mark([string]$Name) { [IO.File]::WriteAllText((Join-Path $Work $Name), '') }
@@ -60,6 +61,7 @@ if (!$Worker) {
                     }
                 } catch {
                     # The worker may replace the progress file while it is being read.
+                    Write-Verbose -Message $_.Exception.Message -ErrorAction SilentlyContinue
                 }
                 Start-Sleep -Milliseconds 100
                 $process.Refresh()
