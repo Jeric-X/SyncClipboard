@@ -9,6 +9,7 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
     public async Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, string parent,
         Func<UpdateInstallRequest, string, Task<PreparedUpdate>> preparePayload, CancellationToken token)
     {
+        EnsurePreviousHelperStopped(cleanup.TaskDirectory);
         var work = Path.Combine(cleanup.TaskDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(work);
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(work, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
@@ -86,10 +87,21 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
         }
     }
 
-    private static async Task WaitForReadyAsync(PreparedUpdate update, Process process, CancellationToken token)
+    internal static void EnsurePreviousHelperStopped(string taskDirectory)
+    {
+        if (!Directory.Exists(taskDirectory)) return;
+        foreach (var work in Directory.EnumerateDirectories(taskDirectory))
+        {
+            if (File.Exists(Path.Combine(work, "cancel")) && UpdateInstallCleanup.HelpersRunning(work))
+                throw new IOException("The previous update helper is still running. Close its update or authorization window before retrying.");
+        }
+    }
+
+    internal static async Task WaitForReadyAsync(PreparedUpdate update, Process process, CancellationToken token,
+        TimeSpan? readyTimeout = null)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeout.CancelAfter(TimeSpan.FromMinutes(5)); // Includes time for system authorization and staging.
+        timeout.CancelAfter(readyTimeout ?? TimeSpan.FromMinutes(5)); // Includes time for system authorization and staging.
         while (!File.Exists(Path.Combine(update.Directory, "ready")))
         {
             if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
@@ -101,7 +113,11 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
                 if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
                 throw new IOException(ReadFailure(update.Directory) ?? "The update helper exited before it was ready.");
             }
-            await Task.Delay(100, timeout.Token);
+            try { await Task.Delay(100, timeout.Token); }
+            catch (OperationCanceledException ex) when (!token.IsCancellationRequested && timeout.IsCancellationRequested)
+            {
+                throw new IOException("Timed out waiting for the update helper. Close its update or authorization window before retrying.", ex);
+            }
         }
     }
 

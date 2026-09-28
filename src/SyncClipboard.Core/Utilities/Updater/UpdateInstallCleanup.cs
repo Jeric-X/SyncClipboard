@@ -66,7 +66,7 @@ internal sealed class UpdateInstallCleanup
             && AppVersion.Parse(update.Version).CompareTo(AppVersion.Parse(currentVersion)) <= 0;
     }
 
-    private static bool HelpersRunning(string work)
+    internal static bool HelpersRunning(string work)
     {
         foreach (var name in new[] { "helper-pid", "worker-pid" })
         {

@@ -112,8 +112,10 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
             }
             catch when (!attached)
             {
-                // Attach may have failed before mounting. Preserve its original error; if detach failed too,
-                // leave the mount directory so the outer cleanup cannot recursively traverse a mounted image.
+                // A nonrecursive rmdir cannot remove an active mount point or a nonempty directory.
+                // Reclaim an unused mount directory, but preserve the original attach error and any live mount.
+                try { Directory.Delete(mount); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
             }
         }
     }

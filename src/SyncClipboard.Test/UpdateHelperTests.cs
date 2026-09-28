@@ -28,6 +28,32 @@ public class UpdateHelperTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task HelperReadiness_DistinguishesTimeoutFromCallerCancellation(bool callerCanceled)
+    {
+        var task = CreateUnixTask();
+        using var process = Process.GetCurrentProcess();
+        using var cancellation = new CancellationTokenSource();
+        if (callerCanceled) cancellation.Cancel();
+        var waiting = UpdateInstallHelper.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
+        if (callerCanceled) await Assert.ThrowsAsync<OperationCanceledException>(() => waiting);
+        else await Assert.ThrowsAsync<IOException>(() => waiting);
+    }
+
+    [TestMethod]
+    public void CanceledHelper_PreventsRetryUntilItStops()
+    {
+        var previous = Directory.CreateDirectory(Path.Combine(work, "previous")).FullName;
+        File.WriteAllText(Path.Combine(previous, "cancel"), "");
+        var pid = Path.Combine(previous, "helper-pid");
+        File.WriteAllText(pid, Environment.ProcessId.ToString());
+        Assert.Throws<IOException>(() => UpdateInstallHelper.EnsurePreviousHelperStopped(work));
+        File.WriteAllText(pid, int.MaxValue.ToString());
+        UpdateInstallHelper.EnsurePreviousHelperStopped(work);
+    }
+
+    [TestMethod]
     [DataRow("backup")]
     [DataRow("installing")]
     public async Task UnixWorker_CancellationDuringCopyPreservesOriginal(string phase)
