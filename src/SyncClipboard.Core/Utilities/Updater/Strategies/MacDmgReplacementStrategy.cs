@@ -150,6 +150,8 @@ internal sealed class MacDmgReplacementStrategy : IFileReplacementStrategy
             {
                 throw new InvalidDataException("The update bundle identity or version is invalid.");
             }
+            var versionAssembly = Path.Combine(bundle, "Contents", "MonoBundle", "SyncClipboard.Shared.dll");
+            UpdatePackageVerifier.ValidateVersion(FileVersionInfo.GetVersionInfo(versionAssembly).ProductVersion, request.Version);
             var executableName = await RunAsync("/usr/libexec/PlistBuddy", token, "-c", "Print :CFBundleExecutable", plist);
             if (executableName != "SyncClipboard.Desktop.MacOS") throw new InvalidDataException("Unexpected bundle executable.");
             var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x86_64";

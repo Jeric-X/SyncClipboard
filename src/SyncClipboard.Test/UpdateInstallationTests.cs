@@ -180,6 +180,28 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task AppImageVersion_ReadsExtractedAssemblyAndCleansInspection(bool matchingVersion)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Requires a Unix extraction fixture.");
+            return;
+        }
+        var image = Path.Combine(directory, "test.AppImage");
+        var source = typeof(SyncClipboard.Shared.SyncClipboardProperty).Assembly.Location.Replace("'", "'\"'\"'");
+        File.WriteAllText(image, "#!/bin/sh\n[ \"$1\" = --appimage-extract ] || exit 1\n" +
+            "mkdir -p squashfs-root/usr/bin\ncp '" + source + "' squashfs-root/usr/bin/SyncClipboard.Shared.dll\n");
+        var version = matchingVersion ? SyncClipboard.Shared.SyncClipboardProperty.AppVersion : "v0.0.0";
+        var verification = LinuxAppImageReplacementStrategy.ValidatePayloadVersionAsync(
+            image, directory, version, TestContext.CancellationTokenSource.Token);
+        if (matchingVersion) await verification;
+        else await Assert.ThrowsAsync<InvalidDataException>(() => verification);
+        Assert.IsFalse(Directory.Exists(Path.Combine(directory, "version-inspection")));
+    }
+
+    [TestMethod]
     public async Task HashCheck_RejectsChangedPackage()
     {
         var file = Path.Combine(directory, "package");

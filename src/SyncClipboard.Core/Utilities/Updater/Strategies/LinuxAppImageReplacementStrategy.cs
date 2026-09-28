@@ -21,7 +21,7 @@ internal sealed class LinuxAppImageReplacementStrategy : IFileReplacementStrateg
 
     public string GetInstallationDirectory(string target) => Path.GetDirectoryName(target)!;
 
-    public Task<UpdateInstallTask> PreparePayloadAsync(UpdateInstallRequest snapshot, string work, CancellationToken token)
+    public async Task<UpdateInstallTask> PreparePayloadAsync(UpdateInstallRequest snapshot, string work, CancellationToken token)
     {
         var target = snapshot.Capability.TargetPath;
         var stage = Path.Combine(work, "payload");
@@ -32,7 +32,8 @@ internal sealed class LinuxAppImageReplacementStrategy : IFileReplacementStrateg
             UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         File.Copy(snapshot.PackagePath, stage);
         ValidateAppImage(stage);
-        return Task.FromResult(new UpdateInstallTask
+        await ValidatePayloadVersionAsync(stage, work, snapshot.Version, token);
+        return new UpdateInstallTask
         {
             Directory = work,
             Kind = Kind.ToString(),
@@ -44,7 +45,7 @@ internal sealed class LinuxAppImageReplacementStrategy : IFileReplacementStrateg
             Version = snapshot.Version,
             ProcessId = Environment.ProcessId,
             Elevate = !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!)
-        });
+        };
     }
 
     public ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
@@ -54,6 +55,53 @@ internal sealed class LinuxAppImageReplacementStrategy : IFileReplacementStrateg
         start.ArgumentList.Add("--install-update");
         start.ArgumentList.Add(Path.Combine(update.Directory, "task.json"));
         return start;
+    }
+
+    internal static async Task ValidatePayloadVersionAsync(string image, string work, string version, CancellationToken token)
+    {
+        var inspection = Path.Combine(work, "version-inspection");
+        Directory.CreateDirectory(inspection);
+        try
+        {
+            if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(image,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            // Type-2 extraction uses the verified image's runtime without FUSE or starting the application.
+            await ExtractImageAsync(image, inspection, token);
+            var assemblies = Directory.EnumerateFiles(Path.Combine(inspection, "squashfs-root"), "SyncClipboard.Shared.dll",
+                new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }).ToArray();
+            if (assemblies.Length != 1) throw new InvalidDataException("The AppImage application metadata is missing or ambiguous.");
+            UpdatePackageVerifier.ValidateVersion(FileVersionInfo.GetVersionInfo(assemblies[0]).ProductVersion, version);
+        }
+        finally
+        {
+            Directory.Delete(inspection, true);
+        }
+    }
+
+    private static async Task ExtractImageAsync(string image, string destination, CancellationToken token)
+    {
+        var start = new ProcessStartInfo(image)
+        {
+            WorkingDirectory = destination,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.Environment.Remove("APPIMAGE_EXTRACT_AND_RUN");
+        start.ArgumentList.Add("--appimage-extract");
+        using var process = Process.Start(start) ?? throw new IOException("Could not inspect the AppImage update.");
+        var output = process.StandardOutput.ReadToEndAsync(token);
+        var error = process.StandardError.ReadToEndAsync(token);
+        try { await process.WaitForExitAsync(token); }
+        catch
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(CancellationToken.None);
+            throw;
+        }
+        await output;
+        var errorText = await error;
+        if (process.ExitCode != 0) throw new IOException("Could not extract AppImage metadata: " + errorText);
     }
 
     private static void ValidateAppImage(string path)
