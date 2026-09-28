@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$Work, [switch]$Worker, [int]$SupervisorId = 0)
+﻿param([Parameter(Mandatory=$true)][string]$Work, [switch]$Worker, [int]$SupervisorId = 0, [switch]$ElevatedRetry)
 $ErrorActionPreference = 'Stop'
 $task = Get-Content -LiteralPath (Join-Path $Work 'task.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $log = Join-Path $Work 'install.log'
@@ -29,24 +29,41 @@ function Get-Sha256([string]$Path) {
 if (!$Worker) {
     try {
         $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $Work 'InstallWindowsZip.ps1') + '" -Work "' + $Work + '" -Worker -SupervisorId ' + $PID
-        $parameters = @{ FilePath = (Join-Path $PSHOME 'powershell.exe'); ArgumentList = $arguments; PassThru = $true; WindowStyle = 'Hidden' }
-        if ($task.Elevate) { $parameters.Verb = 'RunAs' }
-        $process = Start-Process @parameters
-        while (!$process.HasExited) {
-            $progressFile = Join-Path $Work 'progress'
-            if (Test-Path -LiteralPath $progressFile) {
-                $values = @(Get-Content -LiteralPath $progressFile -Encoding UTF8)
-                if ($values.Count -ge 2) {
-                    $phase = $values[0]
-                    if ($task.Language -like 'zh*') {
-                        $labels = @{ waiting = '等待程序退出'; backup = '备份程序文件'; installing = '安装更新'; restoring = '恢复旧版本' }
-                        if ($labels.ContainsKey($phase)) { $phase = $labels[$phase] }
-                    }
-                    Write-Progress -Activity 'SyncClipboard Update' -Status $phase -PercentComplete ([int]$values[1])
-                }
+        $retryElevated = $false
+        while ($true) {
+            $parameters = @{ FilePath = (Join-Path $PSHOME 'powershell.exe'); ArgumentList = $arguments; PassThru = $true; WindowStyle = 'Hidden' }
+            if ($task.Elevate -or $retryElevated) { $parameters.Verb = 'RunAs' }
+            if ($retryElevated) { $parameters.ArgumentList += ' -ElevatedRetry' }
+            try { $process = Start-Process @parameters }
+            catch {
+                # The previous worker restored everything. Canceling UAC must not leave the app closed.
+                if ($retryElevated) { Mark 'restored'; Launch }
+                throw
             }
-            Start-Sleep -Milliseconds 100
-            $process.Refresh()
+            while (!$process.HasExited) {
+                $progressFile = Join-Path $Work 'progress'
+                if (Test-Path -LiteralPath $progressFile) {
+                    $values = @(Get-Content -LiteralPath $progressFile -Encoding UTF8)
+                    if ($values.Count -ge 2) {
+                        $phase = $values[0]
+                        if ($task.Language -like 'zh*') {
+                            $labels = @{ waiting = '等待程序退出'; backup = '备份程序文件'; installing = '安装更新'; restoring = '恢复旧版本' }
+                            if ($labels.ContainsKey($phase)) { $phase = $labels[$phase] }
+                        }
+                        Write-Progress -Activity 'SyncClipboard Update' -Status $phase -PercentComplete ([int]$values[1])
+                    }
+                }
+                Start-Sleep -Milliseconds 100
+                $process.Refresh()
+            }
+            if (!$task.Elevate -and !$retryElevated -and (Exists 'needs-elevation') -and (Exists 'restored')) {
+                if (Exists 'cancel') { throw 'Update handoff canceled.' }
+                $retryElevated = $true
+                Remove-Item -LiteralPath (Join-Path $Work 'needs-elevation')
+                Remove-Item -LiteralPath (Join-Path $Work 'restored')
+                continue
+            }
+            break
         }
         Write-Progress -Activity 'SyncClipboard Update' -Completed
         if ((Exists 'installed') -or (Exists 'restored')) { Launch }
@@ -124,7 +141,8 @@ try {
             $relative = $file.FullName.Substring($task.Stage.Length).TrimStart('\')
             Assert-SafeDestination (Join-Path $task.Target $relative)
         }
-        New-Item -ItemType Directory -Path $task.Backup -ErrorAction Stop | Out-Null
+        if ($ElevatedRetry) { [IO.Directory]::CreateDirectory($task.Backup) | Out-Null }
+        else { New-Item -ItemType Directory -Path $task.Backup -ErrorAction Stop | Out-Null }
     }
     # Acquire write permission before telling the running application to exit.
     $probe = Join-Path $task.Target ('.update-probe-' + [Guid]::NewGuid().ToString('N'))
@@ -182,6 +200,12 @@ try {
     Mark 'installed'
 } catch {
     $failure = $_.Exception.Message
+    $accessDenied = $false
+    $cause = $_.Exception
+    while ($cause) {
+        if ($cause -is [UnauthorizedAccessException]) { $accessDenied = $true }
+        $cause = $cause.InnerException
+    }
     if ($replacementStarted) {
         $restoreErrors = [Collections.Generic.List[string]]::new()
         for ($i = $journal.Count - 1; $i -ge 0; $i--) {
@@ -202,6 +226,14 @@ try {
         else { $failure += ' Rollback failed: ' + ($restoreErrors -join '; ') }
     }
     if (!$replacementStarted -and $parentExited) { Mark 'restored' }
+    # Root-directory create permission does not imply write access to existing files or subdirectories.
+    # Retry only after complete rollback; sharing violations and canceled updates must not trigger UAC.
+    if ($accessDenied -and $parentExited -and !$task.Elevate -and !$ElevatedRetry -and
+        (Exists 'restored') -and !(Exists 'cancel') -and (!$supervisor -or !$supervisor.HasExited)) {
+        Add-Content -LiteralPath $log -Value ("Retrying with administrator permission: " + $failure) -Encoding UTF8
+        Mark 'needs-elevation'
+        exit 1
+    }
     Fail $failure
     exit 1
 }
