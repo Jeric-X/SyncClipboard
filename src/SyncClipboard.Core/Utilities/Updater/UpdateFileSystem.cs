@@ -20,6 +20,14 @@ internal static class UpdateFileSystem
         }
     }
 
+    internal static long GetSize(string path) => Directory.Exists(path)
+        ? Directory.EnumerateFiles(path, "*", new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            AttributesToSkip = FileAttributes.ReparsePoint
+        }).Sum(file => new FileInfo(file).Length)
+        : new FileInfo(path).Length;
+
     public static bool CanWrite(string directory)
     {
         var probe = Path.Combine(directory, ".syncclipboard-write-" + Guid.NewGuid().ToString("N"));

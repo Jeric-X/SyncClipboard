@@ -35,7 +35,7 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
         ExtractPackage(snapshot.PackagePath, stage, protectedPaths, target);
         var executable = Path.Combine(stage, "SyncClipboard.exe");
         ValidateExecutable(executable);
-        ValidateVersion(FileVersionInfo.GetVersionInfo(executable).ProductVersion, snapshot.Version);
+        UpdatePackageVerifier.ValidateVersion(FileVersionInfo.GetVersionInfo(executable).ProductVersion, snapshot.Version);
         UpdatePackageVerifier.ValidatePackageInfo(Path.Combine(stage, Env.UpdateInfoFile), Path.GetFileName(snapshot.PackagePath));
         var backupSize = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
             .Select(path => Path.Combine(target, Path.GetRelativePath(stage, path)))
@@ -56,6 +56,15 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
             ProtectedPaths = protectedPaths
         };
     }
+
+    public long GetRequiredInstallationSpace(UpdateInstallTask update)
+        // Do not spend space from files that might shrink later in the worker's replacement order.
+        => Directory.EnumerateFiles(update.Stage, "*", SearchOption.AllDirectories).Sum(file =>
+        {
+            var installed = Path.Combine(update.Target, Path.GetRelativePath(update.Stage, file));
+            var previousSize = File.Exists(installed) ? new FileInfo(installed).Length : 0;
+            return Math.Max(0, new FileInfo(file).Length - previousSize);
+        });
 
     public ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
     {
@@ -100,15 +109,6 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
         if (!File.Exists(Path.Combine(destination, "SyncClipboard.exe")))
         {
             throw new InvalidDataException("The update archive does not contain SyncClipboard.exe.");
-        }
-    }
-
-    internal static void ValidateVersion(string? productVersion, string expectedVersion)
-    {
-        if (productVersion is null || !AppVersion.TryParse(productVersion.Split('+')[0], out var actual)
-            || !AppVersion.TryParse(expectedVersion, out var expected) || actual.CompareTo(expected) != 0)
-        {
-            throw new InvalidDataException("The update executable version does not match the release.");
         }
     }
 

@@ -15,6 +15,15 @@ internal static class UpdatePackageVerifier
         }
     }
 
+    internal static void ValidateVersion(string? productVersion, string expectedVersion)
+    {
+        if (productVersion is null || !AppVersion.TryParse(productVersion.Split('+')[0], out var actual)
+            || !AppVersion.TryParse(expectedVersion, out var expected) || actual.CompareTo(expected) != 0)
+        {
+            throw new InvalidDataException("The update package version does not match the release.");
+        }
+    }
+
     internal static void ValidatePackageInfo(string path, string packageName)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));

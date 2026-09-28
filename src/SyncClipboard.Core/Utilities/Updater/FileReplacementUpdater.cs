@@ -27,7 +27,6 @@ internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, 
         {
             var size = new FileInfo(request.PackagePath).Length;
             UpdateFileSystem.CheckSpace(work, checked(size * 4));
-            UpdateFileSystem.CheckSpace(parent, checked(size * 4));
             var download = Path.Combine(work, "download");
             Directory.CreateDirectory(download);
             var snapshot = Path.Combine(download, Path.GetFileName(request.PackagePath));
@@ -35,12 +34,7 @@ internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, 
             await UpdatePackageVerifier.VerifyHashAsync(snapshot, request.Digest, token);
             var update = await strategy.PreparePayloadAsync(request with { PackagePath = snapshot }, work, token);
             update = update with { Language = CultureInfo.CurrentUICulture.Name };
-            var stagedSize = Directory.EnumerateFiles(update.Stage, "*", new EnumerationOptions
-            {
-                RecurseSubdirectories = true,
-                AttributesToSkip = FileAttributes.ReparsePoint
-            }).Sum(path => new FileInfo(path).Length);
-            UpdateFileSystem.CheckSpace(parent, stagedSize);
+            UpdateFileSystem.CheckSpace(parent, strategy.GetRequiredInstallationSpace(update));
             token.ThrowIfCancellationRequested();
             await File.WriteAllTextAsync(Path.Combine(work, "task.json"), JsonSerializer.Serialize(update), token);
             return update;
