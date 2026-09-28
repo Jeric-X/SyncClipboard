@@ -44,7 +44,8 @@ public class UpdateHelperTests
                 sleep 1
             fi
             """);
-        File.SetUnixFileMode(copy, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(copy, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         using var process = StartUnixWorker(tools, phase);
         await WaitFor("ready", process);
         File.WriteAllText(Path.Combine(work, "commit"), "");
@@ -231,9 +232,10 @@ public class UpdateHelperTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task WindowsWorker_PreservesUserFilesAndRollsBackLockedUpdates(bool lockLastFile)
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public async Task WindowsWorker_PreservesUserFilesAndRollsBackLockedUpdates(bool lockLastFile, bool closeSupervisor)
     {
         if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
         var target = Directory.CreateDirectory(Path.Combine(work, "installation")).FullName;
@@ -252,7 +254,7 @@ public class UpdateHelperTests
             Backup = Path.Combine(work, "backup"),
             Executable = Path.Combine(target, "SyncClipboard.exe"),
             Version = "v9.0.0",
-            ProcessId = int.MaxValue,
+            ProcessId = closeSupervisor ? Environment.ProcessId : int.MaxValue,
             ProtectedPaths = [Path.Combine(target, "user.txt")]
         };
         File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(task));
@@ -261,6 +263,18 @@ public class UpdateHelperTests
         var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
         foreach (var arg in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
             Path.Combine(work, "install.ps1"), "-Work", work, "-Worker" }) start.ArgumentList.Add(arg);
+        var supervisorStart = new ProcessStartInfo("powershell.exe", "-NoProfile -NonInteractive -Command Start-Sleep -Seconds 120")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var supervisor = closeSupervisor ? Process.Start(supervisorStart)! : null;
+        if (supervisor is not null)
+        {
+            processes.Add(Process.GetProcessById(supervisor.Id));
+            start.ArgumentList.Add("-SupervisorId");
+            start.ArgumentList.Add(supervisor.Id.ToString());
+        }
         using var process = Process.Start(start)!;
         processes.Add(Process.GetProcessById(process.Id));
         await WaitFor("ready", process);
@@ -268,6 +282,19 @@ public class UpdateHelperTests
             ? new FileStream(Path.Combine(target, "Z-library.dll"), FileMode.Open, FileAccess.Read, FileShare.Read)
             : null;
         File.WriteAllText(Path.Combine(work, "commit"), "");
+        if (supervisor is not null)
+        {
+            supervisor.Kill();
+            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(1, process.ExitCode);
+            Assert.IsTrue(File.Exists(Path.Combine(work, "failed")));
+            Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "SyncClipboard.exe")));
+            Assert.AreEqual("old library", File.ReadAllText(Path.Combine(target, "Z-library.dll")));
+            Assert.AreEqual("keep", File.ReadAllText(Path.Combine(target, "user.txt")));
+            Assert.IsFalse(File.Exists(Path.Combine(work, "installed")));
+            return;
+        }
         if (lockLastFile)
         {
             await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)

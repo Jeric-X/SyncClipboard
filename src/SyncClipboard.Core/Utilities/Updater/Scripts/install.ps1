@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$Work, [switch]$Worker)
+﻿param([Parameter(Mandatory=$true)][string]$Work, [switch]$Worker, [int]$SupervisorId = 0)
 $ErrorActionPreference = 'Stop'
 $task = Get-Content -LiteralPath (Join-Path $Work 'task.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $log = Join-Path $Work 'install.log'
@@ -28,7 +28,7 @@ function Get-Sha256([string]$Path) {
 }
 if (!$Worker) {
     try {
-        $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $Work 'install.ps1') + '" -Work "' + $Work + '" -Worker'
+        $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $Work 'install.ps1') + '" -Work "' + $Work + '" -Worker -SupervisorId ' + $PID
         $parameters = @{ FilePath = (Join-Path $PSHOME 'powershell.exe'); ArgumentList = $arguments; PassThru = $true; WindowStyle = 'Hidden' }
         if ($task.Elevate) { $parameters.Verb = 'RunAs' }
         $process = Start-Process @parameters
@@ -68,6 +68,26 @@ if (!$Worker) {
     exit 0
 }
 
+function Assert-UpdateActive {
+    if ((Exists 'cancel') -or ($supervisor -and $supervisor.HasExited)) { throw 'Update canceled or its window was closed.' }
+}
+
+function Copy-Cancellable([string]$Source, [string]$Destination) {
+    Assert-UpdateActive
+    $inputStream = [IO.File]::OpenRead($Source)
+    try {
+        $outputStream = [IO.File]::Open($Destination, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try {
+            $buffer = New-Object byte[] (1024 * 1024)
+            while (($count = $inputStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                Assert-UpdateActive
+                $outputStream.Write($buffer, 0, $count)
+            }
+        } finally { $outputStream.Dispose() }
+    } finally { $inputStream.Dispose() }
+    Assert-UpdateActive
+}
+
 function Assert-SafeDestination([string]$Path) {
     $full = [IO.Path]::GetFullPath($Path)
     $root = [IO.Path]::GetFullPath($task.Target).TrimEnd('\') + '\'
@@ -90,7 +110,14 @@ function Assert-SafeDestination([string]$Path) {
 $journal = [Collections.Generic.List[object]]::new()
 $replacementStarted = $false
 $parentExited = $false
+$supervisor = $null
 try {
+    if ($SupervisorId -gt 0) {
+        $supervisor = [Diagnostics.Process]::GetProcessById($SupervisorId)
+        # Keep a handle to this instance so PID reuse cannot hide a closed update window.
+        $supervisor.Handle | Out-Null
+    }
+    Assert-UpdateActive
     if ($task.Kind -eq 'WindowsPortable') {
         $files = @(Get-ChildItem -LiteralPath $task.Stage -Recurse -File -Force)
         foreach ($file in $files) {
@@ -107,18 +134,24 @@ try {
     Mark 'ready'
     $deadline = [DateTime]::UtcNow.AddMinutes(5)
     while (!(Exists 'commit')) {
+        Assert-UpdateActive
         if ((Exists 'cancel') -or [DateTime]::UtcNow -ge $deadline) { throw 'Update handoff canceled.' }
         Start-Sleep -Milliseconds 100
     }
     $parent = Get-Process -Id $task.ProcessId -ErrorAction SilentlyContinue
-    if ($parent -and !$parent.WaitForExit(60000)) { throw 'Timed out waiting for SyncClipboard to exit.' }
+    $deadline = [DateTime]::UtcNow.AddSeconds(60)
+    while ($parent -and !$parent.WaitForExit(100)) {
+        Assert-UpdateActive
+        if ([DateTime]::UtcNow -ge $deadline) { throw 'Timed out waiting for SyncClipboard to exit.' }
+    }
     $parentExited = $true
-    if (Exists 'cancel') { throw 'Update canceled.' }
+    Assert-UpdateActive
 
     if ($task.Kind -eq 'WindowsPortable') {
         # Back up every existing destination before modifying any installed file.
         $index = 0
         foreach ($file in $files) {
+            Assert-UpdateActive
             $relative = $file.FullName.Substring($task.Stage.Length).TrimStart('\')
             $destination = Join-Path $task.Target $relative
             $backup = Join-Path $task.Backup $relative
@@ -126,7 +159,7 @@ try {
             $existed = Test-Path -LiteralPath $destination
             if ($existed) {
                 [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($backup)) | Out-Null
-                Copy-Item -LiteralPath $destination -Destination $backup
+                Copy-Cancellable $destination $backup
             }
             $journal.Add(@{ Destination = $destination; Backup = $backup; Existed = $existed; Source = $file.FullName; Modified = $false })
             $index++
@@ -135,15 +168,17 @@ try {
         $replacementStarted = $true
         $index = 0
         foreach ($entry in $journal) {
+            Assert-UpdateActive
             Assert-SafeDestination $entry.Destination
             $entry.Modified = $true
             $journal | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Work 'journal.json') -Encoding UTF8
             [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($entry.Destination)) | Out-Null
-            Copy-Item -LiteralPath $entry.Source -Destination $entry.Destination -Force
+            Copy-Cancellable $entry.Source $entry.Destination
             $index++
             Progress 'installing' ([int](100 * $index / $journal.Count))
         }
     } else { throw 'Unsupported update format.' }
+    Assert-UpdateActive
     Mark 'installed'
 } catch {
     $failure = $_.Exception.Message
