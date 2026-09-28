@@ -97,16 +97,23 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
             await RunAsync("/usr/bin/lipo", token, Path.Combine(bundle, "Contents", "MacOS", executableName), "-verify_arch", arch);
             UpdateInstallFiles.ValidatePackageInfo(Path.Combine(bundle, "Contents", "MonoBundle", Env.UpdateInfoFile), Path.GetFileName(request.PackagePath));
             await RunAsync("/usr/bin/codesign", token, "--verify", "--deep", "--strict", bundle);
+            var requiredSpace = checked(UpdateInstallFiles.GetSize(bundle) + UpdateInstallFiles.GetSize(request.Capability.TargetPath));
+            UpdateInstallFiles.CheckSpace(work, requiredSpace);
             await RunAsync("/usr/bin/ditto", token, bundle, stage);
         }
         finally
         {
             // Detach even if attach/copy was interrupted. Never delete a still-mounted image recursively.
-            if (attached)
+            try
             {
                 using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                 await RunAsync("/usr/bin/hdiutil", cleanup.Token, "detach", mount);
                 Directory.Delete(mount);
+            }
+            catch when (!attached)
+            {
+                // Attach may have failed before mounting. Preserve its original error; if detach failed too,
+                // leave the mount directory so the outer cleanup cannot recursively traverse a mounted image.
             }
         }
     }

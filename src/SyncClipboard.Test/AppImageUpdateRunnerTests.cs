@@ -93,14 +93,46 @@ public class AppImageUpdateRunnerTests
     }
 
     [TestMethod]
-    public async Task CancelDuringCopy_RestoresOriginal()
+    [DataRow("installing", 0)]
+    [DataRow("installing", 100)]
+    [DataRow("starting", -1)]
+    public async Task CancelDuringInstallation_RestoresOriginal(string phase, int percent)
     {
         using var cancellation = new CancellationTokenSource();
-        var progress = new InlineProgress(p => { if (p.Phase == "installing") cancellation.Cancel(); });
-        var runner = new AppImageUpdateRunner(update, _ => { }, TimeSpan.FromSeconds(1));
+        var progress = new InlineProgress(p =>
+        {
+            if (p.Phase == phase && (percent < 0 || p.Percent == percent)) cancellation.Cancel();
+        });
+        var launched = new List<string>();
+        var runner = new AppImageUpdateRunner(update, launched.Add, TimeSpan.FromSeconds(1));
         Assert.IsFalse(await runner.RunAsync(progress, cancellation.Token));
         Assert.AreEqual("old version", File.ReadAllText(update.Target));
         Assert.IsTrue(File.Exists(Path.Combine(update.Directory, "restored")));
+        Assert.IsTrue(File.Exists(Path.Combine(update.Directory, "failed")));
+        CollectionAssert.AreEqual(new[] { update.Target }, launched);
+    }
+
+    [TestMethod]
+    public async Task TargetDeletionFailure_RestartsUntouchedApplication()
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows file sharing to block deletion.");
+        FileStream? locked = null;
+        try
+        {
+            var progress = new InlineProgress(p =>
+            {
+                if (p.Phase == "backup" && p.Percent == 100)
+                    locked = new FileStream(update.Target, FileMode.Open, FileAccess.Read, FileShare.Read);
+            });
+            var launched = new List<string>();
+            var runner = new AppImageUpdateRunner(update, launched.Add, TimeSpan.FromSeconds(1));
+            Assert.IsFalse(await runner.RunAsync(progress, CancellationToken.None));
+            Assert.AreEqual("old version", File.ReadAllText(update.Target));
+            Assert.AreEqual("old version", File.ReadAllText(update.Backup));
+            CollectionAssert.AreEqual(new[] { update.Target }, launched);
+            Assert.IsFalse(File.ReadAllText(Path.Combine(update.Directory, "failed")).Contains("Rollback failed"));
+        }
+        finally { locked?.Dispose(); }
     }
 
     [TestMethod]

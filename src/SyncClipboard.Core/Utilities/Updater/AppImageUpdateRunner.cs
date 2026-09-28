@@ -77,14 +77,17 @@ public sealed class AppImageUpdateRunner
             await CopyAsync(update.Target, update.Backup, "backup", progress, token);
             backupComplete = true;
             ThrowIfCanceled(token);
-            replacing = true;
             File.Delete(update.Target);
+            replacing = true;
             await CopyAsync(update.Stage, update.Target, "installing", progress, token);
+            ThrowIfCanceled(token);
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(update.Target,
                 File.GetUnixFileMode(update.Backup) | UnixFileMode.UserExecute);
             await WriteAsync("installed", "");
+            ThrowIfCanceled(token);
             await WriteAsync("completed", "");
             progress.Report(new("starting"));
+            ThrowIfCanceled(token);
             launch(update.Target);
             return true;
         }
