@@ -99,12 +99,17 @@ function Assert-UpdateActive {
     if ((Exists 'cancel') -or ($supervisor -and $supervisor.HasExited)) { throw 'Update canceled or its window was closed.' }
 }
 
-function Copy-Cancellable([string]$Source, [string]$Destination) {
+function Copy-Cancellable([string]$Source, [string]$Destination, [hashtable]$Entry = $null) {
     Assert-UpdateActive
     $inputStream = [IO.File]::OpenRead($Source)
     try {
         $outputStream = [IO.File]::Open($Destination, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
         try {
+            # A failed open leaves the destination untouched, including when it is exclusively locked.
+            if ($Entry) {
+                $Entry.Modified = $true
+                $journal | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Work 'journal.json') -Encoding UTF8
+            }
             $buffer = New-Object byte[] (1024 * 1024)
             while (($count = $inputStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
                 Assert-UpdateActive
@@ -198,10 +203,8 @@ try {
         foreach ($entry in $journal) {
             Assert-UpdateActive
             Assert-SafeDestination $entry.Destination
-            $entry.Modified = $true
-            $journal | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Work 'journal.json') -Encoding UTF8
             [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($entry.Destination)) | Out-Null
-            Copy-Cancellable $entry.Source $entry.Destination
+            Copy-Cancellable $entry.Source $entry.Destination $entry
             $index++
             Progress 'installing' ([int](100 * $index / $journal.Count))
         }
