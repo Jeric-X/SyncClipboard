@@ -4,40 +4,26 @@
 
 ## 代码结构
 
-安装相关代码按职责组织在 `Utilities/Updater/`：
+`UpdateInstallerFactory` 根据渠道、包格式及平台创建安装实现。DI 将选定的 `IUpdateInstaller` 注册为单例，`UpdateChecker` 在整个生命周期内直接使用这个实例；准备和启动阶段不会再按 `Kind` 分派。
 
 ```text
-Updater/
-├── UpdateInstallerDispatcher.cs   # 根据渠道、格式选择策略
-├── UpdateTaskCoordinator.cs       # 准备任务、写入清单、交接辅助进程
-├── UpdateTaskCleaner.cs           # 清理已成功完成且版本允许的任务
-├── UpdateInstallTask.cs           # 任务清单及安装请求、能力数据
-├── UpdateFileSystem.cs            # 路径、写权限和磁盘空间
-├── UpdatePackageVerifier.cs       # 包哈希和发布包名称校验
-├── UpdateServiceRegistration.cs   # 依赖注入注册
-└── Strategies/
-    ├── IUpdateInstallStrategy.cs
-    ├── WindowsZipInstaller.cs    # 解压、保护数据、校验 PE、启动 PowerShell
-    ├── WindowsExeInstaller.cs    # 校验并直接启动安装包
-    ├── MacDmgInstaller.cs        # 挂载、校验、暂存 bundle、准备脚本和 Terminal
-    ├── LinuxAppImageInstaller.cs # 校验和暂存 AppImage、创建辅助进程启动参数
-    ├── AppImageInstallWorker.cs  # 独立辅助进程的替换、进度、恢复和重启
-    └── Scripts/                 # 按平台和用途命名的内嵌安装脚本
+UpdateChecker → IUpdateInstaller（由 Factory 创建一次）
+                 ├── WindowsExeInstaller：直接校验并运行 EXE 安装器
+                 ├── FileReplacementUpdater：共用文件替换更新流程
+                 │    └── IFileReplacementStrategy
+                 │         ├── WindowsZipReplacementStrategy
+                 │         ├── MacDmgReplacementStrategy
+                 │         └── LinuxAppImageReplacementStrategy
+                 └── UnsupportedUpdateInstaller：保留手动更新入口
 ```
 
-策略专用函数放在对应策略内；AppImage 的辅助进程逻辑较大，因此单独保留 `AppImageInstallWorker`。
-公共协调器不判断包格式，不构建平台启动命令，也不生成 macOS 脚本参数。
+`IUpdateInstaller` 提供能力判断、准备和启动方法，并说明交接成功后是否需要主程序退出。`WindowsExeInstaller` 由安装器自行关闭应用；`FileReplacementUpdater` 准备下载快照和任务清单，委托已选定的文件替换策略准备 payload，启动辅助进程并完成 `ready` / `commit` / `cancel` 交接。其自身不修改更新状态，也不退出主程序。
 
-`IUpdateInstaller` 是上层统一入口，`UpdateInstallerDispatcher` 负责渠道与格式识别、安装前哈希校验，以及按 `UpdatePackageKind` 分派策略。四种安装方式各自实现内部接口 `IUpdateInstallStrategy`：
+格式策略集中在 `Strategies/`，实现 `IFileReplacementStrategy`：ZIP 负责安全解压、数据保护和 PE 校验；DMG 负责挂载、身份/架构/签名校验和 bundle 暂存；AppImage 负责原文件定位、ELF 校验和辅助副本。策略提供安装目录、辅助进程启动参数，以及必要的清理约束。较重的 AppImage 辅助执行逻辑独立为 `AppImageInstallWorker`；内嵌脚本位于 `Strategies/Scripts/`。
 
-- `WindowsExeInstaller`：校验 PE 并直接启动原安装包。
-- `WindowsZipInstaller`：保护数据路径、解压校验、计算覆盖文件的备份空间。
-- `MacDmgInstaller`：定位 bundle、挂载 DMG、验证应用身份与签名、通过 `ditto` 暂存。
-- `LinuxAppImageInstaller`：定位可写的 AppImage、验证 ELF 与架构、暂存新文件、复制当前 AppImage 作为辅助程序。
+`UpdateChecker` 在调用安装实现之前进入 `Installing`。准备或交接失败时切换到 `Failed`，取消时回到下载完成状态；交接成功后按安装实现的退出约定调用 `AppCore.ExitAsync()`。`AppCore` 启动时独立调用 `UpdateTaskCleaner` 清理成功任务，清理不属于安装接口。
 
-后三种策略复用 `UpdateTaskCoordinator`，处理下载快照、任务文件和辅助进程的 `ready` / `commit` / `cancel` 交接。主程序启动后由 `UpdateTaskCleaner` 后台清理成功任务。没有 `ConfirmStartup()`、`ack` 握手或启动时恢复安装状态的流程。
-
-`AppCore` 通过 `AddUpdateInstallation()` 注册协调器、四种策略及共用组件。
+`UpdateInstallTask` 保存任务清单；`UpdateFileSystem` 提供路径、空间及内嵌脚本释放工具；`UpdatePackageVerifier` 校验哈希和包元数据；`UpdateServiceRegistration` 装配 Factory 与安装实例。任务 JSON 字段和辅助进程协议保持不变。
 
 ## 主程序更新状态
 

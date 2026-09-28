@@ -1,34 +1,37 @@
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 
 namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
-internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
+internal sealed class WindowsExeInstaller : IUpdateInstaller
 {
-    public UpdatePackageKind Kind => UpdatePackageKind.WindowsInstaller;
+    public bool RequiresAppExit => false;
 
     // The interactive installer determines the destination and handles permissions itself.
-    public UpdateInstallCapability GetCapability() => new(Kind, Path.TrimEndingDirectorySeparator(Env.ProgramDirectory));
+    public UpdateInstallCapability GetCapability() => new(UpdatePackageKind.WindowsInstaller, Path.TrimEndingDirectorySeparator(Env.ProgramDirectory));
 
     public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
-    {
-        token.ThrowIfCancellationRequested();
-        ValidateExecutable(request.PackagePath);
-        return Task.FromResult(new UpdateInstallTask
+        => Task.Run(async () =>
         {
-            Directory = Path.GetDirectoryName(request.PackagePath)!,
-            Kind = nameof(UpdatePackageKind.WindowsInstaller),
-            Target = request.Capability.TargetPath,
-            Stage = request.PackagePath,
-            Backup = string.Empty,
-            Executable = request.PackagePath,
-            Version = request.Version,
-            Digest = request.Digest,
-            ProcessId = Environment.ProcessId
-        });
-    }
+            token.ThrowIfCancellationRequested();
+            await UpdatePackageVerifier.VerifyHashAsync(request.PackagePath, request.Digest, token);
+            ValidateExecutable(request.PackagePath);
+            return new UpdateInstallTask
+            {
+                Directory = Path.GetDirectoryName(request.PackagePath)!,
+                Kind = nameof(UpdatePackageKind.WindowsInstaller),
+                Target = request.Capability.TargetPath,
+                Stage = request.PackagePath,
+                Backup = string.Empty,
+                Executable = request.PackagePath,
+                Version = request.Version,
+                Digest = request.Digest,
+                ProcessId = Environment.ProcessId
+            };
+        }, token);
 
     public async Task StartAsync(UpdateInstallTask update, CancellationToken token)
     {

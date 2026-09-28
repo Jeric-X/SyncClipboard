@@ -118,13 +118,12 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         try
         {
             SetStatus(UpdaterState.Installing);
-            var capability = updateInstaller.GetCapability(updateInfo);
+            var capability = updateInstaller.GetCapability();
             if (!capability.Supported) throw new InvalidOperationException(capability.Reason ?? I18n.Strings.UpdateLocationUnsupported);
             var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!, capability);
             var prepared = await updateInstaller.PrepareAsync(request, token);
-            var interactiveInstaller = capability.Kind == UpdatePackageKind.WindowsInstaller;
             await updateInstaller.StartAsync(prepared, token);
-            if (interactiveInstaller)
+            if (!updateInstaller.RequiresAppExit)
             {
                 SetDownloadedStatus();
                 return;
@@ -401,7 +400,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             UpdaterState.UpdateAvailable => I18n.Strings.FoundNewVersion + GithubRelease!.TagName,
             UpdaterState.Downloading => $"{I18n.Strings.Downloading} {updateInfo.PackageName}",
             UpdaterState.Downloaded => GetDownloadedMessage(),
-            UpdaterState.ReadyToInstall => updateInstaller.GetCapability(updateInfo).Kind == UpdatePackageKind.WindowsInstaller
+            UpdaterState.ReadyToInstall => !updateInstaller.RequiresAppExit
                 ? I18n.Strings.UpdateReadyToLaunchInstaller : I18n.Strings.UpdateReadyToInstall,
             UpdaterState.Installing => I18n.Strings.InstallingUpdate,
             UpdaterState.Failed => I18n.Strings.Error,
@@ -412,11 +411,11 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     }
 
     private void SetDownloadedStatus()
-        => SetStatus(updateInstaller.GetCapability(updateInfo).Supported ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
+        => SetStatus(updateInstaller.GetCapability().Supported ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
 
     private string GetDownloadedMessage()
     {
-        var capability = updateInstaller.GetCapability(updateInfo);
+        var capability = updateInstaller.GetCapability();
         return string.Join(" ", new[] { I18n.Strings.NewVersionDownloaded, capability.Reason }.Where(text => !string.IsNullOrEmpty(text)));
     }
 

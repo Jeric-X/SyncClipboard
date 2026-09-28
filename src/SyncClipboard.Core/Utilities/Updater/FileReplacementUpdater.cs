@@ -1,15 +1,25 @@
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class UpdateTaskCoordinator(UpdateTaskCleaner cleanup)
+internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, UpdateTaskCleaner cleanup) : IUpdateInstaller
 {
-    public async Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, string parent,
-        Func<UpdateInstallRequest, string, Task<UpdateInstallTask>> preparePayload, CancellationToken token,
-        Func<string, bool>? canRemoveOnFailure = null)
+    public bool RequiresAppExit => true;
+
+    public UpdateInstallCapability GetCapability() => strategy.GetCapability();
+
+    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+        => Task.Run(() => PrepareCoreAsync(request, token), token);
+
+    private async Task<UpdateInstallTask> PrepareCoreAsync(UpdateInstallRequest request, CancellationToken token)
     {
+        if (request.Capability.Kind != strategy.Kind) throw new InvalidOperationException("The update does not match the selected strategy.");
+        await UpdatePackageVerifier.VerifyHashAsync(request.PackagePath, request.Digest, token);
+        var parent = strategy.GetInstallationDirectory(request.Capability.TargetPath);
         EnsurePreviousHelperStopped(cleanup.TaskDirectory);
         var work = Path.Combine(cleanup.TaskDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(work);
@@ -24,7 +34,7 @@ internal sealed class UpdateTaskCoordinator(UpdateTaskCleaner cleanup)
             var snapshot = Path.Combine(download, Path.GetFileName(request.PackagePath));
             File.Copy(request.PackagePath, snapshot);
             await UpdatePackageVerifier.VerifyHashAsync(snapshot, request.Digest, token);
-            var update = await preparePayload(request with { PackagePath = snapshot }, work);
+            var update = await strategy.PreparePayloadAsync(request with { PackagePath = snapshot }, work, token);
             update = update with { Digest = request.Digest, Language = CultureInfo.CurrentUICulture.Name };
             UpdateFileSystem.CheckSpace(parent, UpdateFileSystem.GetSize(update.Stage));
             token.ThrowIfCancellationRequested();
@@ -33,20 +43,20 @@ internal sealed class UpdateTaskCoordinator(UpdateTaskCleaner cleanup)
         }
         catch
         {
-            if (canRemoveOnFailure?.Invoke(work) != false) Directory.Delete(work, true);
+            if (strategy.CanRemoveFailedPreparation(work)) Directory.Delete(work, true);
             throw;
         }
     }
 
-    public static async Task StartAsync(UpdateInstallTask update,
-        Func<UpdateInstallTask, ProcessStartInfo> createStartInfo, CancellationToken token, bool launcherMayExit = false)
+    public async Task StartAsync(UpdateInstallTask update, CancellationToken token)
     {
+        if (update.Kind != strategy.Kind.ToString()) throw new InvalidOperationException("The update does not match the selected strategy.");
         token.ThrowIfCancellationRequested();
         try
         {
-            var start = createStartInfo(update);
+            var start = strategy.CreateWorkerStartInfo(update);
             using var process = Process.Start(start) ?? throw new IOException("Could not start the update helper.");
-            await WaitForReadyAsync(update, process, token, launcherMayExit: launcherMayExit);
+            await WaitForReadyAsync(update, process, token, launcherMayExit: strategy.LauncherMayExit);
             token.ThrowIfCancellationRequested();
             await File.WriteAllTextAsync(Path.Combine(update.Directory, "commit"), string.Empty, token);
         }
@@ -100,13 +110,4 @@ internal sealed class UpdateTaskCoordinator(UpdateTaskCleaner cleanup)
 
     internal static string? ReadFailure(string work) => File.Exists(Path.Combine(work, "failed"))
         ? File.ReadAllText(Path.Combine(work, "failed")) : null;
-
-    internal static async Task ExtractScriptAsync(string directory, string name, CancellationToken token)
-    {
-        await using var resource = typeof(UpdateTaskCoordinator).Assembly.GetManifestResourceStream(
-            "SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)
-            ?? throw new IOException("The embedded update script is missing: " + name);
-        await using var output = File.Create(Path.Combine(directory, name));
-        await resource.CopyToAsync(output, token);
-    }
 }

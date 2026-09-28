@@ -147,7 +147,7 @@ public class AppImageInstallWorkerTests
     [TestMethod]
     public void HelperLaunch_UsesSeparateAppImageWithLiteralTaskArgument()
     {
-        var start = LinuxAppImageInstaller.CreateWorkerStartInfo(update);
+        var start = new LinuxAppImageReplacementStrategy().CreateWorkerStartInfo(update);
         Assert.AreEqual(update.HelperExecutable, start.FileName);
         CollectionAssert.AreEqual(new[] { "--install-update", Path.Combine(update.Directory, "task.json") }, start.ArgumentList.ToArray());
         Assert.IsFalse(start.Environment.ContainsKey("APPIMAGE"));

@@ -6,7 +6,7 @@ using System.Xml.Linq;
 
 namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
-internal sealed class MacDmgInstaller(UpdateTaskCoordinator coordinator) : IUpdateInstallStrategy
+internal sealed class MacDmgReplacementStrategy : IFileReplacementStrategy
 {
     public UpdatePackageKind Kind => UpdatePackageKind.MacBundle;
 
@@ -26,42 +26,42 @@ internal sealed class MacDmgInstaller(UpdateTaskCoordinator coordinator) : IUpda
         return capability;
     }
 
-    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
-        => coordinator.PrepareAsync(request, Path.GetDirectoryName(request.Capability.TargetPath)!, async (snapshot, work) =>
+    public string GetInstallationDirectory(string target) => Path.GetDirectoryName(target)!;
+
+    public async Task<UpdateInstallTask> PreparePayloadAsync(UpdateInstallRequest snapshot, string work, CancellationToken token)
+    {
+        var target = snapshot.Capability.TargetPath;
+        UpdateFileSystem.CheckSpace(work, UpdateFileSystem.GetSize(target));
+        var stage = Path.Combine(work, "payload.app");
+        await PrepareMacBundleAsync(snapshot, stage, work, token);
+        await File.WriteAllTextAsync(Path.Combine(work, "install.terminal"), CreateTerminalProfile(work), token);
+        var update = new UpdateInstallTask
         {
-            var target = snapshot.Capability.TargetPath;
-            UpdateFileSystem.CheckSpace(work, UpdateFileSystem.GetSize(target));
-            var stage = Path.Combine(work, "payload.app");
-            await PrepareMacBundleAsync(snapshot, stage, work, token);
-            await File.WriteAllTextAsync(Path.Combine(work, "install.terminal"), CreateTerminalProfile(work), token);
-            var update = new UpdateInstallTask
-            {
-                Directory = work,
-                Kind = Kind.ToString(),
-                Target = target,
-                Stage = stage,
-                Backup = Path.Combine(work, "backup"),
-                Executable = target,
-                Version = snapshot.Version,
-                Language = CultureInfo.CurrentUICulture.Name,
-                ProcessId = Environment.ProcessId,
-                Elevate = !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!)
-            };
-            await PrepareWorkerAsync(update, token);
-            return update;
-        }, token, CanRemoveFailedPreparation);
+            Directory = work,
+            Kind = Kind.ToString(),
+            Target = target,
+            Stage = stage,
+            Backup = Path.Combine(work, "backup"),
+            Executable = target,
+            Version = snapshot.Version,
+            Language = CultureInfo.CurrentUICulture.Name,
+            ProcessId = Environment.ProcessId,
+            Elevate = !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!)
+        };
+        await PrepareWorkerAsync(update, token);
+        return update;
+    }
 
-    public Task StartAsync(UpdateInstallTask update, CancellationToken token)
-        => UpdateTaskCoordinator.StartAsync(update, CreateWorkerStartInfo, token, launcherMayExit: true);
+    public bool LauncherMayExit => true;
 
-    private static bool CanRemoveFailedPreparation(string work)
+    public bool CanRemoveFailedPreparation(string work)
         // A failed detach may leave a read-only DMG mounted here. Do not traverse it during cleanup.
         => !Directory.Exists(Path.Combine(work, "mount"));
 
     private static async Task PrepareWorkerAsync(UpdateInstallTask update, CancellationToken token)
     {
         foreach (var name in new[] { "InstallMacBundle.sh", "OpenMacUpdate.command", "ElevateMacUpdate.applescript" })
-            await UpdateTaskCoordinator.ExtractScriptAsync(update.Directory, name, token);
+            await UpdateFileSystem.ExtractScriptAsync(update.Directory, name, token);
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(Path.Combine(update.Directory, "OpenMacUpdate.command"),
             UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         // Shell reads separate UTF-8 values as data, never sources generated shell code.
@@ -81,7 +81,7 @@ internal sealed class MacDmgInstaller(UpdateTaskCoordinator coordinator) : IUpda
         }
     }
 
-    internal static ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
+    public ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
     {
         var start = new ProcessStartInfo("/usr/bin/open") { UseShellExecute = false };
         foreach (var argument in new[] { "-a", "Terminal", Path.Combine(update.Directory, "install.terminal") })

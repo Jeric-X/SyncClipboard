@@ -37,7 +37,7 @@ public class UpdateHelperTests
         using var process = Process.GetCurrentProcess();
         using var cancellation = new CancellationTokenSource();
         if (callerCanceled) cancellation.Cancel();
-        var waiting = UpdateTaskCoordinator.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
+        var waiting = FileReplacementUpdater.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
         if (callerCanceled) await Assert.ThrowsAsync<OperationCanceledException>(() => waiting);
         else await Assert.ThrowsAsync<IOException>(() => waiting);
     }
@@ -49,9 +49,9 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(previous, "cancel"), "");
         var pid = Path.Combine(previous, "helper-pid");
         File.WriteAllText(pid, Environment.ProcessId.ToString());
-        Assert.Throws<IOException>(() => UpdateTaskCoordinator.EnsurePreviousHelperStopped(work));
+        Assert.Throws<IOException>(() => FileReplacementUpdater.EnsurePreviousHelperStopped(work));
         File.WriteAllText(pid, int.MaxValue.ToString());
-        UpdateTaskCoordinator.EnsurePreviousHelperStopped(work);
+        FileReplacementUpdater.EnsurePreviousHelperStopped(work);
     }
 
     [TestMethod]
@@ -99,12 +99,12 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(work, "InstallMacBundle.sh"),
             "printf '%s' \"$1\" > \"$1/received-path\"\nexit " + exitCode + "\n");
 
-        var elements = XDocument.Parse(MacDmgInstaller.CreateTerminalProfile(work)).Root!.Element("dict")!.Elements().ToArray();
+        var elements = XDocument.Parse(MacDmgReplacementStrategy.CreateTerminalProfile(work)).Root!.Element("dict")!.Elements().ToArray();
         var settings = Enumerable.Range(0, elements.Length / 2)
             .ToDictionary(index => elements[index * 2].Value, index => elements[(index * 2) + 1]);
         Assert.AreEqual("1", settings["shellExitAction"].Value);
         Assert.AreEqual("false", settings["RunCommandAsShell"].Name.LocalName);
-        var terminalStart = MacDmgInstaller.CreateWorkerStartInfo(task);
+        var terminalStart = new MacDmgReplacementStrategy().CreateWorkerStartInfo(task);
         CollectionAssert.AreEqual(new[] { "-a", "Terminal", Path.Combine(work, "install.terminal") }, terminalStart.ArgumentList.ToArray());
 
         var start = new ProcessStartInfo("/bin/sh") { UseShellExecute = false, WorkingDirectory = work };
@@ -375,7 +375,7 @@ public class UpdateHelperTests
 
     private void CopyResource(string name)
     {
-        using var source = typeof(UpdateInstallerDispatcher).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)!;
+        using var source = typeof(UpdateInstallerFactory).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)!;
         using var output = File.Create(Path.Combine(work, name));
         source.CopyTo(output);
     }

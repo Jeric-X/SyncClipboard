@@ -48,7 +48,7 @@ installed/SyncClipboard.app/Contents/MacOS/SyncClipboard.Desktop.MacOS
 ```
 
 关键断点：`UpdateChecker.CheckNewVersion`、`DownloadUpdatePackage`、`InstallUpdateCore`、
-`MacDmgInstaller.PrepareAsync` 和 `UpdateTaskCoordinator.StartAsync`。
+`MacDmgReplacementStrategy.PreparePayloadAsync` 和 `FileReplacementUpdater.StartAsync`。
 进程退出后的安装在 shell 中执行，查看辅助窗口及任务目录中的 `install.log`、`progress`、`task.json`。
 主程序退出使原调试会话结束是预期行为；查看新进程需要重新附加。
 

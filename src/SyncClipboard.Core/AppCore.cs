@@ -207,7 +207,7 @@ namespace SyncClipboard.Core
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
             Job.SetUpSchedulerJobs(Services);
-            _ = Services.GetRequiredService<IUpdateInstaller>().CleanupCompletedAsync();
+            _ = Services.GetRequiredService<UpdateTaskCleaner>().CleanupCompletedAsync();
         }
 
         private void RunStartUpCommands()
