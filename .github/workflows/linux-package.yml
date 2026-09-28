@@ -105,24 +105,15 @@ jobs:
           chmod +x "$tool_dir/appimagetool-x86_64.AppImage"
           echo "$tool_dir" >> "$GITHUB_PATH"
 
-      - name: Configure AppImage updates
+      - name: Install zsync
         if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
-        env:
-          UPDATE_REPOSITORY: ${{ inputs.checkout-repo }}
-          APPIMAGE_NAME: SyncClipboard_linux_${{ matrix.cpu }}.AppImage
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y zsync
-          read -r version < Changes.md
-          channel=latest
-          if [[ "$version" == *-beta* ]]; then
-            channel=latest-all
-          fi
-          update_info="gh-releases-zsync|${UPDATE_REPOSITORY/\//|}|$channel|$APPIMAGE_NAME.zsync"
-          printf '\nAppImageArgs = -u "%s"\n' "$update_info" >> build/linux/linux.pupnet.conf
-          echo "APPIMAGE_UPDATE_INFORMATION=$update_info" >> "$GITHUB_ENV"
 
       - name: Package
+        env:
+          APPIMAGE_UPDATES: ${{ matrix.type == 'self-contained' }}
         run: >
           chmod +x package.sh &&
           ./package.sh
