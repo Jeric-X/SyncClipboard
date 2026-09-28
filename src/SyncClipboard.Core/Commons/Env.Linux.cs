@@ -10,6 +10,11 @@ public static partial class Env
 
     public static string? GetAppImageExecPath()
     {
+        var appImage = Environment.GetEnvironmentVariable("APPIMAGE");
+        if (!string.IsNullOrWhiteSpace(appImage) && Path.IsPathRooted(appImage))
+        {
+            return Path.GetFullPath(appImage);
+        }
         var argv0 = Environment.GetEnvironmentVariable("ARGV0");
         var appDir = Environment.GetEnvironmentVariable("APPDIR");
         var owd = Environment.GetEnvironmentVariable("OWD");
@@ -17,7 +22,7 @@ public static partial class Env
             string.IsNullOrEmpty(appDir) is false &&
             string.IsNullOrEmpty(owd) is false)
         {
-            return Path.GetFullPath(argv0);
+            return Path.GetFullPath(argv0, Path.GetFullPath(owd));
         }
 
         return null;
