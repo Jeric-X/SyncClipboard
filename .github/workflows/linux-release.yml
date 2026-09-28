@@ -79,5 +79,6 @@ jobs:
           allowUpdates: true
           draft: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-          artifacts: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+          artifacts: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}*
+          artifactErrorsFailBuild: true
           bodyFile: feature.txt

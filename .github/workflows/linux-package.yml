@@ -105,6 +105,23 @@ jobs:
           chmod +x "$tool_dir/appimagetool-x86_64.AppImage"
           echo "$tool_dir" >> "$GITHUB_PATH"
 
+      - name: Configure AppImage updates
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        env:
+          UPDATE_REPOSITORY: ${{ inputs.checkout-repo }}
+          APPIMAGE_NAME: SyncClipboard_linux_${{ matrix.cpu }}.AppImage
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y zsync
+          read -r version < Changes.md
+          channel=latest
+          if [[ "$version" == *-beta* ]]; then
+            channel=latest-all
+          fi
+          update_info="gh-releases-zsync|${UPDATE_REPOSITORY/\//|}|$channel|$APPIMAGE_NAME.zsync"
+          printf '\nAppImageArgs = -u "%s"\n' "$update_info" >> build/linux/linux.pupnet.conf
+          echo "APPIMAGE_UPDATE_INFORMATION=$update_info" >> "$GITHUB_ENV"
+
       - name: Package
         run: >
           chmod +x package.sh &&
@@ -120,8 +137,23 @@ jobs:
           SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
         working-directory: ./build/linux/output
 
+      - name: Generate and verify AppImage update metadata
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        env:
+          APPIMAGE_NAME: SyncClipboard_linux_${{ matrix.cpu }}.AppImage
+        run: |
+          # Generate after renaming so both Filename and URL match the release asset.
+          zsyncmake -u "$APPIMAGE_NAME" "$APPIMAGE_NAME"
+          test -s "$APPIMAGE_NAME.zsync"
+          readelf --string-dump=.upd_info "$APPIMAGE_NAME" | grep -F -- "$APPIMAGE_UPDATE_INFORMATION"
+          grep -aFx "Filename: $APPIMAGE_NAME" "$APPIMAGE_NAME.zsync"
+          grep -aFx "URL: $APPIMAGE_NAME" "$APPIMAGE_NAME.zsync"
+          checksum=$(sha1sum "$APPIMAGE_NAME" | cut -d ' ' -f 1)
+          grep -aFx "SHA-1: $checksum" "$APPIMAGE_NAME.zsync"
+        working-directory: ./build/linux/output
+
       - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
         uses: actions/upload-artifact@v7
         with:
           name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
-          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}*
