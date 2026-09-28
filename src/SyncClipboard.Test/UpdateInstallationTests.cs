@@ -81,6 +81,23 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [DataRow("3.3.0", "v3.3.0")]
+    [DataRow("3.3.0+abcdef", "v3.3.0")]
+    [DataRow("3.3.0-beta2+abcdef", "v3.3.0-beta2")]
+    public void PortableVersion_AcceptsMatchingRelease(string productVersion, string releaseVersion)
+        => WindowsZipReplacementStrategy.ValidateVersion(productVersion, releaseVersion);
+
+    [TestMethod]
+    [DataRow(null, "v3.3.0")]
+    [DataRow("", "v3.3.0")]
+    [DataRow("3.2.0+abcdef", "v3.3.0")]
+    [DataRow("3.3.0-beta1", "v3.3.0-beta2")]
+    [DataRow("3.3.0-beta2", "v3.3.0")]
+    [DataRow("3.3.0", "invalid")]
+    public void PortableVersion_RejectsMissingOrMismatchedRelease(string? productVersion, string releaseVersion)
+        => Assert.Throws<InvalidDataException>(() => WindowsZipReplacementStrategy.ValidateVersion(productVersion, releaseVersion));
+
+    [TestMethod]
     public async Task HashCheck_RejectsChangedPackage()
     {
         var file = Path.Combine(directory, "package");
