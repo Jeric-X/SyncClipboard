@@ -1450,6 +1450,9 @@ Shift + 左键：选中连续范围</value>
   <data name="InstallUpdate" xml:space="preserve">
     <value>安装更新</value>
   </data>
+  <data name="UpdateNow" xml:space="preserve">
+    <value>立即更新</value>
+  </data>
   <data name="PreparingUpdateInstall" xml:space="preserve">
     <value>正在准备安装更新，可能需要系统授权。</value>
   </data>

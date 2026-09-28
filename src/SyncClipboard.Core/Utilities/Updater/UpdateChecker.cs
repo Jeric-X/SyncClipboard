@@ -160,20 +160,41 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         }
 
         var stateText = GetStateText(CurrentState.State);
+        notificationManager.ShowText(stateText, I18n.Strings.CheckOnAboutPage, GetNotificationButtons());
+    }
+
+    internal List<ActionButton> GetNotificationButtons()
+    {
         List<ActionButton> buttons = [
             new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null))
         ];
-
-        /*与特定state关联的按钮可能过时，需要在state改变时清除这个按钮
-
-        var action = GetStateAction();
-        if (action is not null)
+        var version = GithubRelease?.TagName;
+        if (CurrentState.State == UpdaterState.ReadyToInstall && !string.IsNullOrEmpty(version)
+            && configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate)
         {
-            var (actionText, manualAction) = action.Value;
-            buttons.Add(new Button(actionText, () => manualAction(CancellationToken.None)));
-        }*/
+            buttons.Add(new ActionButton(I18n.Strings.UpdateNow, () => _ = InstallFromNotification(version)));
+        }
+        return buttons;
+    }
 
-        notificationManager.ShowText(stateText, I18n.Strings.CheckOnAboutPage, buttons);
+    private async Task InstallFromNotification(string version)
+    {
+        try
+        {
+            if (CurrentState.State != UpdaterState.ReadyToInstall || GithubRelease?.TagName != version
+                || !configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate)
+            {
+                mainWindow.OpenPage(PageDefinition.About, null);
+                return;
+            }
+            await InstallUpdate(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync(ex.ToString());
+            SetErrorState(ex.Message);
+        }
+        if (CurrentState.State == UpdaterState.Failed) mainWindow.OpenPage(PageDefinition.About, null);
     }
 
     public Task RunAutoUpdateFlow(CancellationToken token = default)

@@ -1450,6 +1450,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="InstallUpdate" xml:space="preserve">
     <value>Install update</value>
   </data>
+  <data name="UpdateNow" xml:space="preserve">
+    <value>Update now</value>
+  </data>
   <data name="PreparingUpdateInstall" xml:space="preserve">
     <value>Preparing update. System authorization may be required.</value>
   </data>

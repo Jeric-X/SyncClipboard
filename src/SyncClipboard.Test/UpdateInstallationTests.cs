@@ -383,11 +383,70 @@ public class UpdateInstallationTests
         }
     }
 
-    private UpdateChecker CreateChecker(IUpdateInstaller installer, IHttp? http = null)
+    [TestMethod]
+    [DataRow(true, UpdaterState.ReadyToInstall, 2)]
+    [DataRow(false, UpdaterState.ReadyToInstall, 1)]
+    [DataRow(true, UpdaterState.Downloaded, 1)]
+    [DataRow(true, UpdaterState.ReadyForDownload, 1)]
+    public void Notification_OffersUpdateNowOnlyForAutomaticDownloadReadyToInstall(bool autoDownload, UpdaterState state, int count)
+    {
+        using var services = new ConfigurationTestServices();
+        var config = new ConfigManager(Path.Combine(directory, "config.json"), services.Upgrader);
+        config.SetConfig(new ProgramConfig { AutoDownloadUpdate = autoDownload });
+        var installer = new Mock<IUpdateInstaller>();
+        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
+            .Returns(new UpdateInstallCapability(UpdatePackageKind.WindowsPortable, directory));
+        var checker = CreateChecker(installer.Object, configManager: config);
+        SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
+        SetStatus(checker, state);
+
+        var buttons = checker.GetNotificationButtons();
+
+        Assert.HasCount(count, buttons);
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.GoToAboutPage, buttons[0].Text);
+        if (count == 2) Assert.AreEqual(SyncClipboard.Core.I18n.Strings.UpdateNow, buttons[1].Text);
+    }
+
+    [TestMethod]
+    [DataRow("version")]
+    [DataRow("state")]
+    [DataRow("setting")]
+    [DataRow("unchanged")]
+    public async Task Notification_UpdateNowRechecksVersionStateAndSetting(string change)
+    {
+        using var services = new ConfigurationTestServices();
+        var config = new ConfigManager(Path.Combine(directory, "config.json"), services.Upgrader);
+        config.SetConfig(new ProgramConfig { AutoDownloadUpdate = true });
+        var mainWindow = new Mock<IMainWindow>();
+        var installer = new Mock<IUpdateInstaller>();
+        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
+            .Returns(new UpdateInstallCapability(UpdatePackageKind.WindowsPortable, directory));
+        installer.Setup(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("Preparation failed"));
+        var checker = CreateChecker(installer.Object, configManager: config, mainWindow: mainWindow.Object);
+        SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
+        SetProperty(checker, "GithubAsset", new GitHubRelease.GitHubAsset { Digest = "sha256:test" });
+        SetDownloadedStatus(checker);
+        if (change == "version") SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v10.0.0" });
+        if (change == "state") SetStatus(checker, UpdaterState.Downloading);
+        if (change == "setting") config.SetConfig(new ProgramConfig { AutoDownloadUpdate = false });
+
+        await (Task)typeof(UpdateChecker).GetMethod("InstallFromNotification", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(checker, ["v9.0.0"])!;
+
+        installer.Verify(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()),
+            change == "unchanged" ? Times.Once() : Times.Never());
+        mainWindow.Verify(w => w.OpenPage(PageDefinition.About, null), Times.Once());
+        if (change == "unchanged") Assert.AreEqual(UpdaterState.Failed, checker.CurrentState.State);
+    }
+
+    private UpdateChecker CreateChecker(IUpdateInstaller installer, IHttp? http = null,
+        ConfigManager? configManager = null, IMainWindow? mainWindow = null)
     {
         var path = Path.Combine(directory, "update_info.json");
         File.WriteAllText(path, "{\"UpdateInfo\":{\"manage_type\":\"manual\",\"update_src\":\"github\",\"package_name\":\"test_portable.zip\"}}");
-        return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, Mock.Of<INotificationManager>(), null!, null!, installer, new ConfigBase(path));
+        return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, Mock.Of<INotificationManager>(), mainWindow!,
+            configManager!, installer, new ConfigBase(path));
     }
 
     [TestMethod]
