@@ -58,6 +58,28 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [DataRow("data", "data", false)]
+    [DataRow("data/program", "data", false)]
+    [DataRow("program", "program/appdata", true)]
+    [DataRow("program", "data", true)]
+    [DataRow("data-program", "data", true)]
+    public void PortableCapability_RejectsInstallationInsideProtectedData(string installPath, string dataPath, bool supported)
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows installation paths.");
+        var target = Directory.CreateDirectory(Path.Combine(directory, installPath)).FullName;
+        var data = Directory.CreateDirectory(Path.Combine(directory, dataPath)).FullName;
+
+        var capability = WindowsZipReplacementStrategy.GetCapability(target, data);
+
+        Assert.AreEqual(supported, capability.Supported);
+        if (!supported)
+        {
+            Assert.AreEqual(UpdatePackageKind.Unsupported, capability.Kind);
+            Assert.AreEqual(SyncClipboard.Core.I18n.Strings.UpdateLocationUnsupported, capability.Reason);
+        }
+    }
+
+    [TestMethod]
     public async Task HashCheck_RejectsChangedPackage()
     {
         var file = Path.Combine(directory, "package");

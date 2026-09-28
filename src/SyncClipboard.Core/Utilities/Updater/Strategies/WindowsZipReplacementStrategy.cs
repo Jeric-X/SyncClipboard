@@ -11,7 +11,17 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
     public UpdatePackageKind Kind => UpdatePackageKind.WindowsPortable;
 
     public UpdateInstallCapability GetCapability()
-        => UpdateFileSystem.GetLocationCapability(Kind, Path.TrimEndingDirectorySeparator(Env.ProgramDirectory));
+        => GetCapability(Path.TrimEndingDirectorySeparator(Env.ProgramDirectory), Env.AppDataDirectory);
+
+    internal static UpdateInstallCapability GetCapability(string target, string appDataDirectory)
+    {
+        // Protecting this data directory would exclude every installed file from replacement.
+        if (UpdateFileSystem.IsWithin(target, appDataDirectory))
+        {
+            return new(UpdatePackageKind.Unsupported, string.Empty, I18n.Strings.UpdateLocationUnsupported);
+        }
+        return UpdateFileSystem.GetLocationCapability(UpdatePackageKind.WindowsPortable, target);
+    }
 
     public string GetInstallationDirectory(string target) => target;
 
