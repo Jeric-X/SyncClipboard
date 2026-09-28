@@ -10,7 +10,7 @@ SyncClipboard is a cross-platform clipboard synchronization tool (Windows/macOS/
 
 This is a multi-platform .NET solution. The sln cannot be built as a whole (it contains platform-specific projects that fail on incompatible OS/arch). All projects use [central package management](https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management) via `src/Directory.Packages.props`. Commands below are run from the repo root unless noted.
 
-The repository selects .NET SDK 10.0.302 with `latestPatch` roll-forward in `global.json`. Linux packaging still uses PupNet 1.8.0 and requires the .NET 8 runtime in addition to the .NET 10 SDK.
+The repository selects .NET SDK 10.0.302 with `latestPatch` roll-forward in `global.json`.
 
 ### Windows (WinUI3)
 
