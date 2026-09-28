@@ -147,4 +147,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
-          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}*
+          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+
+      - name: Upload AppImage update artifact
+        if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'
+        uses: actions/upload-artifact@v7
+        with:
+          name: SyncClipboard_linux_${{ matrix.cpu }}.AppImage.zsync
+          path: build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}.AppImage.zsync
+          if-no-files-found: error
