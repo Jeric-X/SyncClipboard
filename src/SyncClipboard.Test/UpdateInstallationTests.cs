@@ -83,8 +83,8 @@ public class UpdateInstallationTests
     [DataRow("3.3.0", "v3.3.0")]
     [DataRow("3.3.0+abcdef", "v3.3.0")]
     [DataRow("3.3.0-beta2+abcdef", "v3.3.0-beta2")]
-    public void PortableVersion_AcceptsMatchingRelease(string productVersion, string releaseVersion)
-        => WindowsZipReplacementStrategy.ValidateVersion(productVersion, releaseVersion);
+    public void PackageVersion_AcceptsMatchingRelease(string productVersion, string releaseVersion)
+        => UpdatePackageVerifier.ValidateVersion(productVersion, releaseVersion);
 
     [TestMethod]
     [DataRow(null, "v3.3.0")]
@@ -93,8 +93,8 @@ public class UpdateInstallationTests
     [DataRow("3.3.0-beta1", "v3.3.0-beta2")]
     [DataRow("3.3.0-beta2", "v3.3.0")]
     [DataRow("3.3.0", "invalid")]
-    public void PortableVersion_RejectsMissingOrMismatchedRelease(string? productVersion, string releaseVersion)
-        => Assert.Throws<InvalidDataException>(() => WindowsZipReplacementStrategy.ValidateVersion(productVersion, releaseVersion));
+    public void PackageVersion_RejectsMissingOrMismatchedRelease(string? productVersion, string releaseVersion)
+        => Assert.Throws<InvalidDataException>(() => UpdatePackageVerifier.ValidateVersion(productVersion, releaseVersion));
 
     [TestMethod]
     [DataRow("parent")]
@@ -129,6 +129,54 @@ public class UpdateInstallationTests
             File.SetUnixFileMode(restricted, originalMode);
         }
         Assert.IsFalse(MacDmgReplacementStrategy.RequiresElevation(bundle));
+    }
+
+    [TestMethod]
+    [DataRow(100, 100, 0)]
+    [DataRow(100, 50, 0)]
+    [DataRow(100, 150, 50)]
+    public void ReplacementSpace_ChargesOnlyNetGrowth(int oldSize, int newSize, int expectedGrowth)
+    {
+        var target = Path.Combine(directory, "old");
+        var stage = Path.Combine(directory, "new");
+        File.WriteAllBytes(target, new byte[oldSize]);
+        File.WriteAllBytes(stage, new byte[newSize]);
+        IFileReplacementStrategy strategy = new RecordingReplacementStrategy();
+        Assert.AreEqual((long)expectedGrowth, strategy.GetRequiredInstallationSpace(new UpdateInstallTask
+        {
+            Directory = directory,
+            Kind = "test",
+            Target = target,
+            Stage = stage,
+            Backup = "unused",
+            Executable = "unused",
+            Version = "v9.0.0",
+            ProcessId = Environment.ProcessId
+        }));
+    }
+
+    [TestMethod]
+    public void PortableSpace_DoesNotCreditShrinkingOrUnrelatedFiles()
+    {
+        var target = Directory.CreateDirectory(Path.Combine(directory, "installed")).FullName;
+        var stage = Directory.CreateDirectory(Path.Combine(directory, "payload")).FullName;
+        File.WriteAllBytes(Path.Combine(target, "shrink"), new byte[100]);
+        File.WriteAllBytes(Path.Combine(stage, "shrink"), new byte[50]);
+        File.WriteAllBytes(Path.Combine(target, "grow"), new byte[10]);
+        File.WriteAllBytes(Path.Combine(stage, "grow"), new byte[20]);
+        File.WriteAllBytes(Path.Combine(stage, "added"), new byte[7]);
+        File.WriteAllBytes(Path.Combine(target, "user-data"), new byte[100]);
+        Assert.AreEqual(17L, new WindowsZipReplacementStrategy().GetRequiredInstallationSpace(new UpdateInstallTask
+        {
+            Directory = directory,
+            Kind = "test",
+            Target = target,
+            Stage = stage,
+            Backup = "unused",
+            Executable = "unused",
+            Version = "v9.0.0",
+            ProcessId = Environment.ProcessId
+        }));
     }
 
     [TestMethod]

@@ -8,6 +8,9 @@ internal interface IFileReplacementStrategy
     UpdateInstallCapability GetCapability();
     string GetInstallationDirectory(string target);
     Task<UpdateInstallTask> PreparePayloadAsync(UpdateInstallRequest request, string work, CancellationToken token);
+    // Whole-target replacements remove the previous payload before copying. Overlay strategies override this.
+    long GetRequiredInstallationSpace(UpdateInstallTask update)
+        => Math.Max(0, UpdateFileSystem.GetSize(update.Stage) - UpdateFileSystem.GetSize(update.Target));
     ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update);
     bool LauncherMayExit => false;
     bool CanRemoveFailedPreparation(string work) => true;
