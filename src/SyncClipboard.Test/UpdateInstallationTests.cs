@@ -3,8 +3,9 @@ using Moq;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.ViewModels;
 using System.IO.Compression;
@@ -36,7 +37,7 @@ public class UpdateInstallationTests
     [DataRow("SyncClipboard_macos_x64.dmg", true, false, false, UpdatePackageKind.Unsupported)]
     [DataRow("../SyncClipboard_linux_x64.AppImage", false, false, true, UpdatePackageKind.Unsupported)]
     public void PackageKind_OnlySupportsMatchingPlatform(string name, bool windows, bool mac, bool linux, UpdatePackageKind expected)
-        => Assert.AreEqual(expected, UpdateInstaller.GetPackageKind(name, windows, mac, linux));
+        => Assert.AreEqual(expected, UpdateInstallerDispatcher.GetPackageKind(name, windows, mac, linux));
 
     [TestMethod]
     [DataRow("market", "github")]
@@ -60,9 +61,9 @@ public class UpdateInstallationTests
         var file = Path.Combine(directory, "package");
         await File.WriteAllTextAsync(file, "original", TestContext.CancellationTokenSource.Token);
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(file, TestContext.CancellationTokenSource.Token)));
-        await UpdateInstallFiles.VerifyHashAsync(file, digest.ToLowerInvariant(), CancellationToken.None);
+        await UpdatePackageVerifier.VerifyHashAsync(file, digest.ToLowerInvariant(), CancellationToken.None);
         await File.WriteAllTextAsync(file, "modified", TestContext.CancellationTokenSource.Token);
-        await Assert.ThrowsAsync<InvalidDataException>(() => UpdateInstallFiles.VerifyHashAsync(file, digest, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidDataException>(() => UpdatePackageVerifier.VerifyHashAsync(file, digest, CancellationToken.None));
     }
 
     [TestMethod]
@@ -76,7 +77,7 @@ public class UpdateInstallationTests
     {
         var archive = CreateArchive(("SyncClipboard.exe", "new app"), (entry, "bad"));
         var stage = Directory.CreateDirectory(Path.Combine(directory, "stage")).FullName;
-        Assert.Throws<InvalidDataException>(() => UpdateInstallFiles.ExtractPortable(archive, stage, [], directory));
+        Assert.Throws<InvalidDataException>(() => WindowsZipInstaller.ExtractPackage(archive, stage, [], directory));
         Assert.IsFalse(File.Exists(Path.Combine(directory, "escape")));
     }
 
@@ -92,7 +93,7 @@ public class UpdateInstallationTests
         var archive = CreateArchive(("SyncClipboard.exe", "new app"), ("appdata/history.db", "bad"),
             ("StaticConfig.json", "bad"), ("libs/library.dll", "new library"));
         var stage = Directory.CreateDirectory(Path.Combine(directory, "stage")).FullName;
-        UpdateInstallFiles.ExtractPortable(archive, stage, [data, config], target);
+        WindowsZipInstaller.ExtractPackage(archive, stage, [data, config], target);
         Assert.IsFalse(Directory.Exists(Path.Combine(stage, "appdata")));
         Assert.IsFalse(File.Exists(Path.Combine(stage, "StaticConfig.json")));
         Assert.AreEqual("new library", File.ReadAllText(Path.Combine(stage, "libs/library.dll")));
@@ -105,7 +106,7 @@ public class UpdateInstallationTests
     public void PortableExtraction_RejectsCaseInsensitiveCollisions()
     {
         var archive = CreateArchive(("SyncClipboard.exe", "a"), ("SYNCCLIPBOARD.EXE", "b"));
-        Assert.Throws<InvalidDataException>(() => UpdateInstallFiles.ExtractPortable(archive, directory, [], directory));
+        Assert.Throws<InvalidDataException>(() => WindowsZipInstaller.ExtractPackage(archive, directory, [], directory));
     }
 
     [TestMethod]
@@ -114,7 +115,7 @@ public class UpdateInstallationTests
         var installer = new Mock<IUpdateInstaller>();
         installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
             .Returns(new UpdateInstallCapability(UpdatePackageKind.WindowsPortable, directory));
-        var prepared = new TaskCompletionSource<PreparedUpdate>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var prepared = new TaskCompletionSource<UpdateInstallTask>(TaskCreationOptions.RunContinuationsAsynchronously);
         installer.Setup(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>())).Returns(prepared.Task);
         var checker = CreateChecker(installer.Object);
         SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
@@ -145,7 +146,7 @@ public class UpdateInstallationTests
     {
         var package = Path.Combine(directory, "test_installer.exe");
         // A managed assembly is a valid PE fixture. This test never executes it.
-        File.Copy(typeof(UpdateInstaller).Assembly.Location, package);
+        File.Copy(typeof(UpdateInstallerDispatcher).Assembly.Location, package);
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(
             await File.ReadAllBytesAsync(package, TestContext.CancellationTokenSource.Token)));
         var installer = CreateInstaller();
@@ -174,7 +175,7 @@ public class UpdateInstallationTests
         installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
             .Returns(new UpdateInstallCapability(UpdatePackageKind.WindowsInstaller, directory));
         installer.Setup(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PreparedUpdate
+            .ReturnsAsync(new UpdateInstallTask
             {
                 Directory = directory,
                 Kind = nameof(UpdatePackageKind.WindowsInstaller),
@@ -186,7 +187,7 @@ public class UpdateInstallationTests
                 ProcessId = Environment.ProcessId
             });
         var wizard = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        installer.Setup(i => i.StartAsync(It.IsAny<PreparedUpdate>(), It.IsAny<CancellationToken>())).Returns(wizard.Task);
+        installer.Setup(i => i.StartAsync(It.IsAny<UpdateInstallTask>(), It.IsAny<CancellationToken>())).Returns(wizard.Task);
         var checker = CreateChecker(installer.Object);
         SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
         SetProperty(checker, "GithubAsset", new GitHubRelease.GitHubAsset { Digest = "sha256:test" });
@@ -197,12 +198,12 @@ public class UpdateInstallationTests
         Assert.AreEqual(UpdaterState.Installing, checker.CurrentState.State);
         await action(CancellationToken.None);
         await checker.RunAutoUpdateFlow(TestContext.CancellationTokenSource.Token);
-        installer.Verify(i => i.StartAsync(It.IsAny<PreparedUpdate>(), It.IsAny<CancellationToken>()), Times.Once);
+        installer.Verify(i => i.StartAsync(It.IsAny<UpdateInstallTask>(), It.IsAny<CancellationToken>()), Times.Once);
         wizard.SetResult();
         await running;
         Assert.AreEqual(UpdaterState.ReadyToInstall, checker.CurrentState.State);
         await checker.CurrentState.ManualAction!(CancellationToken.None);
-        installer.Verify(i => i.StartAsync(It.IsAny<PreparedUpdate>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        installer.Verify(i => i.StartAsync(It.IsAny<UpdateInstallTask>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [TestMethod]
@@ -214,7 +215,7 @@ public class UpdateInstallationTests
         installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
             .Returns(new UpdateInstallCapability(kind, directory));
         installer.Setup(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PreparedUpdate
+            .ReturnsAsync(new UpdateInstallTask
             {
                 Directory = directory,
                 Kind = kind.ToString(),
@@ -225,7 +226,7 @@ public class UpdateInstallationTests
                 Version = "v9.0.0",
                 ProcessId = Environment.ProcessId
             });
-        installer.Setup(i => i.StartAsync(It.IsAny<PreparedUpdate>(), It.IsAny<CancellationToken>()))
+        installer.Setup(i => i.StartAsync(It.IsAny<UpdateInstallTask>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
         var checker = CreateChecker(installer.Object);
         SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
@@ -235,7 +236,7 @@ public class UpdateInstallationTests
         Assert.AreEqual(UpdaterState.ReadyToInstall, checker.CurrentState.State);
         Assert.AreEqual(SyncClipboard.Core.I18n.Strings.InstallUpdate, checker.CurrentState.ActionText);
         await checker.CurrentState.ManualAction!(CancellationToken.None);
-        installer.Verify(i => i.StartAsync(It.IsAny<PreparedUpdate>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        installer.Verify(i => i.StartAsync(It.IsAny<UpdateInstallTask>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [TestMethod]
@@ -321,7 +322,7 @@ public class UpdateInstallationTests
         CollectionAssert.AreEquivalent(new[] { typeof(WindowsExeInstaller), typeof(WindowsZipInstaller),
             typeof(MacDmgInstaller), typeof(LinuxAppImageInstaller) }, strategies.Select(s => s.GetType()).ToArray());
         Assert.HasCount(4, strategies.Select(s => s.Kind).Distinct());
-        Assert.IsInstanceOfType<UpdateInstaller>(provider.GetRequiredService<IUpdateInstaller>());
+        Assert.IsInstanceOfType<UpdateInstallerDispatcher>(provider.GetRequiredService<IUpdateInstaller>());
     }
 
     [TestMethod]
@@ -333,7 +334,7 @@ public class UpdateInstallationTests
     {
         var strategies = new[] { UpdatePackageKind.WindowsInstaller, UpdatePackageKind.WindowsPortable,
             UpdatePackageKind.MacBundle, UpdatePackageKind.AppImage }.Select(k => new RecordingStrategy(k)).ToArray();
-        var installer = new UpdateInstaller(strategies, new UpdateInstallCleanup(Mock.Of<IAppConfig>()));
+        var installer = new UpdateInstallerDispatcher(strategies, new UpdateTaskCleaner(Mock.Of<IAppConfig>()));
         var package = Path.Combine(directory, "package");
         await File.WriteAllTextAsync(package, "package contents", TestContext.CancellationTokenSource.Token);
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(
@@ -360,10 +361,10 @@ public class UpdateInstallationTests
 
         public UpdateInstallCapability GetCapability() => new(Kind, "unused");
 
-        public Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+        public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
         {
             PrepareCount++;
-            return Task.FromResult(new PreparedUpdate
+            return Task.FromResult(new UpdateInstallTask
             {
                 Directory = "unused",
                 Kind = Kind.ToString(),
@@ -376,7 +377,7 @@ public class UpdateInstallationTests
             });
         }
 
-        public Task StartAsync(PreparedUpdate update, CancellationToken token)
+        public Task StartAsync(UpdateInstallTask update, CancellationToken token)
         {
             StartCount++;
             return Task.CompletedTask;
@@ -467,7 +468,7 @@ public class UpdateInstallationTests
     public async Task HelperStartupFailure_AbortsHandoffWithoutCommitting()
     {
         var installer = CreateInstaller();
-        var update = new PreparedUpdate
+        var update = new UpdateInstallTask
         {
             Directory = directory,
             Kind = "AppImage",

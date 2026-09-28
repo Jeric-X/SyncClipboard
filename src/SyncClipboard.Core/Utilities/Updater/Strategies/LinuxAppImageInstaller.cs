@@ -1,36 +1,37 @@
 using SyncClipboard.Core.Commons;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace SyncClipboard.Core.Utilities.Updater;
+namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
-internal sealed class LinuxAppImageInstaller(UpdateInstallHelper helper) : IUpdateInstallStrategy
+internal sealed class LinuxAppImageInstaller(UpdateTaskCoordinator coordinator) : IUpdateInstallStrategy
 {
     public UpdatePackageKind Kind => UpdatePackageKind.AppImage;
 
     public UpdateInstallCapability GetCapability()
     {
-        var capability = UpdateInstallFiles.GetLocationCapability(Kind, Env.GetAppImageExecPath());
-        if (capability.Supported && !UpdateInstallFiles.CanWrite(Path.GetDirectoryName(capability.TargetPath)!))
+        var capability = UpdateFileSystem.GetLocationCapability(Kind, Env.GetAppImageExecPath());
+        if (capability.Supported && !UpdateFileSystem.CanWrite(Path.GetDirectoryName(capability.TargetPath)!))
         {
             return new(UpdatePackageKind.Unsupported, capability.TargetPath, I18n.Strings.UpdateDirectoryNotWritable);
         }
         return capability;
     }
 
-    public Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
-        => helper.PrepareAsync(request, Path.GetDirectoryName(request.Capability.TargetPath)!, (snapshot, work) =>
+    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+        => coordinator.PrepareAsync(request, Path.GetDirectoryName(request.Capability.TargetPath)!, (snapshot, work) =>
         {
             var target = snapshot.Capability.TargetPath;
             var stage = Path.Combine(work, "payload");
             var helperExecutable = Path.Combine(work, "SyncClipboard-helper.AppImage");
-            UpdateInstallFiles.CheckSpace(work, checked((UpdateInstallFiles.GetSize(target) * 2) + new FileInfo(snapshot.PackagePath).Length));
+            UpdateFileSystem.CheckSpace(work, checked((UpdateFileSystem.GetSize(target) * 2) + new FileInfo(snapshot.PackagePath).Length));
             File.Copy(target, helperExecutable);
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(helperExecutable,
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             File.Copy(snapshot.PackagePath, stage);
             ValidateAppImage(stage);
-            return Task.FromResult(new PreparedUpdate
+            return Task.FromResult(new UpdateInstallTask
             {
                 Directory = work,
                 Kind = Kind.ToString(),
@@ -41,11 +42,21 @@ internal sealed class LinuxAppImageInstaller(UpdateInstallHelper helper) : IUpda
                 HelperExecutable = helperExecutable,
                 Version = snapshot.Version,
                 ProcessId = Environment.ProcessId,
-                Elevate = !UpdateInstallFiles.CanWrite(Path.GetDirectoryName(target)!)
+                Elevate = !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!)
             });
         }, token);
 
-    public Task StartAsync(PreparedUpdate update, CancellationToken token) => UpdateInstallHelper.StartAsync(update, token);
+    public Task StartAsync(UpdateInstallTask update, CancellationToken token)
+        => UpdateTaskCoordinator.StartAsync(update, CreateWorkerStartInfo, token);
+
+    internal static ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
+    {
+        var start = AppImageInstallWorker.CreateLaunchInfo(update.HelperExecutable
+            ?? throw new IOException("The AppImage update helper is missing."));
+        start.ArgumentList.Add("--install-update");
+        start.ArgumentList.Add(Path.Combine(update.Directory, "task.json"));
+        return start;
+    }
 
     private static void ValidateAppImage(string path)
     {

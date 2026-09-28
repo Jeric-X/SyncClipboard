@@ -1,37 +1,37 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace SyncClipboard.Core.Utilities.Updater;
+namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
 public record UpdateInstallProgress(string Phase, double? Percent = null);
 
 // Used only by the isolated --install-update application. It does not create AppCore or load user data.
-public sealed class AppImageUpdateRunner
+public sealed class AppImageInstallWorker
 {
-    private readonly PreparedUpdate update;
+    private readonly UpdateInstallTask update;
     private readonly Action<string> launch;
     private readonly TimeSpan exitTimeout;
 
-    public AppImageUpdateRunner(PreparedUpdate update) : this(update, Launch, TimeSpan.FromSeconds(60)) { }
+    public AppImageInstallWorker(UpdateInstallTask update) : this(update, Launch, TimeSpan.FromSeconds(60)) { }
 
-    internal AppImageUpdateRunner(PreparedUpdate update, Action<string> launch, TimeSpan exitTimeout)
+    internal AppImageInstallWorker(UpdateInstallTask update, Action<string> launch, TimeSpan exitTimeout)
     {
         this.update = update;
         this.launch = launch;
         this.exitTimeout = exitTimeout;
     }
 
-    public static PreparedUpdate Load(string manifest)
+    public static UpdateInstallTask Load(string manifest)
     {
-        var update = JsonSerializer.Deserialize<PreparedUpdate>(File.ReadAllText(manifest))
+        var update = JsonSerializer.Deserialize<UpdateInstallTask>(File.ReadAllText(manifest))
             ?? throw new InvalidDataException("Invalid update task.");
         var work = Path.GetDirectoryName(Path.GetFullPath(manifest))!;
         if (update.Kind != nameof(UpdatePackageKind.AppImage) || Path.GetFullPath(update.Directory) != work
             || update.Stage != Path.Combine(work, "payload") || update.Backup != Path.Combine(work, "backup")
             || update.HelperExecutable != Path.Combine(work, "SyncClipboard-helper.AppImage")
             || !Path.IsPathRooted(update.Target) || update.Target != update.Executable
-            || UpdateInstallFiles.IsWithin(update.Target, work) || UpdateInstallFiles.HasLinkedAncestor(work)
-            || UpdateInstallFiles.HasLinkedAncestor(update.Target) || update.ProcessId <= 0
+            || UpdateFileSystem.IsWithin(update.Target, work) || UpdateFileSystem.HasLinkedAncestor(work)
+            || UpdateFileSystem.HasLinkedAncestor(update.Target) || update.ProcessId <= 0
             || update.ProcessId == Environment.ProcessId)
         {
             throw new InvalidDataException("Unsafe AppImage update task.");
@@ -48,11 +48,11 @@ public sealed class AppImageUpdateRunner
         {
             await WriteAsync("helper-pid", Environment.ProcessId.ToString());
             progress.Report(new("verifying"));
-            await UpdateInstallFiles.VerifyHashAsync(update.Stage, update.Digest, token);
+            await UpdatePackageVerifier.VerifyHashAsync(update.Stage, update.Digest, token);
             if (File.Exists(update.Backup)) throw new IOException("The update backup already exists.");
-            if (!UpdateInstallFiles.CanWrite(Path.GetDirectoryName(update.Target)!))
+            if (!UpdateFileSystem.CanWrite(Path.GetDirectoryName(update.Target)!))
                 throw new IOException(I18n.Strings.UpdateDirectoryNotWritable);
-            UpdateInstallFiles.CheckSpace(update.Directory, new FileInfo(update.Target).Length);
+            UpdateFileSystem.CheckSpace(update.Directory, new FileInfo(update.Target).Length);
             progress.Report(new("waiting"));
             await WriteAsync("ready", "");
             using (var handoff = CancellationTokenSource.CreateLinkedTokenSource(token))

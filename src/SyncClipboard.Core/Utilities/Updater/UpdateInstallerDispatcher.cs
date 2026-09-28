@@ -1,9 +1,10 @@
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class UpdateInstaller(IEnumerable<IUpdateInstallStrategy> strategies, UpdateInstallCleanup cleanup) : IUpdateInstaller
+internal sealed class UpdateInstallerDispatcher(IEnumerable<IUpdateInstallStrategy> strategies, UpdateTaskCleaner cleanup) : IUpdateInstaller
 {
     private readonly Dictionary<UpdatePackageKind, IUpdateInstallStrategy> strategies = strategies.ToDictionary(s => s.Kind);
 
@@ -29,15 +30,15 @@ internal sealed class UpdateInstaller(IEnumerable<IUpdateInstallStrategy> strate
         return UpdatePackageKind.Unsupported;
     }
 
-    public Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
         => Task.Run(async () =>
         {
             var strategy = GetStrategy(request.Capability.Kind);
-            await UpdateInstallFiles.VerifyHashAsync(request.PackagePath, request.Digest, token);
+            await UpdatePackageVerifier.VerifyHashAsync(request.PackagePath, request.Digest, token);
             return await strategy.PrepareAsync(request, token);
         }, token);
 
-    public Task StartAsync(PreparedUpdate update, CancellationToken token)
+    public Task StartAsync(UpdateInstallTask update, CancellationToken token)
     {
         if (!Enum.TryParse<UpdatePackageKind>(update.Kind, out var kind))
         {

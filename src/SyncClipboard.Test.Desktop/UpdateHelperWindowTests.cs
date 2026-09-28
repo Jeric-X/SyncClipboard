@@ -23,7 +23,7 @@ public class UpdateHelperWindowTests
         var work = Directory.CreateTempSubdirectory("Updater window 中文 ").FullName;
         var stage = Path.Combine(work, "payload");
         File.WriteAllText(stage, "corrupt");
-        var task = new PreparedUpdate
+        var task = new UpdateInstallTask
         {
             Directory = work,
             Kind = "AppImage",

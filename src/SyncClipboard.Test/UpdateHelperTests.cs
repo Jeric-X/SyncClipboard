@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 using SyncClipboard.Core.Utilities.Updater;
 using System.Diagnostics;
 using System.Text.Json;
@@ -36,7 +37,7 @@ public class UpdateHelperTests
         using var process = Process.GetCurrentProcess();
         using var cancellation = new CancellationTokenSource();
         if (callerCanceled) cancellation.Cancel();
-        var waiting = UpdateInstallHelper.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
+        var waiting = UpdateTaskCoordinator.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
         if (callerCanceled) await Assert.ThrowsAsync<OperationCanceledException>(() => waiting);
         else await Assert.ThrowsAsync<IOException>(() => waiting);
     }
@@ -48,9 +49,9 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(previous, "cancel"), "");
         var pid = Path.Combine(previous, "helper-pid");
         File.WriteAllText(pid, Environment.ProcessId.ToString());
-        Assert.Throws<IOException>(() => UpdateInstallHelper.EnsurePreviousHelperStopped(work));
+        Assert.Throws<IOException>(() => UpdateTaskCoordinator.EnsurePreviousHelperStopped(work));
         File.WriteAllText(pid, int.MaxValue.ToString());
-        UpdateInstallHelper.EnsurePreviousHelperStopped(work);
+        UpdateTaskCoordinator.EnsurePreviousHelperStopped(work);
     }
 
     [TestMethod]
@@ -94,8 +95,8 @@ public class UpdateHelperTests
         work += " $(touch injected) & \"test\"";
         Directory.Move(originalWork, work);
         var task = CreateUnixTask(mac: true);
-        CopyResource("install.command");
-        File.WriteAllText(Path.Combine(work, "install.sh"),
+        CopyResource("OpenMacUpdate.command");
+        File.WriteAllText(Path.Combine(work, "InstallMacBundle.sh"),
             "printf '%s' \"$1\" > \"$1/received-path\"\nexit " + exitCode + "\n");
 
         var elements = XDocument.Parse(MacDmgInstaller.CreateTerminalProfile(work)).Root!.Element("dict")!.Elements().ToArray();
@@ -103,7 +104,7 @@ public class UpdateHelperTests
             .ToDictionary(index => elements[index * 2].Value, index => elements[(index * 2) + 1]);
         Assert.AreEqual("1", settings["shellExitAction"].Value);
         Assert.AreEqual("false", settings["RunCommandAsShell"].Name.LocalName);
-        var terminalStart = UpdateInstallHelper.CreateStartInfo(task);
+        var terminalStart = MacDmgInstaller.CreateWorkerStartInfo(task);
         CollectionAssert.AreEqual(new[] { "-a", "Terminal", Path.Combine(work, "install.terminal") }, terminalStart.ArgumentList.ToArray());
 
         var start = new ProcessStartInfo("/bin/sh") { UseShellExecute = false, WorkingDirectory = work };
@@ -271,7 +272,7 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(stage, "SyncClipboard.exe"), "new");
         File.WriteAllText(Path.Combine(target, "Z-library.dll"), "old library");
         File.WriteAllText(Path.Combine(stage, "Z-library.dll"), "new library");
-        var task = new PreparedUpdate
+        var task = new UpdateInstallTask
         {
             Directory = work,
             Kind = "WindowsPortable",
@@ -285,10 +286,10 @@ public class UpdateHelperTests
         };
         File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(task));
         Directory.CreateDirectory(Path.Combine(work, "download"));
-        CopyResource("install.ps1");
+        CopyResource("InstallWindowsZip.ps1");
         var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
         foreach (var arg in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
-            Path.Combine(work, "install.ps1"), "-Work", work, "-Worker" }) start.ArgumentList.Add(arg);
+            Path.Combine(work, "InstallWindowsZip.ps1"), "-Work", work, "-Worker" }) start.ArgumentList.Add(arg);
         var supervisorStart = new ProcessStartInfo("powershell.exe", "-NoProfile -NonInteractive -Command Start-Sleep -Seconds 120")
         {
             UseShellExecute = false,
@@ -340,14 +341,14 @@ public class UpdateHelperTests
         Assert.AreEqual(0, process.ExitCode);
     }
 
-    private PreparedUpdate CreateUnixTask(int parentPid = int.MaxValue, bool mac = false)
+    private UpdateInstallTask CreateUnixTask(int parentPid = int.MaxValue, bool mac = false)
     {
         var installed = Directory.CreateDirectory(Path.Combine(work, "installation")).FullName;
         var target = Path.Combine(installed, mac ? "SyncClipboard 中文.app" : "SyncClipboard 中文.AppImage");
         var stage = Path.Combine(work, mac ? "payload.app" : "payload");
         File.WriteAllText(target, "old version");
         File.WriteAllText(stage, "new version");
-        var task = new PreparedUpdate
+        var task = new UpdateInstallTask
         {
             Directory = work,
             Kind = mac ? "MacBundle" : "AppImage",
@@ -368,13 +369,13 @@ public class UpdateHelperTests
             ["pid"] = parentPid.ToString(),
             ["elevate"] = "no"
         }) File.WriteAllText(Path.Combine(work, name + ".txt"), value);
-        CopyResource("install.sh");
+        CopyResource("InstallMacBundle.sh");
         return task;
     }
 
     private void CopyResource(string name)
     {
-        using var source = typeof(UpdateInstaller).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Scripts." + name)!;
+        using var source = typeof(UpdateInstallerDispatcher).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)!;
         using var output = File.Create(Path.Combine(work, name));
         source.CopyTo(output);
     }
@@ -385,7 +386,7 @@ public class UpdateHelperTests
         if (tools is not null) start.Environment["PATH"] = tools + Path.PathSeparator + start.Environment["PATH"];
         start.Environment["UPDATE_TEST_WORK"] = work;
         if (cancelPhase is not null) start.Environment["UPDATE_TEST_PHASE"] = cancelPhase;
-        foreach (var arg in new[] { Path.Combine(work, "install.sh"), work, "worker" }) start.ArgumentList.Add(arg);
+        foreach (var arg in new[] { Path.Combine(work, "InstallMacBundle.sh"), work, "worker" }) start.ArgumentList.Add(arg);
         var process = Process.Start(start)!;
         // A separate handle lets cleanup still stop workers if an assertion fails.
         processes.Add(Process.GetProcessById(process.Id));

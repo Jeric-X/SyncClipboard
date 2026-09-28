@@ -1,8 +1,9 @@
 using SyncClipboard.Core.Commons;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 
-namespace SyncClipboard.Core.Utilities.Updater;
+namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
 internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
 {
@@ -11,11 +12,11 @@ internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
     // The interactive installer determines the destination and handles permissions itself.
     public UpdateInstallCapability GetCapability() => new(Kind, Path.TrimEndingDirectorySeparator(Env.ProgramDirectory));
 
-    public Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        UpdateInstallFiles.ValidateWindowsExecutable(request.PackagePath, checkArchitecture: false);
-        return Task.FromResult(new PreparedUpdate
+        ValidateExecutable(request.PackagePath);
+        return Task.FromResult(new UpdateInstallTask
         {
             Directory = Path.GetDirectoryName(request.PackagePath)!,
             Kind = nameof(UpdatePackageKind.WindowsInstaller),
@@ -29,7 +30,7 @@ internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
         });
     }
 
-    public async Task StartAsync(PreparedUpdate update, CancellationToken token)
+    public async Task StartAsync(UpdateInstallTask update, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         var path = update.Executable;
@@ -37,7 +38,7 @@ internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
         {
             // Keep this exact file read-only through launch, including any authorization prompt.
             await using var package = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            await UpdateInstallFiles.VerifyHashAsync(path, update.Digest, token);
+            await UpdatePackageVerifier.VerifyHashAsync(path, update.Digest, token);
             using var process = Process.Start(new ProcessStartInfo(path)
             {
                 WorkingDirectory = Path.GetDirectoryName(path),
@@ -49,6 +50,16 @@ internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
             throw new OperationCanceledException("Installer authorization was canceled.", ex, token);
+        }
+    }
+
+    private static void ValidateExecutable(string path)
+    {
+        using var stream = File.OpenRead(path);
+        using var reader = new PEReader(stream);
+        if (reader.PEHeaders.PEHeader is null)
+        {
+            throw new InvalidDataException("The update installer is not a valid Windows executable.");
         }
     }
 }

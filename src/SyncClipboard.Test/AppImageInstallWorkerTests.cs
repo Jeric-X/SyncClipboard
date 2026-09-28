@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 using SyncClipboard.Core.Utilities.Updater;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -5,10 +6,10 @@ using System.Text.Json;
 namespace SyncClipboard.Test;
 
 [TestClass]
-public class AppImageUpdateRunnerTests
+public class AppImageInstallWorkerTests
 {
     private string root = null!;
-    private PreparedUpdate update = null!;
+    private UpdateInstallTask update = null!;
 
     [TestInitialize]
     public void Initialize()
@@ -19,7 +20,7 @@ public class AppImageUpdateRunnerTests
         var stage = Path.Combine(work, "payload");
         File.WriteAllText(target, "old version");
         File.WriteAllText(stage, "new version");
-        update = new PreparedUpdate
+        update = new UpdateInstallTask
         {
             Directory = work,
             Kind = "AppImage",
@@ -43,7 +44,7 @@ public class AppImageUpdateRunnerTests
     {
         var phases = new List<UpdateInstallProgress>();
         var launched = new List<string>();
-        var runner = new AppImageUpdateRunner(update, launched.Add, TimeSpan.FromSeconds(1));
+        var runner = new AppImageInstallWorker(update, launched.Add, TimeSpan.FromSeconds(1));
         Assert.IsTrue(await runner.RunAsync(new InlineProgress(phases.Add), CancellationToken.None));
         Assert.AreEqual("new version", File.ReadAllText(update.Target));
         Assert.AreEqual("old version", File.ReadAllText(update.Backup));
@@ -61,7 +62,7 @@ public class AppImageUpdateRunnerTests
     {
         var launched = new List<string>();
         var progress = new InlineProgress(p => { if (p.Phase == "backup" && p.Percent == 100) File.Delete(update.Stage); });
-        var runner = new AppImageUpdateRunner(update, launched.Add, TimeSpan.FromSeconds(1));
+        var runner = new AppImageInstallWorker(update, launched.Add, TimeSpan.FromSeconds(1));
         Assert.IsFalse(await runner.RunAsync(progress, CancellationToken.None));
         Assert.AreEqual("old version", File.ReadAllText(update.Target));
         Assert.AreEqual("old version", File.ReadAllText(update.Backup));
@@ -74,7 +75,7 @@ public class AppImageUpdateRunnerTests
     public async Task CorruptPayload_LeavesApplicationRunningAndDoesNotOfferHandoff()
     {
         File.WriteAllText(update.Stage, "corrupted");
-        var runner = new AppImageUpdateRunner(update, _ => Assert.Fail("Should not restart"), TimeSpan.FromSeconds(1));
+        var runner = new AppImageInstallWorker(update, _ => Assert.Fail("Should not restart"), TimeSpan.FromSeconds(1));
         Assert.IsFalse(await runner.RunAsync(new InlineProgress(_ => { }), CancellationToken.None));
         Assert.AreEqual("old version", File.ReadAllText(update.Target));
         Assert.IsFalse(File.Exists(Path.Combine(update.Directory, "ready")));
@@ -84,7 +85,7 @@ public class AppImageUpdateRunnerTests
     [TestMethod]
     public async Task ParentExitTimeout_DoesNotReplaceOrTerminateParent()
     {
-        var runner = new AppImageUpdateRunner(update with { ProcessId = Environment.ProcessId },
+        var runner = new AppImageInstallWorker(update with { ProcessId = Environment.ProcessId },
             _ => Assert.Fail("Should not restart"), TimeSpan.FromMilliseconds(50));
         Assert.IsFalse(await runner.RunAsync(new InlineProgress(_ => { }), CancellationToken.None));
         Assert.AreEqual("old version", File.ReadAllText(update.Target));
@@ -104,7 +105,7 @@ public class AppImageUpdateRunnerTests
             if (p.Phase == phase && (percent < 0 || p.Percent == percent)) cancellation.Cancel();
         });
         var launched = new List<string>();
-        var runner = new AppImageUpdateRunner(update, launched.Add, TimeSpan.FromSeconds(1));
+        var runner = new AppImageInstallWorker(update, launched.Add, TimeSpan.FromSeconds(1));
         Assert.IsFalse(await runner.RunAsync(progress, cancellation.Token));
         Assert.AreEqual("old version", File.ReadAllText(update.Target));
         Assert.IsTrue(File.Exists(Path.Combine(update.Directory, "restored")));
@@ -125,7 +126,7 @@ public class AppImageUpdateRunnerTests
                     locked = new FileStream(update.Target, FileMode.Open, FileAccess.Read, FileShare.Read);
             });
             var launched = new List<string>();
-            var runner = new AppImageUpdateRunner(update, launched.Add, TimeSpan.FromSeconds(1));
+            var runner = new AppImageInstallWorker(update, launched.Add, TimeSpan.FromSeconds(1));
             Assert.IsFalse(await runner.RunAsync(progress, CancellationToken.None));
             Assert.AreEqual("old version", File.ReadAllText(update.Target));
             Assert.AreEqual("old version", File.ReadAllText(update.Backup));
@@ -140,13 +141,13 @@ public class AppImageUpdateRunnerTests
     {
         var path = Path.Combine(update.Directory, "task.json");
         File.WriteAllText(path, JsonSerializer.Serialize(update with { Backup = update.Target + ".backup" }));
-        Assert.Throws<InvalidDataException>(() => AppImageUpdateRunner.Load(path));
+        Assert.Throws<InvalidDataException>(() => AppImageInstallWorker.Load(path));
     }
 
     [TestMethod]
     public void HelperLaunch_UsesSeparateAppImageWithLiteralTaskArgument()
     {
-        var start = UpdateInstallHelper.CreateStartInfo(update);
+        var start = LinuxAppImageInstaller.CreateWorkerStartInfo(update);
         Assert.AreEqual(update.HelperExecutable, start.FileName);
         CollectionAssert.AreEqual(new[] { "--install-update", Path.Combine(update.Directory, "task.json") }, start.ArgumentList.ToArray());
         Assert.IsFalse(start.Environment.ContainsKey("APPIMAGE"));

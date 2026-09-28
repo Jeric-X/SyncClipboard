@@ -10,7 +10,7 @@ public record UpdateInstallCapability(UpdatePackageKind Kind, string TargetPath,
 public record UpdateInstallRequest(string PackagePath, string Digest, string Version, UpdateInstallCapability Capability);
 
 // This manifest is also read by the independent helpers. Keep property names stable.
-public sealed record PreparedUpdate
+public sealed record UpdateInstallTask
 {
     public required string Directory { get; init; }
     public required string Kind { get; init; }

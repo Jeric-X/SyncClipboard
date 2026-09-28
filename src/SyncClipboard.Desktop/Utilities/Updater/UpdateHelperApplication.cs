@@ -1,28 +1,29 @@
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Themes.Fluent;
+using Avalonia;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 using SyncClipboard.Core.Utilities.Updater;
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Threading;
+using System;
 
 namespace SyncClipboard.Desktop.Utilities.Updater;
 
-public sealed class UpdateHelperApplication(PreparedUpdate update) : Application
+public sealed class UpdateHelperApplication(UpdateInstallTask update) : Application
 {
     public static int Run(string[] args)
     {
         try
         {
             if (!OperatingSystem.IsLinux() || args.Length != 2) throw new ArgumentException("Expected --install-update <task.json>.");
-            var task = AppImageUpdateRunner.Load(args[1]);
+            var task = AppImageInstallWorker.Load(args[1]);
             if (Environment.GetEnvironmentVariable("APPIMAGE") != task.HelperExecutable)
                 throw new InvalidOperationException("The updater must run from its private AppImage copy.");
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(task.Language);
@@ -105,7 +106,7 @@ public sealed class UpdateHelperApplication(PreparedUpdate update) : Application
                     progressBar.Value = value.Percent ?? 0;
                     details.Text = value.Percent.HasValue ? $"{value.Percent:0}%" : string.Empty;
                 });
-                var success = await Task.Run(() => new AppImageUpdateRunner(update).RunAsync(progress, cancellation.Token));
+                var success = await Task.Run(() => new AppImageInstallWorker(update).RunAsync(progress, cancellation.Token));
                 running = false;
                 if (success || closing) window.Close();
                 else

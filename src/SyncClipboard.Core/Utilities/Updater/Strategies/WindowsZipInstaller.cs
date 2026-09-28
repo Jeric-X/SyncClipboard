@@ -1,0 +1,113 @@
+using SyncClipboard.Core.Commons;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
+
+namespace SyncClipboard.Core.Utilities.Updater.Strategies;
+
+internal sealed class WindowsZipInstaller(UpdateTaskCoordinator coordinator) : IUpdateInstallStrategy
+{
+    public UpdatePackageKind Kind => UpdatePackageKind.WindowsPortable;
+
+    public UpdateInstallCapability GetCapability()
+        => UpdateFileSystem.GetLocationCapability(Kind, Path.TrimEndingDirectorySeparator(Env.ProgramDirectory));
+
+    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+        => coordinator.PrepareAsync(request, request.Capability.TargetPath, async (snapshot, work) =>
+        {
+            var target = snapshot.Capability.TargetPath;
+            var stage = Path.Combine(work, "payload");
+            var protectedPaths = new[] { Env.AppDataDirectory, Env.StaticConfigPath, Env.PortableUserConfigFile,
+                Env.PortableAppDataDirectory, Env.RuntimeConfigPath, Env.AppDataPathConfigPath };
+            Directory.CreateDirectory(stage);
+            ExtractPackage(snapshot.PackagePath, stage, protectedPaths, target);
+            ValidateExecutable(Path.Combine(stage, "SyncClipboard.exe"));
+            UpdatePackageVerifier.ValidatePackageInfo(Path.Combine(stage, Env.UpdateInfoFile), Path.GetFileName(snapshot.PackagePath));
+            var backupSize = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
+                .Select(path => Path.Combine(target, Path.GetRelativePath(stage, path)))
+                .Where(File.Exists).Sum(path => new FileInfo(path).Length);
+            UpdateFileSystem.CheckSpace(work, backupSize);
+            await UpdateTaskCoordinator.ExtractScriptAsync(work, "InstallWindowsZip.ps1", token);
+            return new UpdateInstallTask
+            {
+                Directory = work,
+                Kind = Kind.ToString(),
+                Target = target,
+                Stage = stage,
+                Backup = Path.Combine(work, "backup"),
+                Executable = Env.ProgramPath,
+                Version = snapshot.Version,
+                ProcessId = Environment.ProcessId,
+                Elevate = !UpdateFileSystem.CanWrite(target),
+                ProtectedPaths = protectedPaths
+            };
+        }, token);
+
+    public Task StartAsync(UpdateInstallTask update, CancellationToken token)
+        => UpdateTaskCoordinator.StartAsync(update, CreateWorkerStartInfo, token);
+
+    internal static ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
+    {
+        var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell", "v1.0", "powershell.exe"))
+        { UseShellExecute = true, WorkingDirectory = update.Directory };
+        foreach (var argument in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+            Path.Combine(update.Directory, "InstallWindowsZip.ps1"), "-Work", update.Directory }) start.ArgumentList.Add(argument);
+        return start;
+    }
+
+    internal static void ExtractPackage(string package, string destination, IEnumerable<string> protectedPaths, string target)
+    {
+        using var archive = ZipFile.OpenRead(package);
+        UpdateFileSystem.CheckSpace(destination, archive.Entries.Sum(entry => entry.Length));
+        var destinationPrefix = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destination)) + Path.DirectorySeparatorChar;
+        var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in archive.Entries)
+        {
+            // Validate Windows paths even when these tests run on Unix.
+            var name = entry.FullName.Replace('\\', '/');
+            if (name.StartsWith('/') || name.Contains(':') || name.Split('/').Any(p => p is ".." or "."
+                || p.EndsWith(' ') || p.EndsWith('.')) || ((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
+            {
+                throw new InvalidDataException("Unsafe update archive entry: " + entry.FullName);
+            }
+            var output = Path.GetFullPath(Path.Combine(destination, name));
+            if (!output.StartsWith(destinationPrefix, pathComparison) || !seen.Add(output))
+            {
+                throw new InvalidDataException("Duplicate or invalid update archive entry: " + entry.FullName);
+            }
+            var installed = Path.Combine(target, name);
+            if (protectedPaths.Any(path => UpdateFileSystem.IsWithin(installed, path)))
+            {
+                continue;
+            }
+            if (name.EndsWith('/'))
+            {
+                Directory.CreateDirectory(output);
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+                entry.ExtractToFile(output);
+            }
+        }
+        if (!File.Exists(Path.Combine(destination, "SyncClipboard.exe")))
+        {
+            throw new InvalidDataException("The update archive does not contain SyncClipboard.exe.");
+        }
+    }
+
+    private static void ValidateExecutable(string path)
+    {
+        using var stream = File.OpenRead(path);
+        using var reader = new PEReader(stream);
+        var machine = reader.PEHeaders.CoffHeader.Machine;
+        var expected = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? Machine.Arm64 : Machine.Amd64;
+        if (reader.PEHeaders.PEHeader is null || machine != expected)
+        {
+            throw new InvalidDataException("The update executable has an incompatible architecture.");
+        }
+    }
+}

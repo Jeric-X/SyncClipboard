@@ -1,22 +1,23 @@
 using SyncClipboard.Core.Commons;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
-namespace SyncClipboard.Core.Utilities.Updater;
+namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
-internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInstallStrategy
+internal sealed class MacDmgInstaller(UpdateTaskCoordinator coordinator) : IUpdateInstallStrategy
 {
     public UpdatePackageKind Kind => UpdatePackageKind.MacBundle;
 
     public UpdateInstallCapability GetCapability()
     {
-        var capability = UpdateInstallFiles.GetLocationCapability(Kind, FindBundle(Env.ProgramPath));
+        var capability = UpdateFileSystem.GetLocationCapability(Kind, FindBundle(Env.ProgramPath));
         if (!capability.Supported) return capability;
         var target = capability.TargetPath;
-        if ((target.StartsWith("/Volumes/", StringComparison.Ordinal) && !UpdateInstallFiles.CanWrite(Path.GetDirectoryName(target)!))
+        if ((target.StartsWith("/Volumes/", StringComparison.Ordinal) && !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!))
             || target.Contains("/AppTranslocation/", StringComparison.Ordinal)
-            || UpdateInstallFiles.IsWithin(Env.AppDataDirectory, target)
+            || UpdateFileSystem.IsWithin(Env.AppDataDirectory, target)
             || File.Exists(Env.PortableUserConfigFile)
             || Directory.Exists(Env.PortableAppDataDirectory))
         {
@@ -25,15 +26,15 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
         return capability;
     }
 
-    public Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
-        => helper.PrepareAsync(request, Path.GetDirectoryName(request.Capability.TargetPath)!, async (snapshot, work) =>
+    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+        => coordinator.PrepareAsync(request, Path.GetDirectoryName(request.Capability.TargetPath)!, async (snapshot, work) =>
         {
             var target = snapshot.Capability.TargetPath;
-            UpdateInstallFiles.CheckSpace(work, UpdateInstallFiles.GetSize(target));
+            UpdateFileSystem.CheckSpace(work, UpdateFileSystem.GetSize(target));
             var stage = Path.Combine(work, "payload.app");
             await PrepareMacBundleAsync(snapshot, stage, work, token);
             await File.WriteAllTextAsync(Path.Combine(work, "install.terminal"), CreateTerminalProfile(work), token);
-            return new PreparedUpdate
+            var update = new UpdateInstallTask
             {
                 Directory = work,
                 Kind = Kind.ToString(),
@@ -42,17 +43,56 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
                 Backup = Path.Combine(work, "backup"),
                 Executable = target,
                 Version = snapshot.Version,
+                Language = CultureInfo.CurrentUICulture.Name,
                 ProcessId = Environment.ProcessId,
-                Elevate = !UpdateInstallFiles.CanWrite(Path.GetDirectoryName(target)!)
+                Elevate = !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!)
             };
-        }, token);
+            await PrepareWorkerAsync(update, token);
+            return update;
+        }, token, CanRemoveFailedPreparation);
 
-    public Task StartAsync(PreparedUpdate update, CancellationToken token) => UpdateInstallHelper.StartAsync(update, token);
+    public Task StartAsync(UpdateInstallTask update, CancellationToken token)
+        => UpdateTaskCoordinator.StartAsync(update, CreateWorkerStartInfo, token, launcherMayExit: true);
+
+    private static bool CanRemoveFailedPreparation(string work)
+        // A failed detach may leave a read-only DMG mounted here. Do not traverse it during cleanup.
+        => !Directory.Exists(Path.Combine(work, "mount"));
+
+    private static async Task PrepareWorkerAsync(UpdateInstallTask update, CancellationToken token)
+    {
+        foreach (var name in new[] { "InstallMacBundle.sh", "OpenMacUpdate.command", "ElevateMacUpdate.applescript" })
+            await UpdateTaskCoordinator.ExtractScriptAsync(update.Directory, name, token);
+        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(Path.Combine(update.Directory, "OpenMacUpdate.command"),
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        // Shell reads separate UTF-8 values as data, never sources generated shell code.
+        foreach (var (key, value) in new Dictionary<string, string>
+        {
+            ["kind"] = update.Kind,
+            ["language"] = update.Language,
+            ["target"] = update.Target,
+            ["stage"] = update.Stage,
+            ["backup"] = update.Backup,
+            ["executable"] = update.Executable,
+            ["pid"] = update.ProcessId.ToString(),
+            ["elevate"] = update.Elevate ? "yes" : "no"
+        })
+        {
+            await File.WriteAllTextAsync(Path.Combine(update.Directory, key + ".txt"), value, token);
+        }
+    }
+
+    internal static ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
+    {
+        var start = new ProcessStartInfo("/usr/bin/open") { UseShellExecute = false };
+        foreach (var argument in new[] { "-a", "Terminal", Path.Combine(update.Directory, "install.terminal") })
+            start.ArgumentList.Add(argument);
+        return start;
+    }
 
     internal static string CreateTerminalProfile(string directory)
     {
         // exec preserves the installer's exit status instead of returning to an interactive shell.
-        var command = "exec /bin/sh '" + Path.Combine(directory, "install.command").Replace("'", "'\"'\"'") + "'";
+        var command = "exec /bin/sh '" + Path.Combine(directory, "OpenMacUpdate.command").Replace("'", "'\"'\"'") + "'";
         return new XDocument(new XElement("plist", new XAttribute("version", "1.0"), new XElement("dict",
             new XElement("key", "name"), new XElement("string", "SyncClipboard Update"),
             new XElement("key", "type"), new XElement("string", "Window Settings"),
@@ -95,10 +135,10 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
             if (executableName != "SyncClipboard.Desktop.MacOS") throw new InvalidDataException("Unexpected bundle executable.");
             var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x86_64";
             await RunAsync("/usr/bin/lipo", token, Path.Combine(bundle, "Contents", "MacOS", executableName), "-verify_arch", arch);
-            UpdateInstallFiles.ValidatePackageInfo(Path.Combine(bundle, "Contents", "MonoBundle", Env.UpdateInfoFile), Path.GetFileName(request.PackagePath));
+            UpdatePackageVerifier.ValidatePackageInfo(Path.Combine(bundle, "Contents", "MonoBundle", Env.UpdateInfoFile), Path.GetFileName(request.PackagePath));
             await RunAsync("/usr/bin/codesign", token, "--verify", "--deep", "--strict", bundle);
-            var requiredSpace = checked(UpdateInstallFiles.GetSize(bundle) + UpdateInstallFiles.GetSize(request.Capability.TargetPath));
-            UpdateInstallFiles.CheckSpace(work, requiredSpace);
+            var requiredSpace = checked(UpdateFileSystem.GetSize(bundle) + UpdateFileSystem.GetSize(request.Capability.TargetPath));
+            UpdateFileSystem.CheckSpace(work, requiredSpace);
             await RunAsync("/usr/bin/ditto", token, bundle, stage);
         }
         finally

@@ -4,14 +4,38 @@
 
 ## 代码结构
 
-`IUpdateInstaller` 是上层统一入口，`UpdateInstaller` 负责渠道与格式识别、安装前哈希校验，以及按 `UpdatePackageKind` 分派策略。四种安装方式各自实现内部接口 `IUpdateInstallStrategy`：
+安装相关代码按职责组织在 `Utilities/Updater/`：
+
+```text
+Updater/
+├── UpdateInstallerDispatcher.cs   # 根据渠道、格式选择策略
+├── UpdateTaskCoordinator.cs       # 准备任务、写入清单、交接辅助进程
+├── UpdateTaskCleaner.cs           # 清理已成功完成且版本允许的任务
+├── UpdateInstallTask.cs           # 任务清单及安装请求、能力数据
+├── UpdateFileSystem.cs            # 路径、写权限和磁盘空间
+├── UpdatePackageVerifier.cs       # 包哈希和发布包名称校验
+├── UpdateServiceRegistration.cs   # 依赖注入注册
+└── Strategies/
+    ├── IUpdateInstallStrategy.cs
+    ├── WindowsZipInstaller.cs    # 解压、保护数据、校验 PE、启动 PowerShell
+    ├── WindowsExeInstaller.cs    # 校验并直接启动安装包
+    ├── MacDmgInstaller.cs        # 挂载、校验、暂存 bundle、准备脚本和 Terminal
+    ├── LinuxAppImageInstaller.cs # 校验和暂存 AppImage、创建辅助进程启动参数
+    ├── AppImageInstallWorker.cs  # 独立辅助进程的替换、进度、恢复和重启
+    └── Scripts/                 # 按平台和用途命名的内嵌安装脚本
+```
+
+策略专用函数放在对应策略内；AppImage 的辅助进程逻辑较大，因此单独保留 `AppImageInstallWorker`。
+公共协调器不判断包格式，不构建平台启动命令，也不生成 macOS 脚本参数。
+
+`IUpdateInstaller` 是上层统一入口，`UpdateInstallerDispatcher` 负责渠道与格式识别、安装前哈希校验，以及按 `UpdatePackageKind` 分派策略。四种安装方式各自实现内部接口 `IUpdateInstallStrategy`：
 
 - `WindowsExeInstaller`：校验 PE 并直接启动原安装包。
 - `WindowsZipInstaller`：保护数据路径、解压校验、计算覆盖文件的备份空间。
 - `MacDmgInstaller`：定位 bundle、挂载 DMG、验证应用身份与签名、通过 `ditto` 暂存。
 - `LinuxAppImageInstaller`：定位可写的 AppImage、验证 ELF 与架构、暂存新文件、复制当前 AppImage 作为辅助程序。
 
-后三种策略复用 `UpdateInstallHelper`，处理下载快照、任务文件和辅助进程的 `ready` / `commit` / `cancel` 交接。主程序启动后由 `UpdateInstallCleanup` 后台清理成功任务。没有 `ConfirmStartup()`、`ack` 握手或启动时恢复安装状态的流程。
+后三种策略复用 `UpdateTaskCoordinator`，处理下载快照、任务文件和辅助进程的 `ready` / `commit` / `cancel` 交接。主程序启动后由 `UpdateTaskCleaner` 后台清理成功任务。没有 `ConfirmStartup()`、`ack` 握手或启动时恢复安装状态的流程。
 
 `AppCore` 通过 `AddUpdateInstallation()` 注册协调器、四种策略及共用组件。
 
@@ -32,8 +56,8 @@ ZIP、DMG、AppImage 在安装期间阻止其他检查、下载和安装请求�
 ## 界面和各平台行为
 
 - Windows ZIP：打开 PowerShell 窗口显示按文件数量计算的备份、安装和恢复进度。需要提升权限时使用 UAC，原用户的监督进程负责重新启动应用。只覆盖发布包包含的文件，保留配置、历史、自定义数据和其他文件；先备份，再通过逐文件记录恢复。拒绝通过链接写出安装目录。
-- macOS DMG：生成专用的 `install.terminal` 会话配置，通过 Terminal 执行内嵌的 `install.command`。会话设置 `shellExitAction=1`，使用 `exec` 保留安装脚本的退出码：成功后自动关闭本次安装窗口，失败时保留窗口和错误信息，不修改 Terminal 的默认配置。监督脚本显示当前阶段及依据已复制磁盘占用估算的百分比；需要时通过系统授权运行替换进程，完成后由原用户启动应用。使用 `ditto` 复制 bundle 并验证签名，不在目标旁边重命名暂存。只读镜像运行、App Translocation、bundle 内存放用户数据或有链接的安装位置退回手动安装。
-- Linux AppImage：优先使用 `APPIMAGE` 定位原文件，兼容 `ARGV0` 与 `OWD`。把当前完整 AppImage 复制到任务目录，传入 `--install-update <任务文件>` 启动。`Desktop.Default.Program` 在单实例检查之前进入 `UpdateHelperApplication`，只加载独立的 Avalonia 更新窗口，不构建 AppCore、启动同步服务或加载历史数据库。`AppImageUpdateRunner` 校验新文件、等待主程序退出、备份并复制到原路径，报告真实字节进度，保留执行权限，然后启动新版。启动副本和新版时清除旧 AppImage 的挂载与加载器环境变量。普通关闭窗口会请求取消并尝试恢复；强制结束进程时只保留已写出的记录。目标不可写时退回手动安装。
+- macOS DMG：生成专用的 `install.terminal` 会话配置，通过 Terminal 执行内嵌的 `OpenMacUpdate.command`。会话设置 `shellExitAction=1`，使用 `exec` 保留安装脚本的退出码：成功后自动关闭本次安装窗口，失败时保留窗口和错误信息，不修改 Terminal 的默认配置。监督脚本显示当前阶段及依据已复制磁盘占用估算的百分比；需要时通过系统授权运行替换进程，完成后由原用户启动应用。使用 `ditto` 复制 bundle 并验证签名，不在目标旁边重命名暂存。只读镜像运行、App Translocation、bundle 内存放用户数据或有链接的安装位置退回手动安装。
+- Linux AppImage：优先使用 `APPIMAGE` 定位原文件，兼容 `ARGV0` 与 `OWD`。把当前完整 AppImage 复制到任务目录，传入 `--install-update <任务文件>` 启动。`Desktop.Default.Program` 在单实例检查之前进入 `UpdateHelperApplication`，只加载独立的 Avalonia 更新窗口，不构建 AppCore、启动同步服务或加载历史数据库。`AppImageInstallWorker` 校验新文件、等待主程序退出、备份并复制到原路径，报告真实字节进度，保留执行权限，然后启动新版。启动副本和新版时清除旧 AppImage 的挂载与加载器环境变量。普通关闭窗口会请求取消并尝试恢复；强制结束进程时只保留已写出的记录。目标不可写时退回手动安装。
 
 AppImage 复用现有程序集和图形依赖，没有单独的 NativeAOT 或 GUI 发布包。临时磁盘需要同时容纳下载包、新版暂存、当前 AppImage 的辅助副本及旧版备份。
 

@@ -24,7 +24,7 @@ public class UpdateCleanupTests
     public async Task Cleanup_UsesTargetVersion(string targetVersion, string currentVersion, bool removed)
     {
         var work = CreateTask(targetVersion);
-        await new UpdateInstallCleanup(root, currentVersion).CleanupCompletedAsync();
+        await new UpdateTaskCleaner(root, currentVersion).CleanupCompletedAsync();
         Assert.AreEqual(!removed, Directory.Exists(work));
     }
 
@@ -38,7 +38,7 @@ public class UpdateCleanupTests
         var work = CreateTask("v3.3.0");
         if (state == "incomplete") File.Delete(Path.Combine(work, "completed"));
         else File.WriteAllText(Path.Combine(work, state), "reason");
-        await new UpdateInstallCleanup(root, "3.4.0").CleanupCompletedAsync();
+        await new UpdateTaskCleaner(root, "3.4.0").CleanupCompletedAsync();
         Assert.AreEqual("log", File.ReadAllText(Path.Combine(work, "install.log")));
         Assert.AreEqual("backup", File.ReadAllText(Path.Combine(work, "backup")));
     }
@@ -50,7 +50,7 @@ public class UpdateCleanupTests
         var work = CreateTask("v3.4.0");
         using var process = Process.Start(new ProcessStartInfo("/bin/sleep", "1") { UseShellExecute = false })!;
         File.WriteAllText(Path.Combine(work, "helper-pid"), process.Id.ToString());
-        var cleanup = new UpdateInstallCleanup(root, "3.4.0").CleanupCompletedAsync();
+        var cleanup = new UpdateTaskCleaner(root, "3.4.0").CleanupCompletedAsync();
         Assert.IsFalse(cleanup.IsCompleted);
         Assert.IsTrue(Directory.Exists(work));
         await cleanup;
@@ -65,7 +65,7 @@ public class UpdateCleanupTests
         var work = CreateTask("v3.4.0");
         using var process = Process.Start(new ProcessStartInfo("/bin/sleep", "1") { UseShellExecute = false })!;
         File.WriteAllText(Path.Combine(work, "helper-pid"), process.Id.ToString());
-        var cleanup = new UpdateInstallCleanup(root, "3.4.0").CleanupCompletedAsync();
+        var cleanup = new UpdateTaskCleaner(root, "3.4.0").CleanupCompletedAsync();
         File.WriteAllText(Path.Combine(work, "failed"), "Could not restart");
         await cleanup;
         Assert.IsTrue(Directory.Exists(work));
@@ -74,7 +74,7 @@ public class UpdateCleanupTests
     private string CreateTask(string version)
     {
         var work = Directory.CreateDirectory(Path.Combine(root, Guid.NewGuid().ToString("N"))).FullName;
-        var task = new PreparedUpdate
+        var task = new UpdateInstallTask
         {
             Directory = work,
             Kind = "AppImage",

@@ -28,7 +28,7 @@ function Get-Sha256([string]$Path) {
 }
 if (!$Worker) {
     try {
-        $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $Work 'install.ps1') + '" -Work "' + $Work + '" -Worker -SupervisorId ' + $PID
+        $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $Work 'InstallWindowsZip.ps1') + '" -Work "' + $Work + '" -Worker -SupervisorId ' + $PID
         $parameters = @{ FilePath = (Join-Path $PSHOME 'powershell.exe'); ArgumentList = $arguments; PassThru = $true; WindowStyle = 'Hidden' }
         if ($task.Elevate) { $parameters.Verb = 'RunAs' }
         $process = Start-Process @parameters

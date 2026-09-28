@@ -46,9 +46,9 @@ if [ "$mode" = supervisor ]; then
     printf 'SyncClipboard update / 更新\n%s\n' "$work"
     if [ "$elevate" = yes ]; then
         if [ "$kind" != MacBundle ]; then fail 'The update directory is not writable.'; exit 1; fi
-        /usr/bin/osascript "$work/elevate.applescript" "$work/install.sh" "$work" >>"$work/install.log" 2>&1 &
+        /usr/bin/osascript "$work/ElevateMacUpdate.applescript" "$work/InstallMacBundle.sh" "$work" >>"$work/install.log" 2>&1 &
     else
-        /bin/sh "$work/install.sh" "$work" worker &
+        /bin/sh "$work/InstallMacBundle.sh" "$work" worker &
     fi
     worker_pid=$!
     language=$(cat "$work/language.txt" 2>/dev/null || true)
