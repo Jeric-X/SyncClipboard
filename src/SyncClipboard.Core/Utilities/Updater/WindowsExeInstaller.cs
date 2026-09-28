@@ -24,6 +24,7 @@ internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
             Backup = string.Empty,
             Executable = request.PackagePath,
             Version = request.Version,
+            Digest = request.Digest,
             ProcessId = Environment.ProcessId
         });
     }
@@ -34,6 +35,9 @@ internal sealed class WindowsExeInstaller : IUpdateInstallStrategy
         var path = update.Executable;
         try
         {
+            // Keep this exact file read-only through launch, including any authorization prompt.
+            await using var package = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            await UpdateInstallFiles.VerifyHashAsync(path, update.Digest, token);
             using var process = Process.Start(new ProcessStartInfo(path)
             {
                 WorkingDirectory = Path.GetDirectoryName(path),

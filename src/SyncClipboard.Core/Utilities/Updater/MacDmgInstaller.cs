@@ -119,7 +119,12 @@ internal sealed class MacDmgInstaller(UpdateInstallHelper helper) : IUpdateInsta
         var output = process.StandardOutput.ReadToEndAsync(token);
         var error = process.StandardError.ReadToEndAsync(token);
         try { await process.WaitForExitAsync(token); }
-        catch { if (!process.HasExited) process.Kill(entireProcessTree: true); throw; }
+        catch
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(CancellationToken.None);
+            throw;
+        }
         var text = await output;
         var errorText = await error;
         if (process.ExitCode != 0) throw new IOException(executable + ": " + errorText);

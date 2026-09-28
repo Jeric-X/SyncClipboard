@@ -139,7 +139,9 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
-    public async Task WindowsInstaller_PreparationKeepsOriginalPackageAndCreatesNoHelperFiles()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task WindowsInstaller_KeepsOriginalPackageAndRejectsChangesBeforeLaunch(bool replacePackage)
     {
         var package = Path.Combine(directory, "test_installer.exe");
         // A managed assembly is a valid PE fixture. This test never executes it.
@@ -154,9 +156,15 @@ public class UpdateInstallationTests
 
         Assert.AreEqual(package, prepared.Executable);
         Assert.AreEqual(package, prepared.Stage);
+        Assert.AreEqual(digest, prepared.Digest);
         Assert.AreEqual(string.Empty, prepared.Backup);
         CollectionAssert.AreEqual(new[] { package }, Directory.GetFiles(directory));
         Assert.IsEmpty(Directory.GetDirectories(directory));
+        if (replacePackage)
+        {
+            await File.WriteAllTextAsync(package, "replaced after preparation", TestContext.CancellationTokenSource.Token);
+            await Assert.ThrowsAsync<InvalidDataException>(() => installer.StartAsync(prepared, TestContext.CancellationTokenSource.Token));
+        }
     }
 
     [TestMethod]
