@@ -18,6 +18,14 @@ function Fail([string]$Message) {
 function Launch {
     Start-Process -FilePath $task.Executable -WorkingDirectory ([IO.Path]::GetDirectoryName($task.Executable)) | Out-Null
 }
+function Get-Sha256([string]$Path) {
+    $hash = [Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [IO.File]::OpenRead($Path)
+        try { return [BitConverter]::ToString($hash.ComputeHash($stream)) }
+        finally { $stream.Dispose() }
+    } finally { $hash.Dispose() }
+}
 if (!$Worker) {
     try {
         $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + (Join-Path $Work 'install.ps1') + '" -Work "' + $Work + '" -Worker'
@@ -149,7 +157,7 @@ try {
                 if ($entry.Existed) {
                     # A locked file can reject the copy without changing its bytes. Avoid writing it again.
                     $unchanged = (Test-Path -LiteralPath $entry.Destination) -and
-                        ((Get-FileHash -LiteralPath $entry.Destination).Hash -eq (Get-FileHash -LiteralPath $entry.Backup).Hash)
+                        ((Get-Sha256 $entry.Destination) -eq (Get-Sha256 $entry.Backup))
                     if (!$unchanged) { Copy-Item -LiteralPath $entry.Backup -Destination $entry.Destination -Force }
                 }
                 elseif (Test-Path -LiteralPath $entry.Destination) { Remove-Item -LiteralPath $entry.Destination -Force }

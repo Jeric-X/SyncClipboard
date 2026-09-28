@@ -187,7 +187,7 @@ public class UpdateHelperTests
     public async Task WindowsWorker_PreservesUserFilesAndRollsBackLockedUpdates(bool lockLastFile)
     {
         if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
-        var target = Directory.CreateDirectory(Path.Combine(work, "installed")).FullName;
+        var target = Directory.CreateDirectory(Path.Combine(work, "installation")).FullName;
         var stage = Directory.CreateDirectory(Path.Combine(work, "payload")).FullName;
         File.WriteAllText(Path.Combine(target, "SyncClipboard.exe"), "old");
         File.WriteAllText(Path.Combine(target, "user.txt"), "keep");
