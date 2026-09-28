@@ -97,6 +97,41 @@ public class UpdateInstallationTests
         => Assert.Throws<InvalidDataException>(() => WindowsZipReplacementStrategy.ValidateVersion(productVersion, releaseVersion));
 
     [TestMethod]
+    [DataRow("parent")]
+    [DataRow("bundle")]
+    [DataRow("nested")]
+    public void MacElevation_DetectsReadOnlyBundleDirectories(string restrictedLocation)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Requires Unix directory permissions.");
+            return;
+        }
+        var parent = Directory.CreateDirectory(Path.Combine(directory, "applications")).FullName;
+        var bundle = Directory.CreateDirectory(Path.Combine(parent, "SyncClipboard.app")).FullName;
+        var nested = Directory.CreateDirectory(Path.Combine(bundle, "Contents", "Resources")).FullName;
+        Assert.IsFalse(MacDmgReplacementStrategy.RequiresElevation(bundle));
+        var restricted = restrictedLocation switch
+        {
+            "parent" => parent,
+            "bundle" => bundle,
+            _ => nested
+        };
+        var originalMode = File.GetUnixFileMode(restricted);
+        try
+        {
+            File.SetUnixFileMode(restricted, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            if (UpdateFileSystem.CanWrite(restricted)) Assert.Inconclusive("Requires an unprivileged test user.");
+            Assert.IsTrue(MacDmgReplacementStrategy.RequiresElevation(bundle));
+        }
+        finally
+        {
+            File.SetUnixFileMode(restricted, originalMode);
+        }
+        Assert.IsFalse(MacDmgReplacementStrategy.RequiresElevation(bundle));
+    }
+
+    [TestMethod]
     public async Task HashCheck_RejectsChangedPackage()
     {
         var file = Path.Combine(directory, "package");

@@ -46,10 +46,29 @@ internal sealed class MacDmgReplacementStrategy : IFileReplacementStrategy
             Version = snapshot.Version,
             Language = CultureInfo.CurrentUICulture.Name,
             ProcessId = Environment.ProcessId,
-            Elevate = !UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!)
+            Elevate = RequiresElevation(target)
         };
         await PrepareWorkerAsync(update, token);
         return update;
+    }
+
+    internal static bool RequiresElevation(string target)
+    {
+        if (!UpdateFileSystem.CanWrite(Path.GetDirectoryName(target)!) || !UpdateFileSystem.CanWrite(target)) return true;
+        try
+        {
+            // Removing a bundle also requires write access to its internal directories, not just its parent.
+            return Directory.EnumerateDirectories(target, "*", new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                AttributesToSkip = FileAttributes.ReparsePoint,
+                IgnoreInaccessible = false
+            }).Any(directory => !UpdateFileSystem.CanWrite(directory));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
     }
 
     public bool LauncherMayExit => true;
