@@ -6,48 +6,46 @@ using System.Runtime.InteropServices;
 
 namespace SyncClipboard.Core.Utilities.Updater.Strategies;
 
-internal sealed class WindowsZipInstaller(UpdateTaskCoordinator coordinator) : IUpdateInstallStrategy
+internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
 {
     public UpdatePackageKind Kind => UpdatePackageKind.WindowsPortable;
 
     public UpdateInstallCapability GetCapability()
         => UpdateFileSystem.GetLocationCapability(Kind, Path.TrimEndingDirectorySeparator(Env.ProgramDirectory));
 
-    public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
-        => coordinator.PrepareAsync(request, request.Capability.TargetPath, async (snapshot, work) =>
+    public string GetInstallationDirectory(string target) => target;
+
+    public async Task<UpdateInstallTask> PreparePayloadAsync(UpdateInstallRequest snapshot, string work, CancellationToken token)
+    {
+        var target = snapshot.Capability.TargetPath;
+        var stage = Path.Combine(work, "payload");
+        var protectedPaths = new[] { Env.AppDataDirectory, Env.StaticConfigPath, Env.PortableUserConfigFile,
+            Env.PortableAppDataDirectory, Env.RuntimeConfigPath, Env.AppDataPathConfigPath };
+        Directory.CreateDirectory(stage);
+        ExtractPackage(snapshot.PackagePath, stage, protectedPaths, target);
+        ValidateExecutable(Path.Combine(stage, "SyncClipboard.exe"));
+        UpdatePackageVerifier.ValidatePackageInfo(Path.Combine(stage, Env.UpdateInfoFile), Path.GetFileName(snapshot.PackagePath));
+        var backupSize = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
+            .Select(path => Path.Combine(target, Path.GetRelativePath(stage, path)))
+            .Where(File.Exists).Sum(path => new FileInfo(path).Length);
+        UpdateFileSystem.CheckSpace(work, backupSize);
+        await UpdateFileSystem.ExtractScriptAsync(work, "InstallWindowsZip.ps1", token);
+        return new UpdateInstallTask
         {
-            var target = snapshot.Capability.TargetPath;
-            var stage = Path.Combine(work, "payload");
-            var protectedPaths = new[] { Env.AppDataDirectory, Env.StaticConfigPath, Env.PortableUserConfigFile,
-                Env.PortableAppDataDirectory, Env.RuntimeConfigPath, Env.AppDataPathConfigPath };
-            Directory.CreateDirectory(stage);
-            ExtractPackage(snapshot.PackagePath, stage, protectedPaths, target);
-            ValidateExecutable(Path.Combine(stage, "SyncClipboard.exe"));
-            UpdatePackageVerifier.ValidatePackageInfo(Path.Combine(stage, Env.UpdateInfoFile), Path.GetFileName(snapshot.PackagePath));
-            var backupSize = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
-                .Select(path => Path.Combine(target, Path.GetRelativePath(stage, path)))
-                .Where(File.Exists).Sum(path => new FileInfo(path).Length);
-            UpdateFileSystem.CheckSpace(work, backupSize);
-            await UpdateTaskCoordinator.ExtractScriptAsync(work, "InstallWindowsZip.ps1", token);
-            return new UpdateInstallTask
-            {
-                Directory = work,
-                Kind = Kind.ToString(),
-                Target = target,
-                Stage = stage,
-                Backup = Path.Combine(work, "backup"),
-                Executable = Env.ProgramPath,
-                Version = snapshot.Version,
-                ProcessId = Environment.ProcessId,
-                Elevate = !UpdateFileSystem.CanWrite(target),
-                ProtectedPaths = protectedPaths
-            };
-        }, token);
+            Directory = work,
+            Kind = Kind.ToString(),
+            Target = target,
+            Stage = stage,
+            Backup = Path.Combine(work, "backup"),
+            Executable = Env.ProgramPath,
+            Version = snapshot.Version,
+            ProcessId = Environment.ProcessId,
+            Elevate = !UpdateFileSystem.CanWrite(target),
+            ProtectedPaths = protectedPaths
+        };
+    }
 
-    public Task StartAsync(UpdateInstallTask update, CancellationToken token)
-        => UpdateTaskCoordinator.StartAsync(update, CreateWorkerStartInfo, token);
-
-    internal static ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
+    public ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
     {
         var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
             "WindowsPowerShell", "v1.0", "powershell.exe"))

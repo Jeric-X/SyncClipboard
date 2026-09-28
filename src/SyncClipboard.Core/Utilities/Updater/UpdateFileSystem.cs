@@ -54,4 +54,13 @@ internal static class UpdateFileSystem
         }
         return new(kind, target);
     }
+
+    internal static async Task ExtractScriptAsync(string directory, string name, CancellationToken token)
+    {
+        await using var resource = typeof(UpdateFileSystem).Assembly.GetManifestResourceStream(
+            "SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)
+            ?? throw new IOException("The embedded update script is missing: " + name);
+        await using var output = File.Create(Path.Combine(directory, name));
+        await resource.CopyToAsync(output, token);
+    }
 }

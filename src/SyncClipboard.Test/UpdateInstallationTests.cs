@@ -8,6 +8,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Updater.Strategies;
 using SyncClipboard.Core.ViewModels;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -38,7 +39,7 @@ public class UpdateInstallationTests
     [DataRow("SyncClipboard_linux_x64.rpm", false, UpdatePackageKind.Unsupported)]
     [DataRow("../SyncClipboard_win_x64_portable.zip", true, UpdatePackageKind.Unsupported)]
     public void PackageKind_OnlySupportsWindowsZip(string name, bool windows, UpdatePackageKind expected)
-        => Assert.AreEqual(expected, UpdateInstallerDispatcher.GetPackageKind(name, windows));
+        => Assert.AreEqual(expected, UpdateInstallerFactory.GetPackageKind(name, windows));
 
     [TestMethod]
     [DataRow("market", "github")]
@@ -46,14 +47,15 @@ public class UpdateInstallationTests
     [DataRow("external", "github")]
     public void ManagedChannels_DoNotOfferInstallation(string manageType, string source)
     {
-        var installer = CreateInstaller();
-        var capability = installer.GetCapability(new UpdateInfoConfig
+        using var provider = CreateServices().BuildServiceProvider();
+        var installer = provider.GetRequiredService<UpdateInstallerFactory>().Create(new UpdateInfoConfig
         {
             ManageType = manageType,
             UpdateSrc = source,
             PackageName = "SyncClipboard_win_x64_portable.zip"
         });
-        Assert.IsFalse(capability.Supported);
+        Assert.IsInstanceOfType<UnsupportedUpdateInstaller>(installer);
+        Assert.IsFalse(installer.GetCapability().Supported);
     }
 
     [TestMethod]
@@ -78,7 +80,7 @@ public class UpdateInstallationTests
     {
         var archive = CreateArchive(("SyncClipboard.exe", "new app"), (entry, "bad"));
         var stage = Directory.CreateDirectory(Path.Combine(directory, "stage")).FullName;
-        Assert.Throws<InvalidDataException>(() => WindowsZipInstaller.ExtractPackage(archive, stage, [], directory));
+        Assert.Throws<InvalidDataException>(() => WindowsZipReplacementStrategy.ExtractPackage(archive, stage, [], directory));
         Assert.IsFalse(File.Exists(Path.Combine(directory, "escape")));
     }
 
@@ -94,7 +96,7 @@ public class UpdateInstallationTests
         var archive = CreateArchive(("SyncClipboard.exe", "new app"), ("appdata/history.db", "bad"),
             ("StaticConfig.json", "bad"), ("libs/library.dll", "new library"));
         var stage = Directory.CreateDirectory(Path.Combine(directory, "stage")).FullName;
-        WindowsZipInstaller.ExtractPackage(archive, stage, [data, config], target);
+        WindowsZipReplacementStrategy.ExtractPackage(archive, stage, [data, config], target);
         Assert.IsFalse(Directory.Exists(Path.Combine(stage, "appdata")));
         Assert.IsFalse(File.Exists(Path.Combine(stage, "StaticConfig.json")));
         Assert.AreEqual("new library", File.ReadAllText(Path.Combine(stage, "libs/library.dll")));
@@ -107,14 +109,15 @@ public class UpdateInstallationTests
     public void PortableExtraction_RejectsCaseInsensitiveCollisions()
     {
         var archive = CreateArchive(("SyncClipboard.exe", "a"), ("SYNCCLIPBOARD.EXE", "b"));
-        Assert.Throws<InvalidDataException>(() => WindowsZipInstaller.ExtractPackage(archive, directory, [], directory));
+        Assert.Throws<InvalidDataException>(() => WindowsZipReplacementStrategy.ExtractPackage(archive, directory, [], directory));
     }
 
     [TestMethod]
     public async Task Installing_BlocksRepeatedClicksAndChecks_AndReportsPreparationFailure()
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
+        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
+        installer.Setup(i => i.GetCapability())
             .Returns(new UpdateInstallCapability(UpdatePackageKind.WindowsPortable, directory));
         var prepared = new TaskCompletionSource<UpdateInstallTask>(TaskCreationOptions.RunContinuationsAsynchronously);
         installer.Setup(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>())).Returns(prepared.Task);
@@ -145,7 +148,8 @@ public class UpdateInstallationTests
     public async Task CanceledAuthorization_RestoresInstallButton(UpdatePackageKind kind)
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>()))
+        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
+        installer.Setup(i => i.GetCapability())
             .Returns(new UpdateInstallCapability(kind, directory));
         installer.Setup(i => i.PrepareAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new UpdateInstallTask
@@ -176,7 +180,8 @@ public class UpdateInstallationTests
     public void UnsupportedPackage_KeepsOpenFolder()
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>())).Returns(new UpdateInstallCapability(UpdatePackageKind.Unsupported, ""));
+        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
+        installer.Setup(i => i.GetCapability()).Returns(new UpdateInstallCapability(UpdatePackageKind.Unsupported, ""));
         var checker = CreateChecker(installer.Object);
         SetDownloadedStatus(checker);
         Assert.AreEqual(SyncClipboard.Core.I18n.Strings.OpenFolder, checker.CurrentState.ActionText);
@@ -191,7 +196,8 @@ public class UpdateInstallationTests
     public async Task DownloadCompletion_SelectsStateForInstallationCapability(UpdatePackageKind kind, bool cached)
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>())).Returns(new UpdateInstallCapability(kind, directory));
+        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
+        installer.Setup(i => i.GetCapability()).Returns(new UpdateInstallCapability(kind, directory));
         var bytes = new byte[] { 1, 2, 3, 4 };
         var http = new Mock<IHttp>();
         http.Setup(h => h.GetFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IProgress<HttpDownloadProgress>>(),
@@ -228,7 +234,8 @@ public class UpdateInstallationTests
     public void ActionMapping_IsDeterminedByState(UpdaterState state, UpdatePackageKind kind)
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.Setup(i => i.GetCapability(It.IsAny<UpdateInfoConfig>())).Returns(new UpdateInstallCapability(kind, directory));
+        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
+        installer.Setup(i => i.GetCapability()).Returns(new UpdateInstallCapability(kind, directory));
         var checker = CreateChecker(installer.Object);
         SetStatus(checker, state);
         Assert.AreEqual(state == UpdaterState.ReadyToInstall ? SyncClipboard.Core.I18n.Strings.InstallUpdate
@@ -236,78 +243,115 @@ public class UpdateInstallationTests
         Assert.IsNotNull(checker.CurrentState.ManualAction);
     }
 
-    private static IUpdateInstaller CreateInstaller()
+    private ServiceCollection CreateServices()
     {
         var services = new ServiceCollection();
         services.AddSingleton(Mock.Of<IAppConfig>());
+        var path = Path.Combine(directory, "factory-update-info.json");
+        File.WriteAllText(path, "{\"UpdateInfo\":{\"manage_type\":\"manual\",\"update_src\":\"github\",\"package_name\":\"test_portable.zip\"}}");
+        services.AddKeyedSingleton(Env.UpdateInfoFile, new ConfigBase(path));
         services.AddUpdateInstallation();
-        return services.BuildServiceProvider().GetRequiredService<IUpdateInstaller>();
+        return services;
     }
 
     [TestMethod]
-    public void InstallerRegistration_ResolvesZipStrategy()
+    public void InstallerRegistration_SelectsOneInstanceForItsLifetime()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton(Mock.Of<IAppConfig>());
-        services.AddUpdateInstallation();
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
-        var strategies = provider.GetServices<IUpdateInstallStrategy>().ToArray();
-        CollectionAssert.AreEqual(new[] { typeof(WindowsZipInstaller) }, strategies.Select(s => s.GetType()).ToArray());
-        Assert.IsInstanceOfType<UpdateInstallerDispatcher>(provider.GetRequiredService<IUpdateInstaller>());
+        using var provider = CreateServices().BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
+        var installer = provider.GetRequiredService<IUpdateInstaller>();
+        if (OperatingSystem.IsWindows()) Assert.IsInstanceOfType<FileReplacementUpdater>(installer);
+        else Assert.IsInstanceOfType<UnsupportedUpdateInstaller>(installer);
+        var config = provider.GetRequiredKeyedService<ConfigBase>(Env.UpdateInfoFile);
+        config.SetConfig(new UpdateInfoConfig { ManageType = UpdateInfoConfig.TypeExternal });
+        Assert.AreSame(installer, provider.GetRequiredService<IUpdateInstaller>());
     }
 
     [TestMethod]
-    [DataRow(UpdatePackageKind.WindowsPortable)]
-    public async Task Installer_DispatchesPreparationAndStartup_OnlyAfterHashVerification(UpdatePackageKind kind)
+    [DataRow("test_portable.zip", true, typeof(FileReplacementUpdater), true)]
+    [DataRow("test_portable.zip", false, typeof(UnsupportedUpdateInstaller), false)]
+    [DataRow("test_installer.exe", true, typeof(UnsupportedUpdateInstaller), false)]
+    [DataRow("test.dmg", false, typeof(UnsupportedUpdateInstaller), false)]
+    [DataRow("test.AppImage", false, typeof(UnsupportedUpdateInstaller), false)]
+    public void Factory_ComposesInstallerForPackage(string name, bool windows, Type expectedType, bool requiresAppExit)
     {
-        var strategies = new[] { new RecordingStrategy(UpdatePackageKind.WindowsPortable) };
-        var installer = new UpdateInstallerDispatcher(strategies, new UpdateTaskCleaner(Mock.Of<IAppConfig>()));
+        using var provider = CreateServices().BuildServiceProvider();
+        var installer = provider.GetRequiredService<UpdateInstallerFactory>().Create(new UpdateInfoConfig
+        {
+            ManageType = UpdateInfoConfig.TypeManual,
+            UpdateSrc = "github",
+            PackageName = name
+        }, windows);
+        Assert.AreEqual(expectedType, installer.GetType());
+        Assert.AreEqual(requiresAppExit, installer.RequiresAppExit);
+    }
+
+    [TestMethod]
+    public async Task FileReplacement_VerifiesSnapshotAndUsesOnlyItsSelectedStrategy()
+    {
+        var strategy = new RecordingReplacementStrategy();
+        var installer = new FileReplacementUpdater(strategy, new UpdateTaskCleaner(Path.Combine(directory, "tasks"), "1.0.0"));
         var package = Path.Combine(directory, "package");
         await File.WriteAllTextAsync(package, "package contents", TestContext.CancellationTokenSource.Token);
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(
             await File.ReadAllBytesAsync(package, TestContext.CancellationTokenSource.Token)));
-        var request = new UpdateInstallRequest(package, digest, "v9.0.0", new(kind, directory));
+        var request = new UpdateInstallRequest(package, digest, "v9.0.0", new(strategy.Kind, directory));
         var prepared = await installer.PrepareAsync(request, TestContext.CancellationTokenSource.Token);
-        await installer.StartAsync(prepared, TestContext.CancellationTokenSource.Token);
-        foreach (var strategy in strategies)
-        {
-            Assert.AreEqual(strategy.Kind == kind ? 1 : 0, strategy.PrepareCount);
-            Assert.AreEqual(strategy.Kind == kind ? 1 : 0, strategy.StartCount);
-        }
+        Assert.AreEqual(1, strategy.PrepareCount);
+        Assert.AreNotEqual(package, prepared.Stage);
+        Assert.AreEqual("package contents", File.ReadAllText(Path.Combine(prepared.Stage, "package")));
+        Assert.IsTrue(File.Exists(Path.Combine(prepared.Directory, "task.json")));
+
+        // The selected instance rejects a different kind; it cannot dispatch to another strategy.
+        var wrongRequest = request with { Capability = new(UpdatePackageKind.Unsupported, directory) };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => installer.PrepareAsync(wrongRequest, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => installer.StartAsync(
+            prepared with { Kind = nameof(UpdatePackageKind.Unsupported) }, CancellationToken.None));
+        Assert.AreEqual(1, strategy.PrepareCount);
+        Assert.AreEqual(0, strategy.StartCount);
+
+        // Startup failure must still abort handoff without starting a real process in this fixture.
+        await Assert.ThrowsAsync<IOException>(() => installer.StartAsync(prepared, CancellationToken.None));
+        Assert.AreEqual(1, strategy.StartCount);
+        Assert.IsTrue(File.Exists(Path.Combine(prepared.Directory, "cancel")));
+        Assert.IsFalse(File.Exists(Path.Combine(prepared.Directory, "commit")));
 
         await File.WriteAllTextAsync(package, "corrupted", TestContext.CancellationTokenSource.Token);
         await Assert.ThrowsAsync<InvalidDataException>(() => installer.PrepareAsync(request, CancellationToken.None));
-        Assert.AreEqual(1, strategies.Sum(s => s.PrepareCount));
+        Assert.AreEqual(1, strategy.PrepareCount);
+        Assert.HasCount(1, Directory.GetDirectories(Path.Combine(directory, "tasks")));
     }
 
-    private sealed class RecordingStrategy(UpdatePackageKind kind) : IUpdateInstallStrategy
+    private sealed class RecordingReplacementStrategy : IFileReplacementStrategy
     {
-        public UpdatePackageKind Kind => kind;
+        public UpdatePackageKind Kind => UpdatePackageKind.WindowsPortable;
         public int PrepareCount { get; private set; }
         public int StartCount { get; private set; }
 
         public UpdateInstallCapability GetCapability() => new(Kind, "unused");
+        public string GetInstallationDirectory(string target) => target;
 
-        public Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, CancellationToken token)
+        public Task<UpdateInstallTask> PreparePayloadAsync(UpdateInstallRequest request, string work, CancellationToken token)
         {
             PrepareCount++;
+            var stage = Directory.CreateDirectory(Path.Combine(work, "payload")).FullName;
+            File.Copy(request.PackagePath, Path.Combine(stage, "package"));
             return Task.FromResult(new UpdateInstallTask
             {
-                Directory = "unused",
+                Directory = work,
                 Kind = Kind.ToString(),
                 Target = request.Capability.TargetPath,
-                Stage = request.PackagePath,
-                Backup = "unused",
+                Stage = stage,
+                Backup = Path.Combine(work, "backup"),
                 Executable = "unused",
                 Version = request.Version,
                 ProcessId = Environment.ProcessId
             });
         }
 
-        public Task StartAsync(UpdateInstallTask update, CancellationToken token)
+        public ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update)
         {
             StartCount++;
-            return Task.CompletedTask;
+            throw new IOException("Worker launch failed.");
         }
     }
 
@@ -348,7 +392,7 @@ public class UpdateInstallationTests
         };
         using var process = System.Diagnostics.Process.GetCurrentProcess();
         File.WriteAllText(Path.Combine(directory, "failed"), "Helper failed to initialize.");
-        await Assert.ThrowsAsync<IOException>(() => UpdateTaskCoordinator.WaitForReadyAsync(update, process, CancellationToken.None));
+        await Assert.ThrowsAsync<IOException>(() => FileReplacementUpdater.WaitForReadyAsync(update, process, CancellationToken.None));
         Assert.IsFalse(File.Exists(Path.Combine(directory, "commit")));
     }
 

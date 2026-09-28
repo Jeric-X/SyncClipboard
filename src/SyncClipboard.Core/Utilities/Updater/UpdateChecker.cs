@@ -119,7 +119,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         try
         {
             SetStatus(UpdaterState.Installing);
-            var capability = updateInstaller.GetCapability(updateInfo);
+            var capability = updateInstaller.GetCapability();
             if (!capability.Supported) throw new InvalidOperationException(capability.Reason ?? I18n.Strings.UpdateLocationUnsupported);
             var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!, capability);
             var prepared = await updateInstaller.PrepareAsync(request, token);
@@ -385,11 +385,11 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     }
 
     private void SetDownloadedStatus()
-        => SetStatus(updateInstaller.GetCapability(updateInfo).Supported ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
+        => SetStatus(updateInstaller.GetCapability().Supported ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
 
     private string GetDownloadedMessage()
     {
-        var capability = updateInstaller.GetCapability(updateInfo);
+        var capability = updateInstaller.GetCapability();
         return string.Join(" ", new[] { I18n.Strings.NewVersionDownloaded, capability.Reason }.Where(text => !string.IsNullOrEmpty(text)));
     }
 

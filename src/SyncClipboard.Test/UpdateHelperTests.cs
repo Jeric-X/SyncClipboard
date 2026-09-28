@@ -35,7 +35,7 @@ public class UpdateHelperTests
         using var process = Process.GetCurrentProcess();
         using var cancellation = new CancellationTokenSource();
         if (callerCanceled) cancellation.Cancel();
-        var waiting = UpdateTaskCoordinator.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
+        var waiting = FileReplacementUpdater.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
         if (callerCanceled) await Assert.ThrowsAsync<OperationCanceledException>(() => waiting);
         else await Assert.ThrowsAsync<IOException>(() => waiting);
     }
@@ -47,9 +47,9 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(previous, "cancel"), "");
         var pid = Path.Combine(previous, "helper-pid");
         File.WriteAllText(pid, Environment.ProcessId.ToString());
-        Assert.Throws<IOException>(() => UpdateTaskCoordinator.EnsurePreviousHelperStopped(work));
+        Assert.Throws<IOException>(() => FileReplacementUpdater.EnsurePreviousHelperStopped(work));
         File.WriteAllText(pid, int.MaxValue.ToString());
-        UpdateTaskCoordinator.EnsurePreviousHelperStopped(work);
+        FileReplacementUpdater.EnsurePreviousHelperStopped(work);
     }
 
     [TestMethod]
@@ -149,7 +149,7 @@ public class UpdateHelperTests
 
     private void CopyResource(string name)
     {
-        using var source = typeof(UpdateInstallerDispatcher).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)!;
+        using var source = typeof(UpdateInstallerFactory).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)!;
         using var output = File.Create(Path.Combine(work, name));
         source.CopyTo(output);
     }
