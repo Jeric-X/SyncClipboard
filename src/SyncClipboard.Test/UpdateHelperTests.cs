@@ -1,6 +1,8 @@
 using SyncClipboard.Core.Utilities.Updater.Strategies;
 using SyncClipboard.Core.Utilities.Updater;
 using System.Diagnostics;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text.Json;
 using System.Xml.Linq;
 
@@ -328,6 +330,7 @@ public class UpdateHelperTests
                 .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(1, process.ExitCode);
             Assert.IsTrue(File.Exists(Path.Combine(work, "restored")));
+            Assert.IsFalse(File.Exists(Path.Combine(work, "needs-elevation")));
             Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "SyncClipboard.exe")));
             Assert.AreEqual("old library", File.ReadAllText(Path.Combine(target, "Z-library.dll")));
             Assert.AreEqual("keep", File.ReadAllText(Path.Combine(target, "user.txt")));
@@ -371,6 +374,130 @@ public class UpdateHelperTests
         }) File.WriteAllText(Path.Combine(work, name + ".txt"), value);
         CopyResource("InstallMacBundle.sh");
         return task;
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task WindowsWorker_RequestsElevationAfterAclFailureOnlyOnce(bool alreadyRetried)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Requires Windows file ACLs and PowerShell.");
+            return;
+        }
+        var target = Directory.CreateDirectory(Path.Combine(work, "installation")).FullName;
+        var stage = Directory.CreateDirectory(Path.Combine(work, "payload")).FullName;
+        foreach (var name in new[] { "SyncClipboard.exe", "Z-library.dll" })
+        {
+            File.WriteAllText(Path.Combine(target, name), "old " + name);
+            File.WriteAllText(Path.Combine(stage, name), "new " + name);
+        }
+        var task = new UpdateInstallTask
+        {
+            Directory = work,
+            Kind = "WindowsPortable",
+            Target = target,
+            Stage = stage,
+            Backup = Path.Combine(work, "backup"),
+            Executable = Path.Combine(target, "SyncClipboard.exe"),
+            Version = "v9.0.0",
+            ProcessId = int.MaxValue
+        };
+        File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(task));
+        File.WriteAllText(Path.Combine(work, "commit"), "");
+        CopyResource("InstallWindowsZip.ps1");
+        var restricted = new FileInfo(Path.Combine(target, "Z-library.dll"));
+        var originalAcl = restricted.GetAccessControl();
+        var deniedAcl = restricted.GetAccessControl();
+        using var identity = WindowsIdentity.GetCurrent();
+        deniedAcl.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.WriteData, AccessControlType.Deny));
+        restricted.SetAccessControl(deniedAcl);
+        try
+        {
+            Assert.AreEqual(1, await RunWindowsWorker(alreadyRetried));
+            Assert.IsTrue(File.Exists(Path.Combine(work, "restored")));
+            Assert.AreEqual(!alreadyRetried, File.Exists(Path.Combine(work, "needs-elevation")));
+            Assert.AreEqual(alreadyRetried, File.Exists(Path.Combine(work, "failed")));
+            Assert.AreEqual("old SyncClipboard.exe", File.ReadAllText(task.Executable));
+            Assert.AreEqual("old Z-library.dll", File.ReadAllText(restricted.FullName));
+            if (alreadyRetried) return;
+
+            // Simulate the granted permission, then run the retry worker without an interactive UAC prompt.
+            restricted.SetAccessControl(originalAcl);
+            File.Delete(Path.Combine(work, "needs-elevation"));
+            File.Delete(Path.Combine(work, "restored"));
+            Assert.AreEqual(0, await RunWindowsWorker(true));
+            Assert.IsTrue(File.Exists(Path.Combine(work, "completed")));
+            Assert.IsFalse(File.Exists(Path.Combine(work, "failed")));
+            Assert.AreEqual("new SyncClipboard.exe", File.ReadAllText(task.Executable));
+            Assert.AreEqual("new Z-library.dll", File.ReadAllText(restricted.FullName));
+            Assert.AreEqual("old SyncClipboard.exe", File.ReadAllText(Path.Combine(task.Backup, "SyncClipboard.exe")));
+        }
+        finally { restricted.SetAccessControl(originalAcl); }
+    }
+
+    [TestMethod]
+    public async Task WindowsSupervisor_RestartsRestoredApplicationWhenRetryAuthorizationIsCanceled()
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
+        File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(new
+        {
+            Executable = Path.Combine(work, "SyncClipboard.exe"), Elevate = false, Language = "en"
+        }));
+        CopyResource("InstallWindowsZip.ps1");
+        var harness = Path.Combine(work, "cancel-authorization.ps1");
+        File.WriteAllText(harness, """
+            param([string]$Work)
+            $script:workerStarts = 0
+            function Start-Process {
+                param($FilePath, $ArgumentList, [switch]$PassThru, $WindowStyle, $Verb, $WorkingDirectory)
+                if ($FilePath -eq (Join-Path $Work 'SyncClipboard.exe')) {
+                    if ($Verb) { throw 'The application must restart without elevation.' }
+                    [IO.File]::WriteAllText((Join-Path $Work 'restarted-old-app'), '')
+                    return
+                }
+                $script:workerStarts++
+                if ($script:workerStarts -eq 1) {
+                    [IO.File]::WriteAllText((Join-Path $Work 'restored'), '')
+                    [IO.File]::WriteAllText((Join-Path $Work 'needs-elevation'), '')
+                    return [pscustomobject]@{ HasExited = $true }
+                }
+                if ($script:workerStarts -ne 2 -or $Verb -ne 'RunAs' -or $ArgumentList -notlike '*-ElevatedRetry') {
+                    throw 'Unexpected elevation retry.'
+                }
+                throw [ComponentModel.Win32Exception]::new(1223)
+            }
+            function Read-Host { return '' }
+            & (Join-Path $Work 'InstallWindowsZip.ps1') -Work $Work
+            exit $LASTEXITCODE
+            """);
+        var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
+        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
+            harness, "-Work", work }) start.ArgumentList.Add(argument);
+        using var process = Process.Start(start)!;
+        processes.Add(Process.GetProcessById(process.Id));
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+            .WaitAsync(TimeSpan.FromSeconds(20), TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(1, process.ExitCode);
+        Assert.IsTrue(File.Exists(Path.Combine(work, "canceled")));
+        Assert.IsTrue(File.Exists(Path.Combine(work, "failed")));
+        Assert.IsTrue(File.Exists(Path.Combine(work, "restored")));
+        Assert.IsTrue(File.Exists(Path.Combine(work, "restarted-old-app")));
+        Assert.IsFalse(File.Exists(Path.Combine(work, "completed")));
+    }
+
+    private async Task<int> RunWindowsWorker(bool elevatedRetry)
+    {
+        var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
+        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
+            Path.Combine(work, "InstallWindowsZip.ps1"), "-Work", work, "-Worker" }) start.ArgumentList.Add(argument);
+        if (elevatedRetry) start.ArgumentList.Add("-ElevatedRetry");
+        using var process = Process.Start(start)!;
+        processes.Add(Process.GetProcessById(process.Id));
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+            .WaitAsync(TimeSpan.FromSeconds(20), TestContext.CancellationTokenSource.Token);
+        return process.ExitCode;
     }
 
     private void CopyResource(string name)
