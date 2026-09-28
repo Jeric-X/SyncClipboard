@@ -90,31 +90,37 @@ public sealed class AppImageUpdateRunner
         }
         catch (Exception ex)
         {
-            var failure = ex.ToString();
-            if (ex is OperationCanceledException && !replacing) await WriteAsync("canceled", "");
-            if (replacing && backupComplete)
-            {
-                try
-                {
-                    File.Delete(update.Target);
-                    await CopyAsync(update.Backup, update.Target, "restoring", progress, CancellationToken.None);
-                    await WriteAsync("restored", "");
-                }
-                catch (Exception restoreError) { failure += "\nRollback failed: " + restoreError; }
-            }
-            await File.AppendAllTextAsync(Path.Combine(update.Directory, "install.log"), failure + "\n", CancellationToken.None);
-            await WriteAsync("failed", failure);
-            if (parentExited && (!replacing || File.Exists(Path.Combine(update.Directory, "restored"))))
-            {
-                try { launch(update.Target); }
-                catch (Exception launchError)
-                {
-                    await File.AppendAllTextAsync(Path.Combine(update.Directory, "install.log"), launchError + "\n", CancellationToken.None);
-                }
-            }
-            progress.Report(new("failed"));
-            return false;
+            return await HandleFailureAsync(ex, backupComplete, replacing, parentExited, progress);
         }
+    }
+
+    private async Task<bool> HandleFailureAsync(Exception error, bool backupComplete, bool replacing, bool parentExited,
+        IProgress<UpdateInstallProgress> progress)
+    {
+        var failure = error.ToString();
+        if (error is OperationCanceledException && !replacing) await WriteAsync("canceled", "");
+        if (replacing && backupComplete)
+        {
+            try
+            {
+                File.Delete(update.Target);
+                await CopyAsync(update.Backup, update.Target, "restoring", progress, CancellationToken.None);
+                await WriteAsync("restored", "");
+            }
+            catch (Exception restoreError) { failure += "\nRollback failed: " + restoreError; }
+        }
+        await File.AppendAllTextAsync(Path.Combine(update.Directory, "install.log"), failure + "\n", CancellationToken.None);
+        await WriteAsync("failed", failure);
+        if (parentExited && (!replacing || File.Exists(Path.Combine(update.Directory, "restored"))))
+        {
+            try { launch(update.Target); }
+            catch (Exception launchError)
+            {
+                await File.AppendAllTextAsync(Path.Combine(update.Directory, "install.log"), launchError + "\n", CancellationToken.None);
+            }
+        }
+        progress.Report(new("failed"));
+        return false;
     }
 
     private void ThrowIfCanceled(CancellationToken token)

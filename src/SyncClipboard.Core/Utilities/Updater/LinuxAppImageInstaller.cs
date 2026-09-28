@@ -24,7 +24,7 @@ internal sealed class LinuxAppImageInstaller(UpdateInstallHelper helper) : IUpda
             var target = snapshot.Capability.TargetPath;
             var stage = Path.Combine(work, "payload");
             var helperExecutable = Path.Combine(work, "SyncClipboard-helper.AppImage");
-            UpdateInstallFiles.CheckSpace(work, checked(UpdateInstallFiles.GetSize(target) * 2 + new FileInfo(snapshot.PackagePath).Length));
+            UpdateInstallFiles.CheckSpace(work, checked((UpdateInstallFiles.GetSize(target) * 2) + new FileInfo(snapshot.PackagePath).Length));
             File.Copy(target, helperExecutable);
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(helperExecutable,
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);

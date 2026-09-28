@@ -30,7 +30,7 @@ public static class UpdateInstallFiles
         var fullPath = Path.GetFullPath(directory);
         var drive = DriveInfo.GetDrives().Where(d => d.IsReady && IsWithin(fullPath, d.RootDirectory.FullName))
             .OrderByDescending(d => d.RootDirectory.FullName.Length).FirstOrDefault();
-        if (drive is not null && drive.AvailableFreeSpace < bytes + 32L * 1024 * 1024)
+        if (drive is not null && drive.AvailableFreeSpace < bytes + (32L * 1024 * 1024))
         {
             throw new IOException(I18n.Strings.UpdateInsufficientSpace);
         }

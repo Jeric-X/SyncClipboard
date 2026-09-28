@@ -195,6 +195,6 @@ progress verifying -1
 if [ "$kind" = MacBundle ]; then /usr/bin/codesign --verify --deep --strict "$target"; fi
 touch "$work/installed"
 touch "$work/completed"
-progress done 100
+progress 'done' 100
 trap - EXIT HUP INT TERM
 # The newly started main application cleans successful tasks after all helpers have exited.

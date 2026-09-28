@@ -43,7 +43,7 @@ public class UpdateHelperTests
 
         var elements = XDocument.Parse(MacDmgInstaller.CreateTerminalProfile(work)).Root!.Element("dict")!.Elements().ToArray();
         var settings = Enumerable.Range(0, elements.Length / 2)
-            .ToDictionary(index => elements[index * 2].Value, index => elements[index * 2 + 1]);
+            .ToDictionary(index => elements[index * 2].Value, index => elements[(index * 2) + 1]);
         Assert.AreEqual("1", settings["shellExitAction"].Value);
         Assert.AreEqual("false", settings["RunCommandAsShell"].Name.LocalName);
         var terminalStart = UpdateInstallHelper.CreateStartInfo(task);

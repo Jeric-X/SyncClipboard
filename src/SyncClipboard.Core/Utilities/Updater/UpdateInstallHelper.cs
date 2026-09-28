@@ -75,23 +75,7 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
         {
             var start = CreateStartInfo(update);
             using var process = Process.Start(start) ?? throw new IOException("Could not start the update helper.");
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-            timeout.CancelAfter(TimeSpan.FromMinutes(5)); // Includes time for system authorization and staging.
-            while (!File.Exists(Path.Combine(update.Directory, "ready")))
-            {
-                if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
-                var error = ReadFailure(update.Directory);
-                if (error is not null) throw new IOException(error);
-                var pidPath = Path.Combine(update.Directory, "helper-pid");
-                var helperExited = File.Exists(pidPath) && int.TryParse(await File.ReadAllTextAsync(pidPath, token), out var pid)
-                    && !UpdateInstallCleanup.IsProcessRunning(pid);
-                if (helperExited || (process.HasExited && (update.Kind != nameof(UpdatePackageKind.MacBundle) || process.ExitCode != 0)))
-                {
-                    if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
-                    throw new IOException(ReadFailure(update.Directory) ?? "The update helper exited before it was ready.");
-                }
-                await Task.Delay(100, timeout.Token);
-            }
+            await WaitForReadyAsync(update, process, token);
             token.ThrowIfCancellationRequested();
             await File.WriteAllTextAsync(Path.Combine(update.Directory, "commit"), string.Empty, token);
         }
@@ -100,6 +84,32 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
             await File.WriteAllTextAsync(Path.Combine(update.Directory, "cancel"), string.Empty, CancellationToken.None);
             throw;
         }
+    }
+
+    private static async Task WaitForReadyAsync(PreparedUpdate update, Process process, CancellationToken token)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfter(TimeSpan.FromMinutes(5)); // Includes time for system authorization and staging.
+        while (!File.Exists(Path.Combine(update.Directory, "ready")))
+        {
+            if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
+            var error = ReadFailure(update.Directory);
+            if (error is not null) throw new IOException(error);
+            var helperExited = await HasHelperExitedAsync(update.Directory, token);
+            if (helperExited || (process.HasExited && (update.Kind != nameof(UpdatePackageKind.MacBundle) || process.ExitCode != 0)))
+            {
+                if (File.Exists(Path.Combine(update.Directory, "canceled"))) throw new OperationCanceledException();
+                throw new IOException(ReadFailure(update.Directory) ?? "The update helper exited before it was ready.");
+            }
+            await Task.Delay(100, timeout.Token);
+        }
+    }
+
+    private static async Task<bool> HasHelperExitedAsync(string directory, CancellationToken token)
+    {
+        var pidPath = Path.Combine(directory, "helper-pid");
+        return File.Exists(pidPath) && int.TryParse(await File.ReadAllTextAsync(pidPath, token), out var pid)
+            && !UpdateInstallCleanup.IsProcessRunning(pid);
     }
 
     internal static string? ReadFailure(string work) => File.Exists(Path.Combine(work, "failed"))
