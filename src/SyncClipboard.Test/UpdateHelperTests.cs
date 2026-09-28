@@ -606,6 +606,40 @@ public class UpdateHelperTests
         Assert.IsFalse(entries["Z-library.dll"]);
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task WindowsWorker_PreservesRestoredStateWhenRetryPreflightFails(bool elevatedRetry)
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
+        var target = Directory.CreateDirectory(Path.Combine(work, "installation")).FullName;
+        var stage = Directory.CreateDirectory(Path.Combine(work, "payload")).FullName;
+        var executable = Path.Combine(target, "SyncClipboard.exe");
+        File.WriteAllText(executable, "old app");
+        Directory.CreateDirectory(Path.Combine(target, "conflict.dll"));
+        File.WriteAllText(Path.Combine(stage, "conflict.dll"), "new library");
+        var task = new UpdateInstallTask
+        {
+            Directory = work,
+            Kind = "WindowsPortable",
+            Target = target,
+            Stage = stage,
+            Backup = Path.Combine(work, "backup"),
+            Executable = executable,
+            Version = "v9.0.0",
+            ProcessId = Environment.ProcessId
+        };
+        File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(task));
+        CopyResource("InstallWindowsZip.ps1");
+
+        Assert.AreEqual(1, await RunWindowsWorker(elevatedRetry));
+        Assert.AreEqual(elevatedRetry, File.Exists(Path.Combine(work, "restored")));
+        Assert.IsTrue(File.Exists(Path.Combine(work, "failed")));
+        Assert.IsFalse(File.Exists(Path.Combine(work, "ready")));
+        Assert.IsFalse(File.Exists(Path.Combine(work, "installed")));
+        Assert.AreEqual("old app", File.ReadAllText(executable));
+    }
+
     private async Task<int> RunWindowsWorker(bool elevatedRetry)
     {
         var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };

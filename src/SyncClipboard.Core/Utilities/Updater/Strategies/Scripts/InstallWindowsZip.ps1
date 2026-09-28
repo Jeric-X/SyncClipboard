@@ -141,7 +141,8 @@ function Assert-SafeDestination([string]$Path) {
 
 $journal = [Collections.Generic.List[object]]::new()
 $replacementStarted = $false
-$parentExited = $false
+# An elevated retry is dispatched only after the first worker observed exit and fully restored the app.
+$parentExited = $ElevatedRetry.IsPresent
 $supervisor = $null
 try {
     if ($SupervisorId -gt 0) {

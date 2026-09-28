@@ -33,7 +33,9 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
             Env.PortableAppDataDirectory, Env.RuntimeConfigPath, Env.AppDataPathConfigPath };
         Directory.CreateDirectory(stage);
         ExtractPackage(snapshot.PackagePath, stage, protectedPaths, target);
-        ValidateExecutable(Path.Combine(stage, "SyncClipboard.exe"));
+        var executable = Path.Combine(stage, "SyncClipboard.exe");
+        ValidateExecutable(executable);
+        ValidateVersion(FileVersionInfo.GetVersionInfo(executable).ProductVersion, snapshot.Version);
         UpdatePackageVerifier.ValidatePackageInfo(Path.Combine(stage, Env.UpdateInfoFile), Path.GetFileName(snapshot.PackagePath));
         var backupSize = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories)
             .Select(path => Path.Combine(target, Path.GetRelativePath(stage, path)))
@@ -98,6 +100,15 @@ internal sealed class WindowsZipReplacementStrategy : IFileReplacementStrategy
         if (!File.Exists(Path.Combine(destination, "SyncClipboard.exe")))
         {
             throw new InvalidDataException("The update archive does not contain SyncClipboard.exe.");
+        }
+    }
+
+    internal static void ValidateVersion(string? productVersion, string expectedVersion)
+    {
+        if (productVersion is null || !AppVersion.TryParse(productVersion.Split('+')[0], out var actual)
+            || !AppVersion.TryParse(expectedVersion, out var expected) || actual.CompareTo(expected) != 0)
+        {
+            throw new InvalidDataException("The update executable version does not match the release.");
         }
     }
 
