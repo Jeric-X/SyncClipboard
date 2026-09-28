@@ -5,8 +5,12 @@ $log = Join-Path $Work 'install.log'
 $pidName = if ($Worker) { 'worker-pid' } else { 'helper-pid' }
 [IO.File]::WriteAllText((Join-Path $Work $pidName), [string]$PID)
 function Progress([string]$Phase, [int]$Percent) {
-    [IO.File]::WriteAllText((Join-Path $Work 'progress.tmp'), "$Phase`n$Percent")
-    Move-Item -LiteralPath (Join-Path $Work 'progress.tmp') -Destination (Join-Path $Work 'progress') -Force
+    try {
+        [IO.File]::WriteAllText((Join-Path $Work 'progress.tmp'), "$Phase`n$Percent")
+        Move-Item -LiteralPath (Join-Path $Work 'progress.tmp') -Destination (Join-Path $Work 'progress') -Force
+    } catch {
+        # Progress is optional; reporting failures must never interrupt replacement or rollback.
+    }
 }
 function Mark([string]$Name) { [IO.File]::WriteAllText((Join-Path $Work $Name), '') }
 function Exists([string]$Name) { Test-Path -LiteralPath (Join-Path $Work $Name) }
@@ -41,17 +45,21 @@ if (!$Worker) {
                 throw
             }
             while (!$process.HasExited) {
-                $progressFile = Join-Path $Work 'progress'
-                if (Test-Path -LiteralPath $progressFile) {
-                    $values = @(Get-Content -LiteralPath $progressFile -Encoding UTF8)
-                    if ($values.Count -ge 2) {
-                        $phase = $values[0]
-                        if ($task.Language -like 'zh*') {
-                            $labels = @{ waiting = '等待程序退出'; backup = '备份程序文件'; installing = '安装更新'; restoring = '恢复旧版本' }
-                            if ($labels.ContainsKey($phase)) { $phase = $labels[$phase] }
+                try {
+                    $progressFile = Join-Path $Work 'progress'
+                    if (Test-Path -LiteralPath $progressFile) {
+                        $values = @(Get-Content -LiteralPath $progressFile -Encoding UTF8)
+                        if ($values.Count -ge 2) {
+                            $phase = $values[0]
+                            if ($task.Language -like 'zh*') {
+                                $labels = @{ waiting = '等待程序退出'; backup = '备份程序文件'; installing = '安装更新'; restoring = '恢复旧版本' }
+                                if ($labels.ContainsKey($phase)) { $phase = $labels[$phase] }
+                            }
+                            Write-Progress -Activity 'SyncClipboard Update' -Status $phase -PercentComplete ([int]$values[1])
                         }
-                        Write-Progress -Activity 'SyncClipboard Update' -Status $phase -PercentComplete ([int]$values[1])
                     }
+                } catch {
+                    # The worker may replace the progress file while it is being read.
                 }
                 Start-Sleep -Milliseconds 100
                 $process.Refresh()

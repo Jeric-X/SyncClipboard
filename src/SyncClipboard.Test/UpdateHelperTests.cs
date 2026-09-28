@@ -261,10 +261,15 @@ public class UpdateHelperTests
     }
 
     [TestMethod]
-    [DataRow(false, false)]
-    [DataRow(true, false)]
-    [DataRow(false, true)]
-    public async Task WindowsWorker_PreservesUserFilesAndRollsBackLockedUpdates(bool lockLastFile, bool closeSupervisor)
+    [DataRow(false, false, null)]
+    [DataRow(true, false, null)]
+    [DataRow(false, true, null)]
+    [DataRow(false, false, "progress")]
+    [DataRow(true, false, "progress")]
+    [DataRow(false, false, "progress.tmp")]
+    [DataRow(true, false, "progress.tmp")]
+    public async Task WindowsWorker_PreservesUserFilesAndRollsBackLockedUpdates(
+        bool lockLastFile, bool closeSupervisor, string? lockedProgressFile)
     {
         if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
         var target = Directory.CreateDirectory(Path.Combine(work, "installation")).FullName;
@@ -304,6 +309,8 @@ public class UpdateHelperTests
             start.ArgumentList.Add("-SupervisorId");
             start.ArgumentList.Add(supervisor.Id.ToString());
         }
+        using var progressLock = lockedProgressFile is null ? null
+            : new FileStream(Path.Combine(work, lockedProgressFile), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         using var process = Process.Start(start)!;
         processes.Add(Process.GetProcessById(process.Id));
         await WaitFor("ready", process);
@@ -496,6 +503,48 @@ public class UpdateHelperTests
         Assert.IsFalse(File.Exists(Path.Combine(work, "completed")));
     }
 
+    [TestMethod]
+    public async Task WindowsSupervisor_RestartsApplicationWhenProgressCannotBeRead()
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Requires Windows PowerShell.");
+        File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(new
+        {
+            Executable = Path.Combine(work, "SyncClipboard.exe"),
+            Elevate = false,
+            Language = "en"
+        }));
+        CopyResource("InstallWindowsZip.ps1");
+        using var progressLock = new FileStream(Path.Combine(work, "progress"), FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+        var harness = Path.Combine(work, "locked-progress.ps1");
+        File.WriteAllText(harness, """
+            param([string]$Work)
+            function Start-Process {
+                param($FilePath, $ArgumentList, [switch]$PassThru, $WindowStyle, $Verb, $WorkingDirectory)
+                if ($FilePath -eq (Join-Path $Work 'SyncClipboard.exe')) {
+                    [IO.File]::WriteAllText((Join-Path $Work 'restarted-app'), '')
+                    return
+                }
+                [IO.File]::WriteAllText((Join-Path $Work 'installed'), '')
+                $worker = [pscustomobject]@{ HasExited = $false }
+                $worker | Add-Member -MemberType ScriptMethod -Name Refresh -Value { $this.HasExited = $true }
+                return $worker
+            }
+            function Read-Host { return '' }
+            & (Join-Path $Work 'InstallWindowsZip.ps1') -Work $Work
+            exit $LASTEXITCODE
+            """);
+        var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
+        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
+            harness, "-Work", work }) start.ArgumentList.Add(argument);
+        using var process = Process.Start(start)!;
+        processes.Add(Process.GetProcessById(process.Id));
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+            .WaitAsync(TimeSpan.FromSeconds(60), TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(0, process.ExitCode);
+        Assert.IsTrue(File.Exists(Path.Combine(work, "restarted-app")));
+        Assert.IsFalse(File.Exists(Path.Combine(work, "failed")));
+    }
+
     private async Task<int> RunWindowsWorker(bool elevatedRetry)
     {
         var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
@@ -533,14 +582,21 @@ public class UpdateHelperTests
 
     private async Task WaitFor(string name, Process process)
     {
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var elapsed = Stopwatch.StartNew();
         while (!File.Exists(Path.Combine(work, name)))
         {
             if (process.HasExited)
             {
-                Assert.Fail("Worker exited before " + name + ": " + File.ReadAllText(Path.Combine(work, "install.log")));
+                var log = Path.Combine(work, "install.log");
+                Assert.Fail($"Worker exited before {name}, exit code {process.ExitCode}: " +
+                    (File.Exists(log) ? File.ReadAllText(log) : "No installation log was created."));
             }
-            await Task.Delay(50, timeout.Token);
+            if (elapsed.Elapsed > TimeSpan.FromSeconds(60))
+            {
+                Assert.Fail($"Timed out waiting for {name}; PID {process.Id}, " +
+                    $"worker script started: {File.Exists(Path.Combine(work, "worker-pid"))}.");
+            }
+            await Task.Delay(50, TestContext.CancellationTokenSource.Token);
         }
     }
 
