@@ -7,14 +7,14 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class UpdateInstallCleanup
+internal sealed class UpdateTaskCleaner
 {
     private readonly string currentVersion;
     public string TaskDirectory { get; }
 
-    public UpdateInstallCleanup(IAppConfig appConfig) : this(GetTaskDirectory(Env.ProgramPath), appConfig.AppVersion) { }
+    public UpdateTaskCleaner(IAppConfig appConfig) : this(GetTaskDirectory(Env.ProgramPath), appConfig.AppVersion) { }
 
-    internal UpdateInstallCleanup(string directory, string version)
+    internal UpdateTaskCleaner(string directory, string version)
     {
         TaskDirectory = directory;
         currentVersion = version;
@@ -61,7 +61,7 @@ internal sealed class UpdateInstallCleanup
     {
         if (!File.Exists(Path.Combine(work, "completed")) || File.Exists(Path.Combine(work, "failed"))
             || File.Exists(Path.Combine(work, "canceled")) || File.Exists(Path.Combine(work, "restored"))) return false;
-        var update = JsonSerializer.Deserialize<PreparedUpdate>(File.ReadAllText(Path.Combine(work, "task.json")));
+        var update = JsonSerializer.Deserialize<UpdateInstallTask>(File.ReadAllText(Path.Combine(work, "task.json")));
         return update is not null && Path.GetFullPath(update.Directory) == Path.GetFullPath(work)
             && AppVersion.Parse(update.Version).CompareTo(AppVersion.Parse(currentVersion)) <= 0;
     }

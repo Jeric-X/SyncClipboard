@@ -4,10 +4,10 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
+internal sealed class UpdateTaskCoordinator(UpdateTaskCleaner cleanup)
 {
-    public async Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, string parent,
-        Func<UpdateInstallRequest, string, Task<PreparedUpdate>> preparePayload, CancellationToken token)
+    public async Task<UpdateInstallTask> PrepareAsync(UpdateInstallRequest request, string parent,
+        Func<UpdateInstallRequest, string, Task<UpdateInstallTask>> preparePayload, CancellationToken token)
     {
         EnsurePreviousHelperStopped(cleanup.TaskDirectory);
         var work = Path.Combine(cleanup.TaskDirectory, Guid.NewGuid().ToString("N"));
@@ -15,13 +15,13 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
         try
         {
             var size = new FileInfo(request.PackagePath).Length;
-            UpdateInstallFiles.CheckSpace(work, checked(size * 4));
-            UpdateInstallFiles.CheckSpace(parent, checked(size * 4));
+            UpdateFileSystem.CheckSpace(work, checked(size * 4));
+            UpdateFileSystem.CheckSpace(parent, checked(size * 4));
             var download = Path.Combine(work, "download");
             Directory.CreateDirectory(download);
             var snapshot = Path.Combine(download, Path.GetFileName(request.PackagePath));
             File.Copy(request.PackagePath, snapshot);
-            await UpdateInstallFiles.VerifyHashAsync(snapshot, request.Digest, token);
+            await UpdatePackageVerifier.VerifyHashAsync(snapshot, request.Digest, token);
             var update = await preparePayload(request with { PackagePath = snapshot }, work);
             update = update with { Language = CultureInfo.CurrentUICulture.Name };
             var stagedSize = Directory.EnumerateFiles(update.Stage, "*", new EnumerationOptions
@@ -29,13 +29,9 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
                 RecurseSubdirectories = true,
                 AttributesToSkip = FileAttributes.ReparsePoint
             }).Sum(path => new FileInfo(path).Length);
-            UpdateInstallFiles.CheckSpace(parent, stagedSize);
+            UpdateFileSystem.CheckSpace(parent, stagedSize);
             token.ThrowIfCancellationRequested();
             await File.WriteAllTextAsync(Path.Combine(work, "task.json"), JsonSerializer.Serialize(update), token);
-            await using var resource = typeof(UpdateInstaller).Assembly.GetManifestResourceStream(
-                "SyncClipboard.Core.Utilities.Updater.Scripts.install.ps1")!;
-            await using var output = File.Create(Path.Combine(work, "install.ps1"));
-            await resource.CopyToAsync(output, token);
             return update;
         }
         catch
@@ -45,12 +41,13 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
         }
     }
 
-    public static async Task StartAsync(PreparedUpdate update, CancellationToken token)
+    public static async Task StartAsync(UpdateInstallTask update,
+        Func<UpdateInstallTask, ProcessStartInfo> createStartInfo, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         try
         {
-            var start = CreateStartInfo(update);
+            var start = createStartInfo(update);
             using var process = Process.Start(start) ?? throw new IOException("Could not start the update helper.");
             await WaitForReadyAsync(update, process, token);
             token.ThrowIfCancellationRequested();
@@ -68,12 +65,12 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
         if (!Directory.Exists(taskDirectory)) return;
         foreach (var work in Directory.EnumerateDirectories(taskDirectory))
         {
-            if (File.Exists(Path.Combine(work, "cancel")) && UpdateInstallCleanup.HelpersRunning(work))
+            if (File.Exists(Path.Combine(work, "cancel")) && UpdateTaskCleaner.HelpersRunning(work))
                 throw new IOException("The previous update helper is still running. Close its update or authorization window before retrying.");
         }
     }
 
-    internal static async Task WaitForReadyAsync(PreparedUpdate update, Process process, CancellationToken token,
+    internal static async Task WaitForReadyAsync(UpdateInstallTask update, Process process, CancellationToken token,
         TimeSpan? readyTimeout = null)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -101,19 +98,18 @@ internal sealed class UpdateInstallHelper(UpdateInstallCleanup cleanup)
     {
         var pidPath = Path.Combine(directory, "helper-pid");
         return File.Exists(pidPath) && int.TryParse(await File.ReadAllTextAsync(pidPath, token), out var pid)
-            && !UpdateInstallCleanup.IsProcessRunning(pid);
+            && !UpdateTaskCleaner.IsProcessRunning(pid);
     }
 
     internal static string? ReadFailure(string work) => File.Exists(Path.Combine(work, "failed"))
         ? File.ReadAllText(Path.Combine(work, "failed")) : null;
 
-    internal static ProcessStartInfo CreateStartInfo(PreparedUpdate update)
+    internal static async Task ExtractScriptAsync(string directory, string name, CancellationToken token)
     {
-        var windows = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
-            "WindowsPowerShell", "v1.0", "powershell.exe"))
-        { UseShellExecute = true, WorkingDirectory = update.Directory };
-        foreach (var argument in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-            Path.Combine(update.Directory, "install.ps1"), "-Work", update.Directory }) windows.ArgumentList.Add(argument);
-        return windows;
+        await using var resource = typeof(UpdateTaskCoordinator).Assembly.GetManifestResourceStream(
+            "SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)
+            ?? throw new IOException("The embedded update script is missing: " + name);
+        await using var output = File.Create(Path.Combine(directory, name));
+        await resource.CopyToAsync(output, token);
     }
 }

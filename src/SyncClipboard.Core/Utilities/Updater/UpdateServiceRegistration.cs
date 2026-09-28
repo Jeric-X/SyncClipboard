@@ -1,16 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Updater.Strategies;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal static class UpdateInstallationServices
+internal static class UpdateServiceRegistration
 {
     public static IServiceCollection AddUpdateInstallation(this IServiceCollection services)
     {
-        services.AddSingleton<UpdateInstallCleanup>();
-        services.AddSingleton<UpdateInstallHelper>();
+        services.AddSingleton<UpdateTaskCleaner>();
+        services.AddSingleton<UpdateTaskCoordinator>();
         services.AddSingleton<IUpdateInstallStrategy, WindowsZipInstaller>();
-        services.AddSingleton<IUpdateInstaller, UpdateInstaller>();
+        services.AddSingleton<IUpdateInstaller, UpdateInstallerDispatcher>();
         return services;
     }
 }

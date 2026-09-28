@@ -35,7 +35,7 @@ public class UpdateHelperTests
         using var process = Process.GetCurrentProcess();
         using var cancellation = new CancellationTokenSource();
         if (callerCanceled) cancellation.Cancel();
-        var waiting = UpdateInstallHelper.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
+        var waiting = UpdateTaskCoordinator.WaitForReadyAsync(task, process, cancellation.Token, TimeSpan.Zero);
         if (callerCanceled) await Assert.ThrowsAsync<OperationCanceledException>(() => waiting);
         else await Assert.ThrowsAsync<IOException>(() => waiting);
     }
@@ -47,9 +47,9 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(previous, "cancel"), "");
         var pid = Path.Combine(previous, "helper-pid");
         File.WriteAllText(pid, Environment.ProcessId.ToString());
-        Assert.Throws<IOException>(() => UpdateInstallHelper.EnsurePreviousHelperStopped(work));
+        Assert.Throws<IOException>(() => UpdateTaskCoordinator.EnsurePreviousHelperStopped(work));
         File.WriteAllText(pid, int.MaxValue.ToString());
-        UpdateInstallHelper.EnsurePreviousHelperStopped(work);
+        UpdateTaskCoordinator.EnsurePreviousHelperStopped(work);
     }
 
     [TestMethod]
@@ -66,7 +66,7 @@ public class UpdateHelperTests
         File.WriteAllText(Path.Combine(stage, "SyncClipboard.exe"), "new");
         File.WriteAllText(Path.Combine(target, "Z-library.dll"), "old library");
         File.WriteAllText(Path.Combine(stage, "Z-library.dll"), "new library");
-        var task = new PreparedUpdate
+        var task = new UpdateInstallTask
         {
             Directory = work,
             Kind = "WindowsPortable",
@@ -80,10 +80,10 @@ public class UpdateHelperTests
         };
         File.WriteAllText(Path.Combine(work, "task.json"), JsonSerializer.Serialize(task));
         Directory.CreateDirectory(Path.Combine(work, "download"));
-        CopyResource("install.ps1");
+        CopyResource("InstallWindowsZip.ps1");
         var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
         foreach (var arg in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
-            Path.Combine(work, "install.ps1"), "-Work", work, "-Worker" }) start.ArgumentList.Add(arg);
+            Path.Combine(work, "InstallWindowsZip.ps1"), "-Work", work, "-Worker" }) start.ArgumentList.Add(arg);
         var supervisorStart = new ProcessStartInfo("powershell.exe", "-NoProfile -NonInteractive -Command Start-Sleep -Seconds 120")
         {
             UseShellExecute = false,
@@ -135,7 +135,7 @@ public class UpdateHelperTests
         Assert.AreEqual(0, process.ExitCode);
     }
 
-    private PreparedUpdate CreateTask() => new()
+    private UpdateInstallTask CreateTask() => new()
     {
         Directory = work,
         Kind = nameof(UpdatePackageKind.WindowsPortable),
@@ -149,7 +149,7 @@ public class UpdateHelperTests
 
     private void CopyResource(string name)
     {
-        using var source = typeof(UpdateInstaller).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Scripts." + name)!;
+        using var source = typeof(UpdateInstallerDispatcher).Assembly.GetManifestResourceStream("SyncClipboard.Core.Utilities.Updater.Strategies.Scripts." + name)!;
         using var output = File.Create(Path.Combine(work, name));
         source.CopyTo(output);
     }
