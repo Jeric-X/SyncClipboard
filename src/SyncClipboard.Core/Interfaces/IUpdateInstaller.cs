@@ -1,8 +1,12 @@
-namespace SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Updater;
 
-public record UpdateInstallRequest(string PackagePath, string Digest, string Version);
+namespace SyncClipboard.Core.Interfaces;
 
 public interface IUpdateInstaller
 {
-    Task StartAsync(UpdateInstallRequest request, CancellationToken token);
+    UpdateInstallCapability GetCapability(UpdateInfoConfig updateInfo);
+    Task<PreparedUpdate> PrepareAsync(UpdateInstallRequest request, CancellationToken token);
+    Task StartAsync(PreparedUpdate update, CancellationToken token);
+    Task CleanupCompletedAsync();
 }

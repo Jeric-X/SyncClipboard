@@ -94,6 +94,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\EmbeddedIcons\*.svg" />
+    <EmbeddedResource Include="Utilities\Updater\Scripts\install.ps1" />
   </ItemGroup>
 
 </Project>

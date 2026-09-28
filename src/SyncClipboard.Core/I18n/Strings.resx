@@ -1456,7 +1456,10 @@ Choose whether to use the default location or select another folder.</value>
   <data name="InstallingUpdate" xml:space="preserve">
     <value>Installing update. Please wait.</value>
   </data>
-  <data name="UpdateInstallationUnsupported" xml:space="preserve">
-    <value>Automatic installation is not supported. Install the downloaded package manually.</value>
+  <data name="UpdateLocationUnsupported" xml:space="preserve">
+    <value>This installation location cannot be updated automatically. Install the downloaded package manually.</value>
+  </data>
+  <data name="UpdateInsufficientSpace" xml:space="preserve">
+    <value>There is not enough free space to prepare and back up this update.</value>
   </data>
 </root>

@@ -14,7 +14,7 @@ public class SystemServiceProviderDataSource : ServiceProviderDataSourceBase
             typeof(IServiceProvider),
             typeof(ConfigManager),
             typeof(IAppConfig),
-            typeof(IUpdateInstallerFactory),
+            typeof(IUpdateInstaller),
             typeof(ILogger),
             typeof(IWebDav),
             typeof(IHttp),

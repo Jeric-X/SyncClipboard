@@ -38,7 +38,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     private readonly LocalClipboardSetter localClipboardSetter;
     private readonly IMainWindow mainWindow;
     private readonly ConfigManager configManager;
-    private readonly IUpdateInstaller? updateInstaller;
+    private readonly IUpdateInstaller updateInstaller;
     private readonly Lock installationGate = new();
     private bool installing;
 
@@ -58,7 +58,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         INotificationManager notification,
         IMainWindow mainWindow,
         ConfigManager configManager,
-        IUpdateInstallerFactory updateInstallerFactory,
+        IUpdateInstaller updateInstaller,
         [FromKeyedServices(Env.UpdateInfoFile)] ConfigBase updateInfoConfig)
     {
         this.githubUpdater = githubUpdater;
@@ -66,6 +66,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.logger = logger;
         this.localClipboardSetter = localClipboardSetter;
         this.configManager = configManager;
+        this.updateInstaller = updateInstaller;
         this.notificationManager = notification;
         this.mainWindow = mainWindow;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
@@ -118,9 +119,12 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         try
         {
             SetStatus(UpdaterState.Installing);
-            if (updateInstaller is null) throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
-            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!);
-            await updateInstaller.StartAsync(request, token);
+            var capability = updateInstaller.GetCapability(updateInfo);
+            if (!capability.Supported) throw new InvalidOperationException(capability.Reason ?? I18n.Strings.UpdateLocationUnsupported);
+            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!, capability);
+            var prepared = await updateInstaller.PrepareAsync(request, token);
+            await updateInstaller.StartAsync(prepared, token);
+            await AppCore.Current.ExitAsync();
         }
         catch (OperationCanceledException)
         {
@@ -370,7 +374,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
                 : string.Format(I18n.Strings.UpdateFrom3rdSrc, GithubRelease!.TagName, updateInfo.UpdateSrc),
             UpdaterState.UpdateAvailable => I18n.Strings.FoundNewVersion + GithubRelease!.TagName,
             UpdaterState.Downloading => $"{I18n.Strings.Downloading} {updateInfo.PackageName}",
-            UpdaterState.Downloaded => I18n.Strings.NewVersionDownloaded,
+            UpdaterState.Downloaded => GetDownloadedMessage(),
             UpdaterState.ReadyToInstall => I18n.Strings.UpdateReadyToInstall,
             UpdaterState.Installing => I18n.Strings.InstallingUpdate,
             UpdaterState.Failed => I18n.Strings.Error,
@@ -381,7 +385,13 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     }
 
     private void SetDownloadedStatus()
-        => SetStatus(updateInstaller is not null ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
+        => SetStatus(updateInstaller.GetCapability(updateInfo).Supported ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
+
+    private string GetDownloadedMessage()
+    {
+        var capability = updateInstaller.GetCapability(updateInfo);
+        return string.Join(" ", new[] { I18n.Strings.NewVersionDownloaded, capability.Reason }.Where(text => !string.IsNullOrEmpty(text)));
+    }
 
     private (string, CancelableTask)? GetStateAction(UpdaterState state)
     {
