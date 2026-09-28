@@ -35,8 +35,10 @@ launch() {
 if [ "$mode" = supervisor ]; then
     worker_pid=
     interrupted() {
-        trap - HUP INT TERM
-        if [ -n "$worker_pid" ]; then kill "$worker_pid" 2>/dev/null || true; fi
+        trap '' HUP INT TERM
+        # osascript is only the authorization bridge; the privileged worker consumes this marker.
+        touch "$work/cancel"
+        if [ -n "$worker_pid" ]; then wait "$worker_pid" 2>/dev/null || true; fi
         fail 'Update window was closed. Check the update log and backup before retrying.'
         exit 1
     }
@@ -96,12 +98,20 @@ progress() {
     mv "$work/progress.tmp" "$work/progress"
 }
 
+check_canceled() {
+    if [ -f "$work/cancel" ]; then
+        fail 'Update canceled.'
+        return 1
+    fi
+}
+
 # Both the payload and the backup stay in the updater's private work directory.
 # Copying may cross filesystems; only remove the installed copy after backup succeeds.
 copy_with_progress() {
     source_path=$1
     destination_path=$2
     phase=$3
+    if [ "$phase" != restoring ]; then check_canceled || return 1; fi
     [ -e "$source_path" ] || return 1
     total=$(du -sk "$source_path" | awk '{print $1}')
     progress "$phase" 0
@@ -112,6 +122,7 @@ copy_with_progress() {
     fi
     copy_pid=$!
     while kill -0 "$copy_pid" 2>/dev/null; do
+        if [ "$phase" != restoring ]; then check_canceled || return 1; fi
         copied=$(du -sk "$destination_path" 2>/dev/null | awk '{print $1}')
         copied=${copied:-0}
         percent=0
@@ -122,6 +133,7 @@ copy_with_progress() {
     done
     wait "$copy_pid" || { copy_pid=; return 1; }
     copy_pid=
+    if [ "$phase" != restoring ]; then check_canceled || return 1; fi
     progress "$phase" 100
 }
 
@@ -138,7 +150,11 @@ on_error() {
         copy_pid=
     fi
     if [ "$replacement_started" = yes ] && [ "$backup_complete" = yes ]; then
-        if rm -rf "$target" && copy_with_progress "$backup" "$target" restoring; then
+        # Removal can fail after deleting some files. Still attempt to restore the completed backup.
+        rm -rf "$target" || true
+        if copy_with_progress "$backup" "$target" restoring && {
+            [ "$kind" != MacBundle ] || /usr/bin/codesign --verify --deep --strict "$target"
+        }; then
             touch "$work/restored"
         else
             fail 'Update failed and rollback failed. The backup is preserved in the update directory.'
@@ -180,7 +196,7 @@ while kill -0 "$parent_pid" 2>/dev/null; do
     count=$((count + 1))
 done
 parent_exited=yes
-if [ -f "$work/cancel" ]; then fail 'Update canceled.'; exit 1; fi
+check_canceled
 backup_created=yes
 copy_with_progress "$target" "$backup" backup
 backup_complete=yes
@@ -188,11 +204,13 @@ if [ "$kind" = MacBundle ] && [ "$(id -u)" = 0 ]; then
     # The normal user's next startup must be able to clean this backup, even after authorization.
     /usr/sbin/chown -R -P "$(/usr/bin/stat -f '%u:%g' "$work")" "$backup"
 fi
+check_canceled
 replacement_started=yes
 rm -rf "$target"
 copy_with_progress "$stage" "$target" installing
 progress verifying -1
 if [ "$kind" = MacBundle ]; then /usr/bin/codesign --verify --deep --strict "$target"; fi
+check_canceled
 touch "$work/installed"
 touch "$work/completed"
 progress 'done' 100

@@ -28,6 +28,36 @@ public class UpdateHelperTests
     }
 
     [TestMethod]
+    [DataRow("backup")]
+    [DataRow("installing")]
+    public async Task UnixWorker_CancellationDuringCopyPreservesOriginal(string phase)
+    {
+        RequireUnix();
+        var task = CreateUnixTask();
+        var tools = Directory.CreateDirectory(Path.Combine(work, "tools")).FullName;
+        var copy = Path.Combine(tools, "cp");
+        File.WriteAllText(copy, """
+            #!/bin/sh
+            /bin/cp "$@" || exit 1
+            if [ "$(sed -n '1p' "$UPDATE_TEST_WORK/progress")" = "$UPDATE_TEST_PHASE" ]; then
+                touch "$UPDATE_TEST_WORK/cancel"
+                sleep 1
+            fi
+            """);
+        File.SetUnixFileMode(copy, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        using var process = StartUnixWorker(tools, phase);
+        await WaitFor("ready", process);
+        File.WriteAllText(Path.Combine(work, "commit"), "");
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(1, process.ExitCode);
+        Assert.AreEqual("old version", File.ReadAllText(task.Target));
+        Assert.IsTrue(File.Exists(Path.Combine(work, "restored")));
+        Assert.IsTrue(File.Exists(Path.Combine(work, "failed")));
+        Assert.IsFalse(File.Exists(Path.Combine(work, "completed")));
+    }
+
+    [TestMethod]
     [DataRow(0)]
     [DataRow(1)]
     public async Task MacTerminalCommand_PreservesExitStatusAndQuotesTaskPath(int exitCode)
@@ -140,7 +170,9 @@ public class UpdateHelperTests
     }
 
     [TestMethod]
-    public async Task MacWorker_ReplacesSignedBundleAndPreservesSignature()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task MacWorker_PreservesSignatureAfterReplacementOrRemovalFailure(bool failRemoval)
     {
         if (!OperatingSystem.IsMacOS())
         {
@@ -169,15 +201,32 @@ public class UpdateHelperTests
             await RunTool("/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none", path);
         }
         File.WriteAllText(Path.Combine(work, "kind.txt"), "MacBundle");
-        using var process = StartUnixWorker();
+        string? tools = null;
+        if (failRemoval)
+        {
+            tools = Directory.CreateDirectory(Path.Combine(work, "tools")).FullName;
+            var remove = Path.Combine(tools, "rm");
+            File.WriteAllText(remove, """
+                #!/bin/sh
+                target=$(cat "$UPDATE_TEST_WORK/target.txt")
+                if [ "$2" = "$target" ]; then
+                    /bin/rm -f "$target/Contents/Resources/version"
+                    exit 1
+                fi
+                exec /bin/rm "$@"
+                """);
+            File.SetUnixFileMode(remove, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+        using var process = StartUnixWorker(tools);
         await WaitFor("ready", process);
         File.WriteAllText(Path.Combine(work, "commit"), "");
-        await WaitFor("installed", process);
-        Assert.AreEqual("new", File.ReadAllText(Path.Combine(task.Target, "Contents", "Resources", "version")));
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(failRemoval ? 1 : 0, process.ExitCode);
+        Assert.IsTrue(File.Exists(Path.Combine(work, failRemoval ? "restored" : "installed")));
+        Assert.AreEqual(failRemoval ? "old" : "new", File.ReadAllText(Path.Combine(task.Target, "Contents", "Resources", "version")));
         Assert.AreEqual("old", File.ReadAllText(Path.Combine(task.Backup, "Contents", "Resources", "version")));
         await RunTool("/usr/bin/codesign", "--verify", "--deep", "--strict", task.Target);
-        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token).WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(0, process.ExitCode);
         Assert.IsTrue(Directory.Exists(task.Backup));
     }
 
@@ -277,9 +326,12 @@ public class UpdateHelperTests
         source.CopyTo(output);
     }
 
-    private Process StartUnixWorker()
+    private Process StartUnixWorker(string? tools = null, string? cancelPhase = null)
     {
         var start = new ProcessStartInfo("/bin/sh") { UseShellExecute = false };
+        if (tools is not null) start.Environment["PATH"] = tools + Path.PathSeparator + start.Environment["PATH"];
+        start.Environment["UPDATE_TEST_WORK"] = work;
+        if (cancelPhase is not null) start.Environment["UPDATE_TEST_PHASE"] = cancelPhase;
         foreach (var arg in new[] { Path.Combine(work, "install.sh"), work, "worker" }) start.ArgumentList.Add(arg);
         var process = Process.Start(start)!;
         // A separate handle lets cleanup still stop workers if an assertion fails.

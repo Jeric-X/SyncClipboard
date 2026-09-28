@@ -76,7 +76,7 @@ def prepare(args):
     package_name = f"SyncClipboard_macos_{architecture}.dmg"
     run("dotnet", "restore", project, f"-p:RuntimeIdentifiers={rid}", cwd=source)
     for version, folder in (("0.0.1", "installed"), ("0.0.2", "payload")):
-        run("dotnet", "publish", project, "-c", "Debug", f"-p:RuntimeIdentifiers={rid}",
+        run("dotnet", "publish", project, "-c", "Debug", "-r", rid, f"-p:RuntimeIdentifiers={rid}",
             f"-p:VersionPrefix={version}", "-p:VersionSuffix=", "--self-contained", "true", "--no-restore", cwd=source)
         bundle = output / folder / "SyncClipboard.app"
         bundle.parent.mkdir()

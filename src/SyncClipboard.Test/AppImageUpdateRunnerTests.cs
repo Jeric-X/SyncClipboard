@@ -130,7 +130,7 @@ public class AppImageUpdateRunnerTests
             Assert.AreEqual("old version", File.ReadAllText(update.Target));
             Assert.AreEqual("old version", File.ReadAllText(update.Backup));
             CollectionAssert.AreEqual(new[] { update.Target }, launched);
-            Assert.IsFalse(File.ReadAllText(Path.Combine(update.Directory, "failed")).Contains("Rollback failed"));
+            Assert.DoesNotContain("Rollback failed", File.ReadAllText(Path.Combine(update.Directory, "failed")));
         }
         finally { locked?.Dispose(); }
     }

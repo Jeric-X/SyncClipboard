@@ -63,6 +63,8 @@ public static class UpdateInstallFiles
     {
         using var archive = ZipFile.OpenRead(package);
         CheckSpace(destination, archive.Entries.Sum(entry => entry.Length));
+        var destinationPrefix = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destination)) + Path.DirectorySeparatorChar;
+        var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in archive.Entries)
         {
@@ -74,7 +76,7 @@ public static class UpdateInstallFiles
                 throw new InvalidDataException("Unsafe update archive entry: " + entry.FullName);
             }
             var output = Path.GetFullPath(Path.Combine(destination, name));
-            if (!IsWithin(output, destination) || !seen.Add(output))
+            if (!output.StartsWith(destinationPrefix, pathComparison) || !seen.Add(output))
             {
                 throw new InvalidDataException("Duplicate or invalid update archive entry: " + entry.FullName);
             }
