@@ -6,7 +6,7 @@
 
 ## 固定条件
 
-- .NET SDK 使用仓库 `global.json`（10.0.302），Avalonia 使用中央包版本（12.1.3）。
+- .NET SDK 使用仓库 `global.json`（10.0.302，允许 latestPatch 滚动），Avalonia 使用中央包版本（12.1.3）。
 - `net10.0`、Release、NativeAOT、`TrimMode=full`、`IlcOptimizationPreference=Size`、剥离调试符号。
 - 开启 invariant globalization；测试中英文显示和中文文件名，但不验证区域相关排序、日期格式。
 - 仅引用 `Avalonia.Desktop`，不引用业务项目、DI、MVVM、完整主题或打包字体。
@@ -73,4 +73,24 @@ GUI 启动测试不等价于人工视觉验收，CI 也不是完全没有 SDK �
 | 单文件 ZIP | 8,074,611 | 7.70 |
 | 运行时磁盘占用（单文件 + 释放库） | 23,134,336 | 22.06 |
 
-Windows/Linux 结果以 CI 的 `report.json` 为准，完成后补充。
+## 三平台结果
+
+Windows/Linux 在专用分支提交 `8e177b221b2182753ea0e053813b405cdc7878f8` 的
+[CI 运行 36513015212](https://github.com/Jeric-X/SyncClipboard/actions/runs/36513015212) 完成。
+该分支只触发了 `updater-size-probe`，两项任务均成功，无 trimming/AOT 编译警告。
+macOS 本地发布出现 NuGet 漏洞信息源不可达的 NU1900 警告，未影响构建和运行验证。
+
+| 平台 | 实际 SDK | 单文件字节 | 单文件 MiB | ZIP MiB | 运行时磁盘 MiB |
+|---|---|---:|---:|---:|---:|
+| macOS arm64 | 10.0.302 | 13,813,328 | 13.17 | 7.70 | 22.06 |
+| Windows x64 | 10.0.303 | 16,249,344 | 15.50 | 9.32 | 28.32 |
+| Linux x64 | 10.0.303 | 19,630,672 | 18.72 | 11.09 | 32.05 |
+
+CI 遵循仓库 latestPatch 策略使用了 10.0.303，因此结果保留实际 SDK 信息；这些数字不是固定同一 SDK 补丁的跨平台对照。
+三个平台均通过单文件隔离启动、真实桌面后端、文件/SHA256/ZIP 以及释放目录清理验证。
+Windows 成功省去 5,394,096 字节的 ANGLE DLL；Windows/Linux 仅释放 SkiaSharp 与 HarfBuzzSharp，
+macOS 额外释放 Avalonia.Native。原生库不会因托管 trimming 自动缩小；这里使用 NuGet 提供的原生库，
+没有自行精简或重新编译 Skia/HarfBuzz。
+
+这说明独立助手采用 NativeAOT 并在运行时释放原生库可行，当前最小实用界面配置的分发文件约 13–19 MiB，
+下载 ZIP 约 8–11 MiB。后续正式助手可沿用启动封装，但应另行验证真实 DMG/AppImage/ZIP 的升级、回滚与重启逻辑。
