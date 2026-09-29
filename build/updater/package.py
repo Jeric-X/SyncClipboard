@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import struct
 import sys
 import tempfile
 import zipfile
@@ -54,6 +55,15 @@ def main():
     run(["dotnet", "publish", PROJECT, "-r", args.rid, "-c", "Release", "-o", publish], out / "publish.log")
     executable = NAME + (".exe" if os_name == "win" else "")
     shutil.copy2(publish / executable, delivery / executable)
+    if os_name == "win":
+        # NativeAOT must produce a GUI executable, without an extra console window.
+        binary = (delivery / executable).read_bytes()
+        pe_offset = struct.unpack_from("<I", binary, 0x3C)[0]
+        if binary[pe_offset:pe_offset + 4] != b"PE\0\0":
+            raise RuntimeError("The Windows updater is not a PE executable.")
+        subsystem = struct.unpack_from("<H", binary, pe_offset + 24 + 68)[0]
+        if subsystem != 2:
+            raise RuntimeError(f"Expected Windows GUI subsystem (2), got {subsystem}.")
     native = [p for p in publish.iterdir() if p.suffix in (".dll", ".so", ".dylib")]
     if not native:
         raise RuntimeError("No Avalonia native libraries found in publish output.")

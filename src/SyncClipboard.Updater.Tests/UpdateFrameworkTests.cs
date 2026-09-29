@@ -131,6 +131,43 @@ public class UpdateFrameworkTests
         }
     }
 
+    [TestMethod]
+    public async Task InvalidTaskStillPersistsFailureWithoutInvokingStrategy()
+    {
+        UpdateRequest[] invalid =
+        [
+            Request with { ProtocolVersion = 2 },
+            Request with { PackagePath = "relative.zip" },
+            Request with { Language = null! }
+        ];
+        foreach (var request in invalid)
+        {
+            var directory = Directory.CreateTempSubdirectory("updater invalid ").FullName;
+            try
+            {
+                var path = Path.Combine(directory, "request.json");
+                await File.WriteAllTextAsync(path, JsonSerializer.Serialize(request, UpdateJsonContext.Default.UpdateRequest),
+                    TestContext.CancellationTokenSource.Token);
+                var restored = await UpdateTaskFile.ReadAsync(path, TestContext.CancellationTokenSource.Token);
+                var strategy = new TestStrategy();
+                var runner = new UpdateRunner(new UpdateStrategyFactory([strategy]));
+                var result = await runner.RunAsync(restored, new RecordedProgress(), TestContext.CancellationTokenSource.Token);
+                await UpdateTaskFile.WriteResultAsync(directory, result);
+                var saved = await File.ReadAllTextAsync(Path.Combine(directory, "result.json"), TestContext.CancellationTokenSource.Token);
+                var persisted = JsonSerializer.Deserialize(saved, UpdateJsonContext.Default.UpdateResult);
+                Assert.IsNotNull(persisted);
+                Assert.AreEqual(UpdateOutcome.Failed, persisted.Outcome);
+                Assert.AreEqual(request.TargetVersion, persisted.TargetVersion);
+                Assert.IsFalse(string.IsNullOrWhiteSpace(persisted.Error));
+                Assert.AreEqual(0, strategy.Calls);
+            }
+            finally
+            {
+                Directory.Delete(directory, true);
+            }
+        }
+    }
+
     private sealed class TestStrategy : IUpdateStrategy
     {
         public UpdatePackageKind PackageKind => UpdatePackageKind.WindowsZip;

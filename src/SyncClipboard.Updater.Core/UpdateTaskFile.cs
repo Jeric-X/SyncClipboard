@@ -11,7 +11,7 @@ public static class UpdateTaskFile
         await using var stream = File.OpenRead(path);
         var request = await JsonSerializer.DeserializeAsync(stream, UpdateJsonContext.Default.UpdateRequest, token)
             ?? throw new InvalidDataException("The update request is empty.");
-        request.Validate();
+        // Validation belongs to UpdateRunner so invalid requests still produce a terminal result.
         return request;
     }
 
