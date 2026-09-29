@@ -1,0 +1,50 @@
+name: updater-size-probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/updater-size-probe]
+    paths:
+      - src/SyncClipboard.Updater.SizeProbe/**
+      - build/updater-size/**
+      - .github/workflows/updater-size-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: windows-2025-vs2026
+            rid: win-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Linux native toolchain and desktop libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
+      - name: Publish and measure
+        run: python build/updater-size/measure.py --rid ${{ matrix.rid }}
+      - name: Upload executable, measurements and logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: updater-size-${{ matrix.rid }}
+          path: |
+            artifacts/updater-size/${{ matrix.rid }}/delivery.zip
+            artifacts/updater-size/${{ matrix.rid }}/report.*
+            artifacts/updater-size/${{ matrix.rid }}/*.log
