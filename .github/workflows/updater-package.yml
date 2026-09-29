@@ -42,16 +42,14 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - name: Linux native toolchain and desktop libraries
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
       - name: Publish and check standalone updater
-        run: python build/updater/package.py --rid ${{ matrix.rid }}
+        shell: bash
+        run: bash build/updater/package.sh --rid ${{ matrix.rid }}
       - name: Check code style
         if: matrix.rid == 'linux-x64'
         run: dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info

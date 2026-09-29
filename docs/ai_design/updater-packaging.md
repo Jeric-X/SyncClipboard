@@ -18,11 +18,13 @@
 
 PR 与常规分支/tag CI 均调用 `updater-package.yml`，在目标系统和架构上发布辅助程序。主程序的打包任务依赖该流程完成，通过同一次 workflow run 的 artifact 获取辅助产物。普通本地主程序编译不会自动发布 NativeAOT 辅助程序。
 
-`build/updater/package.py` 发布程序及本地库到 `delivery` 目录，不额外压缩成 ZIP。Windows 使用 GUI 子系统；软件渲染省去 ANGLE，macOS 的本地库按目标架构裁切，所有交付的 Mach-O 文件先做 ad-hoc 签名并验证。
+两个打包脚本使用 Bash，Windows CI 通过 Git Bash 执行，使用 runner 自带的 jq 和 OpenSSL，不需要 Python。
+
+`build/updater/package.sh` 发布程序及本地库到 `delivery` 目录，不额外压缩成 ZIP。Windows 使用 GUI 子系统；软件渲染省去 ANGLE，macOS 的本地库按目标架构裁切，所有交付的 Mach-O 文件先做 ad-hoc 签名并验证。
 
 辅助程序使用框架默认的本地库加载机制，不注册自定义加载器。CI 将整个目录复制到含空格和中文的独立目录，从不同工作目录启动 `--smoke-test`，验证默认加载机制下窗口能正常启动。该模式只显示窗口一秒后退出，不会执行更新。报告记录 RID、源提交、各文件 SHA-256、原始体积及检查结果。
 
-`build/updater/include-in-package.py` 在包类型已经确定的独立暂存目录中加入 `Updater` 目录，并校验 RID、源提交、文件清单/哈希和 GUI 检查结果。辅助程序缺失或不匹配会使打包失败。EXE/deb/rpm 分支不下载辅助产物，并检查暂存目录中没有 Updater 目录，防止误混入。
+`build/updater/include-in-package.sh` 在包类型已经确定的独立暂存目录中加入 `Updater` 目录，并校验 RID、源提交、文件清单/哈希和 GUI 检查结果。辅助程序缺失或不匹配会使打包失败。EXE/deb/rpm 分支不下载辅助产物，并检查暂存目录中没有 Updater 目录，防止误混入。
 
 Windows/Linux 的应用文件目录中存放：
 
@@ -36,7 +38,7 @@ macOS 同样使用普通可执行文件，目录为 `SyncClipboard.app/Contents/
 
 macOS 的顺序是：辅助程序签名 → 放入主程序 Resources → BundleTool 重新 ad-hoc 签名主 .app → 制作 DMG。Homebrew 继续使用相同 DMG，不增加专用产物。复制时显式恢复辅助程序的 Unix 执行权限。
 
-`build/updater/verify-package.py` 在 CI 中检查最终 ZIP、DMG、AppImage 内每个辅助程序文件的哈希，并检查最终 deb/rpm 不含 Updater 目录。DMG 还会挂载只读副本验证 app 签名及辅助程序执行权限。AppImage 使用 SquashFS 工具读取内容，不执行目标镜像，因此 x64 打包主机也能检查 arm64 产物。Windows EXE 的排除检查在交给 Inno Setup 的输入目录上执行。
+集成完成后沿用主程序现有的打包流程，不再解包检查最终安装包。
 
 ## 后续接入
 

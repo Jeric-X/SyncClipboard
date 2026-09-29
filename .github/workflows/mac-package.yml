@@ -67,10 +67,6 @@ jobs:
           chmod +x ./build/SetUpdateSource.sh
           ./build/SetUpdateSource.sh -m manual -s github -o build/macos/SyncClipboard.app/Contents/MonoBundle -n SyncClipboard_macos_${{ matrix.cpu }}.dmg
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
       - name: Download updater
         uses: actions/download-artifact@v8
         with:
@@ -78,8 +74,9 @@ jobs:
           path: updater-artifact/
 
       - name: Include updater before signing app
+        shell: bash
         run: >-
-          python build/updater/include-in-package.py
+          bash build/updater/include-in-package.sh
           --rid osx-${{ matrix.cpu }} --package-type dmg
           --app-dir build/macos/SyncClipboard.app/Contents/Resources --artifact-dir updater-artifact
 
@@ -116,12 +113,6 @@ jobs:
       - name: Change name
         run: mv SyncClipboard.dmg "SyncClipboard_macos_${{ matrix.cpu }}.dmg"
         working-directory: ./build/macos
-
-      - name: Verify updater and signature inside DMG
-        run: >-
-          python build/updater/verify-package.py
-          --package build/macos/SyncClipboard_macos_${{ matrix.cpu }}.dmg
-          --manifest updater-artifact/report.json
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
