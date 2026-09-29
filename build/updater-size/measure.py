@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
 import zipfile
 
@@ -20,7 +21,8 @@ NAME = "SyncClipboard.Updater.SizeProbe"
 def run(command, log=None, cwd=ROOT, timeout=1800):
     print("+ " + " ".join(map(str, command)), flush=True)
     result = subprocess.run(list(map(str, command)), cwd=cwd, text=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+                            encoding="utf-8", errors="replace", stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, timeout=timeout)
     print(result.stdout, flush=True)
     if log:
         log.write_text(result.stdout, encoding="utf-8")
@@ -230,4 +232,6 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     main()
