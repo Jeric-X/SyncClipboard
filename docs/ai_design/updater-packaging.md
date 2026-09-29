@@ -20,7 +20,9 @@ PR 与常规分支/tag CI 均调用 `updater-package.yml`，在目标系统和�
 
 CI 直接运行 `dotnet publish` 发布辅助程序，通过复制命令收集可执行文件与本地库。不额外维护打包脚本、文件哈希清单或 JSON 报告。
 
-产物放在 `artifacts/updater/delivery` 目录，不额外压缩成 ZIP。Windows 使用 GUI 子系统；软件渲染省去 ANGLE。macOS 在 CI 中用 `lipo` 按目标架构裁切本地库，再用 `codesign` 对辅助程序和本地库做 ad-hoc 签名。
+交付产物保持目录形式，放在 `artifacts/updater/delivery` 中。Windows 使用 GUI 子系统；软件渲染省去 ANGLE。macOS 在 CI 中用 `lipo` 按目标架构裁切本地库，再用 `codesign` 对辅助程序和本地库做 ad-hoc 签名。
+
+每个 RID 的 CI 摘要会列出原始文件总大小、ZIP 大小、ZIP/原始大小比例及节省空间比例。统计使用 Deflate 级别 9（Windows 用 7-Zip，macOS/Linux 用 zip），测量 ZIP 放在交付目录之外，不上传或集成进主应用。该数字用于比较辅助程序压缩后的体积，实际主程序包仍由各平台原有打包流程生成。
 
 辅助程序使用框架默认的本地库加载机制，不注册自定义加载器。CI 将整个目录复制到含空格和中文的独立目录，从不同工作目录启动 `--smoke-test`，验证默认加载机制下窗口能正常启动。该模式只显示窗口一秒后退出，不会执行更新。步骤超时由 GitHub Actions 控制，日志保留在 CI 输出中。
 
