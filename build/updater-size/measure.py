@@ -38,15 +38,86 @@ def archive_files(destination, files):
             archive.writestr(info, path.read_bytes(), compresslevel=9)
 
 
+def measure_adjacent(out, baseline, native, delivery, executable_name, rid, excluded):
+    """The main application owns extraction; the helper loads sibling libraries."""
+    binary = delivery / executable_name
+    for source in [baseline / executable_name, *native.iterdir()]:
+        shutil.copy2(source, delivery / source.name)
+    files = [{"name": path.name, "bytes": path.stat().st_size,
+              "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in sorted(delivery.iterdir())]
+    archive = out / "delivery.zip"
+    archive_files(archive, delivery.iterdir())
+
+    results = {}
+    with tempfile.TemporaryDirectory(prefix="syncclipboard-adjacent-test-") as clean:
+        extracted = Path(clean) / "extracted helper 含空格"
+        with zipfile.ZipFile(archive) as package:
+            package.extractall(extracted)
+        # ZIP extraction does not reliably restore Unix execute permissions.
+        # The future main-app extraction routine must also set this explicitly.
+        clean_binary = extracted / executable_name
+        clean_binary.chmod(0o755)
+        for item in files:
+            if hashlib.sha256((extracted / item["name"]).read_bytes()).hexdigest() != item["sha256"]:
+                raise RuntimeError("Extracted package checksum mismatch: " + item["name"])
+        for mode, marker in [("--self-test", "SELF_TEST=PASS"), ("--smoke-test", "GUI_SMOKE=PASS")]:
+            command = [clean_binary, mode]
+            if rid.startswith("linux"):
+                command = ["xvfb-run", "-a"] + command
+            # Working directory deliberately differs from the executable directory.
+            output = run(command, out / (mode[2:] + ".log"), cwd=clean, timeout=90)
+            if marker not in output or "EXTRACTION_DIRECTORY=" in output:
+                raise RuntimeError("Expected successful execution without internal extraction.")
+            loaded = sorted(set(line.split("=", 1)[1] for line in output.splitlines()
+                                if line.startswith("NATIVE_LIBRARY=")))
+            expected = sorted(path.name for path in native.iterdir())
+            if mode == "--smoke-test" and loaded != expected:
+                raise RuntimeError(f"Expected sibling libraries {expected}, loaded {loaded}.")
+            results[mode[2:]] = {"passed": True, "internal_extraction": False, "loaded_libraries": loaded}
+
+    report = {
+        "rid": rid,
+        "layout": "adjacent",
+        "commit": run(["git", "rev-parse", "HEAD"]).strip(),
+        "sdk": run(["dotnet", "--version"]).strip(),
+        "os": platform.platform(),
+        "executable_bytes": binary.stat().st_size,
+        "native_bytes": sum(path.stat().st_size for path in native.iterdir()),
+        "uncompressed_bytes": sum(item["bytes"] for item in files),
+        "zip_bytes": archive.stat().st_size,
+        "zip_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        "compression": "ZIP DEFLATE level 9; fixed order and timestamps",
+        "files": files,
+        "excluded_native_files": [path.name for path in excluded],
+        "tests": results,
+        "settings": {"aot": True, "trim": "full", "optimization": "Size", "invariant_globalization": True,
+                     "rendering": "Software", "theme": None, "bundled_fonts": False},
+    }
+    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    markdown = f"## Adjacent updater package: {rid}\n\n| Measurement | Bytes | MiB |\n|---|---:|---:|\n"
+    markdown += "".join(f"| {label} | {report[label]} | {report[label] / 1048576:.2f} |\n"
+                        for label in ("executable_bytes", "native_bytes", "uncompressed_bytes", "zip_bytes"))
+    markdown += "\nZIP was extracted externally and verified by SHA256, then file/SHA256/ZIP and real GUI tests passed.\n"
+    markdown += "Helper has no embedded payload or self-extraction code; executable and native libraries are siblings.\n"
+    (out / "report.md").write_text(markdown, encoding="utf-8")
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+            summary.write(markdown)
+    print(markdown)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rid", required=True, choices=["osx-arm64", "linux-x64", "win-x64"])
     parser.add_argument("--reuse-baseline", action="store_true")
+    parser.add_argument("--layout", choices=["single-file", "adjacent"], default="single-file")
     args = parser.parse_args()
     expected_os = {"osx-arm64": "Darwin", "linux-x64": "Linux", "win-x64": "Windows"}[args.rid]
     if platform.system() != expected_os:
         parser.error("Run on the target OS: NativeAOT does not support cross-OS publishing.")
     out = ROOT / "artifacts/updater-size" / args.rid
+    if args.layout == "adjacent":
+        out = out / "adjacent"
     out.mkdir(parents=True, exist_ok=True)
     baseline = out / "baseline"
     bundled = out / "bundled"
@@ -57,7 +128,7 @@ def main():
     publish = ["dotnet", "publish", PROJECT, "-r", args.rid, "-c", "Release"]
     if not args.reuse_baseline:
         shutil.rmtree(baseline, ignore_errors=True)
-        run(publish + ["-o", baseline], out / "baseline-publish.log")
+        run(publish + ["-o", baseline, "-p:NativePayload="], out / "baseline-publish.log")
     if not (baseline / executable_name).is_file():
         raise RuntimeError("Baseline executable is missing.")
 
@@ -82,6 +153,10 @@ def main():
                 run(["lipo", target, "-thin", "arm64", "-output", thin])
                 thin.replace(target)
                 run(["codesign", "--force", "--sign", "-", target])
+
+    if args.layout == "adjacent":
+        measure_adjacent(out, baseline, native, delivery, executable_name, args.rid, excluded)
+        return
 
     payload = out / "native.zip"
     archive_files(payload, native.iterdir())

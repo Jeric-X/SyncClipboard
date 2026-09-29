@@ -94,3 +94,23 @@ macOS 额外释放 Avalonia.Native。原生库不会因托管 trimming 自动缩
 
 这说明独立助手采用 NativeAOT 并在运行时释放原生库可行，当前最小实用界面配置的分发文件约 13–19 MiB，
 下载 ZIP 约 8–11 MiB。后续正式助手可沿用启动封装，但应另行验证真实 DMG/AppImage/ZIP 的升级、回滚与重启逻辑。
+
+## 同级动态库 ZIP 对照实验
+
+按后续要求，新增 `--layout adjacent`：生成未内嵌原生库、未编译自解包与父子进程启动代码的 NativeAOT 可执行文件，
+将所需原生库同级放置，统一使用 ZIP DEFLATE level 9 压缩。主程序未来负责解压，助手直接加载自身目录中的库。
+这次只实现测试封装，没有改动正式主程序的释放或升级逻辑。
+
+```sh
+python3 build/updater-size/measure.py --rid osx-arm64 --layout adjacent
+python3 build/updater-size/measure.py --rid linux-x64 --layout adjacent
+python build/updater-size/measure.py --rid win-x64 --layout adjacent
+```
+
+结果写入 `artifacts/updater-size/<rid>/adjacent/`，保留首轮结果。
+测试从实际生成的 ZIP 解压到含中文、空格的新目录，逐文件校验 SHA256，再在不同的工作目录运行功能和 GUI 冒烟测试。
+须加载全部同级原生库且不出现内部解包行为。Unix 解压后显式设置主可执行文件权限为 `0755`；正式主程序也需要这一步。
+CI 仍仅运行测试分支的 Windows/Linux 实验，macOS 在本机验证。
+
+首轮 macOS 对照：ZIP 8,046,535 字节（7.67 MiB），解压后 19,105,392 字节（18.22 MiB），功能和 GUI 测试通过。
+相比此前自解包可执行文件再压 ZIP 的 7.70 MiB，压缩体积变化很小；主要收益是去掉运行时内部解包及父子进程启动流程。

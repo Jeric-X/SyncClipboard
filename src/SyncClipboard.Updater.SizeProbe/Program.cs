@@ -1,4 +1,6 @@
+#if EMBED_NATIVE
 using System.Diagnostics;
+#endif
 using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -19,6 +21,7 @@ internal static class Program
     {
         try
         {
+#if EMBED_NATIVE
             var nativeIndex = Array.IndexOf(args, "--native-directory");
             if (nativeIndex < 0)
             {
@@ -30,6 +33,9 @@ internal static class Program
                 if (nativeIndex + 1 >= args.Length) throw new ArgumentException("Missing native directory.");
                 RegisterNativeLibraries(args[nativeIndex + 1]);
             }
+#else
+            RegisterNativeLibraries(AppContext.BaseDirectory);
+#endif
 
             if (args.Contains("--self-test"))
             {
@@ -52,6 +58,7 @@ internal static class Program
         }
     }
 
+#if EMBED_NATIVE
     private static int RunExtracted(Stream payload, string[] args)
     {
         // The parent owns a fresh private directory; it cleans up after the UI child exits,
@@ -74,6 +81,7 @@ internal static class Program
             directory.Delete(recursive: true);
         }
     }
+#endif
 
     private static void RegisterNativeLibraries(string directory)
     {

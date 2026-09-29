@@ -12,6 +12,9 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(NativePayload)' != ''">
+    <DefineConstants>$(DefineConstants);EMBED_NATIVE</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
   </ItemGroup>

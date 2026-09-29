@@ -38,13 +38,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
       - name: Publish and measure
-        run: python build/updater-size/measure.py --rid ${{ matrix.rid }}
+        run: python build/updater-size/measure.py --rid ${{ matrix.rid }} --layout adjacent
       - name: Upload executable, measurements and logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: updater-size-${{ matrix.rid }}
+          name: updater-adjacent-size-${{ matrix.rid }}
           path: |
-            artifacts/updater-size/${{ matrix.rid }}/delivery.zip
-            artifacts/updater-size/${{ matrix.rid }}/report.*
-            artifacts/updater-size/${{ matrix.rid }}/*.log
+            artifacts/updater-size/${{ matrix.rid }}/adjacent/delivery.zip
+            artifacts/updater-size/${{ matrix.rid }}/adjacent/report.*
+            artifacts/updater-size/${{ matrix.rid }}/adjacent/*.log
