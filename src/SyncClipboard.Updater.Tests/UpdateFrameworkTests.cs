@@ -19,13 +19,15 @@ public class UpdateFrameworkTests
     };
 
     [TestMethod]
-    public void GeneratedJsonPreservesRequestAndResult()
+    [DataRow("3.4.0-beta1")]
+    [DataRow(null)]
+    public void GeneratedJsonPreservesRequestAndResult(string? resultVersion)
     {
         var request = Request with { Language = "zh-CN" };
         var json = JsonSerializer.Serialize(request, UpdateJsonContext.Default.UpdateRequest);
         Assert.AreEqual(request, JsonSerializer.Deserialize(json, UpdateJsonContext.Default.UpdateRequest));
         Assert.Contains("WindowsZip", json);
-        var result = new UpdateResult(request.TargetVersion, UpdateOutcome.Failed, "无法更新");
+        var result = new UpdateResult(resultVersion, UpdateOutcome.Failed, "无法更新");
         json = JsonSerializer.Serialize(result, UpdateJsonContext.Default.UpdateResult);
         Assert.AreEqual(result, JsonSerializer.Deserialize(json, UpdateJsonContext.Default.UpdateResult));
     }

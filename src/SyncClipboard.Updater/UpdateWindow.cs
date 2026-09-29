@@ -55,7 +55,17 @@ internal sealed class UpdateWindow : Window
             // One helper owns each task. Completed artifacts are never silently reused.
             using var ownership = new FileStream(Path.Combine(work, "run.lock"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
             if (File.Exists(Path.Combine(work, "result.json"))) throw new IOException("This update task already has a result.");
-            var request = await UpdateTaskFile.ReadAsync(path, cancellation.Token);
+            UpdateRequest request;
+            try
+            {
+                request = await UpdateTaskFile.ReadAsync(path, cancellation.Token);
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                // Keep ownership while recording unreadable tasks; the target version is unknown.
+                await UpdateTaskFile.WriteResultAsync(work, new(null, UpdateOutcome.Failed, error.Message));
+                throw;
+            }
             chinese = request.Language?.StartsWith("zh", StringComparison.OrdinalIgnoreCase) == true;
             details.Text = request.TargetVersion;
             var progress = new Progress<UpdateProgress>(value => Dispatcher.UIThread.Post(() => ShowProgress(value)));
