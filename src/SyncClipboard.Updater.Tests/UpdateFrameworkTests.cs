@@ -7,6 +7,8 @@ namespace SyncClipboard.Updater.Tests;
 [TestClass]
 public class UpdateFrameworkTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private static UpdateRequest Request => new()
     {
         PackageKind = UpdatePackageKind.WindowsZip,
@@ -22,7 +24,7 @@ public class UpdateFrameworkTests
         var request = Request with { Language = "zh-CN" };
         var json = JsonSerializer.Serialize(request, UpdateJsonContext.Default.UpdateRequest);
         Assert.AreEqual(request, JsonSerializer.Deserialize(json, UpdateJsonContext.Default.UpdateRequest));
-        StringAssert.Contains(json, "WindowsZip");
+        Assert.Contains("WindowsZip", json);
         var result = new UpdateResult(request.TargetVersion, UpdateOutcome.Failed, "无法更新");
         json = JsonSerializer.Serialize(result, UpdateJsonContext.Default.UpdateResult);
         Assert.AreEqual(result, JsonSerializer.Deserialize(json, UpdateJsonContext.Default.UpdateResult));
@@ -43,8 +45,8 @@ public class UpdateFrameworkTests
             Request with { ParentProcessId = 0 }
         ];
         foreach (var request in invalid)
-            Assert.ThrowsException<InvalidDataException>(request.Validate);
-        Assert.ThrowsException<JsonException>(() =>
+            Assert.ThrowsExactly<InvalidDataException>(request.Validate);
+        Assert.ThrowsExactly<JsonException>(() =>
             JsonSerializer.Deserialize("{}", UpdateJsonContext.Default.UpdateRequest));
     }
 
@@ -54,8 +56,8 @@ public class UpdateFrameworkTests
         var strategy = new TestStrategy();
         var factory = new UpdateStrategyFactory([strategy]);
         Assert.AreSame(strategy, factory.Create(UpdatePackageKind.WindowsZip));
-        Assert.ThrowsException<NotSupportedException>(() => factory.Create(UpdatePackageKind.MacDmg));
-        Assert.ThrowsException<ArgumentException>(() => new UpdateStrategyFactory([strategy, strategy]));
+        Assert.ThrowsExactly<NotSupportedException>(() => factory.Create(UpdatePackageKind.MacDmg));
+        Assert.ThrowsExactly<ArgumentException>(() => new UpdateStrategyFactory([strategy, strategy]));
     }
 
     [TestMethod]
@@ -112,13 +114,14 @@ public class UpdateFrameworkTests
         {
             var path = Path.Combine(directory, "request.json");
             var request = Request;
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(request, UpdateJsonContext.Default.UpdateRequest));
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(request, UpdateJsonContext.Default.UpdateRequest),
+                TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(request, await UpdateTaskFile.ReadAsync(path, CancellationToken.None));
             var failure = new UpdateResult(request.TargetVersion, UpdateOutcome.Failed, "Keep this error");
             await UpdateTaskFile.WriteResultAsync(directory, failure);
-            await Assert.ThrowsExceptionAsync<IOException>(() => UpdateTaskFile.WriteResultAsync(directory,
+            await Assert.ThrowsExactlyAsync<IOException>(() => UpdateTaskFile.WriteResultAsync(directory,
                 new UpdateResult(request.TargetVersion, UpdateOutcome.Succeeded)));
-            var saved = await File.ReadAllTextAsync(Path.Combine(directory, "result.json"));
+            var saved = await File.ReadAllTextAsync(Path.Combine(directory, "result.json"), TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(failure, JsonSerializer.Deserialize(saved, UpdateJsonContext.Default.UpdateResult));
             Assert.AreEqual(0, Directory.GetFiles(directory, "*.tmp").Length);
         }
