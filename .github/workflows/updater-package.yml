@@ -1,0 +1,86 @@
+name: updater-package
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    branches: [auto-update]
+    paths:
+      - src/SyncClipboard.Updater*/**
+      - src/Directory.*.props
+      - src/.editorconfig
+      - global.json
+      - build/updater/**
+      - .github/workflows/updater-package.yml
+  push:
+    branches: [auto-update]
+    paths:
+      - src/SyncClipboard.Updater*/**
+      - src/Directory.*.props
+      - src/.editorconfig
+      - global.json
+      - build/updater/**
+      - .github/workflows/updater-package.yml
+
+permissions:
+  contents: read
+
+jobs:
+  framework:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Framework tests
+        run: dotnet test src/SyncClipboard.Updater.Tests -c Release
+      - name: Code style
+        run: |
+          dotnet format src/SyncClipboard.Updater.Core/SyncClipboard.Updater.Core.csproj --verify-no-changes --severity info
+          dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info
+          dotnet format src/SyncClipboard.Updater.Tests/SyncClipboard.Updater.Tests.csproj --verify-no-changes --severity info
+
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+          - os: windows-2025-vs2026
+            rid: win-x64
+          - os: windows-11-arm
+            rid: win-arm64
+          - os: macos-26
+            rid: osx-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Linux native toolchain and desktop libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
+      - name: Publish, package and check extracted updater
+        run: python build/updater/package.py --rid ${{ matrix.rid }}
+      - name: Upload package, size report and logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: updater-${{ matrix.rid }}
+          path: |
+            artifacts/updater/${{ matrix.rid }}/*.zip
+            artifacts/updater/${{ matrix.rid }}/report.json
+            artifacts/updater/${{ matrix.rid }}/*.log
