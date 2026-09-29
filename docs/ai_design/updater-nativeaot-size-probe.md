@@ -114,3 +114,17 @@ CI 仍仅运行测试分支的 Windows/Linux 实验，macOS 在本机验证。
 
 首轮 macOS 对照：ZIP 8,046,535 字节（7.67 MiB），解压后 19,105,392 字节（18.22 MiB），功能和 GUI 测试通过。
 相比此前自解包可执行文件再压 ZIP 的 7.70 MiB，压缩体积变化很小；主要收益是去掉运行时内部解包及父子进程启动流程。
+
+同级文件模式三平台结果（2026-09-29）：
+
+| 平台 | SDK | 主程序 MiB | 解压后合计 MiB | ZIP 字节 | ZIP MiB | 旧自解包模式 ZIP MiB |
+|---|---|---:|---:|---:|---:|---:|
+| macOS arm64 | 10.0.302 | 9.33 | 18.22 | 8,046,535 | 7.67 | 7.70 |
+| Windows x64 | 10.0.303 | 9.98 | 22.81 | 9,722,920 | 9.27 | 9.32 |
+| Linux x64 | 10.0.303 | 13.18 | 26.51 | 11,586,519 | 11.05 | 11.09 |
+
+Windows/Linux 来自提交 `5e35c50d849fce1508343c62ae3ae19843e40542` 的
+[CI 运行 36514982300](https://github.com/Jeric-X/SyncClipboard/actions/runs/36514982300)，两项均成功，无编译警告。
+产物名为 `updater-adjacent-size-win-x64` 和 `updater-adjacent-size-linux-x64`。
+Linux ZIP 内恰好三个同级文件：`SyncClipboard.Updater.SizeProbe`、`libSkiaSharp.so`、`libHarfBuzzSharp.so`。
+主程序未来可将 ZIP 释放到独立工作目录、设置执行权限、启动助手；本轮仅用测试脚本模拟该流程。
