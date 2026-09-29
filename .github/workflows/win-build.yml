@@ -52,6 +52,19 @@ jobs:
       working-directory: ./src
       run: dotnet restore SyncClipboard.WinUI3
 
+    - name: Check updater RID for solution platforms
+      if: matrix.cpu == 'x64' && matrix.dotnet_runtime == 'self-contained' && matrix.win_app_sdk == 'win_app_sdk'
+      shell: pwsh
+      run: |
+        foreach ($project in 'SyncClipboard.WinUI3', 'SyncClipboard.Desktop.Default') {
+          foreach ($architecture in 'x64', 'ARM64') {
+            $rid = dotnet msbuild "src/$project/$project.csproj" -t:ResolveUpdaterConfiguration -p:RuntimeIdentifier= "-p:Platform=$architecture" -getProperty:_UpdaterRid
+            if ($LASTEXITCODE -ne 0) { throw "Could not resolve updater RID for $project/$architecture" }
+            $expected = "win-$($architecture.ToLowerInvariant())"
+            if (($rid -join "`n").Trim() -ne $expected) { throw "Expected $expected for $project/$architecture, got $rid" }
+          }
+        }
+
       # msbuild src\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:Configuration=Release /p:WindowsAppSDKSelfContained=true /p:SelfContained=true /v:m -restore
     - name: Build SyncClipboard.WinUI3
       run: >

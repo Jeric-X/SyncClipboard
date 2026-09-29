@@ -4,9 +4,9 @@
 
 ## 构建与输出
 
-三个桌面入口项目导入 `build/Updater.targets`。普通 `dotnet build` 和 `dotnet publish` 都自动发布同架构的 NativeAOT 辅助程序，再将可执行文件加入主程序输出。无需独立辅助程序 workflow、artifact 下载或按包类型注入；Windows EXE/ZIP、Linux AppImage/deb/rpm 均随桌面输出携带它，Server 不引用该构建目标。现有 Windows x86 配置仍可构建，但本辅助程序目前只提供 x64/arm64 AOT，因此 x86 不附带辅助程序。
+三个桌面入口项目导入 `build/Updater.targets`。普通 `dotnet build` 和 `dotnet publish` 都自动发布同架构的 NativeAOT 辅助程序，再将可执行文件加入主程序输出。无需独立辅助程序 workflow、artifact 下载或按包类型注入；Windows EXE/ZIP、Linux AppImage/deb/rpm 均随桌面输出携带它，Server 不引用该构建目标。解决方案只提供 x64、ARM64 两种平台，移除 x86、Any CPU 解决方案入口及项目中的 x86/RID 声明；托管项目内部仍可使用 AnyCPU 配置。
 
-主程序指定 RID 时辅助程序使用同一 RID；未指定时采用当前 SDK 的主机 RID。支持 win/linux/osx 的 x64、arm64。NativeAOT 需要对应系统的原生编译工具链，Linux CI 改用对应架构的 Ubuntu runner，Windows CI 同样使用对应架构 runner，以便启动验证。
+主程序指定 RID 时辅助程序使用同一 RID；未指定时，以当前 SDK 主机 RID 为基础，按所选 Platform（x64/ARM64）替换架构；AnyCPU 使用主机架构。例如 Windows x64 主机上的 ARM64 配置生成 win-arm64 辅助程序。支持 win/linux/osx 的 x64、arm64；显式指定不支持的架构会报错，不再为 x86 跳过辅助程序构建。NativeAOT 需要对应系统的原生编译工具链，Linux CI 改用对应架构的 Ubuntu runner，Windows CI 同样使用对应架构 runner，以便启动验证。
 
 辅助程序在独立 dotnet 进程中发布，避免继承主程序的 `net10.0-macos`/WinUI 目标框架、`OutDir`、`SelfContained=false` 等配置。通过 `--artifacts-path` 将还原、编译和发布产物隔离到主项目 obj 下，按调用项目、配置、目标框架和 RID 分目录，避免多目标框架或多个入口项目并行构建竞争同一份 bin/obj；SDK 增量编译复用未变化的结果。设计时构建跳过发布，不影响 IDE 加载。主程序真实构建如果辅助程序发布失败会直接失败，不静默漏掉辅助文件。
 

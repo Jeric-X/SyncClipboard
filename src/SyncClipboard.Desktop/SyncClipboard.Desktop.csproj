@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <Platforms>x64;ARM64;AnyCPU</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -15,9 +15,6 @@
 
   <ItemGroup Condition="'$(Platform)'=='x64'">
     <PackageReference Include="Magick.NET-Q16-x64" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(Platform)'=='x86'">
-    <PackageReference Include="Magick.NET-Q16-x86" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='ARM64'">
     <PackageReference Include="Magick.NET-Q16-arm64" />
