@@ -104,12 +104,7 @@ def main():
         output = run(command, out / "smoke-test.log", cwd=temporary, timeout=90)
         if "GUI_SMOKE=PASS" not in output:
             raise RuntimeError("Missing GUI success marker.")
-        loaded = sorted(set(line.split("=", 1)[1] for line in output.splitlines()
-                            if line.startswith("NATIVE_LIBRARY=")))
-        expected_libs = sorted(item["name"] for item in files if item["name"] != executable)
-        if loaded != expected_libs:
-            raise RuntimeError(f"Expected sibling libraries {expected_libs}, loaded {loaded}.")
-        checks["smoke-test"] = {"passed": True, "loaded_libraries": loaded}
+        checks["smoke-test"] = {"passed": True}
 
     report = {
         "rid": args.rid, "commit": run(["git", "rev-parse", "HEAD"]).strip(),
@@ -120,7 +115,7 @@ def main():
     (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     summary = (f"### Updater {args.rid}\n\n"
                f"Payload: {report['uncompressed_bytes'] / 1048576:.2f} MiB before the application's compression.\n\n"
-               "Native-library and GUI checks passed from a copied directory. No installation was performed.\n")
+               "GUI startup passed with default library loading from a copied directory. No installation was performed.\n")
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
             stream.write(summary)

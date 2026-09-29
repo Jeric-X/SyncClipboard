@@ -17,7 +17,6 @@ internal static class Program
             if (args is ["--smoke-test"]) UpdaterApplication.SmokeTest = true;
             else if (args.Length != 0) throw new ArgumentException("Use --help for available options.");
 
-            NativeLibraries.Register();
             return AppBuilder.Configure<UpdaterApplication>().UsePlatformDetect()
                 .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software] })
                 .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Software] })
