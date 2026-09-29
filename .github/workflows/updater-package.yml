@@ -56,26 +56,15 @@ jobs:
       - name: Collect executable and native libraries
         shell: bash
         run: |
-          shopt -s nullglob
           mkdir -p artifacts/updater/delivery
-          cp "artifacts/updater/publish/$UPDATER_EXECUTABLE" artifacts/updater/publish/*.{dll,dylib,so} artifacts/updater/delivery/
-          # Software rendering does not use ANGLE.
-          rm -f artifacts/updater/delivery/av_libglesv2.dll
-      - name: Thin and sign macOS updater
+          cp "artifacts/updater/publish/$UPDATER_EXECUTABLE" artifacts/updater/delivery/
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            cp artifacts/updater/publish/*.so artifacts/updater/delivery/
+          fi
+      - name: Sign macOS updater
         if: runner.os == 'macOS'
-        env:
-          TARGET_ARCH: ${{ matrix.rid == 'osx-x64' && 'x86_64' || 'arm64' }}
-        run: |
-          for library in artifacts/updater/delivery/*.dylib; do
-            if [[ $(lipo -archs "$library") != "$TARGET_ARCH" ]]; then
-              lipo "$library" -thin "$TARGET_ARCH" -output "$library.thin"
-              mv "$library.thin" "$library"
-            fi
-          done
-          for file in artifacts/updater/delivery/*; do
-            codesign --force --sign - --timestamp=none "$file"
-          done
-      - name: Check updater window
+        run: codesign --force --sign - --timestamp=none artifacts/updater/delivery/SyncClipboard.Updater
+      - name: Check updater startup
         shell: bash
         timeout-minutes: 2
         run: |
@@ -85,12 +74,13 @@ jobs:
           cd "$RUNNER_TEMP"
           if [[ "$RUNNER_OS" == Linux ]]; then
             xvfb-run -a "$check_dir/$UPDATER_EXECUTABLE" --smoke-test | tee updater-smoke.log
+            grep -q 'GUI_SMOKE=PASS' updater-smoke.log
           else
             "$check_dir/$UPDATER_EXECUTABLE" --smoke-test | tee updater-smoke.log
+            grep -q 'CONSOLE_SMOKE=PASS' updater-smoke.log
           fi
-          grep -q 'GUI_SMOKE=PASS' updater-smoke.log
       - name: Check code style
-        if: matrix.rid == 'linux-x64'
+        if: matrix.rid == 'linux-x64' || matrix.rid == 'win-x64'
         run: dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info
       - name: Upload updater directory
         uses: actions/upload-artifact@v7

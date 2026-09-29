@@ -1,4 +1,6 @@
+#if UPDATER_AVALONIA
 using Avalonia;
+#endif
 
 namespace SyncClipboard.Updater;
 
@@ -14,14 +16,20 @@ internal static class Program
                 Console.WriteLine("SyncClipboard.Updater [--smoke-test]");
                 return 0;
             }
-            if (args is ["--smoke-test"]) UpdaterApplication.SmokeTest = true;
-            else if (args.Length != 0) throw new ArgumentException("Use --help for available options.");
+            if (args.Length != 0 && args is not ["--smoke-test"])
+                throw new ArgumentException("Use --help for available options.");
 
+#if UPDATER_AVALONIA
+            UpdaterApplication.SmokeTest = args is ["--smoke-test"];
             return AppBuilder.Configure<UpdaterApplication>().UsePlatformDetect()
-                .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software] })
                 .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Software] })
-                .With(new AvaloniaNativePlatformOptions { RenderingMode = [AvaloniaNativeRenderingMode.Software] })
                 .StartWithClassicDesktopLifetime([]);
+#else
+            Console.WriteLine("SyncClipboard 更新助手 / Updater");
+            Console.WriteLine("更新功能尚未接入。 / Installation is not implemented yet.");
+            if (args is ["--smoke-test"]) Console.WriteLine("CONSOLE_SMOKE=PASS");
+            return 0;
+#endif
         }
         catch (Exception error)
         {

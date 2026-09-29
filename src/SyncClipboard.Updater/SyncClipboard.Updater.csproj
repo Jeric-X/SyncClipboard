@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputType Condition="$([MSBuild]::IsOSPlatform('Windows'))">WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -11,8 +10,14 @@
     <IlcOptimizationPreference>Size</IlcOptimizationPreference>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <UpdaterUseAvalonia Condition="'$(RuntimeIdentifier)' != ''">$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux-'))</UpdaterUseAvalonia>
+    <UpdaterUseAvalonia Condition="'$(RuntimeIdentifier)' == ''">$([MSBuild]::IsOSPlatform('Linux'))</UpdaterUseAvalonia>
+    <DefineConstants Condition="'$(UpdaterUseAvalonia)' == 'true'">$(DefineConstants);UPDATER_AVALONIA</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(UpdaterUseAvalonia)' == 'true'">
     <PackageReference Include="Avalonia.Desktop" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UpdaterUseAvalonia)' != 'true'">
+    <Compile Remove="UpdaterApplication.cs;UpdateWindow.cs" />
   </ItemGroup>
 </Project>
