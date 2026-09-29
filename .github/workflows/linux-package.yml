@@ -79,6 +79,23 @@ jobs:
           name: linux-${{ matrix.cpu }}-${{ matrix.type }}
           path: linux-bin/
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Download updater for AppImage
+        if: matrix.package-type == 'AppImage'
+        uses: actions/download-artifact@v8
+        with:
+          name: updater-linux-${{ matrix.cpu }}
+          path: updater-artifact/
+
+      - name: Include updater only in AppImage
+        run: >-
+          python build/updater/include-in-package.py
+          --rid linux-${{ matrix.cpu }} --package-type ${{ matrix.package-type }}
+          --app-dir linux-bin --artifact-dir updater-artifact
+
       - name: set update info
         run: |
           chmod +x ./build/SetUpdateSource.sh
@@ -127,6 +144,17 @@ jobs:
           mv ${{ matrix.package-head }}*-*${{ matrix.package-tail }}.${{ matrix.package-type }}
           SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
         working-directory: ./build/linux/output
+
+      - name: Install package inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y squashfs-tools rpm2cpio cpio
+
+      - name: Verify updater inclusion in finished package
+        run: >-
+          python build/updater/verify-package.py
+          --package build/linux/output/SyncClipboard_linux_${{ matrix.cpu }}${{ matrix.package-dotnet-runtime }}.${{ matrix.package-type }}
+          --manifest updater-artifact/report.json
 
       - name: Generate and verify AppImage update metadata
         if: matrix.package-type == 'AppImage' && matrix.type == 'self-contained'

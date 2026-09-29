@@ -3,44 +3,18 @@ name: updater-package
 on:
   workflow_dispatch:
   workflow_call:
-  pull_request:
-    branches: [auto-update]
-    paths:
-      - src/SyncClipboard.Updater*/**
-      - src/Directory.*.props
-      - src/.editorconfig
-      - global.json
-      - build/updater/**
-      - .github/workflows/updater-package.yml
-  push:
-    branches: [auto-update]
-    paths:
-      - src/SyncClipboard.Updater*/**
-      - src/Directory.*.props
-      - src/.editorconfig
-      - global.json
-      - build/updater/**
-      - .github/workflows/updater-package.yml
+    inputs:
+      checkout-repo:
+        required: true
+        type: string
+      checkout-ref:
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
-  framework:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
-      - name: Framework tests
-        run: dotnet test src/SyncClipboard.Updater.Tests -c Release
-      - name: Code style
-        run: |
-          dotnet format src/SyncClipboard.Updater.Core/SyncClipboard.Updater.Core.csproj --verify-no-changes --severity info
-          dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info
-          dotnet format src/SyncClipboard.Updater.Tests/SyncClipboard.Updater.Tests.csproj --verify-no-changes --severity info
-
   package:
     strategy:
       fail-fast: false
@@ -62,6 +36,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
+        with:
+          repository: ${{ inputs.checkout-repo || github.repository }}
+          ref: ${{ inputs.checkout-ref || github.ref }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
@@ -73,14 +50,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
-      - name: Publish, package and check extracted updater
+      - name: Publish and check standalone updater
         run: python build/updater/package.py --rid ${{ matrix.rid }}
-      - name: Upload package, size report and logs
+      - name: Check code style
+        if: matrix.rid == 'linux-x64'
+        run: dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info
+      - name: Upload updater directory, size report and logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: updater-${{ matrix.rid }}
           path: |
-            artifacts/updater/${{ matrix.rid }}/*.zip
+            artifacts/updater/${{ matrix.rid }}/delivery/
             artifacts/updater/${{ matrix.rid }}/report.json
             artifacts/updater/${{ matrix.rid }}/*.log

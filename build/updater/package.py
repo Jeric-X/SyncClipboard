@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the standalone updater, package sibling native libraries and verify the ZIP in CI."""
+"""Publish the standalone updater and verify its distributable directory in CI."""
 import argparse
 import hashlib
 import json
@@ -11,7 +11,6 @@ import subprocess
 import struct
 import sys
 import tempfile
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT / "src/SyncClipboard.Updater/SyncClipboard.Updater.csproj"
@@ -84,54 +83,44 @@ def main():
                 thin = target.with_suffix(".thin")
                 run(["lipo", target, "-thin", arch, "-output", thin])
                 thin.replace(target)
-                run(["codesign", "--force", "--sign", "-", target])
+    if os_name == "osx":
+        for path in delivery.iterdir():
+            run(["codesign", "--force", "--sign", "-", "--timestamp=none", path])
+            run(["codesign", "--verify", "--strict", path])
     files = [{"name": path.name, "bytes": path.stat().st_size, "sha256": sha256(path)}
              for path in sorted(delivery.iterdir())]
-    archive = out / f"SyncClipboard.Updater-{args.rid}.zip"
-    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as package:
-        for path in sorted(delivery.iterdir()):
-            info = zipfile.ZipInfo(path.name, date_time=(2020, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            info.create_system = 3
-            info.external_attr = 0o100755 << 16
-            package.writestr(info, path.read_bytes(), compresslevel=9)
-
     checks = {}
     with tempfile.TemporaryDirectory(prefix="syncclipboard-updater-") as temporary:
-        extracted = Path(temporary) / "更新 helper 含空格"
-        with zipfile.ZipFile(archive) as package:
-            package.extractall(extracted)
-        binary = extracted / executable
+        copied = Path(temporary) / "更新 helper 含空格"
+        shutil.copytree(delivery, copied)
+        binary = copied / executable
         binary.chmod(0o755)
         for item in files:
-            if sha256(extracted / item["name"]) != item["sha256"]:
-                raise RuntimeError("Extracted checksum mismatch: " + item["name"])
-        for mode, marker in [("--self-test", "SELF_TEST=PASS"), ("--smoke-test", "GUI_SMOKE=PASS")]:
-            command = [binary, mode]
-            if os_name == "linux":
-                command = ["xvfb-run", "-a", *command]
-            output = run(command, out / (mode[2:] + ".log"), cwd=temporary, timeout=90)
-            if marker not in output:
-                raise RuntimeError("Missing success marker: " + marker)
-            loaded = sorted(set(line.split("=", 1)[1] for line in output.splitlines()
-                                if line.startswith("NATIVE_LIBRARY=")))
-            expected_libs = sorted(item["name"] for item in files if item["name"] != executable)
-            if mode == "--smoke-test" and loaded != expected_libs:
-                raise RuntimeError(f"Expected sibling libraries {expected_libs}, loaded {loaded}.")
-            checks[mode[2:]] = {"passed": True, "loaded_libraries": loaded}
+            if sha256(copied / item["name"]) != item["sha256"]:
+                raise RuntimeError("Copied checksum mismatch: " + item["name"])
+        command = [binary, "--smoke-test"]
+        if os_name == "linux":
+            command = ["xvfb-run", "-a", *command]
+        output = run(command, out / "smoke-test.log", cwd=temporary, timeout=90)
+        if "GUI_SMOKE=PASS" not in output:
+            raise RuntimeError("Missing GUI success marker.")
+        loaded = sorted(set(line.split("=", 1)[1] for line in output.splitlines()
+                            if line.startswith("NATIVE_LIBRARY=")))
+        expected_libs = sorted(item["name"] for item in files if item["name"] != executable)
+        if loaded != expected_libs:
+            raise RuntimeError(f"Expected sibling libraries {expected_libs}, loaded {loaded}.")
+        checks["smoke-test"] = {"passed": True, "loaded_libraries": loaded}
 
     report = {
         "rid": args.rid, "commit": run(["git", "rev-parse", "HEAD"]).strip(),
-        "zip_bytes": archive.stat().st_size, "zip_sha256": sha256(archive),
         "uncompressed_bytes": sum(item["bytes"] for item in files),
         "files": files, "excluded_native_files": excluded, "checks": checks,
         "settings": {"aot": True, "optimization": "Size", "rendering": "Software"},
     }
     (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     summary = (f"### Updater {args.rid}\n\n"
-               f"ZIP: {report['zip_bytes'] / 1048576:.2f} MiB; "
-               f"extracted: {report['uncompressed_bytes'] / 1048576:.2f} MiB.\n\n"
-               "Generated JSON and GUI checks passed from the extracted ZIP. No installation was performed.\n")
+               f"Payload: {report['uncompressed_bytes'] / 1048576:.2f} MiB before the application's compression.\n\n"
+               "Native-library and GUI checks passed from a copied directory. No installation was performed.\n")
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
             stream.write(summary)

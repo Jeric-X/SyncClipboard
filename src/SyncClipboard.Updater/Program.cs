@@ -9,19 +9,13 @@ internal static class Program
     {
         try
         {
-            if (args is ["--self-test"]) return SmokeChecks.CheckProtocol();
             if (args is ["--help"])
             {
-                Console.WriteLine("SyncClipboard.Updater --task <absolute request.json path>");
+                Console.WriteLine("SyncClipboard.Updater [--smoke-test]");
                 return 0;
             }
-            if (args is ["--task", var path])
-            {
-                if (!Path.IsPathFullyQualified(path)) throw new ArgumentException("The task path must be absolute.");
-                UpdaterApplication.TaskPath = Path.GetFullPath(path);
-            }
-            else if (args is ["--smoke-test"]) UpdaterApplication.SmokeTest = true;
-            else if (args.Length != 0) throw new ArgumentException("Use --task <request.json> or --help.");
+            if (args is ["--smoke-test"]) UpdaterApplication.SmokeTest = true;
+            else if (args.Length != 0) throw new ArgumentException("Use --help for available options.");
 
             NativeLibraries.Register();
             return AppBuilder.Configure<UpdaterApplication>().UsePlatformDetect()

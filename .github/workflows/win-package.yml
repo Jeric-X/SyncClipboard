@@ -40,6 +40,23 @@ jobs:
           name: win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}
           path: WinUI3/
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Download updater for portable package
+        if: matrix.package-type == 'portable'
+        uses: actions/download-artifact@v8
+        with:
+          name: updater-win-${{ matrix.cpu }}
+          path: updater-artifact/
+
+      - name: Include updater only in portable package
+        run: >-
+          python build/updater/include-in-package.py
+          --rid win-${{ matrix.cpu }} --package-type ${{ matrix.package-type }}
+          --app-dir WinUI3 --artifact-dir updater-artifact
+
       - name: Download feature file
         uses: actions/download-artifact@v8
         with:
@@ -67,6 +84,13 @@ jobs:
         if: matrix.package-type == 'portable'
         run: |
           7z a SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_portable.zip ./WinUI3/*
+
+      - name: Verify updater files inside portable ZIP
+        if: matrix.package-type == 'portable'
+        run: >-
+          python build/updater/verify-package.py
+          --package SyncClipboard_win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}_portable.zip
+          --manifest updater-artifact/report.json
 
       - name: Set update info for installer
         if: matrix.package-type == 'installer'

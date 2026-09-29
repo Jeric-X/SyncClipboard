@@ -16,23 +16,29 @@ jobs:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
 
+  build-updater:
+    uses: ./.github/workflows/updater-package.yml
+    with:
+      checkout-repo: ${{ github.repository }}
+      checkout-ref: ${{ github.ref }}
+
   build-win:
     uses: ./.github/workflows/win-package.yml
-    needs: prebuild
+    needs: [prebuild, build-updater]
 
   build-server:
     uses: ./.github/workflows/server-build.yml
 
   build-linux:
     uses: ./.github/workflows/linux-package.yml
-    needs: prebuild
+    needs: [prebuild, build-updater]
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
     
   build-mac:
     uses: ./.github/workflows/mac-package.yml
-    needs: prebuild
+    needs: [prebuild, build-updater]
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}

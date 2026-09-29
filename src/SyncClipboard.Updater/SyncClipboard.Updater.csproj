@@ -11,10 +11,8 @@
     <IlcOptimizationPreference>Size</IlcOptimizationPreference>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
-    <ProjectReference Include="../SyncClipboard.Updater.Core/SyncClipboard.Updater.Core.csproj" />
   </ItemGroup>
 </Project>
