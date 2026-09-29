@@ -79,16 +79,8 @@ jobs:
           name: linux-${{ matrix.cpu }}-${{ matrix.type }}
           path: linux-bin/
 
-      - name: Download updater for AppImage
-        if: matrix.package-type == 'AppImage'
-        uses: actions/download-artifact@v8
-        with:
-          name: updater-linux-${{ matrix.cpu }}
-          path: linux-bin/Updater/
-
       - name: Restore updater executable permission
-        if: matrix.package-type == 'AppImage'
-        run: chmod +x linux-bin/Updater/SyncClipboard.Updater
+        run: chmod +x linux-bin/SyncClipboard.Updater
 
       - name: set update info
         run: |

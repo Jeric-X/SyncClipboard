@@ -43,4 +43,6 @@
     <PartialAppManifest Include="..\..\build\macos\Info.plist" />
   </ItemGroup>
 
+  <Import Project="../../build/Updater.targets" />
+
 </Project>

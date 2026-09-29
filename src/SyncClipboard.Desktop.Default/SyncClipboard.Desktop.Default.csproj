@@ -33,4 +33,6 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <Import Project="../../build/Updater.targets" />
+
 </Project>

@@ -22,6 +22,7 @@ internal static class Program
 #if UPDATER_AVALONIA
             UpdaterApplication.SmokeTest = args is ["--smoke-test"];
             return AppBuilder.Configure<UpdaterApplication>().UsePlatformDetect()
+                .With(new AvaloniaNativePlatformOptions { RenderingMode = [AvaloniaNativeRenderingMode.Software] })
                 .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Software] })
                 .StartWithClassicDesktopLifetime([]);
 #else

@@ -10,8 +10,8 @@
     <IlcOptimizationPreference>Size</IlcOptimizationPreference>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <UpdaterUseAvalonia Condition="'$(RuntimeIdentifier)' != ''">$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux-'))</UpdaterUseAvalonia>
-    <UpdaterUseAvalonia Condition="'$(RuntimeIdentifier)' == ''">$([MSBuild]::IsOSPlatform('Linux'))</UpdaterUseAvalonia>
+    <UpdaterUseAvalonia Condition="$(RuntimeIdentifier.StartsWith('linux-')) Or $(RuntimeIdentifier.StartsWith('osx-'))">true</UpdaterUseAvalonia>
+    <UpdaterUseAvalonia Condition="'$(RuntimeIdentifier)' == '' And !$([MSBuild]::IsOSPlatform('Windows'))">true</UpdaterUseAvalonia>
     <DefineConstants Condition="'$(UpdaterUseAvalonia)' == 'true'">$(DefineConstants);UPDATER_AVALONIA</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(UpdaterUseAvalonia)' == 'true'">

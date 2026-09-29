@@ -1,0 +1,33 @@
+<Project>
+  <!-- Publish in a separate process so the application's framework, output paths and
+       runtime packaging properties cannot leak into this independent NativeAOT tool. -->
+  <PropertyGroup>
+    <_UpdaterProjectDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../src/SyncClipboard.Updater'))</_UpdaterProjectDirectory>
+    <_UpdaterDotNet Condition="'$(DotNetHostPath)' != ''">$(DotNetHostPath)</_UpdaterDotNet>
+    <_UpdaterDotNet Condition="'$(_UpdaterDotNet)' == ''">dotnet</_UpdaterDotNet>
+  </PropertyGroup>
+
+  <Target Name="BuildUpdater" BeforeTargets="PrepareForBuild;_CollectBundleResources;ComputeFilesToPublish"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(IsCrossTargetingBuild)' != 'true'">
+    <PropertyGroup>
+      <_UpdaterRid>$(RuntimeIdentifier)</_UpdaterRid>
+      <_UpdaterRid Condition="'$(_UpdaterRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</_UpdaterRid>
+      <_UpdaterFileName>SyncClipboard.Updater</_UpdaterFileName>
+      <_UpdaterFileName Condition="$(_UpdaterRid.StartsWith('win-'))">SyncClipboard.Updater.exe</_UpdaterFileName>
+      <_UpdaterPublishDirectory>$(_UpdaterProjectDirectory)/bin/$(Configuration)/net10.0/$(_UpdaterRid)/publish</_UpdaterPublishDirectory>
+      <_UpdaterExecutable>$(_UpdaterPublishDirectory)/$(_UpdaterFileName)</_UpdaterExecutable>
+    </PropertyGroup>
+    <Error Condition="'$(_UpdaterRid)' != 'win-x64' And '$(_UpdaterRid)' != 'win-arm64' And '$(_UpdaterRid)' != 'linux-x64' And '$(_UpdaterRid)' != 'linux-arm64' And '$(_UpdaterRid)' != 'osx-x64' And '$(_UpdaterRid)' != 'osx-arm64'"
+           Text="The NativeAOT updater requires a supported x64/arm64 RuntimeIdentifier; got '$(_UpdaterRid)'." />
+    <Exec Command="&quot;$(_UpdaterDotNet)&quot; publish &quot;$(_UpdaterProjectDirectory)/SyncClipboard.Updater.csproj&quot; -c &quot;$(Configuration)&quot; -r &quot;$(_UpdaterRid)&quot; --self-contained true -o &quot;$(_UpdaterPublishDirectory)&quot;" />
+    <Error Condition="!Exists('$(_UpdaterExecutable)')" Text="The NativeAOT updater executable was not produced." />
+    <ItemGroup Condition="'$(MSBuildProjectName)' != 'SyncClipboard.Desktop.MacOS'">
+      <Content Include="$(_UpdaterExecutable)" Link="$(_UpdaterFileName)"
+               CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(MSBuildProjectName)' == 'SyncClipboard.Desktop.MacOS'">
+      <!-- Let the macOS SDK include the executable before it signs the bundle. -->
+      <BundleResource Include="$(_UpdaterExecutable)" LogicalName="Updater/$(_UpdaterFileName)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -57,6 +57,23 @@ jobs:
           dotnet publish SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
         working-directory: ./src/SyncClipboard.Desktop.MacOS
 
+      - name: Check updater with the application's native libraries
+        timeout-minutes: 2
+        run: |
+          app_dir="$GITHUB_WORKSPACE/src/SyncClipboard.Desktop.MacOS/bin/Release/net10.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app"
+          check_dir="$RUNNER_TEMP/更新 helper 含空格"
+          mkdir -p "$check_dir"
+          cp "$app_dir/Contents/Resources/Updater/SyncClipboard.Updater" "$check_dir/"
+          for library in libSkiaSharp.dylib libHarfBuzzSharp.dylib libAvaloniaNative.dylib; do
+            library_path=$(find "$app_dir/Contents" -name "$library" -type f -print -quit)
+            test -n "$library_path"
+            cp "$library_path" "$check_dir/"
+          done
+          chmod +x "$check_dir/SyncClipboard.Updater"
+          cd "$RUNNER_TEMP"
+          "$check_dir/SyncClipboard.Updater" --smoke-test | tee updater-smoke.log
+          grep -q 'GUI_SMOKE=PASS' updater-smoke.log
+
       - name: mv app
         run: | 
           mv src/SyncClipboard.Desktop.MacOS/bin/Release/net10.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app
@@ -66,15 +83,6 @@ jobs:
         run: |
           chmod +x ./build/SetUpdateSource.sh
           ./build/SetUpdateSource.sh -m manual -s github -o build/macos/SyncClipboard.app/Contents/MonoBundle -n SyncClipboard_macos_${{ matrix.cpu }}.dmg
-
-      - name: Download updater
-        uses: actions/download-artifact@v8
-        with:
-          name: updater-osx-${{ matrix.cpu }}
-          path: build/macos/SyncClipboard.app/Contents/Resources/Updater/
-
-      - name: Restore updater executable permission before signing app
-        run: chmod +x build/macos/SyncClipboard.app/Contents/Resources/Updater/SyncClipboard.Updater
 
       - name: Package app
         run: | 

@@ -22,14 +22,8 @@ jobs:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
 
-  build-updater:
-    uses: ./.github/workflows/updater-package.yml
-    with:
-      checkout-repo: ${{ github.repository }}
-      checkout-ref: ${{ github.ref }}
-
   build-win:
-    needs: [prebuild, build-updater]
+    needs: prebuild
     uses: ./.github/workflows/win-release.yml
 
   build-server:
@@ -37,14 +31,14 @@ jobs:
     secrets: inherit
 
   build-linux:
-    needs: [prebuild, build-updater]
+    needs: prebuild
     uses: ./.github/workflows/linux-release.yml
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
     
   build-mac:
-    needs: [prebuild, build-updater]
+    needs: prebuild
     uses: ./.github/workflows/mac-release.yml
     with:
       checkout-repo: ${{ github.repository }}

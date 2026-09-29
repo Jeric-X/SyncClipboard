@@ -40,13 +40,6 @@ jobs:
           name: win_${{ matrix.cpu }}${{ matrix.dotnet_runtime_filename }}${{ matrix.win_app_sdk_filename }}
           path: WinUI3/
 
-      - name: Download updater for portable package
-        if: matrix.package-type == 'portable'
-        uses: actions/download-artifact@v8
-        with:
-          name: updater-win-${{ matrix.cpu }}
-          path: WinUI3/Updater/
-
       - name: Download feature file
         uses: actions/download-artifact@v8
         with:
