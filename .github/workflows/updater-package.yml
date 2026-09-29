@@ -92,27 +92,6 @@ jobs:
       - name: Check code style
         if: matrix.rid == 'linux-x64'
         run: dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info
-      - name: Report ZIP compression ratio
-        shell: bash
-        working-directory: artifacts/updater/delivery
-        env:
-          UPDATER_RID: ${{ matrix.rid }}
-        run: |
-          if [[ "$RUNNER_OS" == Windows ]]; then
-            7z a -tzip -mm=Deflate -mx=9 ../size-probe.zip ./*
-          else
-            zip -9 ../size-probe.zip ./*
-          fi
-          original_bytes=$(wc -c ./* | awk 'END { print $1 }')
-          zip_bytes=$(wc -c < ../size-probe.zip)
-          awk -v rid="$UPDATER_RID" -v original="$original_bytes" -v compressed="$zip_bytes" 'BEGIN {
-            print "### Updater ZIP size (Deflate, level 9)\n"
-            print "| RID | Original | ZIP | ZIP / original | Space saved |"
-            print "| --- | ---: | ---: | ---: | ---: |"
-            printf "| %s | %.2f MiB | %.2f MiB | %.1f%% | %.1f%% |\n", rid,
-              original / 1048576, compressed / 1048576, compressed / original * 100,
-              (1 - compressed / original) * 100
-          }' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload updater directory
         uses: actions/upload-artifact@v7
         with:

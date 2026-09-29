@@ -22,8 +22,6 @@ CI 直接运行 `dotnet publish` 发布辅助程序，通过复制命令收集�
 
 交付产物保持目录形式，放在 `artifacts/updater/delivery` 中。Windows 使用 GUI 子系统；软件渲染省去 ANGLE。macOS 在 CI 中用 `lipo` 按目标架构裁切本地库，再用 `codesign` 对辅助程序和本地库做 ad-hoc 签名。
 
-每个 RID 的 CI 摘要会列出原始文件总大小、ZIP 大小、ZIP/原始大小比例及节省空间比例。统计使用 Deflate 级别 9（Windows 用 7-Zip，macOS/Linux 用 zip），测量 ZIP 放在交付目录之外，不上传或集成进主应用。该数字用于比较辅助程序压缩后的体积，实际主程序包仍由各平台原有打包流程生成。
-
 辅助程序使用框架默认的本地库加载机制，不注册自定义加载器。CI 将整个目录复制到含空格和中文的独立目录，从不同工作目录启动 `--smoke-test`，验证默认加载机制下窗口能正常启动。该模式只显示窗口一秒后退出，不会执行更新。步骤超时由 GitHub Actions 控制，日志保留在 CI 输出中。
 
 主程序打包时，`actions/download-artifact` 按 RID 选择同一次 workflow run 的辅助产物，直接下载到应用的 `Updater` 目录。macOS/Linux 随后用 `chmod` 恢复可执行文件权限。Windows 仅便携 ZIP 分支下载，Linux 仅 AppImage 分支下载；EXE/deb/rpm 不执行这一步。
@@ -40,7 +38,7 @@ macOS 同样使用普通可执行文件，目录为 `SyncClipboard.app/Contents/
 
 macOS 的顺序是：辅助程序签名 → 放入主程序 Resources → BundleTool 重新 ad-hoc 签名主 .app → 制作 DMG。Homebrew 继续使用相同 DMG，不增加专用产物。复制时显式恢复辅助程序的 Unix 执行权限。
 
-集成完成后沿用主程序现有的打包流程，不再解包检查最终安装包。
+Windows 便携 ZIP 使用 `7z a -tzip -mm=Deflate -mx=9`，以最高 Deflate 压缩级别打包所有架构和运行库变体，保持标准 ZIP 格式。其他格式沿用原有打包流程，不解包检查最终安装包。
 
 ## 后续接入
 
