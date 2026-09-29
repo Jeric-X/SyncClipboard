@@ -71,14 +71,10 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: updater-osx-${{ matrix.cpu }}
-          path: updater-artifact/
+          path: build/macos/SyncClipboard.app/Contents/Resources/Updater/
 
-      - name: Include updater before signing app
-        shell: bash
-        run: >-
-          bash build/updater/include-in-package.sh
-          --rid osx-${{ matrix.cpu }} --package-type dmg
-          --app-dir build/macos/SyncClipboard.app/Contents/Resources --artifact-dir updater-artifact
+      - name: Restore updater executable permission before signing app
+        run: chmod +x build/macos/SyncClipboard.app/Contents/Resources/Updater/SyncClipboard.Updater
 
       - name: Package app
         run: | 

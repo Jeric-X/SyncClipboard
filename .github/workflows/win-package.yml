@@ -45,14 +45,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: updater-win-${{ matrix.cpu }}
-          path: updater-artifact/
-
-      - name: Include updater only in portable package
-        shell: bash
-        run: >-
-          bash build/updater/include-in-package.sh
-          --rid win-${{ matrix.cpu }} --package-type ${{ matrix.package-type }}
-          --app-dir WinUI3 --artifact-dir updater-artifact
+          path: WinUI3/Updater/
 
       - name: Download feature file
         uses: actions/download-artifact@v8

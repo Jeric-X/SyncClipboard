@@ -34,6 +34,8 @@ jobs:
             rid: osx-x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    env:
+      UPDATER_EXECUTABLE: ${{ startsWith(matrix.rid, 'win-') && 'SyncClipboard.Updater.exe' || 'SyncClipboard.Updater' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -47,18 +49,52 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
-      - name: Publish and check standalone updater
+      - name: Publish updater
+        run: >-
+          dotnet publish src/SyncClipboard.Updater/SyncClipboard.Updater.csproj
+          -r ${{ matrix.rid }} -c Release -o artifacts/updater/publish
+      - name: Collect executable and native libraries
         shell: bash
-        run: bash build/updater/package.sh --rid ${{ matrix.rid }}
+        run: |
+          shopt -s nullglob
+          mkdir -p artifacts/updater/delivery
+          cp "artifacts/updater/publish/$UPDATER_EXECUTABLE" artifacts/updater/publish/*.{dll,dylib,so} artifacts/updater/delivery/
+          # Software rendering does not use ANGLE.
+          rm -f artifacts/updater/delivery/av_libglesv2.dll
+      - name: Thin and sign macOS updater
+        if: runner.os == 'macOS'
+        env:
+          TARGET_ARCH: ${{ matrix.rid == 'osx-x64' && 'x86_64' || 'arm64' }}
+        run: |
+          for library in artifacts/updater/delivery/*.dylib; do
+            if [[ $(lipo -archs "$library") != "$TARGET_ARCH" ]]; then
+              lipo "$library" -thin "$TARGET_ARCH" -output "$library.thin"
+              mv "$library.thin" "$library"
+            fi
+          done
+          for file in artifacts/updater/delivery/*; do
+            codesign --force --sign - --timestamp=none "$file"
+          done
+      - name: Check updater window
+        shell: bash
+        timeout-minutes: 2
+        run: |
+          check_dir="$RUNNER_TEMP/更新 helper 含空格"
+          cp -R artifacts/updater/delivery "$check_dir"
+          chmod +x "$check_dir/$UPDATER_EXECUTABLE"
+          cd "$RUNNER_TEMP"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a "$check_dir/$UPDATER_EXECUTABLE" --smoke-test | tee updater-smoke.log
+          else
+            "$check_dir/$UPDATER_EXECUTABLE" --smoke-test | tee updater-smoke.log
+          fi
+          grep -q 'GUI_SMOKE=PASS' updater-smoke.log
       - name: Check code style
         if: matrix.rid == 'linux-x64'
         run: dotnet format src/SyncClipboard.Updater/SyncClipboard.Updater.csproj --verify-no-changes --severity info
-      - name: Upload updater directory, size report and logs
-        if: always()
+      - name: Upload updater directory
         uses: actions/upload-artifact@v7
         with:
           name: updater-${{ matrix.rid }}
-          path: |
-            artifacts/updater/${{ matrix.rid }}/delivery/
-            artifacts/updater/${{ matrix.rid }}/report.json
-            artifacts/updater/${{ matrix.rid }}/*.log
+          path: artifacts/updater/delivery/
+          if-no-files-found: error

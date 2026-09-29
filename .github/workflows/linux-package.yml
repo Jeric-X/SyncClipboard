@@ -84,14 +84,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: updater-linux-${{ matrix.cpu }}
-          path: updater-artifact/
+          path: linux-bin/Updater/
 
-      - name: Include updater only in AppImage
-        shell: bash
-        run: >-
-          bash build/updater/include-in-package.sh
-          --rid linux-${{ matrix.cpu }} --package-type ${{ matrix.package-type }}
-          --app-dir linux-bin --artifact-dir updater-artifact
+      - name: Restore updater executable permission
+        if: matrix.package-type == 'AppImage'
+        run: chmod +x linux-bin/Updater/SyncClipboard.Updater
 
       - name: set update info
         run: |

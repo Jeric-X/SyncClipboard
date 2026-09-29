@@ -18,13 +18,13 @@
 
 PR 与常规分支/tag CI 均调用 `updater-package.yml`，在目标系统和架构上发布辅助程序。主程序的打包任务依赖该流程完成，通过同一次 workflow run 的 artifact 获取辅助产物。普通本地主程序编译不会自动发布 NativeAOT 辅助程序。
 
-两个打包脚本使用 Bash，Windows CI 通过 Git Bash 执行，使用 runner 自带的 jq 和 OpenSSL，不需要 Python。
+CI 直接运行 `dotnet publish` 发布辅助程序，通过复制命令收集可执行文件与本地库。不额外维护打包脚本、文件哈希清单或 JSON 报告。
 
-`build/updater/package.sh` 发布程序及本地库到 `delivery` 目录，不额外压缩成 ZIP。Windows 使用 GUI 子系统；软件渲染省去 ANGLE，macOS 的本地库按目标架构裁切，所有交付的 Mach-O 文件先做 ad-hoc 签名并验证。
+产物放在 `artifacts/updater/delivery` 目录，不额外压缩成 ZIP。Windows 使用 GUI 子系统；软件渲染省去 ANGLE。macOS 在 CI 中用 `lipo` 按目标架构裁切本地库，再用 `codesign` 对辅助程序和本地库做 ad-hoc 签名。
 
-辅助程序使用框架默认的本地库加载机制，不注册自定义加载器。CI 将整个目录复制到含空格和中文的独立目录，从不同工作目录启动 `--smoke-test`，验证默认加载机制下窗口能正常启动。该模式只显示窗口一秒后退出，不会执行更新。报告记录 RID、源提交、各文件 SHA-256、原始体积及检查结果。
+辅助程序使用框架默认的本地库加载机制，不注册自定义加载器。CI 将整个目录复制到含空格和中文的独立目录，从不同工作目录启动 `--smoke-test`，验证默认加载机制下窗口能正常启动。该模式只显示窗口一秒后退出，不会执行更新。步骤超时由 GitHub Actions 控制，日志保留在 CI 输出中。
 
-`build/updater/include-in-package.sh` 在包类型已经确定的独立暂存目录中加入 `Updater` 目录，并校验 RID、源提交、文件清单/哈希和 GUI 检查结果。辅助程序缺失或不匹配会使打包失败。EXE/deb/rpm 分支不下载辅助产物，并检查暂存目录中没有 Updater 目录，防止误混入。
+主程序打包时，`actions/download-artifact` 按 RID 选择同一次 workflow run 的辅助产物，直接下载到应用的 `Updater` 目录。macOS/Linux 随后用 `chmod` 恢复可执行文件权限。Windows 仅便携 ZIP 分支下载，Linux 仅 AppImage 分支下载；EXE/deb/rpm 不执行这一步。
 
 Windows/Linux 的应用文件目录中存放：
 
