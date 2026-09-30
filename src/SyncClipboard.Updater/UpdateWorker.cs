@@ -63,6 +63,8 @@ internal static class UpdateWorker
         }
         catch (Exception error)
         {
+            targetLock?.Dispose();
+            targetLock = null;
             Log(update, error.ToString());
             var recoveryFailed = error is UpdateRecoveryException || !canRestart;
             if (!update.Elevated && !recoveryFailed) await RestartIfStoppedAsync(update);
