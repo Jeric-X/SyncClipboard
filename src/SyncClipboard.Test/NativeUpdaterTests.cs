@@ -32,7 +32,7 @@ public class NativeUpdaterTests
     {
         if (startedNativeUpdater)
         {
-            foreach (var process in Process.GetProcessesByName("SyncClipboard.Updater"))
+            foreach (var process in Process.GetProcessesByName("SyncClipboard.Updater").Concat(Process.GetProcessesByName("SyncClipboard")))
             {
                 using (process)
                 {
