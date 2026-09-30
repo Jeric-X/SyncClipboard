@@ -22,24 +22,21 @@ internal static class UpdateWorker
             Path.Combine(update.WorkDirectory, "SyncClipboard.Updater.exe"), StringComparison.OrdinalIgnoreCase))
             throw new IOException("The update worker must run from its own workspace.");
 
-        FileStream? targetLock = null;
+        Semaphore? targetLock = null;
         var canRestart = true;
         try
         {
             WindowsZipPackage.ValidateTarget(update);
             if (!update.Elevated)
             {
-                var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(update.Target.ToUpperInvariant())));
-                var path = Path.Combine(Path.GetDirectoryName(update.WorkDirectory)!, key + ".lock");
                 try
                 {
-                    targetLock = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
-                        1, FileOptions.DeleteOnClose);
+                    targetLock = AcquireInstallationLock(update.Target);
                 }
-                catch (IOException error) when (IsSharingViolation(error))
+                catch (IOException)
                 {
                     canRestart = false;
-                    throw new IOException("Another updater is using this installation.");
+                    throw;
                 }
             }
 
@@ -152,7 +149,27 @@ internal static class UpdateWorker
             });
     }
 
-    internal static bool IsSharingViolation(IOException error) => (error.HResult & 0xFFFF) is 32 or 33;
+    internal static Semaphore AcquireInstallationLock(string target)
+    {
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(target)).ToUpperInvariant();
+        var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
+        Semaphore semaphore;
+        bool created;
+        try
+        {
+            semaphore = new Semaphore(0, 1, @"Global\SyncClipboard.Update." + key, out created);
+        }
+        catch (UnauthorizedAccessException error)
+        {
+            throw new IOException("Another user has locked this installation for update.", error);
+        }
+        // The object's existence is the lease; no thread-affine ownership or waiting is needed.
+        // Closing the last handle, including on forced process termination, removes the lease.
+        if (created)
+            return semaphore;
+        semaphore.Dispose();
+        throw new IOException("Another updater is using this installation.");
+    }
 
     internal static async Task WaitForProcessAsync(int pid, long startTime, CancellationToken token,
         Func<CancellationToken, Task<bool>>? confirmForceExit = null, TimeSpan? gracefulWait = null)

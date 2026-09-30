@@ -461,13 +461,84 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    [DataRow(unchecked((int)0x80070020), true)]
-    [DataRow(unchecked((int)0x80070021), true)]
-    [DataRow(unchecked((int)0x80070070), false)]
-    [DataRow(unchecked((int)0x80070003), false)]
-    public void InstallationLock_DistinguishesSharingFromOtherIoFailures(int hresult, bool expected)
+    public void InstallationLock_RejectsSameTargetAndAllowsDifferentTargetsAndReacquisition()
     {
-        Assert.AreEqual(expected, UpdateWorker.IsSharingViolation(new IOException("failure", hresult)));
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows global semaphore test.");
+            return;
+        }
+        using (UpdateWorker.AcquireInstallationLock(target))
+        {
+            Assert.Throws<IOException>(() => UpdateWorker.AcquireInstallationLock(target.ToUpperInvariant() + "\\"));
+            using var other = UpdateWorker.AcquireInstallationLock(stage);
+        }
+        using var reacquired = UpdateWorker.AcquireInstallationLock(target);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ReadOnlyDestination_CanBeReplacedAndRestoredOnRollback(bool rollback)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows read-only file test.");
+            return;
+        }
+        var path = Path.Combine(target, "a.txt");
+        File.WriteAllText(path, "old");
+        File.WriteAllText(Path.Combine(stage, "a.txt"), "new");
+        File.SetAttributes(path, FileAttributes.ReadOnly | FileAttributes.Archive);
+        using var cancel = new CancellationTokenSource();
+        try
+        {
+            var install = ApplyAsync((phase, _) =>
+            {
+                if (rollback && phase == "installing")
+                    cancel.Cancel();
+            }, cancel.Token);
+            if (rollback)
+                await Assert.ThrowsAsync<OperationCanceledException>(() => install);
+            else
+                await install;
+            Assert.AreEqual(rollback ? "old" : "new", File.ReadAllText(path));
+            Assert.AreEqual(rollback, (File.GetAttributes(path) & FileAttributes.ReadOnly) != 0);
+        }
+        finally
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+    }
+
+    [TestMethod]
+    public async Task ReadOnlyDestination_FailedReplacementRestoresAttributes()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows read-only file test.");
+            return;
+        }
+        var path = Path.Combine(target, "a.txt");
+        var source = Path.Combine(stage, "a.txt");
+        File.WriteAllText(path, "old");
+        File.WriteAllText(source, "new");
+        File.SetAttributes(path, FileAttributes.ReadOnly | FileAttributes.Archive);
+        var attributes = File.GetAttributes(path);
+        try
+        {
+            await Assert.ThrowsAsync<FileNotFoundException>(() => ApplyAsync((phase, _) =>
+            {
+                if (phase == "backup")
+                    File.Delete(source);
+            }, TestContext.CancellationTokenSource.Token));
+            Assert.AreEqual("old", File.ReadAllText(path));
+            Assert.AreEqual(attributes, File.GetAttributes(path));
+        }
+        finally
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
     }
 
     [TestMethod]

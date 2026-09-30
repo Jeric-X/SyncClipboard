@@ -175,26 +175,42 @@ internal static class FileReplacement
 
     private static async Task ReplaceAsync(string source, string destination, CancellationToken token)
     {
-        // Test write access and sharing before replacing an existing file; never truncate it in place.
-        if (File.Exists(destination))
-        {
-            using var writable = new FileStream(destination, FileMode.Open, FileAccess.Write, FileShare.None);
-        }
         var temporary = Path.Combine(Path.GetDirectoryName(destination)!, ".syncclipboard-" + Guid.NewGuid().ToString("N"));
+        FileAttributes? originalAttributes = null;
         try
         {
+            if (File.Exists(destination))
+            {
+                var attributes = File.GetAttributes(destination);
+                if ((attributes & FileAttributes.ReadOnly) != 0)
+                {
+                    File.SetAttributes(destination, attributes & ~FileAttributes.ReadOnly);
+                    originalAttributes = attributes;
+                }
+                // Test write access and sharing without truncating the existing file.
+                using var writable = new FileStream(destination, FileMode.Open, FileAccess.Write, FileShare.None);
+            }
             await WindowsZipPackage.CopyAsync(source, temporary, token);
             token.ThrowIfCancellationRequested();
             File.Move(temporary, destination, true);
+            originalAttributes = null;
         }
         finally
         {
-            // A failed cleanup must not hide the replacement result or bypass rollback.
             try
             {
-                File.Delete(temporary);
+                if (originalAttributes is { } attributes)
+                    File.SetAttributes(destination, attributes);
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+            finally
+            {
+                // A failed cleanup must not hide the replacement result or bypass rollback.
+                try
+                {
+                    File.Delete(temporary);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+            }
         }
     }
 
