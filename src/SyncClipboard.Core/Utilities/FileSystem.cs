@@ -14,7 +14,7 @@ internal static class FileSystem
         var fullPath = Path.GetFullPath(directory);
         var drive = DriveInfo.GetDrives().Where(d => d.IsReady && IsWithin(fullPath, d.RootDirectory.FullName))
             .OrderByDescending(d => d.RootDirectory.FullName.Length).FirstOrDefault();
-        return drive is null || drive.AvailableFreeSpace >= bytes;
+        return drive is not null && drive.AvailableFreeSpace >= bytes;
     }
 
     public static long GetSize(string path) => Directory.Exists(path)
