@@ -14,13 +14,14 @@ internal static class Program
             if (args is ["--help"])
             {
                 Console.WriteLine("SyncClipboard.Updater [--smoke-test]\nWindows portable ZIP: --package-path <zip> --digest sha256:<hash> "
-                    + "--target <directory> --executable <SyncClipboard.exe> --version <version> --process-id <pid> "
+                    + "--target <directory> --executable <SyncClipboard.exe> --process-id <pid> "
                     + "[--language <language>] [--protect-path <path> ...]");
                 return 0;
             }
             if (args.Length != 0 && args is not ["--smoke-test"])
             {
-                if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("ZIP installation is supported on Windows only.");
+                if (!OperatingSystem.IsWindows())
+                    throw new PlatformNotSupportedException("ZIP installation is supported on Windows only.");
                 if (args is ["--cleanup-work", var workspace, "--wait-pid", var pid, "--wait-start", var start])
                 {
                     UpdateWorker.CleanupAsync(workspace, int.Parse(pid, System.Globalization.CultureInfo.InvariantCulture),
@@ -29,10 +30,20 @@ internal static class Program
                 }
                 var update = UpdateArguments.Parse(args);
                 using var cancellation = new CancellationTokenSource();
-                void Cancel(object? sender, ConsoleCancelEventArgs e) { e.Cancel = true; cancellation.Cancel(); }
+                void Cancel(object? sender, ConsoleCancelEventArgs e)
+                {
+                    e.Cancel = true;
+                    cancellation.Cancel();
+                }
                 Console.CancelKeyPress += Cancel;
-                try { return UpdateWorker.RunAsync(update, cancellation.Token).GetAwaiter().GetResult(); }
-                finally { Console.CancelKeyPress -= Cancel; }
+                try
+                {
+                    return UpdateWorker.RunAsync(update, cancellation.Token).GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    Console.CancelKeyPress -= Cancel;
+                }
             }
 
 #if UPDATER_AVALONIA

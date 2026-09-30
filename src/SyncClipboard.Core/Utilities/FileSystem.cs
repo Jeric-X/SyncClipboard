@@ -39,14 +39,4 @@ internal static class FileSystem
             return false;
         }
     }
-
-    public static bool HasLinkedAncestor(string path)
-    {
-        for (FileSystemInfo? item = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path);
-            item is not null; item = item is DirectoryInfo dir ? dir.Parent : ((FileInfo)item).Directory)
-        {
-            if (item.LinkTarget is not null || (item.Exists && (item.Attributes & FileAttributes.ReparsePoint) != 0)) return true;
-        }
-        return false;
-    }
 }

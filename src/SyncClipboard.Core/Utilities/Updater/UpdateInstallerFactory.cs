@@ -1,4 +1,3 @@
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 
@@ -9,19 +8,14 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
     public IUpdateInstaller? Create(UpdateInfoConfig updateInfo)
         => Create(updateInfo, OperatingSystem.IsWindows());
 
-    internal static IUpdateInstaller? Create(UpdateInfoConfig updateInfo, bool windows)
+    internal static IUpdateInstaller? Create(UpdateInfoConfig updateInfo, bool isWindows)
     {
         if (updateInfo.ManageType != UpdateInfoConfig.TypeManual || updateInfo.UpdateSrc != "github"
-            || string.IsNullOrWhiteSpace(updateInfo.PackageName)) return null;
+            || string.IsNullOrWhiteSpace(updateInfo.PackageName))
+            return null;
 
-        var name = updateInfo.PackageName;
-        if (windows && Path.GetFileName(name) == name && !name.Contains('\\')
-            && name.StartsWith("SyncClipboard_win_", StringComparison.Ordinal)
-            && name.EndsWith("_portable.zip", StringComparison.OrdinalIgnoreCase))
-        {
-            return new FileReplacementPackageInstaller(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"),
-                Env.ProgramDirectory);
-        }
+        if (isWindows && updateInfo.PackageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            return new FileReplacementPackageInstaller();
         return null;
     }
 }

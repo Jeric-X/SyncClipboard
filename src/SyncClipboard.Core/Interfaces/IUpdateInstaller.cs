@@ -1,6 +1,6 @@
 namespace SyncClipboard.Core.Interfaces;
 
-public record UpdateInstallRequest(string PackagePath, string Digest, string Version);
+public record UpdateInstallRequest(string PackagePath, string Digest);
 
 public interface IUpdateInstaller
 {

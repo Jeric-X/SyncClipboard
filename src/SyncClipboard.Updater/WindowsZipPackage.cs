@@ -1,5 +1,4 @@
 using SyncClipboard.Core.Utilities;
-using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
@@ -17,8 +16,8 @@ internal static class WindowsZipPackage
 
     public static void ValidateTarget(UpdateArguments update)
     {
-        if (!Directory.Exists(update.Target) || FileSystem.HasLinkedAncestor(update.Target))
-            throw new IOException("The installation directory is missing or contains a link.");
+        if (!Directory.Exists(update.Target))
+            throw new IOException("The installation directory is missing.");
         if (GetProtectedPaths(update).Any(path => FileSystem.IsWithin(update.Target, path)))
             throw new IOException("The installation directory is inside a protected data directory.");
         if (update.WorkDirectory is not null && FileSystem.IsWithin(update.WorkDirectory, update.Target))
@@ -35,7 +34,7 @@ internal static class WindowsZipPackage
         var stage = Path.Combine(attempt, "payload");
         Directory.CreateDirectory(stage);
         await ExtractAsync(snapshot, stage, update.Target, GetProtectedPaths(update), token);
-        ValidatePayload(stage, Path.GetFileName(update.PackagePath), update.Version);
+        ValidatePayload(stage, Path.GetFileName(update.PackagePath));
         return stage;
     }
 
@@ -58,11 +57,15 @@ internal static class WindowsZipPackage
             token.ThrowIfCancellationRequested();
             var name = ValidateEntryName(entry);
             var relative = name.TrimEnd('/');
-            if (!seen.Add(relative)) throw new InvalidDataException("Duplicate archive entry: " + name);
-            if (protectedPaths.Any(path => FileSystem.IsWithin(Path.Combine(target, relative), path))) continue;
+            if (!seen.Add(relative))
+                throw new InvalidDataException("Duplicate archive entry: " + name);
+            if (protectedPaths.Any(path => FileSystem.IsWithin(Path.Combine(target, relative), path)))
+                continue;
             var output = Path.GetFullPath(Path.Combine(stage, relative));
-            if (!FileSystem.IsWithin(output, stage) || output == stage) throw new InvalidDataException("Invalid archive path.");
-            if (name.EndsWith('/')) Directory.CreateDirectory(output);
+            if (!FileSystem.IsWithin(output, stage) || output == stage)
+                throw new InvalidDataException("Invalid archive path.");
+            if (name.EndsWith('/'))
+                Directory.CreateDirectory(output);
             else
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
@@ -92,12 +95,11 @@ internal static class WindowsZipPackage
         return name;
     }
 
-    internal static void ValidatePayload(string stage, string packageName, string version)
+    internal static void ValidatePayload(string stage, string packageName)
     {
         var executable = Path.Combine(stage, "SyncClipboard.exe");
         ValidateArchitecture(executable);
         ValidateArchitecture(Path.Combine(stage, "SyncClipboard.Updater.exe"));
-        ValidateVersion(FileVersionInfo.GetVersionInfo(executable).ProductVersion, version);
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(stage, "update_info.json")));
         var info = document.RootElement.GetProperty("UpdateInfo");
         if (info.GetProperty("manage_type").GetString() != "manual" || info.GetProperty("update_src").GetString() != "github"
@@ -112,13 +114,6 @@ internal static class WindowsZipPackage
         var machine = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? Machine.Arm64 : Machine.Amd64;
         if (reader.PEHeaders.PEHeader is null || reader.PEHeaders.CoffHeader.Machine != machine)
             throw new InvalidDataException("The update executable has an incompatible architecture: " + Path.GetFileName(executable));
-    }
-
-    internal static void ValidateVersion(string? actual, string expected)
-    {
-        static string Normalize(string value) => value.TrimStart('v').Split('+')[0];
-        if (actual is null || !string.Equals(Normalize(actual), Normalize(expected), StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("The update package version does not match the release.");
     }
 
     internal static async Task CopyAsync(string source, string destination, CancellationToken token)
