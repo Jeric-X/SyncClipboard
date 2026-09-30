@@ -14,4 +14,6 @@ public enum UpdaterState
     Downloaded,
     Failed,
     Canceled,
+    ReadyToInstall,
+    Installing,
 }
