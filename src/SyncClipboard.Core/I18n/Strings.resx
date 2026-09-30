@@ -1459,7 +1459,4 @@ Choose whether to use the default location or select another folder.</value>
   <data name="UpdateLocationUnsupported" xml:space="preserve">
     <value>This installation location cannot be updated automatically. Install the downloaded package manually.</value>
   </data>
-  <data name="UpdateInsufficientSpace" xml:space="preserve">
-    <value>There is not enough free space to prepare and back up this update.</value>
-  </data>
 </root>

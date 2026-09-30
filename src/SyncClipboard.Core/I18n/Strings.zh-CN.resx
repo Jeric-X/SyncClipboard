@@ -1459,7 +1459,4 @@ Shift + 左键：选中连续范围</value>
   <data name="UpdateLocationUnsupported" xml:space="preserve">
     <value>当前安装位置无法自动更新，请手动安装已下载的安装包。</value>
   </data>
-  <data name="UpdateInsufficientSpace" xml:space="preserve">
-    <value>磁盘空间不足，无法准备更新和备份。</value>
-  </data>
 </root>

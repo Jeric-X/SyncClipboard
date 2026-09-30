@@ -120,9 +120,8 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             SetStatus(UpdaterState.Installing);
             var capability = updateInstaller.GetCapability();
             if (!capability.Supported) throw new InvalidOperationException(capability.Reason ?? I18n.Strings.UpdateLocationUnsupported);
-            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!, capability);
-            var prepared = await updateInstaller.PrepareAsync(request, token);
-            await updateInstaller.StartAsync(prepared, token);
+            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!);
+            await updateInstaller.StartAsync(request, token);
             if (updateInstaller.RequiresAppExit) await AppCore.Current.ExitAsync();
         }
         catch (OperationCanceledException)

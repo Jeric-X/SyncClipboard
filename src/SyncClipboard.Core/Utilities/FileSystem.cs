@@ -1,6 +1,6 @@
-namespace SyncClipboard.Core.Utilities.Updater;
+namespace SyncClipboard.Core.Utilities;
 
-internal static class UpdateFileSystem
+internal static class FileSystem
 {
     public static bool IsWithin(string path, string directory)
     {
@@ -9,18 +9,15 @@ internal static class UpdateFileSystem
             && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal));
     }
 
-    public static void CheckSpace(string directory, long bytes)
+    public static bool HasEnoughSpace(string directory, long bytes)
     {
         var fullPath = Path.GetFullPath(directory);
         var drive = DriveInfo.GetDrives().Where(d => d.IsReady && IsWithin(fullPath, d.RootDirectory.FullName))
             .OrderByDescending(d => d.RootDirectory.FullName.Length).FirstOrDefault();
-        if (drive is not null && drive.AvailableFreeSpace < bytes + (32L * 1024 * 1024))
-        {
-            throw new IOException(I18n.Strings.UpdateInsufficientSpace);
-        }
+        return drive is null || drive.AvailableFreeSpace >= bytes;
     }
 
-    internal static long GetSize(string path) => Directory.Exists(path)
+    public static long GetSize(string path) => Directory.Exists(path)
         ? Directory.EnumerateFiles(path, "*", new EnumerationOptions
         {
             RecurseSubdirectories = true,
@@ -43,23 +40,13 @@ internal static class UpdateFileSystem
         }
     }
 
-    internal static bool HasLinkedAncestor(string path)
+    public static bool HasLinkedAncestor(string path)
     {
         for (FileSystemInfo? item = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path);
             item is not null; item = item is DirectoryInfo dir ? dir.Parent : ((FileInfo)item).Directory)
         {
-            // Installation locations must not traverse symbolic links or junctions.
             if ((item.Attributes & FileAttributes.ReparsePoint) != 0) return true;
         }
         return false;
-    }
-
-    internal static UpdateInstallCapability GetLocationCapability(UpdatePackageKind kind, string? target)
-    {
-        if (target is null || target.Any(char.IsControl) || (!Directory.Exists(target) && !File.Exists(target)) || HasLinkedAncestor(target))
-        {
-            return new(UpdatePackageKind.Unsupported, string.Empty, I18n.Strings.UpdateLocationUnsupported);
-        }
-        return new(kind, target);
     }
 }
