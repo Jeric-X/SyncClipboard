@@ -23,7 +23,7 @@ internal static class FileReplacement
     {
         public bool Modified { get; set; }
         public FileAttributes Attributes { get; set; }
-        public FileSecurity? Security { get; set; }
+        public byte[]? Security { get; set; }
     }
 
     public static async Task ApplyAsync(string stage, string target, string backup, string[] protectedPaths,
@@ -84,7 +84,7 @@ internal static class FileReplacement
                     {
                         entry.Attributes = File.GetAttributes(entry.Destination) & ~FileAttributes.ReparsePoint;
                         if (OperatingSystem.IsWindows())
-                            entry.Security = new FileInfo(entry.Destination).GetAccessControl();
+                            entry.Security = new FileInfo(entry.Destination).GetAccessControl().GetSecurityDescriptorBinaryForm();
                         Directory.CreateDirectory(Path.GetDirectoryName(entry.Backup)!);
                         await ReplaceAsync(entry.Destination, entry.Backup, token);
                     }
@@ -121,7 +121,12 @@ internal static class FileReplacement
                     {
                         await ReplaceAsync(entry.Backup, entry.Destination, CancellationToken.None);
                         if (OperatingSystem.IsWindows() && entry.Security is not null)
-                            new FileInfo(entry.Destination).SetAccessControl(entry.Security);
+                        {
+                            var security = new FileSecurity();
+                            security.SetSecurityDescriptorBinaryForm(entry.Security,
+                                AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
+                            new FileInfo(entry.Destination).SetAccessControl(security);
+                        }
                         File.SetAttributes(entry.Destination, entry.Attributes);
                     }
                     else
