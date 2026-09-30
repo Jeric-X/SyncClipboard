@@ -284,7 +284,7 @@ public class UpdateInstallationTests
     public async Task FileReplacement_VerifiesSnapshotAndUsesOnlyItsSelectedStrategy()
     {
         var strategy = new RecordingReplacementStrategy();
-        var installer = new FileReplacementUpdater(strategy, new UpdateTaskCleaner(Path.Combine(directory, "tasks"), "1.0.0"));
+        var installer = new FileReplacementUpdater(strategy, new UpdateTaskWorkspace(Path.Combine(directory, "tasks")));
         var package = Path.Combine(directory, "package");
         await File.WriteAllTextAsync(package, "package contents", TestContext.CancellationTokenSource.Token);
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(

@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, UpdateTaskCleaner cleanup) : IUpdateInstaller
+internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, UpdateTaskWorkspace workspace) : IUpdateInstaller
 {
     public bool RequiresAppExit => true;
 
@@ -20,8 +20,8 @@ internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, 
         if (request.Capability.Kind != strategy.Kind) throw new InvalidOperationException("The update does not match the selected strategy.");
         await UpdatePackageVerifier.VerifyHashAsync(request.PackagePath, request.Digest, token);
         var parent = strategy.GetInstallationDirectory(request.Capability.TargetPath);
-        EnsurePreviousHelperStopped(cleanup.TaskDirectory);
-        var work = Path.Combine(cleanup.TaskDirectory, Guid.NewGuid().ToString("N"));
+        EnsurePreviousHelperStopped(workspace.TaskDirectory);
+        var work = Path.Combine(workspace.TaskDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(work);
         try
         {
@@ -70,7 +70,7 @@ internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, 
         if (!Directory.Exists(taskDirectory)) return;
         foreach (var work in Directory.EnumerateDirectories(taskDirectory))
         {
-            if (File.Exists(Path.Combine(work, "cancel")) && UpdateTaskCleaner.HelpersRunning(work))
+            if (File.Exists(Path.Combine(work, "cancel")) && UpdateTaskWorkspace.HelpersRunning(work))
                 throw new IOException("The previous update helper is still running. Close its update or authorization window before retrying.");
         }
     }
@@ -109,7 +109,7 @@ internal sealed class FileReplacementUpdater(IFileReplacementStrategy strategy, 
     {
         var pidPath = Path.Combine(directory, "helper-pid");
         return File.Exists(pidPath) && int.TryParse(await File.ReadAllTextAsync(pidPath, token), out var pid)
-            && !UpdateTaskCleaner.IsProcessRunning(pid);
+            && !UpdateTaskWorkspace.IsProcessRunning(pid);
     }
 
     internal static string? ReadFailure(string work) => File.Exists(Path.Combine(work, "failed"))

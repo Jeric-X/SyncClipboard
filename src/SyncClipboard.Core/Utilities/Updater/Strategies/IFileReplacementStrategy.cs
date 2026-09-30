@@ -11,6 +11,8 @@ internal interface IFileReplacementStrategy
     // Whole-target replacements remove the previous payload before copying. Overlay strategies override this.
     long GetRequiredInstallationSpace(UpdateInstallTask update)
         => Math.Max(0, UpdateFileSystem.GetSize(update.Stage) - UpdateFileSystem.GetSize(update.Target));
+    // The worker owns replacement, restart, and successful-update cleanup. It must retain rollback files
+    // until replacement and restart succeed, and preserve backups/logs on failure or cancellation.
     ProcessStartInfo CreateWorkerStartInfo(UpdateInstallTask update);
     bool LauncherMayExit => false;
     bool CanRemoveFailedPreparation(string work) => true;

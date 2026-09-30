@@ -8,7 +8,7 @@ internal static class UpdateServiceRegistration
 {
     public static IServiceCollection AddUpdateInstallation(this IServiceCollection services)
     {
-        services.AddSingleton<UpdateTaskCleaner>();
+        services.AddSingleton<UpdateTaskWorkspace>();
         // Concrete package strategies are added separately; downloads keep the manual installation flow.
         services.AddSingleton<IUpdateInstaller, UnsupportedUpdateInstaller>();
         return services;
