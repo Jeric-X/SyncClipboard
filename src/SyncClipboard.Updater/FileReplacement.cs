@@ -103,6 +103,7 @@ internal static class FileReplacement
                     CreateParents(Path.GetDirectoryName(entry.Destination)!, createdDirectories);
                     await ReplaceAsync(entry.Source, entry.Destination, token);
                     entry.Modified = true;
+                    RestoreSecurity(entry);
                 });
                 Report(progress, "installing", (i + 1) * 100 / entries.Length);
             }
@@ -120,13 +121,7 @@ internal static class FileReplacement
                     if (entry.Existed)
                     {
                         await ReplaceAsync(entry.Backup, entry.Destination, CancellationToken.None);
-                        if (OperatingSystem.IsWindows() && entry.Security is not null)
-                        {
-                            var security = new FileSecurity();
-                            security.SetSecurityDescriptorBinaryForm(entry.Security,
-                                AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
-                            new FileInfo(entry.Destination).SetAccessControl(security);
-                        }
+                        RestoreSecurity(entry);
                         File.SetAttributes(entry.Destination, entry.Attributes);
                     }
                     else
@@ -155,6 +150,16 @@ internal static class FileReplacement
                 throw new IOException("Update rolled back. / 更新已回滚。", original);
             throw;
         }
+    }
+
+    private static void RestoreSecurity(Entry entry)
+    {
+        if (!OperatingSystem.IsWindows() || entry.Security is null)
+            return;
+        var security = new FileSecurity();
+        security.SetSecurityDescriptorBinaryForm(entry.Security,
+            AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
+        new FileInfo(entry.Destination).SetAccessControl(security);
     }
 
     internal static void ValidateDestination(string destination, string target, string[] protectedPaths)

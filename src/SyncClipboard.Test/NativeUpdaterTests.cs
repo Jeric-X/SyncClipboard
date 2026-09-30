@@ -430,7 +430,9 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    public async Task Rollback_RestoresOriginalWindowsAttributesAndAccessRules()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Replacement_PreservesWindowsAccessRulesAndRestoresAttributesOnRollback(bool rollback)
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -450,13 +452,18 @@ public class NativeUpdaterTests
         var expectedSecurity = file.GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access);
         var expectedAttributes = File.GetAttributes(path);
         using var cancel = new CancellationTokenSource();
-        await Assert.ThrowsAsync<OperationCanceledException>(() => ApplyAsync((phase, _) =>
+        var install = ApplyAsync((phase, _) =>
         {
-            if (phase == "installing")
+            if (rollback && phase == "installing")
                 cancel.Cancel();
-        }, cancel.Token));
-        Assert.AreEqual("old", File.ReadAllText(path));
-        Assert.AreEqual(expectedAttributes, File.GetAttributes(path));
+        }, cancel.Token);
+        if (rollback)
+            await Assert.ThrowsAsync<OperationCanceledException>(() => install);
+        else
+            await install;
+        Assert.AreEqual(rollback ? "old" : "new", File.ReadAllText(path));
+        if (rollback)
+            Assert.AreEqual(expectedAttributes, File.GetAttributes(path));
         Assert.AreEqual(expectedSecurity, new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access));
     }
 
