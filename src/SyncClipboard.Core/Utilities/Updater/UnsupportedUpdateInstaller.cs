@@ -8,5 +8,5 @@ internal sealed class UnsupportedUpdateInstaller : IUpdateInstaller
     public UpdateInstallCapability GetCapability() => new(false);
 
     public Task StartAsync(UpdateInstallRequest request, CancellationToken token)
-        => Task.FromException(new InvalidOperationException(I18n.Strings.UpdateLocationUnsupported));
+        => Task.FromException(new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported));
 }

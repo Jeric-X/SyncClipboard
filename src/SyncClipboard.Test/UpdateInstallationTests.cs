@@ -1,8 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NativeNotification.Interface;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.ViewModels;
 using System.ComponentModel;
@@ -106,6 +109,7 @@ public class UpdateInstallationTests
         SetDownloadedStatus(checker);
         Assert.AreEqual(SyncClipboard.Core.I18n.Strings.OpenFolder, checker.CurrentState.ActionText);
         Assert.AreEqual(UpdaterState.Downloaded, checker.CurrentState.State);
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.NewVersionDownloaded, checker.CurrentState.Message);
     }
 
     [TestMethod]
@@ -208,11 +212,74 @@ public class UpdateInstallationTests
         Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
     }
 
-    private UpdateChecker CreateChecker(IUpdateInstaller installer, IHttp? http = null)
+    private UpdateChecker CreateChecker(IUpdateInstaller installer, IHttp? http = null, Mock<IUpdateInstallerFactory>? factory = null)
     {
         var path = Path.Combine(directory, "update_info.json");
         File.WriteAllText(path, "{\"UpdateInfo\":{\"manage_type\":\"manual\",\"update_src\":\"github\",\"package_name\":\"test.package\"}}");
-        return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, Mock.Of<INotificationManager>(), null!, null!, installer, new ConfigBase(path));
+        factory ??= new Mock<IUpdateInstallerFactory>();
+        factory.Setup(f => f.Create(It.IsAny<UpdateInfoConfig>())).Returns(installer);
+        return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, Mock.Of<INotificationManager>(), null!, null!, factory.Object, new ConfigBase(path));
+    }
+
+    [TestMethod]
+    public void Checker_SelectsInstallerOnceFromItsUpdateConfiguration()
+    {
+        var factory = new Mock<IUpdateInstallerFactory>();
+        var checker = CreateChecker(new UnsupportedUpdateInstaller(), factory: factory);
+
+        SetDownloadedStatus(checker);
+        SetDownloadedStatus(checker);
+
+        factory.Verify(f => f.Create(It.Is<UpdateInfoConfig>(info => info.ManageType == UpdateInfoConfig.TypeManual
+            && info.UpdateSrc == "github" && info.PackageName == "test.package")), Times.Once);
+        Assert.AreEqual(UpdaterState.Downloaded, checker.CurrentState.State);
+    }
+
+    [TestMethod]
+    [DataRow("manual", "github", "supported.package", true)]
+    [DataRow("manual", "github", "unknown.package", false)]
+    [DataRow("manual", "github", "", false)]
+    [DataRow("manual", "homebrew", "supported.package", false)]
+    [DataRow("external", "github", "supported.package", false)]
+    [DataRow("market", "github", "supported.package", false)]
+    public void Factory_SelectsRegisteredInstallerOnlyForSupportedManualPackages(
+        string manageType, string source, string packageName, bool supported)
+    {
+        var factory = new UpdateInstallerFactory();
+        var selected = new UpdateInstaller(Path.Combine(directory, "updater"), directory);
+        factory.Register(info => info.PackageName == "supported.package", _ => selected);
+
+        var installer = factory.Create(new UpdateInfoConfig
+        {
+            ManageType = manageType,
+            UpdateSrc = source,
+            PackageName = packageName
+        });
+
+        Assert.AreEqual(supported, installer.GetCapability().Supported);
+        if (supported) Assert.AreSame(selected, installer);
+        else Assert.IsInstanceOfType<UnsupportedUpdateInstaller>(installer);
+        // Selection reports functionality without probing files or installation permissions.
+        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+    }
+
+    [TestMethod]
+    public void Factory_WithoutImplementedRulesKeepsAutomaticInstallationDisabled()
+    {
+        var services = new ServiceCollection();
+        AppCore.ConfigCommonService(services);
+        using var provider = services.BuildServiceProvider();
+        var factory = provider.GetRequiredService<IUpdateInstallerFactory>();
+        var installer = factory.Create(new UpdateInfoConfig
+        {
+            ManageType = UpdateInfoConfig.TypeManual,
+            UpdateSrc = "github",
+            PackageName = "SyncClipboard_win_x64_portable.zip"
+        });
+
+        Assert.IsInstanceOfType<UnsupportedUpdateInstaller>(installer);
+        Assert.IsFalse(installer.GetCapability().Supported);
+        Assert.IsNull(provider.GetService<IUpdateInstaller>());
     }
 
     [TestMethod]

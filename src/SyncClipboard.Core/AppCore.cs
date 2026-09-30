@@ -393,8 +393,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
             services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
-            // Enable installation only after the updater supports the handoff arguments.
-            services.AddSingleton<IUpdateInstaller, UnsupportedUpdateInstaller>();
+            // Register package rules after the updater supports their installation flow.
+            services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
             services.AddSingleton<HistorySyncer>();

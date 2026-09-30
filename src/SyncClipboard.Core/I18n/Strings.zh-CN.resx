@@ -1456,7 +1456,7 @@ Shift + 左键：选中连续范围</value>
   <data name="InstallingUpdate" xml:space="preserve">
     <value>正在安装更新，请稍候。</value>
   </data>
-  <data name="UpdateLocationUnsupported" xml:space="preserve">
-    <value>当前安装位置无法自动更新，请手动安装已下载的安装包。</value>
+  <data name="UpdateInstallationUnsupported" xml:space="preserve">
+    <value>暂不支持自动安装更新，请手动安装已下载的安装包。</value>
   </data>
 </root>
