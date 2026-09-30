@@ -631,6 +631,30 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
+    public async Task ParentWait_DeclinedPromptAllowsRestartWhenProcessExitedDuringPrompt()
+    {
+        using var process = StartWaitingProcess();
+        try
+        {
+            var error = await Assert.ThrowsAsync<IOException>(() => UpdateWorker.WaitForProcessAsync(process.Id,
+                process.StartTime.ToUniversalTime().Ticks, TestContext.CancellationTokenSource.Token, async token =>
+                {
+                    process.Kill();
+                    await process.WaitForExitAsync(token);
+                    return false;
+                }, TimeSpan.FromMilliseconds(50)));
+            Assert.IsNotInstanceOfType<UpdateProcessExitException>(error);
+            Assert.IsTrue(process.HasExited);
+        }
+        finally
+        {
+            if (!process.HasExited)
+                process.Kill();
+            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+        }
+    }
+
+    [TestMethod]
     public async Task ParentWait_ContinuesWithoutPromptWhenProcessExits()
     {
         using var process = StartWaitingProcess();

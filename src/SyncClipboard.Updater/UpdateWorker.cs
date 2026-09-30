@@ -209,7 +209,12 @@ internal static class UpdateWorker
                 if (process.HasExited)
                     return;
                 if (!await confirmForceExit(token))
+                {
+                    // A graceful exit during the prompt needs the normal failure/restart path.
+                    if (process.HasExited)
+                        throw new IOException("Update canceled. / 已取消更新。");
                     throw new UpdateProcessExitException("Update canceled. / 已取消更新。");
+                }
                 token.ThrowIfCancellationRequested();
                 if (process.HasExited)
                     return;
