@@ -393,7 +393,6 @@ namespace SyncClipboard.Core
             services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
             services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
-            // Register package rules after the updater supports their installation flow.
             services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();

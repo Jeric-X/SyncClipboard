@@ -5,16 +5,13 @@ using System.Globalization;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class UpdateInstaller(string updaterPath, string targetPath) : IUpdateInstaller
+internal sealed class FileReplacementPackageInstaller(string updaterPath, string targetPath) : IUpdateInstaller
 {
-    public bool RequiresAppExit => true;
-    public UpdateInstallCapability GetCapability() => new(true);
-
-    public Task StartAsync(UpdateInstallRequest request, CancellationToken token)
+    public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         using var process = Process.Start(CreateStartInfo(request)) ?? throw new IOException("Could not start the update helper.");
-        return Task.CompletedTask;
+        await AppCore.Current.ExitAsync();
     }
 
     internal ProcessStartInfo CreateStartInfo(UpdateInstallRequest request)

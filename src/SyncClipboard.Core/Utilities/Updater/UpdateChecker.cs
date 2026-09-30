@@ -38,7 +38,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     private readonly LocalClipboardSetter localClipboardSetter;
     private readonly IMainWindow mainWindow;
     private readonly ConfigManager configManager;
-    private readonly IUpdateInstaller updateInstaller;
+    private readonly IUpdateInstaller? updateInstaller;
     private readonly Lock installationGate = new();
     private bool installing;
 
@@ -118,11 +118,9 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         try
         {
             SetStatus(UpdaterState.Installing);
-            var capability = updateInstaller.GetCapability();
-            if (!capability.Supported) throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
+            if (updateInstaller is null) throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
             var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!);
             await updateInstaller.StartAsync(request, token);
-            if (updateInstaller.RequiresAppExit) await AppCore.Current.ExitAsync();
         }
         catch (OperationCanceledException)
         {
@@ -383,7 +381,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     }
 
     private void SetDownloadedStatus()
-        => SetStatus(updateInstaller.GetCapability().Supported ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
+        => SetStatus(updateInstaller is not null ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
 
     private (string, CancelableTask)? GetStateAction(UpdaterState state)
     {

@@ -5,22 +5,13 @@ namespace SyncClipboard.Core.Utilities.Updater;
 
 internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
 {
-    private readonly UnsupportedUpdateInstaller unsupported = new();
-    private readonly List<(Func<UpdateInfoConfig, bool> Matches, Func<UpdateInfoConfig, IUpdateInstaller> Create)> rules = [];
-
-    // Register implemented package handlers at startup, before UpdateChecker is resolved.
-    public void Register(Func<UpdateInfoConfig, bool> matches, Func<UpdateInfoConfig, IUpdateInstaller> create)
-        => rules.Add((matches, create));
-
-    public IUpdateInstaller Create(UpdateInfoConfig updateInfo)
+    public IUpdateInstaller? Create(UpdateInfoConfig updateInfo)
     {
         if (updateInfo.ManageType != UpdateInfoConfig.TypeManual || updateInfo.UpdateSrc != "github"
-            || string.IsNullOrWhiteSpace(updateInfo.PackageName)) return unsupported;
+            || string.IsNullOrWhiteSpace(updateInfo.PackageName)) return null;
 
-        foreach (var rule in rules)
-        {
-            if (rule.Matches(updateInfo)) return rule.Create(updateInfo);
-        }
-        return unsupported;
+        // Select the installer here as package installation flows are implemented.
+        // The updater currently has no installation flow, so no package is supported yet.
+        return null;
     }
 }

@@ -31,9 +31,6 @@ public class UpdateInstallationTests
     public async Task Installing_BlocksRepeatedClicksAndChecks_AndReportsLaunchFailure()
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
-        installer.Setup(i => i.GetCapability())
-            .Returns(new UpdateInstallCapability(true));
         var launch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         installer.Setup(i => i.StartAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>())).Returns(launch.Task);
         var checker = CreateChecker(installer.Object);
@@ -62,9 +59,6 @@ public class UpdateInstallationTests
     public async Task CanceledLaunch_RestoresInstallButton()
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
-        installer.Setup(i => i.GetCapability())
-            .Returns(new UpdateInstallCapability(true));
         installer.Setup(i => i.StartAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
         var checker = CreateChecker(installer.Object);
@@ -79,12 +73,9 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
-    public async Task InstallationHandoff_RespectsInstallerExitRequirement()
+    public async Task InstallationHandoff_LeavesAppExitToInstaller()
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.SetupGet(i => i.RequiresAppExit).Returns(false);
-        installer.Setup(i => i.GetCapability())
-            .Returns(new UpdateInstallCapability(true));
         installer.Setup(i => i.StartAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var checker = CreateChecker(installer.Object);
@@ -102,14 +93,23 @@ public class UpdateInstallationTests
     [TestMethod]
     public void UnsupportedPackage_KeepsOpenFolder()
     {
-        var installer = new UnsupportedUpdateInstaller();
-        Assert.IsFalse(installer.RequiresAppExit);
-        Assert.IsFalse(installer.GetCapability().Supported);
-        var checker = CreateChecker(installer);
+        var checker = CreateChecker(null);
         SetDownloadedStatus(checker);
         Assert.AreEqual(SyncClipboard.Core.I18n.Strings.OpenFolder, checker.CurrentState.ActionText);
         Assert.AreEqual(UpdaterState.Downloaded, checker.CurrentState.State);
         Assert.AreEqual(SyncClipboard.Core.I18n.Strings.NewVersionDownloaded, checker.CurrentState.Message);
+    }
+
+    [TestMethod]
+    public async Task InstallationWithoutInstaller_ReportsUnsupported()
+    {
+        var checker = CreateChecker(null);
+        SetStatus(checker, UpdaterState.ReadyToInstall);
+
+        await checker.CurrentState.ManualAction!(CancellationToken.None);
+
+        Assert.AreEqual(UpdaterState.Failed, checker.CurrentState.State);
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.UpdateInstallationUnsupported, checker.CurrentState.Message);
     }
 
     [TestMethod]
@@ -120,15 +120,13 @@ public class UpdateInstallationTests
     public async Task DownloadCompletion_SelectsStateForInstallationCapability(bool supported, bool cached)
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
-        installer.Setup(i => i.GetCapability()).Returns(new UpdateInstallCapability(supported));
         var bytes = new byte[] { 1, 2, 3, 4 };
         var http = new Mock<IHttp>();
         http.Setup(h => h.GetFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IProgress<HttpDownloadProgress>>(),
             It.IsAny<CancellationToken?>()))
             .Returns((string url, string path, IProgress<HttpDownloadProgress>? progress, CancellationToken? token)
                 => File.WriteAllBytesAsync(path, bytes, token ?? CancellationToken.None));
-        var checker = CreateChecker(installer.Object, http.Object);
+        var checker = CreateChecker(supported ? installer.Object : null, http.Object);
         // An absolute test version directory keeps downloads inside the temporary fixture.
         SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = directory });
         SetProperty(checker, "GithubAsset", new GitHubRelease.GitHubAsset
@@ -157,9 +155,7 @@ public class UpdateInstallationTests
     public void ActionMapping_IsDeterminedByState(UpdaterState state, bool supported)
     {
         var installer = new Mock<IUpdateInstaller>();
-        installer.SetupGet(i => i.RequiresAppExit).Returns(true);
-        installer.Setup(i => i.GetCapability()).Returns(new UpdateInstallCapability(supported));
-        var checker = CreateChecker(installer.Object);
+        var checker = CreateChecker(supported ? installer.Object : null);
         SetStatus(checker, state);
         Assert.AreEqual(state == UpdaterState.ReadyToInstall ? SyncClipboard.Core.I18n.Strings.InstallUpdate
             : SyncClipboard.Core.I18n.Strings.OpenFolder, checker.CurrentState.ActionText);
@@ -171,7 +167,7 @@ public class UpdateInstallationTests
     {
         var updater = Path.Combine(directory, "missing updater");
         var target = Path.Combine(directory, "target with spaces 中文");
-        var installer = new UpdateInstaller(updater, target);
+        var installer = new FileReplacementPackageInstaller(updater, target);
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
         var request = new UpdateInstallRequest(package, digest, "v9.0.0");
@@ -193,7 +189,7 @@ public class UpdateInstallationTests
     [TestMethod]
     public async Task MissingUpdater_ReportsLaunchFailureWithoutCreatingFiles()
     {
-        var installer = new UpdateInstaller(Path.Combine(directory, "missing updater"), directory);
+        var installer = new FileReplacementPackageInstaller(Path.Combine(directory, "missing updater"), directory);
         var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused", "v9.0.0");
 
         await Assert.ThrowsAsync<Win32Exception>(() => installer.StartAsync(request, CancellationToken.None));
@@ -204,7 +200,7 @@ public class UpdateInstallationTests
     [TestMethod]
     public async Task CanceledLaunch_DoesNotStartUpdater()
     {
-        var installer = new UpdateInstaller(Path.Combine(directory, "missing updater"), directory);
+        var installer = new FileReplacementPackageInstaller(Path.Combine(directory, "missing updater"), directory);
         var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused", "v9.0.0");
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
@@ -212,7 +208,7 @@ public class UpdateInstallationTests
         Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
     }
 
-    private UpdateChecker CreateChecker(IUpdateInstaller installer, IHttp? http = null, Mock<IUpdateInstallerFactory>? factory = null)
+    private UpdateChecker CreateChecker(IUpdateInstaller? installer, IHttp? http = null, Mock<IUpdateInstallerFactory>? factory = null)
     {
         var path = Path.Combine(directory, "update_info.json");
         File.WriteAllText(path, "{\"UpdateInfo\":{\"manage_type\":\"manual\",\"update_src\":\"github\",\"package_name\":\"test.package\"}}");
@@ -225,7 +221,7 @@ public class UpdateInstallationTests
     public void Checker_SelectsInstallerOnceFromItsUpdateConfiguration()
     {
         var factory = new Mock<IUpdateInstallerFactory>();
-        var checker = CreateChecker(new UnsupportedUpdateInstaller(), factory: factory);
+        var checker = CreateChecker(null, factory: factory);
 
         SetDownloadedStatus(checker);
         SetDownloadedStatus(checker);
@@ -236,18 +232,16 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
-    [DataRow("manual", "github", "supported.package", true)]
-    [DataRow("manual", "github", "unknown.package", false)]
-    [DataRow("manual", "github", "", false)]
-    [DataRow("manual", "homebrew", "supported.package", false)]
-    [DataRow("external", "github", "supported.package", false)]
-    [DataRow("market", "github", "supported.package", false)]
-    public void Factory_SelectsRegisteredInstallerOnlyForSupportedManualPackages(
-        string manageType, string source, string packageName, bool supported)
+    [DataRow("manual", "github", "SyncClipboard_win_x64_portable.zip")]
+    [DataRow("manual", "github", "unknown.package")]
+    [DataRow("manual", "github", "")]
+    [DataRow("manual", "homebrew", "SyncClipboard_win_x64_portable.zip")]
+    [DataRow("external", "github", "SyncClipboard_win_x64_portable.zip")]
+    [DataRow("market", "github", "SyncClipboard_win_x64_portable.zip")]
+    public void Factory_ReturnsNullForUnimplementedPackagesAndChannels(
+        string manageType, string source, string packageName)
     {
         var factory = new UpdateInstallerFactory();
-        var selected = new UpdateInstaller(Path.Combine(directory, "updater"), directory);
-        factory.Register(info => info.PackageName == "supported.package", _ => selected);
 
         var installer = factory.Create(new UpdateInfoConfig
         {
@@ -256,15 +250,13 @@ public class UpdateInstallationTests
             PackageName = packageName
         });
 
-        Assert.AreEqual(supported, installer.GetCapability().Supported);
-        if (supported) Assert.AreSame(selected, installer);
-        else Assert.IsInstanceOfType<UnsupportedUpdateInstaller>(installer);
+        Assert.IsNull(installer);
         // Selection reports functionality without probing files or installation permissions.
         Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
     }
 
     [TestMethod]
-    public void Factory_WithoutImplementedRulesKeepsAutomaticInstallationDisabled()
+    public void Factory_FromDependencyInjectionKeepsUnimplementedInstallationDisabled()
     {
         var services = new ServiceCollection();
         AppCore.ConfigCommonService(services);
@@ -277,8 +269,7 @@ public class UpdateInstallationTests
             PackageName = "SyncClipboard_win_x64_portable.zip"
         });
 
-        Assert.IsInstanceOfType<UnsupportedUpdateInstaller>(installer);
-        Assert.IsFalse(installer.GetCapability().Supported);
+        Assert.IsNull(installer);
         Assert.IsNull(provider.GetService<IUpdateInstaller>());
     }
 
