@@ -181,6 +181,8 @@ public class UpdateInstallationTests
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
         Assert.AreEqual(digest, arguments[Array.IndexOf(arguments, "--digest") + 1]);
         Assert.AreEqual(target, arguments[Array.IndexOf(arguments, "--target") + 1]);
+        Assert.AreEqual(OperatingSystem.IsWindows() ? Path.Combine(target, "SyncClipboard.exe") : Env.ProgramPath,
+            arguments[Array.IndexOf(arguments, "--executable") + 1]);
         Assert.AreEqual(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             arguments[Array.IndexOf(arguments, "--process-id") + 1]);
         Assert.IsEmpty(Directory.GetFileSystemEntries(directory));

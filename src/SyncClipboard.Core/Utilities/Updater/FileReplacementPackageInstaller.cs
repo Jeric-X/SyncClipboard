@@ -24,7 +24,7 @@ internal sealed class FileReplacementPackageInstaller(string updaterPath, string
             "--package-path", Path.GetFullPath(request.PackagePath),
             "--digest", request.Digest,
             "--target", Path.GetFullPath(targetPath),
-            "--executable", Env.ProgramPath,
+            "--executable", OperatingSystem.IsWindows() ? Path.GetFullPath(Path.Combine(targetPath, "SyncClipboard.exe")) : Env.ProgramPath,
             "--version", request.Version,
             "--process-id", Environment.ProcessId.ToString(CultureInfo.InvariantCulture),
             "--process-start-time", currentProcess.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture),
