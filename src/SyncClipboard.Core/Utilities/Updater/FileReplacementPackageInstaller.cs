@@ -16,6 +16,7 @@ internal sealed class FileReplacementPackageInstaller(string updaterPath, string
 
     internal ProcessStartInfo CreateStartInfo(UpdateInstallRequest request)
     {
+        using var currentProcess = Process.GetCurrentProcess();
         var start = new ProcessStartInfo(Path.GetFullPath(updaterPath)) { UseShellExecute = false };
         // The updater waits for this process to exit, then owns staging, verification, replacement, and cleanup.
         string[] arguments =
@@ -26,9 +27,16 @@ internal sealed class FileReplacementPackageInstaller(string updaterPath, string
             "--executable", Env.ProgramPath,
             "--version", request.Version,
             "--process-id", Environment.ProcessId.ToString(CultureInfo.InvariantCulture),
+            "--process-start-time", currentProcess.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture),
             "--language", CultureInfo.CurrentUICulture.Name
         ];
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
+        foreach (var path in new[] { Env.AppDataDirectory, Env.StaticConfigPath, Env.PortableUserConfigFile,
+            Env.PortableAppDataDirectory, Env.RuntimeConfigPath, Env.AppDataPathConfigPath })
+        {
+            start.ArgumentList.Add("--protect-path");
+            start.ArgumentList.Add(Path.GetFullPath(path));
+        }
         return start;
     }
 }

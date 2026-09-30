@@ -94,7 +94,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\EmbeddedIcons\*.svg" />
-    <EmbeddedResource Include="Utilities\Updater\Strategies\Scripts\InstallWindowsZip.ps1" />
   </ItemGroup>
 
 </Project>

@@ -20,4 +20,8 @@
   <ItemGroup Condition="'$(UpdaterUseAvalonia)' != 'true'">
     <Compile Remove="UpdaterApplication.cs;UpdateWindow.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../SyncClipboard.Core/Utilities/FileSystem.cs" Link="Utilities/FileSystem.cs" />
+    <InternalsVisibleTo Include="SyncClipboard.Test" />
+  </ItemGroup>
 </Project>

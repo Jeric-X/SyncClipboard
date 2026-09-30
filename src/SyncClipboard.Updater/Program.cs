@@ -13,11 +13,27 @@ internal static class Program
         {
             if (args is ["--help"])
             {
-                Console.WriteLine("SyncClipboard.Updater [--smoke-test]");
+                Console.WriteLine("SyncClipboard.Updater [--smoke-test]\nWindows portable ZIP: --package-path <zip> --digest sha256:<hash> "
+                    + "--target <directory> --executable <SyncClipboard.exe> --version <version> --process-id <pid> "
+                    + "[--language <language>] [--protect-path <path> ...]");
                 return 0;
             }
             if (args.Length != 0 && args is not ["--smoke-test"])
-                throw new ArgumentException("Use --help for available options.");
+            {
+                if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("ZIP installation is supported on Windows only.");
+                if (args is ["--cleanup-work", var workspace, "--wait-pid", var pid, "--wait-start", var start])
+                {
+                    UpdateWorker.CleanupAsync(workspace, int.Parse(pid, System.Globalization.CultureInfo.InvariantCulture),
+                        long.Parse(start, System.Globalization.CultureInfo.InvariantCulture)).GetAwaiter().GetResult();
+                    return 0;
+                }
+                var update = UpdateArguments.Parse(args);
+                using var cancellation = new CancellationTokenSource();
+                void Cancel(object? sender, ConsoleCancelEventArgs e) { e.Cancel = true; cancellation.Cancel(); }
+                Console.CancelKeyPress += Cancel;
+                try { return UpdateWorker.RunAsync(update, cancellation.Token).GetAwaiter().GetResult(); }
+                finally { Console.CancelKeyPress -= Cancel; }
+            }
 
 #if UPDATER_AVALONIA
             UpdaterApplication.SmokeTest = args is ["--smoke-test"];
@@ -27,7 +43,7 @@ internal static class Program
                 .StartWithClassicDesktopLifetime([]);
 #else
             Console.WriteLine("SyncClipboard 更新助手 / Updater");
-            Console.WriteLine("更新功能尚未接入。 / Installation is not implemented yet.");
+            Console.WriteLine("请从 SyncClipboard 启动更新。 / Start updates from SyncClipboard.");
             if (args is ["--smoke-test"]) Console.WriteLine("CONSOLE_SMOKE=PASS");
             return 0;
 #endif

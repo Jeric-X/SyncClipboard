@@ -1,33 +1,27 @@
-using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.Updater.Strategies;
 
 namespace SyncClipboard.Core.Utilities.Updater;
 
-internal sealed class UpdateInstallerFactory(IServiceProvider services)
+internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
 {
-    public IUpdateInstaller Create(UpdateInfoConfig updateInfo)
+    public IUpdateInstaller? Create(UpdateInfoConfig updateInfo)
         => Create(updateInfo, OperatingSystem.IsWindows());
 
-    internal IUpdateInstaller Create(UpdateInfoConfig updateInfo, bool windows)
+    internal static IUpdateInstaller? Create(UpdateInfoConfig updateInfo, bool windows)
     {
-        if (updateInfo.ManageType != UpdateInfoConfig.TypeManual || updateInfo.UpdateSrc != "github")
-            return services.GetRequiredService<UnsupportedUpdateInstaller>();
-        return GetPackageKind(updateInfo.PackageName, windows) switch
+        if (updateInfo.ManageType != UpdateInfoConfig.TypeManual || updateInfo.UpdateSrc != "github"
+            || string.IsNullOrWhiteSpace(updateInfo.PackageName)) return null;
+
+        var name = updateInfo.PackageName;
+        if (windows && Path.GetFileName(name) == name && !name.Contains('\\')
+            && name.StartsWith("SyncClipboard_win_", StringComparison.Ordinal)
+            && name.EndsWith("_portable.zip", StringComparison.OrdinalIgnoreCase))
         {
-            UpdatePackageKind.WindowsPortable => CreateFileReplacement<WindowsZipReplacementStrategy>(),
-            _ => services.GetRequiredService<UnsupportedUpdateInstaller>()
-        };
-    }
-
-    private FileReplacementUpdater CreateFileReplacement<T>() where T : class, IFileReplacementStrategy
-        => new(services.GetRequiredService<T>(), services.GetRequiredService<UpdateTaskCleaner>());
-
-    public static UpdatePackageKind GetPackageKind(string name, bool windows)
-    {
-        if (Path.GetFileName(name) != name || name.Contains('\\')) return UpdatePackageKind.Unsupported;
-        if (windows && name.EndsWith("_portable.zip", StringComparison.OrdinalIgnoreCase)) return UpdatePackageKind.WindowsPortable;
-        return UpdatePackageKind.Unsupported;
+            return new FileReplacementPackageInstaller(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"),
+                Env.ProgramDirectory);
+        }
+        return null;
     }
 }

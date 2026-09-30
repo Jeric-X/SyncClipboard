@@ -207,7 +207,6 @@ namespace SyncClipboard.Core
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
             Job.SetUpSchedulerJobs(Services);
-            _ = Services.GetRequiredService<UpdateTaskCleaner>().CleanupCompletedAsync();
         }
 
         private void RunStartUpCommands()
@@ -394,7 +393,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
             services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
-            services.AddUpdateInstallation();
+            services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
             services.AddSingleton<HistorySyncer>();

@@ -45,7 +45,7 @@ internal static class FileSystem
         for (FileSystemInfo? item = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path);
             item is not null; item = item is DirectoryInfo dir ? dir.Parent : ((FileInfo)item).Directory)
         {
-            if ((item.Attributes & FileAttributes.ReparsePoint) != 0) return true;
+            if (item.LinkTarget is not null || (item.Exists && (item.Attributes & FileAttributes.ReparsePoint) != 0)) return true;
         }
         return false;
     }
