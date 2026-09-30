@@ -62,6 +62,7 @@ public class NativeUpdaterTests
             WorkDirectory = Path.Combine(directory, "work"),
             Elevated = true,
             LauncherId = 1234,
+            LauncherStartTime = DateTime.UtcNow.AddSeconds(-1).Ticks,
             ProcessStartTime = DateTime.UtcNow.Ticks
         };
         var actual = UpdateArguments.Parse(expected.ToCommandLine().ToArray());
@@ -365,13 +366,15 @@ public class NativeUpdaterTests
     [DataRow("3", nameof(UpdateFailureAction.Rollback))]
     [DataRow("invalid\n2", nameof(UpdateFailureAction.Retry))]
     [DataRow("", nameof(UpdateFailureAction.Rollback))]
+    [DataRow("\n", nameof(UpdateFailureAction.Retry))]
     public async Task FailurePrompt_ReadsChoiceAndRollsBackOnEndOfInput(string answer, string expectedName)
     {
         var expected = Enum.Parse<UpdateFailureAction>(expectedName);
         using var input = new StringReader(answer);
         using var output = new StringWriter();
-        var action = await UpdateWorker.PromptFailureAsync("locked.dll", new IOException("file is locked"), "zh-CN",
-            input, output, TestContext.CancellationTokenSource.Token);
+        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
+        var action = await interaction.AskFailureActionAsync("locked.dll", new IOException("file is locked"),
+            TestContext.CancellationTokenSource.Token);
         Assert.AreEqual(expected, action);
         Assert.Contains("locked.dll", output.ToString());
         Assert.Contains("终止", output.ToString());
@@ -424,6 +427,47 @@ public class NativeUpdaterTests
         {
             protectedFile.SetAccessControl(original);
         }
+    }
+
+    [TestMethod]
+    public async Task Rollback_RestoresOriginalWindowsAttributesAndAccessRules()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows file metadata test.");
+            return;
+        }
+        var path = Path.Combine(target, "a.txt");
+        File.WriteAllText(path, "old");
+        File.WriteAllText(Path.Combine(stage, "a.txt"), "new");
+        var file = new FileInfo(path);
+        var security = file.GetAccessControl();
+        using var identity = WindowsIdentity.GetCurrent();
+        security.SetAccessRuleProtection(true, preserveInheritance: true);
+        security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.ReadPermissions, AccessControlType.Allow));
+        file.SetAccessControl(security);
+        File.SetAttributes(path, FileAttributes.Hidden | FileAttributes.Archive);
+        var expectedSecurity = file.GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access);
+        var expectedAttributes = File.GetAttributes(path);
+        using var cancel = new CancellationTokenSource();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => ApplyAsync((phase, _) =>
+        {
+            if (phase == "installing")
+                cancel.Cancel();
+        }, cancel.Token));
+        Assert.AreEqual("old", File.ReadAllText(path));
+        Assert.AreEqual(expectedAttributes, File.GetAttributes(path));
+        Assert.AreEqual(expectedSecurity, new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access));
+    }
+
+    [TestMethod]
+    [DataRow(unchecked((int)0x80070020), true)]
+    [DataRow(unchecked((int)0x80070021), true)]
+    [DataRow(unchecked((int)0x80070070), false)]
+    [DataRow(unchecked((int)0x80070003), false)]
+    public void InstallationLock_DistinguishesSharingFromOtherIoFailures(int hresult, bool expected)
+    {
+        Assert.AreEqual(expected, UpdateWorker.IsSharingViolation(new IOException("failure", hresult)));
     }
 
     [TestMethod]

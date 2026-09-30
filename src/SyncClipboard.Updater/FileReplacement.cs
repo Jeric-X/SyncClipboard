@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Utilities;
+using System.Security.AccessControl;
 
 namespace SyncClipboard.Updater;
 
@@ -21,6 +22,8 @@ internal static class FileReplacement
     private sealed record Entry(string Source, string Destination, string Backup, bool Existed)
     {
         public bool Modified { get; set; }
+        public FileAttributes Attributes { get; set; }
+        public FileSecurity? Security { get; set; }
     }
 
     public static async Task ApplyAsync(string stage, string target, string backup, string[] protectedPaths,
@@ -79,6 +82,9 @@ internal static class FileReplacement
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     if (entry.Existed)
                     {
+                        entry.Attributes = File.GetAttributes(entry.Destination) & ~FileAttributes.ReparsePoint;
+                        if (OperatingSystem.IsWindows())
+                            entry.Security = new FileInfo(entry.Destination).GetAccessControl();
                         Directory.CreateDirectory(Path.GetDirectoryName(entry.Backup)!);
                         await ReplaceAsync(entry.Destination, entry.Backup, token);
                     }
@@ -112,7 +118,12 @@ internal static class FileReplacement
                     Report(progress, "restoring", -1);
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     if (entry.Existed)
+                    {
                         await ReplaceAsync(entry.Backup, entry.Destination, CancellationToken.None);
+                        if (OperatingSystem.IsWindows() && entry.Security is not null)
+                            new FileInfo(entry.Destination).SetAccessControl(entry.Security);
+                        File.SetAttributes(entry.Destination, entry.Attributes);
+                    }
                     else
                         File.Delete(entry.Destination);
                 }

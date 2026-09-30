@@ -21,6 +21,7 @@
     <Compile Remove="UpdaterApplication.cs;UpdateWindow.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Sharprompt" />
     <Compile Include="../SyncClipboard.Core/Utilities/FileSystem.cs" Link="Utilities/FileSystem.cs" />
     <InternalsVisibleTo Include="SyncClipboard.Test" />
   </ItemGroup>

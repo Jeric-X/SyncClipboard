@@ -29,21 +29,8 @@ internal static class Program
                     return 0;
                 }
                 var update = UpdateArguments.Parse(args);
-                using var cancellation = new CancellationTokenSource();
-                void Cancel(object? sender, ConsoleCancelEventArgs e)
-                {
-                    e.Cancel = true;
-                    cancellation.Cancel();
-                }
-                Console.CancelKeyPress += Cancel;
-                try
-                {
-                    return UpdateWorker.RunAsync(update, cancellation.Token).GetAwaiter().GetResult();
-                }
-                finally
-                {
-                    Console.CancelKeyPress -= Cancel;
-                }
+                var interaction = new ConsoleUpdateInteraction(update.Language, update.Elevated);
+                return UpdateWorker.RunAsync(update, interaction, CancellationToken.None).GetAwaiter().GetResult();
             }
 
 #if UPDATER_AVALONIA

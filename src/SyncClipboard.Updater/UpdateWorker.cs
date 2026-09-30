@@ -13,10 +13,10 @@ internal static class UpdateWorker
     private const string WorkspaceMarker = ".syncclipboard-update";
     private const int RecoveryRequired = 2;
 
-    public static async Task<int> RunAsync(UpdateArguments update, CancellationToken token)
+    public static async Task<int> RunAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
     {
         if (update.WorkDirectory is null)
-            return await RelocateAsync(update, token);
+            return await RelocateAsync(update, interaction, token);
         ValidateWorkspace(update.WorkDirectory);
         if (!string.Equals(Path.GetFullPath(Environment.ProcessPath!),
             Path.Combine(update.WorkDirectory, "SyncClipboard.Updater.exe"), StringComparison.OrdinalIgnoreCase))
@@ -36,7 +36,7 @@ internal static class UpdateWorker
                     targetLock = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None,
                         1, FileOptions.DeleteOnClose);
                 }
-                catch (IOException)
+                catch (IOException error) when (IsSharingViolation(error))
                 {
                     canRestart = false;
                     throw new IOException("Another updater is using this installation.");
@@ -45,7 +45,7 @@ internal static class UpdateWorker
 
             try
             {
-                await InstallAsync(update, token);
+                await InstallAsync(update, interaction, token);
             }
             catch (UnauthorizedAccessException) when (!update.Elevated && !token.IsCancellationRequested)
             {
@@ -54,9 +54,9 @@ internal static class UpdateWorker
                 start.UseShellExecute = true;
                 start.Verb = "runas";
                 using var elevated = Process.Start(start) ?? throw new IOException("Could not start the elevated updater.");
-                // Do not abandon a worker that might be replacing files. Its own console handles cancellation.
+                // Wait for the worker to finish before considering a restart.
                 await elevated.WaitForExitAsync(CancellationToken.None);
-                if (elevated.ExitCode == RecoveryRequired)
+                if (elevated.ExitCode != 0 && elevated.ExitCode != 1)
                 {
                     canRestart = false;
                     throw new IOException("The elevated update stopped without a complete rollback. Keep the backup for recovery.");
@@ -70,6 +70,7 @@ internal static class UpdateWorker
             Restart(update);
             Log(update, "Update completed. Removing staging files and old backups.");
             ScheduleCleanup(update);
+            await interaction.ShowResultAsync(new UpdateResult(0));
             return 0;
         }
         catch (Exception error)
@@ -80,8 +81,14 @@ internal static class UpdateWorker
             var recoveryRequired = error is UpdateRecoveryException or UpdateAbortedException || !canRestart;
             if (!update.Elevated && !recoveryRequired && error is not UpdateProcessExitException)
                 await RestartIfStoppedAsync(update);
-            ShowFailure(update, error);
-            return recoveryRequired ? RecoveryRequired : 1;
+            var exitCode = recoveryRequired ? RecoveryRequired : 1;
+            await interaction.ShowResultAsync(new UpdateResult(exitCode, error.Message, update.WorkDirectory, error switch
+            {
+                UpdateRecoveryException recovery => recovery.BackupPath,
+                UpdateAbortedException aborted => aborted.BackupPath,
+                _ => null
+            }));
+            return exitCode;
         }
         finally
         {
@@ -89,7 +96,7 @@ internal static class UpdateWorker
         }
     }
 
-    private static async Task<int> RelocateAsync(UpdateArguments update, CancellationToken token)
+    private static async Task<int> RelocateAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
     {
         string? workspace = null;
         try
@@ -103,8 +110,13 @@ internal static class UpdateWorker
             var worker = Path.Combine(workspace, "SyncClipboard.Updater.exe");
             await WindowsZipPackage.CopyAsync(Environment.ProcessPath!, worker, token);
             token.ThrowIfCancellationRequested();
-            using var process = Process.Start(CreateStartInfo(worker,
-                update with { WorkDirectory = workspace, LauncherId = Environment.ProcessId }))
+            using var launcher = Process.GetCurrentProcess();
+            using var process = Process.Start(CreateStartInfo(worker, update with
+            {
+                WorkDirectory = workspace,
+                LauncherId = launcher.Id,
+                LauncherStartTime = launcher.StartTime.ToUniversalTime().Ticks
+            }))
                 ?? throw new IOException("Could not start the relocated updater.");
             return 0;
         }
@@ -113,59 +125,34 @@ internal static class UpdateWorker
             if (workspace is not null)
                 Log(update with { WorkDirectory = workspace }, error.ToString());
             await RestartIfStoppedAsync(update);
-            ShowFailure(update, error);
+            await interaction.ShowResultAsync(new UpdateResult(1, error.Message, workspace));
             return 1;
         }
     }
 
-    private static async Task InstallAsync(UpdateArguments update, CancellationToken token)
+    private static async Task InstallAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
     {
         var attempt = Path.Combine(update.WorkDirectory!, "attempt-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(attempt);
-        Report(update, "preparing", -1);
+        interaction.Report("preparing", -1);
         var stage = await WindowsZipPackage.PrepareAsync(update, attempt, token);
-        Report(update, "waiting", -1);
+        interaction.Report("waiting", -1);
         await WaitForProcessAsync(update.ProcessId, update.ProcessStartTime, token,
-            cancellation => ConfirmForceExitAsync(update.Language, cancellation));
-        await WaitForProcessAsync(update.LauncherId, 0, token);
+            interaction.ConfirmForceExitAsync);
+        await WaitForProcessAsync(update.LauncherId, update.LauncherStartTime, token);
         await FileReplacement.ApplyAsync(stage, update.Target, Path.Combine(attempt, "backup"),
-            WindowsZipPackage.GetProtectedPaths(update), (phase, percent) => Report(update, phase, percent), token,
+            WindowsZipPackage.GetProtectedPaths(update), interaction.Report, token,
             (path, error, cancellation) =>
             {
                 Log(update, $"File operation failed: {path}: {error}");
                 // Preserve the automatic elevation attempt after restoring the original files.
                 if (error is UnauthorizedAccessException && !update.Elevated)
                     return Task.FromException<UpdateFailureAction>(error);
-                return PromptFailureAsync(path, error, update.Language, Console.In, Console.Out, cancellation);
+                return interaction.AskFailureActionAsync(path, error, cancellation);
             });
     }
 
-    internal static async Task<UpdateFailureAction> PromptFailureAsync(string path, Exception error, string language,
-        TextReader input, TextWriter output, CancellationToken token)
-    {
-        var chinese = language.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
-        output.WriteLine($"{path}: {error.Message}");
-        output.WriteLine(chinese
-            ? "[1] 终止（不回滚，保留备份，不启动主程序） [2] 重试 [3] 回滚"
-            : "[1] Abort (no rollback; keep backups; do not start the application) [2] Retry [3] Roll back");
-        while (true)
-        {
-            var answer = (await input.ReadLineAsync(token))?.Trim();
-            switch (answer)
-            {
-                case "1":
-                    return UpdateFailureAction.Abort;
-                case "2":
-                    return UpdateFailureAction.Retry;
-                case "3":
-                case null:
-                    return UpdateFailureAction.Rollback;
-                default:
-                    output.WriteLine(chinese ? "请输入 1、2 或 3。" : "Enter 1, 2, or 3.");
-                    break;
-            }
-        }
-    }
+    internal static bool IsSharingViolation(IOException error) => (error.HResult & 0xFFFF) is 32 or 33;
 
     internal static async Task WaitForProcessAsync(int pid, long startTime, CancellationToken token,
         Func<CancellationToken, Task<bool>>? confirmForceExit = null, TimeSpan? gracefulWait = null)
@@ -222,16 +209,6 @@ internal static class UpdateWorker
             }
             catch (InvalidOperationException) when (process.HasExited) { }
         }
-    }
-
-    private static async Task<bool> ConfirmForceExitAsync(string language, CancellationToken token)
-    {
-        Console.WriteLine(language.StartsWith("zh", StringComparison.OrdinalIgnoreCase)
-            ? "主程序等待 10 秒仍未退出。是否强制退出并继续更新？未保存的内容可能丢失。[y/N]"
-            : "SyncClipboard has not exited after 10 seconds. Force it to exit and continue updating? Unsaved changes may be lost. [y/N]");
-        var answer = (await Console.In.ReadLineAsync(token))?.Trim();
-        return string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(answer, "yes", StringComparison.OrdinalIgnoreCase) || answer == "是";
     }
 
     private static async Task RestartIfStoppedAsync(UpdateArguments update)
@@ -319,54 +296,6 @@ internal static class UpdateWorker
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             Debug.WriteLine(error);
-        }
-    }
-
-    private static void Report(UpdateArguments update, string phase, int percent)
-    {
-        var text = update.Language.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? phase switch
-        {
-            "preparing" => "复制并校验更新包",
-            "waiting" => "等待程序退出",
-            "backup" => "备份程序文件",
-            "installing" => "安装更新",
-            "restoring" => "恢复旧版本",
-            _ => phase
-        } : phase;
-        try
-        {
-            Console.WriteLine(percent < 0 ? text : $"{text}: {percent}%");
-        }
-        catch (IOException error)
-        {
-            Log(update, error.Message);
-        }
-    }
-
-    private static void ShowFailure(UpdateArguments update, Exception error)
-    {
-        try
-        {
-            Console.Error.WriteLine(error is Win32Exception { NativeErrorCode: 1223 } ? "Update authorization canceled." : error.Message);
-            var backupPath = error switch
-            {
-                UpdateRecoveryException recovery => recovery.BackupPath,
-                UpdateAbortedException aborted => aborted.BackupPath,
-                _ => null
-            };
-            if (backupPath is not null)
-                Console.Error.WriteLine("Backup directory / 备份目录: " + backupPath);
-            if (update.WorkDirectory is not null)
-                Console.Error.WriteLine("Log and workspace / 日志及工作目录: " + update.WorkDirectory);
-            if ((!update.Elevated || backupPath is not null) && !Console.IsInputRedirected)
-            {
-                Console.Error.WriteLine("Press Enter to close. / 按回车关闭。");
-                Console.ReadLine();
-            }
-        }
-        catch (IOException displayError)
-        {
-            Log(update, displayError.ToString());
         }
     }
 }
