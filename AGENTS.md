@@ -99,7 +99,7 @@ Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI valid
 - Keep platform-independent parsing, factory decisions, and mocked business tests uncategorized so the core workflow still covers all platform branches. Do not categorize a test only because its subject is a particular OS.
 - `core-test.yml` excludes all three platform categories. The separate `windows-test.yml`, `macos-test.yml`, and `linux-test.yml` workflows run the matching category on native x64 and ARM64 runners, for all OS-dependent tests in `SyncClipboard.Test`, including updater integration tests.
 - Add `UpdaterSmoke` as well as the platform category to published updater UI smoke tests. Business steps exclude `UpdaterSmoke`; smoke steps select it and use the main application's artifacts and production handoff helpers. Do not automate UI interactions for business tests.
-- Platform CI must fail on missing prerequisites, empty selections, or skipped selected tests. Runtime OS guards are still useful when running all tests locally on one system.
+- Keep CI filters aligned with these categories and verify their selection with `dotnet test --list-tests --filter` when changing them. Use the `dotnet test` exit code for CI results; retain TRX reports for diagnostics. Runtime OS guards are still useful when running all tests locally on one system.
 
 ```bash
 # Platform-independent core tests

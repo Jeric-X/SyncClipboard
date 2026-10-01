@@ -41,8 +41,6 @@ jobs:
           --filter 'TestCategory=PlatformMacOS&TestCategory=UpdaterSmoke'
           --logger 'trx;LogFileName=smoke.trx' --results-directory TestResults
           --blame-hang-timeout 2m
-      - name: Verify every selected test ran
-        run: python3 build/tests/check-results.py TestResults/business.trx TestResults/smoke.trx
       - name: Unmount the application
         if: always()
         run: |

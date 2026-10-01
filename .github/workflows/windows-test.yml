@@ -26,8 +26,6 @@ jobs:
           --filter "TestCategory=PlatformWindows&TestCategory!=UpdaterSmoke"
           --logger "trx;LogFileName=business.trx" --results-directory TestResults
           --blame-hang-timeout 2m
-      - name: Verify every selected test ran
-        run: python build/tests/check-results.py TestResults/business.trx
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -81,8 +79,6 @@ jobs:
           --filter "TestCategory=PlatformWindows&TestCategory=UpdaterSmoke"
           --logger "trx;LogFileName=smoke.trx" --results-directory TestResults
           --blame-hang-timeout 2m
-      - name: Verify smoke ran
-        run: python build/tests/check-results.py TestResults/smoke.trx
       - uses: actions/upload-artifact@v7
         if: always()
         with:

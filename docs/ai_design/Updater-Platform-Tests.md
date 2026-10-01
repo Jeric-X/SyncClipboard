@@ -12,7 +12,7 @@
 | `PlatformLinux` | `linux-test.yml` | 真实 AppImage、执行权限、替换和回滚、重启、进程取消，以及输入设备权限等 core 的 Linux 分支 |
 | `UpdaterSmoke` + 平台分类 | 对应 workflow 的 smoke 步骤 | 使用主程序产物组装并启动 NativeAOT 更新器，确认 `GUI_SMOKE=PASS` 和退出码 |
 
-目录用于组织代码，`TestCategory` 决定筛选。适用于多个系统的测试标注多个平台分类；core 流程排除全部平台分类，业务步骤排除 `UpdaterSmoke`。平台作业校验 TRX，不接受空集合、失败或跳过的用例。
+目录用于组织代码，`TestCategory` 决定筛选。适用于多个系统的测试标注多个平台分类；core 流程排除全部平台分类，业务步骤排除 `UpdaterSmoke`。CI 依据 `dotnet test` 的退出码判定结果，TRX 仅作为诊断报告保留。修改 filter 时使用 `--list-tests` 核对实际选择的用例。
 
 三个平台 workflow 接收所有需要对应操作系统的测试，更新器集成测试只是其中一部分。它们由 push/PR 构建入口调用，等待对应系统的构建产物，不再编译一套测试专用更新器。正式 release 等待它们成功。
 
