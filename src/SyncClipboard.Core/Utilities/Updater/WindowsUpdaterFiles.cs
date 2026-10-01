@@ -6,7 +6,8 @@ internal static class WindowsUpdaterFiles
     // Framework-dependent WinUI builds use the installed SDK through the copied bootstrap DLL.
     private static readonly string[] FileNames =
     [
-        "SyncClipboard.Updater.exe", "SyncClipboard.pri",
+        // Debug PRI files reference App.xbf on disk; Release normally embeds it.
+        "SyncClipboard.Updater.exe", "SyncClipboard.pri", "App.xbf",
         "CoreMessagingXP.dll", "dcompi.dll", "dwmcorei.dll", "DwmSceneI.dll", "DWriteCore.dll", "marshal.dll",
         "Microsoft.DirectManipulation.dll", "Microsoft.InputStateManager.dll", "Microsoft.Internal.FrameworkUdk.dll",
         "Microsoft.UI.Composition.OSSupport.dll", "Microsoft.UI.Input.dll", "Microsoft.UI.Windowing.Core.dll",

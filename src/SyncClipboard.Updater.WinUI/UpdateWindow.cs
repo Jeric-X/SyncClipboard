@@ -89,6 +89,8 @@ internal sealed partial class UpdateWindow : Window, IUpdateInteraction
                     };
                     var shown = dialog.ShowAsync();
                     await Task.Delay(500);
+                    // Exercise WinUI reference tracking while controls are alive, not just startup.
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
                     dialog.Hide();
                     await shown;
                     Console.WriteLine("GUI_SMOKE=PASS");

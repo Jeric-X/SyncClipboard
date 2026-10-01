@@ -13,6 +13,9 @@
     <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CETCompat>false</CETCompat>
+    <!-- .NET 10 NativeAOT reference tracking can deadlock during GC without optimizations,
+         including when the main application is built in Debug: dotnet/runtime#121538. -->
+    <Optimize>true</Optimize>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <DefineConstants Condition="'$(WindowsAppSDKSelfContained)' == 'true'">$(DefineConstants);UPDATER_LOCAL_RUNTIME</DefineConstants>
     <ApplicationManifest>app.manifest</ApplicationManifest>

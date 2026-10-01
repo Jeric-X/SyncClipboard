@@ -55,10 +55,14 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
-    public async Task PrepareWindowsUpdater_ReusesAvailableRuntimeAndResourcesWithoutRequiringMissingLibraries()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PrepareWindowsUpdater_ReusesAvailableRuntimeAndResourcesWithoutRequiringMissingLibraries(bool looseAppXbf)
     {
         string[] files = ["SyncClipboard.Updater.exe", "Microsoft.UI.Xaml.dll", "Microsoft.WindowsAppRuntime.Bootstrap.dll",
             "SyncClipboard.pri", "SyncClipboard.Core.dll", "coreclr.dll"];
+        if (looseAppXbf)
+            files = [.. files, "App.xbf"];
         foreach (var name in files)
             await File.WriteAllTextAsync(Path.Combine(directory, name), "content of " + name, TestContext.CancellationTokenSource.Token);
         var workspace = await FileReplacementPackageInstaller.PrepareWindowsUpdaterAsync(directory,
@@ -72,6 +76,8 @@ public class UpdateInstallationTests
             Assert.AreEqual("content of Microsoft.UI.Xaml.dll", File.ReadAllText(Path.Combine(workspace, files[1])));
             Assert.AreEqual("content of Microsoft.WindowsAppRuntime.Bootstrap.dll", File.ReadAllText(Path.Combine(workspace, files[2])));
             Assert.AreEqual("content of SyncClipboard.pri", File.ReadAllText(Path.Combine(workspace, "resources.pri")));
+            if (looseAppXbf)
+                Assert.AreEqual("content of App.xbf", File.ReadAllText(Path.Combine(workspace, "App.xbf")));
             Assert.IsFalse(File.Exists(Path.Combine(workspace, "SyncClipboard.Core.dll")));
             Assert.IsFalse(File.Exists(Path.Combine(workspace, "coreclr.dll")));
             Assert.IsFalse(File.Exists(Path.Combine(workspace, "Microsoft.WindowsAppRuntime.dll")));
