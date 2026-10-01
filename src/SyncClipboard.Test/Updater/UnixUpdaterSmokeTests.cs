@@ -17,7 +17,8 @@ public class UnixUpdaterSmokeTests
         if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
             Assert.Inconclusive("Requires macOS or Linux.");
         var source = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_SOURCE");
-        Assert.IsFalse(string.IsNullOrEmpty(source), "Set SYNC_CLIPBOARD_UPDATER_TEST_SOURCE to the main application bundle or output directory.");
+        if (string.IsNullOrEmpty(source))
+            Assert.Inconclusive("Set SYNC_CLIPBOARD_UPDATER_TEST_SOURCE to the main application bundle or output directory.");
         var token = TestContext.CancellationTokenSource.Token;
         var workspace = OperatingSystem.IsMacOS()
             ? await FileReplacementPackageInstaller.PrepareMacUpdaterAsync(source, token)

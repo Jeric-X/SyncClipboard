@@ -15,7 +15,8 @@ public class WindowsUpdaterSmokeTests : UpdaterTestBase
         var native = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
         if (!OperatingSystem.IsWindows())
             Assert.Inconclusive("Requires Windows.");
-        Assert.IsFalse(string.IsNullOrEmpty(native), "Set SYNC_CLIPBOARD_UPDATER_TEST_EXE to the packaged WinUI updater.");
+        if (string.IsNullOrEmpty(native))
+            Assert.Inconclusive("Set SYNC_CLIPBOARD_UPDATER_TEST_EXE to the packaged WinUI updater.");
         var sourceDirectory = Path.GetDirectoryName(native)!;
         using (var file = File.OpenRead(native))
         using (var pe = new PEReader(file))

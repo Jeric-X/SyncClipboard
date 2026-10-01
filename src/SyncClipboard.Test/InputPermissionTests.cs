@@ -359,9 +359,9 @@ public class InputPermissionTests
     [TestCategory("PlatformLinux")]
     public void ReadOnlyInputDevice_IsDeniedUntilWriteAccessIsGranted()
     {
-        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        if (!OperatingSystem.IsLinux() || Environment.UserName == "root")
         {
-            Assert.Inconclusive("Requires Unix file permissions without root privileges.");
+            Assert.Inconclusive("Requires Linux file permissions without root privileges.");
             return;
         }
 
@@ -392,9 +392,9 @@ public class InputPermissionTests
     [TestCategory("PlatformLinux")]
     public void SimulationPermission_RequiresOnlyWriteAccessToUinput()
     {
-        if (OperatingSystem.IsWindows() || Environment.UserName == "root")
+        if (!OperatingSystem.IsLinux() || Environment.UserName == "root")
         {
-            Assert.Inconclusive("Requires Unix file permissions without root privileges.");
+            Assert.Inconclusive("Requires Linux file permissions without root privileges.");
             return;
         }
 

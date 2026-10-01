@@ -219,7 +219,8 @@ public class AppImageUpdateTests
     public async Task AppImageInstallation_RestartsNewApplicationAndRemovesWorkspace()
     {
         var tool = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL");
-        Assert.IsFalse(string.IsNullOrEmpty(tool), "Set SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL to appimagetool.");
+        if (string.IsNullOrEmpty(tool))
+            Assert.Inconclusive("Set SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL to appimagetool.");
         var target = await CreateAppImageAsync(tool, "old");
         var package = await CreateAppImageAsync(tool, "new");
         var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
