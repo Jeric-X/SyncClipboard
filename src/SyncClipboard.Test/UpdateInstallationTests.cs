@@ -287,7 +287,7 @@ public class UpdateInstallationTests
     [DataRow("manual", "github", "SyncClipboard_win_arm64_portable.zip", true, true)]
     [DataRow("manual", "github", "custom-update.zip", true, true)]
     [DataRow("manual", "github", "custom-update.ZIP", true, true)]
-    [DataRow("manual", "github", "custom-update.zip.exe", true, false)]
+    [DataRow("manual", "github", "custom-update.zip.txt", true, false)]
     [DataRow("manual", "github", "unknown.package", true, false)]
     [DataRow("manual", "github", "", true, false)]
     [DataRow("manual", "homebrew", "SyncClipboard_win_x64_portable.zip", true, false)]
@@ -306,6 +306,32 @@ public class UpdateInstallationTests
 
         Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
         if (!supported)
+            Assert.IsNull(installer);
+    }
+
+    [TestMethod]
+    [DataRow("manual", "github", "SyncClipboard_win_x64_installer.exe", true, true)]
+    [DataRow("manual", "github", "SyncClipboard_win_arm64_installer.exe", true, true)]
+    [DataRow("manual", "github", "custom-update.EXE", true, true)]
+    [DataRow("manual", "github", "custom-update.zip.exe", true, true)]
+    [DataRow("manual", "github", "SyncClipboard_win_x64_installer.exe", false, false)]
+    [DataRow("manual", "github", "update.msi", true, false)]
+    [DataRow("manual", "winget", "update.exe", true, false)]
+    [DataRow("external", "github", "update.exe", true, false)]
+    [DataRow("market", "github", "update.exe", true, false)]
+    public void Factory_SelectsWindowsInnoSetupInstaller(
+        string manageType, string source, string packageName, bool isWindows, bool supported)
+    {
+        var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
+        {
+            ManageType = manageType,
+            UpdateSrc = source,
+            PackageName = packageName
+        }, isWindows, directory);
+
+        if (supported)
+            Assert.IsInstanceOfType<InnoSetupInstaller>(installer);
+        else
             Assert.IsNull(installer);
     }
 

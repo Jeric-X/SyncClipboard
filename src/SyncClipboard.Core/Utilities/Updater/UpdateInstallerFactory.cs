@@ -17,6 +17,9 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
             || string.IsNullOrWhiteSpace(updateInfo.PackageName))
             return null;
 
+        if (isWindows && updateInfo.PackageName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            return new InnoSetupInstaller();
+
         if (isWindows && updateInfo.PackageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             return File.Exists(Path.Combine(programDirectory, "SyncClipboard.Updater.exe"))
                 ? new FileReplacementPackageInstaller() : null;
