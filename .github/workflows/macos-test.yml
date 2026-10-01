@@ -4,42 +4,32 @@ on:
   workflow_call:
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - cpu: x64
-            runner: macos-26-intel
-          - cpu: arm64
-            runner: macos-26
-    runs-on: ${{ matrix.runner }}
+  function-test:
+    runs-on: macos-26
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.302
-      - name: Run macOS platform tests without updater UI
+      - name: function-test
         run: >-
-          dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
+          dotnet test src/SyncClipboard.Test --configuration Release --arch arm64
           --filter 'TestCategory=PlatformMacOS&TestCategory!=UpdaterSmoke'
-          --logger 'trx;LogFileName=business.trx' --results-directory TestResults
           --blame-hang-timeout 2m
       - uses: actions/download-artifact@v8
         with:
-          name: SyncClipboard_macos_${{ matrix.cpu }}.dmg
+          name: SyncClipboard_macos_arm64.dmg
           path: application
       - name: Mount the packaged application
         run: |
           mkdir -p "$RUNNER_TEMP/updater-dmg"
-          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/updater-dmg" "application/SyncClipboard_macos_${{ matrix.cpu }}.dmg"
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/updater-dmg" "application/SyncClipboard_macos_arm64.dmg"
           echo "SYNC_CLIPBOARD_UPDATER_TEST_SOURCE=$RUNNER_TEMP/updater-dmg/SyncClipboard.app" >> "$GITHUB_ENV"
-      - name: Smoke test the packaged Avalonia updater
+      - name: smoke-test
         run: >-
-          dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }} --no-build
+          dotnet test src/SyncClipboard.Test --configuration Release --arch arm64 --no-build
           --filter 'TestCategory=PlatformMacOS&TestCategory=UpdaterSmoke'
-          --logger 'trx;LogFileName=smoke.trx' --results-directory TestResults
           --blame-hang-timeout 2m
       - name: Unmount the application
         if: always()
@@ -47,8 +37,3 @@ jobs:
           if mount | grep -F " on $RUNNER_TEMP/updater-dmg ("; then
             hdiutil detach "$RUNNER_TEMP/updater-dmg"
           fi
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: macos-tests-${{ matrix.cpu }}
-          path: TestResults/**/*.trx

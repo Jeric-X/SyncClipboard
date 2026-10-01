@@ -92,22 +92,9 @@ dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 
 Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
 
-#### Platform test categories
+#### Test organization
 
-- Keep business tests in `SyncClipboard.Test`. Updater tests that require an OS belong under `Updater/Windows`, `Updater/MacOS`, or `Updater/Linux`; shared updater integration tests belong directly under `Updater`. Other platform tests stay with their feature and use the same platform categories.
-- Use MSTest `[TestCategory("PlatformWindows")]`, `[TestCategory("PlatformMacOS")]`, and `[TestCategory("PlatformLinux")]` for tests that depend on real OS behavior. Add multiple categories when the same test must run on several systems. Categories, not directory names, determine CI selection.
-- Keep platform-independent parsing, factory decisions, and mocked business tests uncategorized so the core workflow still covers all platform branches. Do not categorize a test only because its subject is a particular OS.
-- `core-test.yml` excludes all three platform categories. The separate `windows-test.yml`, `macos-test.yml`, and `linux-test.yml` workflows run the matching category on native x64 and ARM64 runners, for all OS-dependent tests in `SyncClipboard.Test`, including updater integration tests.
-- Add `UpdaterSmoke` as well as the platform category to published updater UI smoke tests. Business steps exclude `UpdaterSmoke`; smoke steps select it and use the main application's artifacts and production handoff helpers. Do not automate UI interactions for business tests.
-- Keep CI filters aligned with these categories and verify their selection with `dotnet test --list-tests --filter` when changing them. Use the `dotnet test` exit code for CI results; retain TRX reports for diagnostics. Runtime OS guards are still useful when running all tests locally on one system.
-
-```bash
-# Platform-independent core tests
-dotnet test src/SyncClipboard.Test --filter "TestCategory!=PlatformWindows&TestCategory!=PlatformMacOS&TestCategory!=PlatformLinux"
-
-# macOS business tests (use PlatformWindows or PlatformLinux on those systems)
-dotnet test src/SyncClipboard.Test --filter "TestCategory=PlatformMacOS&TestCategory!=UpdaterSmoke"
-```
+- Mark tests that require real OS behavior with `[TestCategory("PlatformWindows")]`, `[TestCategory("PlatformMacOS")]`, or `[TestCategory("PlatformLinux")]`. Use multiple categories when appropriate; leave platform-independent tests unmarked. Platform-specific tests must also check the current OS and call `Assert.Inconclusive` on unsupported platforms before performing platform-specific setup or operations; categories alone do not skip tests when running the full suite locally.
 
 ### Code Style
 

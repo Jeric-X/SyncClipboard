@@ -27,7 +27,7 @@ jobs:
       matrix:
         cpu: [x64, arm64]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Download last-job-built change log
         uses: actions/download-artifact@v8
