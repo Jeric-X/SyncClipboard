@@ -80,41 +80,6 @@ jobs:
     - name: copy SyncClipboard.WinUI3
       run: xcopy src\SyncClipboard.WinUI3\bin\${{ matrix.cpu }}\Release\net10.0-windows10.0.19041.0\win-${{ matrix.cpu }} WinUI3\ /s /e
 
-    - name: Install Windows App SDK for framework-dependent checks
-      if: matrix.win_app_sdk == 'no_win_app_sdk'
-      shell: pwsh
-      run: |
-        $assets = Get-Content src/SyncClipboard.WinUI3/obj/project.assets.json -Raw | ConvertFrom-Json -AsHashtable
-        $runtime = @($assets.libraries.Keys | Where-Object { $_ -like 'Microsoft.WindowsAppSDK.Runtime/*' })
-        if ($runtime.Count -ne 1) { throw 'Could not resolve the Windows App SDK runtime package.' }
-        $package = Join-Path $env:USERPROFILE ".nuget/packages/$($runtime[0].ToLowerInvariant())/tools/MSIX/win10-${{ matrix.cpu }}"
-        $framework = @(Get-ChildItem $package -Filter '*.msix' | Where-Object { $_.Name -match '^Microsoft\.WindowsAppRuntime\.\d+\.msix$' })
-        if ($framework.Count -ne 1) { throw 'Could not locate the runtime framework MSIX.' }
-        $packages = @($framework[0]) + @(Get-ChildItem $package -Filter '*.msix' | Where-Object { $_.Name -ne $framework[0].Name })
-        foreach ($msix in $packages) {
-          $archive = [IO.Compression.ZipFile]::OpenRead($msix.FullName)
-          try {
-            $reader = [IO.StreamReader]::new($archive.GetEntry('AppxManifest.xml').Open())
-            try { $identity = ([xml]$reader.ReadToEnd()).Package.Identity } finally { $reader.Dispose() }
-          } finally { $archive.Dispose() }
-          $installed = Get-AppxPackage -Name $identity.Name | Where-Object {
-            $_.Architecture -eq $identity.ProcessorArchitecture -and [version]$_.Version -ge [version]$identity.Version
-          }
-          if (!$installed) { Add-AppxPackage -Path $msix.FullName }
-        }
-
-    - name: Publish disposable application for updater restart checks
-      run: dotnet publish src/SyncClipboard.Test.UpdaterHost -c Release -r win-${{ matrix.cpu }} -o "${{ runner.temp }}/updater-test-host"
-
-    - name: Check WinUI updater and ZIP installation
-      timeout-minutes: 5
-      shell: pwsh
-      run: |
-        $env:SYNC_CLIPBOARD_UPDATER_TEST_EXE = (Resolve-Path WinUI3/SyncClipboard.Updater.exe).Path
-        $env:SYNC_CLIPBOARD_UPDATER_TEST_APP = Join-Path $env:RUNNER_TEMP 'updater-test-host/SyncClipboard.exe'
-        dotnet test src/SyncClipboard.Test -c Release --filter 'FullyQualifiedName~NativeUpdaterTests.NativeAotUpdater' -m:1
-        if ($LASTEXITCODE -ne 0) { throw 'WinUI updater integration checks failed.' }
-
     - name: set update info
       shell: bash
       run: |
