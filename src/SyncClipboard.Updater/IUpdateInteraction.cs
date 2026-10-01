@@ -1,6 +1,7 @@
 namespace SyncClipboard.Updater;
 
-internal sealed record UpdateResult(int ExitCode, string? Error = null, string? WorkDirectory = null, string? BackupPath = null);
+internal sealed record UpdateResult(int ExitCode, string? Error = null, string? WorkDirectory = null, string? BackupPath = null,
+    bool CleanupIncomplete = false);
 
 internal enum ForceExitAction { Yes, No, Retry }
 

@@ -22,7 +22,7 @@ internal static class Program
                 if (!OperatingSystem.IsWindows())
                     throw new PlatformNotSupportedException(UpdaterText.Current.WindowsOnly);
                 var update = UpdateArguments.Parse(args);
-                var interaction = new ConsoleUpdateInteraction(update.Language, update.Elevated);
+                var interaction = new ConsoleUpdateInteraction(update.Language);
                 return UpdateWorker.RunAsync(update, interaction, CancellationToken.None).GetAwaiter().GetResult();
             }
 

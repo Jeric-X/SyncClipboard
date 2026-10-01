@@ -29,17 +29,6 @@ internal static class UpdateWorker
                 Path.Combine(update.WorkDirectory, "SyncClipboard.Updater.exe"), StringComparison.OrdinalIgnoreCase))
                 throw new IOException(UpdaterText.Current.OutsideWorkspace);
             WindowsZipPackage.ValidateTarget(update);
-            if (!update.Elevated)
-            {
-                canRestart = false;
-                await UpdateIo.RunAsync(UpdaterText.Current.LockInstallation + update.Target, () =>
-                {
-                    targetLock = AcquireInstallationLock(update.Target);
-                    return Task.CompletedTask;
-                }, interaction.AskFailureActionAsync, token);
-                canRestart = true;
-            }
-
             if (await RequiresElevationAsync(update.Target, update.Elevated, interaction, token))
             {
                 Log(update, UpdaterText.Current.RequestingElevation);
@@ -47,28 +36,22 @@ internal static class UpdateWorker
                 start.UseShellExecute = true;
                 start.Verb = "runas";
                 using var elevated = Process.Start(start) ?? throw new IOException(UpdaterText.Current.ElevatedStartFailed);
-                // Wait for the worker to finish before considering a restart.
-                await elevated.WaitForExitAsync(CancellationToken.None);
-                if (elevated.ExitCode == 3)
-                    return 3;
-                if (elevated.ExitCode != 0 && elevated.ExitCode != 1)
-                {
-                    canRestart = false;
-                    throw new IOException(UpdaterText.Current.ElevatedRecoveryRequired);
-                }
-                if (elevated.ExitCode != 0)
-                    throw new IOException(UpdaterText.Current.ElevatedUpdateFailed);
-            }
-            else
-                await InstallAsync(update, interaction, token);
-            if (update.Elevated)
                 return 0;
+            }
 
+            canRestart = false;
+            await UpdateIo.RunAsync(UpdaterText.Current.LockInstallation + update.Target, () =>
+            {
+                targetLock = AcquireInstallationLock(update.Target);
+                return Task.CompletedTask;
+            }, interaction.AskFailureActionAsync, token);
+            canRestart = true;
+
+            await InstallAsync(update, interaction, token);
+            targetLock?.Dispose();
+            targetLock = null;
             Restart(update);
-            Log(update, UpdaterText.Current.CleaningUp);
-            await CleanupAsync(update.WorkDirectory!, interaction.AskFailureActionAsync);
-            await interaction.ShowResultAsync(new UpdateResult(0));
-            return 0;
+            return await CleanupAndReportAsync(update, interaction);
         }
         catch (Exception error)
         {
@@ -78,7 +61,7 @@ internal static class UpdateWorker
                 return 3;
             Log(update, error.ToString());
             var recoveryRequired = error is UpdateRecoveryException or UpdateAbortedException || !canRestart;
-            if (!update.Elevated && !recoveryRequired && error is not UpdateProcessExitException)
+            if (!recoveryRequired && error is not UpdateProcessExitException)
                 await RestartIfStoppedAsync(update);
             var exitCode = error is UpdateProcessExitException ? 3 : recoveryRequired ? RecoveryRequired : 1;
             await interaction.ShowResultAsync(new UpdateResult(exitCode, error.Message, update.WorkDirectory, error switch
@@ -242,13 +225,9 @@ internal static class UpdateWorker
 
     private static void Restart(UpdateArguments update)
     {
-        var start = new ProcessStartInfo(update.Executable)
-        {
-            UseShellExecute = true,
-            WorkingDirectory = update.Target,
-            Verb = update.AppElevated ? "runas" : string.Empty
-        };
-        using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartFailed);
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException(UpdaterText.Current.WindowsOnly);
+        WindowsProcessLauncher.Start(update.Executable, update.Target, update.AppElevated);
     }
 
     internal static ProcessStartInfo CreateStartInfo(string executable, UpdateArguments update)
@@ -257,6 +236,25 @@ internal static class UpdateWorker
         foreach (var argument in update.ToCommandLine())
             start.ArgumentList.Add(argument);
         return start;
+    }
+
+    internal static async Task<int> CleanupAndReportAsync(UpdateArguments update, IUpdateInteraction interaction)
+    {
+        UpdateResult result;
+        try
+        {
+            Log(update, UpdaterText.Current.CleaningUp);
+            await CleanupAsync(update.WorkDirectory!, interaction.AskFailureActionAsync);
+            result = new UpdateResult(0);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
+        {
+            Log(update, error.ToString());
+            var cause = error is UpdateAbortedException ? error.InnerException ?? error : error;
+            result = new UpdateResult(1, cause.Message, update.WorkDirectory, CleanupIncomplete: true);
+        }
+        await interaction.ShowResultAsync(result);
+        return result.ExitCode;
     }
 
     internal static async Task CleanupAsync(string workspace, UpdateFailureHandler? onFailure = null)

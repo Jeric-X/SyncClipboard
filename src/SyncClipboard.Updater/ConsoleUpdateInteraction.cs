@@ -7,16 +7,14 @@ namespace SyncClipboard.Updater;
 internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
 {
     private readonly UpdaterText text;
-    private readonly bool isElevated;
     private readonly TextReader input;
     private readonly TextWriter output;
     private readonly bool waitForAcknowledgement;
     private bool usePrompts;
 
-    public ConsoleUpdateInteraction(string language, bool isElevated = false, TextReader? input = null, TextWriter? output = null)
+    public ConsoleUpdateInteraction(string language, TextReader? input = null, TextWriter? output = null)
     {
         text = UpdaterText.ForLanguage(language);
-        this.isElevated = isElevated;
         this.input = input ?? Console.In;
         this.output = output ?? Console.Out;
         waitForAcknowledgement = input is null && !Console.IsInputRedirected;
@@ -105,12 +103,14 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
             WriteLine(text.Completed);
             return;
         }
+        if (result.CleanupIncomplete)
+            WriteLine(text.CleanupIncomplete);
         WriteLine(result.Error ?? text.Failed);
         if (result.BackupPath is not null)
             WriteLine(text.BackupDirectory + result.BackupPath);
         if (result.WorkDirectory is not null)
-            WriteLine(text.Workspace + result.WorkDirectory);
-        if ((!isElevated || result.BackupPath is not null) && waitForAcknowledgement)
+            WriteLine((result.CleanupIncomplete ? text.RemainingDirectory : text.Workspace) + result.WorkDirectory);
+        if (waitForAcknowledgement)
         {
             var message = text.PressEnterToClose;
             if (TryPrompt(() => Prompt.Select<string>(message, [text.Close]), out _))

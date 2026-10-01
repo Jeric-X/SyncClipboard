@@ -562,6 +562,28 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
+    public async Task CleanupFailure_ReportsCompletedUpdateAndRemainingDirectory()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Inconclusive("Windows file locking test.");
+
+        var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
+        File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
+        var backup = Path.Combine(workspace, "backup.zip");
+        using var locked = new FileStream(backup, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        using var input = new StringReader("1\n");
+        using var output = new StringWriter();
+        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
+
+        var result = await UpdateWorker.CleanupAndReportAsync(Arguments() with { WorkDirectory = workspace }, interaction);
+
+        Assert.AreEqual(1, result);
+        Assert.IsTrue(File.Exists(backup));
+        Assert.Contains("更新已完成，但临时文件或旧备份未清理完毕。", output.ToString());
+        Assert.Contains("残留目录: " + workspace, output.ToString());
+    }
+
+    [TestMethod]
     public async Task SelfCleanup_WaitsForExecutableReleaseAndPreservesSpecialCharactersInPath()
     {
         if (!OperatingSystem.IsWindows())
@@ -726,7 +748,10 @@ public class NativeUpdaterTests
     public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace()
     {
         if (!OperatingSystem.IsWindows())
+        {
             Assert.Inconclusive("Windows NativeAOT process integration test.");
+            return;
+        }
         var native = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
         if (native is null)
             Assert.Inconclusive("Publish the NativeAOT updater and set SYNC_CLIPBOARD_UPDATER_TEST_EXE.");
@@ -746,11 +771,13 @@ public class NativeUpdaterTests
         ZipFile.CreateFromDirectory(stage, zip);
         var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(Path.Combine(target, "SyncClipboard.Updater.exe"),
             TestContext.CancellationTokenSource.Token);
+        using var identity = WindowsIdentity.GetCurrent();
         var arguments = Arguments() with
         {
             PackagePath = zip,
             Digest = Digest(zip),
-            WorkDirectory = workspace
+            WorkDirectory = workspace,
+            AppElevated = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator)
         };
         var start = UpdateWorker.CreateStartInfo(Path.Combine(workspace, "SyncClipboard.Updater.exe"), arguments);
         start.Environment["TEMP"] = directory;

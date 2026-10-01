@@ -134,6 +134,18 @@ internal sealed class UpdaterText
         ? "更新完成。"
         : "Update completed.";
 
+    public string CleanupIncomplete => isChinese
+        ? "更新已完成，但临时文件或旧备份未清理完毕。"
+        : "The update completed, but temporary files or old backups could not be fully removed.";
+
+    public string RemainingDirectory => isChinese
+        ? "残留目录: "
+        : "Remaining directory: ";
+
+    public string DesktopUserUnavailable => isChinese
+        ? "无法获取普通权限的桌面用户，不能以原权限启动主程序。请手动启动 SyncClipboard。"
+        : "An unelevated desktop user is unavailable. Start SyncClipboard manually to keep its original permissions.";
+
     public string Failed => isChinese
         ? "更新失败。"
         : "Update failed.";
@@ -313,14 +325,6 @@ internal sealed class UpdaterText
     public string ElevatedStartFailed => isChinese
         ? "无法启动管理员权限更新器。"
         : "Could not start the elevated updater.";
-
-    public string ElevatedRecoveryRequired => isChinese
-        ? "管理员权限更新已停止，且未完成回滚。请保留备份以便恢复。"
-        : "The elevated update stopped without a complete rollback. Keep the backup for recovery.";
-
-    public string ElevatedUpdateFailed => isChinese
-        ? "管理员权限更新失败。详情请查看 install.log。"
-        : "The elevated update failed. See install.log for details.";
 
     public string InstallationLockedByOtherUser => isChinese
         ? "其他用户已锁定此安装目录进行更新。"
